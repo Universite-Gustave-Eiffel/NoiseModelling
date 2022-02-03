@@ -21,6 +21,7 @@ package org.noise_planet.noisemodelling.wps.Database_Manager
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -121,8 +122,10 @@ def exec(Connection connection, input) {
     logger.info("The actual SRID of the table is " + srid)
 
     if (tableSrid == 0) {
-        connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
-                TableLocation.parse(tableName).toString(), srid))
+        GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)), spatialFieldNames.get(0));
+        metaData.setSRID(srid);
+        connection.createStatement().execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)",
+                TableLocation.parse(tableName, DBUtils.getDBType(connection)), spatialFieldNames.get(0), metaData.getSQL(), spatialFieldNames.get(0),spatialFieldNames.get(0) ,srid))
     }
 
     // Project geometry in WGS84 (EPSG:4326) and groups all the geometries of the table

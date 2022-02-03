@@ -18,9 +18,11 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.edit.ST_AddZ
+import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.LineString
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
+import java.sql.Statement
 
 /**
  * @Author Pierre Aumond,  Univ Gustave Eiffel
@@ -282,7 +285,12 @@ def exec(Connection connection, input) {
 
     // Add primary key to the LW table
     sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
-    sql.execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, "+sridSources+")")
+
+    TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
+    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");
+    metaData.setSRID(sridSources);
+    sql.execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)", alterTable, "THE_GEOM",
+            metaData.getSQL(), "THE_GEOM" , metaData.getSRID()))
 
     resultString = "Calculation Done ! The table LW_RAILWAY has been created."
 

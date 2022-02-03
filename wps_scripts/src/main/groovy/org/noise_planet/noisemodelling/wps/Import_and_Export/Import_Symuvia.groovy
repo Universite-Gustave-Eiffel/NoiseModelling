@@ -14,6 +14,8 @@ import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.TableUtilities
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.xml.sax.InputSource
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.DefaultHandler
@@ -218,10 +220,10 @@ class SYMUVIADriverFunction {
             // Initialisation
             final boolean isH2 = JDBCUtilities.isH2DataBase(connection);
             boolean success = false;
-            TableLocation requestedTable = TableLocation.parse(tableName, isH2);
+            TableLocation requestedTable = TableLocation.parse(tableName, DBUtils.getDBType(connection));
             String symuviaTableName = requestedTable.getTable();
-            checkSYMUVIATables(connection, isH2, requestedTable, symuviaTableName);
-            createSYMUVIADatabaseModel(connection, isH2, requestedTable, symuviaTableName);
+            checkSYMUVIATables(connection, requestedTable, symuviaTableName);
+            createSYMUVIADatabaseModel(connection, requestedTable, symuviaTableName);
 
             FileInputStream fs = null;
             try {
@@ -275,10 +277,10 @@ class SYMUVIADriverFunction {
          * @param symuviaTableName
          * @throws SQLException
          */
-        private void checkSYMUVIATables(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
+        private void checkSYMUVIATables(Connection connection, TableLocation requestedTable, String symuviaTableName) throws SQLException {
             String[] omsTables = [SYMUVIATablesFactory.INST,SYMUVIATablesFactory.TRAJ]
             for (String omsTableSuffix : omsTables) {
-                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2);
+                String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, DBUtils.getDBType(connection));
                 if (JDBCUtilities.tableExists(connection, symuviaTable)) {
                     throw new SQLException("The table " + symuviaTable + " already exists.");
                 }
@@ -294,11 +296,12 @@ class SYMUVIADriverFunction {
          * @param symuviaTableName
          * @throws SQLException
          */
-        private void createSYMUVIADatabaseModel(Connection connection, boolean isH2, TableLocation requestedTable, String symuviaTableName) throws SQLException {
-            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, isH2);
-            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName, isH2);
-            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, isH2);
-            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName, isH2);
+        private void createSYMUVIADatabaseModel(Connection connection, TableLocation requestedTable, String symuviaTableName) throws SQLException {
+            DBTypes dbTypes = DBUtils.getDBType(connection);
+            String instTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.INST, dbTypes);
+            instPreparedStmt =  SYMUVIATablesFactory.createInstTable(connection, instTableName);
+            String trajTableName = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + SYMUVIATablesFactory.TRAJ, dbTypes);
+            trajPreparedStmt =  SYMUVIATablesFactory.createTrajTable(connection, trajTableName);
         }
 
 
@@ -509,7 +512,7 @@ class SYMUVIADriverFunction {
          * @return
          * @throws SQLException
          */
-        static PreparedStatement createInstTable(Connection connection, String instTableName, boolean isH2) throws SQLException {
+        static PreparedStatement createInstTable(Connection connection, String instTableName) throws SQLException {
             Statement stmt = connection.createStatement()
             StringBuilder sb = new StringBuilder("CREATE TABLE ")
             sb.append(instTableName)
@@ -528,7 +531,7 @@ class SYMUVIADriverFunction {
          * @return
          * @throws SQLException
          */
-        static PreparedStatement createTrajTable(Connection connection, String trajTableName, boolean isH2) throws SQLException {
+        static PreparedStatement createTrajTable(Connection connection, String trajTableName) throws SQLException {
             Statement stmt = connection.createStatement()
             StringBuilder sb = new StringBuilder("CREATE TABLE ")
             sb.append(trajTableName)
@@ -556,16 +559,16 @@ class SYMUVIADriverFunction {
          * @throws SQLException
          */
         static void dropSYMUVIATables(Connection connection, boolean isH2, String tablePrefix) throws SQLException {
-            TableLocation requestedTable = TableLocation.parse(tablePrefix, isH2)
+            TableLocation requestedTable = TableLocation.parse(tablePrefix, DBUtils.getDBType(connection))
             String symuviaTableName = requestedTable.getTable()
             String[] omsTables = String[INST, TRAJ]
             StringBuilder sb =  new StringBuilder("drop table if exists ")
             String omsTableSuffix = omsTables[0]
-            String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
+            String symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, DBUtils.getDBType(connection))
             sb.append(symuviaTable)
             for (int i = 1; i < omsTables.length; i++) {
                 omsTableSuffix = omsTables[i]
-                symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, isH2)
+                symuviaTable = TableUtilities.caseIdentifier(requestedTable, symuviaTableName + omsTableSuffix, DBUtils.getDBType(connection))
                 sb.append(",").append(symuviaTable)
             }
             Statement stmt = connection.createStatement()

@@ -197,7 +197,8 @@ def exec(connection, input) {
         fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM")
     }
 
-    sql.execute("CREATE TABLE " + receivers_table_name + "(PK SERIAL, THE_GEOM GEOMETRY) AS SELECT null, ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
+    sql.execute("CREATE TABLE " + receivers_table_name + "(THE_GEOM GEOMETRY) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
+    sql.execute("ALTER TABLE " + receivers_table_name + " ADD COLUMN PK SERIAL")
 
     logger.info("Create spatial index on " + receivers_table_name)
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")

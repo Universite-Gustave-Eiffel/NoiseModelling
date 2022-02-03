@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
+import java.time.LocalDateTime
 
 title = 'Compute LDay,Levening,LNight,Lden from road traffic'
 description = 'Compute Lday noise map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details).' +
@@ -563,7 +564,9 @@ def exec(Connection connection, input) {
 
 
     logger.info("Start calculation... ")
-    ProfilerThread profilerThread = new ProfilerThread(new File("webapps/root/profile.csv"));
+    LocalDateTime now = LocalDateTime.now();
+    ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
+            now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())));
     profilerThread.addMetric(ldenProcessing);
     profilerThread.addMetric(new ProgressMetric(progressLogger));
     profilerThread.addMetric(new JVMMemoryMetric());

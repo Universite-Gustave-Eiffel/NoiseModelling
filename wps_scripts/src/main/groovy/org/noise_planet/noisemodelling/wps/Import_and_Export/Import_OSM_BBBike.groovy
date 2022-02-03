@@ -31,9 +31,11 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
@@ -41,6 +43,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.ResultSet
+import java.sql.SQLException
 import java.sql.Statement
 
 title = 'Clean and fence BBBike tables - https://extract.bbbike.org/'
@@ -221,6 +224,7 @@ def exec(Connection connection, input) {
             fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
             // the tableName will be called as the fileName
             String outputTableName = fileName.toUpperCase()
+            TableLocation outputTableIdentifier = TableLocation.parse(outputTableName, DBUtils.getDBType(connection))
 
             // Drop the table if already exists
             String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
@@ -309,22 +313,24 @@ def exec(Connection connection, input) {
 
                 // If the table does not have an associated SRID, add a SRID
                 if (tableSrid == 0) {
-                    connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
-                            TableLocation.parse(outputTableName).toString(), srid))
+                    Statement st = connection.createStatement()
+                    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, outputTableIdentifier, spatialFieldNames.get(0));
+                    metaData.setSRID(srid);
+                    st.execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)", outputTableIdentifier, spatialFieldNames.get(0), metaData.getSQL(),spatialFieldNames.get(0) ,srid))
                 }
             }
 
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
             ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(outputTableName))
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableIdentifier)
 
             if (pkIndex == 0) {
                 if (pkUserIndex > 0) {
-                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
-                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
-                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+                    stmt.execute("ALTER TABLE " + outputTableIdentifier + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableIdentifier + " ADD PRIMARY KEY (PK);  ")
+                    resultString = resultString + String.format(outputTableIdentifier.toString() + " has a new primary key constraint on PK")
+                    logger.info(String.format(outputTableIdentifier.toString() + " has a new primary key constraint on PK"))
                 }
             }
 
@@ -339,24 +345,24 @@ def exec(Connection connection, input) {
     // -------------------------
 
     // This is the name of the OSM tables when the file is imported.
-    String[] osm_tables = ["BUILDINGS", "LANDUSE", "\"NATURAL\"",
+    String[] osm_tables = ["BUILDINGS", "LANDUSE", "NATURAL",
                            "PLACES", "POINTS", "RAILWAYS", "ROADS", "WATERWAYS"]
 
-    String[] osm_tables_temp = ["BUILDINGS_TEMP", "TMP_RELATION_BUILDINGS", "\"NATURAL\"","LANDUSE","LANDUSE_TEMP", "\"NATURAL_TEMP\"",
+    String[] osm_tables_temp = ["BUILDINGS_TEMP", "TMP_RELATION_BUILDINGS", "NATURAL","LANDUSE","LANDUSE_TEMP", "NATURAL_TEMP",
                                 "PLACES_TEMP", "POINTS_TEMP", "RAILWAYS_TEMP", "ROADS_TEMP", "WATERWAYS_TEMP", "PLACES", "POINTS", "RAILWAYS", "WATERWAYS"]
 
     // Loop over every OSM BBBike tables.
     // Add SRID or define SRID
     osm_tables.each { tableName ->
-
+        TableLocation tableIdentifier = TableLocation.parse(tableName, DBUtils.getDBType(connection))
         // Get the PrimaryKey field if exists to keep it in the final table
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)))
 
         // Build the result string with every tables
         StringBuilder sbFields = new StringBuilder()
 
         // Get the column names to keep all column in the final table
-        List<String> fields = JDBCUtilities.getColumnNames(connection, tableName)
+        List<String> fields = JDBCUtilities.getColumnNames(connection, tableIdentifier)
         int k = 1
         String pkField = ""
         fields.each {
@@ -368,7 +374,9 @@ def exec(Connection connection, input) {
                 k++
         }
 
-
+        if(pkField.isEmpty()) {
+            throw new SQLException("No pk field in the table " + tableName)
+        }
         //get SRID of the table
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
 
@@ -436,7 +444,11 @@ def exec(Connection connection, input) {
         sql.execute("create table BUILDINGS as select * FROM BUILDINGS2;")
         sql.execute("alter table BUILDINGS add column height double;  ")
         sql.execute("update BUILDINGS set height = round(4 + RAND() * 2,1) where height is null;")
-        sql.execute("update BUILDINGS set THE_GEOM = ST_SetSRID(the_geom," + input_srid.toInteger() + ");")
+
+        GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, "BUILDINGS", "THE_GEOM");
+        metaData.setSRID(input_srid.toInteger());
+        sql.execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)", TableLocation.parse("BUILDINGS"), "THE_GEOM", metaData.getSQL(),"THE_GEOM" ,input_srid.toInteger()))
+
         sql.execute('CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON BUILDINGS(the_geom);')
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS2;")
@@ -494,8 +506,9 @@ def exec(Connection connection, input) {
     if (!ignoreGround) {
         // LANDUSE TO GROUND
         String Ground_Import = "DROP TABLE GROUND IF EXISTS;" +
-                "create table GROUND(PK serial, the_geom geometry, surfcat varchar, G double) as " +
-                "select null,  l.THE_GEOM the_geom , l.TYPE, 1 from LANDUSE l where l.TYPE IN ('grass', 'village_green', 'park');"
+                "create table GROUND(the_geom geometry, surfcat varchar, G double) as " +
+                "select   l.THE_GEOM the_geom , l.TYPE, 1 from LANDUSE l where l.TYPE IN ('grass', 'village_green', 'park');" +
+                "ALTER TABLE GROUND ADD COLUMN PK SERIAL;"
 
         sql.execute(Ground_Import)
 
@@ -524,7 +537,7 @@ def exec(Connection connection, input) {
         def speed = [110, 80, 50, 50, 30, 30]
 
         String Roads_Import2 = "DROP TABLE IF EXISTS ROADS_AADF;\n" +
-                "CREATE TABLE ROADS_AADF(ID SERIAL,OSM_ID long , THE_GEOM LINESTRING, CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT null, OSM_ID, THE_GEOM,\n" +
+                "CREATE TABLE ROADS_AADF(OSM_ID long , THE_GEOM GEOMETRY(LINESTRING, "+srid+"), CLAS_ADM int, AADF int, CLAS_ALT int) as SELECT OSM_ID, THE_GEOM,\n" +
                 "CASEWHEN(T = 'trunk', 21,\n" +
                 "CASEWHEN(T = 'primary', 41,\n" +
                 "CASEWHEN(T = 'secondary', 41,\n" +
@@ -554,7 +567,8 @@ def exec(Connection connection, input) {
                 "CASEWHEN(T = 'residential' AND MAX_SPEED IS NULL, 5,\n" +
                 "CASEWHEN(T = 'unclassified' AND MAX_SPEED IS NULL, 5,\n" +
                 "CASEWHEN(T = 'service', 6,\n" +
-                "CASEWHEN(T = 'living_street',6, 6)))))))))))))))))) CLAS_ALT  FROM ROADS_TEMP2 ;"
+                "CASEWHEN(T = 'living_street',6, 6)))))))))))))))))) CLAS_ALT  FROM ROADS_TEMP2 ;" +
+                "ALTER TABLE ROADS_AADF ADD COLUMN ID SERIAL;"
 
         sql.execute(Roads_Import2)
 
@@ -595,7 +609,7 @@ def exec(Connection connection, input) {
 
 
     osm_tables_temp.each { tableName ->
-        sql.execute("DROP TABLE " + tableName + " IF EXISTS;")
+        sql.execute("DROP TABLE " + TableLocation.parse(tableName, DBUtils.getDBType(connection)).toString() + " IF EXISTS;")
     }
 
 

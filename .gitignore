@@ -6,4 +6,5 @@ nbactions.xml
 .attach*
 Docs/build
 Docs/venv
+profile_*.csv
 

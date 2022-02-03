@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
+import org.h2.value.ValueBoolean
 import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
@@ -85,7 +86,8 @@ class TestNoiseModelling extends JdbcTestCase {
         assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
 
 
-        SHPRead.importTable(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(), "BUILDINGS")
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(),
+                "BUILDINGS", ValueBoolean.TRUE)
 
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
 

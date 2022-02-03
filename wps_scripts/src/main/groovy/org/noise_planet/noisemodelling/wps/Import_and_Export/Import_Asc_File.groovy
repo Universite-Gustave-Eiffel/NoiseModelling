@@ -212,9 +212,7 @@ def exec(Connection connection, input) {
 
     // Import ASC file
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-    new FileInputStream(new File(pathFile)).withStream { inputStream ->
-        ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid)
-    }
+    ascDriver.read(connection, new File(pathFile), progressLogger, outputTableName, srid)
 
     logger.info("Create spatial index on " + outputTableName )
     stmt.execute("Create spatial index on "+outputTableName+"(the_geom);")

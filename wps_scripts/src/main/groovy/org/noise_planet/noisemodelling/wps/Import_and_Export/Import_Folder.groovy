@@ -30,6 +30,7 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
@@ -137,6 +138,7 @@ def exec(Connection connection, input) {
             fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
             // the tableName will be called as the fileName
             String outputTableName = fileName.toUpperCase()
+            TableLocation outputTableIdentifier = TableLocation.parse(outputTableName, DBUtils.getDBType(connection))
 
             // Drop the table if already exists
             String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
@@ -197,7 +199,7 @@ def exec(Connection connection, input) {
             int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
 
             if (pk2Field > 0 && pkField > 0) {
-                stmt.execute("ALTER TABLE " + outputTableName + " DROP COLUMN PK2;")
+                stmt.execute("ALTER TABLE " + outputTableIdentifier + " DROP COLUMN PK2;")
                 logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
             }
 
@@ -208,9 +210,9 @@ def exec(Connection connection, input) {
             if (spatialFieldNames.isEmpty()) {
                 logger.warn("The table " + outputTableName + " does not contain a geometry field.")
             } else {
-                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + TableLocation.parse(outputTableName) + '(the_geom);')
+                stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + outputTableName + '_INDEX ON ' + outputTableIdentifier + '(the_geom);')
                 // Get the SRID of the table
-                Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(outputTableName))
+                Integer tableSrid = GeometryTableUtilities.getSRID(connection, outputTableIdentifier)
 
                 if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) {
                     resultString = "The table " + outputTableName + " already has a different SRID than the one you gave."
@@ -225,22 +227,24 @@ def exec(Connection connection, input) {
 
                 // If the table does not have an associated SRID, add a SRID
                 if (tableSrid == 0) {
-                    connection.createStatement().execute(String.format("UPDATE %s SET " + spatialFieldNames.get(0) + " = ST_SetSRID(" + spatialFieldNames.get(0) + ",%d)",
-                            TableLocation.parse(outputTableName).toString(), srid))
+                    Statement st = connection.createStatement()
+                    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, outputTableIdentifier, spatialFieldNames.get(0));
+                    metaData.setSRID(srid);
+                    st.execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)", outputTableIdentifier, spatialFieldNames.get(0), metaData.getSQL(),spatialFieldNames.get(0) ,srid))
                 }
             }
 
             // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-            ResultSet rs2 = stmt.executeQuery("SELECT * FROM \"" + outputTableName + "\"")
+            ResultSet rs2 = stmt.executeQuery("SELECT * FROM " + outputTableIdentifier)
             int pkUserIndex = JDBCUtilities.getFieldIndex(rs2.getMetaData(), "PK")
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(outputTableName))
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, outputTableIdentifier)
 
             if (pkIndex == 0) {
                 if (pkUserIndex > 0) {
-                    stmt.execute("ALTER TABLE " + outputTableName + " ALTER COLUMN PK INT NOT NULL;")
-                    stmt.execute("ALTER TABLE " + outputTableName + " ADD PRIMARY KEY (PK);  ")
-                    resultString = resultString + String.format(outputTableName + " has a new primary key constraint on PK")
-                    logger.info(String.format(outputTableName + " has a new primary key constraint on PK"))
+                    stmt.execute("ALTER TABLE " + outputTableIdentifier + " ALTER COLUMN PK INT NOT NULL;")
+                    stmt.execute("ALTER TABLE " + outputTableIdentifier + " ADD PRIMARY KEY (PK);  ")
+                    resultString = resultString + String.format(outputTableIdentifier.toString() + " has a new primary key constraint on PK")
+                    logger.info(String.format(outputTableIdentifier.toString() + " has a new primary key constraint on PK"))
                 }
             }
 

@@ -20,8 +20,10 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -102,8 +104,10 @@ def exec(Connection connection, input) {
     if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
     if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
-
-    sql.execute("UPDATE " + table_name + " SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM," +h+"),"+srid+");")
+    GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
+    metaData.setSRID(srid);
+    connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(ST_UPDATEZ(%s, %f),%d)",
+            TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM" , metaData.getSQL(),"THE_GEOM", h,srid))
 
     resultString = "Process done. Table of receivers " + table_name + " has now a new height set to " + h + "."
 

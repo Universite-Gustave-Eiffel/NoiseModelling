@@ -24,6 +24,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -174,10 +175,7 @@ def exec(Connection connection, input) {
 
             // Import ASC file
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-            new FileInputStream(new File(pathFile)).withStream { inputStream ->
-                ascDriver.read(connection, inputStream, progressLogger, TableLocation.parse(outputTableName).toString(), srid)
-            }
-
+            ascDriver.read(connection, new File(pathFile), progressLogger, outputTableName, srid)
         }
     }
 
