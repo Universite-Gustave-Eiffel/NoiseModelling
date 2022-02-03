@@ -483,7 +483,7 @@ public class ComputeCnossosRays {
         srcPP.orientation = computeOrientation(cutProfile.getSrcOrientation(), srcCut, rcvCut);
         points.add(srcPP);
 
-        PropagationPath propagationPath = new PropagationPath(false, points, segments, srSeg);
+        PropagationPath propagationPath = new PropagationPath(false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
         if(data.isComputeDiffraction()) {
             //Check for Rayleigh criterion for segments computation
             // Compute mean ground plan
@@ -678,27 +678,18 @@ public class ComputeCnossosRays {
                 }
 
                 List<Coordinate> groundPts = toDirectLine(topoPts);
-                /*double g = 0;
-                double d = 0;
-                for(SegmentPath seg : freePaths) {
-                    d+=seg.d;
-                }
-                for(SegmentPath seg : freePaths) {
-                    g+=seg.gPath*seg.d/d;
-                }*/
                 PointPath src = new PointPath(coords.get(0), data.profileBuilder.getZ(coordinates.get(0)), new ArrayList<>(), SRCE);
                 src.orientation = computeOrientation(orientation, coords.get(0), coords.get(1));
                 PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
                 SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, g, data.gS);
-                //LineSegment sr = new LineSegment(src.coordinate, rcv.coordinate);
                 srSeg.dc = sqrt(pow(rcvCoord.x-srcCoord.x, 2) + pow(rcvCoord.y-srcCoord.y, 2) + pow(rcvCoord.z-srcCoord.z, 2));
 
                 List<PointPath> pps = new ArrayList<>();
                 pps.add(src);
                 PointPath previous = src;
                 List<SegmentPath> segs = new ArrayList<>();
-                path = new PropagationPath(false, pps, segs, srSeg);
+                path = new PropagationPath(false, pps, segs, srSeg, Angle.angle(rcvCoord, srcCoord));
                 double e = 0;
                 for(int i=1; i<coordinates.size()-1; i++) {
                     PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), new ArrayList<>(), DIFV);
@@ -750,7 +741,8 @@ public class ComputeCnossosRays {
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
 
-        PropagationPath propagationPath = new PropagationPath(true, points, segments, srPath);
+        PropagationPath propagationPath = new PropagationPath(true, points, segments, srPath,
+                Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate()));
 
         LineSegment srcRcvLine = new LineSegment(firstPts2D, lastPts2D);
         List<Coordinate> pts = new ArrayList<>();
@@ -1360,7 +1352,7 @@ public class ComputeCnossosRays {
                 List<SegmentPath> segments = new ArrayList<SegmentPath>();
                 SegmentPath srPath = null;
                 List<Integer> reflIdx = new ArrayList<>();
-                PropagationPath proPath = new PropagationPath(favorable, points, segments, srPath);
+                PropagationPath proPath = new PropagationPath(favorable, points, segments, srPath, Angle.angle(rcvCoord, srcCoord));
                 proPath.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data, orientation);

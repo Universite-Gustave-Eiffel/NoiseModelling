@@ -111,7 +111,7 @@ public class ComputeCnossosRaysOut implements IComputeRaysOut {
                     for (PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
                         PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRSegment());
+                                path.getSegmentList(), path.getSRSegment(), path.angle);
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int) receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int) sourceId).intValue());
                         propagationPaths.add(pathPk);

@@ -4338,7 +4338,7 @@ public class EvaluateAttenuationCnossosTest {
         assertEquals(44.07, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 1);
     }
 
-    //@Test
+    @Test
     public void testRoseIndex() {
         double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
         double angleStart = Math.PI / 2 - angle_section / 2;
@@ -4355,7 +4355,7 @@ public class EvaluateAttenuationCnossosTest {
      * Check if Li coefficient computation and line source subdivision are correctly done
      * @throws LayerDelaunayError
      */
-    //@Test
+    @Test
     public void testSourceLines()  throws LayerDelaunayError, IOException, ParseException {
 
         // First Compute the scene with only point sources at 1m each

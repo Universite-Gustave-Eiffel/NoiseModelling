@@ -66,8 +66,8 @@ public class PropagationPath {
     private boolean favorable; // if true, favorable meteorological condition path
     int idSource;
     int idReceiver;
-    Orientation sourceOrientation =
-            new Orientation(0,0,0);
+    Orientation sourceOrientation = new Orientation(0,0,0);
+    public double angle;
     double gs;
     private boolean initialized = false;
     // computed in Augmented Path
@@ -125,8 +125,9 @@ public class PropagationPath {
      * @param favorable
      * @param pointList
      * @param segmentList
+     * @param angle         Angle between the 3D source and 3D receiver. Used to rose index.
      */
-    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , SegmentPath srSegment) {
+    public PropagationPath(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , SegmentPath srSegment, double angle) {
         this.favorable = favorable;
         this.pointList = pointList;
         this.segmentList = segmentList;
