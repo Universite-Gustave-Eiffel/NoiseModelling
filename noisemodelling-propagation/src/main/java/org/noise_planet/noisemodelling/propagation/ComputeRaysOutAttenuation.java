@@ -95,8 +95,16 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
      * @return rose index
      */
     public static int getRoseIndex(Coordinate receiver, Coordinate source) {
+        return getRoseIndex(Angle.angle(receiver, source));
+    }
+
+    /**
+     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
+     * @return rose index
+     */
+    public static int getRoseIndex(double angle) {
         // Angle from cos -1 sin 0
-        double angleRad = -(Angle.angle(receiver, source) - Math.PI);
+        double angleRad = -(angle - Math.PI);
         // Offset angle by PI / 2 (North),
         // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
         angleRad -= (Math.PI / 2 - angle_section / 2);
@@ -344,7 +352,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     for(PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
                         PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRSegment());
+                                path.getSegmentList(), path.getSRSegment(), path.angle);
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         pathPk.setSourceOrientation(path.getSourceOrientation());
