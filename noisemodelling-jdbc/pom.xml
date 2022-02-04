@@ -53,6 +53,11 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
+            <artifactId>h2gis</artifactId>
+            <version>${h2gis-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
             <artifactId>poly2tri-core</artifactId>
             <version>0.1.2</version>
         </dependency>

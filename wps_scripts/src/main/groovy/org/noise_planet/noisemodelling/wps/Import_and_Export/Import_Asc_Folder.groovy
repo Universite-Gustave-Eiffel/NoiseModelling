@@ -21,10 +21,10 @@ import geoserver.catalog.Store
 import groovy.io.FileType
 import org.apache.commons.io.FilenameUtils
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
+import org.noise_planet.noisemodelling.jdbc.utils.AscReaderDriver
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
