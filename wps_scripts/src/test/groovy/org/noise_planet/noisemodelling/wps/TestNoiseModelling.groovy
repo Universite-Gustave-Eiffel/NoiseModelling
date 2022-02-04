@@ -137,53 +137,53 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
 
-        assertEquals(83, leqs[0] as Double, 2.0)
-        assertEquals(77, leqs[1] as Double, 2.0)
-        assertEquals(75, leqs[2] as Double, 2.0)
-        assertEquals(76, leqs[3] as Double, 2.0)
-        assertEquals(79, leqs[4] as Double, 2.0)
-        assertEquals(77, leqs[5] as Double, 2.0)
-        assertEquals(68, leqs[6] as Double, 2.0)
-        assertEquals(59, leqs[7] as Double, 2.0)
+        assertEquals(87, leqs[0] as Double, 2.0)
+        assertEquals(78, leqs[1] as Double, 2.0)
+        assertEquals(78, leqs[2] as Double, 2.0)
+        assertEquals(79, leqs[3] as Double, 2.0)
+        assertEquals(82, leqs[4] as Double, 2.0)
+        assertEquals(80, leqs[5] as Double, 2.0)
+        assertEquals(71, leqs[6] as Double, 2.0)
+        assertEquals(62, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LEVENING_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
 
-        assertEquals(78.0, leqs[0] as Double, 2.0)
-        assertEquals(72.0, leqs[1] as Double, 2.0)
-        assertEquals(70.0, leqs[2] as Double, 2.0)
-        assertEquals(72.0, leqs[3] as Double, 2.0)
-        assertEquals(74.0, leqs[4] as Double, 2.0)
-        assertEquals(72.0, leqs[5] as Double, 2.0)
-        assertEquals(63.0, leqs[6] as Double, 2.0)
-        assertEquals(54.0, leqs[7] as Double, 2.0)
+        assertEquals(81.0, leqs[0] as Double, 2.0)
+        assertEquals(74.0, leqs[1] as Double, 2.0)
+        assertEquals(73.0, leqs[2] as Double, 2.0)
+        assertEquals(75.0, leqs[3] as Double, 2.0)
+        assertEquals(77.0, leqs[4] as Double, 2.0)
+        assertEquals(75.0, leqs[5] as Double, 2.0)
+        assertEquals(66.0, leqs[6] as Double, 2.0)
+        assertEquals(57.0, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LNIGHT_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
 
-        assertEquals(75, leqs[0] as Double, 2.0)
-        assertEquals(69, leqs[1] as Double, 2.0)
-        assertEquals(68, leqs[2] as Double, 2.0)
-        assertEquals(69, leqs[3] as Double, 2.0)
-        assertEquals(71, leqs[4] as Double, 2.0)
-        assertEquals(69, leqs[5] as Double, 2.0)
-        assertEquals(60, leqs[6] as Double, 2.0)
-        assertEquals(51, leqs[7] as Double, 2.0)
+        assertEquals(78, leqs[0] as Double, 2.0)
+        assertEquals(71, leqs[1] as Double, 2.0)
+        assertEquals(70, leqs[2] as Double, 2.0)
+        assertEquals(72, leqs[3] as Double, 2.0)
+        assertEquals(74, leqs[4] as Double, 2.0)
+        assertEquals(72, leqs[5] as Double, 2.0)
+        assertEquals(63, leqs[6] as Double, 2.0)
+        assertEquals(54, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LDEN_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
 
-        assertEquals(84, leqs[0] as Double, 2.0)
-        assertEquals(78, leqs[1] as Double, 2.0)
-        assertEquals(76, leqs[2] as Double, 2.0)
-        assertEquals(77, leqs[3] as Double, 2.0)
-        assertEquals(80, leqs[4] as Double, 2.0)
-        assertEquals(78, leqs[5] as Double, 2.0)
-        assertEquals(69, leqs[6] as Double, 2.0)
-        assertEquals(60, leqs[7] as Double, 2.0)
+        assertEquals(87, leqs[0] as Double, 2.0)
+        assertEquals(79, leqs[1] as Double, 2.0)
+        assertEquals(79, leqs[2] as Double, 2.0)
+        assertEquals(80, leqs[3] as Double, 2.0)
+        assertEquals(83, leqs[4] as Double, 2.0)
+        assertEquals(81, leqs[5] as Double, 2.0)
+        assertEquals(72, leqs[6] as Double, 2.0)
+        assertEquals(63, leqs[7] as Double, 2.0)
     }
 
     @Test
@@ -221,21 +221,34 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
 
-        assertEquals(84, leqs[0] as Double, 2.0)
-        assertEquals(77, leqs[1] as Double, 2.0)
-        assertEquals(75, leqs[2] as Double, 2.0)
-        assertEquals(76, leqs[3] as Double, 2.0)
-        assertEquals(79, leqs[4] as Double, 2.0)
-        assertEquals(77, leqs[5] as Double, 2.0)
-        assertEquals(68, leqs[6] as Double, 2.0)
-        assertEquals(59, leqs[7] as Double, 2.0)
+        assertEquals(87, leqs[0] as Double, 2.0)
+        assertEquals(78, leqs[1] as Double, 2.0)
+        assertEquals(78, leqs[2] as Double, 2.0)
+        assertEquals(79, leqs[3] as Double, 2.0)
+        assertEquals(82, leqs[4] as Double, 2.0)
+        assertEquals(80, leqs[5] as Double, 2.0)
+        assertEquals(71, leqs[6] as Double, 2.0)
+        assertEquals(62, leqs[7] as Double, 2.0)
 
         assertTrue(res.contains("LEVENING_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
 
-        assertEquals(79, leqs[0] as Double, 2.0)
-        assertEquals(72, leqs[1] as Double, 2.0)
+        assertEquals(81, leqs[0] as Double, 2.0)
+        assertEquals(74, leqs[1] as Double, 2.0)
+        assertEquals(73, leqs[2] as Double, 2.0)
+        assertEquals(75, leqs[3] as Double, 2.0)
+        assertEquals(77, leqs[4] as Double, 2.0)
+        assertEquals(75, leqs[5] as Double, 2.0)
+        assertEquals(66, leqs[6] as Double, 2.0)
+        assertEquals(57, leqs[7] as Double, 2.0)
+
+        assertTrue(res.contains("LNIGHT_GEOM"))
+
+        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
+
+        assertEquals(78, leqs[0] as Double, 2.0)
+        assertEquals(71, leqs[1] as Double, 2.0)
         assertEquals(70, leqs[2] as Double, 2.0)
         assertEquals(72, leqs[3] as Double, 2.0)
         assertEquals(74, leqs[4] as Double, 2.0)
@@ -243,31 +256,18 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(63, leqs[6] as Double, 2.0)
         assertEquals(54, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LNIGHT_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
-
-        assertEquals(76, leqs[0] as Double, 2.0)
-        assertEquals(69, leqs[1] as Double, 2.0)
-        assertEquals(68, leqs[2] as Double, 2.0)
-        assertEquals(69, leqs[3] as Double, 2.0)
-        assertEquals(71, leqs[4] as Double, 2.0)
-        assertEquals(69, leqs[5] as Double, 2.0)
-        assertEquals(60, leqs[6] as Double, 2.0)
-        assertEquals(51, leqs[7] as Double, 2.0)
-
         assertTrue(res.contains("LDEN_GEOM"))
 
         leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
 
-        assertEquals(84, leqs[0] as Double, 2.0)
-        assertEquals(78, leqs[1] as Double, 2.0)
-        assertEquals(76, leqs[2] as Double, 2.0)
-        assertEquals(77, leqs[3] as Double, 2.0)
-        assertEquals(80, leqs[4] as Double, 2.0)
-        assertEquals(78, leqs[5] as Double, 2.0)
-        assertEquals(69, leqs[6] as Double, 2.0)
-        assertEquals(60, leqs[7] as Double, 2.0)
+        assertEquals(87, leqs[0] as Double, 2.0)
+        assertEquals(79, leqs[1] as Double, 2.0)
+        assertEquals(79, leqs[2] as Double, 2.0)
+        assertEquals(80, leqs[3] as Double, 2.0)
+        assertEquals(83, leqs[4] as Double, 2.0)
+        assertEquals(81, leqs[5] as Double, 2.0)
+        assertEquals(72, leqs[6] as Double, 2.0)
+        assertEquals(63, leqs[7] as Double, 2.0)
     }
 
     @Test

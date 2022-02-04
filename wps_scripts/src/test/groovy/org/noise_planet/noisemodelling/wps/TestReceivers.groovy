@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
+import org.h2.value.ValueBoolean
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
@@ -103,11 +104,12 @@ class TestReceivers extends JdbcTestCase {
     void testBuildingGridWithPop() {
         def sql = new Sql(connection)
 
-        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath(), "BUILDINGS_NOPOP")
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath(),
+                "BUILDINGS_NOPOP", ValueBoolean.TRUE)
         sql.execute("DROP TABLE IF EXISTS BUILDINGS")
-        sql.execute("CREATE TABLE BUILDINGS(pk serial, the_geom geometry, height double, pop double) AS SELECT pk, the_geom, height, ST_AREA(THE_GEOM) / 15 as pop from buildings_nopop")
+        sql.execute("CREATE TABLE BUILDINGS(pk serial primary key, the_geom geometry, height double, pop double) AS SELECT pk, the_geom, height, ST_AREA(THE_GEOM) / 15 as pop from buildings_nopop")
 
-        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath(), ValueBoolean.TRUE)
 
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
@@ -137,7 +139,8 @@ class TestReceivers extends JdbcTestCase {
 
         GeometryFactory f = new GeometryFactory();
         def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
-        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+        g.setSRID(2154)
+        def gFence = ST_Transform.ST_Transform(connection, g, 4326)
         new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                "delta" : 5,
                                                "height" : 6,
@@ -145,7 +148,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertTrue(sql.firstRow("SELECT count(*) cpt from receivers")[0] > 0)
 
-        def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, ST_GeomFromText('"+g.toString()+"'))")[0] as Integer
+        def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, :g)", [g : g])[0] as Integer
 
         assertEquals(0, receivers_pop);
 
@@ -222,11 +225,10 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
-        WKTReader r = new WKTReader();
-        def g = r.read("POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))")
-        def gNoReceiver = r.read("POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))");
+        def g = ValueGeometry.get("SRID=2154; POLYGON ((223994.2 6757775.9, 223930.2 6757890.1, 223940.2 6757895.7, 224001.6 6757783.2, 223994.2 6757775.9))").getGeometry()
+        def gNoReceiver = ValueGeometry.get("SRID=2154; POLYGON ((223938 6757827.1, 223957.4 6757836.6, 223947.4 6757851.4, 223940.2 6757833, 223938 6757827.1))").getGeometry()
 
-        def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
+        def gFence = ST_Transform.ST_Transform(connection, g, 4326)
 
         new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
@@ -235,9 +237,9 @@ class TestReceivers extends JdbcTestCase {
 
         assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, '"+g.toString()+"'::geometry)")[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, :geom)", [geom : g])[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, '"+gNoReceiver.toString()+"'::geometry)")[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, :gNoReceiver)", [gNoReceiver : gNoReceiver])[0] as Integer)
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
@@ -305,7 +307,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
-        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS")
+        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS", ValueBoolean.TRUE)
 
     }
 

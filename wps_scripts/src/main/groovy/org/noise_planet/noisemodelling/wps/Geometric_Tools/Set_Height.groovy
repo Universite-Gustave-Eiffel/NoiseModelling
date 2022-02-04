@@ -105,7 +105,9 @@ def exec(Connection connection, input) {
     if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
-    metaData.setSRID(srid);
+    metaData.setSRID(srid)
+    metaData.setHasZ(true)
+    metaData.initGeometryType()
     connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(ST_UPDATEZ(%s, %f),%d)",
             TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM" , metaData.getSQL(),"THE_GEOM", h,srid))
 

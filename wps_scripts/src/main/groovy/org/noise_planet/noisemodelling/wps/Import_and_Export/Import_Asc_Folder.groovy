@@ -168,6 +168,7 @@ def exec(Connection connection, input) {
 
             AscReaderDriver ascDriver = new AscReaderDriver()
             ascDriver.setAs3DPoint(true)
+            ascDriver.deleteTable = false
             ascDriver.setExtractEnvelope()
             if (downscale > 1) {
                 ascDriver.setDownScale(downscale)

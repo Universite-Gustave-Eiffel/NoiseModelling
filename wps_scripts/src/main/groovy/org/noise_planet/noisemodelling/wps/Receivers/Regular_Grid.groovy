@@ -198,7 +198,7 @@ def exec(connection, input) {
     }
 
     sql.execute("CREATE TABLE " + receivers_table_name + "(THE_GEOM GEOMETRY) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
-    sql.execute("ALTER TABLE " + receivers_table_name + " ADD COLUMN PK SERIAL")
+    sql.execute("ALTER TABLE " + receivers_table_name + " ADD COLUMN PK SERIAL PRIMARY KEY")
 
     logger.info("Create spatial index on " + receivers_table_name)
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")

@@ -27,6 +27,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
@@ -181,7 +182,7 @@ def exec(Connection connection, input) {
     }
 
     Geometry fenceGeom = null
-    if (input['fence']) {
+    if (input['fence'] != null) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             WKTReader wktReader = new WKTReader()
@@ -194,7 +195,9 @@ def exec(Connection connection, input) {
         fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
 
-    def buildingPk = JDBCUtilities.getFieldName(connection.getMetaData(), building_table_name, JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(building_table_name)))
+    def buildingPk = JDBCUtilities.getColumnName(connection, building_table_name,
+            JDBCUtilities.getIntegerPrimaryKey(connection,
+                    TableLocation.parse(building_table_name, DBUtils.getDBType(connection))))
     if (buildingPk == "") {
         return "Buildings table must have a primary key"
     }
@@ -202,11 +205,11 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_receivers_lines")
     def filter_geom_query = ""
     if (fenceGeom != null) {
-        filter_geom_query = " WHERE the_geom && ST_GeomFromText('" + fenceGeom + "') AND ST_INTERSECTS(the_geom, ST_GeomFromText('" + fenceGeom + "'))";
+        filter_geom_query = " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)";
     }
 
     logger.info('create line of receivers')
-    sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query)
+    sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query, [fenceGeom : fenceGeom])
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
@@ -274,7 +277,7 @@ def exec(Connection connection, input) {
 
         if (fenceGeom != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('" + fenceGeom + "'));")
+            sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fenceGeom])
         }
     } else {
         logger.info('create RECEIVERS table...')
@@ -296,7 +299,7 @@ def exec(Connection connection, input) {
 
         if (fenceGeom != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('" + fenceGeom + "'));")
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fenceGeom])
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")

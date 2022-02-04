@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.SQLException
+import java.time.LocalDateTime
 
 title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
 description = 'Calculation of the Lden map from the road noise emission table (DEN format, see input details). </br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +
@@ -553,7 +554,9 @@ def exec(Connection connection, input) {
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     logger.info("Start calculation... ")
-    ProfilerThread profilerThread = new ProfilerThread(new File("webapps/root/profile.csv"));
+    LocalDateTime now = LocalDateTime.now();
+    ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
+            now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())));
     profilerThread.addMetric(ldenProcessing);
     profilerThread.addMetric(new ProgressMetric(progressLogger));
     profilerThread.addMetric(new JVMMemoryMetric());
