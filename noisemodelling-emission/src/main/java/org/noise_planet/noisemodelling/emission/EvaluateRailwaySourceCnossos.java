@@ -46,11 +46,11 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  */
 
 public class EvaluateRailwaySourceCnossos {
-    private JsonNode CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficient_Railway_Cnossos_SNCF.json"));
-    private JsonNode CnossosRailWayData2020 = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
-    private JsonNode CnossosRailWayDataSncf = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_SNCF.json"));
-    private JsonNode CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"));
-    private JsonNode CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+    private JsonNode CnossosRailWayData;
+    private JsonNode CnossosRailWayData2020;
+    private JsonNode CnossosRailWayDataSncf;
+    private JsonNode CnossosVehicleData;
+    private JsonNode CnossosTrainData;
 
     public void setEvaluateRailwaySourceCnossos(InputStream cnossosVehicleData,InputStream cnossosTrainData ) {
         this.CnossosVehicleData = parse(cnossosVehicleData);
@@ -68,10 +68,19 @@ public class EvaluateRailwaySourceCnossos {
 
     public JsonNode getCnossosRailWayData(int spectreVer){
         if (spectreVer==1){
+            if(CnossosRailWayData2020 == null) {
+                CnossosRailWayData2020 = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_2020.json"));
+            }
             return CnossosRailWayData2020;
         } else if (spectreVer==2) {
+            if(CnossosRailWayDataSncf == null) {
+                CnossosRailWayDataSncf = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_SNCF.json"));
+            }
             return CnossosRailWayDataSncf;
         } else {
+            if(CnossosRailWayData == null) {
+                CnossosRailWayData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("coefficients_Railway_Cnossos_SNCF.json"));
+            }
             return CnossosRailWayData;
         }
     }
@@ -90,16 +99,22 @@ public class EvaluateRailwaySourceCnossos {
     }
 
     public JsonNode getCnossosVehicleData(){
+        if(CnossosVehicleData == null) {
+            CnossosVehicleData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Vehicles_SNCF_2021.json"));
+        }
         return CnossosVehicleData;
     }
 
     public JsonNode getCnossosTrainData(){
+        if(CnossosTrainData == null) {
+            CnossosTrainData = parse(EvaluateRailwaySourceCnossos.class.getResourceAsStream("Rail_Train_SNCF_2021.json"));
+        }
         return CnossosTrainData;
     }
 
     public Map<String, Integer> getVehicleFromTrain(String trainName){
         Map<String, Integer> vehicles = null;
-        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosTrainData.fields(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<String, JsonNode>> it = getCnossosTrainData().fields(); it.hasNext(); ) {
             Map.Entry<String, JsonNode> elt = it.next();
             if (trainName.equals(elt.getKey()))
             {
@@ -116,7 +131,7 @@ public class EvaluateRailwaySourceCnossos {
 
     public boolean isInVehicleList(String trainName) {
         boolean inlist = false;
-        for (Iterator<Map.Entry<String, JsonNode>> it = CnossosVehicleData.fields(); it.hasNext(); ) {
+        for (Iterator<Map.Entry<String, JsonNode>> it = getCnossosVehicleData().fields(); it.hasNext(); ) {
             Map.Entry<String, JsonNode> elt = it.next();
             if (trainName.equals(elt.getKey())) {
                 inlist = true;
