@@ -126,7 +126,7 @@ public class LDENPointNoiseMapFactoryTest {
     }
 
 
-    //@Test
+    @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
@@ -284,15 +284,14 @@ public class LDENPointNoiseMapFactoryTest {
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertEquals(geometries.size(),2);
 
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEURS.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/dem.shp").getFile());
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Landcover_g1.shp").getFile());
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Landcover_g0.shp").getFile());
 
-        //TODO envoyer Rail section a Gwen car je veux un DEM de la plateform et si il arrive pas demander à Pierre
-        //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/LANDCOVER_G0.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/LANDCOVER_G1.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
         connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, 0 as g FROM Rail_protect");
