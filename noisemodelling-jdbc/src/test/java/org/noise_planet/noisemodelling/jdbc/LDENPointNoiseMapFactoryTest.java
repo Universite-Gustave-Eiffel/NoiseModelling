@@ -287,12 +287,15 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/dem.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Landcover_g1.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Landcover_g0.shp").getFile());
 
         //TODO envoyer Rail section a Gwen car je veux un DEM de la plateform et si il arrive pas demander à Pierre
         //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
+        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, 0 as g FROM Rail_protect");
 
         // Count receivers
         int nbReceivers = 0;
@@ -306,7 +309,6 @@ public class LDENPointNoiseMapFactoryTest {
         connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
 
         connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -321,15 +323,15 @@ public class LDENPointNoiseMapFactoryTest {
         factory.setKeepRays(true);
 
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY",
-                "RECEPTEURS");
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        //PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_RAILWAY","RECEPTEURS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
 
         //pointNoiseMap.setDemTable("DEM");
 
-        pointNoiseMap.setMaximumPropagationDistance(250.0);
+        pointNoiseMap.setMaximumPropagationDistance(1000.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
@@ -392,11 +394,12 @@ public class LDENPointNoiseMapFactoryTest {
         connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
-        shpDriver.exportTable(connection, "RECEPTEURS", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
+        //shpDriver.exportTable(connection, "RECEPTEURS", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
+        //shpDriver.exportTable(connection, "BUILDINGS", new File("target/Buildings.shp"), true, new EmptyProgressVisitor());
 
 
-        shpDriver.exportTable(connection, "SCREENS", new File("target/SCREENS_control.shp"), true, new EmptyProgressVisitor());
-        shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_control.shp"), true, new EmptyProgressVisitor());
+        //shpDriver.exportTable(connection, "SCREENS", new File("target/SCREENS_control.shp"), true, new EmptyProgressVisitor());
+        //shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_control.shp"), true, new EmptyProgressVisitor());
 
 
     }
