@@ -307,7 +307,8 @@ public class LDENPointNoiseMapFactoryTest {
         connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
 
-        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
+        //connection.createStatement().execute("ALTER TABLE RECEPTEURS  ALTER COLUMN THE_GEOM USING ST_UPDATEZ(THE_GEOM, 4.0 )");
+
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -328,7 +329,15 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
 
-        //pointNoiseMap.setDemTable("DEM");
+
+        pointNoiseMap.setDemTable("DEM");
+
+        pointNoiseMap.setSoilTableName("LANDCOVER_G0");
+
+        //pointNoiseMap.setSoilTableName("LANDCOVER_G1");
+
+        // TODO a vérifier le GS
+        pointNoiseMap.setGs(1);
 
         pointNoiseMap.setMaximumPropagationDistance(1000.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
