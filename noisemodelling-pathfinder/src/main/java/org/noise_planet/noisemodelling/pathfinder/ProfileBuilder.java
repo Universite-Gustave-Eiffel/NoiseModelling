@@ -225,7 +225,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -1039,6 +1039,8 @@ public class ProfileBuilder {
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
+        profile.addSource(c0);
+        profile.addReceiver(c1);
 
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
@@ -1446,7 +1448,11 @@ public class ProfileBuilder {
          * Sort the CutPoints by there coordinates
          */
         public void sort() {
-            pts.sort(CutPoint::compareTo);
+            if(source.compareTo(receiver)<=0) {
+                pts.sort(CutPoint::compareTo);
+            } else {
+                pts.sort(Collections.reverseOrder());
+            }
         }
 
         /**
