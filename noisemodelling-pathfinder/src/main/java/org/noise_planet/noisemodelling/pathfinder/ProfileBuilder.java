@@ -1039,8 +1039,6 @@ public class ProfileBuilder {
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
-        profile.addSource(c0);
-        profile.addReceiver(c1);
 
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
@@ -1069,7 +1067,7 @@ public class ProfileBuilder {
         }
 
         //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+        profile.sort(c0, c1);
         //Add base cut for buildings
         addBuildingBaseCutPts(profile, c0, c1);
 
@@ -1447,8 +1445,8 @@ public class ProfileBuilder {
         /**
          * Sort the CutPoints by there coordinates
          */
-        public void sort() {
-            if(source.compareTo(receiver)<=0) {
+        public void sort(Coordinate c0, Coordinate c1) {
+            if(c0.compareTo(c1)<=0) {
                 pts.sort(CutPoint::compareTo);
             } else {
                 pts.sort(Collections.reverseOrder());
