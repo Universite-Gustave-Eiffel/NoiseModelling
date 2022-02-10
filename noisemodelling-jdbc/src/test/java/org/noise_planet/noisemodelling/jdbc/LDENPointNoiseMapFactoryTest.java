@@ -284,7 +284,8 @@ public class LDENPointNoiseMapFactoryTest {
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertEquals(geometries.size(),2);
 
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEURS.shp").getFile());
+        //SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEURS.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEUR2.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
@@ -298,17 +299,20 @@ public class LDENPointNoiseMapFactoryTest {
 
         // Count receivers
         int nbReceivers = 0;
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEPTEURS")) {
+        //try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEPTEURS")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEPTEUR2")) {
             assertTrue(rs.next());
             nbReceivers = rs.getInt(1);
         }
 
         // ICI HAUTEUR RECPTEUR
-        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEUR2', 'THE_GEOM', 2154);");
+        //connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+
         connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
 
-        //connection.createStatement().execute("ALTER TABLE RECEPTEURS  ALTER COLUMN THE_GEOM USING ST_UPDATEZ(THE_GEOM, 4.0 )");
-
+        connection.createStatement().execute("ALTER TABLE RECEPTEUR2 ALTER COLUMN THE_GEOM TYPE geometry(POINTZ, 2154) USING ST_UPDATEZ(THE_GEOM, 1.20)");
+        //connection.createStatement().execute("ALTER TABLE RECEPTEURS ALTER COLUMN THE_GEOM TYPE geometry(POINTZ, 2154) USING ST_UPDATEZ(THE_GEOM, 1.20)");
 
 
         ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
@@ -323,7 +327,8 @@ public class LDENPointNoiseMapFactoryTest {
         factory.setKeepRays(true);
 
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        //PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY", "RECEPTEUR2");
         //PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_RAILWAY","RECEPTEURS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -332,16 +337,16 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.setDemTable("DEM");
 
-        pointNoiseMap.setSoilTableName("LANDCOVER_G0");
+        //pointNoiseMap.setSoilTableName("LANDCOVER_G0");
 
-        //pointNoiseMap.setSoilTableName("LANDCOVER_G1");
+        pointNoiseMap.setSoilTableName("LANDCOVER_G1");
 
-        // TODO a vérifier le GS
         pointNoiseMap.setGs(1);
 
         pointNoiseMap.setMaximumPropagationDistance(1000.0);
+        pointNoiseMap.setMaximumReflectionDistance(500.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
-        pointNoiseMap.setComputeVerticalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
@@ -374,7 +379,8 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(nbReceivers, receivers.size());
 
         // ICI A MODIFIER
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
+        //try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEUR2 R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
             /*assertTrue(rs.next());
             assertEquals(47.60, rs.getDouble(1), 2.0);
             assertTrue(rs.next());
@@ -399,7 +405,8 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(56.58, rs.getDouble(1), 2.0);*/
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        //connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEUR2 R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
         //shpDriver.exportTable(connection, "RECEPTEURS", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
