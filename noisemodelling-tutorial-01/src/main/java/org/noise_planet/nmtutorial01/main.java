@@ -2,15 +2,22 @@ package org.noise_planet.nmtutorial01;
 
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
+import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.noise_planet.noisemodelling.jdbc.BezierContouring;
 import org.noise_planet.noisemodelling.jdbc.LDENConfig;
 import org.noise_planet.noisemodelling.jdbc.LDENPointNoiseMapFactory;
 import org.noise_planet.noisemodelling.jdbc.PointNoiseMap;
+import org.noise_planet.noisemodelling.jdbc.TriangleNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
+import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
@@ -28,9 +35,10 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class Main {
-    public static void main(String[] args) throws SQLException, IOException {
+    public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
         // Init output logger
         Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -61,38 +69,49 @@ class Main {
 
         logger.info("Import buildings");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("buildings.geojson").getFile(), "BUILDINGS","UTF-8",false);
+        GeoJsonRead.importTable(connection, Main.class.getResource("buildings.geojson").getFile(), "BUILDINGS",
+                ValueBoolean.TRUE);
 
         // Import noise source
 
         logger.info("Import noise source");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS","UTF-8",false);
+        GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS",
+                ValueBoolean.TRUE);
         // Set primary key
         sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL");
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
 
         // Import BUILDINGS
 
-        logger.info("Import evaluation coordinates");
+        logger.info("Generate receivers grid for noise map rendering");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("receivers.geojson").getFile(), "RECEIVERS","UTF-8",false);
-        // Set primary key
-        sql.execute("ALTER TABLE RECEIVERS ALTER COLUMN PK INTEGER NOT NULL");
-        sql.execute("ALTER TABLE RECEIVERS ADD PRIMARY KEY (PK)");
+        TriangleNoiseMap noiseMap = new TriangleNoiseMap("BUILDINGS", "LW_ROADS");
+        noiseMap.setGridDim(1);
+        noiseMap.setMaximumArea(250);
+        noiseMap.setIsoSurfaceInBuildings(true);
 
+        AtomicInteger pk = new AtomicInteger(0);
+        noiseMap.initialize(connection, new EmptyProgressVisitor());
+        for (int i = 0; i < noiseMap.getGridDim(); i++) {
+            for (int j = 0; j < noiseMap.getGridDim(); j++) {
+                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
+                noiseMap.generateReceivers(connection, i, j, "RECEIVERS", "TRIANGLES", pk)
+            }
+        }
 
         // Import MNT
 
         logger.info("Import digital elevation model");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM","UTF-8",false);
+        GeoJsonRead.importTable(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM",
+                ValueBoolean.TRUE);
 
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
         pointNoiseMap.setMaximumPropagationDistance(160.0d);
-        pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.setSoundReflectionOrder(1);
         pointNoiseMap.setComputeHorizontalDiffraction(true);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -154,13 +173,14 @@ class Main {
         }
         long computationTime = System.currentTimeMillis() - start;
         logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
-        // Export result tables as csv files
-        CSVDriverFunction csv = new CSVDriverFunction();
-        csv.exportTable(connection, ldenConfig.getlDayTable(), new File("target/"+ldenConfig.getlDayTable()+".csv"), new EmptyProgressVisitor());
-        csv.exportTable(connection, ldenConfig.getlEveningTable(), new File("target/"+ldenConfig.getlEveningTable()+".csv"), new EmptyProgressVisitor());
-        csv.exportTable(connection, ldenConfig.getlNightTable(), new File("target/"+ldenConfig.getlNightTable()+".csv"), new EmptyProgressVisitor());
-        csv.exportTable(connection, ldenConfig.getlDenTable(), new File("target/"+ldenConfig.getlDenTable()+".csv"), new EmptyProgressVisitor());
 
+
+        logger.info("Create iso contours");
+        List<Double> isoLevels = BezierContouring.NF31_133_ISO; // default values
+        int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("LW_ROADS", DBTypes.H2GIS));
+        BezierContouring bezierContouring = new BezierContouring(isoLevels, srid);
+        bezierContouring.setSmoothCoefficient(0.5);
+        bezierContouring.createTable(connection);
     }
 
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {

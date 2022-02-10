@@ -22,7 +22,7 @@ public class DbUtilities {
         String dbFilePath = getDataBasePath(dbName);
         File dbFile = new File(dbFilePath + ".mv.db");
 
-        String databasePath = "jdbc:h2:" + dbFilePath + ";LOCK_MODE=0;LOG=0;DB_CLOSE_DELAY=5";
+        String databasePath = "jdbc:h2:" + dbFilePath + ";DB_CLOSE_DELAY=5";
 
         if (dbFile.exists()) {
             dbFile.delete();
