@@ -4,6 +4,8 @@ import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
@@ -363,11 +365,12 @@ public abstract class JdbcNoiseMap {
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
         int srid = 0;
+        DBTypes dbTypes = DBUtils.getDBType(connection);
         if(!sourcesTableName.isEmpty()) {
-            srid = getSRID(connection, TableLocation.parse(sourcesTableName));
+            srid = getSRID(connection, TableLocation.parse(sourcesTableName, dbTypes));
         }
         if(srid == 0) {
-            srid = getSRID(connection, TableLocation.parse(buildingsTableName));
+            srid = getSRID(connection, TableLocation.parse(buildingsTableName, dbTypes));
         }
         geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
 
