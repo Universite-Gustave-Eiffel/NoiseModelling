@@ -1689,7 +1689,19 @@ public class ComputeCnossosRays {
                     }
                     ReceiverPointInfo rcv = new ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
 
+                    long start = 0;
+                    if(propagationProcess.profilerThread != null) {
+                        start = propagationProcess.profilerThread.timeTracker.get();
+                    }
+
                     propagationProcess.computeRaysAtPosition(rcv, dataOut, visitor);
+
+                    // Save computation time for this receiver
+                    if(propagationProcess.profilerThread != null &&
+                            propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
+                        propagationProcess.profilerThread.getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
+                                (int) (propagationProcess.profilerThread.timeTracker.get() - start));
+                    }
 
                     if (visitor != null) {
                         visitor.endStep();

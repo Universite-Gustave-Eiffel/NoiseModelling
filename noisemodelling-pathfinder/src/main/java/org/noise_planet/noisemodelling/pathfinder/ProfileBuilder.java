@@ -38,10 +38,13 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
@@ -62,6 +65,7 @@ import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.Intersec
  * Builder constructing profiles from buildings, topography and ground effects.
  */
 public class ProfileBuilder {
+    public static final double epsilon = 1e-7;
     /** Class {@link java.util.logging.Logger}. */
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfileBuilder.class);
     /** Default RTree node capacity. */
@@ -1288,6 +1292,52 @@ public class ProfileBuilder {
         }
         return 0.0;
     }
+
+
+    /**
+     * Fast dot in triangle test
+     * <p/>
+     * {@see http://www.blackpawn.com/texts/pointinpoly/default.html}
+     *
+     * @param p coordinate of the point
+     * @param a coordinate of the A vertex of triangle
+     * @param b coordinate of the B vertex of triangle
+     * @param c coordinate of the C vertex of triangle
+     * @return True if dot is in triangle
+     */
+    private boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
+                             Coordinate c, AtomicReference<Double> error) {
+        Vector2D v0 = new Vector2D(c.x - a.x, c.y - a.y);
+        Vector2D v1 = new Vector2D(b.x - a.x, b.y - a.y);
+        Vector2D v2 = new Vector2D(p.x - a.x, p.y - a.y);
+
+        // Compute dot products
+        double dot00 = v0.dot(v0);
+        double dot01 = v0.dot(v1);
+        double dot02 = v0.dot(v2);
+        double dot11 = v1.dot(v1);
+        double dot12 = v1.dot(v2);
+
+        // Compute barycentric coordinates
+        double invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+        double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        if(error != null) {
+            double err = 0;
+            err += Math.max(0, -u);
+            err += Math.max(0, -v);
+            err += Math.max(0, (u + v) - 1);
+            error.set(err);
+        }
+
+        // Check if point is in triangle
+        return (u > (0. - epsilon)) && (v > (0. - epsilon))
+                && (u + v < (1. + epsilon));
+
+    }
+
+
     public double getZGround(CutPoint cut) {
         if(cut.zGround != null) {
             return cut.zGround;
@@ -1296,19 +1346,14 @@ public class ProfileBuilder {
             cut.zGround = null;
             return 0.0;
         }
-        List<Integer> list = new ArrayList<>();
         Envelope env = new Envelope(cut.coordinate);
-        while(list.isEmpty()) {
-            env.expandBy(maxLineLength);
-            list = (List<Integer>)topoTree.query(env);
-        }
+        List<Integer> list = (List<Integer>)topoTree.query(env);
         for (int i : list) {
-            Triangle tri = topoTriangles.get(i);
-            Coordinate p1 = vertices.get(tri.getA());
-            Coordinate p2 = vertices.get(tri.getB());
-            Coordinate p3 = vertices.get(tri.getC());
-            Polygon poly = FACTORY.createPolygon(new Coordinate[]{p1, p2, p3, p1});
-            if (poly.intersects(FACTORY.createPoint(cut.coordinate))) {
+            final Triangle tri = topoTriangles.get(i);
+            final Coordinate p1 = vertices.get(tri.getA());
+            final Coordinate p2 = vertices.get(tri.getB());
+            final Coordinate p3 = vertices.get(tri.getC());
+            if(dotInTri(cut.coordinate, p1, p2, p3, null)) {
                 double z = Vertex.interpolateZ(cut.coordinate, p1, p2, p3);
                 cut.zGround = z;
                 return z;
