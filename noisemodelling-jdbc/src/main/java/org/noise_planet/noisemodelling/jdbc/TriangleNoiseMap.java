@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.densify.Densifier;
 import org.locationtech.jts.geom.*;
@@ -263,11 +264,12 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
         Envelope computationEnvelope = new Envelope();
+        DBTypes dbTypes = DBUtils.getDBType(connection);
         if(!sourcesTableName.isEmpty()) {
-            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(sourcesTableName), ""));
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
         }
         if(!buildingsTableName.isEmpty()) {
-            computationEnvelope.expandToInclude(SFSUtilities.getTableEnvelope(connection, TableLocation.parse(buildingsTableName), ""));
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(buildingsTableName, dbTypes)).getEnvelopeInternal());
         }
         return computationEnvelope;
     }

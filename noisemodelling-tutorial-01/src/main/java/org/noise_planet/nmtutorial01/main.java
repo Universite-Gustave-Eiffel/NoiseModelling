@@ -95,8 +95,8 @@ class Main {
         noiseMap.initialize(connection, new EmptyProgressVisitor());
         for (int i = 0; i < noiseMap.getGridDim(); i++) {
             for (int j = 0; j < noiseMap.getGridDim(); j++) {
-                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
-                noiseMap.generateReceivers(connection, i, j, "RECEIVERS", "TRIANGLES", pk)
+                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim());
+                noiseMap.generateReceivers(connection, i, j, "RECEIVERS", "TRIANGLES", pk);
             }
         }
 
