@@ -141,7 +141,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, propagationProcessData);
+        fetchCellSource(connection, expandedCellEnvelop, propagationProcessData, true);
 
         propagationProcessData.cellId = ij;
 
