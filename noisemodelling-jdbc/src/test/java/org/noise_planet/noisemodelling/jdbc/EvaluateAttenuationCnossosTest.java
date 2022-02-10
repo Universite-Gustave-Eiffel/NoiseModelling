@@ -59,6 +59,102 @@ public class EvaluateAttenuationCnossosTest {
     }
 
     /**
+     * Test identic rays : to the east, to the west
+     */
+    @Test
+    public void EastWestTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(10, -5),
+                        new Coordinate(20, -5),
+                        new Coordinate(20, 5),
+                        new Coordinate(10, 5)
+                }, 0.0)
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-10, -5),
+                        new Coordinate(-20, -5),
+                        new Coordinate(-20, 5),
+                        new Coordinate(-10, 5)
+                }, 0.0)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(0, 0, 2)
+                .addReceiver(30, 0, 2)
+                .addReceiver(-30, 0, 2)
+                .setGs(0.0)
+                .build();
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+        SegmentPath s0 = propDataOut.propagationPaths.get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+    }
+
+    /**
+     * Test identic rays : to the east, to the west
+     */
+    @Test
+    public void NorthSouthTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, 10),
+                        new Coordinate(-5, 20),
+                        new Coordinate(5, 20),
+                        new Coordinate(5, 10)
+                }, 0.0)
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, -10 ),
+                        new Coordinate(-5, -20 ),
+                        new Coordinate(5, -20),
+                        new Coordinate(5, -10)
+                }, 0.0)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(0, 0, 2)
+                .addReceiver(0, 30, 2)
+                .addReceiver(0, -30, 2)
+                .setGs(0.0)
+                .build();
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+        SegmentPath s0 = propDataOut.propagationPaths.get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+    }
+
+    /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
     @Test
