@@ -38,10 +38,13 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
@@ -62,6 +65,7 @@ import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.Intersec
  * Builder constructing profiles from buildings, topography and ground effects.
  */
 public class ProfileBuilder {
+    public static final double epsilon = 1e-7;
     /** Class {@link java.util.logging.Logger}. */
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfileBuilder.class);
     /** Default RTree node capacity. */
@@ -100,6 +104,8 @@ public class ProfileBuilder {
     private final List<LineString> topoLines = new ArrayList<>();
     /** Topographic triangle facets. */
     private List<Triangle> topoTriangles = new ArrayList<>();
+    /** Topographic triangle neighbors. */
+    private List<Triangle> topoNeighbors = new ArrayList<>();
     /** Topographic Vertices .*/
     private List<Coordinate> vertices = new ArrayList<>();
     /** Topographic RTree. */
@@ -743,6 +749,7 @@ public class ProfileBuilder {
         if(topoPoints.size()+topoLines.size() > 1) {
             //Feed the Delaunay layer
             LayerDelaunay layerDelaunay = new LayerTinfour();
+            layerDelaunay.setRetrieveNeighbors(true);
             try {
                 layerDelaunay.setMaxArea(maxArea);
             } catch (LayerDelaunayError e) {
@@ -775,6 +782,7 @@ public class ProfileBuilder {
             }
             try {
                 topoTriangles = layerDelaunay.getTriangles();
+                topoNeighbors = layerDelaunay.getNeighbors();
             } catch (LayerDelaunayError e) {
                 LOGGER.error("Error while getting triangles", e);
                 return null;
@@ -1261,6 +1269,161 @@ public class ProfileBuilder {
     }
 
     /**
+     * Compute the next triangle index.Find the shortest intersection point of
+     * triIndex segments to the p1 coordinate
+     *
+     * @param triIndex        Triangle index
+     * @param propagationLine Propagation line
+     * @return Next triangle to the specified direction, -1 if there is no
+     * triangle neighbor.
+     */
+    private int getNextTri(final int triIndex,
+                           final LineSegment propagationLine,
+                           HashSet<Integer> navigationHistory, final Coordinate segmentIntersection) {
+        final Triangle tri = topoTriangles.get(triIndex);
+        final Triangle triNeighbors = topoNeighbors.get(triIndex);
+        int nearestIntersectionSide = -1;
+        int idNeighbor;
+
+        double nearestIntersectionPtDist = Double.MAX_VALUE;
+        // Find intersection pt
+        final Coordinate aTri = this.vertices.get(tri.getA());
+        final Coordinate bTri = this.vertices.get(tri.getB());
+        final Coordinate cTri = this.vertices.get(tri.getC());
+        double distline_line;
+        // Intersection First Side
+        idNeighbor = triNeighbors.get(2);
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(aTri, bTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
+                intersectionTest = closestPoints[0];
+            }
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                segmentIntersection.setCoordinate(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    nearestIntersectionPtDist = distline_line;
+                    nearestIntersectionSide = 2;
+                }
+            }
+        }
+        // Intersection Second Side
+        idNeighbor = triNeighbors.get(0);
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(bTri, cTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
+                intersectionTest = closestPoints[0];
+            }
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                segmentIntersection.setCoordinate(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    nearestIntersectionPtDist = distline_line;
+                    nearestIntersectionSide = 0;
+                }
+            }
+        }
+        // Intersection Third Side
+        idNeighbor = triNeighbors.get(1);
+        if (idNeighbor != -1 && !navigationHistory.contains(idNeighbor)) {
+            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(cTri, aTri));
+            Coordinate intersectionTest = null;
+            if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
+                intersectionTest = closestPoints[0];
+            }
+            if(intersectionTest != null) {
+                distline_line = propagationLine.p1.distance(intersectionTest);
+                segmentIntersection.setCoordinate(intersectionTest);
+                if (distline_line < nearestIntersectionPtDist) {
+                    nearestIntersectionSide = 1;
+                }
+            }
+        }
+        if(nearestIntersectionSide > -1) {
+            return triNeighbors.get(nearestIntersectionSide);
+        } else {
+            return -1;
+        }
+    }
+
+
+    /**
+     * Get coordinates of triangle vertices
+     * @param triIndex Index of triangle
+     * @return triangle vertices
+     */
+    Coordinate[] getTriangle(int triIndex) {
+        final Triangle tri = this.topoTriangles.get(triIndex);
+        return new Coordinate[]{this.vertices.get(tri.getA()),
+                this.vertices.get(tri.getB()), this.vertices.get(tri.getC())};
+    }
+
+
+    /**
+     * Return the triangle id from a point coordinate inside the triangle
+     *
+     * @param pt Point test
+     * @return Triangle Id, Or -1 if no triangle has been found
+     */
+
+    public int getTriangleIdByCoordinate(Coordinate pt) {
+        Envelope ptEnv = new Envelope(pt);
+        ptEnv.expandBy(1);
+        List res = topoTree.query(new Envelope(ptEnv));
+        double minDistance = Double.MAX_VALUE;
+        int minDistanceTriangle = -1;
+        for(Object objInd : res) {
+            int triId = (Integer) objInd;
+            Coordinate[] tri = getTriangle(triId);
+            AtomicReference<Double> err = new AtomicReference<>(0.);
+            JTSUtility.dotInTri(pt, tri[0], tri[1], tri[2], err);
+            if (err.get() < minDistance) {
+                minDistance = err.get();
+                minDistanceTriangle = triId;
+            }
+        }
+        return minDistanceTriangle;
+    }
+
+    public void addTopoCutPtsNew(List<LineSegment> lines, CutProfile profile) {
+
+    }
+    public List<Coordinate> getZGround(List<Coordinate> coordinates) {
+        List<Coordinate> outputPoints = new ArrayList<>();
+        if(coordinates.isEmpty()) {
+            return outputPoints;
+        }
+        //get receiver triangle id
+        int curTriP1 = getTriangleIdByCoordinate(coordinates.get(0));
+        for(int idCoordinate = 1; idCoordinate < coordinates.size(); idCoordinate++) {
+            Coordinate p2 = coordinates.get(idCoordinate);
+            LineSegment propaLine = new LineSegment(coordinates.get(0), p2);
+            HashSet<Integer> navigationHistory = new HashSet<Integer>();
+            int navigationTri = curTriP1;
+            while (navigationTri != -1) {
+                navigationHistory.add(navigationTri);
+                Coordinate[] tri = getTriangle(navigationTri);
+                if (JTSUtility.dotInTri(p2, tri[0], tri[1], tri[2])) {
+                    Coordinate pointInTriangle = new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, tri[0], tri[1], tri[2]));
+                    outputPoints.add(pointInTriangle);
+                    break; // process next point
+                }
+                Coordinate intersectionPt = new Coordinate();
+                int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
+                if (propaTri >= 0) {
+                    // Found next triangle
+                    // extract X,Y,Z values of intersection with triangle segment
+                    outputPoints.add(intersectionPt);
+                }
+                navigationTri = propaTri;
+            }
+        }
+        return outputPoints;
+    }
+
+    /**
      * Get the topographic height of a point.
      * @param c Coordinate of the point.
      * @return Topographic height of the point.
@@ -1288,6 +1451,7 @@ public class ProfileBuilder {
         }
         return 0.0;
     }
+
     public double getZGround(CutPoint cut) {
         if(cut.zGround != null) {
             return cut.zGround;
@@ -1296,19 +1460,14 @@ public class ProfileBuilder {
             cut.zGround = null;
             return 0.0;
         }
-        List<Integer> list = new ArrayList<>();
         Envelope env = new Envelope(cut.coordinate);
-        while(list.isEmpty()) {
-            env.expandBy(maxLineLength);
-            list = (List<Integer>)topoTree.query(env);
-        }
+        List<Integer> list = (List<Integer>)topoTree.query(env);
         for (int i : list) {
-            Triangle tri = topoTriangles.get(i);
-            Coordinate p1 = vertices.get(tri.getA());
-            Coordinate p2 = vertices.get(tri.getB());
-            Coordinate p3 = vertices.get(tri.getC());
-            Polygon poly = FACTORY.createPolygon(new Coordinate[]{p1, p2, p3, p1});
-            if (poly.intersects(FACTORY.createPoint(cut.coordinate))) {
+            final Triangle tri = topoTriangles.get(i);
+            final Coordinate p1 = vertices.get(tri.getA());
+            final Coordinate p2 = vertices.get(tri.getB());
+            final Coordinate p3 = vertices.get(tri.getC());
+            if(JTSUtility.dotInTri(cut.coordinate, p1, p2, p3)) {
                 double z = Vertex.interpolateZ(cut.coordinate, p1, p2, p3);
                 cut.zGround = z;
                 return z;

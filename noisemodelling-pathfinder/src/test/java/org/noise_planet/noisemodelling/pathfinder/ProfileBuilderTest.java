@@ -1,11 +1,19 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.cts.crs.CRSException;
+import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 
+import javax.xml.stream.XMLStreamException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -239,6 +247,57 @@ public class ProfileBuilderTest {
         assertEquals(10.0, pts.get(18).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(18).getCoordinate().z, DELTA);
     }
+
+    @Test
+    public void testComplexTopographic() throws IOException, XMLStreamException, CRSException, CoordinateOperationException {
+        ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
+
+        // Generate a digital elevation model using Simplex Noise method
+        long seed = 5289231824766894L;
+        double width = 2000;
+        double height = 2000;
+        int xStepSize = 50;
+        int yStepSize = 50;
+        double minHeight = 50;
+        double maxHeight = 350;
+        double xOrigin = 222532;
+        double yOrigin = 6758964;
+        double frequency = 5;
+        Envelope envDomain = new Envelope();
+        for(int x = 0; x < (int)width; x += xStepSize) {
+            for(int y = 0; y < (int)height; y += yStepSize) {
+                double nx = x/width - 0.5, ny = y/height - 0.5;
+                double z = minHeight + OpenSimplex2S.noise2(seed, nx * frequency, ny * frequency)
+                        * (maxHeight - minHeight);
+                Coordinate topoCoordinate = new Coordinate(x + xOrigin, y + yOrigin, z);
+                envDomain.expandToInclude(topoCoordinate);
+                profileBuilder.addTopographicPoint(topoCoordinate);
+            }
+        }
+        profileBuilder.finishFeeding();
+
+        // Check found intersections
+        Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.1,
+                envDomain.getMinY() + envDomain.getHeight() * 0.15);
+        cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+        Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.25,
+                envDomain.getMinY() + envDomain.getHeight() * 0.16);
+        cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+
+        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(cutStart, cutEnd);
+        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+
+        assertEquals(50, pts.size());
+        //try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
+        //    GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
+        //    geoJSONDocument.setInputCRS("EPSG:2154");
+        //    geoJSONDocument.writeHeader();
+        //    geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
+        //    geoJSONDocument.writeFooter();
+        //}
+    }
+
+
 
     //TODO source on ground effect
 }

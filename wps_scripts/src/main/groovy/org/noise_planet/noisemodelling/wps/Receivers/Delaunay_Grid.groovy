@@ -106,6 +106,13 @@ inputs = [
                 title      : 'Name of output table',
                 min        : 0, max: 1,
                 type       : String.class
+        ],
+        isoSurfaceInBuildings: [
+                name: 'Create IsoSurfaces over buildings',
+                title: 'Create IsoSurfaces over buildings',
+                description: 'If enabled isosurfaces will be visible at the location of buildings',
+                type: Boolean.class,
+                min        : 0, max: 1,
         ]
 ]
 
@@ -177,6 +184,11 @@ def exec(Connection connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
+    boolean isoSurfaceInBuildings = false;
+    if(input['isoSurfaceInBuildings)']) {
+        isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
+    }
+
 
     Double maxPropDist = 600.0
     if (input['maxPropDist']) {
@@ -242,6 +254,8 @@ def exec(Connection connection, input) {
     noiseMap.setRoadWidth(roadWidth)
     // No triangles larger than provided area
     noiseMap.setMaximumArea(maxArea)
+
+    noiseMap.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
     logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())

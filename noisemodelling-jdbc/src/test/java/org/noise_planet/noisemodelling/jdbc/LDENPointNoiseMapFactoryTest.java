@@ -576,6 +576,52 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/receivers.shp").getFile());
 
+        Set<PointNoiseMap.CellIndex> expected = new HashSet<>();
+        expected.add(new PointNoiseMap.CellIndex(0, 0));
+        expected.add(new PointNoiseMap.CellIndex(1, 0));
+        expected.add(new PointNoiseMap.CellIndex(2, 0));
+        expected.add(new PointNoiseMap.CellIndex(3, 0));
+        expected.add(new PointNoiseMap.CellIndex(0, 1));
+        expected.add(new PointNoiseMap.CellIndex(1, 1));
+        expected.add(new PointNoiseMap.CellIndex(2, 1));
+        expected.add(new PointNoiseMap.CellIndex(3, 1));
+        expected.add(new PointNoiseMap.CellIndex(4, 1));
+        expected.add(new PointNoiseMap.CellIndex(5, 1));
+        expected.add(new PointNoiseMap.CellIndex(6, 1));
+        expected.add(new PointNoiseMap.CellIndex(7, 1));
+        expected.add(new PointNoiseMap.CellIndex(0, 2));
+        expected.add(new PointNoiseMap.CellIndex(1, 2));
+        expected.add(new PointNoiseMap.CellIndex(2, 2));
+        expected.add(new PointNoiseMap.CellIndex(3, 2));
+        expected.add(new PointNoiseMap.CellIndex(4, 2));
+        expected.add(new PointNoiseMap.CellIndex(5, 2));
+        expected.add(new PointNoiseMap.CellIndex(6, 2));
+        expected.add(new PointNoiseMap.CellIndex(7, 2));
+        expected.add(new PointNoiseMap.CellIndex(0, 3));
+        expected.add(new PointNoiseMap.CellIndex(1, 3));
+        expected.add(new PointNoiseMap.CellIndex(2, 3));
+        expected.add(new PointNoiseMap.CellIndex(3, 3));
+        expected.add(new PointNoiseMap.CellIndex(4, 3));
+        expected.add(new PointNoiseMap.CellIndex(5, 3));
+        expected.add(new PointNoiseMap.CellIndex(6, 3));
+        expected.add(new PointNoiseMap.CellIndex(7, 3));
+        expected.add(new PointNoiseMap.CellIndex(0, 4));
+        expected.add(new PointNoiseMap.CellIndex(2, 4));
+        expected.add(new PointNoiseMap.CellIndex(3, 4));
+        expected.add(new PointNoiseMap.CellIndex(4, 4));
+        expected.add(new PointNoiseMap.CellIndex(5, 4));
+        expected.add(new PointNoiseMap.CellIndex(6, 4));
+        expected.add(new PointNoiseMap.CellIndex(7, 4));
+        expected.add(new PointNoiseMap.CellIndex(2, 5));
+        expected.add(new PointNoiseMap.CellIndex(3, 5));
+        expected.add(new PointNoiseMap.CellIndex(4, 5));
+        expected.add(new PointNoiseMap.CellIndex(5, 5));
+        expected.add(new PointNoiseMap.CellIndex(3, 6));
+        expected.add(new PointNoiseMap.CellIndex(4, 6));
+        expected.add(new PointNoiseMap.CellIndex(5, 6));
+        expected.add(new PointNoiseMap.CellIndex(4, 7));
+        expected.add(new PointNoiseMap.CellIndex(5, 7));
+        expected.add(new PointNoiseMap.CellIndex(6, 7));
         // Count receivers
         int nbReceivers = 0;
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEIVERS")) {
@@ -616,6 +662,12 @@ public class LDENPointNoiseMapFactoryTest {
 
             Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // check if expected cells are found
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                assertTrue(expected.contains(cellIndex));
+                expected.remove(cellIndex);
+            }
+            assertTrue(expected.isEmpty());
             // Iterate over computation areas
             for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
@@ -625,14 +677,9 @@ public class LDENPointNoiseMapFactoryTest {
             factory.stop();
         }
         connection.commit();
-        // retrieve receiver value
+        // Check if all receivers are computed
         assertEquals(nbReceivers, receivers.size());
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT leq, laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK2 AND ID = 200")) {
-            assertTrue(rs.next());
-            assertEquals(56.58, rs.getDouble(1), 2.0);
-            assertEquals(49.24,rs.getDouble(2), 2.0);
-        }
 
     }
 
