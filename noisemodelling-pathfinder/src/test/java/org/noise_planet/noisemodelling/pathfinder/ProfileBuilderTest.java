@@ -10,11 +10,14 @@ import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.*;
 
@@ -27,6 +30,7 @@ public class ProfileBuilderTest {
     private static final WKTReader READER = new WKTReader();
     /** Delta value. */
     private static final double DELTA = 1e-8;
+    private Logger logger = LoggerFactory.getLogger(ProfileBuilderTest.class);
 
     /**
      * Test the building adding to a {@link ProfileBuilder}.
@@ -284,10 +288,17 @@ public class ProfileBuilderTest {
                 envDomain.getMinY() + envDomain.getHeight() * 0.16);
         cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
 
-        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(cutStart, cutEnd);
-        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+        for(int i = 0; i < 5; i++) {
+            // precompile
+            profileBuilder.getProfile(cutStart, cutEnd);
+        }
+        int loops = 25000;
+        long start = System.currentTimeMillis();
+        for(int i = 0; i < loops; i++) {
+            ProfileBuilder.CutProfile profile = profileBuilder.getProfile(cutStart, cutEnd);
+        }
+        logger.info(String.format(Locale.ROOT, "Building profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
 
-        assertEquals(50, pts.size());
         //try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
         //    GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
         //    geoJSONDocument.setInputCRS("EPSG:2154");

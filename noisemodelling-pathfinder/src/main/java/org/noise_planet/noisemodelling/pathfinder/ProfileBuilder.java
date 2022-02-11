@@ -1048,6 +1048,15 @@ public class ProfileBuilder {
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
+
+
+        //Topography
+        if(topoTree != null) {
+            //addTopoCutPts(List.of(new LineSegment(c0, c1)), profile);
+            addTopoCutPts(c0, c1, profile);
+        }
+        // Split line into segments for structures based on RTree in order to limit the number of queries
+        // (for large area of the line segment envelope)
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
         double l = dist2D(c0, c1);
@@ -1064,10 +1073,6 @@ public class ProfileBuilder {
                 p1.z = c0.z + (c1.z - c0.z) * Math.min((i+1)*frac, 1.0);
                 lines.add(new LineSegment(p0, p1));
             }
-        }
-        //Topography
-        if(topoTree != null) {
-            addTopoCutPts(lines, profile);
         }
         //Buildings and Ground effect
         if(rtree != null) {
@@ -1387,38 +1392,35 @@ public class ProfileBuilder {
         return minDistanceTriangle;
     }
 
-    public void addTopoCutPtsNew(List<LineSegment> lines, CutProfile profile) {
-
-    }
-    public List<Coordinate> getZGround(List<Coordinate> coordinates) {
-        List<Coordinate> outputPoints = new ArrayList<>();
-        if(coordinates.isEmpty()) {
-            return outputPoints;
+    public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile) {
+        List<Coordinate> coordinates = getTopographicProfile(p1, p2);
+        for(int i =0; i < coordinates.size(); i++) {
+            profile.addTopoCutPt(coordinates.get(i), i);
         }
-        //get receiver triangle id
-        int curTriP1 = getTriangleIdByCoordinate(coordinates.get(0));
-        for(int idCoordinate = 1; idCoordinate < coordinates.size(); idCoordinate++) {
-            Coordinate p2 = coordinates.get(idCoordinate);
-            LineSegment propaLine = new LineSegment(coordinates.get(0), p2);
-            HashSet<Integer> navigationHistory = new HashSet<Integer>();
-            int navigationTri = curTriP1;
-            while (navigationTri != -1) {
-                navigationHistory.add(navigationTri);
-                Coordinate[] tri = getTriangle(navigationTri);
-                if (JTSUtility.dotInTri(p2, tri[0], tri[1], tri[2])) {
-                    Coordinate pointInTriangle = new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, tri[0], tri[1], tri[2]));
-                    outputPoints.add(pointInTriangle);
-                    break; // process next point
-                }
-                Coordinate intersectionPt = new Coordinate();
-                int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
-                if (propaTri >= 0) {
-                    // Found next triangle
-                    // extract X,Y,Z values of intersection with triangle segment
-                    outputPoints.add(intersectionPt);
-                }
-                navigationTri = propaTri;
+    }
+    public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+        List<Coordinate> outputPoints = new ArrayList<>();
+        //get origin triangle id
+        int curTriP1 = getTriangleIdByCoordinate(p1);
+        LineSegment propaLine = new LineSegment(p1, p2);
+        HashSet<Integer> navigationHistory = new HashSet<Integer>();
+        int navigationTri = curTriP1;
+        while (navigationTri != -1) {
+            navigationHistory.add(navigationTri);
+            Coordinate[] tri = getTriangle(navigationTri);
+            if (JTSUtility.dotInTri(p2, tri[0], tri[1], tri[2])) {
+                Coordinate pointInTriangle = new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, tri[0], tri[1], tri[2]));
+                outputPoints.add(pointInTriangle);
+                break; // process next point
             }
+            Coordinate intersectionPt = new Coordinate();
+            int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
+            if (propaTri >= 0) {
+                // Found next triangle
+                // extract X,Y,Z values of intersection with triangle segment
+                outputPoints.add(intersectionPt);
+            }
+            navigationTri = propaTri;
         }
         return outputPoints;
     }
