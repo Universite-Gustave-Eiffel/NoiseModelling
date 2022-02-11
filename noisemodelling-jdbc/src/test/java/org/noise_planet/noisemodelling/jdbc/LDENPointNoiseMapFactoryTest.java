@@ -379,7 +379,7 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(nbReceivers, receivers.size());
 
         // ICI A MODIFIER
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK ORDER BY PK")) {
         //try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEUR2 R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
             /*assertTrue(rs.next());
             assertEquals(47.60, rs.getDouble(1), 2.0);
@@ -405,7 +405,7 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(56.58, rs.getDouble(1), 2.0);*/
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK");
         //connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEUR2 R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
