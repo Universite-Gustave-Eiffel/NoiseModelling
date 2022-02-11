@@ -38,12 +38,11 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -1657,9 +1656,10 @@ public class ProfileBuilder {
                     pts.add(cut);
                 }
             }
-            pts.sort(CutPoint::compareTo);
+            int segDir = -p0.compareTo(p1);
+            //pts.sort(CutPoint::compareTo);
             for(CutPoint cut : pts) {
-                if(cut.compareTo(current)>=0 && cut.compareTo(p1)<0) {
+                if(segDir*cut.compareTo(current)>=0 && segDir*cut.compareTo(p1)<0 ) {
                     rsLength += dist2D(current.getCoordinate(), cut.getCoordinate()) * current.getGroundCoef();
                     current = cut;
                 }

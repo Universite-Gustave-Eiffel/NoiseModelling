@@ -61,6 +61,7 @@ public class PropaTrainTest {
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RECEPTEURS.shp").getFile());
+        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RECEPTEURS_ONLY2.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEUR2.shp").getFile());
 
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Buildings.shp").getFile());
@@ -229,6 +230,8 @@ public class PropaTrainTest {
         importFiles(connection);
         computeLW(connection);
 
+        String configName = "C1";
+
         // ecran
         double screenHeight = 5.0;
         double G = 0.5;
@@ -239,8 +242,10 @@ public class PropaTrainTest {
         double rcvHeight = 1.2;
 
         // dem and ground
-        boolean dem = true;
+        boolean dem = false;
         String landcover  = "G0";
+        if (configName.equals("C2")) landcover = "G1";
+
 
         // Config
         int orderRef = 0;
@@ -272,11 +277,17 @@ public class PropaTrainTest {
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
         pointNoiseMap.setGs(1);
-        pointNoiseMap.setMaximumPropagationDistance(1000.0);
+        pointNoiseMap.setMaximumPropagationDistance(800.0);
         pointNoiseMap.setMaximumReflectionDistance(500.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         pointNoiseMap.setSoundReflectionOrder(orderRef);
+        pointNoiseMap.setMaximumError(0.0);
+
+        PropagationProcessPathData environmentalData = new PropagationProcessPathData(false);
+        double[] DEFAULT_WIND_ROSE = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        environmentalData.setWindRose(DEFAULT_WIND_ROSE);
+        pointNoiseMap.setPropagationProcessPathData(environmentalData);
 
         if (dem) pointNoiseMap.setDemTable("DEM");
         if (landcover.equals("G0")) pointNoiseMap.setSoilTableName("LANDCOVER_G0");
@@ -313,9 +324,10 @@ public class PropaTrainTest {
         connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, "+rcvName+" R WHERE LVL.IDRECEIVER = R.PK");
 
         SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
-        shpDriver.exportTable(connection, ""+rcvName+"", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
-
+        shpDriver.exportTable(connection, "RESULTS", new File("target/ResultsSD_"+configName+".shp"), true, new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, ""+rcvName+"", new File("target/RECEPTEURS_"+configName+".shp"), true, new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_"+configName+".shp"), true, new EmptyProgressVisitor());
+        connection.close();
     }
 
     public void testRestults(Connection connection, String config){

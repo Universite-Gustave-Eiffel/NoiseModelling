@@ -78,6 +78,7 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(-20, 5),
                         new Coordinate(-10, 5)
                 }, 0.0)
+                .addGroundEffect(-25.0, 25, -25.0, 25.0, 1)
                 .finishFeeding();
 
         //Propagation data building
@@ -104,6 +105,8 @@ public class EvaluateAttenuationCnossosTest {
         SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
+        assertEquals(Arrays.stream(propDataOut.propagationPaths.get(0).groundAttenuation.wH).average().getAsDouble(),
+                Arrays.stream(propDataOut.propagationPaths.get(1).groundAttenuation.wH).average().getAsDouble(), Double.MIN_VALUE);
     }
 
     /**
@@ -126,6 +129,7 @@ public class EvaluateAttenuationCnossosTest {
                         new Coordinate(5, -20),
                         new Coordinate(5, -10)
                 }, 0.0)
+                .addGroundEffect(-10.0, 10, -10.0, 10.0, 1)
                 .finishFeeding();
 
         //Propagation data building
@@ -152,6 +156,8 @@ public class EvaluateAttenuationCnossosTest {
         SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
+        assertEquals(Arrays.stream(propDataOut.propagationPaths.get(0).groundAttenuation.wH).average().getAsDouble(),
+                Arrays.stream(propDataOut.propagationPaths.get(1).groundAttenuation.wH).average().getAsDouble(), Double.MIN_VALUE);
     }
 
     /**
