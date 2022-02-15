@@ -327,7 +327,53 @@ public class ProfileBuilderTest {
         //}
     }
 
+    @Test
+    public void testProfileTopographicGroundEffectWall() throws Exception {
 
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
+                // Add building
+                .addWall(new Coordinate[]{
+                                new Coordinate(175, 50, 17),
+                                new Coordinate(190, 10, 14)},
+                        1)
+                .finishFeeding();
 
-    //TODO source on ground effect
+        Coordinate receiver = new Coordinate(200, 50, 14);
+        Coordinate source = new Coordinate(10, 10, 1);
+        ProfileBuilder.CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0);
+        assertEquals(7, cutProfile.getCutPoints().size());
+        assertEquals(0, cutProfile.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(120, 33.158, 0)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(3).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(4).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(6).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
+    }
+
+    /*
+     * CutProfile{pts=[
+     * SOURCE (10.0,10.0,1.0) ; grd : 0.9 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * GROUND_EFFECT (50.0,18.421052631578945,0.0) ; grd : 0.5 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * TOPOGRAPHY (120.0,33.1578947368421,0.0) ; grd : 0.5 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * GROUND_EFFECT (150.0,39.473684210526315,4.615384615384616) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * WALL (176.82926829268294,45.1219512195122,16.634146341463413) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * TOPOGRAPHY (185.0,46.84210526315789,10.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
+     * RECEIVER (200.0,50.0,14.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ]
+     */
 }

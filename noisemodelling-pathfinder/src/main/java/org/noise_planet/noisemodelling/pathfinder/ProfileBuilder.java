@@ -1047,10 +1047,70 @@ public class ProfileBuilder {
      * @param c1 Ending point.
      * @return Cutting profile.
      */
-    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+    public CutProfile getProfileOld(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
+        List<LineSegment> lines = new ArrayList<>();
+        LineSegment fullLine = new LineSegment(c0, c1);
+        double l = dist2D(c0, c1);
+        //If the line length if greater than the MAX_LINE_LENGTH value, split it into multiple lines
+        if(l < maxLineLength) {
+            lines.add(fullLine);
+        }
+        else {
+            double frac = maxLineLength /l;
+            for(int i = 0; i<l/ maxLineLength; i++) {
+                Coordinate p0 = fullLine.pointAlong(i*frac);
+                p0.z = c0.z + (c1.z - c0.z) * i*frac;
+                Coordinate p1 = fullLine.pointAlong(Math.min((i+1)*frac, 1.0));
+                p1.z = c0.z + (c1.z - c0.z) * Math.min((i+1)*frac, 1.0);
+                lines.add(new LineSegment(p0, p1));
+            }
+        }
+        //Topography
+        if(topoTree != null) {
+            addTopoCutPts(lines, profile);
+        }
+        //Buildings and Ground effect
+        if(rtree != null) {
+            addGroundBuildingCutPts(lines, fullLine, profile);
+        }
 
+        //Sort all the cut point in order to set the ground coefficients.
+        profile.sort();
+        //Add base cut for buildings
+        addBuildingBaseCutPts(profile, c0, c1);
+
+
+        //If ordering puts source at last position, reverse the list
+        if(profile.pts.get(0) != profile.source) {
+            if(profile.pts.get(profile.pts.size()-1) != profile.source && profile.pts.get(0) != profile.source) {
+                LOGGER.error("The source have to be first or last cut point");
+            }
+            if(profile.pts.get(profile.pts.size()-1) != profile.receiver && profile.pts.get(0) != profile.receiver) {
+                LOGGER.error("The receiver have to be first or last cut point");
+            }
+            profile.reverse();
+        }
+
+
+        //Sets the ground effects
+        //Check is source is inside ground
+        setGroundEffects(profile, c0, gS);
+
+        //Get all the topo points which are aligned with their predecessor and successor and remove them
+        simplifyTopoAlignement(profile);
+        return profile;
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+        CutProfile profile = new CutProfile();
 
         //Topography
         if(topoTree != null) {
@@ -1102,8 +1162,6 @@ public class ProfileBuilder {
         //Check is source is inside ground
         setGroundEffects(profile, c0, gS);
 
-        //Get all the topo points which are aligned with their predecessor and successor and remove them
-        //simplifyTopoAlignement(profile);
         return profile;
     }
 
@@ -1300,10 +1358,11 @@ public class ProfileBuilder {
         // Intersection First Side
         idNeighbor = triNeighbors.get(2);
         if (!navigationHistory.contains(idNeighbor)) {
-            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(aTri, bTri));
+            LineSegment triSegment = new LineSegment(aTri, bTri);
+            Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
             if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
-                intersectionTest = closestPoints[0];
+                intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
@@ -1317,10 +1376,11 @@ public class ProfileBuilder {
         // Intersection Second Side
         idNeighbor = triNeighbors.get(0);
         if (!navigationHistory.contains(idNeighbor)) {
-            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(bTri, cTri));
+            LineSegment triSegment = new LineSegment(bTri, cTri);
+            Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
             if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
-                intersectionTest = closestPoints[0];
+                intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
@@ -1334,10 +1394,11 @@ public class ProfileBuilder {
         // Intersection Third Side
         idNeighbor = triNeighbors.get(1);
         if (!navigationHistory.contains(idNeighbor)) {
-            Coordinate[] closestPoints = propagationLine.closestPoints(new LineSegment(cTri, aTri));
+            LineSegment triSegment = new LineSegment(cTri, aTri);
+            Coordinate[] closestPoints = propagationLine.closestPoints(triSegment);
             Coordinate intersectionTest = null;
             if(closestPoints.length == 2 && closestPoints[0].distance(closestPoints[1]) < JTSUtility.TRIANGLE_INTERSECTION_EPSILON) {
-                intersectionTest = closestPoints[0];
+                intersectionTest = new Coordinate(closestPoints[0].x, closestPoints[0].y, Vertex.interpolateZ(closestPoints[0], triSegment.p0, triSegment.p1));
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
@@ -1399,16 +1460,22 @@ public class ProfileBuilder {
         ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());
         for(int i =0; i < coordinates.size(); i++) {
             // Always add first and last points
-            if(retainedCoordinates.isEmpty() || i == coordinates.size() - 1) {
-                retainedCoordinates.add(coordinates.get(i));
+            Coordinate previous;
+            Coordinate current = coordinates.get(i);
+            Coordinate next;
+            if(retainedCoordinates.isEmpty()) {
+                previous = new Coordinate(p1.x, p1.y, getZGround(p1));
             } else {
-                final Coordinate previous = retainedCoordinates.get(retainedCoordinates.size() - 1);
-                final Coordinate current = coordinates.get(i);
-                final Coordinate next = coordinates.get(i + 1);
-                // Do not add topographic points which are simply the linear interpolation between two points
-                if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= DELTA) {
-                    retainedCoordinates.add(coordinates.get(i));
-                }
+                previous = retainedCoordinates.get(retainedCoordinates.size() - 1);
+            }
+            if(i == coordinates.size() - 1) {
+                next = new Coordinate(p2.x, p2.y, getZGround(p2));
+            } else {
+                next = coordinates.get(i + 1);
+            }
+            // Do not add topographic points which are simply the linear interpolation between two points
+            if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= DELTA) {
+                retainedCoordinates.add(coordinates.get(i));
             }
         }
         // Feed profile
@@ -1781,6 +1848,14 @@ public class ProfileBuilder {
                 }
             }
             return isFreeField;
+        }
+
+        @Override
+        public String toString() {
+            return "CutProfile{" + "pts=" + pts + ", source=" + source + ", receiver=" + receiver + ", " +
+                    "hasBuildingInter=" + hasBuildingInter + ", hasTopographyInter=" + hasTopographyInter + ", " +
+                    "hasGroundEffectInter=" + hasGroundEffectInter + ", isFreeField=" + isFreeField + ", " +
+                    "srcOrientation=" + srcOrientation + '}';
         }
     }
 
