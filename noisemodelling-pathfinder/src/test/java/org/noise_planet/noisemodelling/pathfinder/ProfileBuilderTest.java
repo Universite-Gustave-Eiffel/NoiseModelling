@@ -5,6 +5,7 @@ import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -16,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import javax.xml.stream.XMLStreamException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -260,8 +263,8 @@ public class ProfileBuilderTest {
         long seed = 5289231824766894L;
         double width = 2000;
         double height = 2000;
-        int xStepSize = 50;
-        int yStepSize = 50;
+        int xStepSize = 10;
+        int yStepSize = 10;
         double minHeight = 50;
         double maxHeight = 350;
         double xOrigin = 222532;
@@ -279,25 +282,41 @@ public class ProfileBuilderTest {
             }
         }
         profileBuilder.finishFeeding();
+        double[][] testPointPositions = new double[][] {{0.1, 0.15,0.25,0.16},
+                {0.5, 0.1,0.8,0.4},
+                {0.1, 0.1,0.11,0.11},
+                {0.1, 0.1,0.9,0.9},
+                {0.5, 0.5,0.55,0.55},
+                {-0.1, 0.5,1.1,0.5}};
 
         // Check found intersections
+
         Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.1,
                 envDomain.getMinY() + envDomain.getHeight() * 0.15);
         cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
         Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.25,
                 envDomain.getMinY() + envDomain.getHeight() * 0.16);
         cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-
-        for(int i = 0; i < 5; i++) {
+        for(int i = 0; i < 50; i++) {
             // precompile
             profileBuilder.getProfile(cutStart, cutEnd);
+            ProfileBuilder.CutProfile cutProfile = new ProfileBuilder.CutProfile();
+            profileBuilder.addTopoCutPts(List.of(new LineSegment(cutStart, cutEnd)), cutProfile);
         }
-        int loops = 25000;
+        int loops = 800;
         long start = System.currentTimeMillis();
         for(int i = 0; i < loops; i++) {
-            ProfileBuilder.CutProfile profile = profileBuilder.getProfile(cutStart, cutEnd);
+            for(double[] testPoint : testPointPositions) {
+                cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
+                cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+                cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
+                cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+                profileBuilder.getTopographicProfile(cutStart, cutEnd);
+                //ProfileBuilder.CutProfile cutProfile = new ProfileBuilder.CutProfile();
+                //profileBuilder.addTopoCutPts(List.of(new LineSegment(cutStart, cutEnd)), cutProfile);
+            }
         }
-        logger.info(String.format(Locale.ROOT, "Building profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
+        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
 
         //try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
         //    GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
