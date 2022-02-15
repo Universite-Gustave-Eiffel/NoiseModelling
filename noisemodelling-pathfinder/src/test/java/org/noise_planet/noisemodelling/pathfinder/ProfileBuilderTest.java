@@ -246,14 +246,6 @@ public class ProfileBuilderTest {
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
 
-
-        try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
-            GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
-            geoJSONDocument.writeHeader();
-            geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-            geoJSONDocument.writeFooter();
-        }
-
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
         assertEquals(19, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
@@ -309,9 +301,7 @@ public class ProfileBuilderTest {
         cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
         for(int i = 0; i < 50; i++) {
             // precompile
-            profileBuilder.getProfile(cutStart, cutEnd);
-            ProfileBuilder.CutProfile cutProfile = new ProfileBuilder.CutProfile();
-            profileBuilder.addTopoCutPts(List.of(new LineSegment(cutStart, cutEnd)), cutProfile);
+            profileBuilder.getProfile(cutStart, cutEnd, 0);
         }
         int loops = 800;
         long start = System.currentTimeMillis();
@@ -321,7 +311,7 @@ public class ProfileBuilderTest {
                 cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
                 cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                profileBuilder.getTopographicProfile(cutStart, cutEnd);
+                profileBuilder.getProfile(cutStart, cutEnd, 0);
             }
         }
         logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));

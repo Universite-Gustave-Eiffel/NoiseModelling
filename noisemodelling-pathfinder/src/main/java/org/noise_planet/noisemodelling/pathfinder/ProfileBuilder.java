@@ -998,123 +998,13 @@ public class ProfileBuilder {
         return profile;
     }
 
-    public void addTopoCutPts(List<LineSegment> lines, CutProfile profile) {
-        List<CutPoint> topoCutPts = new ArrayList<>();
-        for (LineSegment line : lines) {
-            List<Integer> indexes = new ArrayList<>(topoTree.query(new Envelope(line.p0, line.p1)));
-            indexes = indexes.stream().distinct().collect(Collectors.toList());
-            for (int i : indexes) {
-                Triangle triangle = topoTriangles.get(i);
-                LineSegment triLine = new LineSegment(vertices.get(triangle.getA()), vertices.get(triangle.getB()));
-                Coordinate intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
-                }
-                triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
-                intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
-                }
-                triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
-                intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
-                }
-            }
-        }
-        List<CutPoint> toRemove = new ArrayList<>();
-        for(int i=0; i<topoCutPts.size(); i++) {
-            CutPoint pt = topoCutPts.get(i);
-            List<CutPoint> remaining = topoCutPts.subList(i+1, topoCutPts.size());
-            for(CutPoint rPt : remaining) {
-                if(pt.getCoordinate().x == rPt.getCoordinate().x &&
-                        pt.getCoordinate().y == rPt.getCoordinate().y) {
-                    toRemove.add(pt);
-                    break;
-                }
-            }
-        }
-        topoCutPts.removeAll(toRemove);
-        topoCutPts.forEach(profile::addCutPt);
-    }
-
     /**
      * Retrieve the cutting profile following the line build from the given coordinates.
      * @param c0 Starting point.
      * @param c1 Ending point.
      * @return Cutting profile.
      */
-    public CutProfile getProfileOld(Coordinate c0, Coordinate c1, double gS) {
-        CutProfile profile = new CutProfile();
-
-        List<LineSegment> lines = new ArrayList<>();
-        LineSegment fullLine = new LineSegment(c0, c1);
-        double l = dist2D(c0, c1);
-        //If the line length if greater than the MAX_LINE_LENGTH value, split it into multiple lines
-        if(l < maxLineLength) {
-            lines.add(fullLine);
-        }
-        else {
-            double frac = maxLineLength /l;
-            for(int i = 0; i<l/ maxLineLength; i++) {
-                Coordinate p0 = fullLine.pointAlong(i*frac);
-                p0.z = c0.z + (c1.z - c0.z) * i*frac;
-                Coordinate p1 = fullLine.pointAlong(Math.min((i+1)*frac, 1.0));
-                p1.z = c0.z + (c1.z - c0.z) * Math.min((i+1)*frac, 1.0);
-                lines.add(new LineSegment(p0, p1));
-            }
-        }
-        //Topography
-        if(topoTree != null) {
-            addTopoCutPts(lines, profile);
-        }
-        //Buildings and Ground effect
-        if(rtree != null) {
-            addGroundBuildingCutPts(lines, fullLine, profile);
-        }
-
-        //Sort all the cut point in order to set the ground coefficients.
-        profile.sort(c0, c1);
-        //Add base cut for buildings
-        addBuildingBaseCutPts(profile, c0, c1);
-
-
-        //If ordering puts source at last position, reverse the list
-        if(profile.pts.get(0) != profile.source) {
-            if(profile.pts.get(profile.pts.size()-1) != profile.source && profile.pts.get(0) != profile.source) {
-                LOGGER.error("The source have to be first or last cut point");
-            }
-            if(profile.pts.get(profile.pts.size()-1) != profile.receiver && profile.pts.get(0) != profile.receiver) {
-                LOGGER.error("The receiver have to be first or last cut point");
-            }
-            profile.reverse();
-        }
-
-
-        //Sets the ground effects
-        //Check is source is inside ground
-        setGroundEffects(profile, c0, gS);
-
-        //Get all the topo points which are aligned with their predecessor and successor and remove them
-        simplifyTopoAlignement(profile);
-        return profile;
-    }
-
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        return getProfileNew(c0, c1, gS);
-    }
-
-
-    /**
-     * Retrieve the cutting profile following the line build from the given coordinates.
-     * @param c0 Starting point.
-     * @param c1 Ending point.
-     * @return Cutting profile.
-     */
-    public CutProfile getProfileNew(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
         //Topography
@@ -1168,43 +1058,6 @@ public class ProfileBuilder {
         setGroundEffects(profile, c0, gS);
 
         return profile;
-    }
-
-    private void simplifyTopoAlignement(CutProfile profile) {
-        List<CutPoint> toRemove = new ArrayList<>();
-        Coordinate cTopo0 = null;
-        Coordinate cTopo1 = null;
-        Coordinate cTopo2 = null;
-        for(CutPoint cutPt : profile.pts) {
-            //In case of Source or Receiver, use Z topo
-            if(cutPt.type == TOPOGRAPHY || cutPt.type == RECEIVER || cutPt.type == SOURCE){
-                if(cTopo0 == null) {
-                    cTopo0 = cutPt.coordinate;
-                    cTopo0 = new Coordinate(cTopo0.x, cTopo0.y, cutPt.type == SOURCE ? getZGround(cTopo0) : cTopo0.z);
-                }
-                else if(cTopo1 == null) {
-                    cTopo1 = cutPt.coordinate;
-                }
-                else {
-                    if(cTopo2 != null) {
-                        cTopo0 = cTopo1;
-                        cTopo1 = cTopo2;
-                    }
-                    cTopo2 = cutPt.coordinate;
-                    cTopo2 = new Coordinate(cTopo2.x, cTopo2.y, cutPt.type == RECEIVER ? getZGround(cTopo2) : cTopo2.z);
-
-                    if (cTopo0.z == cTopo1.z && cTopo1.z == cTopo2.z ||
-                            CGAlgorithms3D.distancePointSegment(cTopo1, cTopo0, cTopo2) < DELTA) {
-                        final Coordinate cTopo = cTopo1;
-                        toRemove.add(profile.pts.stream()
-                                .filter(cut -> cut.coordinate.x==cTopo.x && cut.coordinate.y==cTopo.y)
-                                .findFirst()
-                                .get());
-                    }
-                }
-            }
-        }
-        profile.pts.removeAll(toRemove);
     }
 
     private void setGroundEffects(CutProfile profile, Coordinate c0, double gS) {
