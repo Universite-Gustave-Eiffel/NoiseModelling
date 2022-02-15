@@ -1103,13 +1103,18 @@ public class ProfileBuilder {
         return profile;
     }
 
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+        return getProfileNew(c0, c1, gS);
+    }
+
+
     /**
      * Retrieve the cutting profile following the line build from the given coordinates.
      * @param c0 Starting point.
      * @param c1 Ending point.
      * @return Cutting profile.
      */
-    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+    public CutProfile getProfileNew(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
 
         //Topography
@@ -1366,8 +1371,8 @@ public class ProfileBuilder {
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
-                segmentIntersection.setCoordinate(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
+                    segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 2;
                 }
@@ -1384,8 +1389,8 @@ public class ProfileBuilder {
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
-                segmentIntersection.setCoordinate(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
+                    segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionPtDist = distline_line;
                     nearestIntersectionSide = 0;
                 }
@@ -1402,8 +1407,8 @@ public class ProfileBuilder {
             }
             if(intersectionTest != null) {
                 distline_line = propagationLine.p1.distance(intersectionTest);
-                segmentIntersection.setCoordinate(intersectionTest);
                 if (distline_line < nearestIntersectionPtDist) {
+                    segmentIntersection.setCoordinate(intersectionTest);
                     nearestIntersectionSide = 1;
                 }
             }
@@ -1521,6 +1526,9 @@ public class ProfileBuilder {
             }
         }
         if(minDistanceTriangle != -1) {
+            Coordinate[] tri = getTriangle(minDistanceTriangle);
+            // Compute interpolated Z of the intersected point on the nearest triangle
+            intersectionPt.setZ(Vertex.interpolateZ(intersectionPt, tri[0], tri[1], tri[2]));
             intersection.setCoordinate(intersectionPt);
             intersectionTriangle.set(minDistanceTriangle);
             return true;

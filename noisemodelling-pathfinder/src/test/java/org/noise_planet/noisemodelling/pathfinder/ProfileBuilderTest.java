@@ -223,7 +223,7 @@ public class ProfileBuilderTest {
      * @throws ParseException JTS WKT parsing exception.
      */
     @Test
-    public void allCutProfileTest() throws ParseException {
+    public void allCutProfileTest() throws Exception {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
 
         profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"), 10);
@@ -245,6 +245,15 @@ public class ProfileBuilderTest {
         profileBuilder.finishFeeding();
 
         ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
+
+
+        try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
+            GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
+            geoJSONDocument.writeHeader();
+            geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
+            geoJSONDocument.writeFooter();
+        }
+
         List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
         assertEquals(19, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
@@ -253,6 +262,7 @@ public class ProfileBuilderTest {
         assertEquals(8.0, pts.get(18).getCoordinate().x, DELTA);
         assertEquals(10.0, pts.get(18).getCoordinate().y, DELTA);
         assertEquals(0.3, pts.get(18).getCoordinate().z, DELTA);
+
     }
 
     @Test
@@ -312,8 +322,6 @@ public class ProfileBuilderTest {
                 cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
                 cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 profileBuilder.getTopographicProfile(cutStart, cutEnd);
-                //ProfileBuilder.CutProfile cutProfile = new ProfileBuilder.CutProfile();
-                //profileBuilder.addTopoCutPts(List.of(new LineSegment(cutStart, cutEnd)), cutProfile);
             }
         }
         logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
