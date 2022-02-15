@@ -1,18 +1,22 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertTrue;
 
@@ -31,7 +35,6 @@ public class BezierContouringJDBCTest {
             connection.close();
         }
     }
-
 
     @Test
     public void testBezierContouring() throws SQLException, IOException {

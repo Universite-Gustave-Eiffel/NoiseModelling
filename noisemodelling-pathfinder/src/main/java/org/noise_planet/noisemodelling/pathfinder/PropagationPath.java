@@ -146,6 +146,10 @@ public class PropagationPath {
         this.sourceOrientation = sourceOrientation;
     }
 
+
+    /**
+     * @return Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast
+     */
     public double getGs() {
         return gs;
     }

@@ -43,16 +43,21 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.math.Vector2D;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Nicolas Fortin
  */
 public class JTSUtility {
+    /** Intersection test for topology triangle navigation */
+    public static final double TRIANGLE_INTERSECTION_EPSILON = 1e-7;
+
     /**
      * Utility class
      **/
@@ -135,6 +140,55 @@ public class JTSUtility {
     public static Coordinate makePointImage(double a, double b, Coordinate point) {
         LineSegment pointPlane = new LineSegment(point, makeProjectedPoint(a,b, point));
         return pointPlane.pointAlong(2);
+    }
+
+
+    public static boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
+                                   Coordinate c) {
+        return dotInTri(p, a, b, c, null);
+    }
+
+    /**
+     * Fast dot in triangle test
+     * <p/>
+     * {@see http://www.blackpawn.com/texts/pointinpoly/default.html}
+     *
+     * @param p coordinate of the point
+     * @param a coordinate of the A vertex of triangle
+     * @param b coordinate of the B vertex of triangle
+     * @param c coordinate of the C vertex of triangle
+     * @return True if dot is in triangle
+     */
+    public static boolean dotInTri(Coordinate p, Coordinate a, Coordinate b,
+                                   Coordinate c, AtomicReference<Double> error) {
+        Vector2D v0 = new Vector2D(c.x - a.x, c.y - a.y);
+        Vector2D v1 = new Vector2D(b.x - a.x, b.y - a.y);
+        Vector2D v2 = new Vector2D(p.x - a.x, p.y - a.y);
+
+        // Compute dot products
+        double dot00 = v0.dot(v0);
+        double dot01 = v0.dot(v1);
+        double dot02 = v0.dot(v2);
+        double dot11 = v1.dot(v1);
+        double dot12 = v1.dot(v2);
+
+        // Compute barycentric coordinates
+        double invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+        double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        if(error != null) {
+            double err = 0;
+            err += Math.max(0, -u);
+            err += Math.max(0, -v);
+            err += Math.max(0, (u + v) - 1);
+            error.set(err);
+        }
+
+        // Check if point is in triangle
+        return (u > (0. - TRIANGLE_INTERSECTION_EPSILON)) && (v > (0. - TRIANGLE_INTERSECTION_EPSILON))
+                && (u + v < (1. + TRIANGLE_INTERSECTION_EPSILON));
+
     }
 
     /**
