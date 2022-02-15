@@ -62,7 +62,7 @@ public class EvaluateAttenuationCnossosTest {
      * Test identic rays : to the east, to the west
      */
     @Test
-    public void EastWestTest() {
+    public void eastWestTest() {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
@@ -104,13 +104,14 @@ public class EvaluateAttenuationCnossosTest {
         SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
     }
 
     /**
      * Test identic rays : to the east, to the west
      */
     @Test
-    public void NorthSouthTest() {
+    public void northSouthTest() {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
@@ -152,6 +153,71 @@ public class EvaluateAttenuationCnossosTest {
         SegmentPath s1 = propDataOut.propagationPaths.get(1).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
+    }
+
+    @Test
+    public void northSouthGroundTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addGroundEffect(-50, 50, -5, 5, 0.5)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(0, 0, 2)
+                .addReceiver(0, 30, 2)
+                .addReceiver(0, -30, 2)
+                .setGs(0.0)
+                .build();
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
+    }
+
+    @Test
+    public void eastWestGroundTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addGroundEffect(-5, 5, -50, 50, 0.5)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(0, 0, 2)
+                .addReceiver(30, 0, 2)
+                .addReceiver(-30, 0, 2)
+                .setGs(0.0)
+                .build();
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
     }
 
     /**

@@ -1498,9 +1498,14 @@ public class ProfileBuilder {
                     pts.add(cut);
                 }
             }
-            pts.sort(CutPoint::compareTo);
+            if(p0.compareTo(p1)<=0) {
+                pts.sort(CutPoint::compareTo);
+            } else {
+                pts.sort(Collections.reverseOrder());
+            }
+            int dir = -p0.compareTo(p1);
             for(CutPoint cut : pts) {
-                if(cut.compareTo(current)>=0 && cut.compareTo(p1)<0) {
+                if(dir*cut.compareTo(current)>=0 && dir*cut.compareTo(p1)<0) {
                     rsLength += dist2D(current.getCoordinate(), cut.getCoordinate()) * current.getGroundCoef();
                     current = cut;
                 }
