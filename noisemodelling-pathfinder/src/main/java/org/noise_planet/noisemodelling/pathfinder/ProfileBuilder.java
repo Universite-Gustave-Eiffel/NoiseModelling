@@ -1146,7 +1146,7 @@ public class ProfileBuilder {
         }
 
         //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+        profile.sort(c0, c1);
         //Add base cut for buildings
         addBuildingBaseCutPts(profile, c0, c1);
 
