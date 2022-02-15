@@ -1430,26 +1430,7 @@ public class ProfileBuilder {
      */
     @Deprecated
     public double getZGround(Coordinate c) {
-        if(topoTree == null) {
-            return 0.0;
-        }
-        List<Integer> list = new ArrayList<>();
-        Envelope env = new Envelope(c);
-        while(list.isEmpty()) {
-            env.expandBy(maxLineLength);
-            list = (List<Integer>)topoTree.query(env);
-        }
-        for (int i : list) {
-            Triangle tri = topoTriangles.get(i);
-            Coordinate p1 = vertices.get(tri.getA());
-            Coordinate p2 = vertices.get(tri.getB());
-            Coordinate p3 = vertices.get(tri.getC());
-            Polygon poly = FACTORY.createPolygon(new Coordinate[]{p1, p2, p3, p1});
-            if (poly.intersects(FACTORY.createPoint(c))) {
-                return Vertex.interpolateZ(c, p1, p2, p3);
-            }
-        }
-        return 0.0;
+        return getZGround(new CutPoint(c, TOPOGRAPHY, -1));
     }
 
     public double getZGround(CutPoint cut) {
