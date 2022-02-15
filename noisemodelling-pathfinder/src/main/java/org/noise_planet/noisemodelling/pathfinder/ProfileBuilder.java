@@ -233,7 +233,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -1077,7 +1077,7 @@ public class ProfileBuilder {
         }
 
         //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+        profile.sort(c0, c1);
         //Add base cut for buildings
         addBuildingBaseCutPts(profile, c0, c1);
 
@@ -1759,8 +1759,12 @@ public class ProfileBuilder {
         /**
          * Sort the CutPoints by there coordinates
          */
-        public void sort() {
-            pts.sort(CutPoint::compareTo);
+        public void sort(Coordinate c0, Coordinate c1) {
+            if(c0.compareTo(c1)<=0) {
+                pts.sort(CutPoint::compareTo);
+            } else {
+                pts.sort(Collections.reverseOrder());
+            }
         }
 
         /**
@@ -1808,9 +1812,14 @@ public class ProfileBuilder {
                     pts.add(cut);
                 }
             }
-            pts.sort(CutPoint::compareTo);
+            if(p0.compareTo(p1)<=0) {
+                pts.sort(CutPoint::compareTo);
+            } else {
+                pts.sort(Collections.reverseOrder());
+            }
+            int dir = -p0.compareTo(p1);
             for(CutPoint cut : pts) {
-                if(cut.compareTo(current)>=0 && cut.compareTo(p1)<0) {
+                if(dir*cut.compareTo(current)>=0 && dir*cut.compareTo(p1)<0) {
                     rsLength += dist2D(current.getCoordinate(), cut.getCoordinate()) * current.getGroundCoef();
                     current = cut;
                 }
