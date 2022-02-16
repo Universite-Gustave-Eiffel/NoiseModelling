@@ -169,8 +169,9 @@ public class ProfileBuilder {
      * @param building Building.
      */
     public ProfileBuilder addBuilding(Building building) {
-        if(building.poly == null) {
-            LOGGER.error("Cannot add a building with null geometry.");
+        if(building.getGeometry() == null || building.getGeometry().isEmpty()) {
+            LOGGER.error("Building geometry should be a valid Polygon");
+            return this;
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -391,29 +392,14 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(geom == null && ! (geom instanceof Polygon)) {
+        if(!(geom instanceof Polygon) || geom.isEmpty()) {
             LOGGER.error("Building geometry should be Polygon");
-            return null;
-        }
-        Polygon poly = (Polygon)geom;
-        if(!isFeedingFinished) {
-            if(envelope == null) {
-                envelope = geom.getEnvelopeInternal();
-            }
-            else {
-                envelope.expandToInclude(geom.getEnvelopeInternal());
-            }
-            Building building = new Building(poly, height, alphas, id, zBuildings);
-            buildings.add(building);
-            buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
-            //TODO : generalization of building coefficient
-            addGroundEffect(geom, 0);
             return this;
         }
-        else{
-            LOGGER.warn("Cannot add building, feeding is finished.");
-            return null;
-        }
+        Polygon poly = (Polygon)geom;
+        Building building = new Building(poly, height, alphas, id, zBuildings);
+        addBuilding(building);
+        return this;
     }
 
     /**
