@@ -798,13 +798,6 @@ public class ProfileBuilder {
                     topoTree.insert(env, i);
                 }
             }
-            //TODO : Seems to be useless, to check
-            /*for (IntegerTuple wallId : wallIndex) {
-                Coordinate vA = vertices.get(wallId.nodeIndexA);
-                Coordinate vB = vertices.get(wallId.nodeIndexB);
-                Wall wall = new Wall(vA, vB, wallId.triangleIdentifier, TOPOGRAPHY);
-                processedWalls.add(wall);
-            }*/
         }
         //Update building z
         if(topoTree != null) {
@@ -851,6 +844,7 @@ public class ProfileBuilder {
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING);
+                w.setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
@@ -862,7 +856,9 @@ public class ProfileBuilder {
             Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
+                Wall w = new Wall(lineSegment, j, IntersectionType.WALL);
+                w.setProcessedWallIndex(processedWalls.size());
+                processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
@@ -883,7 +879,9 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
+                    Wall w = new Wall(line, j, IntersectionType.GROUND_EFFECT);
+                    w.setProcessedWallIndex(processedWalls.size());
+                    processedWalls.add(w);
                     rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
                 }
             }
@@ -2067,6 +2065,7 @@ public class ProfileBuilder {
         public Coordinate p1;
         private LineSegment ls;
         private Obstacle obstacle = this;
+        private int processedWallIndex;
 
         /**
          * Constructor using segment and id.
@@ -2129,6 +2128,20 @@ public class ProfileBuilder {
             this.alphas = new ArrayList<>();
             this.hasP0Neighbour = hasP0Neighbour;
             this.hasP1Neighbour = hasP1Neighbour;
+        }
+
+        /**
+         * @return Index of this wall in the ProfileBuild list
+         */
+        public int getProcessedWallIndex() {
+            return processedWallIndex;
+        }
+
+        /**
+         * @param processedWallIndex Index of this wall in the ProfileBuild list
+         */
+        public void setProcessedWallIndex(int processedWallIndex) {
+            this.processedWallIndex = processedWallIndex;
         }
 
         /**
