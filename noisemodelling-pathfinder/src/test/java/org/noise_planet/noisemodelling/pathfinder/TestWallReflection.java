@@ -35,22 +35,74 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import junit.framework.TestCase;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.Polygon;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TestWallReflection extends TestCase {
 
+    public static void pushBuildingToWalls(ProfileBuilder.Building building, int index, List<ProfileBuilder.Wall> wallList) {
+        ArrayList<ProfileBuilder.Wall> wallsOfBuilding = new ArrayList<>();
+        Coordinate[] coords = building.getGeometry().getCoordinates();
+        for (int i = 0; i < coords.length - 1; i++) {
+            LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
+            ProfileBuilder.Wall w = new ProfileBuilder.Wall(lineSegment, index, ProfileBuilder.IntersectionType.BUILDING);
+            wallsOfBuilding.add(w);
+        }
+        building.setWalls(wallsOfBuilding);
+        wallList.addAll(wallsOfBuilding);
+    }
+
     public void testMultipleDepthReflexion() {
         List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
-        Coordinate receiverCoordinates = new Coordinate();
-        int reflectionOrder = 4;
+        Coordinate cA = new Coordinate(1, 1, 5);
+        Coordinate cB = new Coordinate(1, 8, 5);
+        Coordinate cC = new Coordinate(8, 8, 5);
+        Coordinate cD = new Coordinate(8, 5, 5);
+        Coordinate cE = new Coordinate(5, 5, 5);
+        Coordinate cF = new Coordinate(5, 1, 5);
+        Coordinate cG = new Coordinate(13, 1, 2.5);
+        Coordinate cH = new Coordinate(13, 8, 2.5);
+
+        GeometryFactory factory = new GeometryFactory();
+        Polygon buildingGeometry = factory.createPolygon(new Coordinate[] {cA, cB, cC, cD, cE, cF, cA});
+
+        ProfileBuilder.Building building = new ProfileBuilder.Building(buildingGeometry, 5,
+                Collections.emptyList(), 0, true);
+
+        pushBuildingToWalls(building, 0, buildWalls);
+        buildWalls.add(new ProfileBuilder.Wall(cG, cH, 0, ProfileBuilder.IntersectionType.BUILDING));
+
+        Coordinate receiverCoordinates = new Coordinate(6, 3, 1.6);
+
+        int reflectionOrder = 1;
         MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
                 receiverCoordinates, reflectionOrder);
 
+        Coordinate source1 = new Coordinate(10, 7, 0.1);
+
+        List<MirrorReceiverResult> result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1,
+                1e9, 1e9);
+
+        // Reflection only on [g h] wall
+        assertEquals(1, result.size());
 
 
-        Coordinate sourceCoordinates = new Coordinate();
+        reflectionOrder = 2;
+
+        mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
+                receiverCoordinates, reflectionOrder);
+
+
+        result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1,
+                1e9, 1e9);
+
+        // Reflection on [g h] [h g -> e f] [h g -> c d]
+        assertEquals(6, result.size());
     }
 
 

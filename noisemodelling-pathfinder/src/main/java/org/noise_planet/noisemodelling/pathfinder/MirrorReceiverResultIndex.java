@@ -49,9 +49,15 @@ public class MirrorReceiverResultIndex {
     KdTree mirrorReceiverTree;
     public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
     private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
-    private Coordinate receiverCoordinate;
+    private final Coordinate receiverCoordinate;
     private List<ProfileBuilder.Wall> buildWalls;
 
+    /**
+     * Generate all image receivers from the provided list of walls
+     * @param buildWalls
+     * @param receiverCoordinates
+     * @param reflectionOrder
+     */
     public MirrorReceiverResultIndex(List<ProfileBuilder.Wall> buildWalls, Coordinate receiverCoordinates, int reflectionOrder) {
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
@@ -65,13 +71,20 @@ public class MirrorReceiverResultIndex {
             ArrayList<MirrorReceiverResult> nextParentsToProcess = new ArrayList<>();
             for(MirrorReceiverResult parent : parentsToProcess) {
                 for (ProfileBuilder.Wall wall : buildWalls) {
-                    if (parent != null && wall.getProcessedWallIndex() == parent.getWall().getProcessedWallIndex()) {
-                        continue;
+                    Coordinate receiverImage;
+                    if (parent != null) {
+                        if(wall == parent.getWall()) {
+                            continue;
+                        } else {
+                            receiverImage = parent.getReceiverPos();
+                        }
+                    } else {
+                        receiverImage = receiverCoordinates;
                     }
                     //Calculate the coordinate of projection
-                    Coordinate proj = wall.getLineSegment().project(receiverCoordinates);
-                    Coordinate rcvMirror = new Coordinate(2 * proj.x - receiverCoordinates.x,
-                            2 * proj.y - receiverCoordinates.y, receiverCoordinates.z);
+                    Coordinate proj = wall.getLineSegment().project(receiverImage);
+                    Coordinate rcvMirror = new Coordinate(2 * proj.x - receiverImage.x,
+                            2 * proj.y - receiverImage.y, receiverImage.z);
                     MirrorReceiverResult receiverResult = new MirrorReceiverResult(rcvMirror, parent, wall,
                             wall.getOriginId(), wall.getType());
                     mirrorReceiverTree.insert(rcvMirror, receiverResult);
@@ -97,6 +110,9 @@ public class MirrorReceiverResultIndex {
     List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition,
                                                         double maximumDistanceFromSourceReceiver,
                                                         double maximumPropagationDistance) {
+        if(Double.isNaN(sourcePosition.z)) {
+            throw new IllegalArgumentException("Not supported NaN z value");
+        }
         Envelope env = new Envelope(receiverCoordinate);
         env.expandToInclude(sourcePosition);
         env.expandBy(maximumPropagationDistance);
@@ -167,21 +183,20 @@ public class MirrorReceiverResultIndex {
                     // Check if other surface of this wall obstruct the view
                     //Check if another wall is masking the current
                     for (ProfileBuilder.Wall otherWall : currentWall.getObstacle().getWalls()) {
-                        LineSegment otherWallSegment = otherWall.getLineSegment();
-                        li = new RobustLineIntersector();
-                        li.computeIntersection(otherWall.p0, otherWall.p1,
-                                srcMirrRcvLine.p0, srcMirrRcvLine.p1);
-                        if (li.hasIntersection()) {
-                            Coordinate otherReflectionPoint = li.getIntersection(0);
-                            double fraction = otherWallSegment.segmentFraction(otherReflectionPoint);
-                            double wallReflectionPointZ = otherWallSegment.p0.z +
-                                    fraction * (otherWallSegment.p1.z - otherWallSegment.p0.z);
-                            double propagationFraction = srcMirrRcvLine.segmentFraction(otherReflectionPoint);
-                            double propagationReflectionPointZ =  srcMirrRcvLine.p0.z +
-                                    propagationFraction * (srcMirrRcvLine.p1.z - srcMirrRcvLine.p0.z);
-                            if(propagationReflectionPointZ <= wallReflectionPointZ) {
-                                // This wall is obstructing the view of the propagation line (other wall too tall)
-                                return;
+                        if(!otherWall.equals(currentWall)) {
+                            LineSegment otherWallSegment = otherWall.getLineSegment();
+                            li = new RobustLineIntersector();
+                            li.computeIntersection(otherWall.p0, otherWall.p1, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
+                            if (li.hasIntersection()) {
+                                Coordinate otherReflectionPoint = li.getIntersection(0);
+                                double fraction = otherWallSegment.segmentFraction(otherReflectionPoint);
+                                double wallReflectionPointZ = otherWallSegment.p0.z + fraction * (otherWallSegment.p1.z - otherWallSegment.p0.z);
+                                double propagationFraction = srcMirrRcvLine.segmentFraction(otherReflectionPoint);
+                                double propagationReflectionPointZ = srcMirrRcvLine.p0.z + propagationFraction * (srcMirrRcvLine.p1.z - srcMirrRcvLine.p0.z);
+                                if (propagationReflectionPointZ <= wallReflectionPointZ) {
+                                    // This wall is obstructing the view of the propagation line (other wall too tall)
+                                    return;
+                                }
                             }
                         }
                     }

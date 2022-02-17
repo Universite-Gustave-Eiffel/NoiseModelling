@@ -35,15 +35,34 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -52,7 +71,11 @@ import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.BUILDING;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.RECEIVER;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.SOURCE;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.TOPOGRAPHY;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.WALL;
 
 //TODO use NaN for building height
 //TODO fix wall references id in order to use also real wall database key
@@ -168,9 +191,8 @@ public class ProfileBuilder {
      * @param building Building.
      */
     public ProfileBuilder addBuilding(Building building) {
-        if(building.getGeometry() == null || building.getGeometry().isEmpty()) {
-            LOGGER.error("Building geometry should be a valid Polygon");
-            return this;
+        if(building.poly == null) {
+            LOGGER.error("Cannot add a building with null geometry.");
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -391,14 +413,29 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(!(geom instanceof Polygon) || geom.isEmpty()) {
+        if(geom == null && ! (geom instanceof Polygon)) {
             LOGGER.error("Building geometry should be Polygon");
-            return this;
+            return null;
         }
         Polygon poly = (Polygon)geom;
-        Building building = new Building(poly, height, alphas, id, zBuildings);
-        addBuilding(building);
-        return this;
+        if(!isFeedingFinished) {
+            if(envelope == null) {
+                envelope = geom.getEnvelopeInternal();
+            }
+            else {
+                envelope.expandToInclude(geom.getEnvelopeInternal());
+            }
+            Building building = new Building(poly, height, alphas, id, zBuildings);
+            buildings.add(building);
+            buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
+            //TODO : generalization of building coefficient
+            addGroundEffect(geom, 0);
+            return this;
+        }
+        else{
+            LOGGER.warn("Cannot add building, feeding is finished.");
+            return null;
+        }
     }
 
     /**
@@ -798,6 +835,13 @@ public class ProfileBuilder {
                     topoTree.insert(env, i);
                 }
             }
+            //TODO : Seems to be useless, to check
+            /*for (IntegerTuple wallId : wallIndex) {
+                Coordinate vA = vertices.get(wallId.nodeIndexA);
+                Coordinate vB = vertices.get(wallId.nodeIndexB);
+                Wall wall = new Wall(vA, vB, wallId.triangleIdentifier, TOPOGRAPHY);
+                processedWalls.add(wall);
+            }*/
         }
         //Update building z
         if(topoTree != null) {
@@ -844,7 +888,6 @@ public class ProfileBuilder {
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING);
-                w.setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
@@ -856,9 +899,7 @@ public class ProfileBuilder {
             Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.WALL);
-                w.setProcessedWallIndex(processedWalls.size());
-                processedWalls.add(w);
+                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
@@ -879,9 +920,7 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    Wall w = new Wall(line, j, IntersectionType.GROUND_EFFECT);
-                    w.setProcessedWallIndex(processedWalls.size());
-                    processedWalls.add(w);
+                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
                     rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
                 }
             }
@@ -909,29 +948,6 @@ public class ProfileBuilder {
             }
         }
         return list;
-    }
-
-    private static class WallItemVisitor implements ItemVisitor {
-        LineSegment segment;
-        List<Wall> allWalls;
-        double maxDistance;
-        List<Wall> matchWalls = new ArrayList<>();
-
-        public WallItemVisitor(LineSegment segment, List<Wall> allWalls, double maxDistance) {
-            this.segment = segment;
-            this.allWalls = allWalls;
-            this.maxDistance = maxDistance;
-        }
-
-        @Override
-        public void visitItem(Object item) {
-            Wall w = allWalls.get((Integer)item);
-            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
-                if(w.ls.distance(segment) < maxDistance) {
-                    matchWalls.add(w);
-                }
-            }
-        }
     }
 
     private static class UpdateZ implements CoordinateSequenceFilter {
@@ -1959,7 +1975,7 @@ public class ProfileBuilder {
                 newCoordinate = new Coordinate[lr2D.getNumPoints()];
                 for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
                     newCoordinate[idCoordinate] = new Coordinate(lr2D.getCoordinateN(idCoordinate).getX(),
-                                                        lr2D.getCoordinateN(idCoordinate).getY(),
+                            lr2D.getCoordinateN(idCoordinate).getY(),
                             0.0);
                 }
 
