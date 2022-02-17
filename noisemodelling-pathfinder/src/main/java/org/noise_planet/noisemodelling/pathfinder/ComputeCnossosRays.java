@@ -165,11 +165,14 @@ public class ComputeCnossosRays {
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
     private void computeRaysAtPosition(ReceiverPointInfo rcv, IComputeRaysOut dataOut, ProgressVisitor visitor) {
-        Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
-        receiverPropagationEnvelope.expandBy(data.maxSrcDist);
-        List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.position,
-                data.reflexionOrder);
+        MirrorReceiverResultIndex receiverMirrorIndex = null;
+
+        if(data.reflexionOrder > 0) {
+            Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
+            receiverPropagationEnvelope.expandBy(data.maxSrcDist);
+            List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+            receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.position, data.reflexionOrder);
+        }
 
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;

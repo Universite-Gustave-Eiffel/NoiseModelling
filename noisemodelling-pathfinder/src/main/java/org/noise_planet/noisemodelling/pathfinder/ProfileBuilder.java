@@ -191,8 +191,8 @@ public class ProfileBuilder {
      * @param building Building.
      */
     public ProfileBuilder addBuilding(Building building) {
-        if(building.poly == null) {
-            LOGGER.error("Cannot add a building with null geometry.");
+        if(building.poly == null || building.poly.isEmpty()) {
+            LOGGER.error("Cannot add a building with null or empty geometry.");
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -887,7 +887,7 @@ public class ProfileBuilder {
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING);
+                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
@@ -899,7 +899,7 @@ public class ProfileBuilder {
             Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
+                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size()));
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
@@ -920,7 +920,7 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
+                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
                     rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
                 }
             }
@@ -2156,8 +2156,9 @@ public class ProfileBuilder {
         /**
          * @param processedWallIndex Index of this wall in the ProfileBuild list
          */
-        public void setProcessedWallIndex(int processedWallIndex) {
+        public Wall setProcessedWallIndex(int processedWallIndex) {
             this.processedWallIndex = processedWallIndex;
+            return this;
         }
 
         /**
