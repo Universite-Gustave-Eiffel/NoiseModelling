@@ -225,7 +225,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -252,7 +252,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -281,7 +281,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -310,7 +310,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -999,19 +999,19 @@ public class ProfileBuilder {
                 Coordinate intersection = line.intersection(triLine);
                 if (intersection != null) {
                     intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
+                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
                 }
                 triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
                 intersection = line.intersection(triLine);
                 if (intersection != null) {
                     intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
+                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
                 }
                 triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
                 intersection = line.intersection(triLine);
                 if (intersection != null) {
                     intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i));
+                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
                 }
             }
         }
@@ -1245,10 +1245,10 @@ public class ProfileBuilder {
                     intersection.z = getZGround(intersection);
                 }
                 if(facetLine.type == IntersectionType.BUILDING) {
-                    profile.addBuildingCutPt(intersection, facetLine.originId, i);
+                    profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
-                    profile.addWallCutPt(intersection, facetLine.originId);
+                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
                 else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
@@ -1361,7 +1361,7 @@ public class ProfileBuilder {
          * @param coord Coordinate of the source point.
          */
         public void addSource(Coordinate coord) {
-            source = new CutPoint(coord, SOURCE, -1);
+            source = new CutPoint(coord, SOURCE, -1, false);
             pts.add(0, source);
         }
 
@@ -1370,7 +1370,7 @@ public class ProfileBuilder {
          * @param coord Coordinate of the receiver point.
          */
         public void addReceiver(Coordinate coord) {
-            receiver = new CutPoint(coord, RECEIVER, -1);
+            receiver = new CutPoint(coord, RECEIVER, -1, false);
             pts.add(receiver);
         }
 
@@ -1379,8 +1379,8 @@ public class ProfileBuilder {
          * @param coord      Coordinate of the cutting point.
          * @param buildingId Id of the cut building.
          */
-        public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId) {
-            CutPoint cut = new CutPoint(coord, IntersectionType.BUILDING, buildingId);
+        public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
+            CutPoint cut = new CutPoint(coord, IntersectionType.BUILDING, buildingId, corner);
             cut.wallId = wallId;
             pts.add(cut);
             pts.get(pts.size()-1).buildingId = buildingId;
@@ -1392,8 +1392,8 @@ public class ProfileBuilder {
          * @param coord Coordinate of the cutting point.
          * @param id    Id of the cut building.
          */
-        public void addWallCutPt(Coordinate coord, int id) {
-            pts.add(new CutPoint(coord, IntersectionType.WALL, id));
+        public void addWallCutPt(Coordinate coord, int id, boolean corner) {
+            pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
             pts.get(pts.size()-1).wallId = id;
             hasBuildingInter = true;
         }
@@ -1404,7 +1404,7 @@ public class ProfileBuilder {
          * @param id    Id of the cut topography.
          */
         public void addTopoCutPt(Coordinate coord, int id) {
-            pts.add(new CutPoint(coord, TOPOGRAPHY, id));
+            pts.add(new CutPoint(coord, TOPOGRAPHY, id, false));
             hasTopographyInter = true;
         }
 
@@ -1414,7 +1414,7 @@ public class ProfileBuilder {
          * @param id    Id of the cut topography.
          */
         public void addGroundCutPt(Coordinate coord, int id) {
-            pts.add(new CutPoint(coord, IntersectionType.GROUND_EFFECT, id));
+            pts.add(new CutPoint(coord, IntersectionType.GROUND_EFFECT, id, false));
             hasGroundEffectInter = true;
         }
 
@@ -1519,23 +1519,24 @@ public class ProfileBuilder {
                 for(CutPoint cut : pts) {
                     if(cut.getType() == BUILDING || cut.getType() == WALL) {
                         tmp.add(cut);
-                        if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
-                            allMatch = false;
-                        }
                     }
                     else if(cut.getType() == TOPOGRAPHY) {
                         tmp.add(cut);
+                    }
+                    if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
+                        allMatch = false;
                     }
                 }
                 if(allMatch) {
                     return true;
                 }
-                LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
-                for(CutPoint pt : pts) {
-                    //double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
+                List<CutPoint> ptsWithouGroundEffect = pts.stream()
+                        .filter(cut -> !cut.getType().equals(GROUND_EFFECT))
+                        .collect(Collectors.toList());
+                for(CutPoint pt : ptsWithouGroundEffect) {
                     double frac = (pt.coordinate.x-s.x)/(r.x-s.x);
                     double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
-                    if(z < pt.getCoordinate().z) {
+                    if(z < pt.getCoordinate().z && !pt.isCorner()) {
                         isFreeField = false;
                         break;
                     }
@@ -1567,6 +1568,7 @@ public class ProfileBuilder {
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
         private List<Double> wallAlpha;
+        private boolean corner;
 
         /**
          * Constructor using a {@link Coordinate}.
@@ -1574,7 +1576,7 @@ public class ProfileBuilder {
          * @param type  Intersection type.
          * @param id    Identifier of the cut element.
          */
-        public CutPoint(Coordinate coord, IntersectionType type, int id) {
+        public CutPoint(Coordinate coord, IntersectionType type, int id, boolean corner) {
             this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
             this.type = type;
             this.id = id;
@@ -1584,6 +1586,7 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>();
             this.height = 0;
             this.zGround = null;
+            this.corner = corner;
         }
         public CutPoint(CutPoint cut) {
             this.coordinate = new Coordinate(cut.getCoordinate());
@@ -1595,6 +1598,7 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>(cut.wallAlpha);
             this.height = cut.height;
             this.zGround = cut.zGround;
+            this.corner = corner;
         }
 
         /**
@@ -1741,6 +1745,10 @@ public class ProfileBuilder {
             else {
                 return 1;
             }
+        }
+
+        public boolean isCorner(){
+            return corner;
         }
     }
 
