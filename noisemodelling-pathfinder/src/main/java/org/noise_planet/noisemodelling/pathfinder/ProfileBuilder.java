@@ -38,13 +38,12 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -912,6 +911,29 @@ public class ProfileBuilder {
             }
         }
         return list;
+    }
+
+    private static class WallItemVisitor implements ItemVisitor {
+        LineSegment segment;
+        List<Wall> allWalls;
+        double maxDistance;
+        List<Wall> matchWalls = new ArrayList<>();
+
+        public WallItemVisitor(LineSegment segment, List<Wall> allWalls, double maxDistance) {
+            this.segment = segment;
+            this.allWalls = allWalls;
+            this.maxDistance = maxDistance;
+        }
+
+        @Override
+        public void visitItem(Object item) {
+            Wall w = allWalls.get((Integer)item);
+            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
+                if(w.ls.distance(segment) < maxDistance) {
+                    matchWalls.add(w);
+                }
+            }
+        }
     }
 
     private static class UpdateZ implements CoordinateSequenceFilter {

@@ -119,8 +119,8 @@ class Main {
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
         pointNoiseMap.setMaximumPropagationDistance(800.0);
-        pointNoiseMap.setSoundReflectionOrder(0);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setSoundReflectionOrder(1);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");

@@ -42,13 +42,16 @@ import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.geom.prep.PreparedLineString;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.utils.ListFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -165,6 +168,21 @@ public class ComputeCnossosRays {
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
     private void computeRaysAtPosition(ReceiverPointInfo rcv, IComputeRaysOut dataOut, ProgressVisitor visitor) {
+
+
+
+        Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
+        receiverPropagationEnvelope.expandBy(data.maxSrcDist);
+        List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        List<Double> wallDistance = new ArrayList<>(buildWalls.size());
+        for(ProfileBuilder.Wall wall : buildWalls) {
+            wallDistance.add(wall.getLineSegment().distance(rcv.position));
+        }
+        ListFunctions.concurrentSort(wallDistance, wallDistance, buildWalls);
+
+        // Construct a sorted list of distance from receiver
+
+
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(
@@ -230,7 +248,13 @@ public class ComputeCnossosRays {
         // For each Pt Source - Pt Receiver
         AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo src : sourceList) {
-            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount);
+            // Filter walls
+            int indexFarthestWall = Collections.binarySearch(wallDistance, rcv.getCoord().distance(src.position) + data.maxRefDist);
+            if(indexFarthestWall < 0) {
+                indexFarthestWall = -(indexFarthestWall) - 1;
+            }
+            List<ProfileBuilder.Wall> buildWallsNearSource = buildWalls.subList(0, indexFarthestWall);
+            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount, buildWallsNearSource);
             double global = sumArray(power.length, dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
@@ -264,8 +288,9 @@ public class ComputeCnossosRays {
      * @param dataOut Output.
      * @return
      */
-    private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi,
-                                         ReceiverPointInfo rcv, IComputeRaysOut dataOut, AtomicInteger raysCount) {
+    private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi, ReceiverPointInfo rcv,
+                                       IComputeRaysOut dataOut, AtomicInteger raysCount,
+                                       List<ProfileBuilder.Wall> buildWallsNearSource) {
 
         double propaDistance = src.getCoord().distance(rcv.getCoord());
         if (propaDistance < data.maxSrcDist) {
@@ -273,7 +298,8 @@ public class ComputeCnossosRays {
             List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv));
             // Process reflection
             if (data.reflexionOrder > 0) {
-                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false, src.getOrientation()));
+                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false,
+                        src.getOrientation(), buildWallsNearSource));
             }
             if (!propagationPaths.isEmpty()) {
                 if(raysCount != null) {
@@ -1242,24 +1268,20 @@ public class ComputeCnossosRays {
         return results;
     }
 
-    public List<PropagationPath> computeReflexion(Coordinate rcvCoord,
-                                                  Coordinate srcCoord, boolean favorable, Orientation orientation) {
+    public List<PropagationPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord, boolean favorable,
+                                                  Orientation orientation, List<ProfileBuilder.Wall> buildWalls) {
 
         // Compute receiver mirror
         LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
-        Envelope env = new Envelope(srcRcvLine.p0, srcRcvLine.p1);
-        env.expandBy(data.maxRefDist);
-        List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(env);
-
         List<MirrorReceiverResult> mirrorResults = getMirrorReceivers(buildWalls, srcCoord, rcvCoord, srcRcvLine);
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
         for (MirrorReceiverResult receiverReflection : mirrorResults) {
             ProfileBuilder.Wall seg = data.profileBuilder.getProcessedWalls().get(receiverReflection.getWallId());
-            List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
+            List<MirrorReceiverResult> rayPath = new ArrayList<>();
             boolean validReflection = false;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
