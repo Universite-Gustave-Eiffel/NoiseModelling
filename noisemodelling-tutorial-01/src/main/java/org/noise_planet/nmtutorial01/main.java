@@ -126,6 +126,7 @@ class Main {
         pointNoiseMap.setHeightField("HEIGHT");
         // Point cloud height above sea level POINT(X Y Z)
         pointNoiseMap.setDemTable("DEM");
+        pointNoiseMap.setThreadCount(1);
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum

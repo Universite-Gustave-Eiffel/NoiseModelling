@@ -37,32 +37,64 @@ import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.index.kdtree.KdNode;
-import org.locationtech.jts.index.kdtree.KdNodeVisitor;
-import org.locationtech.jts.index.kdtree.KdTree;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MirrorReceiverResultIndex {
-    KdTree mirrorReceiverTree;
+    STRtree mirrorReceiverTree;
     public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
     private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
     private final Coordinate receiverCoordinate;
-    private List<ProfileBuilder.Wall> buildWalls;
+    private final List<ProfileBuilder.Wall> buildWalls;
+    private final double maximumDistanceFromWall;
+    private final double maximumPropagationDistance;
 
+    private static Coordinate projectPoint(Coordinate receiverImage, Coordinate wallCorner,
+                                            double maximumPropagationDistance,
+                                            double maximumDistanceFromWall) {
+        Vector2D vectorP0 = new Vector2D(receiverImage, wallCorner);
+        double distanceFromCorner = maximumPropagationDistance - receiverImage.distance(wallCorner);
+        if(distanceFromCorner > maximumDistanceFromWall) {
+            distanceFromCorner = maximumDistanceFromWall;
+        }
+        vectorP0 = vectorP0.normalize().multiply(distanceFromCorner);
+        return new Coordinate(wallCorner.x + vectorP0.getX(), wallCorner.y + vectorP0.getY());
+    }
+
+    public static Polygon createWallReflectionVisibilityCone(Coordinate receiverImage, LineSegment wall,
+                                                             double maximumPropagationDistance,
+                                                             double maximumDistanceFromWall) {
+        GeometryFactory factory = new GeometryFactory();
+        Coordinate conePointP0 = projectPoint(receiverImage, wall.p0, maximumPropagationDistance,
+                maximumDistanceFromWall);
+        Coordinate conePointP1 = projectPoint(receiverImage, wall.p1, maximumPropagationDistance,
+                maximumDistanceFromWall);
+
+        Coordinate[] conePolygon = new Coordinate[] {wall.p0, wall.p1, conePointP1, conePointP0, wall.p0};
+        return factory.createPolygon(conePolygon);
+    }
     /**
      * Generate all image receivers from the provided list of walls
      * @param buildWalls
      * @param receiverCoordinates
      * @param reflectionOrder
      */
-    public MirrorReceiverResultIndex(List<ProfileBuilder.Wall> buildWalls, Coordinate receiverCoordinates, int reflectionOrder) {
+    public MirrorReceiverResultIndex(List<ProfileBuilder.Wall> buildWalls, Coordinate receiverCoordinates,
+                                     int reflectionOrder, double maximumPropagationDistance,
+                                     double maximumDistanceFromWall) {
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
-        mirrorReceiverTree = new KdTree();
+        this.maximumDistanceFromWall = maximumDistanceFromWall;
+        this.maximumPropagationDistance = maximumPropagationDistance;
+        mirrorReceiverTree = new STRtree();
         int pushed = 0;
         ArrayList<MirrorReceiverResult> parentsToProcess = new ArrayList<>();
         for(int currentDepth = 0; currentDepth < reflectionOrder; currentDepth++) {
@@ -88,7 +120,10 @@ public class MirrorReceiverResultIndex {
                             2 * proj.y - receiverImage.y, receiverImage.z);
                     MirrorReceiverResult receiverResult = new MirrorReceiverResult(rcvMirror, parent, wall,
                             wall.getOriginId(), wall.getType());
-                    mirrorReceiverTree.insert(rcvMirror, receiverResult);
+                    // create the visibility cone of this receiver image
+                    Polygon imageReceiverVisibilityCone = createWallReflectionVisibilityCone(rcvMirror,
+                            wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
+                    mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(), receiverResult);
                     nextParentsToProcess.add(receiverResult);
                     pushed++;
                     if(pushed >= mirrorReceiverCapacity) {
@@ -108,22 +143,18 @@ public class MirrorReceiverResultIndex {
         this.mirrorReceiverCapacity = mirrorReceiverCapacity;
     }
 
-    List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition,
-                                                        double maximumDistanceFromSourceReceiver,
-                                                        double maximumPropagationDistance) {
+    List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition) {
         if(Double.isNaN(sourcePosition.z)) {
             throw new IllegalArgumentException("Not supported NaN z value");
         }
-        Envelope env = new Envelope(receiverCoordinate);
-        env.expandToInclude(sourcePosition);
-        env.expandBy(maximumPropagationDistance);
+        Envelope env = new Envelope(sourcePosition);
         ReceiverImageVisitor receiverImageVisitor = new ReceiverImageVisitor(buildWalls, sourcePosition,
-                receiverCoordinate, maximumDistanceFromSourceReceiver, maximumPropagationDistance);
+                receiverCoordinate, maximumDistanceFromWall, maximumPropagationDistance);
         mirrorReceiverTree.query(env, receiverImageVisitor);
         return receiverImageVisitor.result;
     }
 
-    private static class ReceiverImageVisitor implements KdNodeVisitor {
+    private static class ReceiverImageVisitor implements ItemVisitor {
         List<MirrorReceiverResult> result = new ArrayList<>();
         List<ProfileBuilder.Wall> buildWalls;
         Coordinate source;
@@ -131,6 +162,7 @@ public class MirrorReceiverResultIndex {
         LineSegment sourceReceiverSegment;
         double maximumDistanceFromSegment;
         double maximumPropagationDistance;
+        int visitedNode = 0;
 
         public ReceiverImageVisitor(List<ProfileBuilder.Wall> buildWalls, Coordinate source, Coordinate receiver,
                                     double maximumDistanceFromSegment,
@@ -144,10 +176,11 @@ public class MirrorReceiverResultIndex {
         }
 
         @Override
-        public void visit(KdNode node) {
+        public void visitItem(Object item) {
+            visitedNode++;
             // try to excluded walls without taking into account the topography and other factors
 
-            MirrorReceiverResult receiverImage = (MirrorReceiverResult)node.getData();
+            MirrorReceiverResult receiverImage = (MirrorReceiverResult) item;
             // Check propagation distance
             if(receiverImage.getReceiverPos().distance3D(source) < maximumPropagationDistance) {
                 // Check distance of walls

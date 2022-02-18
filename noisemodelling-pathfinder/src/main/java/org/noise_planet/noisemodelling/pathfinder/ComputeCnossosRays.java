@@ -171,7 +171,8 @@ public class ComputeCnossosRays {
             Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
             receiverPropagationEnvelope.expandBy(data.maxSrcDist);
             List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-            receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.position, data.reflexionOrder);
+            receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.position, data.reflexionOrder,
+                    data.maxSrcDist, data.maxRefDist);
         }
 
         //Compute the source search area
@@ -1199,8 +1200,7 @@ public class ComputeCnossosRays {
         LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(srcCoord,
-                data.maxRefDist, data.maxSrcDist);
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(srcCoord);
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 

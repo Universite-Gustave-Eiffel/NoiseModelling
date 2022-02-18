@@ -33,31 +33,43 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.operation.buffer.BufferParameters;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestWallReflection extends TestCase {
+import static org.junit.Assert.assertEquals;
 
-    public static void pushBuildingToWalls(ProfileBuilder.Building building, int index, List<ProfileBuilder.Wall> wallList) {
+public class TestWallReflection {
+
+    public static int pushBuildingToWalls(ProfileBuilder.Building building, int index, List<ProfileBuilder.Wall> wallList) {
         ArrayList<ProfileBuilder.Wall> wallsOfBuilding = new ArrayList<>();
         Coordinate[] coords = building.getGeometry().getCoordinates();
         for (int i = 0; i < coords.length - 1; i++) {
             LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
             ProfileBuilder.Wall w = new ProfileBuilder.Wall(lineSegment, index, ProfileBuilder.IntersectionType.BUILDING);
+            w.setProcessedWallIndex(i);
             wallsOfBuilding.add(w);
         }
         building.setWalls(wallsOfBuilding);
         wallList.addAll(wallsOfBuilding);
+        return coords.length;
     }
 
+    @Test
     public void testMultipleDepthReflexion() {
+        double maxPropagationDistance = 1000;
+
         List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
         Coordinate cA = new Coordinate(1, 1, 5);
         Coordinate cB = new Coordinate(1, 8, 5);
@@ -81,12 +93,11 @@ public class TestWallReflection extends TestCase {
 
         int reflectionOrder = 1;
         MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-                receiverCoordinates, reflectionOrder);
+                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
 
         Coordinate source1 = new Coordinate(10, 7, 0.1);
 
-        List<MirrorReceiverResult> result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1,
-                1e9, 1e9);
+        List<MirrorReceiverResult> result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1);
 
         // Reflection only on [g h] wall
         assertEquals(1, result.size());
@@ -95,15 +106,73 @@ public class TestWallReflection extends TestCase {
         reflectionOrder = 2;
 
         mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-                receiverCoordinates, reflectionOrder);
+                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
 
 
-        result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1,
-                1e9, 1e9);
+        result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1);
 
         // Reflection on [g h] [h g -> e f] [h g -> c d]
-        assertEquals(6, result.size());
+        assertEquals(7, result.size());
     }
 
+//    @Test
+//    public void testExportVisibilityCones() throws Exception {
+//        double maxPropagationDistance = 1200;
+//
+//        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
+//        Coordinate cA = new Coordinate(1, 1, 5);
+//        Coordinate cB = new Coordinate(1, 8, 5);
+//        Coordinate cC = new Coordinate(8, 8, 5);
+//        Coordinate cD = new Coordinate(8, 5, 5);
+//        Coordinate cE = new Coordinate(5, 5, 5);
+//        Coordinate cF = new Coordinate(5, 1, 5);
+//        Coordinate cG = new Coordinate(13, 1, 2.5);
+//        Coordinate cH = new Coordinate(13, 8, 2.5);
+//        buildWalls.add(new ProfileBuilder.Wall(cE, cF, 0, ProfileBuilder.IntersectionType.WALL));
+//        buildWalls.add(new ProfileBuilder.Wall(cB, cC, 1, ProfileBuilder.IntersectionType.WALL));
+//        buildWalls.add(new ProfileBuilder.Wall(cA, cF, 2, ProfileBuilder.IntersectionType.WALL));
+//
+//
+//        Coordinate receiverCoordinates = new Coordinate(200, 50, 14);
+//        Coordinate source1 = new Coordinate(10, 10, 1);
+//
+//        int reflectionOrder = 1;
+//
+//        MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
+//                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
+//
+//        List<MirrorReceiverResult> objs = (List<MirrorReceiverResult>) mirrorReceiverResultIndex.mirrorReceiverTree.
+//                query(new Envelope(new Coordinate(0, 0), new Coordinate(500, 500)));
+//
+//        WKTWriter wktWriter = new WKTWriter();
+//        GeometryFactory factory = new GeometryFactory();
+//        try(FileWriter fileWriter = new FileWriter(new File("target/testVisibilityCone.csv"))) {
+//            fileWriter.write("geom, type\n");
+//            for (MirrorReceiverResult res : objs) {
+//                Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance);
+//                fileWriter.write("\"");
+//                fileWriter.write(wktWriter.write(visibilityCone));
+//                fileWriter.write("\",0");
+//                fileWriter.write("\n");
+//            }
+//            for(ProfileBuilder.Wall wall : buildWalls) {
+//                fileWriter.write("\"");
+//                fileWriter.write(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1})
+//                        .buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+//                fileWriter.write("\",1");
+//                fileWriter.write("\n");
+//            }
+//            fileWriter.write("\"");
+//            fileWriter.write(wktWriter.write(factory.createPoint(receiverCoordinates)
+//                    .buffer(2, 12, BufferParameters.CAP_ROUND)));
+//            fileWriter.write("\",2");
+//            fileWriter.write("\n");
+//            fileWriter.write("\"");
+//            fileWriter.write(wktWriter.write(factory.createPoint(source1)
+//                    .buffer(2, 12, BufferParameters.CAP_ROUND)));
+//            fileWriter.write("\",3");
+//            fileWriter.write("\n");
+//        }
+//    }
 
 }
