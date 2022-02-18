@@ -41,6 +41,7 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.index.kdtree.KdNode;
 import org.locationtech.jts.index.kdtree.KdNodeVisitor;
 import org.locationtech.jts.index.kdtree.KdTree;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -166,15 +167,12 @@ public class MirrorReceiverResultIndex {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
-                    }
-                    if (reflectionPoint != null) {
+                    } else {
                         reflectionPoint = li.getIntersection(0);
-                        double fraction = currentWallLineSegment.segmentFraction(reflectionPoint);
-                        double wallReflectionPointZ = currentWallLineSegment.p0.z +
-                                fraction * (currentWallLineSegment.p1.z - currentWallLineSegment.p0.z);
-                        double propagationFraction = srcMirrRcvLine.segmentFraction(reflectionPoint);
-                        double propagationReflectionPointZ =  srcMirrRcvLine.p0.z +
-                                propagationFraction * (srcMirrRcvLine.p1.z - srcMirrRcvLine.p0.z);
+                        double wallReflectionPointZ = Vertex.interpolateZ(reflectionPoint, currentWallLineSegment.p0,
+                                currentWallLineSegment.p1);
+                        double propagationReflectionPointZ =  Vertex.interpolateZ(reflectionPoint, srcMirrRcvLine.p0,
+                                srcMirrRcvLine.p1);
                         if(propagationReflectionPointZ > wallReflectionPointZ) {
                             // The receiver image is not visible because the wall is not tall enough
                             return;
@@ -186,13 +184,13 @@ public class MirrorReceiverResultIndex {
                         if(!otherWall.equals(currentWall)) {
                             LineSegment otherWallSegment = otherWall.getLineSegment();
                             li = new RobustLineIntersector();
-                            li.computeIntersection(otherWall.p0, otherWall.p1, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
+                            li.computeIntersection(otherWall.p0, otherWall.p1, reflectionPoint, source);
                             if (li.hasIntersection()) {
                                 Coordinate otherReflectionPoint = li.getIntersection(0);
-                                double fraction = otherWallSegment.segmentFraction(otherReflectionPoint);
-                                double wallReflectionPointZ = otherWallSegment.p0.z + fraction * (otherWallSegment.p1.z - otherWallSegment.p0.z);
-                                double propagationFraction = srcMirrRcvLine.segmentFraction(otherReflectionPoint);
-                                double propagationReflectionPointZ = srcMirrRcvLine.p0.z + propagationFraction * (srcMirrRcvLine.p1.z - srcMirrRcvLine.p0.z);
+                                double wallReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
+                                        otherWallSegment.p0, otherWallSegment.p1);
+                                double propagationReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
+                                        srcMirrRcvLine.p0, srcMirrRcvLine.p1);
                                 if (propagationReflectionPointZ <= wallReflectionPointZ) {
                                     // This wall is obstructing the view of the propagation line (other wall too tall)
                                     return;
