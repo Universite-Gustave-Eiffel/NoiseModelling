@@ -45,7 +45,7 @@ public class MirrorReceiverResult {
 
 	private Coordinate receiverPos;
 	private final MirrorReceiverResult parentMirror;
-	private final int wallId; // Wall index of the last mirrored processed
+	private final ProfileBuilder.Wall wall;
     private final int buildingId; // building that belongs to this wall
     private final ProfileBuilder.IntersectionType type;
 
@@ -70,8 +70,8 @@ public class MirrorReceiverResult {
     /**
      * @return Wall index of the last mirrored processed
      */
-	public int getWallId() {
-		return wallId;
+	public ProfileBuilder.Wall getWall() {
+		return wall;
 	}
 
     /**
@@ -87,10 +87,10 @@ public class MirrorReceiverResult {
      * @param wallId Wall index of the last mirrored processed
      * @param buildingId building that belongs to this wall
      */
-    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, int wallId, int buildingId, ProfileBuilder.IntersectionType type) {
+    public MirrorReceiverResult(Coordinate receiverPos, MirrorReceiverResult parentMirror, ProfileBuilder.Wall wall, int buildingId, ProfileBuilder.IntersectionType type) {
         this.receiverPos = receiverPos;
         this.parentMirror = parentMirror;
-        this.wallId = wallId;
+        this.wall = wall;
         this.buildingId = buildingId;
         this.type = type;
     }
@@ -102,7 +102,7 @@ public class MirrorReceiverResult {
     public MirrorReceiverResult(MirrorReceiverResult cpy) {
         this.receiverPos = new Coordinate(cpy.receiverPos);
         this.parentMirror = cpy.parentMirror;
-        this.wallId = cpy.wallId;
+        this.wall = cpy.wall;
         this.buildingId = cpy.buildingId;
         this.type = cpy.type;
     }
@@ -112,12 +112,12 @@ public class MirrorReceiverResult {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MirrorReceiverResult that = (MirrorReceiverResult) o;
-        return wallId == that.wallId && buildingId == that.buildingId && receiverPos.equals(that.receiverPos) && Objects.equals(parentMirror, that.parentMirror);
+        return wall == that.wall && buildingId == that.buildingId && receiverPos.equals(that.receiverPos) && Objects.equals(parentMirror, that.parentMirror);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(receiverPos, parentMirror, wallId, buildingId);
+        return Objects.hash(receiverPos, parentMirror, wall, buildingId);
     }
 
     public ProfileBuilder.IntersectionType getType() {

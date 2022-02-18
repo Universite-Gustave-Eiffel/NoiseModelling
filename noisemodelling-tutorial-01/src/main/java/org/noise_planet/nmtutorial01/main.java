@@ -23,7 +23,11 @@ import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric;
+import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +41,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -90,12 +95,13 @@ class Main {
         logger.info("Generate receivers grid for noise map rendering");
 
         TriangleNoiseMap noiseMap = new TriangleNoiseMap("BUILDINGS", "LW_ROADS");
-        noiseMap.setGridDim(1);
-        noiseMap.setMaximumArea(0);
-        noiseMap.setIsoSurfaceInBuildings(true);
 
         AtomicInteger pk = new AtomicInteger(0);
         noiseMap.initialize(connection, new EmptyProgressVisitor());
+        noiseMap.setGridDim(1);
+        noiseMap.setMaximumArea(0);
+        noiseMap.setIsoSurfaceInBuildings(false);
+
         for (int i = 0; i < noiseMap.getGridDim(); i++) {
             for (int j = 0; j < noiseMap.getGridDim(); j++) {
                 logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim());
@@ -112,18 +118,14 @@ class Main {
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
-        pointNoiseMap.setMaximumPropagationDistance(160.0d);
+        pointNoiseMap.setMaximumPropagationDistance(800.0);
         pointNoiseMap.setSoundReflectionOrder(1);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
         pointNoiseMap.setHeightField("HEIGHT");
         // Point cloud height above sea level POINT(X Y Z)
-       // pointNoiseMap.setDemTable("DEM");
-        // Do not propagate for low emission or far away sources.
-        // error in dB
-        pointNoiseMap.setMaximumError(0.1d);
-        pointNoiseMap.setNoiseFloor(35d);
+        pointNoiseMap.setDemTable("DEM");
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
@@ -145,6 +147,16 @@ class Main {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
+        LocalDateTime now = LocalDateTime.now();
+        ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
+                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())));
+        profilerThread.addMetric(tableWriter);
+        profilerThread.addMetric(new ProgressMetric(progressLogger));
+        profilerThread.addMetric(new JVMMemoryMetric());
+        profilerThread.addMetric(new ReceiverStatsMetric());
+        profilerThread.setWriteInterval(60);
+        profilerThread.setFlushInterval(60);
+        pointNoiseMap.setProfilerThread(profilerThread);
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
@@ -154,6 +166,7 @@ class Main {
         // Iterate over computation areas
         try {
             tableWriter.start();
+            new Thread(profilerThread).start();
             // Fetch cell identifiers with receivers
             Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
@@ -167,6 +180,7 @@ class Main {
                 }
             }
         } finally {
+            profilerThread.stop();
             tableWriter.stop();
         }
         long computationTime = System.currentTimeMillis() - start;
@@ -186,7 +200,7 @@ class Main {
         bezierContouring.setPointTable(ldenConfig.getlDenTable());
         bezierContouring.createTable(connection);
         logger.info("Export iso contours");
-        SHPWrite.exportTable(connection, "target/ldenroads.shp", bezierContouring.getOutputTable(), ValueBoolean.TRUE);
+        SHPWrite.exportTable(connection, "target/"+bezierContouring.getOutputTable()+".shp", bezierContouring.getOutputTable(), ValueBoolean.TRUE);
     }
 
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {

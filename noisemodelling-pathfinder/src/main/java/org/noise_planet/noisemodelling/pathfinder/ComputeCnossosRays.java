@@ -165,6 +165,16 @@ public class ComputeCnossosRays {
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
     private void computeRaysAtPosition(ReceiverPointInfo rcv, IComputeRaysOut dataOut, ProgressVisitor visitor) {
+        MirrorReceiverResultIndex receiverMirrorIndex = null;
+
+        if(data.reflexionOrder > 0) {
+            Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
+            receiverPropagationEnvelope.expandBy(data.maxSrcDist);
+            List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+            receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.position, data.reflexionOrder,
+                    data.maxSrcDist, data.maxRefDist);
+        }
+
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(
@@ -230,7 +240,7 @@ public class ComputeCnossosRays {
         // For each Pt Source - Pt Receiver
         AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo src : sourceList) {
-            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount);
+            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount, receiverMirrorIndex);
             double global = sumArray(power.length, dbaToW(power));
             totalPowerRemaining -= src.globalWj;
             if (power.length > 0) {
@@ -264,8 +274,9 @@ public class ComputeCnossosRays {
      * @param dataOut Output.
      * @return
      */
-    private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi,
-                                         ReceiverPointInfo rcv, IComputeRaysOut dataOut, AtomicInteger raysCount) {
+    private double[] rcvSrcPropagation(SourcePointInfo src, double srcLi, ReceiverPointInfo rcv,
+                                       IComputeRaysOut dataOut, AtomicInteger raysCount,
+                                       MirrorReceiverResultIndex receiverMirrorIndex) {
 
         double propaDistance = src.getCoord().distance(rcv.getCoord());
         if (propaDistance < data.maxSrcDist) {
@@ -273,7 +284,8 @@ public class ComputeCnossosRays {
             List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv));
             // Process reflection
             if (data.reflexionOrder > 0) {
-                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false, src.getOrientation()));
+                propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false,
+                        src.getOrientation(), receiverMirrorIndex));
             }
             if (!propagationPaths.isEmpty()) {
                 if(raysCount != null) {
@@ -1181,85 +1193,20 @@ public class ComputeCnossosRays {
         return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
     }
 
-
-    private List<MirrorReceiverResult> getMirrorReceivers(List<ProfileBuilder.Wall> buildWalls, Coordinate srcCoord,
-                                                         Coordinate rcvCoord, LineSegment srcRcvLine) {
-        return getMirrorReceivers(buildWalls, srcCoord, rcvCoord, srcRcvLine, 1, null);
-    }
-
-    private List<MirrorReceiverResult> getMirrorReceivers(List<ProfileBuilder.Wall> buildWalls, Coordinate srcCoord,
-                                                         Coordinate rcvCoord, LineSegment srcRcvLine, int depth, MirrorReceiverResult parent) {
-        List<MirrorReceiverResult> results = new ArrayList<>();
-        for(ProfileBuilder.Wall wall : buildWalls) {
-            if(parent != null && buildWalls.indexOf(wall) == parent.getWallId() ||
-                    JTSUtility.getSlope(wall.p0, wall.p1) == JTSUtility.getSlope(srcCoord, rcvCoord)) {
-                continue;
-            }
-            //Calculate the coordinate of projection
-            Coordinate proj = wall.getLineSegment().project(rcvCoord);
-            //If the mirror rcv is too far, skip it
-            if(srcRcvLine.p0.distance(proj) > data.maxSrcDist/2) {
-                continue;
-            }
-
-            Coordinate rcvMirror = new Coordinate(2*proj.x-rcvCoord.x, 2*proj.y-rcvCoord.y, rcvCoord.z);
-            LineSegment srcMirrRcvLine = new LineSegment(srcCoord, rcvMirror);
-            Coordinate inter = srcMirrRcvLine.intersection(wall.getLineSegment());
-            if (inter == null) {
-                continue;
-            }
-            //Check if an other wall is masking the current
-            boolean skipWall = false;
-            List<ProfileBuilder.Wall> walls = new ArrayList<>();
-            walls.addAll(wall.getObstacle().getWalls());
-            for (ProfileBuilder.Wall otherWall : walls) {
-                Coordinate otherInter = srcMirrRcvLine.intersection(otherWall.getLineSegment());
-                if (otherInter != null) {
-                    double otherFrac = otherWall.getLineSegment().segmentFraction(otherInter);
-                    double otherInterZ = otherWall.p0.z + otherFrac * (otherWall.p1.z - otherWall.p0.z);
-                    double d1 = srcMirrRcvLine.segmentFraction(inter);
-                    double d2 = srcMirrRcvLine.segmentFraction(otherInter);
-                    if (otherInterZ > d2 * inter.z / d1) {
-                        double otherDist = dist2D(srcCoord, otherInter);
-                        double dist = dist2D(srcCoord, inter);
-                        if (otherDist < dist) {
-                            skipWall = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (!skipWall) {
-                if(data.reflexionOrder > depth) {
-                    MirrorReceiverResult p = new MirrorReceiverResult(rcvMirror, parent,
-                            data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId(), wall.getType());
-                    results.addAll(getMirrorReceivers(buildWalls, srcCoord, inter, srcMirrRcvLine, depth+1, p));
-                }
-                results.add(new MirrorReceiverResult(rcvMirror, parent,
-                        data.profileBuilder.getProcessedWalls().indexOf(wall), wall.getOriginId(), wall.getType()));
-            }
-        }
-        return results;
-    }
-
-    public List<PropagationPath> computeReflexion(Coordinate rcvCoord,
-                                                  Coordinate srcCoord, boolean favorable, Orientation orientation) {
+    public List<PropagationPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord, boolean favorable,
+                                                  Orientation orientation, MirrorReceiverResultIndex receiverMirrorIndex) {
 
         // Compute receiver mirror
         LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
-        Envelope env = new Envelope(srcRcvLine.p0, srcRcvLine.p1);
-        env.expandBy(data.maxRefDist);
-        List<ProfileBuilder.Wall> buildWalls = data.profileBuilder.getWallsIn(env);
-
-        List<MirrorReceiverResult> mirrorResults = getMirrorReceivers(buildWalls, srcCoord, rcvCoord, srcRcvLine);
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(srcCoord);
 
         List<PropagationPath> reflexionPropagationPaths = new ArrayList<>();
 
         for (MirrorReceiverResult receiverReflection : mirrorResults) {
-            ProfileBuilder.Wall seg = data.profileBuilder.getProcessedWalls().get(receiverReflection.getWallId());
-            List<MirrorReceiverResult> rayPath = new ArrayList<>(data.reflexionOrder + 2);
+            ProfileBuilder.Wall seg = receiverReflection.getWall();
+            List<MirrorReceiverResult> rayPath = new ArrayList<>();
             boolean validReflection = false;
             MirrorReceiverResult receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
@@ -1319,9 +1266,7 @@ public class ComputeCnossosRays {
                         // reflection closer
                         receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                         // Update intersection data
-                        seg = buildWalls
-                                .get(receiverReflectionCursor
-                                        .getWallId());
+                        seg = receiverReflectionCursor.getWall();
                         linters.computeIntersection(seg.p0, seg.p1,
                                 receiverReflectionCursor
                                         .getReceiverPos(),
@@ -1367,8 +1312,8 @@ public class ComputeCnossosRays {
                     reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
                 }
                 else {
-                    reflPoint.setWallId(rayPath.get(0).getWallId());
-                    reflPoint.setAlphaWall(data.profileBuilder.getWall(rayPath.get(0).getWallId()).getAlphas());
+                    reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
+                    reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
                 }
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
@@ -1379,10 +1324,9 @@ public class ComputeCnossosRays {
                     if(rayPath.get(0).getType().equals(BUILDING)) {
                         reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
                         reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
-                    }
-                    else {
-                        reflPoint.setWallId(rayPath.get(0).getWallId());
-                        reflPoint.setAlphaWall(data.profileBuilder.getWall(reflPoint.getBuildingId()).getAlphas());
+                    } else {
+                        reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
+                        reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
                     }
                     points.add(reflPoint);
                     segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));

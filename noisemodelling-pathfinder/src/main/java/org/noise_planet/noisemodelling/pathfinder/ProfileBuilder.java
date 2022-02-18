@@ -35,16 +35,34 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFilter;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -53,7 +71,11 @@ import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.BUILDING;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.RECEIVER;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.SOURCE;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.TOPOGRAPHY;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.WALL;
 
 //TODO use NaN for building height
 //TODO fix wall references id in order to use also real wall database key
@@ -169,8 +191,8 @@ public class ProfileBuilder {
      * @param building Building.
      */
     public ProfileBuilder addBuilding(Building building) {
-        if(building.poly == null) {
-            LOGGER.error("Cannot add a building with null geometry.");
+        if(building.poly == null || building.poly.isEmpty()) {
+            LOGGER.error("Cannot add a building with null or empty geometry.");
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -865,8 +887,9 @@ public class ProfileBuilder {
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING);
+                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
+                w.setAlpha(building.alphas);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -877,7 +900,9 @@ public class ProfileBuilder {
             Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL));
+                Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
+                w.setAlpha(wall.alphas);
+                processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
@@ -898,7 +923,7 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT));
+                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
                     rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
                 }
             }
@@ -1953,7 +1978,7 @@ public class ProfileBuilder {
                 newCoordinate = new Coordinate[lr2D.getNumPoints()];
                 for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
                     newCoordinate[idCoordinate] = new Coordinate(lr2D.getCoordinateN(idCoordinate).getX(),
-                                                        lr2D.getCoordinateN(idCoordinate).getY(),
+                            lr2D.getCoordinateN(idCoordinate).getY(),
                             0.0);
                 }
 
@@ -2059,6 +2084,7 @@ public class ProfileBuilder {
         public Coordinate p1;
         private LineSegment ls;
         private Obstacle obstacle = this;
+        private int processedWallIndex;
 
         /**
          * Constructor using segment and id.
@@ -2121,6 +2147,21 @@ public class ProfileBuilder {
             this.alphas = new ArrayList<>();
             this.hasP0Neighbour = hasP0Neighbour;
             this.hasP1Neighbour = hasP1Neighbour;
+        }
+
+        /**
+         * @return Index of this wall in the ProfileBuild list
+         */
+        public int getProcessedWallIndex() {
+            return processedWallIndex;
+        }
+
+        /**
+         * @param processedWallIndex Index of this wall in the ProfileBuild list
+         */
+        public Wall setProcessedWallIndex(int processedWallIndex) {
+            this.processedWallIndex = processedWallIndex;
+            return this;
         }
 
         /**
