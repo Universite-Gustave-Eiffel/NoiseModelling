@@ -889,6 +889,7 @@ public class ProfileBuilder {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
+                w.setAlpha(building.alphas);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -899,7 +900,9 @@ public class ProfileBuilder {
             Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                processedWalls.add(new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size()));
+                Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
+                w.setAlpha(wall.alphas);
+                processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
