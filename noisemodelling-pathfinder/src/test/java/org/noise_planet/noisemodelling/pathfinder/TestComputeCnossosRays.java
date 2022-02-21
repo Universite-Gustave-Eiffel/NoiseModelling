@@ -235,7 +235,8 @@ public class TestComputeCnossosRays {
         CnossosPropagationData data = new CnossosPropagationData(profileBuilder);
         data.setComputeHorizontalDiffraction(true);
         data.setComputeVerticalDiffraction(true);
-        List<PropagationPath> prop = computeRays.directPath(p2, -1, null, p1, -1);
+        List<PropagationPath> prop = computeRays.directPath(p2, -1, null, p1, -1,
+        data.isComputeHEdgeDiffraction(), data.isComputeVEdgeDiffraction());
         // 3 paths
         // 1 over the building
         assertEquals(3, prop.size());

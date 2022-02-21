@@ -281,7 +281,8 @@ public class ComputeCnossosRays {
         double propaDistance = src.getCoord().distance(rcv.getCoord());
         if (propaDistance < data.maxSrcDist) {
             // Process direct : horizontal and vertical diff
-            List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv));
+            List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv,
+                    data.computeVerticalDiffraction, data.computeHorizontalDiffraction));
             // Process reflection
             if (data.reflexionOrder > 0) {
                 propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false,
@@ -304,8 +305,9 @@ public class ComputeCnossosRays {
      * @return Calculated propagation paths.
      */
     public List<PropagationPath> directPath(SourcePointInfo src,
-                                            ReceiverPointInfo rcv) {
-        return directPath(src.getCoord(), src.getId(), src.getOrientation(), rcv.getCoord(), rcv.getId());
+                                            ReceiverPointInfo rcv, boolean verticalDiffraction, boolean horizontalDiffraction) {
+        return directPath(src.getCoord(), src.getId(), src.getOrientation(), rcv.getCoord(), rcv.getId(),
+                verticalDiffraction, horizontalDiffraction);
     }
 
     /**
@@ -316,7 +318,7 @@ public class ComputeCnossosRays {
      * @param rcvId    Receiver point identifier.
      * @return Calculated propagation paths.
      */
-    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId) {
+    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction) {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
         cutProfile.setSrcOrientation(orientation);
@@ -324,14 +326,14 @@ public class ComputeCnossosRays {
         if(cutProfile.isFreeField()) {
             propagationPaths.add(computeFreeField(cutProfile, data, true));
         }
-        else if(data.isComputeDiffraction()) {
-            if (data.isComputeHEdgeDiffraction()) {
+        else if(verticalDiffraction || horizontalDiffraction) {
+            if (verticalDiffraction) {
                 PropagationPath propagationPath = computeHEdgeDiffraction(cutProfile);
                 if(propagationPath != null) {
                     propagationPaths.add(propagationPath);
                 }
             }
-            if (data.isComputeVEdgeDiffraction()) {
+            if (horizontalDiffraction) {
                 PropagationPath propagationPath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
                 if (propagationPath != null && propagationPath.getPointList() != null) {
                     propagationPaths.add(propagationPath);
@@ -1417,12 +1419,12 @@ public class ComputeCnossosRays {
     public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points,
                                               List<SegmentPath> segments, SegmentPath srPath,
                                               CnossosPropagationData data, Orientation orientation) {
-        List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1);
+        List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1,
+                data.isComputeHEdgeDiffraction(), false);
         if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
-            //srPath.add(new SegmentPath(1.0, new Vector3D(p0, p1), p0));
         }
     }
     /**
