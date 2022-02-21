@@ -58,14 +58,12 @@ public class PropaTrainTest {
 
     public static void importFiles(Connection connection) throws IOException, SQLException {
 
-        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RAIL_SECTIONS.shp").getFile());
         DBFRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RECEPTEURS.shp").getFile());
-        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RECEPTEURS_ONLY2.shp").getFile());
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/RECEPTEUR2.shp").getFile());
 
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Buildings.shp").getFile());
-        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+        SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/RAIL_PROTECT.shp").getFile());
 
 
         SHPRead.importTable(connection, PropaTrainTest.class.getResource("PropaRail/DEM.shp").getFile());
@@ -125,7 +123,7 @@ public class PropaTrainTest {
         ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(2);
         ldenConfig.setExportRays(true);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_SectionS", "Rail_Traffic", ldenConfig);
 
         while (railWayLWIterator.hasNext()) {
             RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
@@ -212,7 +210,7 @@ public class PropaTrainTest {
         }
 
         // small check
-        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
+        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Sections", "Rail_Traffic", ldenConfig);
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -230,104 +228,150 @@ public class PropaTrainTest {
         importFiles(connection);
         computeLW(connection);
 
-        String configName = "C1";
+        List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
 
-        // ecran
-        double screenHeight = 5.0;
-        double G = 0.5;
-        double screenDepth = 0.2;
+        for (String configName : configs) {
+            System.out.println(configName);
 
-        // Receivers
-        String rcvName = "RECEPTEURS";
-        double rcvHeight = 1.2;
+            // ecran
+            double screenHeight = 3.0;
+            if (configName.equals("C1")) screenHeight = 2.0;
 
-        // dem and ground
-        boolean dem = false;
-        String landcover  = "G0";
-        if (configName.equals("C2")) landcover = "G1";
+            double G = 0;
+            if (configName.equals("C3")) G = 1;
+
+            double screenDepth = 0.5;
+            if (configName.equals("C2")) screenHeight = 1;
+
+            // Receivers
+            String rcvName = "RECEPTEURS";
+            double rcvHeight = 1.2;
+            if (configName.equals("F3") ||
+                    configName.equals("C6")) rcvHeight = 4.0;
 
 
-        // Config
-        int orderRef = 0;
+            // dem
+            boolean dem = false;
+            if (configName.equals("F0") ||
+                    configName.equals("F1") ||
+                    configName.equals("F3") ||
+                    configName.equals("C0") ||
+                    configName.equals("C1") ||
+                    configName.equals("C2") ||
+                    configName.equals("C3") ||
+                    configName.equals("C4") ||
+                    configName.equals("C5") ||
+                    configName.equals("C6")) dem = true;
 
-        // screen
-        connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, "+screenDepth+", 'join=mitre endcap=flat') as the_geom, pk as pk, "+screenHeight+" as height, "+G+" as g FROM Rail_protect");
+            // ground
+            String landcover  = "G0";
+            if (configName.equals("F0") ||
+                    configName.equals("F2") ||
+                    configName.equals("F3") ||
+                    configName.equals("C0") ||
+                    configName.equals("C1") ||
+                    configName.equals("C2") ||
+                    configName.equals("C3") ||
+                    configName.equals("C4") ||
+                    configName.equals("C5") ||
+                    configName.equals("C6")) landcover = "G1";
 
-        // RECEIVERS
-        int nbReceivers = 0;
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM "+rcvName+"")) {
-            assertTrue(rs.next());
-            nbReceivers = rs.getInt(1);
-        }
-        connection.createStatement().execute("SELECT UpdateGeometrySRID('"+rcvName+"', 'THE_GEOM', 2154);");
-        connection.createStatement().execute("ALTER TABLE "+rcvName+" ALTER COLUMN THE_GEOM TYPE geometry(POINTZ, 2154) USING ST_UPDATEZ(THE_GEOM, "+rcvHeight+")");
+            // Config
+            int orderRef = 0;
+            if (configName.equals("C4")) orderRef = 1;
+            boolean dif = true;
+            if (configName.equals("C5")) dif = false;
 
-        // Config
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-        ldenConfig.setComputeLDay(true);
-        ldenConfig.setComputeLEvening(false);
-        ldenConfig.setComputeLNight(false);
-        ldenConfig.setComputeLDEN(false);
-        ldenConfig.setExportRays(true);
+            // screen
+            String buildingTable  = "SCREENS";
+            if (configName.equals("F0") || configName.equals("F1") || configName.equals("F2") || configName.equals("F3")) buildingTable = "BUILDINGS";
+            connection.createStatement().execute("DROP TABLE SCREENS IF EXISTS");
+            connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, "+screenDepth+", 'join=mitre endcap=flat') as the_geom, pk as pk, "+screenHeight+" as height, "+G+" as g FROM Rail_protect");
 
-        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
-        factory.setKeepRays(true);
-
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_RAILWAY",""+rcvName+"");
-        pointNoiseMap.setComputeRaysOutFactory(factory);
-        pointNoiseMap.setPropagationProcessDataFactory(factory);
-        pointNoiseMap.setGs(1);
-        pointNoiseMap.setMaximumPropagationDistance(800.0);
-        pointNoiseMap.setMaximumReflectionDistance(500.0);
-        pointNoiseMap.setComputeHorizontalDiffraction(false);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
-        pointNoiseMap.setSoundReflectionOrder(orderRef);
-        pointNoiseMap.setMaximumError(0.0);
-
-        PropagationProcessPathData environmentalData = new PropagationProcessPathData(false);
-        double[] DEFAULT_WIND_ROSE = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        environmentalData.setWindRose(DEFAULT_WIND_ROSE);
-        pointNoiseMap.setPropagationProcessPathData(environmentalData);
-
-        if (dem) pointNoiseMap.setDemTable("DEM");
-        if (landcover.equals("G0")) pointNoiseMap.setSoilTableName("LANDCOVER_G0");
-        if (landcover.equals("G1")) pointNoiseMap.setSoilTableName("LANDCOVER_G1");
-
-        // Calcul
-        Set<Long> receivers = new HashSet<>();
-        try {
-            RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
-            factory.start();
-            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
-            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
-            // Iterate over computation areas
-            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
-                // Run ray propagation
-                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-                if (out instanceof ComputeRaysOutAttenuation) {
-                    ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
-                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
-                }
+            // RECEIVERS
+            int nbReceivers = 0;
+            try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM "+rcvName+"")) {
+                assertTrue(rs.next());
+                nbReceivers = rs.getInt(1);
             }
-        }finally {
-            factory.stop();
+            connection.createStatement().execute("SELECT UpdateGeometrySRID('"+rcvName+"', 'THE_GEOM', 2154);");
+            connection.createStatement().execute("ALTER TABLE "+rcvName+" ALTER COLUMN THE_GEOM TYPE geometry(POINTZ, 2154) USING ST_UPDATEZ(THE_GEOM, "+rcvHeight+")");
+
+            // Config
+            LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+            ldenConfig.setComputeLDay(true);
+            ldenConfig.setComputeLEvening(false);
+            ldenConfig.setComputeLNight(false);
+            ldenConfig.setComputeLDEN(false);
+            ldenConfig.setExportRays(true);
+
+            LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+            factory.setKeepRays(true);
+
+            PointNoiseMap pointNoiseMap = new PointNoiseMap(""+buildingTable+"", "LW_RAILWAY",""+rcvName+"");
+            pointNoiseMap.setComputeRaysOutFactory(factory);
+            pointNoiseMap.setPropagationProcessDataFactory(factory);
+            pointNoiseMap.setGs(1);
+            pointNoiseMap.setMaximumPropagationDistance(800.0);
+            pointNoiseMap.setMaximumReflectionDistance(500.0);
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
+            pointNoiseMap.setComputeVerticalDiffraction(dif);
+            pointNoiseMap.setSoundReflectionOrder(orderRef);
+            pointNoiseMap.setMaximumError(0.0);
+
+            System.out.println("configName:" + configName);
+            System.out.println("landcover:" + landcover);
+            System.out.println("dem:" + dem);
+            System.out.println("orderRef:" + orderRef);
+            System.out.println("buildingTable:" + buildingTable);
+
+            PropagationProcessPathData environmentalData = new PropagationProcessPathData(false);
+            double[] DEFAULT_WIND_ROSE = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            environmentalData.setWindRose(DEFAULT_WIND_ROSE);
+            pointNoiseMap.setPropagationProcessPathData(environmentalData);
+
+            if (dem) pointNoiseMap.setDemTable("DEM");
+            if (landcover.equals("G0")) pointNoiseMap.setSoilTableName("LANDCOVER_G0");
+            if (landcover.equals("G1")) pointNoiseMap.setSoilTableName("LANDCOVER_G1");
+
+            // Calcul
+            Set<Long> receivers = new HashSet<>();
+            try {
+                RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
+                pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+                factory.start();
+                Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+                ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+                // Iterate over computation areas
+                for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                    // Run ray propagation
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                    if (out instanceof ComputeRaysOutAttenuation) {
+                        ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
+                        exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                    }
+                }
+            }finally {
+                factory.stop();
+            }
+            connection.commit();
+
+            // Check if computation ok (numer of receivers)
+            assertEquals(nbReceivers, receivers.size());
+
+            // Check if results OK
+            //testResults(connection, config)
+            connection.createStatement().execute("DROP TABLE RESULTS IF EXISTS;");
+            connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, "+rcvName+" R WHERE LVL.IDRECEIVER = R.PK");
+
+            SHPDriverFunction shpDriver = new SHPDriverFunction();
+            shpDriver.exportTable(connection, "RESULTS", new File("target/Results_"+configName+".shp"), true, new EmptyProgressVisitor());
+            shpDriver.exportTable(connection, ""+rcvName+"", new File("target/RECEPTEURS_"+configName+".shp"), true, new EmptyProgressVisitor());
+            shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_"+configName+".shp"), true, new EmptyProgressVisitor());
+
         }
-        connection.commit();
-
-        // Check if computation ok (numer of receivers)
-        assertEquals(nbReceivers, receivers.size());
-
-        // Check if results OK
-        //testResults(connection, config)
-
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, "+rcvName+" R WHERE LVL.IDRECEIVER = R.PK");
-
-        SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/ResultsSD_"+configName+".shp"), true, new EmptyProgressVisitor());
-        shpDriver.exportTable(connection, ""+rcvName+"", new File("target/RECEPTEURS_"+configName+".shp"), true, new EmptyProgressVisitor());
-        shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_"+configName+".shp"), true, new EmptyProgressVisitor());
         connection.close();
+
     }
 
     public void testRestults(Connection connection, String config){
