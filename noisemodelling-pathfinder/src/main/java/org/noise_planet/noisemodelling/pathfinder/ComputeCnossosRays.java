@@ -1420,12 +1420,11 @@ public class ComputeCnossosRays {
                                               List<SegmentPath> segments, SegmentPath srPath,
                                               CnossosPropagationData data, Orientation orientation) {
         List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1,
-                data.computeVerticalDiffraction, false);
+                data.isComputeHEdgeDiffraction(), false);
         if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());
             segments.addAll(propagationPath.getSegmentList());
-            //srPath.add(new SegmentPath(1.0, new Vector3D(p0, p1), p0));
         }
     }
     /**
