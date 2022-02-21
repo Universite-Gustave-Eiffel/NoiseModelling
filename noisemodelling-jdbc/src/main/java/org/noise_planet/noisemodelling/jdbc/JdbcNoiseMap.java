@@ -277,11 +277,13 @@ public abstract class JdbcNoiseMap {
                                 pk = rs.getInt(columnIndex);
                             }
                             for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
-                                ProfileBuilder.Building poly = new ProfileBuilder.Building((Polygon) intersectedGeometry.getGeometryN(i),
-                                        heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                        alphaList, pk, iszBuildings());
-
-                                buildings.add(poly);
+                                Geometry geometry = intersectedGeometry.getGeometryN(i);
+                                if(geometry instanceof Polygon && !geometry.isEmpty()) {
+                                    ProfileBuilder.Building poly = new ProfileBuilder.Building((Polygon) geometry,
+                                            heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
+                                            alphaList, pk, iszBuildings());
+                                    buildings.add(poly);
+                                }
                             }
                         }
                     }

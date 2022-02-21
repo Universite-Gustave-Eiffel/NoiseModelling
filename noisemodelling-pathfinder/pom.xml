@@ -107,6 +107,7 @@
                         <Public-Package>org.noise_planet.noisemodelling.pathfinder.*</Public-Package>
                         <Bundle-Vendor>IFSTTAR, IRSTV - FR CNRS 2488</Bundle-Vendor>
                         <Import-Package>org.slf4j;version="[1.6.0,2)",!org.h2.*,*</Import-Package>
+                        <Implementation-Build>${buildNumber}</Implementation-Build>
                     </instructions>
                 </configuration>
             </plugin>
