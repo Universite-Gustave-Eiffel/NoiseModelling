@@ -1023,21 +1023,7 @@ public class ProfileBuilder {
         return profile;
     }
 
-    /**
-     * Retrieve the cutting profile following the line build from the given coordinates.
-     * @param c0 Starting point.
-     * @param c1 Ending point.
-     * @return Cutting profile.
-     */
-    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        CutProfile profile = new CutProfile();
-
-        //Topography
-        if(topoTree != null) {
-            addTopoCutPts(c0, c1, profile);
-        }
-        // Split line into segments for structures based on RTree in order to limit the number of queries
-        // (for large area of the line segment envelope)
+    public static List<LineSegment> splitSegment(Coordinate c0, Coordinate c1, double maxLineLength) {
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
         double l = dist2D(c0, c1);
@@ -1055,6 +1041,27 @@ public class ProfileBuilder {
                 lines.add(new LineSegment(p0, p1));
             }
         }
+        return lines;
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+        CutProfile profile = new CutProfile();
+
+        //Topography
+        if(topoTree != null) {
+            addTopoCutPts(c0, c1, profile);
+        }
+        // Split line into segments for structures based on RTree in order to limit the number of queries
+        // (for large area of the line segment envelope)
+        LineSegment fullLine = new LineSegment(c0, c1);
+        List<LineSegment> lines = splitSegment(c0, c1, maxLineLength);
+
         //Buildings and Ground effect
         if(rtree != null) {
             addGroundBuildingCutPts(lines, fullLine, profile);
@@ -2327,11 +2334,14 @@ public class ProfileBuilder {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        Envelope pathEnv = new Envelope(p1, p2);
-        try {
-            buildingTree.query(pathEnv, visitor);
-        } catch (IllegalStateException ex) {
-            //Ignore
+        List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
+        for(LineSegment segment : lines) {
+            Envelope pathEnv = new Envelope(segment.p0, segment.p1);
+            try {
+                buildingTree.query(pathEnv, visitor);
+            } catch (IllegalStateException ex) {
+                //Ignore
+            }
         }
     }
 
