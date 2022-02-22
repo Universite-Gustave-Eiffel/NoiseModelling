@@ -58,8 +58,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
@@ -100,6 +102,8 @@ public class ProfileBuilder {
 
     /** If true, no more data can be add. */
     private boolean isFeedingFinished = false;
+    /** Wide angle points of a building polygon */
+    private Map<Integer, ArrayList<Coordinate>> buildingsWideAnglePoints = new HashMap<>();
     /** Building RTree node capacity. */
     private int buildingNodeCapacity = TREE_NODE_CAPACITY;
     /** Topographic RTree node capacity. */
@@ -881,8 +885,11 @@ public class ProfileBuilder {
         }
         //Process buildings
         rtree = new STRtree(buildingNodeCapacity);
+        buildingsWideAnglePoints.clear();
         for (int j = 0; j < buildings.size(); j++) {
             Building building = buildings.get(j);
+            buildingsWideAnglePoints.put(j + 1,
+                    getWideAnglePointsByBuilding(j + 1, 0, 2 * Math.PI));
             List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
@@ -2288,9 +2295,18 @@ public class ProfileBuilder {
 
     //TODO methods to check
     public static final double wideAngleTranslationEpsilon = 0.01;
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates();
+
+    /**
+     * @param build 1-n based building identifier
+     * @return
+     */
+    public ArrayList<Coordinate> getPrecomputedWideAnglePoints(int build) {
+        return buildingsWideAnglePoints.get(build);
+    }
+
+    public ArrayList<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+        ArrayList <Coordinate> verticesBuilding = new ArrayList<>();
+        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates().clone();
         if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
@@ -2334,14 +2350,14 @@ public class ProfileBuilder {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
-        for(LineSegment segment : lines) {
-            Envelope pathEnv = new Envelope(segment.p0, segment.p1);
-            try {
-                buildingTree.query(pathEnv, visitor);
-            } catch (IllegalStateException ex) {
-                //Ignore
+        try {
+            List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
+            for(LineSegment segment : lines) {
+                Envelope pathEnv = new Envelope(segment.p0, segment.p1);
+                    buildingTree.query(pathEnv, visitor);
             }
+        } catch (IllegalStateException ex) {
+            //Ignore
         }
     }
 
