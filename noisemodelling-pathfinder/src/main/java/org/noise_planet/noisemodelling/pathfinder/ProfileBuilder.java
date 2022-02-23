@@ -125,6 +125,8 @@ public class ProfileBuilder {
     private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** Global RTree. */
     private STRtree rtree;
+    private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
+
 
     /** List of topographic points. */
     private final List<Coordinate> topoPoints = new ArrayList<>();
@@ -914,6 +916,7 @@ public class ProfileBuilder {
             }
         }
         //Process the ground effects
+        groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundEffects.size(); j++) {
             GroundEffect effect = groundEffects.get(j);
             List<Polygon> polygons = new ArrayList<>();
@@ -927,6 +930,7 @@ public class ProfileBuilder {
                 }
             }
             for (Polygon poly : polygons) {
+                groundEffectsRtree.insert(poly.getEnvelopeInternal(), j);
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
@@ -944,7 +948,13 @@ public class ProfileBuilder {
             return getZGround(reflectionPt);
         }
         else {
-            return buildings.get(ids.get(0)-1).getGeometry().getCoordinate().z;
+            for(Integer id : ids) {
+                Geometry buildingGeometry =  buildings.get(id - 1).getGeometry();
+                if(buildingGeometry.getEnvelopeInternal().intersects(reflectionPt)) {
+                    return buildingGeometry.getCoordinate().z;
+                }
+            }
+            return getZGround(reflectionPt);
         }
     }
 
@@ -1103,10 +1113,13 @@ public class ProfileBuilder {
         Stack<GroundEffect> stack = new Stack<>();
         GroundEffect currentGround = null;
         Point p0 = FACTORY.createPoint(c0);
-        for(GroundEffect ground : groundEffects) {
+        List<Integer> groundEffectsResult = (List<Integer>)groundEffectsRtree.query(new Envelope(c0));
+        for(Integer groundEffectIndex : groundEffectsResult) {
+            GroundEffect ground = groundEffects.get(groundEffectIndex);
             if(ground.geom.contains(p0)) {
                 currentGround = ground;
                 stack.push(ground);
+                break;
             }
         }
         List<CutPoint> toRemove = new ArrayList<>();
