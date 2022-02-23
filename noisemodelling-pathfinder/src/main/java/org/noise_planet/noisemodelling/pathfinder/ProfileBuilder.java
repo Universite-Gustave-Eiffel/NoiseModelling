@@ -144,10 +144,6 @@ public class ProfileBuilder {
     /** List of ground effects. */
     private final List<GroundEffect> groundEffects = new ArrayList<>();
 
-    /** Sources geometries.*/
-    private final List<Geometry> sources = new ArrayList<>();
-    /** Sources RTree. */
-    private STRtree sourceTree;
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
 
@@ -743,14 +739,6 @@ public class ProfileBuilder {
     }
 
     /**
-     * Retrieve the sources list.
-     * @return The sources list.
-     */
-    public List<Geometry> getSources() {
-        return sources;
-    }
-
-    /**
      * Retrieve the ground effects.
      * @return The ground effects.
      */
@@ -768,13 +756,7 @@ public class ProfileBuilder {
      */
     public ProfileBuilder finishFeeding() {
         isFeedingFinished = true;
-        //Process sources
-        if(!sources.isEmpty()) {
-            sourceTree = new STRtree();
-            for (int i = 0; i < sources.size(); i++) {
-                sourceTree.insert(sources.get(i).getEnvelopeInternal(), i);
-            }
-        }
+
         //Process topographic points and lines
         if(topoPoints.size()+topoLines.size() > 1) {
             //Feed the Delaunay layer
@@ -833,14 +815,13 @@ public class ProfileBuilder {
                 wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
                 wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
                 // Insert triangle in rtree
-                if(topoTree != null) {
-                    Coordinate vA = vertices.get(tri.getA());
-                    Coordinate vB = vertices.get(tri.getB());
-                    Coordinate vC = vertices.get(tri.getC());
-                    Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                    topoTree.insert(env, i);
-                }
+                Coordinate vA = vertices.get(tri.getA());
+                Coordinate vB = vertices.get(tri.getB());
+                Coordinate vC = vertices.get(tri.getC());
+                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
+                topoTree.insert(env, i);
             }
+            topoTree.build();
             //TODO : Seems to be useless, to check
             /*for (IntegerTuple wallId : wallIndex) {
                 Coordinate vA = vertices.get(wallId.nodeIndexA);
@@ -939,6 +920,8 @@ public class ProfileBuilder {
                 }
             }
         }
+        rtree.build();
+        groundEffectsRtree.build();
         return this;
     }
 
