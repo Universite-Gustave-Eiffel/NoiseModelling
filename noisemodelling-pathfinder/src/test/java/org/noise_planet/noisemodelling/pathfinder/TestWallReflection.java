@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestWallReflection {
 
@@ -65,6 +66,23 @@ public class TestWallReflection {
         wallList.addAll(wallsOfBuilding);
         return coords.length;
     }
+
+    @Test
+    public void testWideWall() {
+
+        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
+        Coordinate cA = new Coordinate(50, 100, 5);
+        Coordinate cB = new Coordinate(150, 100, 5);
+        buildWalls.add(new ProfileBuilder.Wall(cA, cB, 0, ProfileBuilder.IntersectionType.WALL));
+
+        Polygon polygon = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+                new Coordinate(100, 50, 0.1),
+                new LineSegment(cA, cB), 100, 100);
+
+        GeometryFactory factory = new GeometryFactory();
+        assertTrue(polygon.intersects(factory.createPoint(new Coordinate(100, 145, 0))));
+    }
+
 
     @Test
     public void testMultipleDepthReflexion() {
@@ -117,7 +135,8 @@ public class TestWallReflection {
 
 //    @Test
 //    public void testExportVisibilityCones() throws Exception {
-//        double maxPropagationDistance = 1200;
+//        double maxPropagationDistance = 15;
+//        double maxPropagationDistanceFromWall = 3;
 //
 //        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
 //        Coordinate cA = new Coordinate(1, 1, 5);
@@ -133,13 +152,13 @@ public class TestWallReflection {
 //        buildWalls.add(new ProfileBuilder.Wall(cA, cF, 2, ProfileBuilder.IntersectionType.WALL));
 //
 //
-//        Coordinate receiverCoordinates = new Coordinate(200, 50, 14);
-//        Coordinate source1 = new Coordinate(10, 10, 1);
+//        Coordinate receiverCoordinates = new Coordinate(6, 3, 0.1);
+//        Coordinate source1 = new Coordinate(10, 7, 0.1);
 //
 //        int reflectionOrder = 1;
 //
 //        MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-//                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
+//                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
 //
 //        List<MirrorReceiverResult> objs = (List<MirrorReceiverResult>) mirrorReceiverResultIndex.mirrorReceiverTree.
 //                query(new Envelope(new Coordinate(0, 0), new Coordinate(500, 500)));
@@ -149,7 +168,9 @@ public class TestWallReflection {
 //        try(FileWriter fileWriter = new FileWriter(new File("target/testVisibilityCone.csv"))) {
 //            fileWriter.write("geom, type\n");
 //            for (MirrorReceiverResult res : objs) {
-//                Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance);
+//                Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+//                        res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance,
+//                        maxPropagationDistanceFromWall);
 //                fileWriter.write("\"");
 //                fileWriter.write(wktWriter.write(visibilityCone));
 //                fileWriter.write("\",0");
@@ -164,12 +185,12 @@ public class TestWallReflection {
 //            }
 //            fileWriter.write("\"");
 //            fileWriter.write(wktWriter.write(factory.createPoint(receiverCoordinates)
-//                    .buffer(2, 12, BufferParameters.CAP_ROUND)));
+//                    .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
 //            fileWriter.write("\",2");
 //            fileWriter.write("\n");
 //            fileWriter.write("\"");
 //            fileWriter.write(wktWriter.write(factory.createPoint(source1)
-//                    .buffer(2, 12, BufferParameters.CAP_ROUND)));
+//                    .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
 //            fileWriter.write("\",3");
 //            fileWriter.write("\n");
 //        }

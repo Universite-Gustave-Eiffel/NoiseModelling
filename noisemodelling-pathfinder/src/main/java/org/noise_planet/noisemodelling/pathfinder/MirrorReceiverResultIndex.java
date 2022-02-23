@@ -46,9 +46,12 @@ import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class MirrorReceiverResultIndex {
+    private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 12;
     STRtree mirrorReceiverTree;
     public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
     private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
@@ -73,12 +76,57 @@ public class MirrorReceiverResultIndex {
                                                              double maximumPropagationDistance,
                                                              double maximumDistanceFromWall) {
         GeometryFactory factory = new GeometryFactory();
+        if(wall.distance(receiverImage) > maximumPropagationDistance) {
+            return factory.createPolygon();
+        }
         Coordinate conePointP0 = projectPoint(receiverImage, wall.p0, maximumPropagationDistance,
                 maximumDistanceFromWall);
         Coordinate conePointP1 = projectPoint(receiverImage, wall.p1, maximumPropagationDistance,
                 maximumDistanceFromWall);
 
-        Coordinate[] conePolygon = new Coordinate[] {wall.p0, wall.p1, conePointP1, conePointP0, wall.p0};
+        // create circle segments between p0 and p1
+        ArrayList<Coordinate> circleSegmentPoints = new ArrayList<>(Arrays.asList(conePointP0, conePointP1));
+
+        // Insert a mid point
+        int startCheckIndex = 0;
+        while (true) {
+            boolean newPoint = false;
+            for(int i=startCheckIndex; i < circleSegmentPoints.size() - 1; i++) {
+                Coordinate intermediatePoint0 = circleSegmentPoints.get(i);
+                Coordinate intermediatePoint1 = circleSegmentPoints.get(i + 1);
+                Vector2D rP0 = new Vector2D(receiverImage, intermediatePoint0);
+                Vector2D rP1 = new Vector2D(receiverImage, intermediatePoint1);
+                if(circleSegmentPoints.size() == 2 || Math.abs(rP0.angleTo(rP1)) > DEFAULT_CIRCLE_POINT_ANGLE) {
+                    newPoint = true;
+                    startCheckIndex = i;
+                    // distance is too great create a new intermediate point in the circle
+                    Vector2D midVector = rP0.rotate((rP1.angle() - rP0.angle()) / 2.0);
+                    Vector2D translateVector = midVector.normalize().multiply(maximumPropagationDistance);
+                    Coordinate midPointAtMaxDistance = new Coordinate(receiverImage.x + translateVector.getX(),
+                            receiverImage.y + translateVector.getY());
+                    double distanceFromCorner = wall.distance(midPointAtMaxDistance);
+                    if(distanceFromCorner > maximumDistanceFromWall) {
+                        translateVector = midVector.normalize()
+                                .multiply(maximumPropagationDistance - (distanceFromCorner -  maximumDistanceFromWall));
+                        midPointAtMaxDistance = new Coordinate(receiverImage.x + translateVector.getX(),
+                            receiverImage.y + translateVector.getY());
+                    }
+                    circleSegmentPoints.add(i+1, midPointAtMaxDistance);
+                    break;
+                }
+            }
+            if(!newPoint) {
+                break;
+            }
+        }
+
+        Coordinate[] conePolygon = new Coordinate[circleSegmentPoints.size() + 3];
+        conePolygon[0] = wall.p1;
+        conePolygon[1] = wall.p0;
+        conePolygon[conePolygon.length - 1] = wall.p1;
+        for(int i = 0; i < circleSegmentPoints.size(); i++) {
+            conePolygon[i + 2] = circleSegmentPoints.get(i);
+        }
         return factory.createPolygon(conePolygon);
     }
     /**
