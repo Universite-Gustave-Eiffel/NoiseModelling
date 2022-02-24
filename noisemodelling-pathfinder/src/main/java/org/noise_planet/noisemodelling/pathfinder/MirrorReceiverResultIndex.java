@@ -47,8 +47,6 @@ import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 public class MirrorReceiverResultIndex {
@@ -60,6 +58,7 @@ public class MirrorReceiverResultIndex {
     private final List<ProfileBuilder.Wall> buildWalls;
     private final double maximumDistanceFromWall;
     private final double maximumPropagationDistance;
+    int numberOfImageReceivers = 0;
 
     public static Polygon createWallReflectionVisibilityCone(Coordinate receiverImage, LineSegment wall,
                                                              double maximumPropagationDistance,
@@ -75,7 +74,7 @@ public class MirrorReceiverResultIndex {
         Vector2D rP0 = new Vector2D(receiverImage, wall.p0).normalize();
         Vector2D rP1 = new Vector2D(receiverImage, wall.p1).normalize();
         double angleSign = rP0.angleTo(rP1) >= 0 ? 1 : -1;
-        int numberOfStep = (int)(Math.abs(rP0.angleTo(rP1)) / DEFAULT_CIRCLE_POINT_ANGLE);
+        int numberOfStep = Math.max(1, (int)(Math.abs(rP0.angleTo(rP1)) / DEFAULT_CIRCLE_POINT_ANGLE));
         Coordinate lastWallIntersectionPoint = new Coordinate();
         for(int angleStep = 0 ; angleStep <= numberOfStep; angleStep++) {
             Vector2D newPointTranslationVector = rP0.rotate(DEFAULT_CIRCLE_POINT_ANGLE * angleSign * angleStep);
@@ -86,15 +85,17 @@ public class MirrorReceiverResultIndex {
             }
             Coordinate newPoint = newPointTranslationVector.translate(receiverImage);
             Coordinate wallIntersectionPoint = Intersection.intersection(wall.p0, wall.p1, receiverImage, newPoint);
-            double wallIntersectionPointDistance = wallIntersectionPoint.distance(receiverImage);
-            if(wallIntersectionPointDistance < maximumPropagationDistance) {
-                double vectorLength = Math.min(wallIntersectionPointDistance + maximumDistanceFromWall, maximumPropagationDistance);
-                newPoint = newPointTranslationVector.multiply(vectorLength).translate(receiverImage);
-                if(circleSegmentPoints.isEmpty()) {
-                    circleSegmentPoints.add(wallIntersectionPoint);
+            if(wallIntersectionPoint != null) {
+                double wallIntersectionPointDistance = wallIntersectionPoint.distance(receiverImage);
+                if (wallIntersectionPointDistance < maximumPropagationDistance) {
+                    double vectorLength = Math.min(wallIntersectionPointDistance + maximumDistanceFromWall, maximumPropagationDistance);
+                    newPoint = newPointTranslationVector.multiply(vectorLength).translate(receiverImage);
+                    if (circleSegmentPoints.isEmpty()) {
+                        circleSegmentPoints.add(wallIntersectionPoint);
+                    }
+                    lastWallIntersectionPoint = wallIntersectionPoint;
+                    circleSegmentPoints.add(newPoint);
                 }
-                lastWallIntersectionPoint=wallIntersectionPoint;
-                circleSegmentPoints.add(newPoint);
             }
         }
         if(!circleSegmentPoints.isEmpty()) {
@@ -120,7 +121,6 @@ public class MirrorReceiverResultIndex {
         this.maximumDistanceFromWall = maximumDistanceFromWall;
         this.maximumPropagationDistance = maximumPropagationDistance;
         mirrorReceiverTree = new STRtree();
-        int pushed = 0;
         ArrayList<MirrorReceiverResult> parentsToProcess = new ArrayList<>();
         for(int currentDepth = 0; currentDepth < reflectionOrder; currentDepth++) {
             if(currentDepth == 0) {
@@ -154,14 +154,15 @@ public class MirrorReceiverResultIndex {
                             wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
                     mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(), receiverResult);
                     nextParentsToProcess.add(receiverResult);
-                    pushed++;
-                    if(pushed >= mirrorReceiverCapacity) {
+                    numberOfImageReceivers++;
+                    if(numberOfImageReceivers >= mirrorReceiverCapacity) {
                         return;
                     }
                 }
             }
             parentsToProcess = nextParentsToProcess;
         }
+        mirrorReceiverTree.build();
     }
 
     public int getMirrorReceiverCapacity() {
@@ -172,7 +173,7 @@ public class MirrorReceiverResultIndex {
         this.mirrorReceiverCapacity = mirrorReceiverCapacity;
     }
 
-    List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition) {
+    public List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition) {
         if(Double.isNaN(sourcePosition.z)) {
             throw new IllegalArgumentException("Not supported NaN z value");
         }
@@ -216,7 +217,7 @@ public class MirrorReceiverResultIndex {
                 MirrorReceiverResult currentReceiverImage = receiverImage;
                 Coordinate reflectionPoint = source;
                 while (currentReceiverImage != null) {
-                    final ProfileBuilder.Wall currentWall = receiverImage.getWall();
+                    final ProfileBuilder.Wall currentWall = currentReceiverImage.getWall();
                     final LineSegment currentWallLineSegment = currentWall.getLineSegment();
                     if (currentWallLineSegment.distance(sourceReceiverSegment) > maximumDistanceFromSegment) {
                         return;

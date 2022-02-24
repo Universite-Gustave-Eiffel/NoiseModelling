@@ -38,6 +38,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferParameters;
@@ -132,12 +133,13 @@ public class TestWallReflection {
         // Reflection on [g h] [h g -> e f] [h g -> c d]
         assertEquals(7, result.size());
     }
+
 //
 //    @Test
 //    public void testExportVisibilityCones() throws Exception {
-//        double maxPropagationDistance = 5;
-//        double maxPropagationDistanceFromWall = 5;
-//        int reflectionOrder = 2;
+//        double maxPropagationDistance = 30;
+//        double maxPropagationDistanceFromWall = 9999;
+//        int reflectionOrder = 4;
 //
 //        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
 //        Coordinate cA = new Coordinate(1, 1, 5);
@@ -146,58 +148,56 @@ public class TestWallReflection {
 //        Coordinate cD = new Coordinate(8, 5, 5);
 //        Coordinate cE = new Coordinate(5, 5, 5);
 //        Coordinate cF = new Coordinate(5, 1, 5);
-//        Coordinate cG = new Coordinate(13, 1, 2.5);
+//        Coordinate cG = new Coordinate(10, -5, 2.5);
 //        Coordinate cH = new Coordinate(13, 8, 2.5);
+//        Coordinate cI = new Coordinate(8, 9, 2.5);
+//        Coordinate cJ = new Coordinate(12, 8, 2.5);
 //        buildWalls.add(new ProfileBuilder.Wall(cE, cF, 0, ProfileBuilder.IntersectionType.WALL));
-//        //buildWalls.add(new ProfileBuilder.Wall(cB, cC, 1, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cA, cF, 2, ProfileBuilder.IntersectionType.WALL));
+//        buildWalls.add(new ProfileBuilder.Wall(cG, cH, 2, ProfileBuilder.IntersectionType.WALL));
+//        buildWalls.add(new ProfileBuilder.Wall(cI, cJ, 2, ProfileBuilder.IntersectionType.WALL));
 //
 //
-//        Coordinate receiverCoordinates = new Coordinate(6, 3, 0.1);
-//        Coordinate source1 = new Coordinate(10, 7, 0.1);
+//        GeometryFactory factory = new GeometryFactory();
+//        List<Coordinate> pts = new ArrayList<>();
+//        LineString pathReceiver = factory.createLineString(new Coordinate[] {
+//                new Coordinate(5, -1, 0.1),
+//                new Coordinate(7.8, 1.62, 0.1),
+//                new Coordinate(8.06, 6.01, 0.1),
+//                new Coordinate(4.73, 9.95)
+//        });
 //
-//
-//        MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-//                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
-//
-//        List<MirrorReceiverResult> objs = (List<MirrorReceiverResult>) mirrorReceiverResultIndex.mirrorReceiverTree.
-//                query(new Envelope(new Coordinate(0, 0), new Coordinate(500, 500)));
+//        ComputeCnossosRays.splitLineStringIntoPoints(pathReceiver, 0.5 ,pts);
 //
 //        WKTWriter wktWriter = new WKTWriter();
-//        GeometryFactory factory = new GeometryFactory();
-//        try(FileWriter fileWriter = new FileWriter(new File("target/testVisibilityCone.csv"))) {
-//            fileWriter.write("geom, type\n");
-//            for (MirrorReceiverResult res : objs) {
-//                Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
-//                        res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance,
-//                        maxPropagationDistanceFromWall);
+//        try(FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
+//            fileWriter.write("geom, type, time\n");
+//            int t = 0;
+//            for (Coordinate receiverCoordinates : pts) {
+//                MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls, receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
+//                List<MirrorReceiverResult> objs = (List<MirrorReceiverResult>) mirrorReceiverResultIndex.mirrorReceiverTree.query(new Envelope(new Coordinate(0, 0), new Coordinate(500, 500)));
+//                for (MirrorReceiverResult res : objs) {
+//                    Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance, maxPropagationDistanceFromWall);
+//                    fileWriter.write("\"");
+//                    fileWriter.write(wktWriter.write(visibilityCone));
+//                    fileWriter.write("\",0");
+//                    fileWriter.write(","+t+"\n");
+//                    fileWriter.write("\"");
+//                    fileWriter.write(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
+//                    fileWriter.write("\",4");
+//                    fileWriter.write(","+t+"\n");
+//                }
+//                for (ProfileBuilder.Wall wall : buildWalls) {
+//                    fileWriter.write("\"");
+//                    fileWriter.write(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1}).buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+//                    fileWriter.write("\",1");
+//                    fileWriter.write(","+t+"\n");
+//                }
 //                fileWriter.write("\"");
-//                fileWriter.write(wktWriter.write(visibilityCone));
-//                fileWriter.write("\",0");
-//                fileWriter.write("\n");
-//                fileWriter.write("\"");
-//                fileWriter.write(wktWriter.write(factory.createPoint(res.getReceiverPos())
-//                        .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
-//                fileWriter.write("\",4");
-//                fileWriter.write("\n");
+//                fileWriter.write(wktWriter.write(factory.createPoint(receiverCoordinates).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
+//                fileWriter.write("\",2");
+//                fileWriter.write(","+t+"\n");
+//                t+=1;
 //            }
-//            for(ProfileBuilder.Wall wall : buildWalls) {
-//                fileWriter.write("\"");
-//                fileWriter.write(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1})
-//                        .buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
-//                fileWriter.write("\",1");
-//                fileWriter.write("\n");
-//            }
-//            fileWriter.write("\"");
-//            fileWriter.write(wktWriter.write(factory.createPoint(receiverCoordinates)
-//                    .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
-//            fileWriter.write("\",2");
-//            fileWriter.write("\n");
-//            fileWriter.write("\"");
-//            fileWriter.write(wktWriter.write(factory.createPoint(source1)
-//                    .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
-//            fileWriter.write("\",3");
-//            fileWriter.write("\n");
 //        }
 //    }
 

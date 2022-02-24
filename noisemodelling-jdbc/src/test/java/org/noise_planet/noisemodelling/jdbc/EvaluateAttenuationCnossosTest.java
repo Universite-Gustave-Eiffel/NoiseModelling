@@ -5,9 +5,13 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils;
+import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -18,6 +22,7 @@ import static java.lang.Double.NaN;
 import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
+import static org.noise_planet.noisemodelling.propagation.PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
 
 // TODO reduce error epsilon
 
@@ -25,6 +30,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
  * Test class evaluation and testing attenuation values.
  */
 public class EvaluateAttenuationCnossosTest {
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(EvaluateAttenuationCnossosTest.class);
 
     private static final double ERROR_EPSILON_HIGHEST = 1e5;
     private static final double ERROR_EPSILON_VERY_HIGH = 15;
@@ -4618,6 +4625,79 @@ public class EvaluateAttenuationCnossosTest {
 
 
 
+    /**
+     * Test of convergence of power at receiver when increasing the reflection order
+     * Event at 100 order of reflection then final noise level should not be
+     * superior to 3.0 decibels compared to direct power
+     */
+    @Test
+    public void testReflexionConvergence() {
+        //Profile building
+        List<Integer> alphaWallFrequencies = Arrays.asList(PropagationProcessPathData.asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+        List<Double> alphaWall = new ArrayList<>(alphaWallFrequencies.size());
+        for(int frequency : alphaWallFrequencies) {
+            alphaWall.add(AlphaUtils.getWallAlpha(100000, frequency));
+        }
+
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                .addWall(new Coordinate[]{
+                        new Coordinate(6, 0, 4),
+                        new Coordinate(-5, 12, 4),
+                }, 8, alphaWall, 0)
+                .addWall(new Coordinate[]{
+                        new Coordinate(14, 4, 4),
+                        new Coordinate(3, 16, 4),
+                }, 8, alphaWall, 1);
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(8, 5.5, 0.1)
+                .addReceiver(4.5, 8, 1.6)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.5)
+                .build();
+        rayData.maxSrcDist = 60000000;
+        rayData.maxRefDist = 60000000;
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        double firstPowerAtReceiver = 0;
+        for(int i = 0; i < 100; i++) {
+
+            //Out and computation settings
+            ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+            rayData.reflexionOrder = i;
+            ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+            computeRays.setThreadCount(1);
+
+            //Run computation
+            computeRays.run(propDataOut);
+
+            //Actual values
+            // number of propagation paths between two walls = reflectionOrder * 2 + 1
+            assertEquals(i * 2 + 1, propDataOut.propagationPaths.size());
+
+            double[] sourcePower = new double[alphaWall.size()];
+            double[] receiverPower = new double[alphaWall.size()];
+            Arrays.fill(sourcePower, 70.0);
+            for(PropagationPath proPath : propDataOut.propagationPaths) {
+                double[] attenuationGlobal = proPath.absorptionData.aGlobal;
+                double[] contributionPower = PowerUtils.sumArray(attenuationGlobal, sourcePower);
+                receiverPower = PowerUtils.sumDbArray(receiverPower, contributionPower);
+            }
+            double globalPowerAtReceiver = PowerUtils.wToDba(PowerUtils.sumArray(PowerUtils.dbaToW(receiverPower)));
+            if(i == 0) {
+                firstPowerAtReceiver = globalPowerAtReceiver;
+            } else {
+                assertEquals(firstPowerAtReceiver, globalPowerAtReceiver, 3.0);
+            }
+        }
+    }
 
 
     /**
