@@ -84,56 +84,6 @@ public class TestWallReflection {
         assertTrue(polygon.intersects(factory.createPoint(new Coordinate(100, 145, 0))));
     }
 
-
-    @Test
-    public void testMultipleDepthReflexion() {
-        double maxPropagationDistance = 1000;
-
-        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
-        Coordinate cA = new Coordinate(1, 1, 5);
-        Coordinate cB = new Coordinate(1, 8, 5);
-        Coordinate cC = new Coordinate(8, 8, 5);
-        Coordinate cD = new Coordinate(8, 5, 5);
-        Coordinate cE = new Coordinate(5, 5, 5);
-        Coordinate cF = new Coordinate(5, 1, 5);
-        Coordinate cG = new Coordinate(13, 1, 2.5);
-        Coordinate cH = new Coordinate(13, 8, 2.5);
-
-        GeometryFactory factory = new GeometryFactory();
-        Polygon buildingGeometry = factory.createPolygon(new Coordinate[] {cA, cB, cC, cD, cE, cF, cA});
-
-        ProfileBuilder.Building building = new ProfileBuilder.Building(buildingGeometry, 5,
-                Collections.emptyList(), 0, true);
-
-        pushBuildingToWalls(building, 0, buildWalls);
-        buildWalls.add(new ProfileBuilder.Wall(cG, cH, 0, ProfileBuilder.IntersectionType.BUILDING));
-
-        Coordinate receiverCoordinates = new Coordinate(6, 3, 1.6);
-
-        int reflectionOrder = 1;
-        MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
-
-        Coordinate source1 = new Coordinate(10, 7, 0.1);
-
-        List<MirrorReceiverResult> result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1);
-
-        // Reflection only on [g h] wall
-        assertEquals(1, result.size());
-
-
-        reflectionOrder = 2;
-
-        mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
-                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistance);
-
-
-        result = mirrorReceiverResultIndex.findCloseMirrorReceivers(source1);
-
-        // Reflection on [g h] [h g -> e f] [h g -> c d]
-        assertEquals(7, result.size());
-    }
-
 //
 //    @Test
 //    public void testExportVisibilityCones() throws Exception {
