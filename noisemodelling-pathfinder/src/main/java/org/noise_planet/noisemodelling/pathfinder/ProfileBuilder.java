@@ -1140,20 +1140,26 @@ public class ProfileBuilder {
                 currentGround = ground;
             }
         }
-        List<CutPoint> toRemove = new ArrayList<>();
         List<Integer> currGrounds = new ArrayList<>();
         List<Integer> nextGrounds = new ArrayList<>();
         boolean first = true;
         List<CutPoint> pts = profile.pts;
+        //Loop on each cut points
         for (int i = 0; i < pts.size(); i++) {
             CutPoint cut = pts.get(i);
-            if (cut.type == GROUND_EFFECT) {
+            //If the cut point is not a Ground effect, simply apply the current ground coef
+            if (cut.type != GROUND_EFFECT) {
+                cut.groundCoef = currentGround != null ? currentGround.coef : gS;
+            } else {
                 int j=i;
                 CutPoint next = pts.get(j);
+                //Pass all the cut points located at the same position as the current point.
                 while(cut.coordinate.equals2D(next.coordinate)){
+                    //If the current ground effect list has never been filled, fill it.
                     if(first && next.type == GROUND_EFFECT){
                         currGrounds.add(next.id);
                     }
+                    //Apply the current ground effect tfor the case that the current cut point is at the same position as the receiver point.
                     next.groundCoef = currentGround != null ? currentGround.coef : gS;
                     if(j+1==pts.size()){
                         break;
@@ -1161,12 +1167,14 @@ public class ProfileBuilder {
                     next = pts.get(++j);
                 }
                 first = false;
+                //Try to find the next ground effect cut point
                 while((next = pts.get(j)).type != GROUND_EFFECT && j<pts.size()-1){
                     next.groundCoef = currentGround != null ? currentGround.coef : gS;
                     j++;
                 }
                 //If there is no more ground effect, exit loop
                 if(j==pts.size()-1){
+                    //Use the current ground effect for the remaining cut point
                     for(int idx : currGrounds) {
                         if(currentGround != null && currentGround.coef != groundEffects.get(idx).coef){
                             currentGround =groundEffects.get(idx);
@@ -1175,6 +1183,7 @@ public class ProfileBuilder {
                     continue;
                 }
                 CutPoint nextNext = pts.get(j);
+                //Fill the next ground effect list
                 while(next.coordinate.equals2D(nextNext.coordinate)){
                     if(nextNext.type == GROUND_EFFECT){
                         nextGrounds.add(nextNext.id);
@@ -1187,6 +1196,7 @@ public class ProfileBuilder {
                 nextNext = pts.get(j-1);
 
                 boolean found = false;
+                //Find the ground effect which will be applied from current position to next
                 for(int idx : currGrounds) {
                     if(nextGrounds.contains(idx)){
                         currGrdI = idx;
@@ -1194,6 +1204,8 @@ public class ProfileBuilder {
                         break;
                     }
                 }
+                //If no ground effect found, it means that the current ground effect contains an other ground effect.
+                //Store the current ground effect in a stack and use the next ground effect
                 if(!found){
                     currGrdI = nextGrounds.get(0);
                     stack.push(currGrounds);
@@ -1202,6 +1214,7 @@ public class ProfileBuilder {
                     currentGround = groundEffects.get(currGrdI);
                 }
                 CutPoint cutPt = pts.get(i);
+                //Apply the ground effect after the current coint up to the next ground effect
                 while(!nextNext.coordinate.equals2D(cutPt.coordinate)){
                     if(found){
                         cutPt.groundCoef = currentGround != null ? currentGround.coef : gS;
@@ -1214,6 +1227,7 @@ public class ProfileBuilder {
                 }
                 i--;
                 currGrounds = nextGrounds;
+                //remove the used ground effect from the list of next ground effect to avoid to reuse it
                 if(found) {
                     currGrounds.remove((Object) currGrdI);
                 }
@@ -1225,6 +1239,7 @@ public class ProfileBuilder {
                     if(stack.isEmpty()) {
                         currentGround = null;
                     }
+                    //If there is no more ground effect, try to pop the stack
                     else{
                         currGrounds = stack.pop();
                         if(currGrounds.isEmpty()) {
@@ -1235,11 +1250,7 @@ public class ProfileBuilder {
                     }
                 }
             }
-            else {
-                cut.groundCoef = currentGround != null ? currentGround.coef : gS;
-            }
         }
-        profile.pts.removeAll(toRemove);
     }
 
     private void addBuildingBaseCutPts(CutProfile profile, Coordinate c0, Coordinate c1) {
