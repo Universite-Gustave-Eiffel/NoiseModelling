@@ -4666,7 +4666,7 @@ public class EvaluateAttenuationCnossosTest {
         expectedLH = new double[]{20.84, 17.03, 13.68, 10.51, 7.31, 3.68, -1.66, -13.18};
         expectedLF = new double[]{20.84, 17.03, 13.68, 10.51, 7.31, 3.68, -1.66, -13.18};
 
-        proPath = propDataOut.propagationPaths.get(1);
+        //proPath = propDataOut.propagationPaths.get(1);
 
         actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
         actualAAtm = proPath.absorptionData.aAtm;
