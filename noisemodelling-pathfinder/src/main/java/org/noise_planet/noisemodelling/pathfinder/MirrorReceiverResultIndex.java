@@ -52,7 +52,7 @@ import java.util.Collection;
 import java.util.List;
 
 public class MirrorReceiverResultIndex {
-    private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 12;
+    private static final double DEFAULT_CIRCLE_POINT_ANGLE = Math.PI / 24;
     STRtree mirrorReceiverTree;
     public static final int DEFAULT_MIRROR_RECEIVER_CAPACITY = 50000;
     private int mirrorReceiverCapacity = DEFAULT_MIRROR_RECEIVER_CAPACITY;
@@ -72,15 +72,17 @@ public class MirrorReceiverResultIndex {
         }
         ArrayList<Coordinate> circleSegmentPoints = new ArrayList<>();
 
-        Vector2D rP0 = new Vector2D(receiverImage, wall.p0);
-        Vector2D rP1 = new Vector2D(receiverImage, wall.p1);
+        Vector2D rP0 = new Vector2D(receiverImage, wall.p0).normalize();
+        Vector2D rP1 = new Vector2D(receiverImage, wall.p1).normalize();
         double angleSign = rP0.angleTo(rP1) >= 0 ? 1 : -1;
         int numberOfStep = (int)(Math.abs(rP0.angleTo(rP1)) / DEFAULT_CIRCLE_POINT_ANGLE);
         Coordinate lastWallIntersectionPoint = new Coordinate();
-        for(int angleStep = 1 ; angleStep <= numberOfStep; angleStep++) {
-            Vector2D newPointTranslationVector = rP0.normalize().rotate(DEFAULT_CIRCLE_POINT_ANGLE * angleSign * angleStep);
+        for(int angleStep = 0 ; angleStep <= numberOfStep; angleStep++) {
+            Vector2D newPointTranslationVector = rP0.rotate(DEFAULT_CIRCLE_POINT_ANGLE * angleSign * angleStep);
             if(angleStep == numberOfStep) {
-                newPointTranslationVector = rP1.normalize();
+                newPointTranslationVector = rP1;
+            } else if(angleStep == 0) {
+                newPointTranslationVector = rP0;
             }
             Coordinate newPoint = newPointTranslationVector.translate(receiverImage);
             Coordinate wallIntersectionPoint = Intersection.intersection(wall.p0, wall.p1, receiverImage, newPoint);

@@ -132,11 +132,12 @@ public class TestWallReflection {
         // Reflection on [g h] [h g -> e f] [h g -> c d]
         assertEquals(7, result.size());
     }
-
+//
 //    @Test
 //    public void testExportVisibilityCones() throws Exception {
-//        double maxPropagationDistance = 15;
-//        double maxPropagationDistanceFromWall = 3;
+//        double maxPropagationDistance = 5;
+//        double maxPropagationDistanceFromWall = 5;
+//        int reflectionOrder = 2;
 //
 //        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
 //        Coordinate cA = new Coordinate(1, 1, 5);
@@ -148,14 +149,13 @@ public class TestWallReflection {
 //        Coordinate cG = new Coordinate(13, 1, 2.5);
 //        Coordinate cH = new Coordinate(13, 8, 2.5);
 //        buildWalls.add(new ProfileBuilder.Wall(cE, cF, 0, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cB, cC, 1, ProfileBuilder.IntersectionType.WALL));
+//        //buildWalls.add(new ProfileBuilder.Wall(cB, cC, 1, ProfileBuilder.IntersectionType.WALL));
 //        buildWalls.add(new ProfileBuilder.Wall(cA, cF, 2, ProfileBuilder.IntersectionType.WALL));
 //
 //
 //        Coordinate receiverCoordinates = new Coordinate(6, 3, 0.1);
 //        Coordinate source1 = new Coordinate(10, 7, 0.1);
 //
-//        int reflectionOrder = 1;
 //
 //        MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls,
 //                receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
