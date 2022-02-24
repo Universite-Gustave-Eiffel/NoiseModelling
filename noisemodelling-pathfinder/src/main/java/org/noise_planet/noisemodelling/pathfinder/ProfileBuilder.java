@@ -54,15 +54,7 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -1017,49 +1009,6 @@ public class ProfileBuilder {
         profile.receiver.wallAlpha = c1.wallAlpha;
 
         return profile;
-    }
-
-    private void addTopoCutPts(List<LineSegment> lines, CutProfile profile) {
-        List<CutPoint> topoCutPts = new ArrayList<>();
-        for (LineSegment line : lines) {
-            List<Integer> indexes = new ArrayList<>(topoTree.query(new Envelope(line.p0, line.p1)));
-            indexes = indexes.stream().distinct().collect(Collectors.toList());
-            for (int i : indexes) {
-                Triangle triangle = topoTriangles.get(i);
-                LineSegment triLine = new LineSegment(vertices.get(triangle.getA()), vertices.get(triangle.getB()));
-                Coordinate intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
-                }
-                triLine = new LineSegment(vertices.get(triangle.getB()), vertices.get(triangle.getC()));
-                intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
-                }
-                triLine = new LineSegment(vertices.get(triangle.getC()), vertices.get(triangle.getA()));
-                intersection = line.intersection(triLine);
-                if (intersection != null) {
-                    intersection.z = triLine.p0.z + (triLine.p1.z - triLine.p0.z) * triLine.segmentFraction(intersection);
-                    topoCutPts.add(new CutPoint(intersection, TOPOGRAPHY, i, false));
-                }
-            }
-        }
-        List<CutPoint> toRemove = new ArrayList<>();
-        for(int i=0; i<topoCutPts.size(); i++) {
-            CutPoint pt = topoCutPts.get(i);
-            List<CutPoint> remaining = topoCutPts.subList(i+1, topoCutPts.size());
-            for(CutPoint rPt : remaining) {
-                if(pt.getCoordinate().x == rPt.getCoordinate().x &&
-                        pt.getCoordinate().y == rPt.getCoordinate().y) {
-                    toRemove.add(pt);
-                    break;
-                }
-            }
-        }
-        topoCutPts.removeAll(toRemove);
-        topoCutPts.forEach(profile::addCutPt);
     }
 
     /**
