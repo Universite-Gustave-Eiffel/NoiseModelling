@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.locationtech.jts.algorithm.Intersection;
 import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
@@ -60,74 +61,48 @@ public class MirrorReceiverResultIndex {
     private final double maximumDistanceFromWall;
     private final double maximumPropagationDistance;
 
-    private static Coordinate projectPoint(Coordinate receiverImage, Coordinate wallCorner,
-                                            double maximumPropagationDistance,
-                                            double maximumDistanceFromWall) {
-        Vector2D vectorP0 = new Vector2D(receiverImage, wallCorner);
-        double distanceFromCorner = maximumPropagationDistance - receiverImage.distance(wallCorner);
-        if(distanceFromCorner > maximumDistanceFromWall) {
-            distanceFromCorner = maximumDistanceFromWall;
-        }
-        vectorP0 = vectorP0.normalize().multiply(distanceFromCorner);
-        return new Coordinate(wallCorner.x + vectorP0.getX(), wallCorner.y + vectorP0.getY());
-    }
-
     public static Polygon createWallReflectionVisibilityCone(Coordinate receiverImage, LineSegment wall,
                                                              double maximumPropagationDistance,
                                                              double maximumDistanceFromWall) {
+        double distanceMin = wall.distance(receiverImage);
+
         GeometryFactory factory = new GeometryFactory();
-        if(wall.distance(receiverImage) > maximumPropagationDistance) {
+        if(distanceMin > maximumPropagationDistance) {
             return factory.createPolygon();
         }
-        Coordinate conePointP0 = projectPoint(receiverImage, wall.p0, maximumPropagationDistance,
-                maximumDistanceFromWall);
-        Coordinate conePointP1 = projectPoint(receiverImage, wall.p1, maximumPropagationDistance,
-                maximumDistanceFromWall);
+        ArrayList<Coordinate> circleSegmentPoints = new ArrayList<>();
 
-        // create circle segments between p0 and p1
-        ArrayList<Coordinate> circleSegmentPoints = new ArrayList<>(Arrays.asList(conePointP0, conePointP1));
-
-        // Insert a mid point
-        int startCheckIndex = 0;
-        while (true) {
-            boolean newPoint = false;
-            for(int i=startCheckIndex; i < circleSegmentPoints.size() - 1; i++) {
-                Coordinate intermediatePoint0 = circleSegmentPoints.get(i);
-                Coordinate intermediatePoint1 = circleSegmentPoints.get(i + 1);
-                Vector2D rP0 = new Vector2D(receiverImage, intermediatePoint0);
-                Vector2D rP1 = new Vector2D(receiverImage, intermediatePoint1);
-                if(circleSegmentPoints.size() == 2 || Math.abs(rP0.angleTo(rP1)) > DEFAULT_CIRCLE_POINT_ANGLE) {
-                    newPoint = true;
-                    startCheckIndex = i;
-                    // distance is too great create a new intermediate point in the circle
-                    Vector2D midVector = rP0.rotate((rP1.angle() - rP0.angle()) / 2.0);
-                    Vector2D translateVector = midVector.normalize().multiply(maximumPropagationDistance);
-                    Coordinate midPointAtMaxDistance = new Coordinate(receiverImage.x + translateVector.getX(),
-                            receiverImage.y + translateVector.getY());
-                    double distanceFromCorner = wall.distance(midPointAtMaxDistance);
-                    if(distanceFromCorner > maximumDistanceFromWall) {
-                        translateVector = midVector.normalize()
-                                .multiply(maximumPropagationDistance - (distanceFromCorner -  maximumDistanceFromWall));
-                        midPointAtMaxDistance = new Coordinate(receiverImage.x + translateVector.getX(),
-                            receiverImage.y + translateVector.getY());
-                    }
-                    circleSegmentPoints.add(i+1, midPointAtMaxDistance);
-                    break;
+        Vector2D rP0 = new Vector2D(receiverImage, wall.p0);
+        Vector2D rP1 = new Vector2D(receiverImage, wall.p1);
+        double angleSign = rP0.angleTo(rP1) >= 0 ? 1 : -1;
+        int numberOfStep = (int)(Math.abs(rP0.angleTo(rP1)) / DEFAULT_CIRCLE_POINT_ANGLE);
+        Coordinate lastWallIntersectionPoint = new Coordinate();
+        for(int angleStep = 1 ; angleStep <= numberOfStep; angleStep++) {
+            Vector2D newPointTranslationVector = rP0.normalize().rotate(DEFAULT_CIRCLE_POINT_ANGLE * angleSign * angleStep);
+            if(angleStep == numberOfStep) {
+                newPointTranslationVector = rP1.normalize();
+            }
+            Coordinate newPoint = newPointTranslationVector.translate(receiverImage);
+            Coordinate wallIntersectionPoint = Intersection.intersection(wall.p0, wall.p1, receiverImage, newPoint);
+            double wallIntersectionPointDistance = wallIntersectionPoint.distance(receiverImage);
+            if(wallIntersectionPointDistance < maximumPropagationDistance) {
+                double vectorLength = Math.min(wallIntersectionPointDistance + maximumDistanceFromWall, maximumPropagationDistance);
+                newPoint = newPointTranslationVector.multiply(vectorLength).translate(receiverImage);
+                if(circleSegmentPoints.isEmpty()) {
+                    circleSegmentPoints.add(wallIntersectionPoint);
                 }
-            }
-            if(!newPoint) {
-                break;
+                lastWallIntersectionPoint=wallIntersectionPoint;
+                circleSegmentPoints.add(newPoint);
             }
         }
-
-        Coordinate[] conePolygon = new Coordinate[circleSegmentPoints.size() + 3];
-        conePolygon[0] = wall.p1;
-        conePolygon[1] = wall.p0;
-        conePolygon[conePolygon.length - 1] = wall.p1;
-        for(int i = 0; i < circleSegmentPoints.size(); i++) {
-            conePolygon[i + 2] = circleSegmentPoints.get(i);
+        if(!circleSegmentPoints.isEmpty()) {
+            circleSegmentPoints.add(lastWallIntersectionPoint);
+            circleSegmentPoints.add(circleSegmentPoints.get(0));
+            Coordinate[] conePolygon = circleSegmentPoints.toArray(new Coordinate[0]);
+            return factory.createPolygon(conePolygon);
+        } else {
+            return factory.createPolygon();
         }
-        return factory.createPolygon(conePolygon);
     }
     /**
      * Generate all image receivers from the provided list of walls
@@ -166,6 +141,10 @@ public class MirrorReceiverResultIndex {
                     Coordinate proj = wall.getLineSegment().project(receiverImage);
                     Coordinate rcvMirror = new Coordinate(2 * proj.x - receiverImage.x,
                             2 * proj.y - receiverImage.y, receiverImage.z);
+                    if(wall.getLineSegment().distance(rcvMirror) > maximumPropagationDistance) {
+                        // wall is too far from the receiver image, there is no receiver image
+                        continue;
+                    }
                     MirrorReceiverResult receiverResult = new MirrorReceiverResult(rcvMirror, parent, wall,
                             wall.getOriginId(), wall.getType());
                     // create the visibility cone of this receiver image

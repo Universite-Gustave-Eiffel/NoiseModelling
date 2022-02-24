@@ -175,6 +175,11 @@ public class TestWallReflection {
 //                fileWriter.write(wktWriter.write(visibilityCone));
 //                fileWriter.write("\",0");
 //                fileWriter.write("\n");
+//                fileWriter.write("\"");
+//                fileWriter.write(wktWriter.write(factory.createPoint(res.getReceiverPos())
+//                        .buffer(0.1, 12, BufferParameters.CAP_ROUND)));
+//                fileWriter.write("\",4");
+//                fileWriter.write("\n");
 //            }
 //            for(ProfileBuilder.Wall wall : buildWalls) {
 //                fileWriter.write("\"");
