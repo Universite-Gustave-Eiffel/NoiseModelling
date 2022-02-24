@@ -58,8 +58,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
@@ -71,11 +73,7 @@ import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
 import static org.noise_planet.noisemodelling.pathfinder.JTSUtility.dist2D;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.BUILDING;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.RECEIVER;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.SOURCE;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.TOPOGRAPHY;
-import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.WALL;
+import static org.noise_planet.noisemodelling.pathfinder.ProfileBuilder.IntersectionType.*;
 
 //TODO use NaN for building height
 //TODO fix wall references id in order to use also real wall database key
@@ -100,6 +98,8 @@ public class ProfileBuilder {
 
     /** If true, no more data can be add. */
     private boolean isFeedingFinished = false;
+    /** Wide angle points of a building polygon */
+    private Map<Integer, ArrayList<Coordinate>> buildingsWideAnglePoints = new HashMap<>();
     /** Building RTree node capacity. */
     private int buildingNodeCapacity = TREE_NODE_CAPACITY;
     /** Topographic RTree node capacity. */
@@ -121,6 +121,8 @@ public class ProfileBuilder {
     private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** Global RTree. */
     private STRtree rtree;
+    private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
+
 
     /** List of topographic points. */
     private final List<Coordinate> topoPoints = new ArrayList<>();
@@ -138,10 +140,6 @@ public class ProfileBuilder {
     /** List of ground effects. */
     private final List<GroundEffect> groundEffects = new ArrayList<>();
 
-    /** Sources geometries.*/
-    private final List<Geometry> sources = new ArrayList<>();
-    /** Sources RTree. */
-    private STRtree sourceTree;
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
 
@@ -282,7 +280,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -311,7 +309,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -340,7 +338,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -367,7 +365,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -396,7 +394,7 @@ public class ProfileBuilder {
         int l = coords.length;
         if(coords[0] != coords[l-1]) {
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;
@@ -737,14 +735,6 @@ public class ProfileBuilder {
     }
 
     /**
-     * Retrieve the sources list.
-     * @return The sources list.
-     */
-    public List<Geometry> getSources() {
-        return sources;
-    }
-
-    /**
      * Retrieve the ground effects.
      * @return The ground effects.
      */
@@ -762,13 +752,7 @@ public class ProfileBuilder {
      */
     public ProfileBuilder finishFeeding() {
         isFeedingFinished = true;
-        //Process sources
-        if(!sources.isEmpty()) {
-            sourceTree = new STRtree();
-            for (int i = 0; i < sources.size(); i++) {
-                sourceTree.insert(sources.get(i).getEnvelopeInternal(), i);
-            }
-        }
+
         //Process topographic points and lines
         if(topoPoints.size()+topoLines.size() > 1) {
             //Feed the Delaunay layer
@@ -827,14 +811,13 @@ public class ProfileBuilder {
                 wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
                 wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
                 // Insert triangle in rtree
-                if(topoTree != null) {
-                    Coordinate vA = vertices.get(tri.getA());
-                    Coordinate vB = vertices.get(tri.getB());
-                    Coordinate vC = vertices.get(tri.getC());
-                    Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                    topoTree.insert(env, i);
-                }
+                Coordinate vA = vertices.get(tri.getA());
+                Coordinate vB = vertices.get(tri.getB());
+                Coordinate vC = vertices.get(tri.getC());
+                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
+                topoTree.insert(env, i);
             }
+            topoTree.build();
             //TODO : Seems to be useless, to check
             /*for (IntegerTuple wallId : wallIndex) {
                 Coordinate vA = vertices.get(wallId.nodeIndexA);
@@ -881,8 +864,11 @@ public class ProfileBuilder {
         }
         //Process buildings
         rtree = new STRtree(buildingNodeCapacity);
+        buildingsWideAnglePoints.clear();
         for (int j = 0; j < buildings.size(); j++) {
             Building building = buildings.get(j);
+            buildingsWideAnglePoints.put(j + 1,
+                    getWideAnglePointsByBuilding(j + 1, 0, 2 * Math.PI));
             List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
@@ -907,6 +893,7 @@ public class ProfileBuilder {
             }
         }
         //Process the ground effects
+        groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundEffects.size(); j++) {
             GroundEffect effect = groundEffects.get(j);
             List<Polygon> polygons = new ArrayList<>();
@@ -920,14 +907,17 @@ public class ProfileBuilder {
                 }
             }
             for (Polygon poly : polygons) {
+                groundEffectsRtree.insert(poly.getEnvelopeInternal(), j);
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, IntersectionType.GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
+                    processedWalls.add(new Wall(line, j, GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
                     rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
                 }
             }
         }
+        rtree.build();
+        groundEffectsRtree.build();
         return this;
     }
 
@@ -937,7 +927,13 @@ public class ProfileBuilder {
             return getZGround(reflectionPt);
         }
         else {
-            return buildings.get(ids.get(0)-1).getGeometry().getCoordinate().z;
+            for(Integer id : ids) {
+                Geometry buildingGeometry =  buildings.get(id - 1).getGeometry();
+                if(buildingGeometry.getEnvelopeInternal().intersects(reflectionPt)) {
+                    return buildingGeometry.getCoordinate().z;
+                }
+            }
+            return getZGround(reflectionPt);
         }
     }
 
@@ -1023,21 +1019,7 @@ public class ProfileBuilder {
         return profile;
     }
 
-    /**
-     * Retrieve the cutting profile following the line build from the given coordinates.
-     * @param c0 Starting point.
-     * @param c1 Ending point.
-     * @return Cutting profile.
-     */
-    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        CutProfile profile = new CutProfile();
-
-        //Topography
-        if(topoTree != null) {
-            addTopoCutPts(c0, c1, profile);
-        }
-        // Split line into segments for structures based on RTree in order to limit the number of queries
-        // (for large area of the line segment envelope)
+    public static List<LineSegment> splitSegment(Coordinate c0, Coordinate c1, double maxLineLength) {
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
         double l = dist2D(c0, c1);
@@ -1055,6 +1037,27 @@ public class ProfileBuilder {
                 lines.add(new LineSegment(p0, p1));
             }
         }
+        return lines;
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+        CutProfile profile = new CutProfile();
+
+        //Topography
+        if(topoTree != null) {
+            addTopoCutPts(c0, c1, profile);
+        }
+        // Split line into segments for structures based on RTree in order to limit the number of queries
+        // (for large area of the line segment envelope)
+        LineSegment fullLine = new LineSegment(c0, c1);
+        List<LineSegment> lines = splitSegment(c0, c1, maxLineLength);
+
         //Buildings and Ground effect
         if(rtree != null) {
             addGroundBuildingCutPts(lines, fullLine, profile);
@@ -1086,40 +1089,129 @@ public class ProfileBuilder {
     }
 
     private void setGroundEffects(CutProfile profile, Coordinate c0, double gS) {
-        Stack<GroundEffect> stack = new Stack<>();
+        Stack<List<Integer>> stack = new Stack<>();
         GroundEffect currentGround = null;
+        int currGrdI = -1;
         Point p0 = FACTORY.createPoint(c0);
-        for(GroundEffect ground : groundEffects) {
+        List<Integer> groundEffectsResult = (List<Integer>)groundEffectsRtree.query(new Envelope(c0));
+        for(Integer groundEffectIndex : groundEffectsResult) {
+            GroundEffect ground = groundEffects.get(groundEffectIndex);
             if(ground.geom.contains(p0)) {
                 currentGround = ground;
-                stack.push(ground);
+                break;
             }
         }
-        List<CutPoint> toRemove = new ArrayList<>();
-        CutPoint previous = null;
-        for(CutPoint cut : profile.pts) {
-            if(cut.type == IntersectionType.GROUND_EFFECT) {
-                if(currentGround == groundEffects.get(cut.id)) {
-                    stack.pop();
-                    currentGround = stack.isEmpty() ? null : stack.peek();
+        List<Integer> currGrounds = new ArrayList<>();
+        List<Integer> nextGrounds = new ArrayList<>();
+        boolean first = true;
+        List<CutPoint> pts = profile.pts;
+        //Loop on each cut points
+        for (int i = 0; i < pts.size(); i++) {
+            CutPoint cut = pts.get(i);
+            //If the cut point is not a Ground effect, simply apply the current ground coef
+            if (cut.type != GROUND_EFFECT) {
+                cut.groundCoef = currentGround != null ? currentGround.coef : gS;
+            } else {
+                int j=i;
+                CutPoint next = pts.get(j);
+                //Pass all the cut points located at the same position as the current point.
+                while(cut.coordinate.equals2D(next.coordinate)){
+                    //If the current ground effect list has never been filled, fill it.
+                    if(first && next.type == GROUND_EFFECT){
+                        currGrounds.add(next.id);
+                    }
+                    //Apply the current ground effect tfor the case that the current cut point is at the same position as the receiver point.
+                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    if(j+1==pts.size()){
+                        break;
+                    }
+                    next = pts.get(++j);
                 }
-                else {
-                    stack.push(groundEffects.get(cut.id));
-                    currentGround = groundEffects.get(cut.id);
-                    if(previous != null &&
-                            cut.getCoordinate().x == previous.getCoordinate().x &&
-                            cut.getCoordinate().y == previous.getCoordinate().y &&
-                            previous.getType() != SOURCE &&
-                            previous.getType() != RECEIVER &&
-                            previous.getType() != BUILDING ) {
-                        toRemove.add(previous);
+                first = false;
+                //Try to find the next ground effect cut point
+                while((next = pts.get(j)).type != GROUND_EFFECT && j<pts.size()-1){
+                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    j++;
+                }
+                //If there is no more ground effect, exit loop
+                if(j==pts.size()-1){
+                    //Use the current ground effect for the remaining cut point
+                    for(int idx : currGrounds) {
+                        if(currentGround != null && currentGround.coef != groundEffects.get(idx).coef){
+                            currentGround =groundEffects.get(idx);
+                        }
+                    }
+                    continue;
+                }
+                CutPoint nextNext = pts.get(j);
+                //Fill the next ground effect list
+                while(next.coordinate.equals2D(nextNext.coordinate)){
+                    if(nextNext.type == GROUND_EFFECT){
+                        nextGrounds.add(nextNext.id);
+                    }
+                    if(j+1==pts.size()){
+                        break;
+                    }
+                    nextNext = pts.get(++j);
+                }
+                nextNext = pts.get(j-1);
+
+                boolean found = false;
+                //Find the ground effect which will be applied from current position to next
+                for(int idx : currGrounds) {
+                    if(nextGrounds.contains(idx)){
+                        currGrdI = idx;
+                        found = true;
+                        break;
                     }
                 }
-                previous = cut;
+                //If no ground effect found, it means that the current ground effect contains an other ground effect.
+                //Store the current ground effect in a stack and use the next ground effect
+                if(!found){
+                    currGrdI = nextGrounds.get(0);
+                    stack.push(currGrounds);
+                }
+                if(currGrdI != -1) {
+                    currentGround = groundEffects.get(currGrdI);
+                }
+                CutPoint cutPt = pts.get(i);
+                //Apply the ground effect after the current coint up to the next ground effect
+                while(!nextNext.coordinate.equals2D(cutPt.coordinate)){
+                    if(found){
+                        cutPt.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    }
+                    i++;
+                    if(i==pts.size()){
+                        break;
+                    }
+                    cutPt = pts.get(i);
+                }
+                i--;
+                currGrounds = nextGrounds;
+                //remove the used ground effect from the list of next ground effect to avoid to reuse it
+                if(found) {
+                    currGrounds.remove((Object) currGrdI);
+                }
+                nextGrounds = new ArrayList<>();
+                if(!currGrounds.isEmpty()) {
+                    currentGround = groundEffects.get(currGrounds.get(0));
+                }
+                else {
+                    if(stack.isEmpty()) {
+                        currentGround = null;
+                    }
+                    //If there is no more ground effect, try to pop the stack
+                    else{
+                        currGrounds = stack.pop();
+                        if(currGrounds.isEmpty()) {
+                            currentGround = null;
+                        } else {
+                            currentGround = groundEffects.get(currGrounds.get(0));
+                        }
+                    }
+                }
             }
-            cut.groundCoef = currentGround != null ? currentGround.coef : gS;
         }
-        profile.pts.removeAll(toRemove);
     }
 
     private void addBuildingBaseCutPts(CutProfile profile, Coordinate c0, Coordinate c1) {
@@ -1180,6 +1272,7 @@ public class ProfileBuilder {
             indexes.addAll(rtree.query(new Envelope(line.p0, line.p1)));
         }
         indexes = indexes.stream().distinct().collect(Collectors.toList());
+        Map<Integer, Coordinate> processedGround = new HashMap<>();
         for (int i : indexes) {
             Wall facetLine = processedWalls.get(i);
             Coordinate intersection = fullLine.intersection(facetLine.ls);
@@ -1200,18 +1293,32 @@ public class ProfileBuilder {
                     intersection.z = getZGround(intersection);
                 }
                 if(facetLine.type == IntersectionType.BUILDING) {
-                    profile.addBuildingCutPt(intersection, facetLine.originId, i);
+                    profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
-                    profile.addWallCutPt(intersection, facetLine.originId);
+                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
-                else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
+                else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
-                        //Coordinate c = new Coordinate(intersection.x, intersection.y, getZ(intersection));
-                        profile.addGroundCutPt(intersection, facetLine.originId);
+                        //Add cut point only if the a same orifinId is for two different coordinate to avoid having
+                        // more than one cutPoint with the same id on the same coordinate
+                        if(processedGround.containsKey(facetLine.originId) ){
+                            if(intersection.equals(processedGround.get(facetLine.originId))) {
+                                processedGround.remove(facetLine.originId);
+                            }else{
+                                profile.addGroundCutPt(intersection, facetLine.originId);
+                                profile.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
+                            }
+                        }
+                        else {
+                            processedGround.put(facetLine.originId, intersection);
+                        }
                     }
                 }
             }
+        }
+        for(Map.Entry<Integer, Coordinate> entry : processedGround.entrySet()){
+            profile.addGroundCutPt(entry.getValue(), entry.getKey());
         }
     }
 
@@ -1544,8 +1651,8 @@ public class ProfileBuilder {
          * @param coord      Coordinate of the cutting point.
          * @param buildingId Id of the cut building.
          */
-        public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId) {
-            CutPoint cut = new CutPoint(coord, IntersectionType.BUILDING, buildingId);
+        public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
+            CutPoint cut = new CutPoint(coord, IntersectionType.BUILDING, buildingId, corner);
             cut.wallId = wallId;
             pts.add(cut);
             pts.get(pts.size()-1).buildingId = buildingId;
@@ -1557,8 +1664,8 @@ public class ProfileBuilder {
          * @param coord Coordinate of the cutting point.
          * @param id    Id of the cut building.
          */
-        public void addWallCutPt(Coordinate coord, int id) {
-            pts.add(new CutPoint(coord, IntersectionType.WALL, id));
+        public void addWallCutPt(Coordinate coord, int id, boolean corner) {
+            pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
             pts.get(pts.size()-1).wallId = id;
             hasBuildingInter = true;
         }
@@ -1619,10 +1726,21 @@ public class ProfileBuilder {
          * Sort the CutPoints by there coordinates
          */
         public void sort(Coordinate c0, Coordinate c1) {
-            if(c0.compareTo(c1)<=0) {
-                pts.sort(CutPoint::compareTo);
-            } else {
-                pts.sort(Collections.reverseOrder());
+            if(c0.x<=c1.x){
+                if(c0.y<=c1.y){
+                    pts.sort(CutPoint::compareTox01y01);
+                }
+                else {
+                    pts.sort(CutPoint::compareTox01y10);
+                }
+            }
+            if(c0.x>c1.x){
+                if(c0.y<=c1.y){
+                    pts.sort(CutPoint::compareTox10y01);
+                }
+                else {
+                    pts.sort(CutPoint::compareTox10y10);
+                }
             }
         }
 
@@ -1701,23 +1819,24 @@ public class ProfileBuilder {
                 for(CutPoint cut : pts) {
                     if(cut.getType() == BUILDING || cut.getType() == WALL) {
                         tmp.add(cut);
-                        if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
-                            allMatch = false;
-                        }
                     }
                     else if(cut.getType() == TOPOGRAPHY) {
                         tmp.add(cut);
+                    }
+                    if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
+                        allMatch = false;
                     }
                 }
                 if(allMatch) {
                     return true;
                 }
-                LineSegment srcRcvLine = new LineSegment(source.getCoordinate(), receiver.getCoordinate());
-                for(CutPoint pt : pts) {
-                    //double frac = srcRcvLine.segmentFraction(pt.getCoordinate());
+                List<CutPoint> ptsWithouGroundEffect = pts.stream()
+                        .filter(cut -> !cut.getType().equals(GROUND_EFFECT))
+                        .collect(Collectors.toList());
+                for(CutPoint pt : ptsWithouGroundEffect) {
                     double frac = (pt.coordinate.x-s.x)/(r.x-s.x);
                     double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
-                    if(z < pt.getCoordinate().z) {
+                    if(z < pt.getCoordinate().z && !pt.isCorner()) {
                         isFreeField = false;
                         break;
                     }
@@ -1757,6 +1876,7 @@ public class ProfileBuilder {
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
         private List<Double> wallAlpha;
+        private boolean corner;
 
         /**
          * Constructor using a {@link Coordinate}.
@@ -1764,7 +1884,7 @@ public class ProfileBuilder {
          * @param type  Intersection type.
          * @param id    Identifier of the cut element.
          */
-        public CutPoint(Coordinate coord, IntersectionType type, int id) {
+        public CutPoint(Coordinate coord, IntersectionType type, int id, boolean corner) {
             this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
             this.type = type;
             this.id = id;
@@ -1774,6 +1894,10 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>();
             this.height = 0;
             this.zGround = null;
+            this.corner = corner;
+        }
+        public CutPoint(Coordinate coord, IntersectionType type, int id) {
+            this(coord, type, id, false);
         }
         public CutPoint(CutPoint cut) {
             this.coordinate = new Coordinate(cut.getCoordinate());
@@ -1785,6 +1909,7 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>(cut.wallAlpha);
             this.height = cut.height;
             this.zGround = cut.zGround;
+            this.corner = corner;
         }
 
         /**
@@ -1916,7 +2041,61 @@ public class ProfileBuilder {
             str += "buildH : " + height + " ; ";
             str += "buildId : " + buildingId + " ; ";
             str += "alpha : " + wallAlpha + " ; ";
+            str += "id : " + id + " ; ";
             return str;
+        }
+
+
+        public int compareTox01y01(CutPoint cutPoint) {
+            if(this.coordinate.x < cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox10y01(CutPoint cutPoint) {
+            if(this.coordinate.x > cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox01y10(CutPoint cutPoint) {
+            if(this.coordinate.x < cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox10y10(CutPoint cutPoint) {
+            if(this.coordinate.x > cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
         }
 
         @Override
@@ -1931,6 +2110,10 @@ public class ProfileBuilder {
             else {
                 return 1;
             }
+        }
+
+        public boolean isCorner(){
+            return corner;
         }
     }
 
@@ -2281,9 +2464,18 @@ public class ProfileBuilder {
 
     //TODO methods to check
     public static final double wideAngleTranslationEpsilon = 0.01;
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates();
+
+    /**
+     * @param build 1-n based building identifier
+     * @return
+     */
+    public ArrayList<Coordinate> getPrecomputedWideAnglePoints(int build) {
+        return buildingsWideAnglePoints.get(build);
+    }
+
+    public ArrayList<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+        ArrayList <Coordinate> verticesBuilding = new ArrayList<>();
+        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates().clone();
         if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
@@ -2327,9 +2519,12 @@ public class ProfileBuilder {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        Envelope pathEnv = new Envelope(p1, p2);
         try {
-            buildingTree.query(pathEnv, visitor);
+            List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
+            for(LineSegment segment : lines) {
+                Envelope pathEnv = new Envelope(segment.p0, segment.p1);
+                    buildingTree.query(pathEnv, visitor);
+            }
         } catch (IllegalStateException ex) {
             //Ignore
         }
