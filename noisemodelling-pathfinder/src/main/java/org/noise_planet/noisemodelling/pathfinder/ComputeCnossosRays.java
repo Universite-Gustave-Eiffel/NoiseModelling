@@ -801,7 +801,7 @@ public class ComputeCnossosRays {
             int i1 = pts2D.indexOf(pts.get(i));
             ProfileBuilder.CutPoint cutPt0 = cutPts.get(i0);
             ProfileBuilder.CutPoint cutPt1 = cutPts.get(i1);
-            ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(cutPt0, cutPt1);
+            ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(cutPt0, cutPt1, data.gS);
             List<Coordinate> subList = pts2D.subList(i0, i1+1).stream().map(Coordinate::new).collect(Collectors.toList());
             for(int j=0; j<=i1-i0; j++){
                 if(!cutPts.get(j+i0).getType().equals(BUILDING)){
@@ -1001,11 +1001,6 @@ public class ComputeCnossosRays {
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
                         // Check if we still are in the propagation domain
-                        /*if (!profileBuilder.getMeshEnvelope().contains(coordinates[k]) ||
-                                !profileBuilder.getMeshEnvelope().contains(coordinates[k + 1])) {
-                            // This side goes over propagation path
-                            return new ArrayList<>();
-                        }*/
                         buildingIntersectionRayVisitor = new BuildingIntersectionRayVisitor(profileBuilder.getBuildings(),
                                 coordinates[k], coordinates[k + 1], profileBuilder, input, buildingInHull, cutPlane);
                         profileBuilder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionRayVisitor);
