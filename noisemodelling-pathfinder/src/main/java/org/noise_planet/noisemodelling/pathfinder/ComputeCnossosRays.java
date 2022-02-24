@@ -1091,7 +1091,7 @@ public class ComputeCnossosRays {
             if (buildingsInIntersection.contains(id)) {
                 return;
             }
-            List<Coordinate> roofPoints = profileBuilder.getWideAnglePointsByBuilding(id, 0, 2 * Math.PI);
+            List<Coordinate> roofPoints = profileBuilder.getPrecomputedWideAnglePoints(id);
             // Create a cut of the building volume
             roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
             if (!roofPoints.isEmpty()) {

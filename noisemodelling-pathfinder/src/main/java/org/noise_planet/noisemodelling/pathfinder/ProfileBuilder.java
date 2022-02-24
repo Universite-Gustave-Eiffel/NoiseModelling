@@ -54,7 +54,17 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -88,6 +98,8 @@ public class ProfileBuilder {
 
     /** If true, no more data can be add. */
     private boolean isFeedingFinished = false;
+    /** Wide angle points of a building polygon */
+    private Map<Integer, ArrayList<Coordinate>> buildingsWideAnglePoints = new HashMap<>();
     /** Building RTree node capacity. */
     private int buildingNodeCapacity = TREE_NODE_CAPACITY;
     /** Topographic RTree node capacity. */
@@ -109,6 +121,8 @@ public class ProfileBuilder {
     private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** Global RTree. */
     private STRtree rtree;
+    private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
+
 
     /** List of topographic points. */
     private final List<Coordinate> topoPoints = new ArrayList<>();
@@ -126,10 +140,6 @@ public class ProfileBuilder {
     /** List of ground effects. */
     private final List<GroundEffect> groundEffects = new ArrayList<>();
 
-    /** Sources geometries.*/
-    private final List<Geometry> sources = new ArrayList<>();
-    /** Sources RTree. */
-    private STRtree sourceTree;
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
 
@@ -725,14 +735,6 @@ public class ProfileBuilder {
     }
 
     /**
-     * Retrieve the sources list.
-     * @return The sources list.
-     */
-    public List<Geometry> getSources() {
-        return sources;
-    }
-
-    /**
      * Retrieve the ground effects.
      * @return The ground effects.
      */
@@ -750,13 +752,7 @@ public class ProfileBuilder {
      */
     public ProfileBuilder finishFeeding() {
         isFeedingFinished = true;
-        //Process sources
-        if(!sources.isEmpty()) {
-            sourceTree = new STRtree();
-            for (int i = 0; i < sources.size(); i++) {
-                sourceTree.insert(sources.get(i).getEnvelopeInternal(), i);
-            }
-        }
+
         //Process topographic points and lines
         if(topoPoints.size()+topoLines.size() > 1) {
             //Feed the Delaunay layer
@@ -815,14 +811,13 @@ public class ProfileBuilder {
                 wallIndex.add(new IntegerTuple(tri.getB(), tri.getC(), i));
                 wallIndex.add(new IntegerTuple(tri.getC(), tri.getA(), i));
                 // Insert triangle in rtree
-                if(topoTree != null) {
-                    Coordinate vA = vertices.get(tri.getA());
-                    Coordinate vB = vertices.get(tri.getB());
-                    Coordinate vC = vertices.get(tri.getC());
-                    Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
-                    topoTree.insert(env, i);
-                }
+                Coordinate vA = vertices.get(tri.getA());
+                Coordinate vB = vertices.get(tri.getB());
+                Coordinate vC = vertices.get(tri.getC());
+                Envelope env = FACTORY.createLineString(new Coordinate[]{vA, vB, vC}).getEnvelopeInternal();
+                topoTree.insert(env, i);
             }
+            topoTree.build();
             //TODO : Seems to be useless, to check
             /*for (IntegerTuple wallId : wallIndex) {
                 Coordinate vA = vertices.get(wallId.nodeIndexA);
@@ -869,8 +864,11 @@ public class ProfileBuilder {
         }
         //Process buildings
         rtree = new STRtree(buildingNodeCapacity);
+        buildingsWideAnglePoints.clear();
         for (int j = 0; j < buildings.size(); j++) {
             Building building = buildings.get(j);
+            buildingsWideAnglePoints.put(j + 1,
+                    getWideAnglePointsByBuilding(j + 1, 0, 2 * Math.PI));
             List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
@@ -895,6 +893,7 @@ public class ProfileBuilder {
             }
         }
         //Process the ground effects
+        groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundEffects.size(); j++) {
             GroundEffect effect = groundEffects.get(j);
             List<Polygon> polygons = new ArrayList<>();
@@ -908,6 +907,7 @@ public class ProfileBuilder {
                 }
             }
             for (Polygon poly : polygons) {
+                groundEffectsRtree.insert(poly.getEnvelopeInternal(), j);
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
@@ -916,6 +916,8 @@ public class ProfileBuilder {
                 }
             }
         }
+        rtree.build();
+        groundEffectsRtree.build();
         return this;
     }
 
@@ -925,7 +927,13 @@ public class ProfileBuilder {
             return getZGround(reflectionPt);
         }
         else {
-            return buildings.get(ids.get(0)-1).getGeometry().getCoordinate().z;
+            for(Integer id : ids) {
+                Geometry buildingGeometry =  buildings.get(id - 1).getGeometry();
+                if(buildingGeometry.getEnvelopeInternal().intersects(reflectionPt)) {
+                    return buildingGeometry.getCoordinate().z;
+                }
+            }
+            return getZGround(reflectionPt);
         }
     }
 
@@ -1011,21 +1019,7 @@ public class ProfileBuilder {
         return profile;
     }
 
-    /**
-     * Retrieve the cutting profile following the line build from the given coordinates.
-     * @param c0 Starting point.
-     * @param c1 Ending point.
-     * @return Cutting profile.
-     */
-    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
-        CutProfile profile = new CutProfile();
-
-        //Topography
-        if(topoTree != null) {
-            addTopoCutPts(c0, c1, profile);
-        }
-        // Split line into segments for structures based on RTree in order to limit the number of queries
-        // (for large area of the line segment envelope)
+    public static List<LineSegment> splitSegment(Coordinate c0, Coordinate c1, double maxLineLength) {
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
         double l = dist2D(c0, c1);
@@ -1043,6 +1037,27 @@ public class ProfileBuilder {
                 lines.add(new LineSegment(p0, p1));
             }
         }
+        return lines;
+    }
+
+    /**
+     * Retrieve the cutting profile following the line build from the given coordinates.
+     * @param c0 Starting point.
+     * @param c1 Ending point.
+     * @return Cutting profile.
+     */
+    public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
+        CutProfile profile = new CutProfile();
+
+        //Topography
+        if(topoTree != null) {
+            addTopoCutPts(c0, c1, profile);
+        }
+        // Split line into segments for structures based on RTree in order to limit the number of queries
+        // (for large area of the line segment envelope)
+        LineSegment fullLine = new LineSegment(c0, c1);
+        List<LineSegment> lines = splitSegment(c0, c1, maxLineLength);
+
         //Buildings and Ground effect
         if(rtree != null) {
             addGroundBuildingCutPts(lines, fullLine, profile);
@@ -1078,9 +1093,12 @@ public class ProfileBuilder {
         GroundEffect currentGround = null;
         int currGrdI = -1;
         Point p0 = FACTORY.createPoint(c0);
-        for(GroundEffect ground : groundEffects) {
+        List<Integer> groundEffectsResult = (List<Integer>)groundEffectsRtree.query(new Envelope(c0));
+        for(Integer groundEffectIndex : groundEffectsResult) {
+            GroundEffect ground = groundEffects.get(groundEffectIndex);
             if(ground.geom.contains(p0)) {
                 currentGround = ground;
+                break;
             }
         }
         List<Integer> currGrounds = new ArrayList<>();
@@ -2446,9 +2464,18 @@ public class ProfileBuilder {
 
     //TODO methods to check
     public static final double wideAngleTranslationEpsilon = 0.01;
-    public List<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        List <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates();
+
+    /**
+     * @param build 1-n based building identifier
+     * @return
+     */
+    public ArrayList<Coordinate> getPrecomputedWideAnglePoints(int build) {
+        return buildingsWideAnglePoints.get(build);
+    }
+
+    public ArrayList<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
+        ArrayList <Coordinate> verticesBuilding = new ArrayList<>();
+        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates().clone();
         if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
@@ -2492,9 +2519,12 @@ public class ProfileBuilder {
      * @return Building identifier (1-n) intersected by the line
      */
     public void getBuildingsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        Envelope pathEnv = new Envelope(p1, p2);
         try {
-            buildingTree.query(pathEnv, visitor);
+            List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
+            for(LineSegment segment : lines) {
+                Envelope pathEnv = new Envelope(segment.p0, segment.p1);
+                    buildingTree.query(pathEnv, visitor);
+            }
         } catch (IllegalStateException ex) {
             //Ignore
         }
