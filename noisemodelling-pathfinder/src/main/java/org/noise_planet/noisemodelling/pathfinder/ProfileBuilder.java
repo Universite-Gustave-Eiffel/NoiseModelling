@@ -1067,7 +1067,7 @@ public class ProfileBuilder {
         }
 
         //Sort all the cut point in order to set the ground coefficients.
-        profile.sort();
+        profile.sort(c0, c1);
         //Add base cut for buildings
         addBuildingBaseCutPts(profile, c0, c1);
 
@@ -1131,38 +1131,113 @@ public class ProfileBuilder {
     }
 
     private void setGroundEffects(CutProfile profile, Coordinate c0, double gS) {
-        Stack<GroundEffect> stack = new Stack<>();
+        Stack<List<Integer>> stack = new Stack<>();
         GroundEffect currentGround = null;
+        int currGrdI = -1;
         Point p0 = FACTORY.createPoint(c0);
         for(GroundEffect ground : groundEffects) {
             if(ground.geom.contains(p0)) {
                 currentGround = ground;
-                stack.push(ground);
             }
         }
         List<CutPoint> toRemove = new ArrayList<>();
-        CutPoint previous = null;
-        for(CutPoint cut : profile.pts) {
-            if(cut.type == IntersectionType.GROUND_EFFECT) {
-                if(currentGround == groundEffects.get(cut.id)) {
-                    stack.pop();
-                    currentGround = stack.isEmpty() ? null : stack.peek();
+        List<Integer> currGrounds = new ArrayList<>();
+        List<Integer> nextGrounds = new ArrayList<>();
+        boolean first = true;
+        List<CutPoint> pts = profile.pts;
+        for (int i = 0; i < pts.size(); i++) {
+            CutPoint cut = pts.get(i);
+            if (cut.type == GROUND_EFFECT) {
+                int j=i;
+                CutPoint next = pts.get(j);
+                while(cut.coordinate.equals2D(next.coordinate)){
+                    if(first && next.type == GROUND_EFFECT){
+                        currGrounds.add(next.id);
+                    }
+                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    if(j+1==pts.size()){
+                        break;
+                    }
+                    next = pts.get(++j);
                 }
-                else {
-                    stack.push(groundEffects.get(cut.id));
-                    currentGround = groundEffects.get(cut.id);
-                    if(previous != null &&
-                            cut.getCoordinate().x == previous.getCoordinate().x &&
-                            cut.getCoordinate().y == previous.getCoordinate().y &&
-                            previous.getType() != SOURCE &&
-                            previous.getType() != RECEIVER &&
-                            previous.getType() != BUILDING ) {
-                        toRemove.add(previous);
+                first = false;
+                while((next = pts.get(j)).type != GROUND_EFFECT && j<pts.size()-1){
+                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    j++;
+                }
+                //If there is no more ground effect, exit loop
+                if(j==pts.size()-1){
+                    for(int idx : currGrounds) {
+                        if(currentGround != null && currentGround.coef != groundEffects.get(idx).coef){
+                            currentGround =groundEffects.get(idx);
+                        }
+                    }
+                    continue;
+                }
+                CutPoint nextNext = pts.get(j);
+                while(next.coordinate.equals2D(nextNext.coordinate)){
+                    if(nextNext.type == GROUND_EFFECT){
+                        nextGrounds.add(nextNext.id);
+                    }
+                    if(j+1==pts.size()){
+                        break;
+                    }
+                    nextNext = pts.get(++j);
+                }
+                nextNext = pts.get(j-1);
+
+                boolean found = false;
+                for(int idx : currGrounds) {
+                    if(nextGrounds.contains(idx)){
+                        currGrdI = idx;
+                        found = true;
+                        break;
                     }
                 }
-                previous = cut;
+                if(!found){
+                    currGrdI = nextGrounds.get(0);
+                    stack.push(currGrounds);
+                }
+                if(currGrdI != -1) {
+                    currentGround = groundEffects.get(currGrdI);
+                }
+                CutPoint cutPt = pts.get(i);
+                while(!nextNext.coordinate.equals2D(cutPt.coordinate)){
+                    if(found){
+                        cutPt.groundCoef = currentGround != null ? currentGround.coef : gS;
+                    }
+                    i++;
+                    if(i==pts.size()){
+                        break;
+                    }
+                    cutPt = pts.get(i);
+                }
+                i--;
+                currGrounds = nextGrounds;
+                if(found) {
+                    currGrounds.remove((Object) currGrdI);
+                }
+                nextGrounds = new ArrayList<>();
+                if(!currGrounds.isEmpty()) {
+                    currentGround = groundEffects.get(currGrounds.get(0));
+                }
+                else {
+                    if(stack.isEmpty()) {
+                        currentGround = null;
+                    }
+                    else{
+                        currGrounds = stack.pop();
+                        if(currGrounds.isEmpty()) {
+                            currentGround = null;
+                        } else {
+                            currentGround = groundEffects.get(currGrounds.get(0));
+                        }
+                    }
+                }
             }
-            cut.groundCoef = currentGround != null ? currentGround.coef : gS;
+            else {
+                cut.groundCoef = currentGround != null ? currentGround.coef : gS;
+            }
         }
         profile.pts.removeAll(toRemove);
     }
@@ -1225,6 +1300,7 @@ public class ProfileBuilder {
             indexes.addAll(rtree.query(new Envelope(line.p0, line.p1)));
         }
         indexes = indexes.stream().distinct().collect(Collectors.toList());
+        Map<Integer, Coordinate> processedGround = new HashMap<>();
         for (int i : indexes) {
             Wall facetLine = processedWalls.get(i);
             Coordinate intersection = fullLine.intersection(facetLine.ls);
@@ -1252,11 +1328,25 @@ public class ProfileBuilder {
                 }
                 else if(facetLine.type == IntersectionType.GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
-                        //Coordinate c = new Coordinate(intersection.x, intersection.y, getZ(intersection));
-                        profile.addGroundCutPt(intersection, facetLine.originId);
+                        //Add cut point only if the a same orifinId is for two different coordinate to avoid having
+                        // more than one cutPoint with the same id on the same coordinate
+                        if(processedGround.containsKey(facetLine.originId) ){
+                            if(intersection.equals(processedGround.get(facetLine.originId))) {
+                                processedGround.remove(facetLine.originId);
+                            }else{
+                                profile.addGroundCutPt(intersection, facetLine.originId);
+                                profile.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
+                            }
+                        }
+                        else {
+                            processedGround.put(facetLine.originId, intersection);
+                        }
                     }
                 }
             }
+        }
+        for(Map.Entry<Integer, Coordinate> entry : processedGround.entrySet()){
+            profile.addGroundCutPt(entry.getValue(), entry.getKey());
         }
     }
 
@@ -1445,8 +1535,23 @@ public class ProfileBuilder {
         /**
          * Sort the CutPoints by there coordinates
          */
-        public void sort() {
-            pts.sort(CutPoint::compareTo);
+        public void sort(Coordinate c0, Coordinate c1) {
+            if(c0.x<=c1.x){
+                if(c0.y<=c1.y){
+                    pts.sort(CutPoint::compareTox01y01);
+                }
+                else {
+                    pts.sort(CutPoint::compareTox01y10);
+                }
+            }
+            if(c0.x>c1.x){
+                if(c0.y<=c1.y){
+                    pts.sort(CutPoint::compareTox10y01);
+                }
+                else {
+                    pts.sort(CutPoint::compareTox10y10);
+                }
+            }
         }
 
         /**
@@ -1730,7 +1835,61 @@ public class ProfileBuilder {
             str += "buildH : " + height + " ; ";
             str += "buildId : " + buildingId + " ; ";
             str += "alpha : " + wallAlpha + " ; ";
+            str += "id : " + id + " ; ";
             return str;
+        }
+
+
+        public int compareTox01y01(CutPoint cutPoint) {
+            if(this.coordinate.x < cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox10y01(CutPoint cutPoint) {
+            if(this.coordinate.x > cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox01y10(CutPoint cutPoint) {
+            if(this.coordinate.x < cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
+        }
+
+        public int compareTox10y10(CutPoint cutPoint) {
+            if(this.coordinate.x > cutPoint.coordinate.x ||
+                    (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
+                return -1;
+            }
+            if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
+                return 0;
+            }
+            else {
+                return 1;
+            }
         }
 
         @Override
