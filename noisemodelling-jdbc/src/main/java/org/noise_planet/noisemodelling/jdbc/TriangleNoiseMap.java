@@ -252,10 +252,16 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         if (maximumArea > 1) {
             double triangleSide = (2*Math.pow(maximumArea, 0.5)) / Math.pow(3, 0.25);
             Polygon polygon = (Polygon)Densifier.densify(new GeometryFactory().toGeometry(cellEnvelope), triangleSide);
-            cellMesh.addLineString(polygon.getExteriorRing(), 0);
+            Coordinate[] points = polygon.getExteriorRing().getCoordinates();
+            for(Coordinate point : points) {
+                cellMesh.addVertex(point);
+            }
         } else {
             Polygon polygon = (Polygon) new GeometryFactory().toGeometry(cellEnvelope);
-            cellMesh.addLineString(polygon.getExteriorRing(), 0);
+            Coordinate[] points = polygon.getExteriorRing().getCoordinates();
+            for(Coordinate point : points) {
+                cellMesh.addVertex(point);
+            }
         }
         cellMesh.processDelaunay();
         logger.info("End delaunay");
