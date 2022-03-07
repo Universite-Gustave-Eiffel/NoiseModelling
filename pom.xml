@@ -22,9 +22,10 @@
         <jts-core-groupId>org.locationtech.jts</jts-core-groupId>
         <jts-core-version>1.18.2</jts-core-version>
         <jts-io-version>1.18.2</jts-io-version>
-        <h2-version>2.0.202</h2-version>
-        <h2-group>org.orbisgis</h2-group>
-        <h2gis-version>2.0.0</h2gis-version>
+        <h2-version>2.1.210</h2-version>
+        <h2gis-version>2.1.0-SNAPSHOT</h2gis-version>
+        <cts-version>1.6.0</cts-version>
+        <slf4j-version>1.7.32</slf4j-version>
     </properties>
     <modules>
         <module>noisemodelling-emission</module>
