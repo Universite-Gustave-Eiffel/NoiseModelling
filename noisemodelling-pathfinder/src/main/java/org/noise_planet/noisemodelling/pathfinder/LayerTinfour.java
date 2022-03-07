@@ -217,10 +217,6 @@ public class LayerTinfour implements LayerDelaunay {
         boolean refine;
         List<SimpleTriangle> simpleTriangles = new ArrayList<>();
         do {
-            // Dump input data
-            if(!dumpFolder.isEmpty()) {
-                dumpDataClass();
-            }
             // Triangulate
             tin = new IncrementalTin();
             // Add points
@@ -230,6 +226,10 @@ public class LayerTinfour implements LayerDelaunay {
                 tin.addConstraints(constraints, false);
             }catch (IllegalStateException ex) {
                 // Got error
+                // Dump input data
+                if(!dumpFolder.isEmpty()) {
+                    dumpData();
+                }
                 throw new LayerDelaunayError(ex);
             }
             refine = false;
