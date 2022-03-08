@@ -21,7 +21,6 @@ publishing {
     }
 }
 repositories {
-    mavenLocal() // TODO remove this on major release
     mavenCentral()
     maven {
         url "libs/"
@@ -44,6 +43,7 @@ repositories {
     maven {
         url "https://repo.matsim.org/repository/matsim/"
     }
+    mavenLocal() // TODO remove this on major release
 }
 
 test {
@@ -79,7 +79,7 @@ dependencies {
     implementation 'org.codehaus.groovy:groovy-all:2.5.5'
     implementation group: 'org.ejml', name: 'all', version: '0.29'
     implementation group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
-    implementation group: 'org.orbisgis', name: 'h2gis', version: '2.0.0'
+    implementation group: 'org.orbisgis', name: 'h2gis', version: '2.1.0-SNAPSHOT'
     implementation('org.locationtech.jts:jts-core:1.18.2') {
         version {
             strictly '[1.18, 1.19['
@@ -103,7 +103,7 @@ dependencies {
     }
 
     implementation 'com.opencsv:opencsv:4.0'
-    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
     testCompileOnly 'junit:junit:4.12'
 }
 
