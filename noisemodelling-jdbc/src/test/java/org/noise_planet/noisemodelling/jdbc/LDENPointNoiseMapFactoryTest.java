@@ -126,7 +126,7 @@ public class LDENPointNoiseMapFactoryTest {
     }
 
 
-    //@Test
+    @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
@@ -401,7 +401,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     }
 
-    //@Test
+    @Test
     public void testTableGenerationFromTraffic() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -488,17 +488,17 @@ public class LDENPointNoiseMapFactoryTest {
             for(int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(83, leqs[0], 2.0);
-            assertEquals(76, leqs[1], 2.0);
-            assertEquals(75, leqs[2], 2.0);
-            assertEquals(76, leqs[3], 2.0);
-            assertEquals(79, leqs[4], 2.0);
-            assertEquals(77, leqs[5], 2.0);
-            assertEquals(68, leqs[6], 2.0);
-            assertEquals(59, leqs[7], 2.0);
+            assertEquals(87, leqs[0], 2.0);
+            assertEquals(78, leqs[1], 2.0);
+            assertEquals(78, leqs[2], 2.0);
+            assertEquals(79, leqs[3], 2.0);
+            assertEquals(82, leqs[4], 2.0);
+            assertEquals(80, leqs[5], 2.0);
+            assertEquals(72, leqs[6], 2.0);
+            assertEquals(62, leqs[7], 2.0);
 
-            assertEquals(86, rs.getDouble(9), 2.0);
-            assertEquals(82,rs.getDouble(10), 2.0);
+            assertEquals(90, rs.getDouble(9), 2.0);
+            assertEquals(86,rs.getDouble(10), 2.0);
         }
 
 
@@ -509,17 +509,17 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(78.0, leqs[0], 2.0);
-            assertEquals(72.0, leqs[1], 2.0);
-            assertEquals(70.0, leqs[2], 2.0);
-            assertEquals(72.0, leqs[3], 2.0);
-            assertEquals(74.0, leqs[4], 2.0);
-            assertEquals(72.0, leqs[5], 2.0);
-            assertEquals(63.0, leqs[6], 2.0);
-            assertEquals(54.0, leqs[7], 2.0);
+            assertEquals(82.0, leqs[0], 2.0);
+            assertEquals(74.0, leqs[1], 2.0);
+            assertEquals(74.0, leqs[2], 2.0);
+            assertEquals(75.0, leqs[3], 2.0);
+            assertEquals(78.0, leqs[4], 2.0);
+            assertEquals(75.0, leqs[5], 2.0);
+            assertEquals(67.0, leqs[6], 2.0);
+            assertEquals(57.0, leqs[7], 2.0);
 
-            assertEquals(82, rs.getDouble(9), 2.0);
-            assertEquals(78,rs.getDouble(10), 2.0);
+            assertEquals(85, rs.getDouble(9), 2.0);
+            assertEquals(81,rs.getDouble(10), 2.0);
         }
 
 
@@ -529,17 +529,17 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(76, leqs[0], 2.0);
-            assertEquals(69, leqs[1], 2.0);
-            assertEquals(68, leqs[2], 2.0);
-            assertEquals(69, leqs[3], 2.0);
-            assertEquals(71, leqs[4], 2.0);
-            assertEquals(68, leqs[5], 2.0);
-            assertEquals(60, leqs[6], 2.0);
-            assertEquals(51, leqs[7], 2.0);
+            assertEquals(79, leqs[0], 2.0);
+            assertEquals(71, leqs[1], 2.0);
+            assertEquals(70, leqs[2], 2.0);
+            assertEquals(72, leqs[3], 2.0);
+            assertEquals(75, leqs[4], 2.0);
+            assertEquals(72, leqs[5], 2.0);
+            assertEquals(64, leqs[6], 2.0);
+            assertEquals(55, leqs[7], 2.0);
 
-            assertEquals(79, rs.getDouble(9), 2.0);
-            assertEquals(75,rs.getDouble(10), 2.0);
+            assertEquals(81, rs.getDouble(9), 2.0);
+            assertEquals(78,rs.getDouble(10), 2.0);
         }
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDenTable)) {
@@ -548,22 +548,22 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(84.0, leqs[0], 2.0);
-            assertEquals(77.0, leqs[1], 2.0);
-            assertEquals(76.0, leqs[2], 2.0);
-            assertEquals(77.0, leqs[3], 2.0);
-            assertEquals(80.0, leqs[4], 2.0);
-            assertEquals(77.0, leqs[5], 2.0);
-            assertEquals(69.0, leqs[6], 2.0);
-            assertEquals(59.0, leqs[7], 2.0);
+            assertEquals(87.0, leqs[0], 2.0);
+            assertEquals(79.0, leqs[1], 2.0);
+            assertEquals(79.0, leqs[2], 2.0);
+            assertEquals(80.0, leqs[3], 2.0);
+            assertEquals(83.0, leqs[4], 2.0);
+            assertEquals(81.0, leqs[5], 2.0);
+            assertEquals(72.0, leqs[6], 2.0);
+            assertEquals(63.0, leqs[7], 2.0);
 
-            assertEquals(87, rs.getDouble(9), 2.0);
-            assertEquals(83,rs.getDouble(10), 2.0);
+            assertEquals(90, rs.getDouble(9), 2.0);
+            assertEquals(87,rs.getDouble(10), 2.0);
         }
     }
 
 
-    //@Test
+    @Test
     public void testTableGenerationFromTrafficNightOnly() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -636,22 +636,22 @@ public class LDENPointNoiseMapFactoryTest {
             for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(75, leqs[0], 2.0);
-            assertEquals(69, leqs[1], 2.0);
-            assertEquals(68, leqs[2], 2.0);
-            assertEquals(69, leqs[3], 2.0);
-            assertEquals(71, leqs[4], 2.0);
-            assertEquals(69, leqs[5], 2.0);
-            assertEquals(60, leqs[6], 2.0);
-            assertEquals(51, leqs[7], 2.0);
+            assertEquals(78, leqs[0], 2.0);
+            assertEquals(71, leqs[1], 2.0);
+            assertEquals(70, leqs[2], 2.0);
+            assertEquals(72, leqs[3], 2.0);
+            assertEquals(75, leqs[4], 2.0);
+            assertEquals(72, leqs[5], 2.0);
+            assertEquals(64, leqs[6], 2.0);
+            assertEquals(55, leqs[7], 2.0);
 
-            assertEquals(79, rs.getDouble(9), 2.0);
-            assertEquals(75,rs.getDouble(10), 2.0);
+            assertEquals(82, rs.getDouble(9), 2.0);
+            assertEquals(78,rs.getDouble(10), 2.0);
         }
 
     }
 
-   // @Test
+    @Test
     public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -721,7 +721,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(LAEQ) LAEQ FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            assertEquals(75, rs.getDouble("LAEQ"), 2.0);
+            assertEquals(78, rs.getDouble("LAEQ"), 2.0);
         }
 
     }
@@ -782,17 +782,29 @@ public class LDENPointNoiseMapFactoryTest {
         assertEquals(1000, (int)ldenConfig.propagationProcessPathData.freq_lvl.get(0));
     }
 
-   // @Test
+    @Test
     public void testNoDemBuildingsZ() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
+        try(Statement st = connection.createStatement()) {
+            // Alter buildings polygons Z
+            //st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(ST_FORCE3D(THE_GEOM), 50), 2154)");
+            st.execute("CREATE TABLE BUILDINGS_Z(PK SERIAL PRIMARY KEY, the_geom GEOMETRY, HEIGHT FLOAT ) AS SELECT " +
+                    "(row_number() over())::int, ST_UPDATEZ(ST_FORCE3D(THE_GEOM),50.0), HEIGHT FROM BUILDINGS;");
+            st.execute("SELECT UpdateGeometrySRID('BUILDINGS_Z', 'THE_GEOM', 2154);");
+
+            // Use only a subset of receivers
+            st.execute("SELECT UpdateGeometrySRID('RECEIVERS', 'THE_GEOM', 2154);");
+            st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('SRID=2154;POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
+        }
+
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_Z", "LW_ROADS",
                 "RECEIVERS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -803,12 +815,7 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
 
-        try(Statement st = connection.createStatement()) {
-            // Alter buildings polygons Z
-            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(ST_FORCE3D(THE_GEOM), 50), 2154)");
-            // Use only a subset of receivers
-            st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
-        }
+
 
 
         // Set of already processed receivers
@@ -845,7 +852,7 @@ public class LDENPointNoiseMapFactoryTest {
     }
 
     // Check regression of finding cell i,j that contains receivers
-    //@Test
+    @Test
     public void testRegression1() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
@@ -958,7 +965,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     }
 
-    //@Test
+    @Test
     public void TestPointSource() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
@@ -1003,9 +1010,9 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
         pointNoiseMap.setHeightField("HEIGHT");
-        pointNoiseMap.setMaximumPropagationDistance(5000);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setMaximumPropagationDistance(100);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(1);
         pointNoiseMap.setDemTable("DEM_FENCE");
         pointNoiseMap.setSoilTableName("LANDCOVER");
