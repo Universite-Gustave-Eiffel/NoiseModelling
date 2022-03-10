@@ -222,18 +222,6 @@ public class ComputeCnossosRays {
                 }
             }
         }
-        List<SourcePointInfo> newList = new ArrayList<>();
-        for(SourcePointInfo src : sourceList) {
-            boolean hasPt = false;
-            for(SourcePointInfo s : newList) {
-                if(s.getCoord().x == src.getCoord().x && s.getCoord().y == src.getCoord().y){
-                    hasPt = true;
-                }
-            }
-            if(!hasPt) {
-                newList.add(src);
-            }
-        }
         // Sort sources by power contribution descending
         Collections.sort(sourceList);
         double powerAtSource = 0;
