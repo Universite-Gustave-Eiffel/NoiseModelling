@@ -228,7 +228,10 @@ public class PropaTrainTest {
         importFiles(connection);
         computeLW(connection);
 
-        List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
+        //List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
+
+        List<String> configs = Arrays.asList("C0","C4");
+
 
         for (String configName : configs) {
             System.out.println(configName);
@@ -241,7 +244,7 @@ public class PropaTrainTest {
             if (configName.equals("C3")) G = 1;
 
             double screenDepth = 0.5;
-            if (configName.equals("C2")) screenHeight = 1;
+            if (configName.equals("C2")) screenDepth = 1;
 
             // Receivers
             String rcvName = "RECEPTEURS";
@@ -278,7 +281,9 @@ public class PropaTrainTest {
 
             // Config
             int orderRef = 0;
-            if (configName.equals("C4")) orderRef = 1;
+            if (configName.equals("C3") ||
+                    configName.equals("C4")) orderRef = 1;
+
             boolean dif = true;
             if (configName.equals("C5")) dif = false;
 
