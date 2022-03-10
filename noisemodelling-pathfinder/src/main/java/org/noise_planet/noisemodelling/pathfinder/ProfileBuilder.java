@@ -1593,7 +1593,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
+    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
 
         PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
             if(this.equals(SOURCE)){
