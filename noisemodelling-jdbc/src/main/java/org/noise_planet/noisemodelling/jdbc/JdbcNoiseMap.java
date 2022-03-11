@@ -38,7 +38,7 @@ public abstract class JdbcNoiseMap {
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
-    private String alphaFieldName = "ALPHA";
+    private String alphaFieldName = "G";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
     protected String soilTableName = "";
