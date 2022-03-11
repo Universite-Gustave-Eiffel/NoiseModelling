@@ -225,14 +225,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
-                /*Orientation sourceOrientation = proPath.getSourceOrientation();
-                // fetch orientation of the first ray
-                Coordinate nextPointFromSource = proPath.getPointList().get(1).coordinate;
-                Coordinate sourceCoordinate = proPath.getPointList().get(0).coordinate;
-                Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
-                        nextPointFromSource.y - sourceCoordinate.y,
-                        nextPointFromSource.z - sourceCoordinate.z)).normalize();
-                Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);*/
                 Orientation directivityToPick = proPath.getPointList().get(0).orientation;
                 double[] attSource = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
@@ -351,8 +343,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                       receiverId < multiThreadParent.inputData.receiversPk.size()) {
                     for(PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
-                        PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRSegment(), path.angle);
+                        PropagationPath pathPk = new PropagationPath(path);
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         pathPk.setSourceOrientation(path.getSourceOrientation());
