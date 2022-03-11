@@ -178,12 +178,12 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
         }
     }
 
-    static class LdenData {
-        AtomicLong queueSize = new AtomicLong(0);
-        public ConcurrentLinkedDeque<VerticeSL> lDayLevels = new ConcurrentLinkedDeque<>();
-        public ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
-        public ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();
-        public ConcurrentLinkedDeque<VerticeSL> lDenLevels = new ConcurrentLinkedDeque<>();
-        public ConcurrentLinkedDeque<PropagationPath> rays = new ConcurrentLinkedDeque<>();
+    public static class LdenData {
+        public final AtomicLong queueSize = new AtomicLong(0);
+        public final ConcurrentLinkedDeque<VerticeSL> lDayLevels = new ConcurrentLinkedDeque<>();
+        public final ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
+        public final ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();
+        public final ConcurrentLinkedDeque<VerticeSL> lDenLevels = new ConcurrentLinkedDeque<>();
+        public final ConcurrentLinkedDeque<PropagationPath> rays = new ConcurrentLinkedDeque<>();
     }
 }
