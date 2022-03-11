@@ -93,7 +93,7 @@ public class PropagationPath {
     public double deltaRetroH;
     public double deltaRetroF;
 
-    public class ABoundary {
+    public static class ABoundary {
         public double[] deltaDiffSR;
         public double[] aGroundSO;
         public double[] aGroundOR;
@@ -132,6 +132,43 @@ public class PropagationPath {
         this.pointList = pointList;
         this.segmentList = segmentList;
         this.srSegment = srSegment;
+    }
+
+    /**
+     * Copy constructor
+     * @param other
+     */
+    public PropagationPath(PropagationPath other) {
+        this.srSegment = other.srSegment;
+        this.pointList = other.pointList;
+        this.segmentList = other.segmentList;
+        this.favorable = other.favorable;
+        this.idSource = other.idSource;
+        this.idReceiver = other.idReceiver;
+        this.sourceOrientation = other.sourceOrientation;
+        this.angle = other.angle;
+        this.gs = other.gs;
+        this.initialized = other.initialized;
+        this.difHPoints = other.difHPoints;
+        this.difVPoints = other.difVPoints;
+        this.refPoints = other.refPoints;
+        this.keepAbsorption = other.keepAbsorption;
+        this.absorptionData = other.absorptionData;
+        this.groundAttenuation = other.groundAttenuation;
+        this.reflectionAttenuation = other.reflectionAttenuation;
+        this.deltaH = other.deltaH;
+        this.deltaF = other.deltaF;
+        this.deltaPrimeH = other.deltaPrimeH;
+        this.deltaPrimeF = other.deltaPrimeF;
+        this.deltaSPrimeRH = other.deltaSPrimeRH;
+        this.deltaSRPrimeH = other.deltaSRPrimeH;
+        this.aBoundaryH = other.aBoundaryH;
+        this.aBoundaryF = other.aBoundaryF;
+        this.deltaSPrimeRF = other.deltaSPrimeRF;
+        this.deltaSRPrimeF = other.deltaSRPrimeF;
+        this.e = other.e;
+        this.deltaRetroH = other.deltaRetroH;
+        this.deltaRetroF = other.deltaRetroF;
     }
 
     public PropagationPath() {
