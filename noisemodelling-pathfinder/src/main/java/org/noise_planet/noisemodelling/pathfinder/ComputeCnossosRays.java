@@ -526,20 +526,12 @@ public class ComputeCnossosRays {
 
                 //Plane S->O
                 Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), 0, iO + 1);
-                double[] abs = new double[]{0, 0};
-                //double soY = soCoords[0].y;
-                //if (!Arrays.stream(soCoords).allMatch(c -> c.y == soY)) {
-                    abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
-                //}
+                double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
                 SegmentPath seg1 = computeSegment(src, o, abs);
 
                 //Plane O->R
                 Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
-                double[] abr = new double[]{0, 0};
-                //double orY = orCoords[0].y;
-                //if (!Arrays.stream(soCoords).allMatch(c -> c.y == orY)) {
-                    abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
-                //}
+                double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
                 SegmentPath seg2 = computeSegment(o, rcv, abr);
 
                 Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
@@ -614,7 +606,6 @@ public class ComputeCnossosRays {
 
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
-                List<SegmentPath> freePaths = new ArrayList<>();
                 List<Coordinate> topoPts = new ArrayList<>();
                 topoPts.add(coordinates.get(0));
                 double g = 0;
@@ -629,7 +620,6 @@ public class ComputeCnossosRays {
                             .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                             .map(ProfileBuilder.CutPoint::getCoordinate)
                             .collect(Collectors.toList()));
-                    freePaths.addAll(computeFreeField(profile, data, false).getSegmentList());
                 }
                 g/=d;
                 //Filter bridge
@@ -709,8 +699,6 @@ public class ComputeCnossosRays {
                 path.deltaH = segs.get(0).d + e + segs.get(segs.size()-1).d - srSeg.dc;
                 path.e = e;
                 path.difVPoints.add(1);
-
-                //TODO : implement R-crit for Vertical Diff
             }
         }
         return path;
@@ -844,7 +832,6 @@ public class ComputeCnossosRays {
         LineSegment sr = new LineSegment(src, rcv);
 
         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-        //LineSegment sPrimeO = new LineSegment(seg1.sPrime, c0);
         double dSPrimeR = dist2D(seg1.sPrime, rcv);
         double dSPrimeO = dist2D(seg1.sPrime, c0);
         propagationPath.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + e + dOnR - dSPrimeR);
@@ -906,7 +893,6 @@ public class ComputeCnossosRays {
 
         // Intersection test cache
         Set<LineSegment> freeFieldSegments = new HashSet<>();
-        GeometryFactory geometryFactory = GEOMETRY_FACTORY;
 
         List<Coordinate> input = new ArrayList<>();
 
@@ -936,7 +922,7 @@ public class ComputeCnossosRays {
 
         int k;
         while (convexHullIntersects) {
-            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), geometryFactory);
+            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
             Geometry convexhull = convexHull.getConvexHull();
 
             if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
