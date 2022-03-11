@@ -24,6 +24,9 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
         this.ldenPropagationProcessData = inputData;
     }
 
+    public LdenData getLdenData() {
+        return ldenData;
+    }
 
     @Override
     public IComputeRaysOut subProcess() {

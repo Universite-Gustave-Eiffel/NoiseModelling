@@ -81,6 +81,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     }
 
+    public LDENComputeRaysOut.LdenData getLdenData() {
+        return ldenData;
+    }
+
     public void insertTrainDirectivity() {
         directionAttributes.clear();
         directionAttributes.put(0, new LDENPropagationProcessData.OmnidirectionalDirection());
