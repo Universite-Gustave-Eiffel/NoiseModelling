@@ -1136,7 +1136,7 @@
       "NbAxlePerVeh": 4,
       "RefRoughness": 4,
       "RefContact": 4,
-      "RefTransfer": 2,
+      "RefTransfer": 3,
       "RefTraction": 3
    },
    "SNCF61": {
@@ -1155,7 +1155,7 @@
       "RefAerodynamic": 0,
       "RefRoughness": 4,
       "RefContact": 4,
-      "RefTransfer": 2,
+      "RefTransfer": 3,
       "RefTraction": 3
    },
    "SNCF62": {
@@ -1174,7 +1174,7 @@
       "RefAerodynamic": 0,
       "RefRoughness": 4,
       "RefContact": 4,
-      "RefTransfer": 2,
+      "RefTransfer": 3,
       "RefTraction": 3
    },
    "SNCF63": {
@@ -1444,10 +1444,10 @@
       "RefTraction": 10
    },
    "SNCF77": {
-      "Description": "Wagon-FRET-PLAT-freine-fonte-sans-chargement",
+      "Description": "Wagon-FRET-PLAT-freine-composite-sans-chargement",
       "Vmax": 120,
       "Length": 17,
-      "TrailerBogieBraking": "Semelle-fonte",
+      "TrailerBogieBraking": "Semelle-composite",
       "MotorBogieBraking": "-",
       "MotorWheelDiameter": null,
       "TrailerWheelDiameter": 920,
@@ -1458,7 +1458,7 @@
       "NbAxlePerVeh": 4,
       "RefAerodynamic": 0,
       "RefRoughness": 1,
-      "RefContact": 3,
+      "RefContact": 4,
       "RefTransfer": 2,
       "RefTraction": 10
    },
@@ -1466,7 +1466,7 @@
       "Description": "Wagon-FRET-freine-composite",
       "Vmax": 120,
       "Length": 17,
-      "TrailerBogieBraking": "Semelle-composite",
+      "TrailerBogieBraking": "Semelle-fonte",
       "MotorBogieBraking": "-",
       "MotorWheelDiameter": null,
       "TrailerWheelDiameter": 920,
