@@ -228,9 +228,9 @@ public class PropaTrainTest {
         importFiles(connection);
         computeLW(connection);
 
-        //List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
+        List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
 
-        List<String> configs = Arrays.asList("C0","C4");
+        //List<String> configs = Arrays.asList("C3","C4");
 
 
         for (String configName : configs) {
