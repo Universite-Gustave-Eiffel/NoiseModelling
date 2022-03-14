@@ -230,7 +230,7 @@ public class PropaTrainTest {
 
         //List<String> configs = Arrays.asList("F0", "F1", "F2", "F3", "C0","C1","C2","C3","C4","C5","C6");
 
-        List<String> configs = Arrays.asList("C3","C4");
+        List<String> configs = Arrays.asList("F1");
 
 
         for (String configName : configs) {
@@ -241,7 +241,7 @@ public class PropaTrainTest {
             if (configName.equals("C1")) screenHeight = 2.0;
 
             double G = 0;
-            if (configName.equals("C3")) G = 0.5;
+            if (configName.equals("C3")) G = 1;
 
             double screenDepth = 0.5;
             if (configName.equals("C2")) screenDepth = 1;
@@ -323,6 +323,7 @@ public class PropaTrainTest {
             pointNoiseMap.setComputeVerticalDiffraction(dif);
             pointNoiseMap.setSoundReflectionOrder(orderRef);
             pointNoiseMap.setMaximumError(0.0);
+            pointNoiseMap.setThreadCount(1);
 
             System.out.println("configName:" + configName);
             System.out.println("landcover:" + landcover);
@@ -331,7 +332,7 @@ public class PropaTrainTest {
             System.out.println("buildingTable:" + buildingTable);
 
             PropagationProcessPathData environmentalData = new PropagationProcessPathData(false);
-            double[] DEFAULT_WIND_ROSE = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
             environmentalData.setWindRose(DEFAULT_WIND_ROSE);
             pointNoiseMap.setPropagationProcessPathData(environmentalData);
 
