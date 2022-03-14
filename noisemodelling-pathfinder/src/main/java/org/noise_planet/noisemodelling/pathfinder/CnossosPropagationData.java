@@ -119,6 +119,14 @@ public class CnossosPropagationData {
 
     Map<String, Integer> sourceFieldNames = new HashMap<>();
 
+    public List<Integer> freq_lvl = List.of(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+
+
+    public CnossosPropagationData(ProfileBuilder profileBuilder, List<Integer> freq_lvl) {
+        this.profileBuilder = profileBuilder;
+        this.freq_lvl = freq_lvl;
+    }
+
 
     public CnossosPropagationData(ProfileBuilder profileBuilder) {
         this.profileBuilder = profileBuilder;

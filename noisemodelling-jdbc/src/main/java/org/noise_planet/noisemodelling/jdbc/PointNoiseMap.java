@@ -97,8 +97,6 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public CnossosPropagationData prepareCell(Connection connection,int cellI, int cellJ,
                                               ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        boolean isH2 = JDBCUtilities.isH2DataBase(connection);
-
         ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
