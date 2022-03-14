@@ -7,4 +7,5 @@ nbactions.xml
 Docs/build
 Docs/venv
 profile_*.csv
-
+/noisemodelling-jdbc/src/test/resources/org/noise_planet/noisemodelling/jdbc/PropaRail/
+/noisemodelling-jdbc/src/test/java/org/noise_planet/noisemodelling/jdbc/PropaTrainTest.java
