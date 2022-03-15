@@ -172,8 +172,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             double[] aDiv = EvaluateAttenuationCnossos.aDiv(proPath, data);
             //AAtm computation
             double[] aAtm = EvaluateAttenuationCnossos.aAtm(data, proPath.getSRSegment().d);
-            //ARef computation
+            //Reflexion computation
             double[] aRef = EvaluateAttenuationCnossos.evaluateAref(proPath, data);
+            double[] aRetroDiff;
             //ABoundary computation
             double[] aBoundary;
             double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
@@ -185,8 +186,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             if (data.getWindRose()[roseindex]!=1) {
                 proPath.setFavorable(false);
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(keepAbsorption) {
@@ -198,8 +200,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             if (data.getWindRose()[roseindex]!=0) {
                 proPath.setFavorable(true);
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(keepAbsorption) {

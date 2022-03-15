@@ -1168,7 +1168,6 @@ public class ComputeCnossosRays {
                                                   Orientation orientation, MirrorReceiverResultIndex receiverMirrorIndex) {
 
         // Compute receiver mirror
-        LineSegment srcRcvLine = new LineSegment(srcCoord, rcvCoord);
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
         List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(srcCoord);
@@ -1264,14 +1263,14 @@ public class ComputeCnossosRays {
                     continue;
                 }
                 // A valid propagation path as been found
-                List<PointPath> points = new ArrayList<PointPath>();
-                List<SegmentPath> segments = new ArrayList<SegmentPath>();
+                List<PointPath> points = new ArrayList<>();
+                List<SegmentPath> segments = new ArrayList<>();
                 SegmentPath srPath = null;
                 List<Integer> reflIdx = new ArrayList<>();
                 PropagationPath proPath = new PropagationPath(favorable, points, segments, srPath, Angle.angle(rcvCoord, srcCoord));
                 proPath.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
-                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, srPath, data, orientation);
+                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, data, orientation);
                 if (points.isEmpty()) {
                     continue;
                 }
@@ -1280,12 +1279,14 @@ public class ComputeCnossosRays {
                 reflPoint.setType(PointPath.POINT_TYPE.REFL);
                 if(rayPath.get(0).getType().equals(BUILDING)) {
                     reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
+                    reflPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
                     reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
-                }
-                else {
+                } else {
+                    reflPoint.buildingHeight = rayPath.get(0).getWall().p0.getZ();
                     reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
                     reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
                 }
+                reflPoint.altitude = data.profileBuilder.getZGround(reflPoint.coordinate);
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
@@ -1294,17 +1295,20 @@ public class ComputeCnossosRays {
 
                     if(rayPath.get(0).getType().equals(BUILDING)) {
                         reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
+                        reflPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
                         reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
                     } else {
+                        reflPoint.buildingHeight = rayPath.get(0).getWall().p0.getZ();
                         reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
                         reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
                     }
+                    reflPoint.altitude = data.profileBuilder.getZGround(reflPoint.coordinate);
                     points.add(reflPoint);
                     segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
-                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, srPath, data, orientation);
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, data, orientation);
                 if (lastPts.isEmpty()) {
                     continue;
                 }
@@ -1366,18 +1370,20 @@ public class ComputeCnossosRays {
                         pt.z = data.profileBuilder.getZGround(pt);
                     }
                     topoPts = toDirectLine(topoPts);
-                    /*double g = 0;
-                    double d = 0;
-                    for(SegmentPath s : segments) {
-                        d+=s.d;
-                    }
-                    for(SegmentPath s : segments) {
-                        g+=s.gPath*s.d/d;
-                    }*/
                     double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
                     proPath.setSRSegment(computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS));
-                    //TODO retrodiff
                     reflexionPropagationPaths.add(proPath);
+
+                    //Restore the diffraction points
+                    for (int i = 0; i < points.size(); i++) {
+                        PointPath pp = points.get(i);
+                        if (pp.type == DIFH) {
+                            proPath.difHPoints.add(i);
+                        }
+                        else if (pp.type == DIFV) {
+                            proPath.difVPoints.add(i);
+                        }
+                    }
                 }
             }
         }
@@ -1386,8 +1392,8 @@ public class ComputeCnossosRays {
 
 
     public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points,
-                                              List<SegmentPath> segments, SegmentPath srPath,
-                                              CnossosPropagationData data, Orientation orientation) {
+                                              List<SegmentPath> segments, CnossosPropagationData data,
+                                              Orientation orientation) {
         List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1,
                 data.isComputeHEdgeDiffraction(), false);
         if (!propagationPaths.isEmpty()) {
