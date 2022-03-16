@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
@@ -619,8 +620,35 @@ public class EvaluateAttenuationCnossos {
 
         double aGroundSO = proPath.isFavorable() ? aGroundF(proPath, first, data, i) : aGroundH(proPath, first, data, i);
         double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i, true) : aGroundH(proPath, last, data, i, true);
-        double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
-        double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
+
+        //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
+        Coordinate s = proPath.getSRSegment().s;
+        double deltaGroundSO;
+        if(s.y < first.a*s.x+first.b){
+            deltaGroundSO = aGroundSO;
+            deltaDiffSR = deltaDiffSPrimeR;
+        } else {
+            deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
+        }
+
+        Coordinate r = proPath.getSRSegment().r;
+        double deltaGroundOR;
+        if(r.y < first.a*r.x+first.b){
+            deltaGroundOR = aGroundOR;
+            deltaDiffSR = deltaDiffSPrimeR;
+        } else {
+            deltaGroundOR = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10, -(deltaDiffSRPrime - deltaDiffSR) / 20));
+        }
+
+        //Double check NaN values
+        if(Double.isNaN(deltaGroundSO)) {
+            deltaGroundSO = aGroundSO;
+            deltaDiffSR = deltaDiffSPrimeR;
+        }
+        if(Double.isNaN(deltaGroundOR)) {
+            deltaGroundOR = aGroundOR;
+            deltaDiffSR = deltaDiffSPrimeR;
+        }
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPath.keepAbsorption) {
