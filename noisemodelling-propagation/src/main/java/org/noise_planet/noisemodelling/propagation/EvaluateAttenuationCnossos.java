@@ -37,6 +37,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +61,8 @@ public class EvaluateAttenuationCnossos {
     public static double[] getaGlobal() {
         return aGlobal;
     }
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateAttenuationCnossos.class);
 
     /**
      * Eq 2.5.21
@@ -642,10 +646,12 @@ public class EvaluateAttenuationCnossos {
 
         //Double check NaN values
         if(Double.isNaN(deltaGroundSO)) {
+            LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
             deltaGroundSO = aGroundSO;
             deltaDiffSR = deltaDiffSPrimeR;
         }
         if(Double.isNaN(deltaGroundOR)) {
+            LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
             deltaGroundOR = aGroundOR;
             deltaDiffSR = deltaDiffSPrimeR;
         }
