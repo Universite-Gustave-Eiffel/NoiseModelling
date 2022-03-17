@@ -64,7 +64,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     LDENConfig ldenConfig;
 
     public LDENPropagationProcessData(ProfileBuilder builder, LDENConfig ldenConfig) {
-        super(builder);
+        super(builder, ldenConfig.propagationProcessPathData.freq_lvl);
         this.ldenConfig = ldenConfig;
     }
 

@@ -512,7 +512,7 @@ public class ComputeCnossosRays {
             double dSO = dist2D(src, o);
             double dOR = dist2D(o, rcv);
             propagationPath.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
-            List<Integer> freqs = Arrays.asList(63, 125, 250, 500, 1000, 2000, 4000, 8000);
+            List<Integer> freqs = data.freq_lvl;
             boolean rcrit = false;
             for(int f : freqs) {
                 if(propagationPath.deltaH > -(340./f) / 20) {

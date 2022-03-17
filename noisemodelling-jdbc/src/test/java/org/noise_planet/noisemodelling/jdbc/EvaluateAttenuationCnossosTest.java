@@ -23,7 +23,6 @@ import static java.lang.Double.NaN;
 import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
-import static org.noise_planet.noisemodelling.propagation.PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
 
 // TODO reduce error epsilon
 
@@ -5424,7 +5423,8 @@ public class EvaluateAttenuationCnossosTest {
     @Test
     public void testReflexionConvergence() {
         //Profile building
-        List<Integer> alphaWallFrequencies = Arrays.asList(PropagationProcessPathData.asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+        List<Integer> alphaWallFrequencies = Arrays.asList(PropagationProcessPathData.asOctaveBands(
+                CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
         List<Double> alphaWall = new ArrayList<>(alphaWallFrequencies.size());
         for(int frequency : alphaWallFrequencies) {
             alphaWall.add(AlphaUtils.getWallAlpha(100000, frequency));

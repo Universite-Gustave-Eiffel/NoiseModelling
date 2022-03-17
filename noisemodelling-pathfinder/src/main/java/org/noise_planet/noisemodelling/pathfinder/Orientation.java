@@ -47,9 +47,15 @@ import java.util.Objects;
  * So 0 degrees point the end of the line segment.
  */
 public class Orientation {
-    public final float yaw;
-    public final float pitch;
-    public final float roll;
+    public float yaw;
+    public float pitch;
+    public float roll;
+
+    /**
+     * Default constructor
+     */
+    public Orientation() {
+    }
 
     /**
      * @param yaw     Orientation using degrees east of true north (0 is north, 90 is east)

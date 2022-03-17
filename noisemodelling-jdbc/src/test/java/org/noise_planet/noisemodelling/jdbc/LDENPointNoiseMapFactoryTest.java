@@ -18,6 +18,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
@@ -141,7 +142,7 @@ public class LDENPointNoiseMapFactoryTest {
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
                 " DIR_ID");
         StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?");
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWD");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
@@ -149,7 +150,7 @@ public class LDENPointNoiseMapFactoryTest {
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWE");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
@@ -157,7 +158,7 @@ public class LDENPointNoiseMapFactoryTest {
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWN");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
