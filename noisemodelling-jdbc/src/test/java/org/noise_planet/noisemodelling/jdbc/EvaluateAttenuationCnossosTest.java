@@ -286,6 +286,47 @@ public class EvaluateAttenuationCnossosTest {
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
     }
 
+    @Test
+    public void retroDiff() {
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder()
+
+                // Add building
+                .addWall(new Coordinate[]{
+                        new Coordinate(10, 50, 15),
+                        new Coordinate(20, 50, 15)}, Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), 1)
+
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(builder)
+                .addSource(0, 0, 14.8)
+                .addReceiver(30, 0, 14.8)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(1)
+                .build();
+        rayData.reflexionOrder=1;
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        double[] retro = propDataOut.propagationPaths.get(1).reflectionAttenuation.dLRetro;
+        for (double v : retro) {
+            assertTrue(v > 0.);
+        }
+    }
+
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
@@ -3221,72 +3262,57 @@ public class EvaluateAttenuationCnossosTest {
      * TC18 - Screening and reflecting barrier on ground with spatially varying heights and
      * acoustic properties
      */
-    //TODO : not tested
     @Test
     public void TC18() {
-        GeometryFactory factory = new GeometryFactory();
-
         //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
+        ProfileBuilder builder = new ProfileBuilder()
+        //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+                //Topography
+                .addTopographicLine(0, 80, 0, 225, 80, 0)
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                .addTopographicLine(225, -20, 0, 0, -20, 0)
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10)
 
         // Add building
-        builder.addBuilding(new Coordinate[]{
-                new Coordinate(114, 52),
-                new Coordinate(170, 60),
-                new Coordinate(170, 61),
-                new Coordinate(114, 53),
-                new Coordinate(114, 52)}, 15, -1);
+                .addWall(new Coordinate[]{
+                new Coordinate(114, 52, 15),
+                new Coordinate(170, 60, 15)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 1)
 
-        builder.addBuilding(new Coordinate[]{
+                .addWall(new Coordinate[]{
                 new Coordinate(87, 50),
-                new Coordinate(92, 32),
-                new Coordinate(92, 33),
-                new Coordinate(87, 51),
-                new Coordinate(87, 50)}, 12, -1);
+                new Coordinate(92, 32)}, 12, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 2)
 
-        //x1
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(120, -20, 0));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        //x2
-        builder.addTopographicPoint(new Coordinate(225, 80, 0));
-        builder.addTopographicPoint(new Coordinate(225, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, -20, 0));
-        builder.addTopographicPoint(new Coordinate(0, 80, 0));
-        builder.addTopographicPoint(new Coordinate(120, 80, 0));
-        builder.addTopographicPoint(new Coordinate(205, -5, 10));
-        builder.addTopographicPoint(new Coordinate(205, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, 75, 10));
-        builder.addTopographicPoint(new Coordinate(185, -5, 10));
+                .finishFeeding();
 
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -100, 100)), 0.9);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -100, 100)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -100, 100)), 0.2);
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(builder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 12)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+        rayData.reflexionOrder=1;
 
-        builder.finishFeeding();
-
-        CnossosPropagationData rayData = new CnossosPropagationData(builder);
-        rayData.addReceiver(new Coordinate(200, 50, 12));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)));
-        rayData.setComputeHorizontalDiffraction(true);
-
-        rayData.setComputeVerticalDiffraction(true);
-
-        rayData.setGs(0.9);
-
+        //Propagation process path data building
         PropagationProcessPathData attData = new PropagationProcessPathData();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
-        attData.setPrime2520(false);
-        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, attData);
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
         computeRays.setThreadCount(1);
+
+        //Run computation
         computeRays.run(propDataOut);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});

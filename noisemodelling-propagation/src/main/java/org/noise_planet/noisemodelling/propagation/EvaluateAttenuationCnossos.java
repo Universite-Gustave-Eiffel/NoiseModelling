@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
@@ -556,26 +557,31 @@ public class EvaluateAttenuationCnossos {
     }
 
     public static double[] deltaRetrodif(PropagationPath reflect, PropagationProcessPathData data) {
+
         double[] retroDiff = new double[data.freq_lvl.size()];
-        for(int i=0; i<data.freq_lvl.size(); i++) {
-            if(reflect.refPoints.size() == 0) {
-                retroDiff[i]=0;
-            }
-            PointPath pp = reflect.getPointList().get(reflect.refPoints.get(0));
+        Arrays.fill(retroDiff, 0.);
+        Coordinate s = reflect.getSRSegment().s;
+        Coordinate r = reflect.getSRSegment().r;
+        for(int idx : reflect.refPoints) {
+            //Get the reflexion point
+            PointPath pp = reflect.getPointList().get(idx);
+            //Get the point on the top of the obstacle
+            Coordinate o = new Coordinate(pp.coordinate.x, pp.buildingHeight);
+            //Compute de distance delta (2.5.36)
+            double deltaPrime = -(s.distance(o) + o.distance(r) - reflect.getSRSegment().d);
             double ch = 1.;
-            double lambda = 340.0 / data.freq_lvl.get(i);
-            double deltaPrime = reflect.isFavorable() ? reflect.deltaRetroF : reflect.deltaRetroH;
-            double testForm = 40.0/lambda*deltaPrime;
-            double dLRetro = testForm >= -2 ? 10*ch*log10(3+testForm) : 0;
-            double dLAbs = 10*log10(1-pp.alphaWall.get(i));
-            if(reflect.keepAbsorption) {
-                if(reflect.reflectionAttenuation.dLRetro == null) {
-                    reflect.reflectionAttenuation.init(data.freq_lvl.size());
-                }
-                reflect.reflectionAttenuation.dLRetro[i] = dLRetro;
-                reflect.reflectionAttenuation.dLAbs[i] = dLAbs;
+            for (int i = 0; i < data.freq_lvl.size(); i++) {
+                double lambda = 340.0 / data.freq_lvl.get(i);
+                double testForm = 40.0 / lambda * deltaPrime;
+                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0;
+                retroDiff[i] = dLRetro;
             }
-            retroDiff[i]= dLRetro + dLAbs;
+        }
+        if (reflect.keepAbsorption) {
+            if (reflect.reflectionAttenuation.dLRetro == null) {
+                reflect.reflectionAttenuation.init(data.freq_lvl.size());
+            }
+            reflect.reflectionAttenuation.dLRetro = retroDiff;
         }
         return retroDiff;
     }

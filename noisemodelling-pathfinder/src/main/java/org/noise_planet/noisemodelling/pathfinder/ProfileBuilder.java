@@ -533,6 +533,15 @@ public class ProfileBuilder {
     }
 
     /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
+     */
+    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
+        return addWall(FACTORY.createLineString(coords), 0.0, alphas, id);
+    }
+
+    /**
      * Add the topographic point in the data, to complete the topographic data.
      * @param point Topographic point.
      */
