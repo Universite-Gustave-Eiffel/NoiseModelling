@@ -127,7 +127,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         if(propagationProcessDataFactory != null) {
             propagationProcessData = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new CnossosPropagationData(builder);
+            propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathData.freq_lvl);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.maximumError = getMaximumError();
