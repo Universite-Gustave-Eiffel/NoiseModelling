@@ -401,7 +401,10 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
 
         }
-        assertEquals(expectedValuesLWRolling[0], lWRailWay.getLWRolling()[0] , EPSILON_TEST1);
-
+        for (int idFreq = 0; idFreq < 24; idFreq++) {
+            // Compute sound powers per track meter
+            lWRailWay.getLWRolling()[idFreq] = 10*Math.log10(Math.pow(10,(lWRailWay.getLWRolling()[idFreq]+10 * Math.log10(nBUnit)+deltaTDay)/10));
+            assertEquals(expectedValuesLWRolling[idFreq], lWRailWay.getLWRolling()[idFreq] , EPSILON_TEST1);
+        }
     }
 }
