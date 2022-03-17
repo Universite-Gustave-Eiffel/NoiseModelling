@@ -99,7 +99,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, pointNoiseMap.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
-            List<Integer> allFrequencyValues = Arrays.asList(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
+            List<Integer> allFrequencyValues = Arrays.asList(CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";
             if (ldenConfig.computeLDay || ldenConfig.computeLDEN) {
                 period = "D";
@@ -127,8 +127,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             List<Double> aWeighting = new ArrayList<>();
             for (int freq : frequencyValues) {
                 int index = allFrequencyValues.indexOf(freq);
-                exactFrequencies.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
-                aWeighting.add(PropagationProcessPathData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
+                exactFrequencies.add(CnossosPropagationData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
+                aWeighting.add(CnossosPropagationData.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
             }
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source table "+pointNoiseMap.getSourcesTableName()+" does not contains any frequency bands");
