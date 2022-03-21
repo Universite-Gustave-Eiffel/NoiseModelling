@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
