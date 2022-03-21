@@ -151,7 +151,7 @@ def exec(Connection connection, input) {
     StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
             " DIR_ID")
     StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?")
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWD")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")
@@ -159,7 +159,7 @@ def exec(Connection connection, input) {
         insertIntoQuery.append(thirdOctave)
         insertIntoValuesQuery.append(", ?")
     }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWE")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")
@@ -167,7 +167,7 @@ def exec(Connection connection, input) {
         insertIntoQuery.append(thirdOctave)
         insertIntoValuesQuery.append(", ?")
     }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWN")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")

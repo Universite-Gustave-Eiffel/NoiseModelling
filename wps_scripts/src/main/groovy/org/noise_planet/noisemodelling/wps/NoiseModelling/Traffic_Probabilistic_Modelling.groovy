@@ -498,7 +498,7 @@ def exec(Connection connection, input) {
  * Read source database and compute the sound emission spectrum of roads sources
  * */
 class WpsPropagationProcessDataProba extends CnossosPropagationData {
-    static List<Integer> freq_lvl = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE))
+    static List<Integer> freq_lvl = Arrays.asList(CnossosPropagationData.asOctaveBands(CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE))
 
     // Lden values
     public List<double[]> wjSourcesD = new ArrayList<>()
