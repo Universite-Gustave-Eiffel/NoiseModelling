@@ -812,6 +812,10 @@ public class ComputeCnossosRays {
         }
         propagationPath.e = e;
 
+        if(points.isEmpty()) {
+            return null;
+        }
+
         Coordinate rcv = points.get(points.size()-1).coordinate;
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){

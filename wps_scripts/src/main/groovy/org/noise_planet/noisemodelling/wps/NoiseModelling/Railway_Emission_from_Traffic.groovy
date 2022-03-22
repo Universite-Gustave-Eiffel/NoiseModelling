@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -151,7 +152,7 @@ def exec(Connection connection, input) {
     StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
             " DIR_ID")
     StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?")
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWD")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")
@@ -159,7 +160,7 @@ def exec(Connection connection, input) {
         insertIntoQuery.append(thirdOctave)
         insertIntoValuesQuery.append(", ?")
     }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWE")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")
@@ -167,7 +168,7 @@ def exec(Connection connection, input) {
         insertIntoQuery.append(thirdOctave)
         insertIntoValuesQuery.append(", ?")
     }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+    for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
         createTableQuery.append(", LWN")
         createTableQuery.append(thirdOctave)
         createTableQuery.append(" double precision")

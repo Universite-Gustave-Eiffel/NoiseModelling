@@ -21,6 +21,7 @@ publishing {
     }
 }
 repositories {
+    mavenLocal() // To test noise modelling updated locally we have to put this first
     mavenCentral()
     maven {
         url "libs/"
@@ -43,7 +44,6 @@ repositories {
     maven {
         url "https://repo.matsim.org/repository/matsim/"
     }
-    mavenLocal() // TODO remove this on major release
 }
 
 test {
