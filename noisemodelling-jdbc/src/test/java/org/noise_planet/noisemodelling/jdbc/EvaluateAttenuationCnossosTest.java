@@ -122,8 +122,15 @@ public class EvaluateAttenuationCnossosTest {
 
         alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
         //Profile building
+        ProfileBuilder profileBuilder2 = new ProfileBuilder();
+        profileBuilder2
+                .addWall(new Coordinate[]{
+                        new Coordinate(3, -100, 0),
+                        new Coordinate(3, 100, 0)
+                }, 2.5,alphas,1)
+                .finishFeeding();
         //Propagation data building
-        CnossosPropagationData rayData2 = new PropagationDataBuilder(profileBuilder)
+        CnossosPropagationData rayData2 = new PropagationDataBuilder(profileBuilder2)
                 .addSource(0.5, 0, 0.)
                 .addReceiver(25, 0, 4)
                 .setGs(1.0)
