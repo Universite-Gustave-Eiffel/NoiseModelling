@@ -270,7 +270,7 @@ public class ComputeCnossosRays {
         if (propaDistance < data.maxSrcDist) {
             // Process direct : horizontal and vertical diff
             List<PropagationPath> propagationPaths = new ArrayList<>(directPath(src, rcv,
-                    data.computeVerticalDiffraction, data.computeHorizontalDiffraction));
+                    data.computeVerticalDiffraction, data.computeHorizontalDiffraction, data.isBodyBarrier()));
             // Process reflection
             if (data.reflexionOrder > 0) {
                 propagationPaths.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false,
@@ -293,9 +293,9 @@ public class ComputeCnossosRays {
      * @return Calculated propagation paths.
      */
     public List<PropagationPath> directPath(SourcePointInfo src,
-                                            ReceiverPointInfo rcv, boolean verticalDiffraction, boolean horizontalDiffraction) {
+                                            ReceiverPointInfo rcv, boolean verticalDiffraction, boolean horizontalDiffraction, boolean bodyBarrier) {
         return directPath(src.getCoord(), src.getId(), src.getOrientation(), rcv.getCoord(), rcv.getId(),
-                verticalDiffraction, horizontalDiffraction);
+                verticalDiffraction, horizontalDiffraction, bodyBarrier);
     }
 
     /**
@@ -306,7 +306,7 @@ public class ComputeCnossosRays {
      * @param rcvId    Receiver point identifier.
      * @return Calculated propagation paths.
      */
-    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction) {
+    public List<PropagationPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction, boolean bodyBarrier) {
         List<PropagationPath> propagationPaths = new ArrayList<>();
         ProfileBuilder.CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
         cutProfile.setSrcOrientation(orientation);
@@ -316,7 +316,7 @@ public class ComputeCnossosRays {
         }
         else if(verticalDiffraction || horizontalDiffraction) {
             if (verticalDiffraction) {
-                PropagationPath propagationPath = computeHEdgeDiffraction(cutProfile);
+                PropagationPath propagationPath = computeHEdgeDiffraction(cutProfile, bodyBarrier);
                 if(propagationPath != null) {
                     propagationPaths.add(propagationPath);
                 }
@@ -719,7 +719,7 @@ public class ComputeCnossosRays {
         return coords;
     }
 
-    public PropagationPath computeHEdgeDiffraction(ProfileBuilder.CutProfile cutProfile) {
+    public PropagationPath computeHEdgeDiffraction(ProfileBuilder.CutProfile cutProfile , boolean bodyBarrier) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         List<ProfileBuilder.CutPoint> cutPts = cutProfile.getCutPoints().stream()
@@ -800,6 +800,7 @@ public class ComputeCnossosRays {
                 propagationPath.difHPoints.add(i);
                 PointPath pt = points.get(points.size()-1);
                 pt.type = PointPath.POINT_TYPE.DIFH;
+                pt.bodyBarrier = bodyBarrier;
                 if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
                     pt.setBuildingHeight(data.profileBuilder.getBuilding(pt.buildingId).getHeight());
@@ -1395,7 +1396,7 @@ public class ComputeCnossosRays {
                                               List<SegmentPath> segments, CnossosPropagationData data,
                                               Orientation orientation) {
         List<PropagationPath> propagationPaths = directPath(p0, -1, orientation, p1, -1,
-                data.isComputeHEdgeDiffraction(), false);
+                data.isComputeHEdgeDiffraction(), false, false);
         if (!propagationPaths.isEmpty()) {
             PropagationPath propagationPath = propagationPaths.get(0);
             points.addAll(propagationPath.getPointList());

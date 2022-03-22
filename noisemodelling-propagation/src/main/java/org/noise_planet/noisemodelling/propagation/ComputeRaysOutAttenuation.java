@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.*;
-import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.*;
+import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.DIFH;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 /**
@@ -181,80 +181,58 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
             double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
             double[] aBodyScreen = new double[data.freq_lvl.size()];
-            boolean bodyscreen = true;
-
-            PropagationPath proPathBodyScreen = new PropagationPath();
-
-            // generate bodyScreen rays
-            if (bodyscreen){
-                /*//Profile building
-                ProfileBuilder profileBuilder = new ProfileBuilder()
-                        //Ground effects
-                        .addWall(0.0,0.7)
-                        .finishFeeding();
-
-                //Propagation data building
-                CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
-                        .addSource(10, 10, 1)
-                        .addReceiver(200, 50, 4)
-                        .vEdgeDiff(true)
-                        .hEdgeDiff(true)
-                        .build();
-
-                //Out and computation settings
-                ComputeCnossosRaysOut propDataOut = new ComputeCnossosRaysOut(true);
-                ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
-                computeRays.setThreadCount(1);
-
-                //Run computation
-                computeRays.run(propDataOut);*/
-            }
-
+            double hRail = 0.05;
             List<PointPath> ptList = proPath.getPointList();
+
             int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
             // Homogenous conditions
             if (data.getWindRose()[roseindex]!=1) {
                 proPath.setFavorable(false);
 
-                if (bodyscreen){
-                    // todo relative to the ground
-                    Coordinate src = ptList.get(0).coordinate;
-                    PointPath p0 = ptList.stream().filter(p -> p.type.equals(REFL)).findFirst().orElse(null);
-                    if (p0 != null) {
+                Coordinate src = ptList.get(0).coordinate;
+                PointPath pDif = ptList.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
+
+                if (pDif != null) {
+                    if (pDif.bodyBarrier){
+
                         int n = 3;
                         Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
-                        double[] deltaGeo = new double[data.freq_lvl.size()];
-                        double[] deltaAbs = new double[data.freq_lvl.size()];
-                        double[] deltaDif = new double[data.freq_lvl.size()];
-                        double[] deltaRef = new double[data.freq_lvl.size()];
-                        double[] deltaRetroDif = new double[data.freq_lvl.size()];
+                        double[][] deltaGeo = new double[n+1][data.freq_lvl.size()];
+                        double[][] deltaAbs = new double[n+1][data.freq_lvl.size()];
+                        double[][] deltaDif = new double[n+1][data.freq_lvl.size()];
+                        double[][] deltaRef = new double[n+1][data.freq_lvl.size()];
+                        double[][] deltaRetroDifi = new double[n+1][data.freq_lvl.size()];
+                        double[][] deltaRetroDif = new double[n+1][data.freq_lvl.size()];
                         double[] deltaL = new double[data.freq_lvl.size()];
-                        double db = p0.coordinate.x;
-                        double hb = p0.coordinate.y;
+
+                        double db = pDif.coordinate.x;
+                        double hb = pDif.coordinate.y;
                         Coordinate B = new Coordinate(db,hb);
 
                         double Cref = 1;
-                        double dr = db + p0.coordinate.x;
-                        double hs = 0.05;
-                        double hr = p0.coordinate.y;
+                        double dr = db + pDif.coordinate.x;
+                        double hs = ptList.get(0).altitude+src.y-hRail;
+                        double hr = ptList.get(ptList.size()-1).altitude + ptList.get(ptList.size()-1).coordinate.y;
                         double[] r = new double[4];
                         if (db<5*hb) {
                             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                                if (p0.alphaWall.get(idfreq)<0.8){
+                                if (pDif.alphaWall.get(idfreq)<0.8){
+
+                                    double dif0 =0 ;
+                                    double ch = 1.;
+                                    double lambda = 340.0 / data.freq_lvl.get(idfreq);
+                                    double hi = hs;
+                                    double cSecond = 1;
+
                                     for (int i = 0; i <= n; i++) {
                                         double di = -2 * i * db;
-                                        double hi = hs;
+
                                         Coordinate si = new Coordinate(src.x+di, src.y);
-
                                         r[i] = sqrt(pow(di - (db + dr), 2) + pow(hi - hr, 2));
-                                        deltaGeo[idfreq] = deltaGeo[idfreq] + 20 * log10(r[0] / r[i]);
-
+                                        deltaGeo[i][idfreq] =  20 * log10(r[0] / r[i]);
                                         double deltai = si.distance(B)+B.distance(rcv)-si.distance(rcv);
-                                        double ch = 1.;
-                                        double lambda = 340.0 / data.freq_lvl.get(idfreq);
-                                        double cSecond = 1;
+
                                         double dif = 0;
-                                        double dif0 =0 ;
                                         double testForm = (40/lambda)*cSecond*deltai;
                                         if (testForm>=-2) {
                                             dif = 10*ch*log10(3+testForm);
@@ -262,13 +240,13 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
                                         if (i==0){
                                             dif0=dif;
-                                            deltaRetroDif[idfreq] = deltaDif[idfreq]+ dif;
+                                            deltaRetroDif[i][idfreq] = dif;
                                         }else{
-                                            deltaDif[idfreq] = deltaDif[idfreq]  + (dif0-dif);
+                                            deltaDif[i][idfreq] = dif0-dif;
                                         }
 
-                                        deltaAbs[idfreq] = deltaAbs[idfreq] + 10 * i * log10(1 - p0.alphaWall.get(idfreq));
-                                        deltaRef[idfreq] = deltaRef[idfreq] + 10 * i * log10(Cref);
+                                        deltaAbs[i][idfreq] = 10 * i * log10(1 - pDif.alphaWall.get(idfreq));
+                                        deltaRef[i][idfreq] = 10 * i * log10(Cref);
 
                                         double retroDif =0 ;
                                         Coordinate Pi = new Coordinate(-(2 * i -1)* db,hb);
@@ -281,14 +259,29 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                                         }
 
                                         if (i==0){
-                                            deltaRetroDif[idfreq] = 0;
+                                            deltaRetroDifi[i][idfreq] = 0;
                                         }else{
-                                            deltaRetroDif[idfreq] = deltaRetroDif[idfreq] + (n+1-i)*retroDif;
+                                            deltaRetroDifi[i][idfreq] = retroDif;
                                         }
-                                        deltaL[idfreq] = deltaGeo[idfreq]+deltaDif[idfreq]+deltaAbs[idfreq]+deltaRef[idfreq]+deltaRetroDif[idfreq];
+
+
+                                    }
+                                    // Compute deltaRetroDif
+                                    deltaRetroDif[0][idfreq] = 0;
+                                    for (int i = 1; i <= n; i++) {
+                                        double sumRetrodif = 0;
+                                        for (int j = 1; j <= i; j++) {
+                                            sumRetrodif = sumRetrodif + deltaRetroDifi[j][idfreq];
+                                        }
+                                        deltaRetroDif[i][idfreq] = - sumRetrodif;
+                                    }
+                                    // Compute deltaL
+                                    for (int i = 0; i <= n; i++) {
+                                        deltaL[idfreq] = deltaL[idfreq] + dbaToW(deltaGeo[i][idfreq] + deltaDif[i][idfreq] + deltaAbs[i][idfreq] + deltaRef[i][idfreq] + deltaRetroDif[i][idfreq]);
                                     }
                                 }
                            }
+                            aBodyScreen = wToDba(deltaL);
                         }
                     }
 
@@ -297,7 +290,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
                 aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] + aBodyScreen[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(keepAbsorption) {
@@ -311,7 +304,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
                 aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq]+ aBodyScreen[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(keepAbsorption) {

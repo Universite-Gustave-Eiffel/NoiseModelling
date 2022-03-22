@@ -65,6 +65,67 @@ public class EvaluateAttenuationCnossosTest {
         }
     }
 
+
+    /**
+     * Test body-barrier effect
+     */
+    @Test
+    public void testBodyBarrier() {
+        List<Double> alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addWall(new Coordinate[]{
+                        new Coordinate(5, -100, 10),
+                        new Coordinate(5, 100, 10)
+                }, 10,alphas,1)
+                .finishFeeding();
+
+        //Propagation data building
+        CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
+                .addSource(0, 0, 0.5)
+                .addReceiver(250, 0, 4)
+                .setGs(0.0)
+                .build();
+        rayData.reflexionOrder=1;
+        rayData.maxSrcDist = 1000;
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setBodyBarrier(true);
+
+        //Propagation process path data building
+        PropagationProcessPathData attData = new PropagationProcessPathData();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Run computation
+        ComputeRaysOutAttenuation propDataOut0 = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays0 = new ComputeCnossosRays(rayData);
+        computeRays0.setThreadCount(1);
+        rayData.reflexionOrder=0;
+        computeRays0.run(propDataOut0);
+        double[] values0 = propDataOut0.receiversAttenuationLevels.pop().value;
+
+        ComputeRaysOutAttenuation propDataOut1 = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays1 = new ComputeCnossosRays(rayData);
+        computeRays1.setThreadCount(1);
+        rayData.reflexionOrder=1;
+        rayData.maxSrcDist = 1000;
+        rayData.setComputeHorizontalDiffraction(false);
+        rayData.setComputeVerticalDiffraction(true);
+        rayData.setBodyBarrier(false);
+        computeRays1.run(propDataOut1);
+        double[] values1 = propDataOut1.receiversAttenuationLevels.pop().value;
+        assertNotEquals(values0[0], values1[0]);
+        assertNotEquals(values0[1], values1[1]);
+        assertNotEquals(values0[2], values1[2]);
+        assertNotEquals(values0[3], values1[3]);
+        assertNotEquals(values0[4], values1[4]);
+        assertNotEquals(values0[5], values1[5]);
+        assertNotEquals(values0[6], values1[6]);
+        assertNotEquals(values0[7], values1[7]);
+    }
+
     /**
      * Test reflexion ray has contribution :
      *

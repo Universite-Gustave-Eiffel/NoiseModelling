@@ -90,6 +90,18 @@ public class CnossosPropagationData {
 
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
+
+    public boolean isBodyBarrier() {
+        return bodyBarrier;
+    }
+
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
+    }
+
+    /** bodyBarrier effet */
+    boolean bodyBarrier = false;
+
     /** Compute horizontal diffraction rays over vertical edges */
     protected boolean computeHorizontalDiffraction = true;
 

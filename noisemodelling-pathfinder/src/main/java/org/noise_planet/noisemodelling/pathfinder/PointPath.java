@@ -35,6 +35,7 @@ public class PointPath {
         RECV,
         DIFH_RCRIT;
     }
+    public boolean bodyBarrier = false;
 
     /**
      * parameters given by user
