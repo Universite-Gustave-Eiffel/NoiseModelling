@@ -178,6 +178,7 @@ public class EvaluateAttenuationCnossosTest {
         double r1A = wToDba(sumArray(dbaToW(values1A)));
         double r2A = wToDba(sumArray(dbaToW(values2A)));
         double r3A = wToDba(sumArray(dbaToW(values3A)));
+
         assertEquals(19.2,r3A-r1A,0.5);
         assertEquals(11.7,r0A-r1A,1);
         assertEquals(6.6,r2A-r1A,1);
