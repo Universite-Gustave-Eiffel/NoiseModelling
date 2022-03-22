@@ -788,11 +788,11 @@ public class ComputeCnossosRays {
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
             segments.add(path);
             if(points.isEmpty()) {
-                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), PointPath.POINT_TYPE.SRCE));
+                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), cutPt1.getBuildingId(),PointPath.POINT_TYPE.SRCE));
                 points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
                 src = path.s;
             }
-            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), PointPath.POINT_TYPE.RECV));
+            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), cutPt1.getBuildingId(),PointPath.POINT_TYPE.RECV));
             if(i != pts.size()-1) {
                 if(i != 1) {
                     e += path.d;

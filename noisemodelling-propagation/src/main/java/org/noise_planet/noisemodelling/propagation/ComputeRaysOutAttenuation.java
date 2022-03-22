@@ -192,7 +192,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 Coordinate src = ptList.get(0).coordinate;
                 PointPath pDif = ptList.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
 
-                if (pDif != null) {
+                if (pDif != null && pDif.alphaWall.size()>0) {
                     if (pDif.bodyBarrier){
 
                         int n = 3;
