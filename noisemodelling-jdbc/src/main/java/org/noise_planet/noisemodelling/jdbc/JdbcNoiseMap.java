@@ -57,6 +57,16 @@ public abstract class JdbcNoiseMap {
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
+
+    public boolean isBodyBarrier() {
+        return bodyBarrier;
+    }
+
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
+    }
+
+    protected boolean bodyBarrier = false;
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
