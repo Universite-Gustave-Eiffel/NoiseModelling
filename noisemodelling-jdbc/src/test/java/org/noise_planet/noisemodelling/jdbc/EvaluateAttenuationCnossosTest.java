@@ -68,24 +68,29 @@ public class EvaluateAttenuationCnossosTest {
 
     /**
      * Test body-barrier effect
+     * NMPB08 – Railway Emission Model
+     * Programmers Guide
      */
     @Test
     public void testBodyBarrier() {
-        List<Double> alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+
+
+        // Hard barrier
+        List<Double> alphas = Arrays.asList(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(5, -100, 10),
-                        new Coordinate(5, 100, 10)
-                }, 10,alphas,1)
+                        new Coordinate(3, -100, 0),
+                        new Coordinate(3, 100, 0)
+                }, 2.5,alphas,1)
                 .finishFeeding();
 
         //Propagation data building
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
-                .addSource(0, 0, 0.5)
-                .addReceiver(250, 0, 4)
-                .setGs(0.0)
+                .addSource(0.5, 0, 0.)
+                .addReceiver(25, 0, 4)
+                .setGs(1.0)
                 .build();
         rayData.reflexionOrder=1;
         rayData.maxSrcDist = 1000;
@@ -102,28 +107,75 @@ public class EvaluateAttenuationCnossosTest {
         ComputeRaysOutAttenuation propDataOut0 = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays0 = new ComputeCnossosRays(rayData);
         computeRays0.setThreadCount(1);
-        rayData.reflexionOrder=0;
         computeRays0.run(propDataOut0);
         double[] values0 = propDataOut0.receiversAttenuationLevels.pop().value;
 
+        // Barrier, no interaction
+        rayData.setBodyBarrier(false);
         ComputeRaysOutAttenuation propDataOut1 = new ComputeRaysOutAttenuation(true, true, attData);
         ComputeCnossosRays computeRays1 = new ComputeCnossosRays(rayData);
         computeRays1.setThreadCount(1);
-        rayData.reflexionOrder=1;
-        rayData.maxSrcDist = 1000;
-        rayData.setComputeHorizontalDiffraction(false);
-        rayData.setComputeVerticalDiffraction(true);
-        rayData.setBodyBarrier(false);
         computeRays1.run(propDataOut1);
         double[] values1 = propDataOut1.receiversAttenuationLevels.pop().value;
-        assertNotEquals(values0[0], values1[0]);
-        assertNotEquals(values0[1], values1[1]);
-        assertNotEquals(values0[2], values1[2]);
-        assertNotEquals(values0[3], values1[3]);
-        assertNotEquals(values0[4], values1[4]);
-        assertNotEquals(values0[5], values1[5]);
-        assertNotEquals(values0[6], values1[6]);
-        assertNotEquals(values0[7], values1[7]);
+
+        // Soft barrier (a=0.5)
+
+        alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+        //Profile building
+        //Propagation data building
+        CnossosPropagationData rayData2 = new PropagationDataBuilder(profileBuilder)
+                .addSource(0.5, 0, 0.)
+                .addReceiver(25, 0, 4)
+                .setGs(1.0)
+                .build();
+        rayData2.reflexionOrder=1;
+        rayData2.maxSrcDist = 1000;
+        rayData2.setComputeHorizontalDiffraction(false);
+        rayData2.setComputeVerticalDiffraction(true);
+        rayData2.setBodyBarrier(true);
+
+        ComputeRaysOutAttenuation propDataOut2 = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays2 = new ComputeCnossosRays(rayData2);
+        computeRays2.run(propDataOut2);
+        double[] values2 = propDataOut2.receiversAttenuationLevels.pop().value;
+
+        // No barrier
+        ProfileBuilder profileBuilder3 = new ProfileBuilder();
+        profileBuilder3
+                .addWall(new Coordinate[]{
+                        new Coordinate(100, -100, 0),
+                        new Coordinate(100, 100, 0)
+                }, 0,alphas,1)
+                .finishFeeding();
+        CnossosPropagationData rayData3 = new PropagationDataBuilder(profileBuilder3)
+                .addSource(0.5, 0, 0.)
+                .addReceiver(25, 0, 4)
+                .setGs(1.0)
+                .build();
+        rayData3.reflexionOrder=1;
+        rayData3.maxSrcDist = 1000;
+        rayData3.setComputeHorizontalDiffraction(false);
+        rayData3.setComputeVerticalDiffraction(true);
+        rayData3.setBodyBarrier(false);
+        ComputeRaysOutAttenuation propDataOut3 = new ComputeRaysOutAttenuation(true, true, attData);
+        ComputeCnossosRays computeRays3 = new ComputeCnossosRays(rayData3);
+        computeRays3.run(propDataOut3);
+        double[] values3 = propDataOut3.receiversAttenuationLevels.pop().value;
+
+
+        double[] values0A = sumArray(values0, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values1A = sumArray(values1, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values2A = sumArray(values2, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values3A = sumArray(values3, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double r0A = wToDba(sumArray(dbaToW(values0A)));
+        double r1A = wToDba(sumArray(dbaToW(values1A)));
+        double r2A = wToDba(sumArray(dbaToW(values2A)));
+        double r3A = wToDba(sumArray(dbaToW(values3A)));
+        assertEquals(19.2,r3A-r1A,0.5);
+        assertEquals(11.7,r0A-r1A,1);
+        assertEquals(6.6,r2A-r1A,1);
+
+
     }
 
     /**

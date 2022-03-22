@@ -180,7 +180,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             double[] aBoundary;
             double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
             double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
-            double[] aBodyScreen = new double[data.freq_lvl.size()];
+            double[] deltaBodyScreen = new double[data.freq_lvl.size()];
             double hRail = 0.05;
             List<PointPath> ptList = proPath.getPointList();
 
@@ -210,9 +210,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                         Coordinate B = new Coordinate(db,hb);
 
                         double Cref = 1;
-                        double dr = db + pDif.coordinate.x;
+                        double dr = rcv.x;
+                        double h0 = ptList.get(0).altitude+hRail;
                         double hs = ptList.get(0).altitude+src.y-hRail;
-                        double hr = ptList.get(ptList.size()-1).altitude + ptList.get(ptList.size()-1).coordinate.y;
+                        double hr = ptList.get(ptList.size()-1).altitude + ptList.get(ptList.size()-1).coordinate.y-h0;
                         double[] r = new double[4];
                         if (db<5*hb) {
                             for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
@@ -251,7 +252,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                                         double retroDif =0 ;
                                         Coordinate Pi = new Coordinate(-(2 * i -1)* db,hb);
                                         Coordinate RcvPrime = new Coordinate(dr,max(hr,hb*(db+dr-di)/(db-di)));
-                                        deltai = si.distance(Pi)+Pi.distance(RcvPrime)-si.distance(RcvPrime);
+                                        deltai = -(si.distance(Pi)+Pi.distance(RcvPrime)-si.distance(RcvPrime));
 
                                         testForm = (40/lambda)*cSecond*deltai;
                                         if (testForm>=-2) {
@@ -281,7 +282,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                                     }
                                 }
                            }
-                            aBodyScreen = wToDba(deltaL);
+                            deltaBodyScreen = wToDba(deltaL);
                         }
                     }
 
@@ -290,7 +291,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
                 aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] + aBodyScreen[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(keepAbsorption) {
@@ -304,7 +305,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
                 aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq]+ aBodyScreen[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(keepAbsorption) {
