@@ -107,7 +107,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
                  "tableToExport": "LDAY_GEOM"])
 
-        assertEquals(67.46,receiversLvl[0]["LEQ"] as Double,0.1)
+        assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test
