@@ -151,8 +151,8 @@ public class RailWayLW {
                         * (2.0 / 3.0 * Math.sin(2 * theta) - Math.sin(theta))
                         * Math.log10((frequency + 600.0) / 200.0);
             }
-        } else if(height_index == 1){
-            if(theta < 0) { // for aerodynamic effect only
+        } else if(height_index == 1 && noiseSource == TrainNoiseSource.AERODYNAMICB){// for aerodynamic effect only
+            if(theta < 0) {
                 attVertical = 10 * Math.log10(Math.pow(Math.cos(theta), 2));
             }
         }
