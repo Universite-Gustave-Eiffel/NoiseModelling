@@ -297,33 +297,6 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
             // Night
             ln = dbaToW(getEmissionFromResultSet(rs, "N", slope));
 
-        }else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW) {
-            // Extract road slope
-            double slope = 0;
-            try {
-                Geometry g = rs.getGeometry();
-                if(profileBuilder!=null && g != null && !g.isEmpty()) {
-                    Coordinate[] c = g.getCoordinates();
-                    if(c.length >= 2) {
-                        double z0 = profileBuilder.getZ(c[0]);
-                        double z1 = profileBuilder.getZ(c[1]);
-                        if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
-                            slope = Utils.computeSlope(z0, z1, g.getLength());
-                        }
-                    }
-                }
-            } catch (SQLException ex) {
-                // ignore
-            }
-            // Day
-            ld = dbaToW(getEmissionFromResultSet(rs, "D", slope));
-
-            // Evening
-            le = dbaToW(getEmissionFromResultSet(rs, "E", slope));
-
-            // Night
-            ln = dbaToW(getEmissionFromResultSet(rs, "N", slope));
-
         }
 
         // Combine day evening night sound levels

@@ -74,7 +74,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
 
-        def expected = ["ID_SECTION","THE_GEOM","DIR_ID","LWD50","LWD63","LWD80","LWD100","LWD125",
+        def expected = ["ID_SECTION","THE_GEOM","DIR_ID","GS","LWD50","LWD63","LWD80","LWD100","LWD125",
                         "LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250",
                         "LWD1600","LWD2000","LWD2500","LWD3150","LWD4000","LWD5000","LWD6300","LWD8000","LWD10000",
                         "LWE50","LWE63","LWE80","LWE100","LWE125","LWE160","LWE200","LWE250","LWE315","LWE400",
@@ -107,7 +107,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
                  "tableToExport": "LDAY_GEOM"])
 
-        assertEquals(67.46,receiversLvl[0]["LEQ"] as Double,0.1)
+        assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,0.1)
     }
 
     @Test
