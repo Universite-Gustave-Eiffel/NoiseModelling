@@ -105,7 +105,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                         TableLocation.parse(tableTrackGeometry, DBUtils.getDBType(connection)));
                 spatialResultSet = connection.createStatement().executeQuery(
                         "SELECT r1."+trackKey.first()+" trackid, r1.*, r2.* FROM " + tableTrackGeometry + " r1, " +
-                                tableTrainTraffic + " r2 WHERE r1.IDSECTION=R2.IDSECTION ORDER BY R1.PK")
+                                tableTrainTraffic + " r2 WHERE r1.IDSECTION=R2.IDSECTION ORDER BY R1." + trackKey.first())
                         .unwrap(SpatialResultSet.class);
                 if(!spatialResultSet.next()) {
                     return null;
