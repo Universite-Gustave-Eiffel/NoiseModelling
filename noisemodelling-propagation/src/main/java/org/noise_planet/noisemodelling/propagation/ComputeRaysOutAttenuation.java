@@ -229,11 +229,15 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
                 Orientation directivityToPick = proPath.getPointList().get(0).orientation;
+                proPath.raySourceReceiverDirectivity = directivityToPick;
                 double[] attSource = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                     attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
                             data.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
                             (float)Math.toRadians(directivityToPick.pitch));
+                }
+                if(keepAbsorption) {
+                    proPath.absorptionData.aSource = attSource;
                 }
                 aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
             }
