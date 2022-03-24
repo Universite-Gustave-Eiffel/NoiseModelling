@@ -34,9 +34,9 @@ public class MakeLWTable {
         connection.createStatement().execute("drop table if exists " + outputTable);
 
         // Build and execute queries
-        StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (ID_SECTION int," +
+        StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (PK_SECTION int," +
                 " the_geom GEOMETRY, DIR_ID int, GS double");
-        StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(ID_SECTION, the_geom," +
+        StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
                 " DIR_ID, GS");
         StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
         for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {

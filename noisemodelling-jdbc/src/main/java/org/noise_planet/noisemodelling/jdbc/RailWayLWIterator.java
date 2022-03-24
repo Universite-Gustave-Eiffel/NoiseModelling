@@ -2,6 +2,9 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.Tuple;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.operation.linemerge.LineMerger;
@@ -98,7 +101,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private RailWayLWGeom fetchNext() {
         try {
             if (spatialResultSet == null) {
-                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.PK trackid, r1.*, r2.* FROM " + tableTrackGeometry + " r1, " + tableTrainTraffic + " r2 WHERE r1.IDSECTION= R2.IDSECTION ORDER BY R1.PK").unwrap(SpatialResultSet.class);
+                Tuple<String, Integer> trackKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection,
+                        TableLocation.parse(tableTrackGeometry, DBUtils.getDBType(connection)));
+                spatialResultSet = connection.createStatement().executeQuery(
+                        "SELECT r1."+trackKey.first()+" trackid, r1.*, r2.* FROM " + tableTrackGeometry + " r1, " +
+                                tableTrainTraffic + " r2 WHERE r1.IDSECTION=R2.IDSECTION ORDER BY R1.PK")
+                        .unwrap(SpatialResultSet.class);
                 if(!spatialResultSet.next()) {
                     return null;
                 }
