@@ -59,6 +59,7 @@ public class LDENConfig {
 
     boolean computeLAEQOnly = false;
     boolean exportRays = false;
+    boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
@@ -159,6 +160,22 @@ public class LDENConfig {
      */
     public void setExportRays(boolean exportRays) {
         this.exportRays = exportRays;
+    }
+
+    public boolean isKeepAbsorption() {
+        return keepAbsorption;
+    }
+
+    /**
+     * @param keepAbsorption If true store absorption values in rays
+     * @see #setKeepAbsorption(boolean)
+     */
+    public void setKeepAbsorption(boolean keepAbsorption) {
+        this.keepAbsorption = keepAbsorption;
+        if(keepAbsorption) {
+            // as absorption values are stored in rays
+            this.exportRays = true;
+        }
     }
 
     /**
