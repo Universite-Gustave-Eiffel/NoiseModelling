@@ -35,7 +35,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private int currentIdSection = -1;
     List<LineString> railWayGeoms;
     double gs;
-    private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     public double distance = 2;
     public Map<String, Integer> sourceFields = null;
@@ -49,11 +48,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     }
 
 
-    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
+    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack) {
         this.connection = connection;
         this.tableTrain = tableTrain;
         this.tableTrack = tableTrack;
-        this.ldenConfig = ldenConfig;
         railWayLWCurrent = fetchNext();
     }
 
@@ -94,7 +92,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private RailWayLWGeom fetchNext() {
         try {
             if (spatialResultSet == null) {
-                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ; ").unwrap(SpatialResultSet.class);
+                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.PK id_section, r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ; ").unwrap(SpatialResultSet.class);
                 if(!spatialResultSet.next()) {
                     return null;
                 }
@@ -109,7 +107,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     gs = spatialResultSet.getDouble("GS");
                 }
 
-                currentIdSection = spatialResultSet.getInt("PK");
+                currentIdSection = spatialResultSet.getInt("id_section");
                 railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
             }
             if(currentIdSection == -1) {
@@ -118,7 +116,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdSection, nbTrack, distance, gs);
             currentIdSection = -1;
             while (spatialResultSet.next()) {
-                if (railWayLWNext.pk == spatialResultSet.getInt("PK")) {
+                if (railWayLWNext.pk == spatialResultSet.getInt("id_section")) {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumDay = RailWayLW.sumRailWayLW(railWayLWsumDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumEvening = RailWayLW.sumRailWayLW(railWayLWsumEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
@@ -131,7 +129,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     railWayLWNext.setRailWayLWNight(railWayLWsumNight);
                     // read next instance attributes for the next() call
                     railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
-                    currentIdSection = spatialResultSet.getInt("PK");
+                    currentIdSection = spatialResultSet.getInt("id_section");
                     nbTrack = spatialResultSet.getInt("NTRACK");
                     if (hasColumn(spatialResultSet, "GS")) {
                         gs = spatialResultSet.getDouble("GS");
@@ -163,7 +161,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 sourceFields.put(fieldName.toUpperCase(), fieldId++);
             }
         }
-        double[] lvl = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
 
         String typeTrain = "FRET";
         double vehicleSpeed = 160;

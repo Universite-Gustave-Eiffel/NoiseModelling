@@ -71,11 +71,7 @@ public class MakeLWTable {
         connection.createStatement().execute(createTableQuery.toString());
 
         // Get Class to compute LW
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-        ldenConfig.setCoefficientVersion(2);
-        ldenConfig.setExportRays(true);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName, ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName);
 
         while (railWayLWIterator.hasNext()) {
             RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();

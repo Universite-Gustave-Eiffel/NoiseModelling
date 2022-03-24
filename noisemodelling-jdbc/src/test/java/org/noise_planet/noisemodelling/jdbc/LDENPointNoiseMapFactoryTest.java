@@ -110,12 +110,7 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
-
-
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         railWayLWIterator.setDistance(2);
 
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
@@ -137,12 +132,7 @@ public class LDENPointNoiseMapFactoryTest {
                 "LW_RAILWAY");
 
         // Get Class to compute LW
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-        ldenConfig.setCoefficientVersion(2);
-        ldenConfig.setExportRays(true);
-
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -170,7 +160,7 @@ public class LDENPointNoiseMapFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         ldenConfig.setComputeLDay(true);
         ldenConfig.setComputeLEvening(false);
