@@ -35,10 +35,10 @@ public class MakeLWTable {
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (ID_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int");
+                " the_geom GEOMETRY, DIR_ID int, GS double");
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(ID_SECTION, the_geom," +
-                " DIR_ID");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?");
+                " DIR_ID, GS");
+        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
         for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWD");
             createTableQuery.append(thirdOctave);
@@ -141,6 +141,7 @@ public class MakeLWTable {
                     ps.setInt(cursor++, pk);
                     ps.setObject(cursor++, sourceGeometry);
                     ps.setInt(cursor++, directivityId);
+                    ps.setDouble(cursor++, railWayLWGeom.getGs());
                     for (double v : LWDay) {
                         ps.setDouble(cursor++, v);
                     }
