@@ -1576,7 +1576,7 @@ public class ComputeCnossosRays {
                             Orientation.rotate(new Orientation(orientation.yaw, orientation.roll, 0),
                                     v.normalize()), orientation.roll);
                 } else {
-                    orientation = Orientation.fromVector(v.normalize(), 0);
+                    orientation = Orientation.fromVector(Orientation.rotate(new Orientation(0,0,0), v.normalize()), 0);
                 }
                 totalPowerRemaining += insertPtSource(pt, receiverCoord, srcIndex, sourceList, wj, li, orientation);
             }

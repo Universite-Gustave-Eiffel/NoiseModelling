@@ -46,19 +46,19 @@ public class DiscreteDirectionAttributesTest {
                 (float)Math.toRadians(31), 1);
         assertEquals(new DiscreteDirectionAttributes.DirectivityRecord((float)Math.toRadians(26),
                         (float)Math.toRadians(31), null), r);
-        assertArrayEquals(new double[]{-5.02, -4.94, -4.81, -4.62, -4.38, -4.10, -3.78, -3.46}, r.getAttenuation(),
+        assertArrayEquals(new double[]{-5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63}, r.getAttenuation(),
                 0.1);
 
 
-        assertEquals(-5.02, d.getAttenuation(freqTest[0], (float)Math.toRadians(31),
+        assertEquals(-5.63, d.getAttenuation(freqTest[0], (float)Math.toRadians(31),
                 (float)Math.toRadians(26)),0.1);
-        assertEquals(-4.94, d.getAttenuation(freqTest[1], (float)Math.toRadians(31),
+        assertEquals(-5.63, d.getAttenuation(freqTest[1], (float)Math.toRadians(31),
                 (float)Math.toRadians(26)),0.1);
-        assertEquals(-4.94, d.getAttenuation(freqTest[1] + 1, (float)Math.toRadians(31),
+        assertEquals(-5.63, d.getAttenuation(freqTest[1] + 1, (float)Math.toRadians(31),
                 (float)Math.toRadians(26)),0.1);
-        assertEquals(-4.94, d.getAttenuation(freqTest[0] - 1, (float)Math.toRadians(31),
+        assertEquals(-5.63, d.getAttenuation(freqTest[0] - 1, (float)Math.toRadians(31),
                 (float)Math.toRadians(26)),0.1);
-        assertEquals(-3.46, d.getAttenuation(freqTest[freqTest.length - 1] + 1, (float)Math.toRadians(31),
+        assertEquals(-5.63, d.getAttenuation(freqTest[freqTest.length - 1] + 1, (float)Math.toRadians(31),
                 (float)Math.toRadians(26)),0.1);
     }
 
