@@ -130,6 +130,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
             propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathData.freq_lvl);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
+        propagationProcessData.setBodyBarrier(bodyBarrier);
         propagationProcessData.maximumError = getMaximumError();
         propagationProcessData.noiseFloor = getNoiseFloor();
         propagationProcessData.maxRefDist = maximumReflectionDistance;

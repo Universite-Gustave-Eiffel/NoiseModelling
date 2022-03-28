@@ -57,6 +57,8 @@ public abstract class JdbcNoiseMap {
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
+
+    protected boolean bodyBarrier = false; // it needs to be true if train propagation is computed (multiple reflection between the train and a screen)
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
@@ -340,6 +342,14 @@ public abstract class JdbcNoiseMap {
                 }
             }
         }
+    }
+
+    /**
+     * true if train propagation is computed (multiple reflection between the train and a screen)
+     * @param bodyBarrier
+     */
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
     }
 
     protected double getCellWidth() {

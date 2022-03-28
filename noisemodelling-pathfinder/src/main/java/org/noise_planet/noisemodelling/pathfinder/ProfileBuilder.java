@@ -1094,6 +1094,7 @@ public class ProfileBuilder {
         //Check is source is inside ground
         setGroundEffects(profile, c0, gS);
 
+
         return profile;
     }
 
@@ -1305,7 +1306,7 @@ public class ProfileBuilder {
                     profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
-                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
+                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection), facetLine.alphas);
                 }
                 else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
@@ -1676,6 +1677,18 @@ public class ProfileBuilder {
         public void addWallCutPt(Coordinate coord, int id, boolean corner) {
             pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
             pts.get(pts.size()-1).wallId = id;
+            hasBuildingInter = true;
+        }
+
+        /**
+         * Add a building cutting point.
+         * @param coord Coordinate of the cutting point.
+         * @param id    Id of the cut building.
+         */
+        public void addWallCutPt(Coordinate coord, int id, boolean corner, List<Double> alphas) {
+            pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
+            pts.get(pts.size()-1).wallId = id;
+            pts.get(pts.size()-1).setWallAlpha(alphas);
             hasBuildingInter = true;
         }
 
