@@ -58,14 +58,6 @@ public abstract class JdbcNoiseMap {
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
 
-    public boolean isBodyBarrier() {
-        return bodyBarrier;
-    }
-
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
-
     protected boolean bodyBarrier = false;
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
@@ -350,6 +342,11 @@ public abstract class JdbcNoiseMap {
                 }
             }
         }
+    }
+
+
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
     }
 
     protected double getCellWidth() {
