@@ -2,6 +2,9 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.Tuple;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.operation.linemerge.LineMerger;
@@ -29,13 +32,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private RailWayLW railWayLWsumEvening;
     private RailWayLW railWayLWsumNight;
     private RailWayLWGeom railWayLWCurrent = null;
-    private String tableTrain;
-    private String tableTrack;
+    private String tableTrackGeometry;
+    private String tableTrainTraffic;
     private int nbTrack;
-    private int currentIdSection = -1;
+    private int currentIdTrack = -1;
     List<LineString> railWayGeoms;
     double gs;
-    private LDENConfig ldenConfig;
     private SpatialResultSet spatialResultSet;
     public double distance = 2;
     public Map<String, Integer> sourceFields = null;
@@ -49,11 +51,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     }
 
 
-    public RailWayLWIterator(Connection connection, String tableTrain, String tableTrack, LDENConfig ldenConfig) {
+    /**
+     * Generate sound source for train (with train source directivity) from traffic and geometry tracks tables
+     * @param connection
+     * @param tableTrackGeometry Track geometry and metadata
+     * @param tableTrainTraffic Train traffic associated with tracks
+     */
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) {
         this.connection = connection;
-        this.tableTrain = tableTrain;
-        this.tableTrack = tableTrack;
-        this.ldenConfig = ldenConfig;
+        this.tableTrackGeometry = tableTrackGeometry;
+        this.tableTrainTraffic = tableTrainTraffic;
         railWayLWCurrent = fetchNext();
     }
 
@@ -94,7 +101,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private RailWayLWGeom fetchNext() {
         try {
             if (spatialResultSet == null) {
-                spatialResultSet = connection.createStatement().executeQuery("SELECT r1.*, r2.* FROM " + tableTrain + " r1, " + tableTrack + " r2 WHERE r1.IDSECTION= R2.IDSECTION ; ").unwrap(SpatialResultSet.class);
+                Tuple<String, Integer> trackKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection,
+                        TableLocation.parse(tableTrackGeometry, DBUtils.getDBType(connection)));
+                spatialResultSet = connection.createStatement().executeQuery(
+                        "SELECT r1."+trackKey.first()+" trackid, r1.*, r2.* FROM " + tableTrackGeometry + " r1, " +
+                                tableTrainTraffic + " r2 WHERE r1.IDSECTION=R2.IDSECTION ORDER BY R1." + trackKey.first())
+                        .unwrap(SpatialResultSet.class);
                 if(!spatialResultSet.next()) {
                     return null;
                 }
@@ -109,16 +121,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     gs = spatialResultSet.getDouble("GS");
                 }
 
-                currentIdSection = spatialResultSet.getInt("PK");
+                currentIdTrack = spatialResultSet.getInt("trackid");
                 railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
             }
-            if(currentIdSection == -1) {
+            if(currentIdTrack == -1) {
                 return null;
             }
-            RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdSection, nbTrack, distance, gs);
-            currentIdSection = -1;
+            RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdTrack, nbTrack, distance, gs);
+            currentIdTrack = -1;
             while (spatialResultSet.next()) {
-                if (railWayLWNext.pk == spatialResultSet.getInt("PK")) {
+                if (railWayLWNext.pk == spatialResultSet.getInt("trackid")) {
                     railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumDay = RailWayLW.sumRailWayLW(railWayLWsumDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     railWayLWsumEvening = RailWayLW.sumRailWayLW(railWayLWsumEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
@@ -131,7 +143,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     railWayLWNext.setRailWayLWNight(railWayLWsumNight);
                     // read next instance attributes for the next() call
                     railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
-                    currentIdSection = spatialResultSet.getInt("PK");
+                    currentIdTrack = spatialResultSet.getInt("trackid");
                     nbTrack = spatialResultSet.getInt("NTRACK");
                     if (hasColumn(spatialResultSet, "GS")) {
                         gs = spatialResultSet.getDouble("GS");
@@ -163,7 +175,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 sourceFields.put(fieldName.toUpperCase(), fieldId++);
             }
         }
-        double[] lvl = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
 
         String typeTrain = "FRET";
         double vehicleSpeed = 160;
@@ -262,8 +273,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
                 if (i==0){
                     lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
-                }
-                else {
+                } else {
                     lWRailWay = RailWayLW.sumRailWayLW(lWRailWay, evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters));
                 }
                 i++;

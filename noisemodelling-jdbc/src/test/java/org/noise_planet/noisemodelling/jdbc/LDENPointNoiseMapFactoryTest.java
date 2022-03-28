@@ -18,6 +18,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -109,12 +110,7 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
-
-
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         railWayLWIterator.setDistance(2);
 
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
@@ -132,154 +128,11 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
-
-        // drop table LW_RAILWAY if exists and the create and prepare the table
-        connection.createStatement().execute("drop table if exists LW_RAILWAY;");
-
-        // Build and execute queries
-        StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int");
-        StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
-                " DIR_ID");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?");
-        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWD");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWD");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWE");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWE");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        for(int thirdOctave : CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWN");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWN");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        createTableQuery.append(")");
-        insertIntoQuery.append(") VALUES (");
-        insertIntoQuery.append(insertIntoValuesQuery);
-        insertIntoQuery.append(")");
-        connection.createStatement().execute(createTableQuery.toString());
-
-        // --------------------------------------
-        // Start calculation and fill the table
-        // --------------------------------------
+        MakeLWTable.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY");
 
         // Get Class to compute LW
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-        ldenConfig.setCoefficientVersion(2);
-        ldenConfig.setExportRays(true);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
-
-        while (railWayLWIterator.hasNext()) {
-            RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
-
-            RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay();
-            RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
-            RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight();
-            List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
-
-            int pk = railWayLWGeom.getPK();
-            double[] LWDay = new double[0];
-            double[] LWEvening = new double[0];
-            double[] LWNight = new double[0];
-            double heightSource = 0;
-            int directivityId = 0;
-            for (int iSource = 0; iSource < 6; iSource++) {
-                switch (iSource) {
-                    case 0:
-                        LWDay = railWayLWDay.getLWRolling();
-                        LWEvening = railWayLWEvening.getLWRolling();
-                        LWNight = railWayLWNight.getLWRolling();
-                        heightSource = 0.5;
-                        directivityId = 1;
-                        break;
-                    case 1:
-                        LWDay = railWayLWDay.getLWTractionA();
-                        LWEvening = railWayLWEvening.getLWTractionA();
-                        LWNight = railWayLWNight.getLWTractionA();
-                        heightSource = 0.5;
-                        directivityId = 2;
-                        break;
-                    case 2:
-                        LWDay = railWayLWDay.getLWTractionB();
-                        LWEvening = railWayLWEvening.getLWTractionB();
-                        LWNight = railWayLWNight.getLWTractionB();
-                        heightSource = 4;
-                        directivityId = 3;
-                        break;
-                    case 3:
-                        LWDay = railWayLWDay.getLWAerodynamicA();
-                        LWEvening = railWayLWEvening.getLWAerodynamicA();
-                        LWNight = railWayLWNight.getLWAerodynamicA();
-                        heightSource = 0.5;
-                        directivityId = 4;
-                        break;
-                    case 4:
-                        LWDay = railWayLWDay.getLWAerodynamicB();
-                        LWEvening = railWayLWEvening.getLWAerodynamicB();
-                        LWNight = railWayLWNight.getLWAerodynamicB();
-                        heightSource = 4;
-                        directivityId = 5;
-                        break;
-                    case 5:
-                        LWDay = railWayLWDay.getLWBridge();
-                        LWEvening = railWayLWEvening.getLWBridge();
-                        LWNight = railWayLWNight.getLWBridge();
-                        heightSource = 0.5;
-                        directivityId = 6;
-                        break;
-                }
-                PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
-                for (Geometry trackGeometry : geometries) {
-
-                    Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy() ;
-
-//                    sourceGeometry.apply((GeometryFilter) new ST_Force3D());
-                    // offset geometry z
-                    //sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
-
-                    //  sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
-                    int cursor = 1;
-                    ps.setInt(cursor++, pk);
-                    ps.setObject(cursor++, sourceGeometry);
-                    ps.setInt(cursor++, directivityId);
-                    for (double v : LWDay) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWEvening) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWNight) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    ps.addBatch();
-                }
-                ps.executeBatch();
-            }
-
-        }
-
-        // Add primary key to the LW table
-
-        connection.createStatement().execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
-      //  connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_UPDATEZ(THE_GEOM,5.0);");
-
-        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -288,9 +141,6 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
-
-        //TODO envoyer Rail section a Gwen car je veux un DEM de la plateform et si il arrive pas demander à Pierre
-        //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
         connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
@@ -310,7 +160,7 @@ public class LDENPointNoiseMapFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         ldenConfig.setComputeLDay(true);
         ldenConfig.setComputeLEvening(false);
@@ -320,6 +170,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
         factory.setKeepRays(true);
+        factory.insertTrainDirectivity();
 
 
         PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY",

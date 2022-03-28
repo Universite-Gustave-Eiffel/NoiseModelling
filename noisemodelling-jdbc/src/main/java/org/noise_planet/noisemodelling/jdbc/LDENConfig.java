@@ -29,7 +29,7 @@ import java.io.File;
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
 public class LDENConfig {
-    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW,INPUT_MODE_RAILWAY_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
+    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
     // This field is initialised when {@link PointNoiseMap#initialize} is called
@@ -59,6 +59,7 @@ public class LDENConfig {
 
     boolean computeLAEQOnly = false;
     boolean exportRays = false;
+    boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
@@ -159,6 +160,22 @@ public class LDENConfig {
      */
     public void setExportRays(boolean exportRays) {
         this.exportRays = exportRays;
+    }
+
+    public boolean isKeepAbsorption() {
+        return keepAbsorption;
+    }
+
+    /**
+     * @param keepAbsorption If true store absorption values in rays
+     * @see #setKeepAbsorption(boolean)
+     */
+    public void setKeepAbsorption(boolean keepAbsorption) {
+        this.keepAbsorption = keepAbsorption;
+        if(keepAbsorption) {
+            // as absorption values are stored in rays
+            this.exportRays = true;
+        }
     }
 
     /**

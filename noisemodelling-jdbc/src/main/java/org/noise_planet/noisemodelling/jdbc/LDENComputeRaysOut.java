@@ -20,6 +20,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
     public LDENComputeRaysOut(PropagationProcessPathData pathData, LDENPropagationProcessData inputData, LdenData ldenData) {
         super(inputData.ldenConfig.exportRays, pathData, inputData);
+        this.keepAbsorption = inputData.ldenConfig.keepAbsorption;
         this.ldenData = ldenData;
         this.ldenPropagationProcessData = inputData;
     }

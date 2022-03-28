@@ -67,6 +67,7 @@ public class PropagationPath {
     int idSource;
     int idReceiver;
     Orientation sourceOrientation = new Orientation(0,0,0);
+    public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
     public double angle;
     double gs;
     private boolean initialized = false;
@@ -146,6 +147,7 @@ public class PropagationPath {
         this.idSource = other.idSource;
         this.idReceiver = other.idReceiver;
         this.sourceOrientation = other.sourceOrientation;
+        this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
         this.angle = other.angle;
         this.gs = other.gs;
         this.initialized = other.initialized;
@@ -183,6 +185,13 @@ public class PropagationPath {
         this.sourceOrientation = sourceOrientation;
     }
 
+    public Orientation getRaySourceReceiverDirectivity() {
+        return raySourceReceiverDirectivity;
+    }
+
+    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
+        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
+    }
 
     /**
      * @return Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast
@@ -682,6 +691,7 @@ public class PropagationPath {
         public double[] aDifH;
         public double[] aDifF;
         public double[] aGlobal;
+        public double[] aSource; // directivity attenuation
 
         public void init(int size) {
             aAtm = new double[size];
@@ -694,6 +704,7 @@ public class PropagationPath {
             aDifH = new double[size];
             aDifF = new double[size];
             aGlobal = new double[size];
+            aSource = new double[size];
         }
     }
 

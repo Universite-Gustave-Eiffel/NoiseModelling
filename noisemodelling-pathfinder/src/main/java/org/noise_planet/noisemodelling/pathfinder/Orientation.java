@@ -47,9 +47,9 @@ import java.util.Objects;
  * So 0 degrees point the end of the line segment.
  */
 public class Orientation {
-    public float yaw;
-    public float pitch;
-    public float roll;
+    public double yaw;
+    public double pitch;
+    public double roll;
 
     /**
      * Default constructor
@@ -62,7 +62,7 @@ public class Orientation {
      * @param pitch Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
      * @param roll        Longitudinal axis in degrees. A positive value lifts the left wing and lowers the right wing.
      */
-    public Orientation(float yaw, float pitch, float roll) {
+    public Orientation(double yaw, double pitch, double roll) {
         this.yaw = (360 + yaw) % 360;
         this.pitch = Math.min(90, Math.max(-90, pitch));
         this.roll = (360 + roll) % 360;
@@ -125,10 +125,10 @@ public class Orientation {
                 res.getEntry(2, 0));
     }
 
-    public static Orientation fromVector(Vector3D vector, float roll) {
+    public static Orientation fromVector(Vector3D vector, double roll) {
         double newYaw = Math.atan2(vector.getY(), vector.getX());
         double newPitch = Math.asin(vector.getZ());
-        return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), roll);
+        return new Orientation(Math.toDegrees(newYaw), Math.toDegrees(newPitch), roll);
     }
 
     @Override
@@ -136,9 +136,9 @@ public class Orientation {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Orientation that = (Orientation) o;
-        return Float.compare(that.yaw, yaw) == 0 &&
-                Float.compare(that.pitch, pitch) == 0 &&
-                Float.compare(that.roll, roll) == 0;
+        return Double.compare(that.yaw, yaw) == 0 &&
+                Double.compare(that.pitch, pitch) == 0 &&
+                Double.compare(that.roll, roll) == 0;
     }
 
     @Override
