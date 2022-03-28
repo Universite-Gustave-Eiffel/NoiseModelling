@@ -1,6 +1,5 @@
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
@@ -683,6 +682,7 @@ public class EvaluateAttenuationCnossosTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 14)
+                .setGs(0.9)
                 .build();
 
         //Propagation process path data building
@@ -778,6 +778,7 @@ public class EvaluateAttenuationCnossosTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 11.5)
+                .setGs(0.9)
                 .hEdgeDiff(true)
                 .vEdgeDiff(true)
                 .build();

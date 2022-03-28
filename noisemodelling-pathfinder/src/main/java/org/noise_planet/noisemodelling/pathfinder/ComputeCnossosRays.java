@@ -469,10 +469,10 @@ public class ComputeCnossosRays {
         }
         SegmentPath srSeg;
         if(isSrSeg) {
-            srSeg = computeSegment(new Coordinate(src.x, srcCut.getCoordinate().z), new Coordinate(rcv.x, rcvCut.getCoordinate().z), meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
+            srSeg = computeSegment(new Coordinate(src.x, srcCut.getCoordinate().z), new Coordinate(rcv.x, rcvCut.getCoordinate().z), meanPlane, cutProfile.getGPath(srcCut, rcvCut), data.gS);
         }
         else {
-            srSeg = computeSegment(src, rcv, meanPlane, cutProfile.getGPath(srcCut, rcvCut), srcCut.getGroundCoef());
+            srSeg = computeSegment(src, rcv, meanPlane, cutProfile.getGPath(srcCut, rcvCut), data.gS);
         }
         LineSegment dSR = new LineSegment(src, rcv);
 
