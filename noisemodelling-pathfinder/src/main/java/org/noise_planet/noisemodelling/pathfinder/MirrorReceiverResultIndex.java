@@ -33,6 +33,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.Intersection;
 import org.locationtech.jts.algorithm.LineIntersector;
 import org.locationtech.jts.algorithm.RobustLineIntersector;
@@ -73,8 +74,9 @@ public class MirrorReceiverResultIndex {
 
         Vector2D rP0 = new Vector2D(receiverImage, wall.p0).normalize();
         Vector2D rP1 = new Vector2D(receiverImage, wall.p1).normalize();
-        double angleSign = rP0.angleTo(rP1) >= 0 ? 1 : -1;
-        int numberOfStep = Math.max(1, (int)(Math.abs(rP0.angleTo(rP1)) / DEFAULT_CIRCLE_POINT_ANGLE));
+        double angleRp0TorP1 = JTSUtility.angleTo(rP0, rP1);
+        double angleSign = angleRp0TorP1 >= 0 ? 1 : -1;
+        int numberOfStep = Math.max(1, (int)(Math.abs(angleRp0TorP1) / DEFAULT_CIRCLE_POINT_ANGLE));
         Coordinate lastWallIntersectionPoint = new Coordinate();
         for(int angleStep = 0 ; angleStep <= numberOfStep; angleStep++) {
             Vector2D newPointTranslationVector = rP0.rotate(DEFAULT_CIRCLE_POINT_ANGLE * angleSign * angleStep);

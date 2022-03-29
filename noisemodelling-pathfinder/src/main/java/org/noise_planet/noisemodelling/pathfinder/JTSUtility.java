@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.stat.regression.RegressionResults;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.Coordinate;
@@ -62,6 +63,31 @@ public class JTSUtility {
      * Utility class
      **/
     private JTSUtility() {}
+
+
+
+    public static double angle(Vector2D v1) {
+        return Math.acos(v1.getX()/ (Math.sqrt(v1.getX()*v1.getX()+ v1.getY()*v1.getY())));
+    }
+
+    /**
+     * Faster than Vector2D angleTo because no usage of aTan2
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static double angleTo(Vector2D v1, Vector2D v2) {
+        double a1 = angle(v1);
+        double a2 = angle(v2);
+        double angDel = a2 - a1;
+
+        // normalize, maintaining orientation
+        if (angDel <= -Math.PI)
+            return angDel + Angle.PI_TIMES_2;
+        if (angDel > Math.PI)
+            return angDel - Angle.PI_TIMES_2;
+        return angDel;
+    }
 
     /**
      * Compute a and b linear function of the line p1 p2
