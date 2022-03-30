@@ -13,6 +13,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
+import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -183,7 +184,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, DBUtils.getDBType(connection))).getEnvelopeInternal();
+        DBTypes dbTypes = DBUtils.getDBType(connection);
+        Envelope computationEnvelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, dbTypes)).getEnvelopeInternal();
+        if(!sourcesTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
+        }
+        return computationEnvelope;
     }
 
     /**

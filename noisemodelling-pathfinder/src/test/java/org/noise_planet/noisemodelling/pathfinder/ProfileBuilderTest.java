@@ -293,36 +293,30 @@ public class ProfileBuilderTest {
 
         // Check found intersections
 
-        Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.1,
-                envDomain.getMinY() + envDomain.getHeight() * 0.15);
-        cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-        Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.25,
-                envDomain.getMinY() + envDomain.getHeight() * 0.16);
-        cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-        for(int i = 0; i < 50; i++) {
-            // precompile
-            profileBuilder.getProfile(cutStart, cutEnd, 0);
-        }
         int loops = 800;
-        long start = System.currentTimeMillis();
+        int startLoop = 50;
+        long start = 0;
         for(int i = 0; i < loops; i++) {
+            if(i == startLoop) {
+                start = System.currentTimeMillis();
+            }
             for(double[] testPoint : testPointPositions) {
-                cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
+                Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
                 cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
+                Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
                 cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 profileBuilder.getProfile(cutStart, cutEnd, 0);
             }
         }
-        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
+        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / (loops - startLoop)));
 
-        //try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
-        //    GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
-        //    geoJSONDocument.setInputCRS("EPSG:2154");
-        //    geoJSONDocument.writeHeader();
-        //    geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-        //    geoJSONDocument.writeFooter();
-        //}
+//        try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
+//            GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
+//            geoJSONDocument.setInputCRS("EPSG:2154");
+//            geoJSONDocument.writeHeader();
+//            geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
+//            geoJSONDocument.writeFooter();
+//        }
     }
 
     @Test
