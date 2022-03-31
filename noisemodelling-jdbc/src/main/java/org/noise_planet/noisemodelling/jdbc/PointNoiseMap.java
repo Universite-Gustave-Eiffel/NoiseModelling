@@ -13,6 +13,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
+import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -127,7 +128,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         if(propagationProcessDataFactory != null) {
             propagationProcessData = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathData.freq_lvl);
+            propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathDataDay.freq_lvl);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
@@ -183,7 +184,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
 
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
-        return GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, DBUtils.getDBType(connection))).getEnvelopeInternal();
+        DBTypes dbTypes = DBUtils.getDBType(connection);
+        Envelope computationEnvelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, dbTypes)).getEnvelopeInternal();
+        if(!sourcesTableName.isEmpty()) {
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
+        }
+        return computationEnvelope;
     }
 
     /**
@@ -253,9 +259,10 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathData, threadData);
+            computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathDataDay, threadData);
         } else {
-            computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathData);
+            computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathDataDay,
+                    propagationProcessPathDataEvening, propagationProcessPathDataNight);
         }
 
         ComputeCnossosRays computeRays = new ComputeCnossosRays(threadData);
@@ -296,7 +303,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
     }
 
     public interface IComputeRaysOutFactory {
-        IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathData);
+        IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
+                               PropagationProcessPathData pathDataEvening, PropagationProcessPathData pathDataNight);
     }
 
     /**
