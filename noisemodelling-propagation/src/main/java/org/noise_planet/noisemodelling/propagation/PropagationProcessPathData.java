@@ -94,6 +94,25 @@ public class PropagationProcessPathData {
     }
 
     /**
+     * Copy constructor
+     * @param other
+     */
+    public PropagationProcessPathData(PropagationProcessPathData other) {
+        this.freq_lvl = other.freq_lvl;
+        this.freq_lvl_exact = other.freq_lvl_exact;
+        this.freq_lvl_a_weighting = other.freq_lvl_a_weighting;
+        this.temperature = other.temperature;
+        this.celerity = other.celerity;
+        this.humidity = other.humidity;
+        this.pressure = other.pressure;
+        this.alpha_atmo = other.alpha_atmo;
+        this.defaultOccurance = other.defaultOccurance;
+        this.gDisc = other.gDisc;
+        this.prime2520 = other.prime2520;
+        this.windRose = other.windRose;
+    }
+
+    /**
      * @param freq_lvl Frequency values for column names
      * @param freq_lvl_exact Exact frequency values for computations
      * @param freq_lvl_a_weighting A weighting values

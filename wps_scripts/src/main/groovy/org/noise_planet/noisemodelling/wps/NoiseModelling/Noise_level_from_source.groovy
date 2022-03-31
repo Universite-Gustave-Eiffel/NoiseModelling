@@ -220,9 +220,31 @@ inputs = [
                                    min        : 0, max: 1,
                                    type       : Double.class
         ],
-        confFavorableOccurrences: [
-                name       : 'Probability of occurrences',
-                title      : 'Probability of occurrences',
+        confFavorableOccurrencesDay: [
+                name       : 'Probability of occurrences (Day)',
+                title      : 'Probability of occurrences (Day)',
+                description: 'comma-delimited string containing the probability of occurrences of favourable propagation conditions.' +
+                        'The north slice is the last array index not the first one<br/>' +
+                        'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
+                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
+                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>Default value <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confFavorableOccurrencesEvening: [
+                name       : 'Probability of occurrences (Evening)',
+                title      : 'Probability of occurrences (Evening)',
+                description: 'comma-delimited string containing the probability of occurrences of favourable propagation conditions.' +
+                        'The north slice is the last array index not the first one<br/>' +
+                        'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
+                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
+                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>Default value <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        confFavorableOccurrencesNight: [
+                name       : 'Probability of occurrences (Night)',
+                title      : 'Probability of occurrences (Night)',
                 description: 'comma-delimited string containing the probability of occurrences of favourable propagation conditions.' +
                         'The north slice is the last array index not the first one<br/>' +
                         'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
@@ -499,26 +521,45 @@ def exec(Connection connection, input) {
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
 
     // Set environmental parameters
-    PropagationProcessPathData environmentalData = new PropagationProcessPathData()
+    PropagationProcessPathData environmentalDataDay = new PropagationProcessPathData()
 
     if (input.containsKey('confHumidity')) {
-        environmentalData.setHumidity(input['confHumidity'] as Double)
+        environmentalDataDay.setHumidity(input['confHumidity'] as Double)
     }
     if (input.containsKey('confTemperature')) {
-        environmentalData.setTemperature(input['confTemperature'] as Double)
+        environmentalDataDay.setTemperature(input['confTemperature'] as Double)
     }
-    if (input.containsKey('confFavorableOccurrences')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrences'] as String, ',')
+
+    PropagationProcessPathData environmentalDataEvening = new PropagationProcessPathData(environmentalDataDay)
+    PropagationProcessPathData environmentalDataNight = new PropagationProcessPathData(environmentalDataDay)
+    if (input.containsKey('confFavorableOccurrencesDay')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDay'] as String, ',')
         double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
         for (int i = 0; i < favOccurrences.length; i++) {
             favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
         }
-        environmentalData.setWindRose(favOccurrences)
+        environmentalDataDay.setWindRose(favOccurrences)
+    }
+    if (input.containsKey('confFavorableOccurrencesEvening')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesEvening'] as String, ',')
+        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        for (int i = 0; i < favOccurrences.length; i++) {
+            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
+        }
+        environmentalDataEvening.setWindRose(favOccurrences)
+    }
+    if (input.containsKey('confFavorableOccurrencesNight')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesNight'] as String, ',')
+        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        for (int i = 0; i < favOccurrences.length; i++) {
+            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
+        }
+        environmentalDataNight.setWindRose(favOccurrences)
     }
 
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY, environmentalData)
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_EVENING, environmentalData)
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_NIGHT, environmentalData)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY, environmentalDataDay)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_EVENING, environmentalDataEvening)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_NIGHT, environmentalDataNight)
 
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
