@@ -740,7 +740,7 @@ public class ComputeCnossosRays {
         for(int i=1; i<pts2D.size(); i++) {
             Coordinate pt = pts2D.get(i);
             double frac = srcRcvLine.segmentFraction(pt);
-            double y = 0.0;
+            double y = Double.MIN_VALUE;
             for(int j=i+1; j<pts2D.size(); j++) {
                 y = max(y, srcRcvLine.p0.y + frac*(pts2D.get(j).y-srcRcvLine.p0.y));
             }
