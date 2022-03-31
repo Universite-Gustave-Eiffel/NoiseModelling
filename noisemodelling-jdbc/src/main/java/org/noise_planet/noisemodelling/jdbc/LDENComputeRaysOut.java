@@ -106,7 +106,9 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
         double[] processAndPushResult(long receiverPK, List<double[]> wjSources,List<VerticeSL> receiverAttenuationLevels, ConcurrentLinkedDeque<VerticeSL> result, boolean feedStack) {
             double[] levels = sumLevels(wjSources, receiverAttenuationLevels);
-            pushInStack(result, new VerticeSL(receiverPK, -1, wToDba(levels)));
+            if(feedStack) {
+                pushInStack(result, new VerticeSL(receiverPK, -1, wToDba(levels)));
+            }
             return levels;
         }
 
@@ -237,15 +239,21 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                     }
                     if (ldenConfig.computeLDay || ldenConfig.computeLDEN) {
                         dayLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesD.get((int) sourceId)), entry.getValue().dayLevels);
-                        pushInStack(ldenComputeRaysOut.ldenData.lDayLevels, new VerticeSL(receiverPK, sourcePK, dayLevels));
+                        if(ldenConfig.computeLDay) {
+                            pushInStack(ldenComputeRaysOut.ldenData.lDayLevels, new VerticeSL(receiverPK, sourcePK, dayLevels));
+                        }
                     }
                     if (ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
                         eveningLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesE.get((int) sourceId)), entry.getValue().eveningLevels);
-                        pushInStack(ldenComputeRaysOut.ldenData.lEveningLevels, new VerticeSL(receiverPK, sourcePK, eveningLevels));
+                        if(ldenConfig.computeLEvening) {
+                            pushInStack(ldenComputeRaysOut.ldenData.lEveningLevels, new VerticeSL(receiverPK, sourcePK, eveningLevels));
+                        }
                     }
                     if (ldenConfig.computeLNight || ldenConfig.computeLDEN) {
                         nightLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesN.get((int) sourceId)), entry.getValue().nightLevels);
-                        pushInStack(ldenComputeRaysOut.ldenData.lNightLevels, new VerticeSL(receiverPK, sourcePK, nightLevels));
+                        if(ldenConfig.computeLNight) {
+                            pushInStack(ldenComputeRaysOut.ldenData.lNightLevels, new VerticeSL(receiverPK, sourcePK, nightLevels));
+                        }
                     }
                     if (ldenConfig.computeLDEN) {
                         double[] levels = new double[dayLevels.length];

@@ -264,9 +264,10 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+    List<Integer> freqLvl = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY).freq_lvl;
+    for (int idfreq = 0; idfreq < freqLvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(freqLvl.get(idfreq));
         sb.append(" numeric(5, 2)");
     }
     sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
@@ -275,9 +276,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     }
     sb.append(", ")
     sb.append(geomField)
-    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < freqLvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(freqLvl.get(idfreq));
     }
     sb.append(", LAEQ, LEQ FROM ")
     sb.append(tableReceiver)
@@ -515,7 +516,10 @@ def exec(Connection connection, input) {
         environmentalData.setWindRose(favOccurrences)
     }
 
-    pointNoiseMap.setPropagationProcessPathData(environmentalData)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY, environmentalData)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_EVENING, environmentalData)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_NIGHT, environmentalData)
+
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
     // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon

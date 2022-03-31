@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
@@ -284,9 +283,10 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+    PropagationProcessPathData pathData = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY);
+    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(pathData.freq_lvl.get(idfreq));
         sb.append(" numeric(5, 2)");
     }
     sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
@@ -295,9 +295,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     }
     sb.append(", ")
     sb.append(geomField)
-    for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
-        sb.append(ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq));
+        sb.append(pathData.freq_lvl.get(idfreq));
     }
     sb.append(", LAEQ, LEQ FROM ")
     sb.append(tableReceiver)
@@ -524,7 +524,9 @@ def exec(Connection connection, input) {
         environmentalData.setWindRose(favOccurrences)
     }
 
-    pointNoiseMap.setPropagationProcessPathData(environmentalData)
+    pointNoiseMap.setPropagationProcessPathDataDay(environmentalData)
+    pointNoiseMap.setPropagationProcessPathDataEvening(environmentalData)
+    pointNoiseMap.setPropagationProcessPathDataNight(environmentalData)
 
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
