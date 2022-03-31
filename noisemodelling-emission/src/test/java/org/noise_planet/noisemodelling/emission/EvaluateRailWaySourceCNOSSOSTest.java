@@ -363,7 +363,7 @@ public class EvaluateRailWaySourceCNOSSOSTest {
 
         double vehicleSpeed = 80;
         int rollingCondition = 0;
-        double idlingTime = 0;
+        double idlingTime = 0.0;
 
         // Set : Take into account the number of units
         double nBUnit = 2;
