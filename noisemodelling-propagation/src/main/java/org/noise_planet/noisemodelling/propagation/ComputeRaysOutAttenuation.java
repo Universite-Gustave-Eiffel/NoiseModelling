@@ -202,6 +202,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                     double[][] deltaRetroDifi = new double[n+1][data.freq_lvl.size()];
                     double[][] deltaRetroDif = new double[n+1][data.freq_lvl.size()];
                     double[] deltaL = new double[data.freq_lvl.size()];
+                    Arrays.fill(deltaL,dbaToW(0.0));
 
                     double db = pDif.coordinate.x;
                     double hb = pDif.coordinate.y;
