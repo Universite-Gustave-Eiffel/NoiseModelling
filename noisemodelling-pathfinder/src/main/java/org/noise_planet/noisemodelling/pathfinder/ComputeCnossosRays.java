@@ -486,6 +486,7 @@ public class ComputeCnossosRays {
         points.add(srcPP);
 
         PropagationPath propagationPath = new PropagationPath(false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
+        propagationPath.raySourceReceiverDirectivity = srcPP.orientation;
         if(data.isComputeDiffraction()) {
             //Check for Rayleigh criterion for segments computation
             // Compute mean ground plan
@@ -682,6 +683,7 @@ public class ComputeCnossosRays {
                 PointPath previous = src;
                 List<SegmentPath> segs = new ArrayList<>();
                 path = new PropagationPath(false, pps, segs, srSeg, Angle.angle(rcvCoord, srcCoord));
+                path.raySourceReceiverDirectivity = src.orientation;
                 double e = 0;
                 for(int i=1; i<coordinates.size()-1; i++) {
                     PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), new ArrayList<>(), DIFV);
@@ -791,6 +793,7 @@ public class ComputeCnossosRays {
                 //todo check this getBuildingId when DIFH is on floor or line wall
                 points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), cutPt1.getBuildingId(),PointPath.POINT_TYPE.SRCE));
                 points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
+                propagationPath.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = path.s;
             }
             //todo check this getBuildingId when DIFH is on floor or line wall

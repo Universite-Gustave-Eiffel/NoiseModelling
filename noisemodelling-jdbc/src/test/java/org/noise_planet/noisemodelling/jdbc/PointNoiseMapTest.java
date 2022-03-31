@@ -242,10 +242,8 @@ public class PointNoiseMapTest {
             pointNoiseMap.setMaximumPropagationDistance(1000);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
             ldenConfig.setCoefficientVersion(1);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
@@ -254,6 +252,7 @@ public class PointNoiseMapTest {
             pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
             pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
 
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
@@ -313,10 +312,8 @@ public class PointNoiseMapTest {
             pointNoiseMap.setMaximumPropagationDistance(1000);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
             ldenConfig.setCoefficientVersion(1);
             ldenConfig.setKeepAbsorption(true);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
@@ -402,10 +399,8 @@ public class PointNoiseMapTest {
             pointNoiseMap.setMaximumPropagationDistance(1000);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
             ldenConfig.setCoefficientVersion(1);
             ldenConfig.setKeepAbsorption(true);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
@@ -414,6 +409,8 @@ public class PointNoiseMapTest {
             ldenPointNoiseMapFactory.setKeepRays(true);
             pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
             pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);

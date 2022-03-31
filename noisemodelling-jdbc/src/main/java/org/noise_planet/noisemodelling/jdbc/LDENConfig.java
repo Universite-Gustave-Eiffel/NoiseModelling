@@ -29,11 +29,14 @@ import java.io.File;
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
 public class LDENConfig {
+    public enum TIME_PERIOD {TIME_PERIOD_DAY, TIME_PERIOD_EVENING, TIME_PERIOD_NIGHT}
     public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
     // This field is initialised when {@link PointNoiseMap#initialize} is called
-    PropagationProcessPathData propagationProcessPathData = null;
+    PropagationProcessPathData propagationProcessPathDataDay = null;
+    PropagationProcessPathData propagationProcessPathDataEvening = null;
+    PropagationProcessPathData propagationProcessPathDataNight = null;
 
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
@@ -44,9 +47,9 @@ public class LDENConfig {
     boolean aborted = false;
 
     // Output config
-    boolean computeLDay = false;
-    boolean computeLEvening = false;
-    boolean computeLNight = false;
+    boolean computeLDay = true;
+    boolean computeLEvening = true;
+    boolean computeLNight = true;
     boolean computeLDEN = true;
 
     public boolean isComputeLAEQOnly() {
@@ -82,8 +85,27 @@ public class LDENConfig {
         this.input_mode = input_mode;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathData() {
-        return propagationProcessPathData;
+
+    public PropagationProcessPathData getPropagationProcessPathData(TIME_PERIOD time_period) {
+        switch (time_period) {
+            case TIME_PERIOD_DAY:
+                return propagationProcessPathDataDay;
+            case TIME_PERIOD_EVENING:
+                return propagationProcessPathDataEvening;
+            default:
+                return propagationProcessPathDataNight;
+        }
+    }
+
+    public void setPropagationProcessPathData(TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
+        switch (time_period) {
+            case TIME_PERIOD_DAY:
+                propagationProcessPathDataDay = propagationProcessPathData;
+            case TIME_PERIOD_EVENING:
+                propagationProcessPathDataEvening = propagationProcessPathData;
+            default:
+                propagationProcessPathDataNight = propagationProcessPathData;
+        }
     }
 
     public String getLwFrequencyPrepend() {
@@ -128,10 +150,6 @@ public class LDENConfig {
      */
     public void setSqlOutputFile(File sqlOutputFile) {
         this.sqlOutputFile = sqlOutputFile;
-    }
-
-    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
-        this.propagationProcessPathData = propagationProcessPathData;
     }
 
     public void setComputeLDay(boolean computeLDay) {

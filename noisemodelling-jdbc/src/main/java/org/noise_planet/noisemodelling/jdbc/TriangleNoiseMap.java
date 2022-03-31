@@ -313,7 +313,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
-        CnossosPropagationData data = new CnossosPropagationData(null, getPropagationProcessPathData().freq_lvl);
+        CnossosPropagationData data = new CnossosPropagationData(null, propagationProcessPathDataDay.freq_lvl);
         if(!sourcesTableName.isEmpty()) {
             fetchCellSource(connection, cellEnvelope, data, false);
         }

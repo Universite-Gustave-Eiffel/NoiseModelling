@@ -335,8 +335,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
-                Orientation directivityToPick = proPath.getPointList().get(0).orientation;
-                proPath.raySourceReceiverDirectivity = directivityToPick;
+                Orientation directivityToPick = proPath.raySourceReceiverDirectivity;
                 double[] attSource = new double[data.freq_lvl.size()];
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                     attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
@@ -370,7 +369,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
     @Override
     public IComputeRaysOut subProcess() {
-        return new ThreadRaysOut(this);
+        return new ThreadRaysOut(this, genericMeteoData);
     }
 
     public List<VerticeSL> getVerticesSoundLevel() {
@@ -440,19 +439,23 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     public static class ThreadRaysOut implements IComputeRaysOut {
-        protected ComputeRaysOutAttenuation multiThreadParent;
-        protected List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
+        public ComputeRaysOutAttenuation multiThreadParent;
+        public List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
         public List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
+        public PropagationProcessPathData propagationProcessPathData;
+        public boolean keepRays = false;
 
-        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent) {
+        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent, PropagationProcessPathData propagationProcessPathData) {
             this.multiThreadParent = multiThreadParent;
+            this.keepRays = multiThreadParent.keepRays;
+            this.propagationProcessPathData = propagationProcessPathData;
         }
 
         @Override
         public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
+            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(propagationProcessPathData, sourceId, sourceLi, receiverId, propagationPath);
             multiThreadParent.rayCount.addAndGet(propagationPath.size());
-            if(multiThreadParent.keepRays) {
+            if(keepRays) {
                 if(multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&
                       receiverId < multiThreadParent.inputData.receiversPk.size()) {
                     for(PropagationPath path : propagationPath) {
@@ -482,7 +485,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
         @Override
         public void finalizeReceiver(final long receiverId) {
-            if(multiThreadParent.keepRays && !propagationPaths.isEmpty()) {
+            if(keepRays && !propagationPaths.isEmpty()) {
                 multiThreadParent.propagationPaths.addAll(propagationPaths);
                 propagationPaths.clear();
             }
