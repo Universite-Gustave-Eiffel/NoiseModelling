@@ -193,64 +193,64 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
         // Read fields
         if (sourceFields.containsKey("TRAINSPD")) {
-            vehicleSpeed = rs.getDouble(sourceFields.get("TRAINSPD"));
+            vehicleSpeed = rs.getDouble("TRAINSPD");
         }
         if (sourceFields.containsKey("T" + period)) {
-            vehiclePerHour = rs.getInt(sourceFields.get("T" + period));
+            vehiclePerHour = rs.getInt("T" + period);
         }
         if (sourceFields.containsKey("ROLLINGCONDITION")) {
-            rollingCondition = rs.getInt(sourceFields.get("ROLLINGCONDITION"));
+            rollingCondition = rs.getInt("ROLLINGCONDITION");
         }
         if (sourceFields.containsKey("IDLINGTIME")) {
-            idlingTime = rs.getDouble(sourceFields.get("IDLINGTIME"));
+            idlingTime = rs.getDouble("IDLINGTIME");
         }
         if (sourceFields.containsKey("TRANSFER")) {
-            trackTransfer = rs.getInt(sourceFields.get("TRANSFER"));
+            trackTransfer = rs.getInt("TRANSFER");
         }
         if (sourceFields.containsKey("ROUGHNESS")) {
-            railRoughness = rs.getInt(sourceFields.get("ROUGHNESS"));
+            railRoughness = rs.getInt("ROUGHNESS");
         }
 
         if (sourceFields.containsKey("IMPACT")) {
-            impactNoise = rs.getInt(sourceFields.get("IMPACT"));
+            impactNoise = rs.getInt("IMPACT");
         }
         if (sourceFields.containsKey("BRIDGE")) {
-            bridgeTransfert = rs.getInt(sourceFields.get("BRIDGE"));
+            bridgeTransfert = rs.getInt("BRIDGE");
         }
         if (sourceFields.containsKey("CURVATURE")) {
-            curvature = rs.getInt(sourceFields.get("CURVATURE"));
+            curvature = rs.getInt("CURVATURE");
         }
 
         if (sourceFields.containsKey("TRACKSPD")) {
-            vMaxInfra = rs.getDouble(sourceFields.get("TRACKSPD"));
+            vMaxInfra = rs.getDouble("TRACKSPD");
         }
         if (sourceFields.containsKey("TRACKSPC")) {
-            trackSpacing = rs.getDouble(sourceFields.get("TRACKSPC"));
+            trackSpacing = rs.getDouble("TRACKSPC");
             setDistance(trackSpacing);
         }
 
         if (sourceFields.containsKey("COMSPD")) {
-            commercialSpeed = rs.getDouble(sourceFields.get("COMSPD"));
+            commercialSpeed = rs.getDouble("COMSPD");
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
-            typeTrain = rs.getString(sourceFields.get("TRAINTYPE"));
+            typeTrain = rs.getString("TRAINTYPE");
         }
 
         if (sourceFields.containsKey("ISTUNNEL")) {
-            isTunnel = rs.getBoolean(sourceFields.get("ISTUNNEL"));
+            isTunnel = rs.getBoolean("ISTUNNEL");
         }
 
         if (sourceFields.containsKey("IDTUNNEL")) {
 
-            if (rs.getString(sourceFields.get("IDTUNNEL")) ==  null) {
-                isTunnel = false;
+            if (rs.getString("IDTUNNEL").matches(".*\\w.*")) {
+                isTunnel = true;
             } else {
-                isTunnel = !rs.getString(sourceFields.get("IDTUNNEL")).isEmpty();
+                isTunnel = false;
             }
         }
 
         if (sourceFields.containsKey("NTRACK")) {
-            nbTrack = rs.getInt(sourceFields.get("NTRACK"));
+            nbTrack = rs.getInt("NTRACK");
         }
 
 
