@@ -241,12 +241,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         }
 
         if (sourceFields.containsKey("IDTUNNEL")) {
-
-            if (rs.getString("IDTUNNEL").matches(".*\\w.*")) {
-                isTunnel = true;
-            } else {
-                isTunnel = false;
-            }
+            String idTunnel = rs.getString("IDTUNNEL");
+            isTunnel = idTunnel != null && !idTunnel.trim().isEmpty();
         }
 
         if (sourceFields.containsKey("NTRACK")) {
