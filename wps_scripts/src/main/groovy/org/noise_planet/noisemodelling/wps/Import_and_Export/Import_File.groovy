@@ -235,7 +235,7 @@ def exec(Connection connection, input) {
 
         // If the table does not have an associated SRID, add a SRID
         if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
-            connection.createStatement().execute(String.format("SELECT UpdateGeometrySRID('%s', ' " + spatialFieldNames.get(0) + " ', %d);",
+            connection.createStatement().execute(String.format("SELECT UpdateGeometrySRID('%s', '" + spatialFieldNames.get(0) + "', %d);",
                     TableLocation.parse(tableName).toString(), srid))
         }
 
