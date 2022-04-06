@@ -27,6 +27,8 @@ package org.noise_planet.noisemodelling.emission;
  * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
+import java.util.Arrays;
+
 import static org.noise_planet.noisemodelling.emission.Utils.sumDbArray;
 
 /**
@@ -50,12 +52,14 @@ public class RailWayLW {
      */
     public static final int[] TRAIN_NOISE_SOURCE_H_INDEX = new int[] {0, 0, 1, 0, 1, 0};
 
-    private double[] lWRolling;
-    private double[] lWTractionA;
-    private double[] lWTractionB;
-    private double[] lWAerodynamicA;
-    private double[] lWAerodynamicB;
-    private double[] lWBridge;
+    public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+
+    private double[] lWRolling = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWTractionA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWTractionB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWAerodynamicA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWAerodynamicB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWBridge = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
 
 
     public void setLWRolling(double[] LWRolling) {
@@ -97,9 +101,12 @@ public class RailWayLW {
     }
 
     public RailWayLW(){
-    }
-
-    public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
+        Arrays.fill(lWRolling,-99.99);
+        Arrays.fill(lWTractionA,-99.99);
+        Arrays.fill(lWTractionB,-99.99);
+        Arrays.fill(lWAerodynamicA,-99.99);
+        Arrays.fill(lWAerodynamicB,-99.99);
+        Arrays.fill(lWBridge,-99.99);
 
         setLWRolling(lWRolling);
         setLWTractionA(lWTractionA);
@@ -108,6 +115,15 @@ public class RailWayLW {
         setLWAerodynamicB(lWAerodynamicB);
         setLWBridge(lWBridge);
 
+    }
+
+    public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
+        setLWRolling(lWRolling);
+        setLWTractionA(lWTractionA);
+        setLWTractionB(lWTractionB);
+        setLWAerodynamicA(lWAerodynamicA);
+        setLWAerodynamicB(lWAerodynamicB);
+        setLWBridge(lWBridge);
     }
 
     /**
