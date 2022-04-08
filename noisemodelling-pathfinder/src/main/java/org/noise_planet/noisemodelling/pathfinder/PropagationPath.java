@@ -80,19 +80,19 @@ public class PropagationPath {
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
     public ReflectionAttenuation reflectionAttenuation = new ReflectionAttenuation();
 
-    public double deltaH;
-    public double deltaF;
-    public double deltaPrimeH;
-    public double deltaPrimeF;
-    public double deltaSPrimeRH;
-    public double deltaSRPrimeH;
+    public double deltaH = Double.MAX_VALUE;
+    public double deltaF= Double.MAX_VALUE;
+    public double deltaPrimeH= Double.MAX_VALUE;
+    public double deltaPrimeF= Double.MAX_VALUE;
+    public double deltaSPrimeRH= Double.MAX_VALUE;
+    public double deltaSRPrimeH= Double.MAX_VALUE;
     public ABoundary aBoundaryH = new ABoundary();
     public ABoundary aBoundaryF = new ABoundary();
-    public double deltaSPrimeRF;
-    public double deltaSRPrimeF;
+    public double deltaSPrimeRF= Double.MAX_VALUE;
+    public double deltaSRPrimeF= Double.MAX_VALUE;
     public double e=0;
-    public double deltaRetroH;
-    public double deltaRetroF;
+    public double deltaRetroH= Double.MAX_VALUE;
+    public double deltaRetroF= Double.MAX_VALUE;
 
     public static class ABoundary {
         public double[] deltaDiffSR;
