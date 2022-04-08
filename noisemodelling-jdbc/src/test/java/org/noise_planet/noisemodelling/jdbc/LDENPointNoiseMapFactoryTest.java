@@ -167,6 +167,15 @@ public class LDENPointNoiseMapFactoryTest {
             String idSection = v.getIdSection();
             v = railWayLWIterator.next();
         }
+        double[] rolling = v.getRailWayLWDay().getLWRolling();
+        double[] tractiona = v.getRailWayLWDay().getLWTractionA();
+        double[] tractionb = v.getRailWayLWDay().getLWTractionB();
+        double[] aeroa = v.getRailWayLWDay().getLWAerodynamicA();
+        double[] aerob = v.getRailWayLWDay().getLWAerodynamicB();
+        double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        double[] LWA = sumArray(LW, dBA);
+        double res = sumDbArray(LWA);
+        String idSection = v.getIdSection();
 
         v = railWayLWIterator.next();
         assertFalse(railWayLWIterator.hasNext());
