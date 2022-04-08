@@ -8,18 +8,14 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.functions.spatial.convert.ST_Force3D;
-import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable;
-import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
@@ -33,10 +29,15 @@ import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumDbArray;
 
 public class LDENPointNoiseMapFactoryTest {
 
@@ -121,6 +122,54 @@ public class LDENPointNoiseMapFactoryTest {
         RailWayLW railWayLW = v.getRailWayLW();
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertTrue(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        railWayLWIterator.setDistance(2);
+
+        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        v.setNbTrack(2);
+        RailWayLW railWayLW = v.getRailWayLW();
+        List<LineString> geometries = v.getRailWayLWGeometry();
+
+        v = railWayLWIterator.next();
+        assertFalse(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
+        double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        railWayLWIterator.setDistance(2);
+        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
+
+        while (railWayLWIterator.hasNext()) {
+            double[] rolling = v.getRailWayLWDay().getLWRolling();
+            double[] tractiona = v.getRailWayLWDay().getLWTractionA();
+            double[] tractionb = v.getRailWayLWDay().getLWTractionB();
+            double[] aeroa = v.getRailWayLWDay().getLWAerodynamicA();
+            double[] aerob = v.getRailWayLWDay().getLWAerodynamicB();
+            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            double[] LWA = sumArray(LW, dBA);
+            double res = sumDbArray(LWA);
+            String idSection = v.getIdSection();
+            v = railWayLWIterator.next();
+        }
+
+        v = railWayLWIterator.next();
+        assertFalse(railWayLWIterator.hasNext());
 
     }
 

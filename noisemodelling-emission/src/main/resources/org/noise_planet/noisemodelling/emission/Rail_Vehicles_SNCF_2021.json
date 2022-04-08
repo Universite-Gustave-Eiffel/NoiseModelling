@@ -1466,7 +1466,7 @@
       "Description": "Wagon-FRET-freine-composite",
       "Vmax": 120,
       "Length": 17,
-      "TrailerBogieBraking": "Semelle-fonte",
+      "TrailerBogieBraking": "Semelle-composite",
       "MotorBogieBraking": "-",
       "MotorWheelDiameter": null,
       "TrailerWheelDiameter": 920,
