@@ -651,12 +651,12 @@ public class EvaluateAttenuationCnossos {
 
         //Double check NaN values
         if(Double.isNaN(deltaGroundSO)) {
-            LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
+           // LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
             deltaGroundSO = aGroundSO;
             deltaDiffSR = deltaDiffSPrimeR;
         }
         if(Double.isNaN(deltaGroundOR)) {
-            LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
+         //   LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
             deltaGroundOR = aGroundOR;
             deltaDiffSR = deltaDiffSPrimeR;
         }
