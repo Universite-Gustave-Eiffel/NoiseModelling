@@ -66,6 +66,16 @@ public class PowerUtils {
         return sum;
     }
 
+    public static double sumDbArray(double[] array1) {
+
+        double sum = dbaToW(array1[0]);
+        for (int i = 1; i < array1.length; i++) {
+            sum =dbaToW(array1[i]) + sum;
+        }
+
+        return wToDba(sum);
+    }
+
     /**
      * Multiply component of two same size array
      *

@@ -35,9 +35,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private String tableTrackGeometry;
     private String tableTrainTraffic;
     private int nbTrack;
+    private String idSection ="";
     private int currentIdTrack = -1;
     List<LineString> railWayGeoms;
-    double gs;
+    double gs = 1.0;
     private SpatialResultSet spatialResultSet;
     public double distance = 2;
     public Map<String, Integer> sourceFields = null;
@@ -98,6 +99,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         return current;
     }
 
+    public RailWayLWGeom current() {
+        return railWayLWCurrent;
+    }
+
     private RailWayLWGeom fetchNext() {
         try {
             if (spatialResultSet == null) {
@@ -117,6 +122,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
 
                 nbTrack = spatialResultSet.getInt("NTRACK");
+                idSection = spatialResultSet.getString("IDSECTION");
                 if (hasColumn(spatialResultSet, "GS")) {
                     gs = spatialResultSet.getDouble("GS");
                 }
@@ -128,6 +134,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 return null;
             }
             RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdTrack, nbTrack, distance, gs);
+            railWayLWNext.setIdSection(idSection);
             currentIdTrack = -1;
             while (spatialResultSet.next()) {
                 if (railWayLWNext.pk == spatialResultSet.getInt("trackid")) {
@@ -141,10 +148,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     railWayLWNext.setRailWayLWDay(railWayLWsumDay);
                     railWayLWNext.setRailWayLWEvening(railWayLWsumEvening);
                     railWayLWNext.setRailWayLWNight(railWayLWsumNight);
+                    railWayLWNext.setIdSection(idSection);
                     // read next instance attributes for the next() call
                     railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
                     currentIdTrack = spatialResultSet.getInt("trackid");
                     nbTrack = spatialResultSet.getInt("NTRACK");
+                    idSection = spatialResultSet.getString("IDSECTION");
                     if (hasColumn(spatialResultSet, "GS")) {
                         gs = spatialResultSet.getDouble("GS");
                     }
@@ -190,13 +199,14 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         double vMaxInfra = 160;
         double commercialSpeed = 160;
         boolean isTunnel = false;
+        String idSection = "";
 
         // Read fields
         if (sourceFields.containsKey("TRAINSPD")) {
             vehicleSpeed = rs.getDouble("TRAINSPD");
         }
         if (sourceFields.containsKey("T" + period)) {
-            vehiclePerHour = rs.getInt("T" + period);
+            vehiclePerHour = rs.getDouble("T" + period);
         }
         if (sourceFields.containsKey("ROLLINGCONDITION")) {
             rollingCondition = rs.getInt("ROLLINGCONDITION");
@@ -234,6 +244,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
             typeTrain = rs.getString("TRAINTYPE");
+        }
+
+        if (sourceFields.containsKey("TYPETRAIN")) {
+            typeTrain = rs.getString("TYPETRAIN");
         }
 
         if (sourceFields.containsKey("ISTUNNEL")) {
@@ -295,6 +309,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         private List<LineString> geometry;
         private int pk;
         private int nbTrack;
+        private String idSection;
         private double distance;
 
         public RailWayLWGeom(RailWayLW railWayLW, RailWayLW railWayLWDay, RailWayLW railWayLWEvening, RailWayLW railWayLWNight, List<LineString> geometry, int pk, int nbTrack, double distance, double gs) {
@@ -360,6 +375,13 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             return nbTrack;
         }
 
+        public String getIdSection() {
+            return idSection;
+        }
+
+        public void setIdSection(String idSection) {
+            this.idSection = idSection;
+        }
         public void setNbTrack(int nbTrack) {
             this.nbTrack = nbTrack;
         }
