@@ -151,33 +151,82 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
+        HashMap<String, double[]> Resultats = new HashMap<>();
+
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         railWayLWIterator.setDistance(2);
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
 
         while (railWayLWIterator.hasNext()) {
-            double[] rolling = v.getRailWayLWDay().getLWRolling();
-            double[] tractiona = v.getRailWayLWDay().getLWTractionA();
-            double[] tractionb = v.getRailWayLWDay().getLWTractionB();
-            double[] aeroa = v.getRailWayLWDay().getLWAerodynamicA();
-            double[] aerob = v.getRailWayLWDay().getLWAerodynamicB();
+            RailWayLW railWayLW = v.getRailWayLWDay();
+            double[] rolling = railWayLW.getLWRolling();
+            double[] tractiona = railWayLW.getLWTractionA();
+            double[] tractionb = railWayLW.getLWTractionB();
+            double[] aeroa = railWayLW.getLWAerodynamicA();
+            double[] aerob = railWayLW.getLWAerodynamicB();
             double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
             double[] LWA = sumArray(LW, dBA);
-            double res = sumDbArray(LWA);
+            double resD = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWEvening();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            double resE = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWNight();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            double resN = sumDbArray(LWA);
+
             String idSection = v.getIdSection();
+
+            Resultats.put(idSection,new double[]{resD, resE, resN});
             v = railWayLWIterator.next();
         }
-        double[] rolling = v.getRailWayLWDay().getLWRolling();
-        double[] tractiona = v.getRailWayLWDay().getLWTractionA();
-        double[] tractionb = v.getRailWayLWDay().getLWTractionB();
-        double[] aeroa = v.getRailWayLWDay().getLWAerodynamicA();
-        double[] aerob = v.getRailWayLWDay().getLWAerodynamicB();
+        RailWayLW railWayLW = v.getRailWayLWDay();
+        double[] rolling = railWayLW.getLWRolling();
+        double[] tractiona = railWayLW.getLWTractionA();
+        double[] tractionb = railWayLW.getLWTractionB();
+        double[] aeroa = railWayLW.getLWAerodynamicA();
+        double[] aerob = railWayLW.getLWAerodynamicB();
         double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
         double[] LWA = sumArray(LW, dBA);
-        double res = sumDbArray(LWA);
-        String idSection = v.getIdSection();
+        double resD = sumDbArray(LWA);
 
+        railWayLW = v.getRailWayLWEvening();
+        rolling = railWayLW.getLWRolling();
+        tractiona = railWayLW.getLWTractionA();
+        tractionb = railWayLW.getLWTractionB();
+        aeroa = railWayLW.getLWAerodynamicA();
+        aerob = railWayLW.getLWAerodynamicB();
+        LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        LWA = sumArray(LW, dBA);
+        double resE = sumDbArray(LWA);
+
+        railWayLW = v.getRailWayLWNight();
+        rolling = railWayLW.getLWRolling();
+        tractiona = railWayLW.getLWTractionA();
+        tractionb = railWayLW.getLWTractionB();
+        aeroa = railWayLW.getLWAerodynamicA();
+        aerob = railWayLW.getLWAerodynamicB();
+        LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        LWA = sumArray(LW, dBA);
+        double resN = sumDbArray(LWA);
+
+        String idSection = v.getIdSection();
+        Resultats.put(idSection,new double[]{resD, resE, resN});
         v = railWayLWIterator.next();
+
         assertFalse(railWayLWIterator.hasNext());
 
     }

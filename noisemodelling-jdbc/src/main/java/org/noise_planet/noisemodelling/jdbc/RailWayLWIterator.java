@@ -205,10 +205,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         if (sourceFields.containsKey("TRAINSPD")) {
             vehicleSpeed = rs.getDouble("TRAINSPD");
         }
-
         if (sourceFields.containsKey("T" + period)) {
             vehiclePerHour = rs.getDouble("T" + period);
-
         }
         if (sourceFields.containsKey("ROLLINGCONDITION")) {
             rollingCondition = rs.getInt("ROLLINGCONDITION");
