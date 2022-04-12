@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.util.*;
@@ -287,7 +288,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             }
 
-            int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+            // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
+            Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation().reverse(),
+                    Orientation.toVector(proPath.raySourceReceiverDirectivity), false);
+            int roseindex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
             // Homogenous conditions
             if (data.getWindRose()[roseindex]!=1) {
                 proPath.setFavorable(false);

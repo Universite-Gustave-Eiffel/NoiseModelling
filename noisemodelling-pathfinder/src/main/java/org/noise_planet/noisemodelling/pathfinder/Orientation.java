@@ -68,6 +68,13 @@ public class Orientation {
         this.roll = (360 + roll) % 360;
     }
 
+    /**
+     * @return Reversed state of this orientation
+     */
+    public Orientation reverse() {
+        return new Orientation(360 - yaw, -pitch, 360 - roll);
+    }
+
     @Override
     public String toString() {
         return "Orientation{" +
@@ -129,6 +136,10 @@ public class Orientation {
         double newYaw = Math.atan2(vector.getY(), vector.getX());
         double newPitch = Math.asin(vector.getZ());
         return new Orientation(Math.toDegrees(newYaw), Math.toDegrees(newPitch), roll);
+    }
+
+    public static Vector3D toVector(Orientation orientation) {
+        return rotate(orientation, new Vector3D(0, 1, 0));
     }
 
     @Override
