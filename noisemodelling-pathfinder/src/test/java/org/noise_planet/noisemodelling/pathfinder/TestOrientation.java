@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.locationtech.jts.math.Vector3D;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class TestOrientation {
 
@@ -87,11 +88,51 @@ public class TestOrientation {
 
     @Test
     public void testReverse3() {
-        Vector3D sourceOrientationVector = new Vector3D(0, 1, 0).normalize();
-        Orientation sourceOrientation = Orientation.fromVector(sourceOrientationVector, 0);
+        Orientation sourceOrientation = new Orientation(90, 10, 0);
         Vector3D rayDirection = new Vector3D(0.5, -0.5, 0.33).normalize();
-        Orientation rotated = Orientation.fromVector(Orientation.rotate(sourceOrientation, rayDirection, true), 0);
-        Vector3D generated = Orientation.rotate(sourceOrientation.reverse(), Orientation.toVector(rotated), false);
+        Vector3D rotatedVector = Orientation.rotate(sourceOrientation, rayDirection, true);
+        Orientation rotated = Orientation.fromVector(rotatedVector, 0);
+        Vector3D generated = Orientation.rotate(sourceOrientation, Orientation.toVector(rotated), false);
+        assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+    }
+
+    @Test
+    public void testRotateNoOp() {
+        Vector3D rayDirection = new Vector3D(0.640762396942007, -0.640762396942007, 0.42290318198172466).normalize();
+        Vector3D generated = Orientation.rotate(new Orientation(0, 0, 0), rayDirection, false);
+        assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+        generated = Orientation.rotate(new Orientation(0, 0, 0), rayDirection, true);
+        assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+    }
+
+    @Test
+    public void testMultipleRotate() {
+        Vector3D rayDirection = new Vector3D(0.640762396942007, -0.640762396942007, 0.42290318198172466).normalize();
+        Vector3D generated = Orientation.rotate(new Orientation(10, 0, 0), rayDirection, false);
+        assertNotEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertNotEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        generated = Orientation.rotate(new Orientation(-10, 0, 0), generated, false);
+        assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+        generated = Orientation.rotate(new Orientation(0, 10, 0), generated, false);
+        assertNotEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertNotEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+        generated = Orientation.rotate(new Orientation(0, -10, 0), generated, false);
+        assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
+        assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+        generated = Orientation.rotate(new Orientation(10, 10, 0), generated, false);
+        assertNotEquals(rayDirection.getX(), generated.getY(), 1e-6);
+        assertNotEquals(rayDirection.getY(), generated.getY(), 1e-6);
+        assertNotEquals(rayDirection.getZ(), generated.getZ(), 1e-6);
+        generated = Orientation.rotate(new Orientation(10, 10, 0), generated, true);
         assertEquals(rayDirection.getX(), generated.getX(), 1e-6);
         assertEquals(rayDirection.getY(), generated.getY(), 1e-6);
         assertEquals(rayDirection.getZ(), generated.getZ(), 1e-6);

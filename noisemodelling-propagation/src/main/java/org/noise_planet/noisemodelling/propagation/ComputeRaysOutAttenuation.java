@@ -289,7 +289,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             }
 
             // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
-            Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation().reverse(),
+            // just swap the inverse boolean parameter
+            // @see ComputeCnossosRays#computeOrientation
+            Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation(),
                     Orientation.toVector(proPath.raySourceReceiverDirectivity), false);
             int roseindex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
             // Homogenous conditions
