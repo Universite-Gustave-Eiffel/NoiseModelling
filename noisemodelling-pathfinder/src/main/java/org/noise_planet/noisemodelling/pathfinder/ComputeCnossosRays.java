@@ -1332,7 +1332,7 @@ public class ComputeCnossosRays {
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 List<PointPath> lastPts = new ArrayList<>();
-                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, , data, orientation, proPath.difHPoints, proPath.difVPoints);
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
                 if (lastPts.isEmpty()) {
                     continue;
                 }
