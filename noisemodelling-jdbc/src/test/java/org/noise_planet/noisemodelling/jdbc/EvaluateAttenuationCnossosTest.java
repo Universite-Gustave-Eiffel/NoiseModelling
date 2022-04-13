@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils;
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
@@ -17,8 +18,10 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
+import static java.lang.Double.max;
 import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
@@ -5369,6 +5372,78 @@ public class EvaluateAttenuationCnossosTest {
 
     }
 
+
+    /**
+     * TC28 Propagation over a large distance with many buildings between source and
+     * receiver
+     */
+    @Test
+    public void TestFavorableConditionAttenuationRose() {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder();
+
+        builder.finishFeeding();
+
+        //Propagation data building
+        Vector3D northReceiver = new Vector3D(0, 100, 4);
+        List<Vector3D> receivers = new ArrayList<>();
+        receivers.add(northReceiver);
+        receivers.add(Orientation.rotate(new Orientation(45, 0, 0), northReceiver)); // NW
+        receivers.add(Orientation.rotate(new Orientation(90, 0, 0), northReceiver)); // W
+        receivers.add(Orientation.rotate(new Orientation(135, 0, 0), northReceiver)); // SW
+        receivers.add(Orientation.rotate(new Orientation(180, 0, 0), northReceiver)); // S
+        receivers.add(Orientation.rotate(new Orientation(225, 0, 0), northReceiver)); // SE
+        receivers.add(Orientation.rotate(new Orientation(270, 0, 0), northReceiver)); // E
+        receivers.add(Orientation.rotate(new Orientation(315, 0, 0), northReceiver)); // NE
+        PropagationDataBuilder propagationDataBuilder = new PropagationDataBuilder(builder)
+                .addSource(0, 0, 4);
+        for(Vector3D receiver : receivers) {
+            propagationDataBuilder.addReceiver(receiver.getX(), receiver.getY(), receiver.getZ());
+        }
+        CnossosPropagationData rayData = propagationDataBuilder.hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.5)
+                .build();
+        rayData.reflexionOrder=1;
+        rayData.maxSrcDist = 1500;
+
+        double[][] windRoseTest = new double[receivers.size()][];
+        // generate favorable condition for each direction
+        for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
+            windRoseTest[idReceiver] = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length];
+            double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
+            Arrays.fill(windRoseTest[idReceiver], 1);
+            int roseIndex = ComputeRaysOutAttenuation.getRoseIndex(angle);
+            windRoseTest[idReceiver][roseIndex] = 0.5;
+        }
+        for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
+            double[] favorableConditionDirections = windRoseTest[idReceiver];
+            //Propagation process path data building
+            PropagationProcessPathData attData = new PropagationProcessPathData();
+            attData.setHumidity(HUMIDITY);
+            attData.setTemperature(TEMPERATURE);
+            attData.setWindRose(favorableConditionDirections);
+
+            //Out and computation settings
+            ComputeRaysOutAttenuation propDataOut = new ComputeRaysOutAttenuation(true, true, attData);
+            ComputeCnossosRays computeRays = new ComputeCnossosRays(rayData);
+            computeRays.setThreadCount(1);
+            computeRays.run(propDataOut);
+
+            int maxPowerReceiverIndex = -1;
+            double maxGlobalValue = Double.NEGATIVE_INFINITY;
+            for (ComputeRaysOutAttenuation.VerticeSL v : propDataOut.getVerticesSoundLevel()) {
+                double globalValue = PowerUtils.sumDbArray(v.value);
+                if (globalValue > maxGlobalValue) {
+                    maxGlobalValue = globalValue;
+                    maxPowerReceiverIndex = (int) v.receiverId;
+                }
+            }
+            assertEquals(idReceiver, maxPowerReceiverIndex);
+        }
+    }
 
     /**
      * Test optimisation feature {@link CnossosPropagationData#maximumError}

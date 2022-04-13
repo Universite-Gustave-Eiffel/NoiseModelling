@@ -102,6 +102,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     /**
+     * The north slice is the last array index not the first one
+     * Ex for slice width of 20°:
+     *      - The first column 20° contain winds between 10 to 30 °
+     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
      * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
      * @return rose index
      */
@@ -115,10 +119,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         if(angleRad < 0) {
             angleRad += Math.PI * 2;
         }
-        // The north slice is the last array index not the first one
-        // Ex for slice width of 20°:
-        //      - The first column 20° contain winds between 10 to 30 °
-        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
         int index = (int)(angleRad / angle_section) - 1;
         if(index < 0) {
             index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
