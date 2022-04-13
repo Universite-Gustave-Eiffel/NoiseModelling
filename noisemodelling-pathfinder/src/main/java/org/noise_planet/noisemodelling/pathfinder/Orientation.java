@@ -120,15 +120,19 @@ public class Orientation {
         }
         RealMatrix matrixB = new Array2DRowRealMatrix(b);
         RealMatrix res = matrixA.multiply(matrixB);
-        return new Vector3D(res.getEntry(0, 0),
-                res.getEntry(1, 0),
+        return new Vector3D(res.getEntry(1, 0),
+                res.getEntry(0, 0),
                 res.getEntry(2, 0));
     }
 
     public static Orientation fromVector(Vector3D vector, double roll) {
-        double newYaw = Math.atan2(vector.getY(), vector.getX());
+        double newYaw = Math.atan2(vector.getX(), vector.getY());
         double newPitch = Math.asin(vector.getZ());
         return new Orientation(Math.toDegrees(newYaw), Math.toDegrees(newPitch), roll);
+    }
+
+    public static Vector3D toVector(Orientation orientation) {
+        return rotate(orientation, new Vector3D(0, 1, 0));
     }
 
     @Override

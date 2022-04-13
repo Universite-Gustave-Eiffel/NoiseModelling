@@ -36,6 +36,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.util.*;
@@ -101,6 +102,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     /**
+     * The north slice is the last array index not the first one
+     * Ex for slice width of 20°:
+     *      - The first column 20° contain winds between 10 to 30 °
+     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
      * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
      * @return rose index
      */
@@ -114,10 +119,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         if(angleRad < 0) {
             angleRad += Math.PI * 2;
         }
-        // The north slice is the last array index not the first one
-        // Ex for slice width of 20°:
-        //      - The first column 20° contain winds between 10 to 30 °
-        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
         int index = (int)(angleRad / angle_section) - 1;
         if(index < 0) {
             index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
@@ -287,7 +288,12 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
             }
 
-            int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+            // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
+            // just swap the inverse boolean parameter
+            // @see ComputeCnossosRays#computeOrientation
+            Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation(),
+                    Orientation.toVector(proPath.raySourceReceiverDirectivity), false);
+            int roseindex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
             // Homogenous conditions
             if (data.getWindRose()[roseindex]!=1) {
                 proPath.setFavorable(false);

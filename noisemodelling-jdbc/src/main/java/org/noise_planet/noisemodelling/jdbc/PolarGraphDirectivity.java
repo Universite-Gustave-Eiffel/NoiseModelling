@@ -120,6 +120,7 @@ public class PolarGraphDirectivity {
             double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
             double maxLevelY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
             double attenuationPercentage = (attenuation - minimumAttenuation) / (maximumAttenuation - minimumAttenuation);
+            attenuationPercentage = Math.max(0, Math.min(1,attenuationPercentage));
             Vector2D interpolatedVector = Vector2D.create(new Coordinate(centerx, centery), new Coordinate(maxLevelX, maxLevelY));
             interpolatedVector = interpolatedVector.multiply(attenuationPercentage);
             double stopX = centerx + interpolatedVector.getX();
