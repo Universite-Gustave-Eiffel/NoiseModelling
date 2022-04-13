@@ -631,23 +631,8 @@ public class EvaluateAttenuationCnossos {
         double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i, true) : aGroundH(proPath, last, data, i, true);
 
         //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
-        Coordinate s = proPath.getSRSegment().s;
-        double deltaGroundSO;
-        if(s.y < first.a*s.x+first.b){
-            deltaGroundSO = aGroundSO;
-            deltaDiffSR = deltaDiffSPrimeR;
-        } else {
-            deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
-        }
-
-        Coordinate r = proPath.getSRSegment().r;
-        double deltaGroundOR;
-        if(r.y < first.a*r.x+first.b){
-            deltaGroundOR = aGroundOR;
-            deltaDiffSR = deltaDiffSPrimeR;
-        } else {
-            deltaGroundOR = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10, -(deltaDiffSRPrime - deltaDiffSR) / 20));
-        }
+        double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
+        double deltaGroundOR  = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10, -(deltaDiffSRPrime - deltaDiffSR) / 20));
 
         //Double check NaN values
         if(Double.isNaN(deltaGroundSO)) {
