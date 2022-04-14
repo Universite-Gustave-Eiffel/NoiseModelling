@@ -731,17 +731,21 @@ public class ComputeCnossosRays {
 
         List<Coordinate> pts2D = computePts2D(cutPts);
         //Remove aligned cut points
-        List<Coordinate> cutToRemove = new ArrayList<>();
+        List<Coordinate> ptsToRemove = new ArrayList<>();
+        List<Integer> cutToRemove = new ArrayList<>();
         for(int i=0; i<pts2D.size()-2; i++) {
             Coordinate c0 = pts2D.get(i);
             Coordinate c1 = pts2D.get(i+1);
             Coordinate c2 = pts2D.get(i+2);
             if(new LineSegment(c0, c2).distance(c1) < 0.1) {
-                cutToRemove.add(c1);
-                cutPts.remove(i+1);
+                cutToRemove.add(i+1);
+                ptsToRemove.add(c1);
             }
         }
-        pts2D.removeAll(cutToRemove);
+        for(int i : cutToRemove) {
+            cutPts.remove(i);
+        }
+        pts2D.removeAll(ptsToRemove);
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
