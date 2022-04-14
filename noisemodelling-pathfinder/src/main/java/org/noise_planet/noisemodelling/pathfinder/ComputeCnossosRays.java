@@ -388,7 +388,6 @@ public class ComputeCnossosRays {
 
     private static List<Coordinate> computePts2D(List<ProfileBuilder.CutPoint> pts) {
         List<Coordinate> pts2D = pts.stream()
-                .filter(cut -> cut.getType() != GROUND_EFFECT)
                 .map(ProfileBuilder.CutPoint::getCoordinate)
                 .collect(Collectors.toList());
         pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
@@ -730,18 +729,27 @@ public class ComputeCnossosRays {
                 .collect(Collectors.toList());
 
         List<Coordinate> pts2D = computePts2D(cutPts);
+        if(pts2D.size() != cutPts.size()) {
+            throw new IllegalArgumentException("The two arrays size should be the same");
+        }
         //Remove aligned cut points
-        List<Coordinate> cutToRemove = new ArrayList<>();
+        List<ProfileBuilder.CutPoint> newCutPts = new ArrayList<>(cutPts.size());
+        List<Coordinate> newPts2D = new ArrayList<>(pts2D.size());
+        newCutPts.add(cutPts.get(0));
+        newPts2D.add(pts2D.get(0));
         for(int i=0; i<pts2D.size()-2; i++) {
             Coordinate c0 = pts2D.get(i);
             Coordinate c1 = pts2D.get(i+1);
             Coordinate c2 = pts2D.get(i+2);
-            if(new LineSegment(c0, c2).distance(c1) < 0.1) {
-                cutToRemove.add(c1);
-                cutPts.remove(i+1);
+            if(new LineSegment(c0, c2).distance(c1) >= 0.1) {
+                newPts2D.add(c1);
+                newCutPts.add(cutPts.get(i+1));
             }
         }
-        pts2D.removeAll(cutToRemove);
+        newPts2D.add(pts2D.get(pts2D.size()-1));
+        newCutPts.add(cutPts.get(cutPts.size() - 1));
+        pts2D = newPts2D;
+        cutPts = newCutPts;
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
