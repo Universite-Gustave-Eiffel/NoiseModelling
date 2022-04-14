@@ -138,7 +138,7 @@ public class TestComputeRaysFull {
     /**
      * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
      */
-    @Test
+ /*   @Test
     public void TC07()  throws LayerDelaunayError , IOException {
         GeometryFactory factory = new GeometryFactory();
         //Scene dimension
@@ -179,7 +179,7 @@ public class TestComputeRaysFull {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, 3);
 
-    }
+    }*/
 //    /**
 //     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
 //     * This test
