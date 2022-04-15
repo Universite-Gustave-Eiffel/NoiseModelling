@@ -185,7 +185,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             }
         }
 
-        String typeTrain = "FRET";
+        String train = "FRET";
         double vehicleSpeed = 160;
         double vehiclePerHour = 1;
         int rollingCondition = 0;
@@ -243,11 +243,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             commercialSpeed = rs.getDouble("COMSPD");
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
-            typeTrain = rs.getString("TRAINTYPE");
+            train = rs.getString("TRAINTYPE");
         }
 
         if (sourceFields.containsKey("TYPETRAIN")) {
-            typeTrain = rs.getString("TYPETRAIN");
+            train = rs.getString("TYPETRAIN");
         }
 
         if (sourceFields.containsKey("ISTUNNEL")) {
@@ -269,12 +269,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
-        Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(typeTrain);
+        Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(train);
 
         if (vehicles!=null){
             int i = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
-                typeTrain = entry.getKey();
+                String typeTrain = entry.getKey();
                 vehiclePerHour = vehiclePerHour * entry.getValue();
                 if (vehiclePerHour>0) {
                     RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
@@ -289,9 +289,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 i++;
             }
 
-        }else if (evaluateRailwaySourceCnossos.isInVehicleList(typeTrain)){
+        }else if (evaluateRailwaySourceCnossos.isInVehicleList(train)){
             if (vehiclePerHour>0) {
-                RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
+                RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(train, vehicleSpeed,
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
                 lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
             }
