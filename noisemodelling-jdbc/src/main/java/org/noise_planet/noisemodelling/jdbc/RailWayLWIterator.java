@@ -270,12 +270,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(train);
-
+        double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
             int i = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
-                vehiclePerHour = vehiclePerHour * entry.getValue();
+                vehiclePerHour = vehiclePerHouri * entry.getValue();
                 if (vehiclePerHour>0) {
                     RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
                             vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
