@@ -112,17 +112,91 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
-
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
 
-        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
-        assertNotNull(v);
-        v.setNbTrack(3);
-        RailWayLW railWayLW = v.getRailWayLW();
-        List<LineString> geometries = v.getRailWayLWGeometry();
-        assertTrue(railWayLWIterator.hasNext());
+    @Test
+    public void testNoiseEmissionRailWayTwoGeoms() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 2)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+
+    @Test
+    public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+
+    @Test
+    public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+        connection.createStatement().execute("DELETE FROM RAILTRAIN WHERE PK NOT IN (SELECT R1.PK FROM RAILTRAIN R1, RAILTRACK R2 WHERE r1.IDSECTION = R2.IDSECTION LIMIT 1)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
     }
 
     @Test
@@ -131,8 +205,6 @@ public class LDENPointNoiseMapFactoryTest {
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
-
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         v.setNbTrack(2);
@@ -154,7 +226,6 @@ public class LDENPointNoiseMapFactoryTest {
         HashMap<String, double[]> Resultats = new HashMap<>();
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
 
         while (railWayLWIterator.hasNext()) {
