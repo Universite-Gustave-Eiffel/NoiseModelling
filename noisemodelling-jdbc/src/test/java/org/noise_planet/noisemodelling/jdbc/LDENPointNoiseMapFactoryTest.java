@@ -281,7 +281,7 @@ public class LDENPointNoiseMapFactoryTest {
         HashMap<String, double[]> Resultats = new HashMap<>();
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAIL_SECTIONS", "RAIL_TRAFIC");
-        railWayLWIterator.setDistance(2);
+
         double resD,resE,resN;
 
        // RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
