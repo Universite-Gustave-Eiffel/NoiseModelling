@@ -27,30 +27,12 @@ import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParalle
 public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGeom> {
     private final EvaluateRailwaySourceCnossos evaluateRailwaySourceCnossos = new EvaluateRailwaySourceCnossos();
     private Connection connection;
-    private RailWayLW railWayLWsum;
-    private RailWayLW railWayLWsumDay;
-    private RailWayLW railWayLWsumEvening;
-    private RailWayLW railWayLWsumNight;
-    private RailWayLWGeom railWayLWCurrent = null;
+    private RailWayLWGeom railWayLWComplete = null;
+    private RailWayLWGeom railWayLWIncomplete = new RailWayLWGeom();
     private String tableTrackGeometry;
     private String tableTrainTraffic;
-    private int nbTrack;
-    private String idSection ="";
-    private int currentIdTrack = -1;
-    List<LineString> railWayGeoms;
-    double gs = 1.0;
     private SpatialResultSet spatialResultSet;
-    public double distance = 2;
     public Map<String, Integer> sourceFields = null;
-
-    public double getDistance() {
-        return distance;
-    }
-
-    public void setDistance(double distance) {
-        this.distance = distance;
-    }
-
 
     /**
      * Generate sound source for train (with train source directivity) from traffic and geometry tracks tables
@@ -62,12 +44,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
-        railWayLWCurrent = fetchNext();
+        railWayLWComplete = fetchNext(railWayLWIncomplete);
     }
 
     @Override
     public boolean hasNext() {
-        return railWayLWCurrent != null;
+        return railWayLWComplete != null;
     }
 
     private List<LineString> splitGeometry(Geometry geometry){
@@ -94,17 +76,19 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
 
     @Override
     public RailWayLWGeom next() {
-        RailWayLWGeom current = railWayLWCurrent;
-        railWayLWCurrent = fetchNext();
+        RailWayLWGeom current = railWayLWComplete;
+        railWayLWComplete = fetchNext(railWayLWIncomplete);
         return current;
     }
 
     public RailWayLWGeom current() {
-        return railWayLWCurrent;
+        return railWayLWComplete;
     }
 
-    private RailWayLWGeom fetchNext() {
+    private RailWayLWGeom fetchNext(RailWayLWGeom incompleteRecord) {
+        RailWayLWGeom completeRecord = null;
         try {
+            boolean hasNext = false;
             if (spatialResultSet == null) {
                 Tuple<String, Integer> trackKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection,
                         TableLocation.parse(tableTrackGeometry, DBUtils.getDBType(connection)));
@@ -115,56 +99,70 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 if(!spatialResultSet.next()) {
                     return null;
                 }
-
-                railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
-                railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
-                railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
-                railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
-
-                nbTrack = spatialResultSet.getInt("NTRACK");
-                idSection = spatialResultSet.getString("IDSECTION");
-                if (hasColumn(spatialResultSet, "GS")) {
-                    gs = spatialResultSet.getDouble("GS");
+                hasNext = true;
+                if (sourceFields == null) {
+                    sourceFields = new HashMap<>();
+                    int fieldId = 1;
+                    for (String fieldName : JDBCUtilities.getColumnNames(spatialResultSet.getMetaData())) {
+                        sourceFields.put(fieldName.toUpperCase(), fieldId++);
+                    }
                 }
-
-                currentIdTrack = spatialResultSet.getInt("trackid");
-                railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
+                if (sourceFields.containsKey("TRACKSPC")) {
+                    incompleteRecord.distance = spatialResultSet.getDouble("TRACKSPC");
+                }
+                incompleteRecord.setRailWayLW(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
+                incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
+                incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                if (hasColumn(spatialResultSet, "GS")) {
+                    incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                }
+                incompleteRecord.pk = spatialResultSet.getInt("trackid");
+                incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
             }
-            if(currentIdTrack == -1) {
+            if(incompleteRecord.pk == -1) {
                 return null;
             }
-            RailWayLWGeom railWayLWNext = new RailWayLWGeom(railWayLWsum, railWayLWsumDay, railWayLWsumEvening, railWayLWsumNight, railWayGeoms, currentIdTrack, nbTrack, distance, gs);
-            railWayLWNext.setIdSection(idSection);
-            currentIdTrack = -1;
             while (spatialResultSet.next()) {
-                if (railWayLWNext.pk == spatialResultSet.getInt("trackid")) {
-                    railWayLWsum = RailWayLW.sumRailWayLW(railWayLWsum, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
-                    railWayLWsumDay = RailWayLW.sumRailWayLW(railWayLWsumDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
-                    railWayLWsumEvening = RailWayLW.sumRailWayLW(railWayLWsumEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
-                    railWayLWsumNight = RailWayLW.sumRailWayLW(railWayLWsumNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                hasNext = true;
+                if (incompleteRecord.pk == spatialResultSet.getInt("trackid")) {
+                    incompleteRecord.setRailWayLW(RailWayLW.sumRailWayLW(incompleteRecord.railWayLW, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
+                    incompleteRecord.setRailWayLWDay(RailWayLW.sumRailWayLW(incompleteRecord.railWayLWDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
+                    incompleteRecord.setRailWayLWEvening(RailWayLW.sumRailWayLW(incompleteRecord.railWayLWEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING")));
+                    incompleteRecord.setRailWayLWNight(RailWayLW.sumRailWayLW(incompleteRecord.railWayLWNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT")));
                 } else {
-                    // finalize current value
-                    railWayLWNext.setRailWayLW(railWayLWsum);
-                    railWayLWNext.setRailWayLWDay(railWayLWsumDay);
-                    railWayLWNext.setRailWayLWEvening(railWayLWsumEvening);
-                    railWayLWNext.setRailWayLWNight(railWayLWsumNight);
-                    railWayLWNext.setIdSection(idSection);
-                    // read next instance attributes for the next() call
-                    railWayGeoms = splitGeometry(spatialResultSet.getGeometry());
-                    currentIdTrack = spatialResultSet.getInt("trackid");
-                    nbTrack = spatialResultSet.getInt("NTRACK");
-                    idSection = spatialResultSet.getString("IDSECTION");
-                    if (hasColumn(spatialResultSet, "GS")) {
-                        gs = spatialResultSet.getDouble("GS");
+                    // railWayLWIncomplete is complete
+                    completeRecord = new RailWayLWGeom(incompleteRecord);
+                    // read next (incomplete) instance attributes for the next() call
+                    incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
+                    if (sourceFields.containsKey("TRACKSPC")) {
+                        incompleteRecord.distance = spatialResultSet.getDouble("TRACKSPC");
                     }
-                    railWayLWsum = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
-                    railWayLWsumDay = getRailwayEmissionFromResultSet(spatialResultSet, "DAY");
-                    railWayLWsumEvening = getRailwayEmissionFromResultSet(spatialResultSet, "EVENING");
-                    railWayLWsumNight = getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT");
+                    // initialize incomplete record
+                    incompleteRecord.setRailWayLW(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                    incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
+                    incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
+                    incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                    incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
+                    incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                    if (hasColumn(spatialResultSet, "GS")) {
+                        incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                    }
+                    incompleteRecord.pk = spatialResultSet.getInt("trackid");
+                    incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
                     break;
                 }
             }
-            return railWayLWNext;
+            if(!hasNext) {
+                incompleteRecord.pk = -1;
+            } else {
+                if (completeRecord == null) {
+                    completeRecord = new RailWayLWGeom(incompleteRecord);
+                }
+            }
+            return completeRecord;
         } catch (SQLException | IOException throwables) {
             throw new NoSuchElementException(throwables.getMessage());
         }
@@ -176,26 +174,17 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
      * @return Emission spectrum in dB
      */
     public RailWayLW getRailwayEmissionFromResultSet(ResultSet rs, String period) throws SQLException, IOException {
-
-        if (sourceFields == null) {
-            sourceFields = new HashMap<>();
-            int fieldId = 1;
-            for (String fieldName : JDBCUtilities.getColumnNames(rs.getMetaData())) {
-                sourceFields.put(fieldName.toUpperCase(), fieldId++);
-            }
-        }
-
-        String typeTrain = "FRET";
+        String train = "FRET";
         double vehicleSpeed = 160;
         double vehiclePerHour = 1;
         int rollingCondition = 0;
         double idlingTime = 0;
         int trackTransfer = 4;
-        double trackSpacing = 1.0;
         int impactNoise = 0;
         int bridgeTransfert = 0;
         int curvature = 0;
         int railRoughness = 1;
+        int nbTrack = 2;
         double vMaxInfra = 160;
         double commercialSpeed = 160;
         boolean isTunnel = false;
@@ -234,20 +223,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         if (sourceFields.containsKey("TRACKSPD")) {
             vMaxInfra = rs.getDouble("TRACKSPD");
         }
-        if (sourceFields.containsKey("TRACKSPC")) {
-            trackSpacing = rs.getDouble("TRACKSPC");
-            setDistance(trackSpacing);
-        }
 
         if (sourceFields.containsKey("COMSPD")) {
             commercialSpeed = rs.getDouble("COMSPD");
         }
         if (sourceFields.containsKey("TRAINTYPE")) {
-            typeTrain = rs.getString("TRAINTYPE");
+            train = rs.getString("TRAINTYPE");
         }
 
         if (sourceFields.containsKey("TYPETRAIN")) {
-            typeTrain = rs.getString("TYPETRAIN");
+            train = rs.getString("TYPETRAIN");
         }
 
         if (sourceFields.containsKey("ISTUNNEL")) {
@@ -269,16 +254,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         RailwayTrackParametersCnossos trackParameters = new RailwayTrackParametersCnossos(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
-        Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(typeTrain);
-
+        Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(train);
+       // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
             int i = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
-                typeTrain = entry.getKey();
-                vehiclePerHour = vehiclePerHour * entry.getValue();
-                if (vehiclePerHour>0) {
+                String typeTrain = entry.getKey();
+                double vehiclePerHouri = vehiclePerHour * entry.getValue();
+                if (vehiclePerHouri>0) {
                     RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
-                            vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
+                            vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
 
                     if (i == 0) {
                         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -289,9 +274,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 i++;
             }
 
-        }else if (evaluateRailwaySourceCnossos.isInVehicleList(typeTrain)){
+        }else if (evaluateRailwaySourceCnossos.isInVehicleList(train)){
             if (vehiclePerHour>0) {
-                RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
+                RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(train, vehicleSpeed,
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
                 lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
             }
@@ -307,10 +292,29 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         private RailWayLW railWayLWEvening;
         private RailWayLW railWayLWNight;
         private List<LineString> geometry;
-        private int pk;
+        private int pk = -1;
         private int nbTrack;
         private String idSection;
-        private double distance;
+        private double distance = 2;
+        private double gs = 1.0;
+
+        // Default constructor
+        public RailWayLWGeom() {
+
+        }
+
+        public RailWayLWGeom(RailWayLWGeom other) {
+            this.railWayLW = other.railWayLW;
+            this.railWayLWDay = other.railWayLWDay;
+            this.railWayLWEvening = other.railWayLWEvening;
+            this.railWayLWNight = other.railWayLWNight;
+            this.geometry = other.geometry;
+            this.pk = other.pk;
+            this.nbTrack = other.nbTrack;
+            this.idSection = other.idSection;
+            this.distance = other.distance;
+            this.gs = other.gs;
+        }
 
         public RailWayLWGeom(RailWayLW railWayLW, RailWayLW railWayLWDay, RailWayLW railWayLWEvening, RailWayLW railWayLWNight, List<LineString> geometry, int pk, int nbTrack, double distance, double gs) {
             this.railWayLW = railWayLW;
@@ -331,8 +335,6 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         public void setGs(double gs) {
             this.gs = gs;
         }
-
-        private double gs;
 
         public double getDistance() {
             return distance;

@@ -112,17 +112,91 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
-
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
 
-        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
-        assertNotNull(v);
-        v.setNbTrack(3);
-        RailWayLW railWayLW = v.getRailWayLW();
-        List<LineString> geometries = v.getRailWayLWGeometry();
-        assertTrue(railWayLWIterator.hasNext());
+    @Test
+    public void testNoiseEmissionRailWayTwoGeoms() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 2)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+
+    @Test
+    public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+
+    @Test
+    public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+        connection.createStatement().execute("DELETE FROM RAILTRAIN WHERE PK NOT IN (SELECT R1.PK FROM RAILTRAIN R1, RAILTRACK R2 WHERE r1.IDSECTION = R2.IDSECTION LIMIT 1)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
     }
 
     @Test
@@ -131,8 +205,6 @@ public class LDENPointNoiseMapFactoryTest {
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
-
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         v.setNbTrack(2);
@@ -154,10 +226,11 @@ public class LDENPointNoiseMapFactoryTest {
         HashMap<String, double[]> Resultats = new HashMap<>();
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
-        railWayLWIterator.setDistance(2);
-        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
+        double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+
             RailWayLW railWayLW = v.getRailWayLWDay();
             double[] rolling = railWayLW.getLWRolling();
             double[] tractiona = railWayLW.getLWTractionA();
@@ -166,7 +239,7 @@ public class LDENPointNoiseMapFactoryTest {
             double[] aerob = railWayLW.getLWAerodynamicB();
             double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
             double[] LWA = sumArray(LW, dBA);
-            double resD = sumDbArray(LWA);
+            resD = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWEvening();
             rolling = railWayLW.getLWRolling();
@@ -176,7 +249,7 @@ public class LDENPointNoiseMapFactoryTest {
             aerob = railWayLW.getLWAerodynamicB();
             LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
             LWA = sumArray(LW, dBA);
-            double resE = sumDbArray(LWA);
+            resE = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWNight();
             rolling = railWayLW.getLWRolling();
@@ -186,13 +259,73 @@ public class LDENPointNoiseMapFactoryTest {
             aerob = railWayLW.getLWAerodynamicB();
             LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
             LWA = sumArray(LW, dBA);
-            double resN = sumDbArray(LWA);
+            resN = sumDbArray(LWA);
 
             String idSection = v.getIdSection();
 
             Resultats.put(idSection,new double[]{resD, resE, resN});
-            v = railWayLWIterator.next();
+
         }
+
+        assertFalse(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_Section556() throws SQLException, IOException {
+        double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
+
+        HashMap<String, double[]> Resultats = new HashMap<>();
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAIL_SECTIONS", "RAIL_TRAFIC");
+
+        double resD,resE,resN;
+
+       // RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
+
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+
+            RailWayLW railWayLW = v.getRailWayLWDay();
+            double[] rolling = railWayLW.getLWRolling();
+            double[] tractiona = railWayLW.getLWTractionA();
+            double[] tractionb = railWayLW.getLWTractionB();
+            double[] aeroa = railWayLW.getLWAerodynamicA();
+            double[] aerob = railWayLW.getLWAerodynamicB();
+            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            double[] LWA = sumArray(LW, dBA);
+            resD = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWEvening();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resE = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWNight();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resN = sumDbArray(LWA);
+
+            String idSection = v.getIdSection();
+
+            Resultats.put(idSection,new double[]{resD, resE, resN});
+
+        }
+
+        /*RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         RailWayLW railWayLW = v.getRailWayLWDay();
         double[] rolling = railWayLW.getLWRolling();
         double[] tractiona = railWayLW.getLWTractionA();
@@ -218,14 +351,14 @@ public class LDENPointNoiseMapFactoryTest {
         tractiona = railWayLW.getLWTractionA();
         tractionb = railWayLW.getLWTractionB();
         aeroa = railWayLW.getLWAerodynamicA();
-        aerob = railWayLW.getLWAerodynamicB();
-        LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        aerob = railWayLW.getLWAerodynamicB();*
+       /* LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
         LWA = sumArray(LW, dBA);
-        double resN = sumDbArray(LWA);
+        double resN = sumDbArray(LWA);*/
 
-        String idSection = v.getIdSection();
+        /*String idSection = v.getIdSection();
         Resultats.put(idSection,new double[]{resD, resE, resN});
-        v = railWayLWIterator.next();
+        v = railWayLWIterator.next();*/
 
         assertFalse(railWayLWIterator.hasNext());
 
