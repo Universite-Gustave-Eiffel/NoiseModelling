@@ -164,6 +164,15 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     break;
                 }
             }
+            if (!spatialResultSet.next()) {
+                // finalize current value
+                railWayLWNext.setRailWayLW(railWayLWsum);
+                railWayLWNext.setRailWayLWDay(railWayLWsumDay);
+                railWayLWNext.setRailWayLWEvening(railWayLWsumEvening);
+                railWayLWNext.setRailWayLWNight(railWayLWsumNight);
+                railWayLWNext.setIdSection(idSection);
+            }
+
             return railWayLWNext;
         } catch (SQLException | IOException throwables) {
             throw new NoSuchElementException(throwables.getMessage());
@@ -270,15 +279,15 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrain(train);
-        double vehiclePerHouri=vehiclePerHour;
+       // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
             int i = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
-                vehiclePerHour = vehiclePerHouri * entry.getValue();
-                if (vehiclePerHour>0) {
+                double vehiclePerHouri = vehiclePerHour * entry.getValue();
+                if (vehiclePerHouri>0) {
                     RailwayVehicleParametersCnossos vehicleParameters = new RailwayVehicleParametersCnossos(typeTrain, vehicleSpeed,
-                            vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
+                            vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
 
                     if (i == 0) {
                         lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
@@ -345,24 +354,24 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         public RailWayLW getRailWayLW() {
             return railWayLW;
         }
-
         public void setRailWayLW(RailWayLW railWayLW) {
             this.railWayLW = railWayLW;
         }
+
         public RailWayLW getRailWayLWDay() {
             return railWayLWDay;
         }
-
         public void setRailWayLWDay(RailWayLW railWayLWDay) {
             this.railWayLWDay = railWayLWDay;
         }
+
         public RailWayLW getRailWayLWEvening() {
             return railWayLWEvening;
         }
-
         public void setRailWayLWEvening(RailWayLW railWayLWEvening) {
             this.railWayLWEvening = railWayLWEvening;
         }
+
         public RailWayLW getRailWayLWNight() {
             return railWayLWNight;
         }
