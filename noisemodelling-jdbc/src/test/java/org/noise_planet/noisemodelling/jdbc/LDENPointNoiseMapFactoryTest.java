@@ -359,11 +359,207 @@ public class LDENPointNoiseMapFactoryTest {
         /*String idSection = v.getIdSection();
         Resultats.put(idSection,new double[]{resD, resE, resN});
         v = railWayLWIterator.next();*/
+/*
+        StringBuilder keyRow = new StringBuilder();
+        StringBuilder value1 = new StringBuilder();
+        StringBuilder value2 = new StringBuilder();
+        StringBuilder value3 = new StringBuilder();
+
+        Iterator keys = Resultats.keySet().iterator();
+        boolean notFirst = true;
+        while(keys.hasNext()) {
+            String key = (String)keys.next();
+
+            if(!notFirst) {
+                keyRow.append(",");
+                value1.append(",");
+                value2.append(",");
+                value3.append(",");
+            }
+            keyRow.append(key);
+            value1.append((Double)Resultats.get(key)[0]);
+            value2.append((Double)Resultats.get(key)[1]);
+            value3.append((Double)Resultats.get(key)[2]);
+            notFirst = false;
+        }
+        String csv = keyRow.toString()+"\n"+value1.toString()+"\n"+value2.toString()+"\n"+value3.toString();
+
+*/
+  /*      Resultats.toString();
+
+        StringBuilder csv = new StringBuilder();
+        int row = 0;
+        ArrayList<double[]> list = new ArrayList<double[]>();
+
+        // Write the keys row:
+        Iterator keys = Resultats.keySet().iterator();
+        boolean notFirst = true;
+        while(keys.hasNext()) {
+            String key = (String)keys.next();
+            double[] tmp = Resultats.get(key);
+            if(!notFirst) {
+                csv.append(",");
+            }
+            csv.append(key);
+            // store list
+            list.add(tmp);
+            notFirst = false;
+        }
+
+
+
+        // Write the rest of the rows
+        while(row<3) {
+            notFirst = true;
+            for(int x=0;x<list.size();x++) {
+                if(!notFirst) {
+                    csv.append(",");
+                }
+                csv.append((double)list.get(x)[row]);
+                notFirst = false;
+            }
+            row++;
+        }
+        csv.append("\n");
+*/
 
         assertFalse(railWayLWIterator.hasNext());
 
     }
 
+    public void toString(HashMap<String, ArrayList<String>> map) {
+        for(int i = 0; i < map.size(); i++) {
+            ArrayList<String> list = new ArrayList<String>(map.keySet());
+            String key = list.get(i);
+            System.out.println(key);
+            for(int j = 0; j < map.get(key).size(); j++)
+                System.out.println(map.get(key).get(j));
+        }
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayForPropa556() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
+
+        MakeLWTable.makeTrainLWTable(connection, "RAIL_SECTIONS", "RAIL_TRAFIC",
+                "LW_RAILWAY");
+
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/Buildings2.shp").getFile());
+
+        // ICI POUR CHANGER HAUTEUR ET G ECRAN
+        //connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
+
+        // Count receivers
+        int nbReceivers = 0;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEPTEURS")) {
+            assertTrue(rs.next());
+            nbReceivers = rs.getInt(1);
+        }
+
+        // ICI HAUTEUR RECPTEUR
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154);");
+
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM,4.0);");
+        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
+
+
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        ldenConfig.setComputeLDay(true);
+        ldenConfig.setComputeLEvening(true);
+        ldenConfig.setComputeLNight(true);
+        ldenConfig.setComputeLDEN(true);
+        ldenConfig.setExportRays(false);
+
+        LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+        factory.setKeepRays(false);
+        factory.insertTrainDirectivity();
+
+
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS2", "LW_RAILWAY",
+                "RECEPTEURS");
+
+        pointNoiseMap.setComputeRaysOutFactory(factory);
+        pointNoiseMap.setPropagationProcessDataFactory(factory);
+
+        //pointNoiseMap.setDemTable("DEM");
+        pointNoiseMap.setMaximumError(0.2d);
+        pointNoiseMap.setMaximumPropagationDistance(800.0);
+        pointNoiseMap.setComputeHorizontalDiffraction(true);
+        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setSoundReflectionOrder(1);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        try {
+            RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+            factory.start();
+            Map<PointNoiseMap.CellIndex, Integer> cells = pointNoiseMap.searchPopulatedCells(connection);
+            ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+            // Iterate over computation areas
+            for(PointNoiseMap.CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                if (out instanceof ComputeRaysOutAttenuation) {
+                    ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
+                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                }
+            }
+        }finally {
+            factory.stop();
+        }
+
+
+
+
+        connection.commit();
+        // retrieve receiver value
+        assertEquals(nbReceivers, receivers.size());
+
+        // ICI A MODIFIER
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ ldenConfig.lDayTable + " LVL")) {
+            assertTrue(rs.next());
+            /*assertTrue(rs.next());
+            assertEquals(47.60, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertEquals(56.58, rs.getDouble(1), 2.0);*/
+        }
+
+     /*  connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        SHPDriverFunction shpDriver = new SHPDriverFunction();
+        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "RECEPTEURS", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
+
+
+        shpDriver.exportTable(connection, "SCREENS", new File("target/SCREENS_control.shp"), true, new EmptyProgressVisitor());
+        shpDriver.exportTable(connection, "LW_RAILWAY", new File("target/LW_RAILWAY_control.shp"), true, new EmptyProgressVisitor());
+*/
+
+    }
 
     @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
@@ -373,12 +569,7 @@ public class LDENPointNoiseMapFactoryTest {
         MakeLWTable.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
                 "LW_RAILWAY");
 
-        // Get Class to compute LW
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
-        RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
-        assertNotNull(v);
-        List<LineString> geometries = v.getRailWayLWGeometry();
-        assertEquals(geometries.size(),2);
+
 
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
@@ -423,7 +614,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         //pointNoiseMap.setDemTable("DEM");
 
-        pointNoiseMap.setMaximumPropagationDistance(250.0);
+        pointNoiseMap.setMaximumPropagationDistance(850.0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
@@ -459,8 +650,9 @@ public class LDENPointNoiseMapFactoryTest {
 
         // ICI A MODIFIER
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenConfig.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
-            /*assertTrue(rs.next());
-            assertEquals(47.60, rs.getDouble(1), 2.0);
+            assertTrue(rs.next());
+            assertTrue(rs.next());
+            /*assertEquals(47.60, rs.getDouble(1), 2.0);
             assertTrue(rs.next());
             assertEquals(56.58, rs.getDouble(1), 2.0);
             assertTrue(rs.next());
