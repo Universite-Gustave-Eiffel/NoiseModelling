@@ -7,6 +7,7 @@ import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -216,32 +217,40 @@ public abstract class JdbcNoiseMap {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
-                        Geometry poly = rs.getGeometry();
-                        if(poly != null) {
-                            // Split soil by square
-                            Envelope geoEnv = poly.getEnvelopeInternal();
-                            double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                            double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                            double xCursor = startXGeo;
-                            double g = rs.getDouble("G");
-                            double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
-                            double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
-                            while(xCursor < maxX)  {
-                                double yCursor = startYGeo;
-                                while(yCursor < maxY) {
-                                    Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor+groundSurfaceSplitSideLength);
-                                    Geometry envGeom = geometryFactory.toGeometry(cellEnv);
-                                    try {
-                                        Geometry inters = poly.intersection(envGeom);
-                                        if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
-                                            builder.addGroundEffect(inters, g);
+                        Geometry mainPolygon = rs.getGeometry();
+                        if(mainPolygon != null) {
+                            for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
+                                Geometry poly = mainPolygon.getGeometryN(idPoly);
+                                if (poly instanceof Polygon) {
+                                    PreparedPolygon preparedPolygon = new PreparedPolygon((Polygon) poly);
+                                    // Split soil by square
+                                    Envelope geoEnv = poly.getEnvelopeInternal();
+                                    double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double xCursor = startXGeo;
+                                    double g = rs.getDouble("G");
+                                    double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
+                                    double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
+                                    while (xCursor < maxX) {
+                                        double yCursor = startYGeo;
+                                        while (yCursor < maxY) {
+                                            Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor + groundSurfaceSplitSideLength);
+                                            Geometry envGeom = geometryFactory.toGeometry(cellEnv);
+                                            if(preparedPolygon.intersects(envGeom)) {
+                                                try {
+                                                    Geometry inters = poly.intersection(envGeom);
+                                                    if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
+                                                        builder.addGroundEffect(inters, g);
+                                                    }
+                                                } catch (TopologyException | IllegalArgumentException ex) {
+                                                    // Ignore
+                                                }
+                                            }
+                                            yCursor += groundSurfaceSplitSideLength;
                                         }
-                                    } catch (TopologyException | IllegalArgumentException ex) {
-                                        // Ignore
+                                        xCursor += groundSurfaceSplitSideLength;
                                     }
-                                    yCursor += groundSurfaceSplitSideLength;
                                 }
-                                xCursor += groundSurfaceSplitSideLength;
                             }
                         }
                     }
