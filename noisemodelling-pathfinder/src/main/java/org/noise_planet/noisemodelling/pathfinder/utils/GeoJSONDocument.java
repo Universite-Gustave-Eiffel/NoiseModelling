@@ -20,8 +20,11 @@ import org.noise_planet.noisemodelling.pathfinder.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 /**
  * Export rays for validation
@@ -107,32 +110,29 @@ public class GeoJSONDocument {
         jsonGenerator.writeEndObject();
     }
 
-    public void writeRay(PropagationPath path) throws IOException {
+    public void writeCutPoint(ProfileBuilder.CutPoint cutPoint) throws IOException {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("type", "Feature");
         jsonGenerator.writeObjectFieldStart("geometry");
-        jsonGenerator.writeStringField("type", "LineString");
+        jsonGenerator.writeStringField("type", "Point");
         jsonGenerator.writeFieldName("coordinates");
-        jsonGenerator.writeStartArray();
-        for(PointPath pointPath : path.getPointList()) {
-            writeCoordinate(new Coordinate(pointPath.coordinate));
-        }
-        jsonGenerator.writeEndArray();
+        writeCoordinate(new Coordinate(cutPoint.getCoordinate()));
         jsonGenerator.writeEndObject(); // geometry
         // Write properties
         jsonGenerator.writeObjectFieldStart("properties");
-        jsonGenerator.writeNumberField("receiver", path.getIdReceiver());
-        jsonGenerator.writeNumberField("source", path.getIdSource());
-        if(path.getSRSegment() == null) {
-            path.computeAugmentedSRPath();
+        if(cutPoint.getBuildingId() != - 1) {
+            jsonGenerator.writeNumberField("building", cutPoint.getBuildingId());
+            jsonGenerator.writeNumberField("height", cutPoint.getHeight());
+            jsonGenerator.writeStringField("alpha", cutPoint.getWallAlpha().stream().
+                    map(aDouble -> String.format("%.2f", aDouble)).collect(Collectors.joining(",")));
         }
-        jsonGenerator.writeArrayFieldStart("gPath");
-        for(SegmentPath sr : path.getSegmentList()) {
-            jsonGenerator.writeNumber(String.format(Locale.ROOT, "%.2f", sr.gPath));
+        jsonGenerator.writeStringField("type", cutPoint.getType().toString());
+        if(cutPoint.getGroundCoef() != 0) {
+            jsonGenerator.writeNumberField("g", cutPoint.getGroundCoef());
         }
-        jsonGenerator.writeEndArray(); //gPath
         jsonGenerator.writeEndObject(); // properties
         jsonGenerator.writeEndObject();
+        jsonGenerator.flush();
     }
 
     /**

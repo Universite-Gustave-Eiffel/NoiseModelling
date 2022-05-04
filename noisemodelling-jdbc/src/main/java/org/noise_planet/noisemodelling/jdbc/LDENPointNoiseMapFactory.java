@@ -261,7 +261,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
 
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
-            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?);";
+            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE, GEOJSON ) VALUES (?, ?, ?, ?);";
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
             PreparedStatement ps;
             if(sqlFilePath == null) {
@@ -277,6 +277,13 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 ps.setObject(parameterIndex++, row.asGeom());
                 ps.setLong(parameterIndex++, row.getIdReceiver());
                 ps.setLong(parameterIndex++, row.getIdSource());
+                String geojson = "";
+                try {
+                    geojson = row.profileAsJSON(ldenConfig.geojsonColumnSizeLimit);
+                } catch (IOException ex) {
+                    //ignore
+                }
+                ps.setString(parameterIndex++, geojson);
                 ps.addBatch();
                 batchSize++;
                 if (batchSize >= BATCH_MAX_SIZE) {
@@ -410,7 +417,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
                     processQuery(q);
                 }
-                String q = "CREATE TABLE IF NOT EXISTS "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL);";
+                String q = "CREATE TABLE IF NOT EXISTS "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL, GEOJSON VARCHAR);";
                 processQuery(q);
             }
             if(ldenConfig.computeLDay) {

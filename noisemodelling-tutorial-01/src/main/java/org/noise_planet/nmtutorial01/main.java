@@ -135,6 +135,7 @@ class Main {
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
+        ldenConfig.setExportRays(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
@@ -201,6 +202,7 @@ class Main {
         bezierContouring.createTable(connection);
         logger.info("Export iso contours");
         SHPWrite.exportTable(connection, "target/"+bezierContouring.getOutputTable()+".shp", bezierContouring.getOutputTable(), ValueBoolean.TRUE);
+        SHPWrite.exportTable(connection, "target/"+ldenConfig.getRaysTable()+".shp", ldenConfig.getRaysTable(), ValueBoolean.TRUE);
     }
 
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {

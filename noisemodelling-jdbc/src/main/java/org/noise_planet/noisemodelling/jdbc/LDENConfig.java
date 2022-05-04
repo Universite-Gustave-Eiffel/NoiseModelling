@@ -51,6 +51,7 @@ public class LDENConfig {
     boolean computeLEvening = true;
     boolean computeLNight = true;
     boolean computeLDEN = true;
+    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
     public boolean isComputeLAEQOnly() {
         return computeLAEQOnly;
@@ -261,6 +262,20 @@ public class LDENConfig {
 
     public String getlDenTable() {
         return lDenTable;
+    }
+
+    /**
+     * @return Table name that contains rays dump (profile)
+     */
+    public String getRaysTable() {
+        return raysTable;
+    }
+
+    /**
+     * @param raysTable Table name that will contain rays dump (profile)
+     */
+    public void setRaysTable(String raysTable) {
+        this.raysTable = raysTable;
     }
 
     public boolean isComputeLDay() {

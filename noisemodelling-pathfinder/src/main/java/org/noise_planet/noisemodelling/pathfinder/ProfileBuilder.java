@@ -1883,9 +1883,9 @@ public class ProfileBuilder {
         /** {@link Coordinate} of the cut point. */
         private Coordinate coordinate;
         /** Intersection type. */
-        private final IntersectionType type;
+        private IntersectionType type;
         /** Identifier of the cut element. */
-        private final int id;
+        private int id;
         /** Identifier of the building containing the point. -1 if no building. */
         private int buildingId;
         /** Identifier of the wall containing the point. -1 if no wall. */
@@ -1921,6 +1921,15 @@ public class ProfileBuilder {
         public CutPoint(Coordinate coord, IntersectionType type, int id) {
             this(coord, type, id, false);
         }
+
+        public CutPoint() {
+            coordinate = new Coordinate();
+        }
+
+        /**
+         * Copy constructor
+         * @param cut
+         */
         public CutPoint(CutPoint cut) {
             this.coordinate = new Coordinate(cut.getCoordinate());
             this.type = cut.type;
@@ -1931,7 +1940,19 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>(cut.wallAlpha);
             this.height = cut.height;
             this.zGround = cut.zGround;
-            this.corner = corner;
+            this.corner = cut.corner;
+        }
+
+        public void setType(IntersectionType type) {
+            this.type = type;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public void setCoordinate(Coordinate coordinate) {
+            this.coordinate = coordinate;
         }
 
         /**

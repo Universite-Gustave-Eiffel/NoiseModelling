@@ -255,12 +255,14 @@ public class PointNoiseMapTest {
             pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
+            pointNoiseMap.setGridDim(1);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof LDENComputeRaysOut) {
                         LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+
                         ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(1, sl.receiverId);
                         assertEquals(73.3, sl.value[0], 1);
