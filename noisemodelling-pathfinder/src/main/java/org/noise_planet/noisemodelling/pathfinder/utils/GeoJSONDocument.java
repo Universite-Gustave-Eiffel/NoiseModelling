@@ -16,24 +16,23 @@ import org.cts.registry.EPSGRegistry;
 import org.cts.registry.RegistryManager;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.Triangle;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
  * Export rays for validation
  */
 public class GeoJSONDocument {
-    JsonGenerator jsonGenerator;
-    String crs = "EPSG:4326";
-    int rounding = -1;
-    private CoordinateOperation transform = null;
+    public JsonGenerator jsonGenerator;
+    public String crs = "EPSG:4326";
+    public int rounding = -1;
+    public CoordinateOperation transform = null;
 
     public GeoJSONDocument(OutputStream outputStream) throws IOException {
         JsonFactory jsonFactory = new JsonFactory();
@@ -120,6 +119,10 @@ public class GeoJSONDocument {
         jsonGenerator.writeEndObject(); // geometry
         // Write properties
         jsonGenerator.writeObjectFieldStart("properties");
+        Double zGround = cutPoint.getzGround();
+        if(zGround != null && !Double.isNaN(zGround)) {
+            jsonGenerator.writeNumberField("zGround", zGround);
+        }
         if(cutPoint.getBuildingId() != - 1) {
             jsonGenerator.writeNumberField("building", cutPoint.getBuildingId());
             jsonGenerator.writeNumberField("height", cutPoint.getHeight());
@@ -171,7 +174,7 @@ public class GeoJSONDocument {
      * @param coordinate
      * @throws IOException
      */
-    private void writeCoordinate(Coordinate coordinate) throws IOException {
+    public void writeCoordinate(Coordinate coordinate) throws IOException {
         jsonGenerator.writeStartArray();
         if(transform != null) {
             try {
@@ -189,7 +192,7 @@ public class GeoJSONDocument {
         jsonGenerator.writeEndArray();
     }
 
-    private void writeNumber(double number) throws IOException {
+    public void writeNumber(double number) throws IOException {
         if(rounding >= 0) {
             jsonGenerator.writeNumber(String.format(Locale.ROOT,"%."+rounding+"f", number));
         } else {

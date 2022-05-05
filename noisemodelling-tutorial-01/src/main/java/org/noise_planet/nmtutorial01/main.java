@@ -135,7 +135,6 @@ class Main {
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
-        ldenConfig.setExportRays(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 

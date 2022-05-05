@@ -63,6 +63,7 @@ public class LDENConfig {
 
     boolean computeLAEQOnly = false;
     boolean exportRays = false;
+    boolean exportProfileInRays = false;
     boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
@@ -179,6 +180,20 @@ public class LDENConfig {
      */
     public void setExportRays(boolean exportRays) {
         this.exportRays = exportRays;
+    }
+
+    /**
+     * @return For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public boolean isExportProfileInRays() {
+        return exportProfileInRays;
+    }
+
+    /**
+     * @param  exportProfileInRays For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public void setExportProfileInRays(boolean exportProfileInRays) {
+        this.exportProfileInRays = exportProfileInRays;
     }
 
     public boolean isKeepAbsorption() {

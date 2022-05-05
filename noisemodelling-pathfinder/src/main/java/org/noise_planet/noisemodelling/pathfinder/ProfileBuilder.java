@@ -1893,11 +1893,11 @@ public class ProfileBuilder {
         /** Height of the building containing the point. NaN of no building. */
         private double height;
         /** Topographic height of the point. */
-        private Double zGround;
+        private Double zGround = Double.NaN;
         /** Ground effect coefficient. 0 if there is no coefficient. */
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
-        private List<Double> wallAlpha;
+        private List<Double> wallAlpha = Collections.emptyList();
         private boolean corner;
 
         /**
@@ -2057,7 +2057,7 @@ public class ProfileBuilder {
          * Retrieve the topographic height of the point.
          * @return The topographic height of the point.
          */
-        public double getzGround() {
+        public Double getzGround() {
             return zGround;
         }
 
