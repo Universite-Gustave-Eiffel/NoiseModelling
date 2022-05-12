@@ -486,6 +486,7 @@ public class ComputeCnossosRays {
         points.add(srcPP);
 
         PropagationPath propagationPath = new PropagationPath(false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
+        propagationPath.setCutPoints(cuts);
         propagationPath.raySourceReceiverDirectivity = srcPP.orientation;
         if(data.isComputeDiffraction()) {
             //Check for Rayleigh criterion for segments computation
@@ -611,6 +612,7 @@ public class ComputeCnossosRays {
                 topoPts.add(coordinates.get(0));
                 double g = 0;
                 double d = 0;
+                List<ProfileBuilder.CutPoint> allCutPoints = new ArrayList<>();
                 for(int i=0; i<coordinates.size()-1; i++) {
                     ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS);
                     profile.setSrcOrientation(orientation);
@@ -621,6 +623,7 @@ public class ComputeCnossosRays {
                             .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                             .map(ProfileBuilder.CutPoint::getCoordinate)
                             .collect(Collectors.toList()));
+                    allCutPoints.addAll(profile.getCutPoints());
                 }
                 g/=d;
                 //Filter bridge
@@ -683,6 +686,7 @@ public class ComputeCnossosRays {
                 PointPath previous = src;
                 List<SegmentPath> segs = new ArrayList<>();
                 path = new PropagationPath(false, pps, segs, srSeg, Angle.angle(rcvCoord, srcCoord));
+                path.setCutPoints(allCutPoints);
                 path.raySourceReceiverDirectivity = src.orientation;
                 double e = 0;
                 for(int i=1; i<coordinates.size()-1; i++) {
@@ -757,7 +761,7 @@ public class ComputeCnossosRays {
 
         PropagationPath propagationPath = new PropagationPath(true, points, segments, srPath,
                 Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate()));
-
+        propagationPath.setCutPoints(cutPts);
         LineSegment srcRcvLine = new LineSegment(firstPts2D, lastPts2D);
         List<Coordinate> pts = new ArrayList<>();
         pts.add(firstPts2D);
@@ -1391,12 +1395,14 @@ public class ComputeCnossosRays {
                     topoPts.add(new Coordinate(srcCoord));
                     double g = 0;
                     double d = 0;
+                    List<ProfileBuilder.CutPoint> allCutPoints = new ArrayList<>();
                     for(int i=0; i<pts.size()-1; i++) {
                         ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS);
                         topoPts.addAll(profile.getCutPoints().stream()
                                 .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                                 .map(ProfileBuilder.CutPoint::getCoordinate)
                                 .collect(Collectors.toList()));
+                        allCutPoints.addAll(profile.getCutPoints());
                         if(i<pts.size()-2){
                             topoPts.add(topoPts.get(topoPts.size()-1));
                             topoPts.add(topoPts.get(topoPts.size()-1));
@@ -1409,6 +1415,7 @@ public class ComputeCnossosRays {
                     for (final Coordinate pt : topoPts) {
                         pt.z = data.profileBuilder.getZGround(pt);
                     }
+                    proPath.setCutPoints(allCutPoints);
                     topoPts = toDirectLine(topoPts);
                     double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
                     proPath.setSRSegment(computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS));

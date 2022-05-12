@@ -51,6 +51,7 @@ public class LDENConfig {
     boolean computeLEvening = true;
     boolean computeLNight = true;
     boolean computeLDEN = true;
+    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
     public boolean isComputeLAEQOnly() {
         return computeLAEQOnly;
@@ -62,6 +63,7 @@ public class LDENConfig {
 
     boolean computeLAEQOnly = false;
     boolean exportRays = false;
+    boolean exportProfileInRays = false;
     boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
@@ -180,6 +182,20 @@ public class LDENConfig {
         this.exportRays = exportRays;
     }
 
+    /**
+     * @return For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public boolean isExportProfileInRays() {
+        return exportProfileInRays;
+    }
+
+    /**
+     * @param  exportProfileInRays For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public void setExportProfileInRays(boolean exportProfileInRays) {
+        this.exportProfileInRays = exportProfileInRays;
+    }
+
     public boolean isKeepAbsorption() {
         return keepAbsorption;
     }
@@ -261,6 +277,20 @@ public class LDENConfig {
 
     public String getlDenTable() {
         return lDenTable;
+    }
+
+    /**
+     * @return Table name that contains rays dump (profile)
+     */
+    public String getRaysTable() {
+        return raysTable;
+    }
+
+    /**
+     * @param raysTable Table name that will contain rays dump (profile)
+     */
+    public void setRaysTable(String raysTable) {
+        this.raysTable = raysTable;
     }
 
     public boolean isComputeLDay() {

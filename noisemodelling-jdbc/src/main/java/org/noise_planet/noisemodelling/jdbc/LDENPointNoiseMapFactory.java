@@ -261,7 +261,12 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
 
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
-            String query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?);";
+            String query;
+            if(ldenConfig.exportProfileInRays) {
+                query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE, GEOJSON ) VALUES (?, ?, ?, ?);";
+            } else {
+                query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?);";
+            }
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
             PreparedStatement ps;
             if(sqlFilePath == null) {
@@ -277,6 +282,15 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 ps.setObject(parameterIndex++, row.asGeom());
                 ps.setLong(parameterIndex++, row.getIdReceiver());
                 ps.setLong(parameterIndex++, row.getIdSource());
+                if(ldenConfig.exportProfileInRays) {
+                    String geojson = "";
+                    try {
+                        geojson = row.profileAsJSON(ldenConfig.geojsonColumnSizeLimit);
+                    } catch (IOException ex) {
+                        //ignore
+                    }
+                    ps.setString(parameterIndex++, geojson);
+                }
                 ps.addBatch();
                 batchSize++;
                 if (batchSize >= BATCH_MAX_SIZE) {
@@ -410,7 +424,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
                     processQuery(q);
                 }
-                String q = "CREATE TABLE IF NOT EXISTS "+ldenConfig.raysTable+"(pk bigint auto_increment, the_geom geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL);";
+                String q;
+                if(ldenConfig.exportProfileInRays) {
+                    q = "CREATE TABLE IF NOT EXISTS " + ldenConfig.raysTable + "(pk bigint auto_increment, the_geom " +
+                            "geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL, GEOJSON VARCHAR);";
+                } else {
+                    q = "CREATE TABLE IF NOT EXISTS " + ldenConfig.raysTable + "(pk bigint auto_increment, the_geom " +
+                            "geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL);";
+                }
                 processQuery(q);
             }
             if(ldenConfig.computeLDay) {
@@ -512,8 +533,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     LOGGER.error("SQL Writer exception", e);
                     LOGGER.error(e.getLocalizedMessage(), e.getNextException());
                     ldenConfig.aborted = true;
-                } catch (IOException e) {
-                    LOGGER.error("File Writer exception", e);
+                } catch (Throwable e) {
+                    LOGGER.error("Got exception on result writer, cancel calculation", e);
                     ldenConfig.aborted = true;
                 }
             } else {
@@ -526,8 +547,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     LOGGER.error("SQL Writer exception", e);
                     LOGGER.error(e.getLocalizedMessage(), e.getNextException());
                     ldenConfig.aborted = true;
-                } catch (IOException e) {
-                    LOGGER.error("File Writer exception", e);
+                } catch (Throwable e) {
+                    LOGGER.error("Got exception on result writer, cancel calculation", e);
                     ldenConfig.aborted = true;
                 }
             }

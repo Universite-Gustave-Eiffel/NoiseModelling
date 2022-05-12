@@ -1576,11 +1576,11 @@ public class ProfileBuilder {
     }
 
     public double getZGround(CutPoint cut) {
-        if(cut.zGround != null) {
+        if(!Double.isNaN(cut.zGround)) {
             return cut.zGround;
         }
         if(topoTree == null) {
-            cut.zGround = null;
+            cut.zGround = NaN;
             return 0.0;
         }
         Envelope env = new Envelope(cut.coordinate);
@@ -1596,7 +1596,7 @@ public class ProfileBuilder {
                 return z;
             }
         }
-        cut.zGround = null;
+        cut.zGround = NaN;
         return 0.0;
     }
 
@@ -1883,9 +1883,9 @@ public class ProfileBuilder {
         /** {@link Coordinate} of the cut point. */
         private Coordinate coordinate;
         /** Intersection type. */
-        private final IntersectionType type;
+        private IntersectionType type;
         /** Identifier of the cut element. */
-        private final int id;
+        private int id;
         /** Identifier of the building containing the point. -1 if no building. */
         private int buildingId;
         /** Identifier of the wall containing the point. -1 if no wall. */
@@ -1893,11 +1893,11 @@ public class ProfileBuilder {
         /** Height of the building containing the point. NaN of no building. */
         private double height;
         /** Topographic height of the point. */
-        private Double zGround;
+        private double zGround = Double.NaN;
         /** Ground effect coefficient. 0 if there is no coefficient. */
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
-        private List<Double> wallAlpha;
+        private List<Double> wallAlpha = Collections.emptyList();
         private boolean corner;
 
         /**
@@ -1915,12 +1915,20 @@ public class ProfileBuilder {
             this.groundCoef = 0;
             this.wallAlpha = new ArrayList<>();
             this.height = 0;
-            this.zGround = null;
             this.corner = corner;
         }
         public CutPoint(Coordinate coord, IntersectionType type, int id) {
             this(coord, type, id, false);
         }
+
+        public CutPoint() {
+            coordinate = new Coordinate();
+        }
+
+        /**
+         * Copy constructor
+         * @param cut
+         */
         public CutPoint(CutPoint cut) {
             this.coordinate = new Coordinate(cut.getCoordinate());
             this.type = cut.type;
@@ -1931,7 +1939,19 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>(cut.wallAlpha);
             this.height = cut.height;
             this.zGround = cut.zGround;
-            this.corner = corner;
+            this.corner = cut.corner;
+        }
+
+        public void setType(IntersectionType type) {
+            this.type = type;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public void setCoordinate(Coordinate coordinate) {
+            this.coordinate = coordinate;
         }
 
         /**
@@ -2036,7 +2056,7 @@ public class ProfileBuilder {
          * Retrieve the topographic height of the point.
          * @return The topographic height of the point.
          */
-        public double getzGround() {
+        public Double getzGround() {
             return zGround;
         }
 

@@ -38,10 +38,13 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +62,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils.pro
 // todo please revise public, private, etc.
 
 public class PropagationPath {
+    public static final int FOOTER_RESERVED_SIZE = 120; // reserved size for geojson footer
+    private List<ProfileBuilder.CutPoint> cutPoints = new ArrayList<>();
     // given by user
     private SegmentPath srSegment; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
@@ -122,6 +127,18 @@ public class PropagationPath {
     }
 
     /**
+     * 3D intersections points of the ray
+     * @return
+     */
+    public List<ProfileBuilder.CutPoint> getCutPoints() {
+        return cutPoints;
+    }
+
+    public void setCutPoints(List<ProfileBuilder.CutPoint> cutPoints) {
+        this.cutPoints = cutPoints;
+    }
+
+    /**
      * parameters given by user
      * @param favorable
      * @param pointList
@@ -171,6 +188,7 @@ public class PropagationPath {
         this.e = other.e;
         this.deltaRetroH = other.deltaRetroH;
         this.deltaRetroF = other.deltaRetroF;
+        this.cutPoints = new ArrayList<>(other.cutPoints);
     }
 
     public PropagationPath() {
@@ -210,12 +228,26 @@ public class PropagationPath {
      */
     public LineString asGeom() {
         GeometryFactory geometryFactory = new GeometryFactory();
-        Coordinate[] coordinates = new Coordinate[pointList.size()];
+        Coordinate[] coordinates = new Coordinate[cutPoints.size()];
         int i=0;
-        for(PointPath pointPath : pointList) {
-            coordinates[i++] = new Coordinate(pointPath.coordinate);
+        for(ProfileBuilder.CutPoint cutPoint : cutPoints) {
+            coordinates[i++] = new Coordinate(cutPoint.getCoordinate());
         }
         return geometryFactory.createLineString(coordinates);
+    }
+
+    public String profileAsJSON(int sizeLimitation) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        GeoJSONDocument geoJSONDocument = new GeoJSONDocument(byteArrayOutputStream);
+        geoJSONDocument.writeHeader();
+        for (ProfileBuilder.CutPoint cutPoint : cutPoints) {
+            if(sizeLimitation > 0 && byteArrayOutputStream.size() + FOOTER_RESERVED_SIZE > sizeLimitation) {
+                break;
+            }
+            geoJSONDocument.writeCutPoint(cutPoint);
+        }
+        geoJSONDocument.writeFooter();
+        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
     }
 
     public int getIdSource() {
