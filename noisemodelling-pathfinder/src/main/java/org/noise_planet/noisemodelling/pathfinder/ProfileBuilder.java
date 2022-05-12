@@ -1576,11 +1576,11 @@ public class ProfileBuilder {
     }
 
     public double getZGround(CutPoint cut) {
-        if(cut.zGround != null) {
+        if(!Double.isNaN(cut.zGround)) {
             return cut.zGround;
         }
         if(topoTree == null) {
-            cut.zGround = null;
+            cut.zGround = NaN;
             return 0.0;
         }
         Envelope env = new Envelope(cut.coordinate);
@@ -1596,7 +1596,7 @@ public class ProfileBuilder {
                 return z;
             }
         }
-        cut.zGround = null;
+        cut.zGround = NaN;
         return 0.0;
     }
 
@@ -1893,7 +1893,7 @@ public class ProfileBuilder {
         /** Height of the building containing the point. NaN of no building. */
         private double height;
         /** Topographic height of the point. */
-        private Double zGround = Double.NaN;
+        private double zGround = Double.NaN;
         /** Ground effect coefficient. 0 if there is no coefficient. */
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
@@ -1915,7 +1915,6 @@ public class ProfileBuilder {
             this.groundCoef = 0;
             this.wallAlpha = new ArrayList<>();
             this.height = 0;
-            this.zGround = null;
             this.corner = corner;
         }
         public CutPoint(Coordinate coord, IntersectionType type, int id) {
