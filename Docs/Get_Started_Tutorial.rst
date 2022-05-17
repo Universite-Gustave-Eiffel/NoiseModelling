@@ -16,14 +16,14 @@ Please install JAVA version v8.x. Currently only version 8 of Java is compatible
 
 - Download Java here : https://www.java.com/fr/download/
 
-- You can check if JAVA_HOME environnement variable is well settled to your last installed java folder using :literal:`echo %JAVA_HOME%` (windows) or :literal:`echo $JAVA_HOME` (linux) in your command prompt. You should have a result similar to :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x_x\\`
+- You can check if JAVA_HOME environnement variable is well settled to your last installed java folder using ``echo %JAVA_HOME%`` (windows) or ``echo $JAVA_HOME`` (linux) in your command prompt. You should have a result similar to ``C:\\Program Files (x86)\\Java\\jre1.8.x_x\\``
 
--  If you don't have this result, it is probably because your JAVA_HOME environnement variable is not well settled. To set you JAVA_HOME environnement variable you can adapt (with :literal:`x` the JAVA version number) you installed and use the following command line : :literal:`setx JAVA_HOME  "C:\\Program Files (x86)\\Java\\jre.1.8.x_x"` in your command prompt. You can also refer to `this document`_ for example. 
+-  If you don't have this result, it is probably because your JAVA_HOME environnement variable is not well settled. To set you JAVA_HOME environnement variable you can adapt (with ``x`` the JAVA version number) you installed and use the following command line : ``setx JAVA_HOME  "C:\\Program Files (x86)\\Java\\jre.1.8.x_x"`` in your command prompt. You can also refer to `this document`_ for example. 
 
-- You may have to reboot your command prompt after using the precedent command line before printing again :literal:`echo %JAVA_HOME%` (windows) or :literal:`echo $JAVA_HOME` (linux).
+- You may have to reboot your command prompt after using the precedent command line before printing again ``echo %JAVA_HOME%`` (windows) or ``echo $JAVA_HOME`` (linux).
 
 .. warning::
-    The command promprt should print :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x_x\\` whithout the bin directory. If JAVA_HOME is settled as :literal:`C:\\Program Files (x86)\\Java\\jre1.8.x_x\\bin`, it will not work. It should also point to a JRE  (Java Runtime Environment) Java environnement and not JDK. 
+    The command promprt should print ``C:\\Program Files (x86)\\Java\\jre1.8.x_x\\`` whithout the bin directory. If JAVA_HOME is settled as ``C:\\Program Files (x86)\\Java\\jre1.8.x_x\\bin``, it will not work. It should also point to a JRE  (Java Runtime Environment) Java environnement and not JDK. 
     
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html   
 
@@ -32,7 +32,10 @@ Docker Setup
 
 When a developer uses Docker (https://www.docker.com/), he creates an application or service, which he then bundles together with the associated dependencies in a container image. An image is a static representation of the application or service, its configuration and dependencies.
 
-A docker image for the NoiseModelling library has already been built. Please visit: https://github.com/tomasanda/docker-noisemodelling
+A docker image for the NoiseModelling v3.4.4 library has already been built. Please visit: https://github.com/tomasanda/docker-noisemodelling
+
+.. warning::
+    This docker version is made with NoiseModelling v3.4.4 which is an old release. A news Docker version with the last NoiseModelling version may be made. 
 
 Step 1: Download the latest release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,7 +45,7 @@ Step 1: Download the latest release
 - *Other plaforms* : Unzip the downloaded zip file into a chosen directory.
 
 .. warning::
-    The chosen directory can be anywhere but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.
+    The chosen directory can be anywhere, but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.
 
 .. note::
     - Only from version 3.3, NoiseModelling releases include the user interface described in this tutorial. 
@@ -56,12 +59,12 @@ NoiseModelling connects to a PostGIS or H2GIS database. The database needs to be
 In this tutorial the server type is `GeoServer`_ and the database type is `H2GIS`_. 
 Those tools are included in the archive.
 
-To run the server, please execute "startup" from your own Geoserver folder :
+To run the server, please execute ``startup`` from your own Geoserver folder :
 
-- NoiseModelling.exe for Windows Users 
-- NoiseModelling\\bin\\startup.sh for Linux and Mac Users (check authorize file execution in property of this file before)
+- ``NoiseModelling.exe`` for Windows Users 
+- ``NoiseModelling\\bin\\startup.sh`` for Linux and Mac Users (check authorize file execution in property of this file before)
 
-and wait until :literal:`INFO:oejs.Server:main:Started` is written in your command prompt.
+and wait until ``INFO:oejs.Server:main:Started`` is written in your command prompt.
 
 
 .. warning::
@@ -96,18 +99,18 @@ Step 4: Upload files to database
 
 To compute your first noise map, you will need 5 layers: Buildings, Roads, Ground type, Topography (DEM) and Receivers.
 
-In the noisemodelling\\data_dir\\data\\wpsdata folder, you will find 5 files (4 shapefiles and 1 geojson) corresponding to these layers.
+In the ``noisemodelling\\data_dir\\data\\wpsdata`` folder, you will find 5 files (4 shapefiles and 1 geojson) corresponding to these layers.
 
-You can import these layers in your database using the *Import File* or *Import Folder* blocks.
+You can import these layers in your database using the ``Import File`` or ``Import Folder`` blocks.
 
-- Drag *Import File* block into Builder window 
-- Select *Path of the input File* block and type ``data_dir/data/wpsdata/buildings.shp`` in the field **pathFile**: 
-- Then click on *Run Process* after selecting one of the sub-blocks of your process
+- Drag ``Import File`` block into the Builder window 
+- Select ``Path of the input File`` box and type ``data_dir/data/wpsdata/buildings.shp`` in the field ``PathFile`` *(on the right-side column)*
+- Then click on ``Run Process`` after selecting one of the sub-boxes of your process
 
 .. figure:: images/tutorial/Tutorial1_Image1bis.gif
    :align: center
 
-Files are uploaded to database when the Console window displays :literal:`The table x has been uploaded to database.`
+Files are uploaded to database when the Console window displays ``The table x has been uploaded to database``.
 
 Repeat this operation for other files:
 
@@ -117,10 +120,10 @@ Repeat this operation for other files:
 - ``data_dir/data/wpsdata/dem.geojson``
 
 .. note::   
-    You can find all files in your own NoiseModelling folder, at direction /data_dir/data/wpsdata/
+    You can find all files in your own NoiseModelling folder, at direction ``/data_dir/data/wpsdata/``
 
 .. note::
-    - if you have the message :literal:`Error opening database`, please refer to the note in Step 1.
+    - if you have the message ``Error opening database``, please refer to the note in Step 1.
     - The process is supposed to be quick (<5 sec.). In case of out of time, try to restart the Geoserver (see Step 2).
     - Orange blocks are mandatory
     - Beige blocks are optional
@@ -135,20 +138,20 @@ Repeat this operation for other files:
 Step 5: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run Calculation you have to drag the block *Noise_level_from_traffic* into WPS Builder window.
+To run Calculation you have to drag the block ``Noise_level_from_traffic`` into WPS Builder window.
 
 Then, select the orange blocks and indicate the name of the corresponding table your database, for example :
 
-- Building table name : :literal:`BUILDINGS`
-- Sources table name : :literal:`ROADS2`
-- Receivers table name : :literal:`RECEIVERS`
+- Building table name : ``BUILDINGS``
+- Sources table name : ``ROADS2``
+- Receivers table name : ``RECEIVERS``
 
 Then, you can run the process.
 
 .. figure:: images/tutorial/Tutorial1_Image2bis.PNG
    :align: center
 
-The tables LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM and LDEN_GEOM will be created in your database.
+The tables ``LDAY_GEOM``, ``LEVENING_GEOM``, ``LNIGHT_GEOM`` and ``LDEN_GEOM`` will be created in your database.
 
 .. note::
     If you want to know more about the format of the input tables, you can refer to the `WPS Blocks`_ section.
@@ -161,14 +164,14 @@ The tables LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM and LDEN_GEOM will be created i
 Step 6: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can now export the output table in your favorite export format using *Export Table* block giving the path of the file you want to create (including its extension, for example : c:/home/receivers.geojson).
+You can now export the output table in your favorite export format using *Export Table* block giving the path of the file you want to create (including its extension, for example : ``c:/home/receivers.geojson``).
 
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
 
-For example, you can choose to export the table in shp format. This format can be read with many GIS tools such as the open source softwares `QGIS`_ and `SAGA`_.
+For example, you can choose to export the table in ``.shp`` format. This format can be read with many GIS tools such as the open source softwares `QGIS`_ and `SAGA`_.
 
-To obtain the following image, use the syling vector options in your GIS and assign a color gradient to LAEQ column of your exported LDAY_GEOM table.
+To obtain the following image, use the syling vector options in your GIS and assign a color gradient to LAEQ column of your exported ``LDAY_GEOM`` table.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
    :align: center
