@@ -12,7 +12,7 @@ Implementation validation
 
 A large set of unit tests are present in the `code`_. Please consult an example dealing with CNOSSOS-EU `here`_. 
 
-Note that all the tests entilted ``TCxx`` (`see example`_) are coming from the `ISO/TR 17534-4:2020`_ standard.
+Note that all the tests entilted ``TCxx`` (`see example`_) are coming from the `ISO/TR 17534-4:2020`_ standard *(it implies that NoiseModelling is compliant with this standard)*.
 
 
 

@@ -144,7 +144,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'NoiseModelling.tex', u'NoiseModelling Documentation',
-     u'Aumond P., Fortin N., Le Bescond V.', 'manual'),
+     u'Aumond P., Fortin N., Le Bescond V., Petit G.', 'manual'),
 ]
 
 

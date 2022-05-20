@@ -22,6 +22,10 @@ The ray tracing algorithm is a rubber-band like algorithm as specified in `CNOSS
 .. warning::
     - Rays backwards to the source or receiver are not taken into account. For example, if a receiver is located inside a U-shaped building, only diffractions on horizontal edges will be taken into account.
 
+.. figure:: images/Numerical_Model/ray_tracing.png
+    :align: center
+    :width: 75%
+
 Propagation Numerical Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The emission model of the implemented traffic is the `CNOSSOS-EU`_ model.

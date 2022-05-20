@@ -4,10 +4,13 @@ Manipulate your database with DBeaver
 Presentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`DBeaver`_ is a free and open-source universal SQL client/database tool for developers and database administrators. DBeaver is able to connect to `H2GIS`_ database which is the one used.
+`DBeaver`_ is a free and open-source universal SQL client/database tool for developers and database administrators. DBeaver is able (among others) to connect to `H2`_/`H2GIS`_ database which is the one used by default, or to `PostgreSQL`_/`PostGIS`_.
 
 .. _DBeaver: https://dbeaver.io/
+.. _H2 : https://www.h2database.com
 .. _H2GIS: http://www.h2gis.org/
+.. _PostgreSQL: https://www.postgresql.org/
+.. _PostGIS: https://postgis.net/
 
 Download DBeaver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,9 +27,9 @@ Connect DBeaver to your database
 
 1. Run DBeaver
 2. Add a new connection
-3. If you use a H2GIS type databse, please select 'H2GIS embedded'
-4. Browse your database. By default it is in the ``NoiseModelling\\data_dir`` directory and the name is ``h2gisdb.mv.db``.
-5. Open it !
+3. If you use a H2GIS type databse, please select ``H2GIS embedded``
+4. Browse your database. By default it is in the ``NoiseModelling/data_dir`` directory and the name is ``h2gisdb.mv.db``.
+5. Open it!
 
 Use DBeaver 
 ~~~~~~~~~~~~~

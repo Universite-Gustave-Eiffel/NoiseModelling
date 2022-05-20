@@ -121,7 +121,7 @@ To quote this tool, please use the bibliographic reference below:
     :caption: User Interface
 
     WPS_Blocks
-    FAQ_UF
+    WPS_Builder
 
 .. toctree::
     :maxdepth: 2
@@ -130,6 +130,7 @@ To quote this tool, please use the bibliographic reference below:
     Own_Wps
     dBeaver
     NoiseModellingScripting
+    NoiseModellingOnH2
     NoiseModellingOnPostGIS
 
 .. toctree::
