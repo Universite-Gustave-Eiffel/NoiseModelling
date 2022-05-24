@@ -1,13 +1,36 @@
 plugins {
     id 'java'
     id 'groovy'
-    id 'java-library'
     id 'maven-publish'
-    id 'signing'
+    id 'application'
+    id 'distribution'
 }
 
-group = 'org.orbisgis'
-version = '4.0.0-SNAPSHOT'
+
+sourceCompatibility = 11
+
+
+distributions {
+    main {
+        distributionBaseName = 'scriptrunner'
+        contents {
+            from '../LICENSE'
+            from '../README.md'
+            from 'load_file_demo.sh'
+            from 'src/main/groovy/org/noise_planet/'
+            from('src/test/') { include 'resources/**' }
+        }
+    }
+}
+
+
+
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
 
 publishing {
     publications {
@@ -96,6 +119,7 @@ dependencies {
     implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.0-SNAPSHOT'
     implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.0-SNAPSHOT'
     implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.0-SNAPSHOT'
+    implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
     implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
@@ -107,10 +131,12 @@ dependencies {
     testCompileOnly 'junit:junit:4.12'
 }
 
-task copyDependencies(type: Copy) {
-    from configurations.default
-    into 'dependencies'
+
+mainClassName = 'org.noisemodelling.runner.Main'
+
+jar {
+    manifest {
+        attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
+                'Main-Class': 'org.noisemodelling.runner.Main')
+    }
 }
-
-
-// compile group: 'org.orbisgis', name: 'osm', version: '1.0.0-SNAPSHOT'
