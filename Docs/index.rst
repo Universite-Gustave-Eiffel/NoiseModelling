@@ -14,7 +14,7 @@ Welcome on the **official NoiseModelling v4.0 User Guide**.
 NoiseModelling is a library capable of producing (regulatory) noise maps. 
 It can be freely used either for research and education, as well as by experts in a professional use.
 
-Since the release v4.0, this tool is fully compliant with the `CNOSSOS-EU`_ standard method for the noise emission (only road traffic) and `almost compliant`_ with noise propagation.
+Since the release v4.0, this tool is fully compliant with the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
@@ -103,6 +103,7 @@ To quote this tool, please use the bibliographic reference below:
     :maxdepth: 2
     :caption: NoiseModelling presentation
     
+    Architecture
     Numerical_Model
     Validation
     Contributions

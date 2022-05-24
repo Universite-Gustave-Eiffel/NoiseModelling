@@ -164,7 +164,10 @@ The tables ``LDAY_GEOM``, ``LEVENING_GEOM``, ``LNIGHT_GEOM`` and ``LDEN_GEOM`` w
 Step 6: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can now export the output table in your favorite export format using *Export Table* block giving the path of the file you want to create (including its extension, for example : ``c:/home/receivers.geojson``).
+You can now export the output table in your favorite export format using *Export Table* block giving the path of the file you want to create.
+
+.. warning::
+    Dont' forget to add the file extension (*e.g* ``c:/home/receivers.geojson`` or ``c:/home/lday_geom.shp``) (Read more info about file extensions here: :doc:`Tutorials_FAQ`)
 
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
