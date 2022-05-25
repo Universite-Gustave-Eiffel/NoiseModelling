@@ -18,6 +18,7 @@ distributions {
             from '../README.md'
             from 'get_started_tutorial.sh'
             from 'src/main/groovy/org/noise_planet/'
+            from 'src/main/groovy/get_started_tutorial.groovy'
             from('src/test/') { include 'resources/**' }
         }
     }
