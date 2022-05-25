@@ -16,7 +16,7 @@ distributions {
         contents {
             from '../LICENSE'
             from '../README.md'
-            from 'load_file_demo.sh'
+            from 'get_started_tutorial.sh'
             from 'src/main/groovy/org/noise_planet/'
             from('src/test/') { include 'resources/**' }
         }
