@@ -22,68 +22,44 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-def exec(Connection connection, input) {
-    ProgressVisitor progressVisitor = input["progressVisitor"]
+
+
+
+def runScript(connection, scriptFile, arguments) {
     Logger logger = LoggerFactory.getLogger("script")
+    GroovyShell shell = new GroovyShell()
+    Script scriptInstance = shell.parse(new File(scriptFile))
+    Object result = scriptInstance.invokeMethod("exec", [connection, arguments])
+    if(result != null) {
+        logger.info(result.toString())
+    }
+}
+
+def exec(Connection connection, input) {
 
     // Step 4: Upload files to database
-    GroovyShell shell = new GroovyShell()
-    Script importFile=shell.parse(new File("noisemodelling/wps/Import_and_Export/Import_File.groovy"))
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+            ["pathFile":"resources/org/noise_planet/noisemodelling/wps/ground_type.shp"])
 
-    Map<String, Object> inputs = new HashMap<>()
-    inputs.put("progressVisitor", progressVisitor)
-    inputs.put("pathFile", "resources/org/noise_planet/noisemodelling/wps/ground_type.shp")
-    Object result = importFile.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+            ["pathFile":"resources/org/noise_planet/noisemodelling/wps/buildings.shp"])
 
-    inputs.put("pathFile", "resources/org/noise_planet/noisemodelling/wps/buildings.shp")
-    result = importFile.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+            ["pathFile":"resources/org/noise_planet/noisemodelling/wps/receivers.shp"])
 
-    inputs.put("pathFile", "resources/org/noise_planet/noisemodelling/wps/receivers.shp")
-    result = importFile.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+            ["pathFile":"resources/org/noise_planet/noisemodelling/wps/ROADS2.shp"])
 
-    inputs.put("pathFile", "resources/org/noise_planet/noisemodelling/wps/ROADS2.shp")
-    result = importFile.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Import_File.groovy",
+            ["pathFile":"resources/org/noise_planet/noisemodelling/wps/dem.geojson"])
 
-    inputs.put("pathFile", "resources/org/noise_planet/noisemodelling/wps/dem.geojson")
-    result = importFile.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
-
-    Script noiseLevelFromTraffic=shell.parse(new File("noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy"))
-    inputs = new HashMap<>()
-    inputs.put("progressVisitor", progressVisitor)
-    inputs.put("tableBuilding", "BUILDINGS")
-    inputs.put("tableRoads", "ROADS2")
-    inputs.put("tableReceivers", "RECEIVERS")
-    inputs.put("tableDEM", "DEM")
-    inputs.put("tableGroundAbs", "GROUND_TYPE")
-    result = noiseLevelFromTraffic.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    // Step 5: Run Calculation
+    runScript(connection, "noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy",
+            ["tableBuilding":"BUILDINGS", "tableRoads":"ROADS2", "tableReceivers":"RECEIVERS",
+             "tableDEM":"DEM", "tableGroundAbs":"GROUND_TYPE"])
 
     // Step 6: Export (& see) the results
-    Script exportTable=shell.parse(new File("noisemodelling/wps/Import_and_Export/Export_Table.groovy"))
-    inputs = new HashMap<>()
-    inputs.put("progressVisitor", progressVisitor)
-    inputs.put("exportPath", "LDAY_GEOM.shp")
-    inputs.put("tableToExport", "LDAY_GEOM")
-    result = exportTable.invokeMethod("exec", [connection, inputs])
-    if(result != null) {
-        logger.info(result.toString())
-    }
+    runScript(connection, "noisemodelling/wps/Import_and_Export/Export_Table.groovy",
+            ["exportPath":"LDAY_GEOM.shp", "tableToExport":"LDAY_GEOM"])
 }
 
