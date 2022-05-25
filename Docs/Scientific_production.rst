@@ -1,6 +1,6 @@
 .. _My target:
 
-Contributions using NoiseModelling 
+Scientific production 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Below is a non-exhaustive list of articles or presentations in which NoiseModelling is used.
@@ -54,9 +54,6 @@ AUMOND P., CAN A., `Probabilistic modeling framework to predict traffic sound di
 
 AUMOND P., JACQUESSON L., CAN A., `Probabilistic modeling framework for multisource sound mapping <https://www.sciencedirect.com/science/article/pii/S0003682X17311283>`_, Applied Acoustics, 139, 34-43, 2018
 
-.. figure:: images/examples/Multisource.PNG
-    :align: center
-    :width: 75%
 
 Sensitivity Analysis & data assimilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

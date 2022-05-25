@@ -3,24 +3,32 @@ Numerical Model
 
 Emission Numerical Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Traffic emission model
-----------------------
-The emission model of the implemented traffic is the `CNOSSOS-EU`_ model.
+Road traffic emission model
+----------------------------
+The emission model of the implemented road traffic is the `CNOSSOS-EU`_ model.
 
-.. note::
-    Current model includes the emission coefficients ``a`` and ``b`` presented in the `report "Amendments for CNOSSOS-EU" (Kok, 2019)`_
+User can choose coefficients from the Directive 2015/996 and its amendment 2019/1010.
 
-Other emission models
-----------------------
+Rail traffic emission model
+----------------------------
+The emission model of the implemented rail traffic is the `CNOSSOS-EU`_ model.
 
-Other emission models are not included within the release 3.0.
+Only french database, from SNCF, is implemented.
 
-Ray Tracing
+
+Without emission model
+----------------------------
+User can also add directly its own emission sound power level (LW).
+
+
+Path finding algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ray tracing algorithm is a rubber-band like algorithm as specified in `CNOSSOS-EU`_. 
+The path finding algorithm is a rubber-band like algorithm as specified in `CNOSSOS-EU`_. 
+
+To optimize the processing time, this algorithm is taking benefit from a R-Tree spatial partioning algorithm.
 
 .. warning::
-    - Rays backwards to the source or receiver are not taken into account. For example, if a receiver is located inside a U-shaped building, only diffractions on horizontal edges will be taken into account.
+    Rays backwards to the source or receiver are not taken into account. For example, if a receiver is located inside a U-shaped building, only diffractions on horizontal edges will be taken into account.
 
 .. figure:: images/Numerical_Model/ray_tracing.png
     :align: center
@@ -28,16 +36,9 @@ The ray tracing algorithm is a rubber-band like algorithm as specified in `CNOSS
 
 Propagation Numerical Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The emission model of the implemented traffic is the `CNOSSOS-EU`_ model.
+The propagation model is the `CNOSSOS-EU`_ one.
 
-.. warning::
-    - The rays under favorable conditions are subject to `questioning`_. The current version is not final.
-    - The Rayleigh criterion is subject to `questioning`_. The current version does not integrate calculation that involve this criterion.
-    - Taking into account 15 degrees obstacles are subject to `questioning`_. The current version doesn't integrate calculation that involve 15 degrees obstacles.
 
-.. _questioning: https://www.rivm.nl/bibliotheek/rapporten/2019-0023.pdf
-
-.. _report "Amendments for CNOSSOS-EU" (Kok, 2019): https://www.rivm.nl/bibliotheek/rapporten/2019-0023.pdf
 
 .. _CNOSSOS-EU: https://circabc.europa.eu/sd/a/9566c5b9-8607-4118-8427-906dab7632e2/Directive_2015_996_EN.pdfde
 

@@ -1,4 +1,4 @@
-MATSim - Tutorial
+MATSim - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Introduction

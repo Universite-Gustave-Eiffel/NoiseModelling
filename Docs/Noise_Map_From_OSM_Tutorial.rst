@@ -1,4 +1,4 @@
-Noise Map from OSM - Tutorial
+Noise Map from OSM - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Prerequisites

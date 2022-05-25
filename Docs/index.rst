@@ -11,17 +11,17 @@ NoiseModelling v4.0 User Guide
 
 Welcome on the **official NoiseModelling v4.0 User Guide**.
 
-NoiseModelling is a library capable of producing (regulatory) noise maps. 
+NoiseModelling is a library capable of producing noise maps. 
 It can be freely used either for research and education, as well as by experts in a professional use.
 
-Since the release v4.0, this tool is fully compliant with the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
+Since the release v4.0, this tool implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
 
--  for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
--  to **contribute to NoiseModelling** source code, follow the ":doc:`Get_Started_Dev`" page
--  to **contact the development team**, 
+* for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
+* to **contribute to NoiseModelling** source code, follow the ":doc:`Get_Started_Dev`" page
+* to **contact the support / development team**, 
     - open an issue : https://github.com/Ifsttar/NoiseModelling/issues or a write a message : https://github.com/Ifsttar/NoiseModelling/discussions *(we prefer these two options)*
     - send us an email at contact@noise-planet.org  
 
@@ -34,9 +34,13 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 .. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
 
 
-**Authors and licence**:
+**Authors**:
 
-NoiseModelling is jointly developed by acousticians from the *Mixt Research Unit in Environmental Acoustics* (`UMRAE`_ - Université Gustave Eiffel & Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
+NoiseModelling project is leaded by acousticians from the *Mixt Research Unit in Environmental Acoustics* (`UMRAE`_ - Université Gustave Eiffel & Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
+
+The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
+
+**Licence**:
 
 NoiseModelling and its documentation are distributed for free under GPL v3 :doc:`License`. 
 
@@ -48,7 +52,7 @@ NoiseModelling and its documentation are distributed for free under GPL v3 :doc:
 
 **Publications**: 
 
-NoiseModelling was initially developed in a research context, which has led to numerous scientific publications. For more information, have a look to ":doc:`Contributions`" page. 
+NoiseModelling was initially developed in a research context, which has led to numerous scientific publications. For more information, have a look to ":doc:`Scientific_production`" page. 
 To quote this tool, please use the bibliographic reference below:
 
 .. note::
@@ -103,18 +107,20 @@ To quote this tool, please use the bibliographic reference below:
     :maxdepth: 2
     :caption: NoiseModelling presentation
     
+    Requirements
     Architecture
     Numerical_Model
     Validation
-    Contributions
+    Scientific_production
 
 .. toctree::
     :maxdepth: 2
     :caption: Tutorials
 
-    Get_Started_Tutorial
+    Get_Started_GUI
     Noise_Map_From_OSM_Tutorial
     Matsim_Tutorial
+    Get_Started_Script
     Tutorials_FAQ
 
 .. toctree::
@@ -129,10 +135,9 @@ To quote this tool, please use the bibliographic reference below:
     :caption: For Advanced Users
 
     Own_Wps
-    dBeaver
-    NoiseModellingScripting
     NoiseModellingOnH2
     NoiseModellingOnPostGIS
+    dBeaver
 
 .. toctree::
     :maxdepth: 2
