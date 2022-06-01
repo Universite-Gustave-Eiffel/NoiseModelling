@@ -438,9 +438,9 @@
        inkscape:export-ydpi="140.72421"><tspan
          x="321.13971"
          y="123.54105"
-         id="tspan9691"><tspan
+         id="tspan10032"><tspan
            style="font-weight:bold;text-align:center;text-anchor:middle"
-           id="tspan9689">NoiseModelling with Docker</tspan></tspan></text>
+           id="tspan10030">NoiseModelling with Docker</tspan></tspan></text>
     <rect
        style="fill:#afd8ff;fill-opacity:1;stroke:none;stroke-width:0.182674;stroke-opacity:1"
        id="rect158004"
@@ -490,15 +490,15 @@
          y="0"><tspan
            x="253.27096"
            y="118.82224"
-           id="tspan9695"><tspan
+           id="tspan10036"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9693">NoiseModelling
+             id="tspan10034">NoiseModelling
 </tspan></tspan><tspan
            x="274.28002"
            y="135.48886"
-           id="tspan9699"><tspan
+           id="tspan10040"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9697">Emission</tspan></tspan></text>
+             id="tspan10038">Emission</tspan></tspan></text>
     </g>
     <g
        id="g113946"
@@ -522,15 +522,15 @@
          y="0"><tspan
            x="253.27096"
            y="118.82224"
-           id="tspan9703"><tspan
+           id="tspan10044"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9701">NoiseModelling
+             id="tspan10042">NoiseModelling
 </tspan></tspan><tspan
            x="287.73051"
            y="135.48886"
-           id="tspan9707"><tspan
+           id="tspan10048"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9705">JDBC</tspan></tspan></text>
+             id="tspan10046">JDBC</tspan></tspan></text>
     </g>
     <g
        id="g113936"
@@ -554,15 +554,15 @@
          y="0"><tspan
            x="253.27096"
            y="118.82224"
-           id="tspan9711"><tspan
+           id="tspan10052"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9709">NoiseModelling
+             id="tspan10050">NoiseModelling
 </tspan></tspan><tspan
            x="269.79761"
            y="135.48886"
-           id="tspan9715"><tspan
+           id="tspan10056"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9713">Pathfinder</tspan></tspan></text>
+             id="tspan10054">Pathfinder</tspan></tspan></text>
     </g>
     <g
        id="g113941"
@@ -586,15 +586,15 @@
          y="0"><tspan
            x="253.27096"
            y="118.82224"
-           id="tspan9719"><tspan
+           id="tspan10060"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9717">NoiseModelling
+             id="tspan10058">NoiseModelling
 </tspan></tspan><tspan
            x="263.96104"
            y="135.48886"
-           id="tspan9723"><tspan
+           id="tspan10064"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9721">Propagation</tspan></tspan></text>
+             id="tspan10062">Propagation</tspan></tspan></text>
     </g>
     <g
        id="g9789"
@@ -787,9 +787,9 @@
        inkscape:export-ydpi="140.72421"><tspan
          x="329.46134"
          y="123.54105"
-         id="tspan9727"><tspan
+         id="tspan10068"><tspan
            style="font-weight:bold;text-align:center;text-anchor:middle"
-           id="tspan9725">NoiseModelling with a GUI</tspan></tspan></text>
+           id="tspan10066">NoiseModelling with a GUI</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.22409827,0,0,0.22409827,53.110809,25.040575)"
@@ -802,9 +802,9 @@
        inkscape:export-ydpi="140.72421"><tspan
          x="298.05348"
          y="123.54105"
-         id="tspan9731"><tspan
+         id="tspan10072"><tspan
            style="font-weight:bold;text-align:center;text-anchor:middle"
-           id="tspan9729">NoiseModelling libraries</tspan></tspan></text>
+           id="tspan10070">NoiseModelling libraries</tspan></tspan></text>
     <g
        id="g49283"
        transform="matrix(0.073788,0,0,0.073788,32.883372,55.617702)"
@@ -1180,9 +1180,9 @@
          y="0"><tspan
            x="268.9773"
            y="118.82224"
-           id="tspan9735"><tspan
+           id="tspan10076"><tspan
              style="text-align:center;text-anchor:middle"
-             id="tspan9733">Web client</tspan></tspan></text>
+             id="tspan10074">Web client</tspan></tspan></text>
     </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.224098px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
@@ -1204,21 +1204,21 @@
        inkscape:export-ydpi="140.72421"><tspan
          x="239.00016"
          y="118.82224"
-         id="tspan9739"><tspan
+         id="tspan10080"><tspan
            style="text-align:center;text-anchor:middle"
-           id="tspan9737">WPS Groovy scripts
+           id="tspan10078">WPS Groovy scripts
 </tspan></tspan><tspan
          x="294.05862"
          y="135.48886"
-         id="tspan9743"><tspan
+         id="tspan10084"><tspan
            style="text-align:center;text-anchor:middle"
-           id="tspan9741">via
+           id="tspan10082">via
 </tspan></tspan><tspan
          x="255.94674"
          y="152.15549"
-         id="tspan9747"><tspan
+         id="tspan10088"><tspan
            style="text-align:center;text-anchor:middle"
-           id="tspan9745">HTTP requests</tspan></tspan></text>
+           id="tspan10086">HTTP requests</tspan></tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.224098px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Mstart);marker-end:url(#marker129331)"
        d="m 117.85093,76.909381 c -13.06003,0 -24.365379,-12.994112 -36.396789,-12.994112"
@@ -1431,9 +1431,9 @@
        inkscape:export-ydpi="140.72421"><tspan
          x="376.24307"
          y="123.54105"
-         id="tspan9751"><tspan
+         id="tspan10092"><tspan
            style="font-weight:bold;text-align:center;text-anchor:middle"
-           id="tspan9749">Database</tspan></tspan></text>
+           id="tspan10090">Database</tspan></tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.224098;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.224098, 0.672294;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
        d="m 153.65934,66.356213 21.71131,6.400119"
@@ -1497,9 +1497,9 @@
          inkscape:export-ydpi="140.72421"><tspan
            x="284.07975"
            y="123.54105"
-           id="tspan9755"><tspan
+           id="tspan10096"><tspan
              style="font-weight:bold;text-align:center;text-anchor:middle"
-             id="tspan9753">NoiseModelling with command line</tspan></tspan></text>
+             id="tspan10094">NoiseModelling with command line</tspan></tspan></text>
     </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.224098px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"

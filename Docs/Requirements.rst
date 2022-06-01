@@ -1,9 +1,6 @@
 Requirements
 ^^^^^^^^^^^^^^^^^
 
-
-
-
 Java environment
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -15,11 +12,10 @@ Since NoiseModelling is developped with the `Java langage`_, you will need to in
 .. _Java langage : https://en.wikipedia.org/wiki/Java_(programming_language)
 
 
-
 Windows
 ----------
 
-If you are launching NoiseModelling thanks to the ``NoiseModelling_xxx_install.exe`` file, the JRE is already inside, so you don't have anything to do.
+If you are launching NoiseModelling thanks to the ``NoiseModelling_xxx_install.exe`` file, the JRE is already inside, so **you don't have anything to do**.
 
 If you are not using the ``.exe`` file, you have to launch NoiseModelling thanks to the ```...\bin\startup_windows.bat`` file (in the ``NoiseModelling_xxx.zip`` release file). In this case, Java v11.x has to be installed before.
 
