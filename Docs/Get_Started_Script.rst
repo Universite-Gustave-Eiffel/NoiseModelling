@@ -3,10 +3,16 @@ Pilot NoiseModelling with scripts
 
 In this tutorial, we described the different way to pilot NoiseModelling without GUI and Geoserver.
 
+NoiseModelling can be executed in 3 different maners: 
+
+#. with simple command lines
+#. with Bash script
+#. with Groovy script
+
 To illustrate, users are invited to reproduce the tutorial ":doc:`Get_Started_GUI`"" in command lines.
 
-This tutorial is mainly dedicated to advanced users.
-
+.. note::
+    This tutorial is mainly dedicated to advanced users.
 
 
 Requirements: 
@@ -16,7 +22,7 @@ Requirements:
     For all users (**Linux** , **Mac** and **Windows**), please make sure your Java environment is well setted. For more information, please read the page :doc:`Requirements`.
 
 
-Simple command line
+1. Simple command line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Below is an example of a bash instruction, executing the ``Noise_level_from_traffic.groovy`` WPS Script (located in the directory ``wps/``). This block has 5 arguments corresponding to the input table names (for buildings, roads, receivers, dem and ground type).
@@ -29,7 +35,7 @@ Below is an example of a bash instruction, executing the ``Noise_level_from_traf
 ``./bin/wps_scripts`` instruction allows to launch the ``wps_scripts.sh`` or ``wps_scripts.bat`` *(depending on if you are on Linux / Mac or Windows)* file, which is located in the ``bin/`` directory.
 
 
-Bash script
+2. Bash script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Below is an example of a sequence of simple .groovy scripts, using bash instructions and launching the differents steps described in the ":doc:`Get_Started_GUI`".
@@ -39,7 +45,7 @@ Below is an example of a sequence of simple .groovy scripts, using bash instruct
    :linenos:
 
 
-Groovy script
+3. Groovy script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Below is an example of a complex .groovy script, launching the differents steps described in the ":doc:`Get_Started_GUI`".
