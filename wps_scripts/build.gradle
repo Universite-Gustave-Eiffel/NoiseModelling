@@ -24,6 +24,11 @@ distributions {
     }
 }
 
+startScripts {
+    doLast {
+        windowsScript.text = windowsScript.text.replaceAll('set CLASSPATH=.*', 'set CLASSPATH=.;%APP_HOME%/lib/*')
+    }
+}
 
 
 compileJava {
