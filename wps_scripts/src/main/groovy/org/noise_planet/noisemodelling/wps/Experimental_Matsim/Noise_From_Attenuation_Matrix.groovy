@@ -170,8 +170,9 @@ def exec(Connection connection, input) {
             HZ4000 double precision,
             HZ8000 double precision,
             TIMESTRING varchar
-        ) AS
-        SELECT NULL, lg.IDRECEIVER,  lg.THE_GEOM,
+        );
+        INSERT INTO RESULT_GEOM(IDRECEIVER , THE_GEOM , HZ63 , HZ125 , HZ250 , HZ500 , HZ1000 , HZ2000 , HZ4000 , HZ8000 , TIMESTRING ) 
+        SELECT lg.IDRECEIVER,  lg.THE_GEOM,
             10 * LOG10( SUM(POWER(10,(mrs.LW63 + lg.HZ63) / 10))) AS HZ63,
             10 * LOG10( SUM(POWER(10,(mrs.LW125 + lg.HZ125) / 10))) AS HZ125,
             10 * LOG10( SUM(POWER(10,(mrs.LW250 + lg.HZ250) / 10))) AS HZ250,
