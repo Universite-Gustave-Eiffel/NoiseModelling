@@ -132,7 +132,7 @@ def exec(Connection connection, input) {
     // output string, the information given back to the user
     String resultString = null
 
-   // Create a logger to display messages in the geoserver logs and in the command prompt.
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
@@ -203,13 +203,16 @@ def exec(Connection connection, input) {
     }
 
     sql.execute("drop table if exists tmp_receivers_lines")
-    def filter_geom_query = ""
+
     if (fenceGeom != null) {
-        filter_geom_query = " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)";
+        filter_geom_query = "";
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom])
+    } else {
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name)
     }
 
     logger.info('create line of receivers')
-    sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + filter_geom_query, [fenceGeom : fenceGeom])
+
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
@@ -227,7 +230,7 @@ def exec(Connection connection, input) {
     sql.execute("create table TMP_SCREENS_MERGE (pk integer not null, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
     logger.info('Add primary key')
     sql.execute("ALTER TABLE TMP_SCREENS_MERGE add primary key(pk)")
-    logger.info('Collect all lines and convert into points using custom method')    
+    logger.info('Collect all lines and convert into points using custom method')
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
