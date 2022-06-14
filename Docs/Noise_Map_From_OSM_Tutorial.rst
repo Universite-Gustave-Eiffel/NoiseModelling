@@ -35,7 +35,7 @@ Download OSM data
 In the email you will receive from BBBike, use the link to download your data. You will get a file called ``planet_xx.xx,xx.xx.osm.pbf`` 
 
 .. warning::
-   To avoid potential upcoming errors rename the file to ``planet_xx.xx,xx.xx.osm.pbf`` to something simpler (e.g ``my_area.osm.pbf``.
+   To avoid potential upcoming errors rename the file ``planet_xx.xx,xx.xx.osm.pbf`` to something simpler (*e.g.* ``my_area.osm.pbf``).
 
 .. note::
    Developped by `Wolfram Schneider`_, BBBike is a free of charge service (for non-professional purpose). If you like Wolfram's job and wants to help him support the server costs, you are invited to `donate`_.
@@ -46,7 +46,7 @@ In the email you will receive from BBBike, use the link to download your data. Y
 Import to the database
 ------------------------------------------------
 
-To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM_Pbf`` WPS block.
+To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` WPS block.
 
 #. ``Target projection identifier``: enter the corresponding SRID *(see note below)* (*e.g.* ``2154`` for french Lambert 93)
 #. ``Path of the OSM PBF file``: enter the adress of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
@@ -82,10 +82,10 @@ With NoiseModelling GUI
 * A spatial layer can be visualized using ``Table_Visualization_Map`` WPS script.
 * A data table can be visualized using ``Table_Visualization_Data`` WPS script.
 
-With H2 database manager
---------------------------------
+With H2 or DBeaver client
+------------------------------------
 
-While NoiseModelling is open, if you are working with the default H2/H2GIS database, you can display your database in the H2 web interface. To do so, just follow the :doc:`NoiseModellingOnH2` page.
+While NoiseModelling is open, if you are working with the default H2/H2GIS database, you can display your database in both the H2 / H2GIS web interface and DBeaver. To do so, just follow the :doc:`NoiseModelling_db` page.
 
 Export tables into files
 --------------------------------

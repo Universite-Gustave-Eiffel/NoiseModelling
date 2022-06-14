@@ -14,8 +14,6 @@ Welcome on the **official NoiseModelling v4.0 User Guide**.
 NoiseModelling is a library capable of producing noise maps. 
 It can be freely used either for research and education, as well as by experts in a professional use.
 
-Since the release v4.0, this tool implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
-
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
 
@@ -33,10 +31,16 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 
 .. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
 
+What's new with the V4.0?
+---------------------------
 
-**Authors**:
+Since the release v4.0, this tool implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
 
-NoiseModelling project is leaded by acousticians from the *Mixt Research Unit in Environmental Acoustics* (`UMRAE`_ - Université Gustave Eiffel & Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
+
+Authors
+---------------------------
+
+NoiseModelling project is leaded by acousticians from the *Joint Research Unit in Environmental Acoustics* (`UMRAE`_, Université Gustave Eiffel - Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
 
 The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
 
@@ -50,7 +54,8 @@ NoiseModelling and its documentation are distributed for free under GPL v3 :doc:
 .. _Lab-STICC: https://labsticc.fr
 
 
-**Publications**: 
+Publications
+---------------------------
 
 NoiseModelling was initially developed in a research context, which has led to numerous scientific publications. For more information, have a look to ":doc:`Scientific_production`" page. 
 To quote this tool, please use the bibliographic reference below:
@@ -62,7 +67,8 @@ To quote this tool, please use the bibliographic reference below:
 .. _10.3390/ijgi8030130: https://www.mdpi.com/2220-9964/8/3/130
 
 
-**Fundings:**
+Fundings
+---------------------------
 
 *Research projects:*
 
@@ -107,16 +113,16 @@ To quote this tool, please use the bibliographic reference below:
     :maxdepth: 2
     :caption: NoiseModelling presentation
     
-    Requirements
     Architecture
     Numerical_Model
     Validation
     Scientific_production
-
+    
 .. toctree::
     :maxdepth: 2
     :caption: Tutorials
 
+    Requirements
     Get_Started_GUI
     Noise_Map_From_OSM_Tutorial
     Matsim_Tutorial
@@ -135,9 +141,8 @@ To quote this tool, please use the bibliographic reference below:
     :caption: For Advanced Users
 
     Own_Wps
-    NoiseModellingOnH2
+    NoiseModelling_db
     NoiseModellingOnPostGIS
-    dBeaver
 
 .. toctree::
     :maxdepth: 2
@@ -151,6 +156,7 @@ To quote this tool, please use the bibliographic reference below:
 
     Support
     License
+    Glossary
 
 Indices and tables
 ==================
