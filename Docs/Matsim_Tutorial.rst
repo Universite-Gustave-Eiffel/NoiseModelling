@@ -40,7 +40,7 @@ Step 1 : Import Buildings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first thing we're going to do is to import buildings.
-We use the ``Osm_Pbf_to_Buildings`` WPS block to do that. Simply put the ``nantes_ile.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
+We use the ``Import_OSM`` WPS block to do that. Simply put the ``nantes_ile.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
 
 .. _2154: https://epsg.io/2154
 
