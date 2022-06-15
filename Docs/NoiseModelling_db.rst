@@ -116,15 +116,19 @@ Connect DBeaver to your database
 
 #. Run DBeaver
 #. Add a new connection
-#. If you use a H2GIS type databse, please select ``H2GIS embedded``
+#. If you use a H2GIS type databse, please select ``H2GIS embedded`` *(use the search engine to filter)*
 #. Point the database path by clicking on ``Browse ...``. By default the database is placed in the ``NoiseModelling/data_dir`` directory and is named ``h2gisdb.mv.db``.
 #. In the ``Path`` text area, remove ``.mv.db`` at the end of the address
 #. If you want to open the database while NoiseModelling is running, add ``;AUTO_SERVER=TRUE`` at the end of the path (you should have something like this ``/home/nm_user/NoiseModelling/NoiseModelling_4.0/data_dir/h2gisdb;AUTO_SERVER=TRUE``)
 #. Click on ``Terminate`` to open your dabatase!
 
+.. figure:: images/NoiseModelling_db/dbeaver_new_connection.png
+    :align: center
+    :width: 70%
+
 
 .. warning ::
-    Dependending on the DBeaver version, the interface may ask you to ``Save`` instead of ``Opening`` the existing db. Once you click on ``Save``, a panel will warns you that ``h2gisdb.mv.db`` already exists and will ask you if you want to ``Cancel`` or ``Replace`` : click on ``Replace``.
+    If you are using a version of DBeaver prior to 22.0.4, the interface may ask you to ``Save`` instead of ``Opening`` the existing db. Once you click on ``Save``, a panel will warns you that ``h2gisdb.mv.db`` already exists and will ask you if you want to ``Cancel`` or ``Replace`` : click on ``Replace``.
 
 Now you can use the full potential of DBeaver and the H2GIS database. You can explore, display and manage your database.
 
