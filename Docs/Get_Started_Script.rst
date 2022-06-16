@@ -13,7 +13,9 @@ To illustrate, users are invited to reproduce the tutorial ":doc:`Get_Started_GU
 
 .. note::
     This tutorial is mainly dedicated to advanced users.
-
+    
+.. warning::
+    The URL is here adapted to Linux or Mac users. Windows user may adapt the address by replacing ``/`` by ``\`` and the drive name.
 
 Requirements: 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
