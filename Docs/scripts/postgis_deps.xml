@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <properties>
         <h2gis-version>2.1.0-SNAPSHOT<</h2gis-version>
-        <noisemodelling-version>4.0.0-SNAPSHOT</noisemodelling-version>
+        <noisemodelling-version>4.0.0</noisemodelling-version>
     </properties>
     <dependencies>
         <dependency>

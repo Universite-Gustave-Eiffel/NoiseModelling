@@ -24,9 +24,9 @@ copyright = u'2022, UMRAE - Lab-STICC'
 author = u'Aumond P., Fortin N., Le Bescond V., Petit G.'
 
 # The short X.Y version
-version = u''
+version = u'4.0'
 # The full version, including alpha/beta/rc tags
-release = u'3.3'
+release = u'4.0.0'
 
 
 # -- General configuration ---------------------------------------------------
