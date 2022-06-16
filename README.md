@@ -3,6 +3,8 @@
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
 [![GitHub release](https://img.shields.io/github/release/Ifsttar/NoiseModelling)](https://github.com/Ifsttar/NoiseModelling/releases/)
 
+![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
+
 NoiseModelling
 ======
 
