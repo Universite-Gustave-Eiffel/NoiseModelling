@@ -1,19 +1,23 @@
 Use NoiseModelling with a PostGIS database
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Introduction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NoiseModelling is distributed with the GeoServer (http://geoserver.org/) application. This application has been
-preconfigured to use H2GIS as the default database.
+NoiseModelling is distributed with `GeoServer`_. This application has been preconfigured to use `H2GIS`_ as the default database.
 
 H2GIS does not need to be configured or installed on the system and is therefore perfectly suitable as a default database.
 
-However, this database is less efficient than the Postgre/PostGIS database, which has a larger community of contributors/users.
+However, you may want to connect NoiseModelling to a `PostgreSQL`_/`PostGIS`_ database (this option may be interesting especially if you are using huge datasets (*e.g* on large area)).
 
-NoiseModelling is written with the idea of maintaining H2GIS/PostGIS compatibility.
+That is why NoiseModelling has been written with the idea of maintaining the H2GIS/PostGIS compatibility.
 
 This tutorial will not cover the steps for installing and configuring a PostGIS database.
+
+.. _Geoserver: http://geoserver.org/
+.. _H2GIS : http://h2gis.org/
+.. _PostgreSQL: https://www.postgresql.org/
+.. _PostGIS: https://postgis.net/
 
 
 Connect with Java
@@ -26,7 +30,9 @@ First you have to add some libraries. We will use PostgreSQL/PostGIS wrapper ava
    :language: xml
    :linenos:
 
-The new dependency here is postgis-jts-osgi. It contains some code to convert PostGIS geometries objects into/from JTS objects.
+The new dependency here is ``postgis-jts-osgi``. It contains some code to convert PostGIS geometries objects into/from `JTS`_ objects.
+
+.. _JTS: https://github.com/locationtech/jts
 
 In your code you have to import the PostGIS wrapper class and some utility class:
 

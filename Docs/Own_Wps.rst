@@ -4,14 +4,16 @@ Create your own WPS block
 Presentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The OGC Web Processing Service (WPS) Interface Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services as a web service.
+The OGC Web Processing Service (`WPS`_) Standard provides rules for standardizing inputs and outputs (requests and responses) for invoking geospatial processing services as a web service.
 
-WPS scripts for GeoServer are written in groovy language. They are located in the Geoserver\\data_dir\\scripts\\wps directory.
+.. _WPS : https://www.ogc.org/standards/wps
 
-To help you build your WPS block, you will find a template in the Geoserver\\data_dir\\scripts\\template directory
+WPS scripts for NoiseModelling are written in Groovy language. They are located in the ``NoiseModelling/data_dir/scripts/wps`` directory.
+
+To help you build your WPS script, you will find a template in the ``NoiseModelling/data_dir/scripts/template`` directory
 
 .. note::
-    Don't be shy, if you think your block can be useful to the community, you can redistribute it using github or by sending it directly to us.
+    Don't be shy, if you think your script can be useful to the community, you can redistribute it using github or by sending it directly to us.
 
 .. tip::
     The best way to make your own WPS is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.
@@ -19,7 +21,7 @@ To help you build your WPS block, you will find a template in the Geoserver\\dat
 General Structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1.Import used libraries
+1. Import used libraries
 -------------------------
 
 ::
@@ -27,9 +29,7 @@ General Structure
     import geoserver.GeoServer
     import geoserver.catalog.Store
 
-
-
-2.WPS Script meta data
+2. WPS Script meta data
 -------------------------
 
 ::
@@ -37,7 +37,7 @@ General Structure
     title = '....'
     description = '.....'
 
-3.WPS Script input & output
+3. WPS Script input & output
 -----------------------------------
 
 ::
@@ -51,7 +51,7 @@ General Structure
         ouputparameter: [name: '...', title: '...', type: String.class]
     ]
 
-4.Set connection method
+4. Set connection method
 -----------------------------------
 
 ::
@@ -62,9 +62,7 @@ General Structure
         return jdbcDataStore.getDataSource().getConnection()
     }
 
-
-
-5.Set main method to execute 
+5. Set main method to execute 
 -----------------------------------
 
 ::
@@ -82,7 +80,3 @@ General Structure
         // print to Console windows
         return [result : 'Ok ! ']
     }
-
-
-    
-

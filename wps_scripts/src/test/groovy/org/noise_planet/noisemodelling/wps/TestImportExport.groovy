@@ -20,8 +20,7 @@ import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Map
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_Folder
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_BBBike
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_Pbf
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
@@ -154,23 +153,9 @@ class TestImportExport extends JdbcTestCase {
     }
 
     @Test
-    void testImportOSMBBBike() {
-
-
-        new Import_OSM_BBBike().exec(connection,
-                ["importFolder": TestImportExport.class.getResource("BBBike/").getPath(),
-                 "inputSRID"   : 2154])
-
-        String res = new Display_Database().exec(connection, [])
-
-        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
-
-    }
-
-    @Test
     void testImportOSMPBF() {
 
-        new Import_OSM_Pbf().exec(connection, [
+        new Import_OSM().exec(connection, [
                 "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
                 "targetSRID"    : 2154,
                 "ignoreGround"  : false,

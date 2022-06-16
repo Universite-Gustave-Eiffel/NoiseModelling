@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = u'NoiseModelling'
-copyright = u'2019, Ifsttar'
-author = u'Aumond P., Fortin N., Le Bescond V.'
+copyright = u'2022, UMRAE - Lab-STICC'
+author = u'Aumond P., Fortin N., Le Bescond V., Petit G.'
 
 # The short X.Y version
 version = u''
@@ -144,7 +144,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'NoiseModelling.tex', u'NoiseModelling Documentation',
-     u'Aumond P., Fortin N., Le Bescond V.', 'manual'),
+     u'Aumond P., Fortin N., Le Bescond V., Petit G.', 'manual'),
 ]
 
 
