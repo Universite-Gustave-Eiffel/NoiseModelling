@@ -39,8 +39,7 @@ Publications
 
 NoiseModelling was initially developed in a research context, which has led to numerous scientific publications. For more information, have a look to [Scientific_production](https://noisemodelling.readthedocs.io/en/v4.0.0/Scientific_production.html) page. 
 
-To quote this tool, please use the bibliographic reference below:
-Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. *NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps*. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. - [10.3390/ijgi8030130](https://www.mdpi.com/2220-9964/8/3/130)
+To quote this tool, please use the following bibliographic reference: Erwan Bocher, Gwenaël Guillaume, Judicaël Picaut, Gwendall Petit, Nicolas Fortin. *NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps*. ISPRS International Journal of Geo-Information, MDPI, 2019, 8 (3), pp.130. - [10.3390/ijgi8030130](https://www.mdpi.com/2220-9964/8/3/130)
 
 Fundings
 ---------------------------
