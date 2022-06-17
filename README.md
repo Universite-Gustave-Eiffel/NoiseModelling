@@ -14,12 +14,15 @@ It can be freely used either for research and education, as well as by experts i
 A general overview of the model (v3.4.5 - September 2020) can be found in [this video](https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s).
 
 * for **more information** on NoiseModelling, [visit the offical NoiseModelling website](https://noise-planet.org/noisemodelling.html)
-* to **contribute to NoiseModelling** source code, follow the [Get_Started_Dev](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
+* to **contribute to NoiseModelling** source code, follow the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
 * to **contact the support / development team**, 
     - open an issue : https://github.com/Ifsttar/NoiseModelling/issues or a write a message : https://github.com/Ifsttar/NoiseModelling/discussions *(we prefer these two options)*
-    - send us an email at contact@noise-planet.org  
+    - send us an email at ``contact@noise-planet.org``
 
-The **documentation** is available [here](https://noisemodelling.readthedocs.io/en/latest/).
+Documentation
+---------------------------
+
+An online **documentation** is available [here](https://noisemodelling.readthedocs.io/en/latest/).
 
 Authors
 ---------------------------
@@ -32,7 +35,6 @@ Licence
 ---------------------------
 
 NoiseModelling and its documentation are distributed for free under [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html). 
-
 
 Publications
 ---------------------------
