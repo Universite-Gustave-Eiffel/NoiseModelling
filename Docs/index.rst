@@ -6,7 +6,7 @@
 NoiseModelling v4.0 User Guide
 ==========================================
 
-.. figure:: images/Logo_noisemodelling.png
+.. figure:: images/home/NoiseModelling_banner.png
    :align: center
 
 Welcome on the **official NoiseModelling v4.0 User Guide**.
@@ -26,15 +26,24 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 .. _CNOSSOS-EU : https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
 
 .. _almost compliant: Numerical_Model.html
-
 .. _this video: https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
-
 .. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
 
 What's new with the V4.0?
 ---------------------------
 
-Since the release v4.0, this tool implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation.
+Since the release v4.0, NoiseModelling implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`" and ":doc:`Validation`" pages for more information).
+
+Performance optimizations:
+
+* `H2`_ and `H2GIS`_ versions have been upgraded (respectively to v2.0.202 and v2.0.0)
+* Triangulation library `Poly2Tri`_ has been replaced by `Tinfoor`_
+* Triangulation for accelerate propagation is not used anymore (only used in DEM intersections test)
+
+.. _H2 : https://www.h2database.com/
+.. _H2GIS : https://www.h2gis.org/
+.. _Poly2Tri : https://github.com/jhasse/poly2tri
+.. _Tinfoor : https://github.com/gwlucastrig/Tinfour
 
 
 Authors
@@ -44,7 +53,9 @@ NoiseModelling project is leaded by acousticians from the *Joint Research Unit i
 
 The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
 
-**Licence**:
+
+Licence
+---------------------------
 
 NoiseModelling and its documentation are distributed for free under GPL v3 :doc:`License`. 
 

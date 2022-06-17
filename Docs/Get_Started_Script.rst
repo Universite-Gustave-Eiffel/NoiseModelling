@@ -1,9 +1,17 @@
 Pilot NoiseModelling with scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we described the different way to pilot NoiseModelling without GUI and Geoserver.
+In this tutorial, we describe the different ways to pilot NoiseModelling without GUI and Geoserver.
 
-NoiseModelling can be executed in 3 different maners: 
+To do so, we will use a dedicated packaging of NoiseModelling, called ``Script Runner`` *(and which does not include the GUI and Geoserver)*.
+
+#. Go on the NoiseModelling v4.0 `release page`_
+#. Download and unzip the `NoiseModelling_4.0.0_wps_scripts`_ file
+
+.. _release page : https://github.com/Ifsttar/NoiseModelling/releases/tag/v4.0.0
+.. _NoiseModelling_4.0.0_wps_scripts : https://github.com/Ifsttar/NoiseModelling/releases/download/v4.0.0/NoiseModelling_4.0.0_wps_scripts.zip
+
+From that point, NoiseModelling can be executed in 3 different maners: 
 
 #. with simple command lines
 #. with Bash script
