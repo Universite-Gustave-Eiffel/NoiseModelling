@@ -22,7 +22,7 @@ A general overview of the model (v3.4.5 - September 2020) can be found in [this 
 Documentation
 ---------------------------
 
-An online **documentation** is available [here](https://noisemodelling.readthedocs.io/en/latest/).
+An online documentation is available [here](https://noisemodelling.readthedocs.io/en/latest/).
 
 Authors
 ---------------------------
