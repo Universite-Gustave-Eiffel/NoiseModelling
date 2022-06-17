@@ -28,7 +28,8 @@ NoiseModelling project is leaded by acousticians from the *Joint Research Unit i
 
 The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
 
-**Licence**:
+Licence
+---------------------------
 
 NoiseModelling and its documentation are distributed for free under [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html). 
 
