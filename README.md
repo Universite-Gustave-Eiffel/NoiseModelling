@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
 [![GitHub release](https://img.shields.io/github/release/Ifsttar/NoiseModelling)](https://github.com/Ifsttar/NoiseModelling/releases/)
 
-![alt tag](http://noise-planet.org/assets/img/logos/Logo_noisemodelling.png)
+<img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="70%">
 
 NoiseModelling
 ======
@@ -18,6 +18,12 @@ A general overview of the model (v3.4.5 - September 2020) can be found in [this 
 * to **contact the support / development team**, 
     - open an issue : https://github.com/Ifsttar/NoiseModelling/issues or a write a message : https://github.com/Ifsttar/NoiseModelling/discussions *(we prefer these two options)*
     - send us an email at ``contact@noise-planet.org``
+
+Stable release
+---------------------------
+
+The current stable version is v4.0.0 (see [latest release](https://github.com/Ifsttar/NoiseModelling/releases/latest) page)
+
 
 Documentation
 ---------------------------
@@ -47,14 +53,14 @@ Fundings
 ---------------------------
 
 *Research projects:*
-- ANR Eval-PDU (ANR-08-VILL-0005) 2008-2011
-- ANR Veg-DUD (ANR-09-VILL-0007) 2009-2014
-- ANR CENSE (ANR-16-CE22-0012) 2017-2021
-- Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
-- PlaMADE 2020-2022
+- ANR [Eval-PDU](https://anr.fr/Projet-ANR-08-VILL-0005) (ANR-08-VILL-0005) 2008-2011
+- ANR [Veg-DUD](https://anr.fr/Projet-ANR-09-VILL-0007) (ANR-09-VILL-0007) 2009-2014
+- ANR [CENSE](https://anr.fr/Projet-ANR-16-CE22-0012) (ANR-16-CE22-0012) 2017-2021
+- [Nature4cities](https://www.nature4cities.eu/) (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
+- [PlaMADE](https://www.cerema.fr/fr/projets/plamade-plate-forme-mutualisee-aide-au-diagnostic) 2020-2022
 
 *Institutional (public) fundings:*
-- Université Gustave Eiffel (formerly Ifsttar, formerly LCPC), CNRS, Cerema, Université Bretagne Sud, Ecole Centrale de Nantes
+- [Université Gustave Eiffel](https://www.univ-gustave-eiffel.fr/) (formerly Ifsttar, formerly LCPC), [CNRS](https://www.cnrs.fr), [Cerema](https://www.cerema.fr/), [Université Bretagne Sud](https://www.univ-ubs.fr/), [Ecole Centrale de Nantes](https://www.ec-nantes.fr/)
 
 *Private fundings:*
 - Airbus Urban Mobility
