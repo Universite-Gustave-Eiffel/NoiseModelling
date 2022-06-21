@@ -38,7 +38,7 @@ These libraries may be used independently of each other. Note that the ``noisemo
 Thanks to the ``noisemodelling-jdbc`` library, NoiseModelling can access and communicate with databases. This system is quite adapted to store, manage and process (spatial) data. Here, the user has the choice between to database (free, open-source and powerful) couples:
 
 * `H2`_ / `H2GIS`_, which is configured and embeded by default. In this case, the user has nothing to do.
-* `PostGreSQL`_ / `PostGIS`_. In this case, the user has to configure the connexion.
+* `PostGreSQL`_ / `PostGIS`_. In this case, the user has to configure the connexion (read ":doc:`NoiseModellingOnPostGIS`" page for more information).
 
 In both cases, database can be local or remote.
 
