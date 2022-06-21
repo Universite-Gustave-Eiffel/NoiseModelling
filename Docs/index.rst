@@ -16,30 +16,30 @@ It can be freely used either for research and education, as well as by experts i
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
-
-* for **more information** on NoiseModelling, `visit the offical NoiseModelling website`_
+* for **more information** on NoiseModelling, visit the `offical NoiseModelling website`_
 * to **contribute to NoiseModelling** source code, follow the ":doc:`Get_Started_Dev`" page
 * to **contact the support / development team**, 
-    - open an issue : https://github.com/Ifsttar/NoiseModelling/issues or a write a message : https://github.com/Ifsttar/NoiseModelling/discussions *(we prefer these two options)*
+    - open an `issue`_ or a write a `message`_ *(we prefer these two options)*
     - send us an email at contact@noise-planet.org  
 
-.. _CNOSSOS-EU : https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
-
-.. _almost compliant: Numerical_Model.html
-.. _this video: https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
-.. _visit the offical NoiseModelling website: http://noise-planet.org/noisemodelling.html
+.. _issue : https://github.com/Ifsttar/NoiseModelling/issues
+.. _message : https://github.com/Ifsttar/NoiseModelling/discussions
+.. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
+.. _offical NoiseModelling website : http://noise-planet.org/noisemodelling.html
 
 What's new with the V4.0?
 ---------------------------
 
 Since the release v4.0, NoiseModelling implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`" and ":doc:`Validation`" pages for more information).
 
-Performance optimizations:
+Optimizations
+**************
 
 * `H2`_ and `H2GIS`_ versions have been upgraded (respectively to v2.0.202 and v2.0.0)
 * Triangulation library `Poly2Tri`_ has been replaced by `Tinfoor`_
-* Triangulation for accelerate propagation is not used anymore (only used in DEM intersections test)
+* Triangulation to accelerate the propagation is not used anymore (only used in DEM intersections test)
 
+.. _CNOSSOS-EU : https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
 .. _H2 : https://www.h2database.com/
 .. _H2GIS : https://www.h2gis.org/
 .. _Poly2Tri : https://github.com/jhasse/poly2tri
@@ -49,7 +49,6 @@ Packaging
 **************
 
 On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
-
 
 * ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
 * ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
@@ -64,16 +63,13 @@ NoiseModelling project is leaded by acousticians from the *Joint Research Unit i
 
 The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
 
+.. _UMRAE: https://www.umrae.fr/
+.. _Lab-STICC: https://labsticc.fr
 
 Licence
 ---------------------------
 
 NoiseModelling and its documentation are distributed for free under GPL v3 :doc:`License`. 
-
-
-.. _UMRAE: https://www.umrae.fr/
-
-.. _Lab-STICC: https://labsticc.fr
 
 
 Publications
@@ -94,11 +90,11 @@ Fundings
 
 *Research projects:*
 
-- ANR Eval-PDU (ANR-08-VILL-0005) 2008-2011
-- ANR Veg-DUD (ANR-09-VILL-0007) 2009-2014
-- ANR CENSE (ANR-16-CE22-0012) 2017-2021
-- Nature4cities (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
-- PlaMADE 2020-2022
+- `ANR Eval-PDU`_ (ANR-08-VILL-0005) 2008-2011
+- `ANR VegDUD`_ (ANR-09-VILL-0007) 2009-2014
+- `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
+- `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
+- `PlaMADE`_ 2020-2022
 
 *Institutional (public) fundings:*
 
@@ -108,15 +104,16 @@ Fundings
 
 - Airbus Urban Mobility
 
+.. _ANR Eval-PDU : https://anr.fr/Projet-ANR-08-VILL-0005
+.. _ANR VegDUD : https://anr.fr/Projet-ANR-09-VILL-0007
+.. _ANR CENSE : https://anr.fr/Projet-ANR-16-CE22-0012
+.. _Nature4cities : https://www.nature4cities.eu/
+.. _PlaMADE : https://www.cerema.fr/fr/projets/plamade-plate-forme-mutualisee-aide-au-diagnostic
 
 .. _Université Gustave Eiffel: https://www.univ-gustave-eiffel.fr/
-
 .. _CNRS: https://www.cnrs.fr
-
 .. _Cerema: https://www.cerema.fr/
-
 .. _Université Bretagne Sud: https://www.univ-ubs.fr/
-
 .. _Ecole Centrale de Nantes: https://www.ec-nantes.fr/
 
 ------------
@@ -126,7 +123,6 @@ Fundings
     -  Some illustrations may refer to previous versions of NoiseModelling
     -  If you observe some mistakes or errors, please open an issue `here`_ or contact us at contact@noise-planet.org
     -  You are also welcome to contribute to the documentation (click on *"Edit on Github"* - top of the page)
-
 
 .. _here: https://github.com/Ifsttar/NoiseModelling/issues
 
