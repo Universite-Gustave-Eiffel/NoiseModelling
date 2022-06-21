@@ -15,15 +15,10 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 import org.h2gis.api.ProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
-
-
-
 
 def runScript(connection, scriptFile, arguments) {
     Logger logger = LoggerFactory.getLogger("script")
@@ -62,4 +57,3 @@ def exec(Connection connection, input) {
     runScript(connection, "noisemodelling/wps/Import_and_Export/Export_Table.groovy",
             ["exportPath":"LDAY_GEOM.shp", "tableToExport":"LDAY_GEOM"])
 }
-
