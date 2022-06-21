@@ -45,6 +45,17 @@ Performance optimizations:
 .. _Poly2Tri : https://github.com/jhasse/poly2tri
 .. _Tinfoor : https://github.com/gwlucastrig/Tinfour
 
+Packaging
+**************
+
+On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
+
+
+* ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
+* ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
+* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`"" page for more info)
+
+.. _release page : https://github.com/Ifsttar/NoiseModelling/releases/latest
 
 Authors
 ---------------------------
