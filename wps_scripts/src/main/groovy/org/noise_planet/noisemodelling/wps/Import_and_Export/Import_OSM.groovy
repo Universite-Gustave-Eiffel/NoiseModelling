@@ -11,6 +11,8 @@
  */
 /**
  * @Author Valentin Le Bescond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Author Gwendall Petit, Cerema
  */
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export;
@@ -37,7 +39,10 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 import org.openstreetmap.osmosis.core.task.v0_6.Sink;
- 
+
+import org.openstreetmap.osmosis.xml.v0_6.XmlReader;
+import org.openstreetmap.osmosis.xml.common.CompressionMethod;
+
 import crosby.binary.osmosis.OsmosisReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory;
@@ -45,18 +50,17 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection
 
 title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
-description = 'Convert PBF file (https://wiki.openstreetmap.org/wiki/PBF_Format) to input tables. ' +
-        '<br> The user can choose to create one to three output tables : <br>' +
-        '-  <b> BUILDINGS  </b> : a table containing the building. </br>' +
-        '-  <b> GROUND  </b> : surface/ground acoustic absorption table. </br>' +
-        '-  <b> ROADS  </b> : a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
+description = 'Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file to input tables.' +
+        '<br> The user can choose to create one to three output tables: <br>' +
+        '- <b> BUILDINGS </b>: a table containing the building. </br>' +
+        '- <b> GROUND </b>: surface/ground acoustic absorption table. </br>' +
+        '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
 
 inputs = [
         pathFile        : [
-                name       : 'Path of the OSM PBF file',
-
-                title      : 'Path of the OSM PBF file',
-                description: 'Path of the OSM PBF file including extension. ' +
+                name       : 'Path of the OSM file',
+                title      : 'Path of the OSM file',
+                description: 'Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).' +
                         '</br> For example : c:/home/area.osm.pbf',
                 type       : String.class
         ],
@@ -76,7 +80,7 @@ inputs = [
                 name       : 'Do not import Surface acoustic absorption',
                 title      : 'Do not import Surface acoustic absorption',
                 description: 'If the box is checked, the table GROUND will NOT be extracted.' +
-                        '</br>The table will contain : </br> ' +
+                        '</br>The table will contain: </br> ' +
                         '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
                         '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
                 min        : 0, max: 1,
@@ -165,7 +169,7 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Get Buildings from PBF OSM')
+    logger.info('Start : Get Buildings from OSM')
     logger.info("inputs {}", input)
 
     // -------------------
@@ -199,13 +203,22 @@ def exec(Connection connection, input) {
         removeTunnels = input['removeTunnels'] as Boolean
     }
 
-    InputStream inputStream = new FileInputStream(pathFile);
-    OsmosisReader reader = new OsmosisReader(inputStream);
+    // Read the OSM file, depending on its extension
+    def reader
+    if (pathFile.endsWith(".pbf")) {
+        InputStream inputStream = new FileInputStream(pathFile);
+        reader = new OsmosisReader(inputStream);
+    } else if (pathFile.endsWith(".osm")) {
+        reader = new XmlReader(new File(pathFile), true, CompressionMethod.None);
+    } else if (pathFile.endsWith(".osm.gz")) {
+        reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
+    }
+
     OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
     reader.setSink(handler);
     reader.run();
 
-    logger.info('PBF Read done')
+    logger.info('OSM Read done')
 
     if (!ignoreBuilding) {
         String tableName = "MAP_BUILDINGS_GEOM";
@@ -223,21 +236,21 @@ def exec(Connection connection, input) {
 
         sql.execute('''
             CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
-            -- list buildings that intersects with other buildings that have a greater area
-            drop table if exists tmp_relation_buildings_buildings;
-            create table tmp_relation_buildings_buildings as select s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;
+            -- List buildings that intersects with other buildings that have a greater area
+            DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
+            CREATE TABLE tmp_relation_buildings_buildings AS SELECT s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;
             
             -- Alter that small area buildings by removing shared area
-            drop table if exists tmp_buildings_truncated;
-            create table tmp_buildings_truncated as select PK_BUILDING, ST_DIFFERENCE(s1.the_geom,  ST_BUFFER(ST_Collect(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
+            DROP TABLE IF EXISTS tmp_buildings_truncated;
+            CREATE TABLE tmp_buildings_truncated AS SELECT PK_BUILDING, ST_DIFFERENCE(s1.the_geom, ST_BUFFER(ST_Collect(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
             
-            -- merge original buildings with altered buildings 
+            -- Merge original buildings with altered buildings 
             DROP TABLE IF EXISTS BUILDINGS;
-            create table BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real)  as select s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
+            CREATE TABLE BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real) AS SELECT s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
     
-            drop table if exists tmp_buildings_truncated;
-            drop table if exists tmp_relation_buildings_buildings;
-            drop table if exists MAP_BUILDINGS_GEOM;
+            DROP TABLE IF EXISTS tmp_buildings_truncated;
+            DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
+            DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
         ''');
 
         sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS BUILDING_GEOM_INDEX ON " + "BUILDINGS" + "(THE_GEOM)")
@@ -246,7 +259,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("create table ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("CREATE TABLE ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
@@ -264,18 +277,18 @@ def exec(Connection connection, input) {
                     'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
                     '?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
             sql.execute(query, [road.id, road.geom, road.type,
-                    road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
-                    road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
-                    Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
-                    Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]),
-                    'NL08'])
+                                road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
+                                road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
+                                Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
+                                Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]),
+                                'NL08'])
         }
         sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS ROADS_GEOM_INDEX ON " + "ROADS" + "(THE_GEOM)")
     }
 
     if (!ignoreGround) {
         sql.execute("DROP TABLE IF EXISTS GROUND")
-        sql.execute("create table GROUND (PK serial, ID_WAY int, THE_GEOM geometry, PRIORITY int, G double);")
+        sql.execute("CREATE TABLE GROUND (PK serial, ID_WAY int, THE_GEOM geometry, PRIORITY int, G double);")
 
         for (Ground ground : handler.grounds) {
             if (ground.priority == 0) {
@@ -305,14 +318,13 @@ def exec(Connection connection, input) {
     resultString += "grounds : " + handler.nb_grounds
     resultString += "<br>\n"
 
-    logger.info('End : Get Buildings from PBF OSM')
+    logger.info('End : Get Buildings from OSM')
     logger.info('Result : ' + resultString)
     return resultString
 }
 
-
 public class OsmHandler implements Sink {
- 
+
     public int nb_ways = 0;
     public int nb_nodes = 0;
     public int nb_relations = 0;
@@ -321,7 +333,7 @@ public class OsmHandler implements Sink {
     public int nb_grounds = 0;
 
     Random rand = new Random();
-    
+
     public Map<Long, Node> nodes = new HashMap<Long, Node>();
     public Map<Long, Way> ways = new HashMap<Long, Way>();
     public Map<Long, Relation> relations = new HashMap<Long, Relation>();
@@ -346,7 +358,7 @@ public class OsmHandler implements Sink {
     @Override
     public void initialize(Map<String, Object> arg0) {
     }
- 
+
     @Override
     public void process(EntityContainer entityContainer) {
         if (entityContainer instanceof NodeContainer) {
@@ -405,7 +417,7 @@ public class OsmHandler implements Sink {
             System.out.println("Unknown Entity!");
         }
     }
- 
+
     @Override
     public void complete() {
         for(Building building: buildings) {
@@ -426,7 +438,7 @@ public class OsmHandler implements Sink {
         int doPrint = 2
         for (int j = 0; j < grounds.size(); j++) {
             if (j >= doPrint) {
-                logger.info("cleaning GROUND geom : " + j + "/" + grounds.size())
+                logger.info("Cleaning GROUND geom : " + j + "/" + grounds.size())
                 doPrint *= 2
             }
             if (grounds[j].geom.isEmpty() || !grounds[j].geom.isValid()) {
@@ -457,7 +469,7 @@ public class OsmHandler implements Sink {
             }
         }
     }
- 
+
     @Override
     public void close() {
     }
@@ -922,5 +934,5 @@ public class Ground {
     void setGeom(Geometry geom) {
         this.geom = geom;
     }
-
 }
+

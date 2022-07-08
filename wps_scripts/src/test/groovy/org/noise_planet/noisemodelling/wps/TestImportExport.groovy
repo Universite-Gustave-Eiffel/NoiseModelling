@@ -170,4 +170,20 @@ class TestImportExport extends JdbcTestCase {
     }
 
 
+    @Test
+    void testImportOSMXML() {
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.gz").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+        String res = new Display_Database().exec(connection, [])
+
+        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
+
+    }
 }
