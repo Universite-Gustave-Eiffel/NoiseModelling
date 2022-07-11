@@ -259,17 +259,30 @@ def exec(Connection connection, input) {
 
     logger.info("Delaunay initialize")
     noiseMap.initialize(connection, new EmptyProgressVisitor())
-    noiseMap.setExceptionDumpFolder("data_dir/")
+
+    if(input['errorDumpFolder']) {
+        // Will write the input mesh in this folder in order to
+        // help debugging delaunay triangulation
+        noiseMap.setExceptionDumpFolder(input['errorDumpFolder'] as String)
+    }
+
     AtomicInteger pk = new AtomicInteger(0)
     ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
 
-    for (int i = 0; i < noiseMap.getGridDim(); i++) {
-        for (int j = 0; j < noiseMap.getGridDim(); j++) {
-            logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
-            noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
-            progressVisitorNM.endStep()
+    try {
+        for (int i = 0; i < noiseMap.getGridDim(); i++) {
+            for (int j = 0; j < noiseMap.getGridDim(); j++) {
+                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
+                noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
+                progressVisitorNM.endStep()
+            }
         }
+    } catch (LayerDelaunayError ex) {
+        logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
+                "input geometries for debugging purpose")
+        throw ex
     }
+
     logger.info("Create spatial index on "+receivers_table_name+" table")
     sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
 
