@@ -121,7 +121,6 @@ class TestImportExport extends JdbcTestCase {
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
         String res = new Import_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
-                 "inputSRID" : 2154,
                  "importExt" : "shp"])
 
         assertTrue(res.contains("ROADS2"))

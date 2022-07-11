@@ -157,18 +157,6 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
-    //Load GeneralTools.groovy
-    File generalTools = new File(new File("").absolutePath+"/data_dir/scripts/wpsTools/GeneralTools.groovy")
-
-    //if we are in dev, the path is not the same as for geoserver
-    if (new File("").absolutePath.substring(new File("").absolutePath.length() - 11) == 'wps_scripts') {
-        generalTools = new File(new File("").absolutePath+"/src/main/groovy/org/noise_planet/noisemodelling/wpsTools/GeneralTools.groovy")
-    }
-
-    // Get external tools
-    Class groovyClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(generalTools)
-    GroovyObject tools = (GroovyObject) groovyClass.newInstance()
-
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -409,17 +397,13 @@ def exec(Connection connection, input) {
     def qry = 'INSERT INTO L_PROBA(IT , IDRECEIVER,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
     k = 0
-    int currentVal = 0
     for (int it = 1; it < nIterations; it++) {
         // Iterate over attenuation matrix
         Map<Integer, double[]> soundLevels = new HashMap<>()
         Map<Integer, double[]> sourceLev = new HashMap<>()
 
-
         for (int i = 0; i < allLevels.size(); i++) {
-
             k++
-            currentVal = tools.invokeMethod("ProgressBar", [Math.round(10*i/(allLevels.size()*nIterations)).toInteger(),currentVal])
 
             // get attenuation matrix value
             double[] soundLevel = allLevels.get(i).value
