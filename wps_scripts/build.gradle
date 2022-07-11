@@ -128,6 +128,7 @@ dependencies {
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '0.48.3'
     implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
         exclude group: 'org.geotools'
     }

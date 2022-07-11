@@ -121,7 +121,6 @@ class TestImportExport extends JdbcTestCase {
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
         String res = new Import_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
-                 "inputSRID" : 2154,
                  "importExt" : "shp"])
 
         assertTrue(res.contains("ROADS2"))
@@ -170,4 +169,20 @@ class TestImportExport extends JdbcTestCase {
     }
 
 
+    @Test
+    void testImportOSMXML() {
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.gz").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+        String res = new Display_Database().exec(connection, [])
+
+        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
+
+    }
 }
