@@ -18,6 +18,11 @@ Prerequisites
 Step 1:  Get OSM data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+   OpenStreetMap data can be downloaded in various formats. The main ones are `.osm`, `.osm.gz` and `.osm.pbf` (`read more`_). For this example, we will use `.osm.pbf` file, which is a compressed version of `.osm`.
+
+.. _read more : https://wiki.openstreetmap.org/wiki/OSM_file_formats
+
 Download OSM data
 ------------------------------------------------
 
@@ -46,10 +51,10 @@ In the email you will receive from BBBike, use the link to download your data. Y
 Import to the database
 ------------------------------------------------
 
-To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` WPS block.
+To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` WPS block (note that this block also allows to load ``.osm`` or ``.osm.gz`` files).
 
 #. ``Target projection identifier``: enter the corresponding SRID *(see note below)* (*e.g.* ``2154`` for french Lambert 93)
-#. ``Path of the OSM PBF file``: enter the adress of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
+#. ``Path of the OSM file``: enter the adress of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
 #. If needeed, check the 4 other optionnal options
 #. When ready, click on the green ``Run Process`` button
 
