@@ -408,10 +408,10 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setComputeLEvening(false);
         ldenConfig.setComputeLNight(false);
         ldenConfig.setComputeLDEN(false);
-        ldenConfig.setExportRays(true);
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
-        factory.setKeepRays(true);
+
         factory.insertTrainDirectivity();
 
 
@@ -1196,7 +1196,7 @@ public class LDENPointNoiseMapFactoryTest {
                 kmlDocument.writeBuildings(builder);
             }
             if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty())  {
-                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+                kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
             }
 
             kmlDocument.writeFooter();

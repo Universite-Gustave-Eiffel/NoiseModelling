@@ -62,7 +62,10 @@ public class LDENConfig {
     }
 
     boolean computeLAEQOnly = false;
-    boolean exportRays = false;
+
+    public enum ExportRaysMethods {TO_RAYS_TABLE, TO_MEMORY, NONE}
+    ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
+
     boolean exportProfileInRays = false;
     boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     // Maximum result stack to be inserted in database
@@ -166,20 +169,16 @@ public class LDENConfig {
         this.computeLNight = computeLNight;
     }
 
-    /**
-     * Export rays in table
-     * @return True if exported, false (default) otherwise
-     */
-    public boolean isExportRays() {
-        return exportRays;
+    public ExportRaysMethods getExportRaysMethod() {
+        return exportRaysMethod;
     }
 
     /**
-     * Export rays in table (beware this could take a lot of storage space)
-     * @param exportRays True to export rays in table RAYS (by default)
+     * Export rays in table (beware this could take a lot of storage space) or keep on memory or do not keep
+     * @param exportRaysMethod
      */
-    public void setExportRays(boolean exportRays) {
-        this.exportRays = exportRays;
+    public void setExportRaysMethod(ExportRaysMethods exportRaysMethod) {
+        this.exportRaysMethod = exportRaysMethod;
     }
 
     /**
@@ -201,15 +200,11 @@ public class LDENConfig {
     }
 
     /**
-     * @param keepAbsorption If true store absorption values in rays
+     * @param keepAbsorption If true store absorption values in propagation path objects
      * @see #setKeepAbsorption(boolean)
      */
     public void setKeepAbsorption(boolean keepAbsorption) {
         this.keepAbsorption = keepAbsorption;
-        if(keepAbsorption) {
-            // as absorption values are stored in rays
-            this.exportRays = true;
-        }
     }
 
     /**

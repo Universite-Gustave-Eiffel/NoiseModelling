@@ -259,7 +259,7 @@ public class PropagationPath {
                 double ratio = Math.min(1, Math.max(0, (pointPath.coordinate.x - (cutPointDistance - distanceP0P1)) / distanceP0P1));
                 // interpolate coordinates
                 rayPoint = new LineSegment(p0, p1).pointAlong(ratio);
-                rayPoint.z = Vertex.interpolateZ(rayPoint, p0, p1);
+                rayPoint.setZ(pointPath.coordinate.y);
             }
             coordinates[i++] = new Coordinate(rayPoint);
         }

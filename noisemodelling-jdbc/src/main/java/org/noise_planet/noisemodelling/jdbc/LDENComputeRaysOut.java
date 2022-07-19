@@ -22,17 +22,19 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
     public PropagationProcessPathData dayPathData;
     public PropagationProcessPathData eveningPathData;
     public PropagationProcessPathData nightPathData;
+    public LDENConfig ldenConfig;
 
     public LDENComputeRaysOut(PropagationProcessPathData dayPathData, PropagationProcessPathData eveningPathData,
                               PropagationProcessPathData nightPathData, LDENPropagationProcessData inputData,
-                              LdenData ldenData) {
-        super(inputData.ldenConfig.exportRays, null, inputData);
+                              LdenData ldenData, LDENConfig ldenConfig) {
+        super(inputData.ldenConfig.exportRaysMethod != LDENConfig.ExportRaysMethods.NONE, null, inputData);
         this.keepAbsorption = inputData.ldenConfig.keepAbsorption;
         this.ldenData = ldenData;
         this.ldenPropagationProcessData = inputData;
         this.dayPathData = dayPathData;
         this.eveningPathData = eveningPathData;
         this.nightPathData = nightPathData;
+        this.ldenConfig = ldenConfig;
     }
 
     public LdenData getLdenData() {
@@ -116,19 +118,17 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
         @Override
         public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             ldenComputeRaysOut.rayCount.addAndGet(propagationPath.size());
-            if(ldenComputeRaysOut.keepRays) {
-                if(ldenComputeRaysOut.inputData != null && sourceId < ldenComputeRaysOut.inputData.sourcesPk.size() &&
-                        receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
-                    for(PropagationPath path : propagationPath) {
-                        // Copy path content in order to keep original ids for other method calls
-                        PropagationPath pathPk = new PropagationPath(path);
-                        pathPk.setIdReceiver(ldenComputeRaysOut.inputData.receiversPk.get((int)receiverId).intValue());
-                        pathPk.setIdSource(ldenComputeRaysOut.inputData.sourcesPk.get((int)sourceId).intValue());
-                        propagationPaths.add(pathPk);
-                    }
-                } else {
-                    propagationPaths.addAll(propagationPath);
+            if(ldenComputeRaysOut.inputData != null && sourceId < ldenComputeRaysOut.inputData.sourcesPk.size() &&
+                    receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
+                for(PropagationPath path : propagationPath) {
+                    // Copy path content in order to keep original ids for other method calls
+                    PropagationPath pathPk = new PropagationPath(path);
+                    pathPk.setIdReceiver(ldenComputeRaysOut.inputData.receiversPk.get((int)receiverId).intValue());
+                    pathPk.setIdSource(ldenComputeRaysOut.inputData.sourcesPk.get((int)sourceId).intValue());
+                    propagationPaths.add(pathPk);
                 }
+            } else {
+                propagationPaths.addAll(propagationPath);
             }
             double[] ldenLevels = lDENThreadRaysOut[0].addPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
             ldenLevels = PowerUtils.sumDbArray(ldenLevels, lDENThreadRaysOut[1].addPropagationPaths(sourceId, sourceLi,
@@ -193,9 +193,13 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
         @Override
         public void finalizeReceiver(final long receiverId) {
-            if(ldenComputeRaysOut.keepRays && !propagationPaths.isEmpty()) {
-                // Push propagation rays
-                pushInStack(ldenComputeRaysOut.ldenData.rays, propagationPaths);
+            if(!propagationPaths.isEmpty()) {
+                if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_RAYS_TABLE) {
+                    // Push propagation rays
+                    pushInStack(ldenComputeRaysOut.ldenData.rays, propagationPaths);
+                } else if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_MEMORY){
+                    ldenComputeRaysOut.propagationPaths.addAll(propagationPaths);
+                }
                 propagationPaths.clear();
             }
             long receiverPK = receiverId;

@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.jdbc.TriangleNoiseMap;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
@@ -46,6 +47,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Main {
+    public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50;
+
     public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
         // Init output logger
         Logger logger = LoggerFactory.getLogger(Main.class);
@@ -89,6 +92,7 @@ class Main {
         // Set primary key
         sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL");
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
+        sql.execute("DELETE FROM LW_ROADS WHERE PK != 102");
 
         // Import BUILDINGS
 
@@ -118,8 +122,8 @@ class Main {
         // Init NoiseModelling
         PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS", "RECEIVERS");
 
-        pointNoiseMap.setMaximumPropagationDistance(800.0);
-        pointNoiseMap.setSoundReflectionOrder(1);
+        pointNoiseMap.setMaximumPropagationDistance(100.0);
+        pointNoiseMap.setSoundReflectionOrder(0);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -135,10 +139,9 @@ class Main {
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
-
-        tableWriter.setKeepRays(false);
 
         pointNoiseMap.setPropagationProcessDataFactory(tableWriter);
         pointNoiseMap.setComputeRaysOutFactory(tableWriter);
@@ -146,6 +149,8 @@ class Main {
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+        pointNoiseMap.setGridDim(1);
 
         LocalDateTime now = LocalDateTime.now();
         ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
@@ -176,6 +181,18 @@ class Main {
                 // Export as a Google Earth 3d scene
                 if (out instanceof ComputeRaysOutAttenuation) {
                     ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
+                    // restrict the number of rays to export
+                    List<PropagationPath> propagationPaths = new ArrayList<>();
+                    for(PropagationPath p : ((ComputeRaysOutAttenuation)out).propagationPaths) {
+                        if(p.getPointList().size() > 3) {
+                            propagationPaths.add(p);
+                            if(propagationPaths.size() > MAX_OUTPUT_PROPAGATION_PATHS) {
+                                break;
+                            }
+                        }
+                    }
+                    ((ComputeRaysOutAttenuation)out).propagationPaths.clear();
+                    ((ComputeRaysOutAttenuation)out).propagationPaths.addAll(propagationPaths);
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }
@@ -221,7 +238,9 @@ class Main {
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
                 if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty()) {
-                    kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+                    String layerName = "S:"+result.getInputData().sourcesPk.get(0)+" R:" + result.getInputData().receiversPk.get(0);
+                    kmlDocument.writeProfile(layerName, builder.getProfile(result.getInputData().
+                            sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
                 }
             }
 

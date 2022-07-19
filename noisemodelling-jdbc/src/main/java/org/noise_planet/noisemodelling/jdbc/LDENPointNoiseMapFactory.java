@@ -55,6 +55,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     static final int BATCH_MAX_SIZE = 500;
     static final int WRITER_CACHE = 65536;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
+
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
@@ -161,20 +162,6 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     }
 
     /**
-     * @return Store propagation rays
-     */
-    public boolean isKeepRays() {
-        return ldenConfig.exportRays;
-    }
-
-    /**
-     * @param keepRays true to store propagation rays
-     */
-    public void setKeepRays(boolean keepRays) {
-        ldenConfig.setExportRays(keepRays);
-    }
-
-    /**
      * Start creating and filling database tables
      */
     public void start() {
@@ -236,7 +223,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
                                   PropagationProcessPathData pathDataEvening, PropagationProcessPathData pathDataNight) {
         return new LDENComputeRaysOut(pathDataDay, pathDataEvening, pathDataNight,
-                (LDENPropagationProcessData)threadData, ldenData);
+                (LDENPropagationProcessData)threadData, ldenData, ldenConfig);
     }
 
     private static class TableWriter implements Runnable {
@@ -419,7 +406,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         }
 
         public void init() throws SQLException, IOException {
-            if(ldenConfig.exportRays) {
+            if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_RAYS_TABLE) {
                 if(ldenConfig.dropResultsTable) {
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
                     processQuery(q);
