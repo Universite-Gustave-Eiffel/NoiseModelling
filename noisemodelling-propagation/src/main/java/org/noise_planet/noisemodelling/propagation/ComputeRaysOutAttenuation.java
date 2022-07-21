@@ -80,7 +80,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         this.genericMeteoData = pathData;
     }
 
-    public boolean keepRays = true;
+    public boolean keepRays;
     public boolean keepAbsorption = false;
     public AtomicLong rayCount = new AtomicLong();
     public AtomicLong nb_couple_receiver_src = new AtomicLong();

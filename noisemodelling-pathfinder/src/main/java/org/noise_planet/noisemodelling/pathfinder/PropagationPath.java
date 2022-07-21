@@ -36,8 +36,10 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 
 import java.io.ByteArrayOutputStream;
@@ -227,11 +229,39 @@ public class PropagationPath {
      * @return Propagation path as a geometry object
      */
     public LineString asGeom() {
+        // try to compute 3d ray geometry using two different list of points (one in 2D and the ground cut points in 3d)
         GeometryFactory geometryFactory = new GeometryFactory();
-        Coordinate[] coordinates = new Coordinate[cutPoints.size()];
+        Coordinate[] coordinates = new Coordinate[pointList.size()];
         int i=0;
-        for(ProfileBuilder.CutPoint cutPoint : cutPoints) {
-            coordinates[i++] = new Coordinate(cutPoint.getCoordinate());
+        double cutPointDistance = 0;
+        int cutPointCursor = 0;
+        if(cutPoints.isEmpty()) {
+            return geometryFactory.createLineString();
+        }
+        for(PointPath pointPath : pointList) {
+            // report x,y from cut point
+            while(cutPointCursor < cutPoints.size() - 1) {
+                if(pointPath.coordinate.x > cutPointDistance) {
+                    cutPointCursor++;
+                    cutPointDistance += cutPoints.get(cutPointCursor-1).getCoordinate()
+                            .distance(cutPoints.get(cutPointCursor).getCoordinate());
+                } else {
+                    break;
+                }
+            }
+            Coordinate rayPoint = new Coordinate(cutPoints.get(cutPointCursor).getCoordinate());
+            rayPoint.setZ(pointPath.coordinate.y);
+            if(cutPointCursor > 0) {
+                final Coordinate p0 = cutPoints.get(cutPointCursor - 1).getCoordinate();
+                final Coordinate p1 = cutPoints.get(cutPointCursor).getCoordinate();
+                double distanceP0P1 = p1.distance(p0);
+                // compute ratio of pointPath position between p0 and p1
+                double ratio = Math.min(1, Math.max(0, (pointPath.coordinate.x - (cutPointDistance - distanceP0P1)) / distanceP0P1));
+                // interpolate coordinates
+                rayPoint = new LineSegment(p0, p1).pointAlong(ratio);
+                rayPoint.setZ(pointPath.coordinate.y);
+            }
+            coordinates[i++] = new Coordinate(rayPoint);
         }
         return geometryFactory.createLineString(coordinates);
     }

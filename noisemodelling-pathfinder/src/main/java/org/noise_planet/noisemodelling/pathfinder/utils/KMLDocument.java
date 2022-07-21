@@ -272,19 +272,19 @@ public class KMLDocument {
         return this;
     }
 
-    public KMLDocument writeProfile(ProfileBuilder.CutProfile profile) throws XMLStreamException {
+    public KMLDocument writeProfile(String layerName, ProfileBuilder.CutProfile profile) throws XMLStreamException {
         xmlOut.writeStartElement("Schema");
-        xmlOut.writeAttribute("name", "rays");
-        xmlOut.writeAttribute("id", "rays");
+        xmlOut.writeAttribute("name", "profile");
+        xmlOut.writeAttribute("id", "profile");
         xmlOut.writeEndElement();//Write schema
         xmlOut.writeStartElement("Folder");
         xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters("rays");
+        xmlOut.writeCharacters("profile");
         xmlOut.writeEndElement();//Name
 
         xmlOut.writeStartElement("Placemark");
         xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters(String.format("R:%d S:%d", 0, 0));
+        xmlOut.writeCharacters(layerName);
         xmlOut.writeEndElement();//Name
 
         Coordinate[] coordinates = new Coordinate[profile.getCutPoints().size()];
@@ -321,12 +321,7 @@ public class KMLDocument {
             xmlOut.writeStartElement("name");
             xmlOut.writeCharacters(String.format("R:%d S:%d", line.getIdReceiver(), line.getIdSource()));
             xmlOut.writeEndElement();//Name
-            Coordinate[] coordinates = new Coordinate[line.getPointList().size()];
-            int i=0;
-            for(PointPath pointPath : line.getPointList()) {
-                coordinates[i++] = copyCoord(pointPath.coordinate);
-            }
-            LineString lineString = geometryFactory.createLineString(coordinates);
+            LineString lineString = line.asGeom();
             // Apply CRS transform
             doTransform(lineString);
             //Write geometry
