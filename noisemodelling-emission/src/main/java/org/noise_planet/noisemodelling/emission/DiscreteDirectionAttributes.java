@@ -14,6 +14,10 @@ package org.noise_planet.noisemodelling.emission;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Describe Attenuation directivity over a sphere
+ * Values between specified angles are interpolated following a method (linear by default)
+ */
 public class DiscreteDirectionAttributes implements DirectionAttributes {
     int interpolationMethod = 1;
     int directionIdentifier;

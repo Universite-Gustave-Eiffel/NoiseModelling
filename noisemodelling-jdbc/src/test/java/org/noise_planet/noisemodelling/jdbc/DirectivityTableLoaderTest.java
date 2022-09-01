@@ -32,6 +32,10 @@ public class DirectivityTableLoaderTest {
         }
     }
 
+    /**
+     * Create discrete directivity table from a formulae directivity class. Then load it using library
+     * @throws SQLException
+     */
     @Test
     public void testFetch() throws SQLException {
         double[] freqTest = new double[] {63, 125, 250, 500, 1000, 2000, 4000, 8000};
@@ -59,6 +63,11 @@ public class DirectivityTableLoaderTest {
                 }
             }
         }
+
+        try(Statement st = connection.createStatement()) {
+            st.execute("CALL CSVWrite('/home/nicolas/github/NoiseModelling/target/directivity_demo.csv', 'SELECT * FROM DIRTEST');");
+        }
+
 
         // Data is inserted now fetch it from the database
         Map<Integer, DiscreteDirectionAttributes> directivities = DirectivityTableLoader.loadTable(connection, "DIRTEST", 1);
