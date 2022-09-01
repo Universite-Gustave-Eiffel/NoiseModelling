@@ -64,11 +64,6 @@ public class DirectivityTableLoaderTest {
             }
         }
 
-        try(Statement st = connection.createStatement()) {
-            st.execute("CALL CSVWrite('/home/nicolas/github/NoiseModelling/target/directivity_demo.csv', 'SELECT * FROM DIRTEST');");
-        }
-
-
         // Data is inserted now fetch it from the database
         Map<Integer, DiscreteDirectionAttributes> directivities = DirectivityTableLoader.loadTable(connection, "DIRTEST", 1);
 
