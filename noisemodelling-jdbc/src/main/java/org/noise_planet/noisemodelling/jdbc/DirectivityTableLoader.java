@@ -79,7 +79,7 @@ public class DirectivityTableLoader {
                     float phi = (float)Math.toRadians(rs.getFloat(3));
                     double[] att = new double[frequencies.length];
                     for(int freqColumn = 0; freqColumn < frequencies.length; freqColumn++) {
-                        att[0] = rs.getDouble(freqColumn + 4);
+                        att[freqColumn] = rs.getDouble(freqColumn + 4);
                     }
                     DiscreteDirectionAttributes.DirectivityRecord r = new DiscreteDirectionAttributes.DirectivityRecord(theta, phi, att);
                     rows.add(r);

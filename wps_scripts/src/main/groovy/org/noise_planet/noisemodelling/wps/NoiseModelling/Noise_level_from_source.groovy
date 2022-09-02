@@ -515,6 +515,7 @@ def exec(Connection connection, input) {
     } else {
         // Load table into specialized class
         ldenProcessing.directionAttributes = DirectivityTableLoader.loadTable(connection, tableSourceDirectivity, 1)
+        logger.info(String.format(Locale.ROOT, "Loaded %d directivity from %s table", ldenProcessing.directionAttributes.size(), tableSourceDirectivity))
     }
     pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)

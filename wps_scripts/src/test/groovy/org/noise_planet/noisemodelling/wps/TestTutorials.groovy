@@ -98,4 +98,15 @@ class TestTutorials extends JdbcTestCase {
 
     }
 
+    @Test
+    public void testTutorialPointSourceDirectivity() {
+        Sql sql = new Sql(connection)
+
+        // Check empty database
+        Object res = new Display_Database().exec(connection, [])
+        assertEquals("", res)
+
+
+
+    }
 }
