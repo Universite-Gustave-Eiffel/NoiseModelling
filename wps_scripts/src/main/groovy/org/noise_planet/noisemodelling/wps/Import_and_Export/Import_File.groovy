@@ -126,6 +126,10 @@ def exec(Connection connection, input) {
 
     // Get the path of the file to import
     String pathFile = input["pathFile"] as String
+    if (!input["pathFile"]) {
+        resultString = "pathFile argument has not been provided."
+        throw new Exception('ERROR : ' + resultString)
+    }
 
     def file = new File(pathFile)
     if (!file.exists()) {
