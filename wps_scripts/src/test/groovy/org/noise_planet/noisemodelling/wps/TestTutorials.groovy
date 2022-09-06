@@ -23,6 +23,7 @@ import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
@@ -130,6 +131,10 @@ class TestTutorials extends JdbcTestCase {
                 pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/Directivity.csv").getPath(),
                 tableName : "Directivity"])
 
+        new Import_Asc_File().exec(connection, [
+                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/zone_dem.asc").getPath(),
+                inputSRID : 2154])
+
 
         res = new Display_Database().exec(connection, [])
 
@@ -137,6 +142,7 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("DIRECTIVITY"))
         assertTrue(res.contains("GROUND"))
         assertTrue(res.contains("SOURCES"))
+        assertTrue(res.contains("DEM"))
 
         // generate a grid of receivers using the buildings as envelope
         logger.info(new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
@@ -152,9 +158,10 @@ class TestTutorials extends JdbcTestCase {
                                                         confMaxSrcDist : 800,
                                                         confSkipLden: true,
                                                         confSkipLnight: true,
-                                                        confSkipLevening: true])
+                                                        confSkipLevening: true,
+                                                        tableDEM: "DEM"])
 
-        new Create_Isosurface().exec(connection, [resultTable: "LDAY_GEOM"])
+        new Create_Isosurface().exec(connection, [resultTable: "LDAY_GEOM", smoothCoefficient : 0.4])
 
         new Export_Table().exec(connection, [exportPath:"target/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
 
