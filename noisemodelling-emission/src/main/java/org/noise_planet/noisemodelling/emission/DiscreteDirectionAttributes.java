@@ -82,6 +82,12 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
         return lastQueryRecord.getAttenuation()[idFreq];
     }
 
+    /**
+     * Add angle attenuation record
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @param phi (0 2π) 0 is front
+     * @param attenuation Attenuation in dB
+     */
     public void addDirectivityRecord(float theta, float phi, double[] attenuation) {
         DirectivityRecord record = new DirectivityRecord(theta, phi, attenuation);
         int index = Collections.binarySearch(recordsTheta, record, thetaComparator);
@@ -136,73 +142,28 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
         float theta1 = recordsTheta.get(index).getTheta();
         index = Collections.binarySearch(recordsPhi, record, phiComparator);
         index = - index - 1;
-        // If phi is out of bounds, we have to check all records
-        boolean checkAllRecords = false;
         if(index >= recordsPhi.size()) {
-            checkAllRecords = true;
-        } else {
-            float phi2 = recordsPhi.get(index).getPhi();
-            // Take previous record
-            index -= 1;
-            if (index < 0) {
-                checkAllRecords = true;
-            } else {
-                float phi1 = recordsPhi.get(index).getPhi();
-                // Find closest records
-                int[] indexes = new int[]{
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi1, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator)};
-                if (Arrays.stream(indexes).min().getAsInt() < 0) {
-                    checkAllRecords = true;
-                }
-                if (!checkAllRecords) {
-                    allRecords = new DirectivityRecord[]{
-                            recordsTheta.get(indexes[0]),
-                            recordsTheta.get(indexes[1]),
-                            recordsTheta.get(indexes[2]),
-                            recordsTheta.get(indexes[3])
-                    };
-                }
-            }
+            index = 0;
         }
-        if(checkAllRecords) {
-            // its quite time consuming process
-            // but it only when requested around the poles
-            // so its not quite often called
-            // Find the 4 closest points
-            allRecords = new DirectivityRecord[4];
-            double[] minDist = new double[] { Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
-            for(DirectivityRecord r : recordsTheta) {
-                double testDist = getDistance(theta, phi, r);
-                for(int idClosest = 0; idClosest < allRecords.length; idClosest++) {
-                    if (testDist < minDist[idClosest]) {
-                        minDist[idClosest] = testDist;
-                        allRecords[idClosest] = r;
-                        break;
-                    }
-                }
-            }
-            // place furthest from 0 on the 2 position
-            double maxDist = 0;
-            int furthestIndex = -1;
-            int idrecord = 1;
-            for(DirectivityRecord r : Arrays.copyOfRange(allRecords, 1, allRecords.length)) {
-                double testDist = getDistance(r.theta, r.phi, allRecords[0]);
-                if(testDist > maxDist) {
-                    maxDist = testDist;
-                    furthestIndex = idrecord;
-                }
-                idrecord++;
-            }
-            if(furthestIndex != 2) {
-                // switch records
-                DirectivityRecord r = allRecords[2];
-                allRecords[2] = allRecords[furthestIndex];
-                allRecords[furthestIndex] = r;
-            }
+        float phi2 = recordsPhi.get(index).getPhi();
+        // Take previous record
+        index -= 1;
+        if (index < 0) {
+            index = recordsPhi.size() - 1;
         }
+        float phi1 = recordsPhi.get(index).getPhi();
+        // Find closest records
+        int[] indexes = new int[]{
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi1, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator)};
+        allRecords = new DirectivityRecord[]{
+                recordsTheta.get(indexes[0]),
+                recordsTheta.get(indexes[1]),
+                recordsTheta.get(indexes[2]),
+                recordsTheta.get(indexes[3])
+        };
         if(interpolate == 0) {
             double minDist = Double.MAX_VALUE;
             DirectivityRecord closest = allRecords[0];

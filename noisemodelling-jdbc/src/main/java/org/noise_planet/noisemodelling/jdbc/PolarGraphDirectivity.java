@@ -2,6 +2,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector2D;
+import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 
 import java.util.Locale;
@@ -49,7 +50,7 @@ public class PolarGraphDirectivity {
                 "%.0f dB", value), "middle");
     }
 
-    public String generatePolarGraph(RailWayLW.TrainNoiseSource noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
+    public String generatePolarGraph(DirectionAttributes noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
 
         // HEADER
         StringBuilder sb = new StringBuilder(String.format("<svg height=\"%d\" width=\"%d\">\n", (int)dheight, (int)dwidth));
@@ -116,7 +117,7 @@ public class PolarGraphDirectivity {
                 }
                 theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2 ;
             }
-            double attenuation = RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
+            double attenuation = noiseSource.getAttenuation(frequency, phi, theta);
             double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
             double maxLevelY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
             double attenuationPercentage = (attenuation - minimumAttenuation) / (maximumAttenuation - minimumAttenuation);
