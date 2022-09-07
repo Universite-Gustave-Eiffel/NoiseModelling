@@ -51,9 +51,8 @@ public class DirectivityTableLoaderTest {
                     st.setInt(1, 1);
                     st.setFloat(2, pitch);
                     st.setFloat(3, yaw);
-                    double[] attSpectrum = new double[freqTest.length];
+                    double[] attSpectrum = att.getAttenuationArray(freqTest, phi, theta);
                     for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
-                        attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], phi, theta);
                         st.setFloat(4 + idFreq, (float)attSpectrum[idFreq]);
                     }
                     st.executeUpdate();
@@ -74,10 +73,7 @@ public class DirectivityTableLoaderTest {
 
         DiscreteDirectionAttributes d = directivities.get(1);
         for(DiscreteDirectionAttributes.DirectivityRecord directivityRecord : d.getRecordsTheta()) {
-            double[] attSpectrum = new double[freqTest.length];
-            for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
-                attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], directivityRecord.getPhi(), directivityRecord.getTheta());
-            }
+            double[] attSpectrum = att.getAttenuationArray(freqTest, directivityRecord.getPhi(), directivityRecord.getTheta());
             assertArrayEquals(attSpectrum, directivityRecord.getAttenuation(), 1e-2);
         }
     }

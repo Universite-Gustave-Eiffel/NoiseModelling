@@ -188,5 +188,14 @@ public class RailWayLW {
         public double getAttenuation(double frequency, double phi, double theta) {
             return RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
         }
+
+        @Override
+        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+            double[] ret = new double[frequencies.length];
+            for(int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+                ret[idFrequency] = getAttenuation(frequencies[idFrequency], phi, theta);
+            }
+            return ret;
+        }
     }
 }

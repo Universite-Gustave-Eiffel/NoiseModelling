@@ -151,6 +151,8 @@ class TestTutorials extends JdbcTestCase {
         //new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
         //new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
+        //sql.execute("DELETE FROM RECEIVERS WHERE PK NOT IN (5794, 4303)")
+
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"SOURCES",
                                                         tableReceivers : "RECEIVERS",
                                                         tableGroundAbs: "GROUND",
@@ -165,6 +167,9 @@ class TestTutorials extends JdbcTestCase {
         new Create_Isosurface().exec(connection, [resultTable: "LDAY_GEOM", smoothCoefficient : 0.4])
 
         new Export_Table().exec(connection, [exportPath:"target/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
+
+        new Export_Table().exec(connection, [exportPath:"target/LDAY_GEOM.shp", tableToExport: "LDAY_GEOM"])
+
 
 
     }

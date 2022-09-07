@@ -23,8 +23,6 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
     int directionIdentifier;
     double[] frequencies;
     Map<Long, Integer> frequencyMapping = new HashMap<>();
-    DirectivityRecord lastQuery = null;
-    DirectivityRecord lastQueryRecord = null;
     // List of records, maintain the two lists sorted
     List<DirectivityRecord> recordsTheta = new ArrayList<>();
     List<DirectivityRecord> recordsPhi = new ArrayList<>();
@@ -72,14 +70,34 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
                         first : last;
             }
         }
+        return getRecord(query.theta, query.phi, interpolationMethod).getAttenuation()[idFreq];
+    }
 
-        // for speed up, check if it is the same theta and phi queried last time
-        if(!query.equals(lastQuery)) {
-            // if not go looking for it
-            lastQueryRecord = getRecord(query.theta, query.phi, interpolationMethod);
-            lastQuery = query;
+    @Override
+    public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+        DirectivityRecord query = new DirectivityRecord(theta, phi, null);
+
+        DirectivityRecord record = getRecord(query.theta, query.phi, interpolationMethod);
+
+        double[] returnAttenuation = new double[frequencies.length];
+
+        for(int frequencyIndex = 0; frequencyIndex < frequencies.length; frequencyIndex++) {
+            double frequency = frequencies[frequencyIndex];
+            // look for frequency index
+            Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
+            if (idFreq == null) {
+                // get closest index
+                idFreq = Arrays.binarySearch(frequencies, frequency);
+                if (idFreq < 0) {
+                    int last = Math.min(-idFreq - 1, frequencies.length - 1);
+                    int first = Math.max(last - 1, 0);
+                    idFreq = Math.abs(frequencies[first] - frequency) < Math.abs(frequencies[last] - frequency) ? first : last;
+                }
+            }
+            returnAttenuation[frequencyIndex] = record.attenuation[idFreq];
         }
-        return lastQueryRecord.getAttenuation()[idFreq];
+
+        return returnAttenuation;
     }
 
     /**
