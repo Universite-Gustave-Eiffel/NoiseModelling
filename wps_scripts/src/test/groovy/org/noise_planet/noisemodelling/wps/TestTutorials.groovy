@@ -159,7 +159,8 @@ class TestTutorials extends JdbcTestCase {
                                                         confSkipLden: true,
                                                         confSkipLnight: true,
                                                         confSkipLevening: true,
-                                                        tableDEM: "DEM"])
+                                                        tableDEM: "DEM"
+                                                        ])
 
         new Create_Isosurface().exec(connection, [resultTable: "LDAY_GEOM", smoothCoefficient : 0.4])
 

@@ -43,7 +43,14 @@ public class DirectivityTableLoader {
         List<String> frequenciesFields = new ArrayList<>();
         for(String field : fields) {
             if(field.toUpperCase(Locale.ROOT).startsWith("LW")) {
-                frequenciesFields.add(field);
+                try {
+                    double frequency = Double.parseDouble(field.substring(2));
+                    if (frequency > 0) {
+                        frequenciesFields.add(field);
+                    }
+                } catch (NumberFormatException ex) {
+                    //ignore column
+                }
             }
         }
         if(frequenciesFields.isEmpty()) {
@@ -75,8 +82,8 @@ public class DirectivityTableLoader {
                         rows.clear();
                     }
                     lastDirId = dirId;
-                    float theta = (float)Math.toRadians(rs.getFloat(2));
-                    float phi = (float)Math.toRadians(rs.getFloat(3));
+                    double theta = Math.toRadians(rs.getDouble(2));
+                    double phi = Math.toRadians(rs.getDouble(3));
                     double[] att = new double[frequencies.length];
                     for(int freqColumn = 0; freqColumn < frequencies.length; freqColumn++) {
                         att[freqColumn] = rs.getDouble(freqColumn + 4);

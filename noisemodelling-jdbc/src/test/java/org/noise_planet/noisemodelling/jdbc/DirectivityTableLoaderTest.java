@@ -45,9 +45,9 @@ public class DirectivityTableLoaderTest {
         RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
         try(PreparedStatement st = connection.prepareStatement("INSERT INTO DIRTEST VALUES(?,?,?,?,?,?,?,?,?,?,?)")) {
             for(int yaw = 0; yaw < 360; yaw += 5) {
-                float phi = (float) Math.toRadians(yaw);
-                for (int pitch = -85; pitch < 90; pitch += 5) {
-                    float theta = (float)Math.toRadians(pitch);
+                double phi = Math.toRadians(yaw);
+                for (int pitch = -90; pitch <= 90; pitch += 5) {
+                    double theta = Math.toRadians(pitch);
                     st.setInt(1, 1);
                     st.setFloat(2, pitch);
                     st.setFloat(3, yaw);
@@ -61,9 +61,9 @@ public class DirectivityTableLoaderTest {
             }
         }
 
-        //try(Statement st = connection.createStatement()) {
-        //    st.execute("CALL CSVWrite('target/directivity_demo.csv', 'SELECT * FROM DIRTEST');");
-        //}
+        try(Statement st = connection.createStatement()) {
+            st.execute("CALL CSVWrite('target/directivity_demo.csv', 'SELECT * FROM DIRTEST');");
+        }
 
         // Data is inserted now fetch it from the database
         Map<Integer, DiscreteDirectionAttributes> directivities = DirectivityTableLoader.loadTable(connection, "DIRTEST", 1);
