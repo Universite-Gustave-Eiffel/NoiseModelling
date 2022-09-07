@@ -65,12 +65,12 @@ public class DirectivityTest {
         DiscreteDirectionAttributes noiseSource = new DiscreteDirectionAttributes(1, freqTest);
         noiseSource.setInterpolationMethod(1);
 
-        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
+        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.ROLLING);
 
         for(int yaw = 0; yaw < 360; yaw += 5) {
-            float phi = (float)Math.toRadians(yaw);
-            for(int pitch = -85; pitch < 90; pitch += 5) {
-                float theta = (float)Math.toRadians(pitch);
+            double phi = Math.toRadians(yaw);
+            for(int pitch = -90; pitch <= 90; pitch += 5) {
+                double theta = Math.toRadians(pitch);
                 double[] attSpectrum = new double[freqTest.length];
                 for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
                     attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], phi, theta);
