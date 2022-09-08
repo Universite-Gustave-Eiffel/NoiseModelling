@@ -22,8 +22,8 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
     - open an `issue`_ or a write a `message`_ *(we prefer these two options)*
     - send us an email at contact@noise-planet.org  
 
-.. _issue : https://github.com/Ifsttar/NoiseModelling/issues
-.. _message : https://github.com/Ifsttar/NoiseModelling/discussions
+.. _issue : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues
+.. _message : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions
 .. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
 .. _offical NoiseModelling website : http://noise-planet.org/noisemodelling.html
 
@@ -54,7 +54,7 @@ On the NoiseModelling latest `release page`_, three packages of NoiseModelling a
 * ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
 * ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`"" page for more info)
 
-.. _release page : https://github.com/Ifsttar/NoiseModelling/releases/latest
+.. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
 
 Authors
 ---------------------------
@@ -124,7 +124,7 @@ Fundings
     -  If you observe some mistakes or errors, please open an issue `here`_ or contact us at contact@noise-planet.org
     -  You are also welcome to contribute to the documentation (click on *"Edit on Github"* - top of the page)
 
-.. _here: https://github.com/Ifsttar/NoiseModelling/issues
+.. _here: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues
 
 
 .. toctree::
@@ -143,6 +143,7 @@ Fundings
     Requirements
     Get_Started_GUI
     Noise_Map_From_OSM_Tutorial
+    Noise_Map_From_Point_Source
     Matsim_Tutorial
     Get_Started_Script
     Tutorials_FAQ
