@@ -115,8 +115,8 @@ inputs = [
                 description: '<b>Name of the emission directivity table. If not specified the default is train directivity of cnossos</b></br>  ' +
                         '</br>The table shall contain the following fields : </br> ' +
                         '- <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</br> ' +
-                        '- <b> THETA </b> : (-90 - 90) Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</br> ' +
-                        '- <b> PHI </b> : (0-360) Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</br> ' +
+                        '- <b> THETA </b> : [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</br> ' +
+                        '- <b> PHI </b> : [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</br> ' +
                         '- <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </br> ' ,
                 min        : 0, max: 1, type: String.class
         ],
