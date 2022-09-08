@@ -176,6 +176,10 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
                 Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator),
                 Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator),
                 Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator)};
+        if (Arrays.stream(indexes).min().getAsInt() < 0) {
+            // got issues looking for directivity
+            return new DirectivityRecord(theta, phi, new double[frequencies.length]);
+        }
         allRecords = new DirectivityRecord[]{
                 recordsTheta.get(indexes[0]),
                 recordsTheta.get(indexes[1]),
