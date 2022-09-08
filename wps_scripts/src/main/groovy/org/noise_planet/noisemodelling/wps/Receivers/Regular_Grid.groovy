@@ -147,12 +147,12 @@ def exec(connection, input) {
 
     Double delta = 10
     if (input['delta']) {
-        delta = input['delta']
+        delta = input['delta'] as Double
     }
 
     Double h = 4
     if (input['height']) {
-        h = input['height']
+        h = input['height'] as Double
     }
 
     String sources_table_name = "SOURCES"
