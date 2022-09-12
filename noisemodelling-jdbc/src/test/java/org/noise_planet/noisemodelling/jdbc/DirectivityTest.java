@@ -71,10 +71,7 @@ public class DirectivityTest {
             double phi = Math.toRadians(yaw);
             for(int pitch = -90; pitch <= 90; pitch += 5) {
                 double theta = Math.toRadians(pitch);
-                double[] attSpectrum = new double[freqTest.length];
-                for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
-                    attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], phi, theta);
-                }
+                double[] attSpectrum = att.getAttenuationArray(freqTest, phi, theta);
                 noiseSource.addDirectivityRecord(theta, phi,
                         attSpectrum);
             }
