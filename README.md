@@ -1,6 +1,7 @@
+[![CI](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml/badge.svg?branch=4.X)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
-[![GitHub release](https://img.shields.io/github/release/Ifsttar/NoiseModelling)](https://github.com/Ifsttar/NoiseModelling/releases/)
+[![GitHub release](https://img.shields.io/github/release/Universite-Gustave-Eiffel/NoiseModelling)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/)
 
 <img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="70%">
 
@@ -15,14 +16,14 @@ A general overview of the model (v3.4.5 - September 2020) can be found in [this 
 * for **more information** on NoiseModelling, [visit the offical NoiseModelling website](https://noise-planet.org/noisemodelling.html)
 * to **contribute to NoiseModelling** source code, follow the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
 * to **contact the support / development team**, 
-    - open an issue : https://github.com/Ifsttar/NoiseModelling/issues or a write a message : https://github.com/Ifsttar/NoiseModelling/discussions *(we prefer these two options)*
+    - open an issue : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues or a write a message : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions *(we prefer these two options)*
     - send us an email at ``contact@noise-planet.org``
 * follow us on Twitter @Noise_Planet [![Twitter Follow](https://img.shields.io/twitter/follow/noise_planet.svg?style=social&label=Follow)](https://twitter.com/Noise_Planet?lang=en)
 
 Stable release
 ---------------------------
 
-The current stable version is v4.0.0 (see [latest release](https://github.com/Ifsttar/NoiseModelling/releases/latest) page)
+The current stable version is v4.0.0 (see [latest release](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest) page)
 
 
 Documentation
