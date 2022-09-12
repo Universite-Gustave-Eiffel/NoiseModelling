@@ -25,7 +25,7 @@ Prerequisites
 The data
 ~~~~~~~~~~~~~~~
 
-You can download and unzip the data in any folder from here : https://github.com/Ifsttar/NoiseModelling/releases/download/v3.3.1/scenario_matsim.zip
+You can download and unzip the data in any folder from here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/download/v3.3.1/scenario_matsim.zip
 
 The data folder should contain the following files :
 

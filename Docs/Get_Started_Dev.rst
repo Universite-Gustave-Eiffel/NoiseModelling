@@ -3,7 +3,7 @@ Get Started
 
 #. If not already done, create an account on `Github`_,
 
-#. Go to the official NoiseModelling repository: https://github.com/Ifsttar/NoiseModelling
+#. Go to the official NoiseModelling repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling
 
 #. There are 4 main librairies: 
 
