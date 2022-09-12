@@ -116,24 +116,25 @@ class TestTutorials extends JdbcTestCase {
         assertEquals("", res)
 
         new Import_File().exec(connection, [
-                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/BUILDINGS.geojson").getPath(),
+                pathFile : TestTutorials.class.getResource("buildings.shp").getPath(),
                 tableName : "BUILDINGS"])
 
         new Import_File().exec(connection, [
-                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/SOURCE.geojson").getPath(),
-                tableName : "SOURCES"])
+                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/Point_Source.geojson").getPath(),
+                tableName : "Point_Source"])
 
         new Import_File().exec(connection, [
-                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/GROUND.geojson").getPath(),
-                tableName : "GROUND"])
+                pathFile : TestTutorials.class.getResource("ground_type.shp").getPath(),
+                tableName : "ground_type"])
 
         new Import_File().exec(connection, [
                 pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/Directivity.csv").getPath(),
                 tableName : "Directivity"])
 
-        new Import_Asc_File().exec(connection, [
-                pathFile : TestTutorials.class.getResource("TutoPointSourceDirectivity/zone_dem.asc").getPath(),
-                inputSRID : 2154])
+        new Import_File().exec(connection, [
+                pathFile : TestTutorials.class.getResource("dem.geojson").getPath(),
+                tableName : "DEM"])
+
 
 
         res = new Display_Database().exec(connection, [])
@@ -141,21 +142,19 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("BUILDINGS"))
         assertTrue(res.contains("DIRECTIVITY"))
         assertTrue(res.contains("GROUND"))
-        assertTrue(res.contains("SOURCES"))
+        assertTrue(res.contains("POINT_SOURCE"))
         assertTrue(res.contains("DEM"))
 
         // generate a grid of receivers using the buildings as envelope
         logger.info(new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
-                                                          sourcesTableName : "SOURCES" , height: 1.6]));
+                                                          sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
         //new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
         //new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
-        //sql.execute("DELETE FROM RECEIVERS WHERE PK NOT IN (5794, 4303)")
-
-        new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"SOURCES",
+        new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
-                                                        tableGroundAbs: "GROUND",
+                                                        tableGroundAbs: "GROUND_TYPE",
                                                         tableSourceDirectivity: "DIRECTIVITY",
                                                         confMaxSrcDist : 800,
                                                         confSkipLden: true,
