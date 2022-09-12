@@ -286,8 +286,8 @@ public class CnossosPropagationData {
      * @param theta (-π/2 π/2) 0 is horizontal π is top
      * @return Attenuation in dB
      */
-    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
-        return 0;
+    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
+        return new double[frequencies.length];
     }
 
     /**

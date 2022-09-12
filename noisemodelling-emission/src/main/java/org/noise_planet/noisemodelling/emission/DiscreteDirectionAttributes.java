@@ -14,13 +14,15 @@ package org.noise_planet.noisemodelling.emission;
 import java.io.Serializable;
 import java.util.*;
 
+/**
+ * Describe Attenuation directivity over a sphere
+ * Values between specified angles are interpolated following a method (linear by default)
+ */
 public class DiscreteDirectionAttributes implements DirectionAttributes {
     int interpolationMethod = 1;
     int directionIdentifier;
     double[] frequencies;
     Map<Long, Integer> frequencyMapping = new HashMap<>();
-    DirectivityRecord lastQuery = null;
-    DirectivityRecord lastQueryRecord = null;
     // List of records, maintain the two lists sorted
     List<DirectivityRecord> recordsTheta = new ArrayList<>();
     List<DirectivityRecord> recordsPhi = new ArrayList<>();
@@ -54,7 +56,7 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
 
     @Override
     public double getAttenuation(double frequency, double phi, double theta) {
-        DirectivityRecord query = new DirectivityRecord((float)theta, (float)phi, null);
+        DirectivityRecord query = new DirectivityRecord(theta, phi, null);
 
         // look for frequency index
         Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
@@ -68,17 +70,43 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
                         first : last;
             }
         }
-
-        // for speed up, check if it is the same theta and phi queried last time
-        if(!query.equals(lastQuery)) {
-            // if not go looking for it
-            lastQueryRecord = getRecord(query.theta, query.phi, interpolationMethod);
-            lastQuery = query;
-        }
-        return lastQueryRecord.getAttenuation()[idFreq];
+        return getRecord(query.theta, query.phi, interpolationMethod).getAttenuation()[idFreq];
     }
 
-    public void addDirectivityRecord(float theta, float phi, double[] attenuation) {
+    @Override
+    public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+        DirectivityRecord query = new DirectivityRecord(theta, phi, null);
+
+        DirectivityRecord record = getRecord(query.theta, query.phi, interpolationMethod);
+
+        double[] returnAttenuation = new double[frequencies.length];
+
+        for(int frequencyIndex = 0; frequencyIndex < frequencies.length; frequencyIndex++) {
+            double frequency = frequencies[frequencyIndex];
+            // look for frequency index
+            Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
+            if (idFreq == null) {
+                // get closest index
+                idFreq = Arrays.binarySearch(frequencies, frequency);
+                if (idFreq < 0) {
+                    int last = Math.min(-idFreq - 1, frequencies.length - 1);
+                    int first = Math.max(last - 1, 0);
+                    idFreq = Math.abs(frequencies[first] - frequency) < Math.abs(frequencies[last] - frequency) ? first : last;
+                }
+            }
+            returnAttenuation[frequencyIndex] = record.attenuation[idFreq];
+        }
+
+        return returnAttenuation;
+    }
+
+    /**
+     * Add angle attenuation record
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @param phi (0 2π) 0 is front
+     * @param attenuation Attenuation in dB
+     */
+    public void addDirectivityRecord(double theta, double phi, double[] attenuation) {
         DirectivityRecord record = new DirectivityRecord(theta, phi, attenuation);
         int index = Collections.binarySearch(recordsTheta, record, thetaComparator);
         if(index >= 0) {
@@ -110,7 +138,7 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
      * @param interpolate 0 for closest neighbor, 1 for Bilinear interpolation
      * @return DirectivityRecord instance
      */
-    public DirectivityRecord getRecord(float theta, float phi, int interpolate) {
+    public DirectivityRecord getRecord(double theta, double phi, int interpolate) {
         // all records points must be ordered on anti-clockwise
         // point[0] and point[2] must be the most distant
         DirectivityRecord[] allRecords = null;
@@ -123,82 +151,41 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
         if(index >= recordsTheta.size()) {
             index = 0;
         }
-        float theta2 = recordsTheta.get(index).getTheta();
+        double theta2 = recordsTheta.get(index).getTheta();
         // Take previous record
         index -= 1;
         if(index < 0) {
             index = recordsTheta.size() - 1;
         }
-        float theta1 = recordsTheta.get(index).getTheta();
+        double theta1 = recordsTheta.get(index).getTheta();
         index = Collections.binarySearch(recordsPhi, record, phiComparator);
         index = - index - 1;
-        // If phi is out of bounds, we have to check all records
-        boolean checkAllRecords = false;
         if(index >= recordsPhi.size()) {
-            checkAllRecords = true;
-        } else {
-            float phi2 = recordsPhi.get(index).getPhi();
-            // Take previous record
-            index -= 1;
-            if (index < 0) {
-                checkAllRecords = true;
-            } else {
-                float phi1 = recordsPhi.get(index).getPhi();
-                // Find closest records
-                int[] indexes = new int[]{
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi1, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator),
-                        Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator)};
-                if (Arrays.stream(indexes).min().getAsInt() < 0) {
-                    checkAllRecords = true;
-                }
-                if (!checkAllRecords) {
-                    allRecords = new DirectivityRecord[]{
-                            recordsTheta.get(indexes[0]),
-                            recordsTheta.get(indexes[1]),
-                            recordsTheta.get(indexes[2]),
-                            recordsTheta.get(indexes[3])
-                    };
-                }
-            }
+            index = 0;
         }
-        if(checkAllRecords) {
-            // its quite time consuming process
-            // but it only when requested around the poles
-            // so its not quite often called
-            // Find the 4 closest points
-            allRecords = new DirectivityRecord[4];
-            double[] minDist = new double[] { Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE};
-            for(DirectivityRecord r : recordsTheta) {
-                double testDist = getDistance(theta, phi, r);
-                for(int idClosest = 0; idClosest < allRecords.length; idClosest++) {
-                    if (testDist < minDist[idClosest]) {
-                        minDist[idClosest] = testDist;
-                        allRecords[idClosest] = r;
-                        break;
-                    }
-                }
-            }
-            // place furthest from 0 on the 2 position
-            double maxDist = 0;
-            int furthestIndex = -1;
-            int idrecord = 1;
-            for(DirectivityRecord r : Arrays.copyOfRange(allRecords, 1, allRecords.length)) {
-                double testDist = getDistance(r.theta, r.phi, allRecords[0]);
-                if(testDist > maxDist) {
-                    maxDist = testDist;
-                    furthestIndex = idrecord;
-                }
-                idrecord++;
-            }
-            if(furthestIndex != 2) {
-                // switch records
-                DirectivityRecord r = allRecords[2];
-                allRecords[2] = allRecords[furthestIndex];
-                allRecords[furthestIndex] = r;
-            }
+        double phi2 = recordsPhi.get(index).getPhi();
+        // Take previous record
+        index -= 1;
+        if (index < 0) {
+            index = recordsPhi.size() - 1;
         }
+        double phi1 = recordsPhi.get(index).getPhi();
+        // Find closest records
+        int[] indexes = new int[]{
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi1, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi1, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta2, phi2, null), thetaComparator),
+                Collections.binarySearch(recordsTheta, new DirectivityRecord(theta1, phi2, null), thetaComparator)};
+        if (Arrays.stream(indexes).min().getAsInt() < 0) {
+            // got issues looking for directivity
+            return new DirectivityRecord(theta, phi, new double[frequencies.length]);
+        }
+        allRecords = new DirectivityRecord[]{
+                recordsTheta.get(indexes[0]),
+                recordsTheta.get(indexes[1]),
+                recordsTheta.get(indexes[2]),
+                recordsTheta.get(indexes[3])
+        };
         if(interpolate == 0) {
             double minDist = Double.MAX_VALUE;
             DirectivityRecord closest = allRecords[0];
@@ -239,7 +226,7 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
 
     /**
      * Add new records.
-     * This function is much more efficient than {@link #addDirectivityRecord(float, float, double[])}
+     * This function is much more efficient than {@link #addDirectivityRecord(double, double, double[])}
      * @param newRecords Records to push
      */
     public void addDirectivityRecords(Collection<DirectivityRecord> newRecords) {
@@ -253,11 +240,11 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
 
         @Override
         public int compare(DirectivityRecord o1, DirectivityRecord o2) {
-            final int thetaCompare = Float.compare(o1.theta, o2.theta);
+            final int thetaCompare = Double.compare(o1.theta, o2.theta);
             if(thetaCompare != 0) {
                 return thetaCompare;
             }
-            return Float.compare(o1.phi, o2.phi);
+            return Double.compare(o1.phi, o2.phi);
         }
 
     }
@@ -266,30 +253,30 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
 
         @Override
         public int compare(DirectivityRecord o1, DirectivityRecord o2) {
-            final int phiCompare = Float.compare(o1.phi, o2.phi);
+            final int phiCompare = Double.compare(o1.phi, o2.phi);
             if(phiCompare != 0) {
                 return phiCompare;
             }
-            return Float.compare(o1.theta, o2.theta);
+            return Double.compare(o1.theta, o2.theta);
         }
 
     }
     public static class DirectivityRecord {
-        private float theta;
-        private float phi;
+        private double theta;
+        private double phi;
         private double[] attenuation;
 
-        public DirectivityRecord(float theta, float phi, double[] attenuation) {
+        public DirectivityRecord(double theta, double phi, double[] attenuation) {
             this.theta = theta;
             this.phi = phi;
             this.attenuation = attenuation;
         }
 
-        public float getTheta() {
+        public double getTheta() {
             return theta;
         }
 
-        public float getPhi() {
+        public double getPhi() {
             return phi;
         }
 
@@ -298,8 +285,8 @@ public class DiscreteDirectionAttributes implements DirectionAttributes {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             DirectivityRecord record = (DirectivityRecord) o;
-            return Float.compare(record.theta, theta) == 0 &&
-                    Float.compare(record.phi, phi) == 0;
+            return Double.compare(record.theta, theta) == 0 &&
+                    Double.compare(record.phi, phi) == 0;
         }
 
         @Override

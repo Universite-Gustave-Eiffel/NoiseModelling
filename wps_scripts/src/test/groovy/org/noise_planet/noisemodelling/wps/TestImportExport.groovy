@@ -96,7 +96,7 @@ class TestImportExport extends JdbcTestCase {
     void testImportAsc() {
 
         String res = new Import_Asc_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
+                ["pathFile" : TestImportExport.getResource("testAscFolder/precip30min.asc").getPath(),
                  "inputSRID": 2154])
 
         assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
@@ -105,7 +105,7 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportAscFolder() {
 
-        File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
+        File file = new File(TestImportExport.getResource("testAscFolder/precip30min.asc").getPath()).getParentFile()
         String res = new Import_Asc_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
                  "inputSRID" : 2154])

@@ -158,11 +158,13 @@ public class RailWayLW {
         if(noiseSource == TrainNoiseSource.BRIDGE) {
             return 0.0;
         }
+        theta = Math.min(Math.max(theta, -(Math.PI / 2)), Math.PI / 2);
+        phi = Math.max(0, Math.min(phi, 2 * Math.PI));
         int height_index = TRAIN_NOISE_SOURCE_H_INDEX[noiseSource.ordinal()];
         double attHorizontal = 10 * Math.log10(0.01 + 0.99 * Math.pow(Math.sin(phi), 2));
         double attVertical = 0;
         if(height_index == 0) {
-            if(theta > 0 && theta <= Math.PI / 2.0) {
+            if(theta > 0) {
                 attVertical = (40.0 / 3.0)
                         * (2.0 / 3.0 * Math.sin(2 * theta) - Math.sin(theta))
                         * Math.log10((frequency + 600.0) / 200.0);
@@ -185,6 +187,15 @@ public class RailWayLW {
         @Override
         public double getAttenuation(double frequency, double phi, double theta) {
             return RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
+        }
+
+        @Override
+        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+            double[] ret = new double[frequencies.length];
+            for(int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+                ret[idFrequency] = getAttenuation(frequencies[idFrequency], phi, theta);
+            }
+            return ret;
         }
     }
 }

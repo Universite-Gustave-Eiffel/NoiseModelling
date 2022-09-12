@@ -32,32 +32,36 @@ public class DirectivityTableLoaderTest {
         }
     }
 
+    /**
+     * Create discrete directivity table from a formulae directivity class. Then load it using library
+     * @throws SQLException
+     */
     @Test
     public void testFetch() throws SQLException {
         double[] freqTest = new double[] {63, 125, 250, 500, 1000, 2000, 4000, 8000};
-        DiscreteDirectionAttributes d = new DiscreteDirectionAttributes(1, freqTest);
         try(Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE DIRTEST(DIR_ID INTEGER, THETA FLOAT, PHI FLOAT, LW63 FLOAT, LW125 FLOAT, LW250 FLOAT, LW500 FLOAT, LW1000 FLOAT, LW2000 FLOAT, LW4000 FLOAT, LW8000 FLOAT)");
         }
+        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
         try(PreparedStatement st = connection.prepareStatement("INSERT INTO DIRTEST VALUES(?,?,?,?,?,?,?,?,?,?,?)")) {
-            RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
             for(int yaw = 0; yaw < 360; yaw += 5) {
-                float theta = (float) Math.toRadians(yaw);
-                for (int pitch = -85; pitch < 90; pitch += 5) {
-                    float phi = (float)Math.toRadians(pitch);
+                double phi = Math.toRadians(yaw);
+                for (int pitch = -90; pitch <= 90; pitch += 5) {
+                    double theta = Math.toRadians(pitch);
                     st.setInt(1, 1);
-                    st.setFloat(2, yaw);
-                    st.setFloat(3, pitch);
-                    double[] attSpectrum = new double[freqTest.length];
+                    st.setFloat(2, pitch);
+                    st.setFloat(3, yaw);
+                    double[] attSpectrum = att.getAttenuationArray(freqTest, phi, theta);
                     for (int idFreq = 0; idFreq < freqTest.length; idFreq++) {
-                        attSpectrum[idFreq] = att.getAttenuation(freqTest[idFreq], phi, theta);
                         st.setFloat(4 + idFreq, (float)attSpectrum[idFreq]);
                     }
                     st.executeUpdate();
-                    d.addDirectivityRecord(theta, phi,
-                            attSpectrum);
                 }
             }
+        }
+
+        try(Statement st = connection.createStatement()) {
+            st.execute("CALL CSVWrite('target/directivity_demo.csv', 'SELECT * FROM DIRTEST');");
         }
 
         // Data is inserted now fetch it from the database
@@ -65,14 +69,13 @@ public class DirectivityTableLoaderTest {
 
         assertEquals(1, directivities.size());
 
-        assertTrue(directivities.containsKey(d.getDirectionIdentifier()));
+        assertTrue(directivities.containsKey(1));
 
-        assertEquals(d.getRecordsTheta().size(), directivities.get(d.getDirectionIdentifier()).getRecordsTheta().size());
-
-        assertEquals(d.getRecordsTheta().get(0), directivities.get(d.getDirectionIdentifier()).getRecordsTheta().get(0));
-
-        assertArrayEquals(d.getRecordsTheta().get(0).getAttenuation(), directivities.get(d.getDirectionIdentifier()).getRecordsTheta().get(0).getAttenuation(), 0.1);
-
+        DiscreteDirectionAttributes d = directivities.get(1);
+        for(DiscreteDirectionAttributes.DirectivityRecord directivityRecord : d.getRecordsTheta()) {
+            double[] attSpectrum = att.getAttenuationArray(freqTest, directivityRecord.getPhi(), directivityRecord.getTheta());
+            assertArrayEquals(attSpectrum, directivityRecord.getAttenuation(), 1e-2);
+        }
     }
 
 }

@@ -162,6 +162,14 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         if (data == null) {
             return new double[0];
         }
+        // cache frequencies
+        double[] frequencies = new double[0];
+        if(inputData != null) {
+            frequencies = new double[inputData.freq_lvl.size()];
+            for (int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+                frequencies[idFrequency] = inputData.freq_lvl.get(idFrequency);
+            }
+        }
         // Compute receiver/source attenuation
         double[] propagationAttenuationSpectrum = null;
         for (PropagationPath proPath : propagationPath) {
@@ -342,12 +350,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
                 Orientation directivityToPick = proPath.raySourceReceiverDirectivity;
-                double[] attSource = new double[data.freq_lvl.size()];
-                for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
-                            data.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
-                            (float)Math.toRadians(directivityToPick.pitch));
-                }
+                double[] attSource = inputData.getSourceAttenuation((int) sourceId,
+                        frequencies, Math.toRadians(directivityToPick.yaw),
+                        Math.toRadians(directivityToPick.pitch));
                 if(keepAbsorption) {
                     proPath.absorptionData.aSource = attSource;
                 }

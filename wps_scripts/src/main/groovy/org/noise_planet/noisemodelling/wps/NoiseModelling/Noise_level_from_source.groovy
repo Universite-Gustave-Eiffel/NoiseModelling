@@ -115,8 +115,8 @@ inputs = [
                 description: '<b>Name of the emission directivity table. If not specified the default is train directivity of cnossos</b></br>  ' +
                         '</br>The table shall contain the following fields : </br> ' +
                         '- <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</br> ' +
-                        '- <b> THETA </b> : Horizontal angle in degree. 0&#176; front and 90&#176; right (0-360) (FLOAT)</br> ' +
-                        '- <b> PHI </b> : Vertical angle in degree. 0&#176; front and 90&#176; top -90&#176; bottom (-90 - 90) (FLOAT)</br> ' +
+                        '- <b> THETA </b> : [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</br> ' +
+                        '- <b> PHI </b> : [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</br> ' +
                         '- <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </br> ' ,
                 min        : 0, max: 1, type: String.class
         ],
@@ -515,6 +515,7 @@ def exec(Connection connection, input) {
     } else {
         // Load table into specialized class
         ldenProcessing.directionAttributes = DirectivityTableLoader.loadTable(connection, tableSourceDirectivity, 1)
+        logger.info(String.format(Locale.ROOT, "Loaded %d directivity from %s table", ldenProcessing.directionAttributes.size(), tableSourceDirectivity))
     }
     pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)

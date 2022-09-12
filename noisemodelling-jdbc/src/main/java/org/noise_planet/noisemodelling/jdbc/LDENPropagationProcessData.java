@@ -92,12 +92,13 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     }
 
     @Override
-    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
         int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
         if(directionAttributes.containsKey(directivityIdentifier)) {
-            return directionAttributes.get(directivityIdentifier).getAttenuation(frequency, phi, theta);
+            return directionAttributes.get(directivityIdentifier).getAttenuationArray(frequencies, phi, theta);
         } else {
-            return 0;
+            // This direction identifier has not been found
+            return new double[frequencies.length];
         }
     }
 
@@ -313,6 +314,11 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         @Override
         public double getAttenuation(double frequency, double phi, double theta) {
             return 0;
+        }
+
+        @Override
+        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+            return new double[frequencies.length];
         }
     }
 }
