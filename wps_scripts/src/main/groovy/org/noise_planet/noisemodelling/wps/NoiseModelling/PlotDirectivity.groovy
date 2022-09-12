@@ -40,8 +40,7 @@ import java.sql.Connection
 
 
 title = 'Plot the directivity graph of the specified DIR_ID'
-description = 'Display first rows of a table containing. ' +
-        '</br> Be careful, this treatment can be very long if the table is large.'
+description = 'Plot the directivity graph of the specified DIR_ID'
 
 inputs = [
         tableSourceDirectivity          : [
