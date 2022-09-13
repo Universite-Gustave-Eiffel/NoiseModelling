@@ -121,10 +121,10 @@ dependencies {
             prefer '1.18.2'
         }
     }
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.1-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.1-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.1-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.1-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.1'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.1'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.1'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.1'
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
