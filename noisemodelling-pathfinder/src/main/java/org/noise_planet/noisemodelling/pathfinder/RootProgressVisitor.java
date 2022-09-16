@@ -44,7 +44,7 @@ public class RootProgressVisitor extends DefaultProgressVisitor {
         double newProgress = getProgression();
         propertyChangeSupport.firePropertyChange("PROGRESS", oldProgress, newProgress);
         if(logProgression) {
-            String newLogProgress = String.format("%.2f %%", newProgress * 100);
+            String newLogProgress = String.format("CUSTOMMESSAGE %.2f %%", newProgress * 100);
             if(!newLogProgress.equals(lastLoggedProgression)) {
                 lastLoggedProgression = newLogProgress;
                 long t = System.currentTimeMillis();
