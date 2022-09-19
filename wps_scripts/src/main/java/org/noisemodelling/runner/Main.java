@@ -13,6 +13,14 @@ package org.noisemodelling.runner;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingOptionException;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PropertyConfigurator;
 import org.h2.util.OsgiDataSourceFactory;
 import org.h2gis.functions.factory.H2GISFunctions;
@@ -32,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -126,7 +135,20 @@ public class Main {
 
     public static void main(String... args) throws Exception {
         PropertyConfigurator.configure(Main.class.getResource("log4j.properties"));
-
+        // Arguments parser
+        Options options = new Options();
+        Option workingDirOption = new Option("w", "working-dir", true, "Path where the database will be located");
+        workingDirOption.setRequired(true);
+        workingDirOption.setArgName("folder path");
+        options.addOption(workingDirOption);
+        Option scriptPathOption = new Option("s", "script", true, "Path and file name of the script");
+        scriptPathOption.setRequired(true);
+        scriptPathOption.setArgName("script path");
+        options.addOption(scriptPathOption);
+        Option databaseNameOption = new Option("d", "database-name", true, "Database name (default to h2gisdb)");
+        options.addOption(databaseNameOption);
+        Option printVersionOption = new Option("v", false,"Print version of all libraries");
+        options.addOption(printVersionOption);
         Logger logger = LoggerFactory.getLogger("org.noise_planet");
         try {
             // Read parameters
@@ -135,47 +157,21 @@ public class Main {
             String databaseName = "h2gisdb";
             Map<String, String> customParameters = new HashMap<>();
             boolean printVersion = false;
-            for (int i = 0; args != null && i < args.length; i++) {
-                String a = args[i];
-                if(a == null) {
-                    continue;
-                }
-                if (a.startsWith("-w")) {
-                    workingDir = a.substring(2);
-                    if(!(new File(workingDir).exists())) {
-                        logger.error(workingDir + " folder does not exists");
-                        workingDir = "";
-                    }
-                } else if (a.startsWith("-s")) {
-                    scriptPath = a.substring(2);
-                    if(!(new File(scriptPath).exists())) {
-                        logger.error(scriptPath + " script does not exists");
-                        scriptPath = "";
-                    }
-                } else if (a.startsWith("-d")) {
-                    databaseName = a.substring(2);
-                } else if (a.startsWith("-v")) {
-                    printVersion = true;
-                } else if(a.contains("=")){
-                    String key = a.substring(0, a.indexOf("="));
-                    String value = a.substring(a.indexOf("=") + 1);
-                    customParameters.put(key, value);
-                }
+
+            CommandLineParser commandLineParser = new DefaultParser();
+            HelpFormatter helpFormatter = new HelpFormatter();
+            CommandLine commandLine;
+            try {
+                commandLine = commandLineParser.parse(options, args, true);
+            } catch (ParseException ex) {
+                logger.info(ex.getMessage());
+                helpFormatter.printHelp("NoiseModelling Script Runner", options);
+                System.exit(1);
+                return;
             }
-            if (workingDir.isEmpty() || scriptPath.isEmpty()) {
-                logger.info("Command line arguments :");
-                for (String arg : args) {
-                    logger.info("Got argument [" + arg + "]");
-                }
-                String help = "script_runner -wWORKSPACE -sSCRIPT_PATH\n" +
-                        "DESCRIPTION\n" +
-                        "-wWORKSPACE path where the database is located\n" +
-                        "-sSCRIPT_PATH path and file name of the script\n" +
-                        "-dFILENAME database name (default to h2gisdb)\n" +
-                        "-v print version of all libraries\n" +
-                        "customParameter=thevalue Custom arguments for the groovy script\n";
-                throw new IllegalArgumentException(help);
-            }
+            workingDir = commandLine.getOptionValue(workingDirOption.getOpt());
+            scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
+            printVersion = commandLine.hasOption(printVersionOption.getOpt());
 
             if(printVersion) {
                 printBuildIdentifiers(logger);
@@ -189,11 +185,36 @@ public class Main {
 
             try (Connection connection = new ConnectionWrapper(ds.getConnection())) {
                 GroovyShell shell = new GroovyShell();
-                Script receiversGrid= shell.parse(new File(scriptPath));
-                Map<String, Object> inputs = new HashMap<>();
-                inputs.putAll(customParameters);
+                Script script= shell.parse(new File(scriptPath));
+                script.run();
+                if(shell.getVariable("inputs") == null) {
+                    throw new IllegalArgumentException("Script does not contains inputs variable");
+                }
+                ((Map) shell.getVariable("inputs")).forEach((key, value) -> {
+                    Map<String, Object> optionAttributes = ((Map)value);
+                    Option customOption = new Option(key.toString(),
+                            optionAttributes.get("type") != Boolean.class, optionAttributes.get("description").toString().replaceAll("<[^>]*>", ""));
+                    customOption.setType((Class)optionAttributes.get("type"));
+                    customOption.setArgs(1);
+                    customOption.setArgName(optionAttributes.get("name").toString());
+                    customOption.setRequired(!optionAttributes.containsKey("min") || (Integer)optionAttributes.get("min") == 1);
+                    options.addOption(customOption);
+                });
+                try {
+                    commandLine = commandLineParser.parse(options, args);
+                    for (Iterator<Option> it = commandLine.iterator(); it.hasNext(); ) {
+                        Option option = it.next();
+                        customParameters.put(option.getOpt(), option.getValue());
+                    }
+                } catch (ParseException ex) {
+                    logger.info(ex.getMessage());
+                    helpFormatter.printHelp("NoiseModelling Script Runner", options);
+                    System.exit(1);
+                    return;
+                }
+                Map<String, Object> inputs = new HashMap<>(customParameters);
                 inputs.put("progressVisitor", progressVisitor);
-                Object result = receiversGrid.invokeMethod("exec", new Object[] {connection, inputs});
+                Object result = script.invokeMethod("exec", new Object[] {connection, inputs});
                 if(result != null) {
                     logger.info(result.toString());
                 }
