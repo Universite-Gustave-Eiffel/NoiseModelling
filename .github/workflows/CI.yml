@@ -50,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name:  NoiseModelling_without_gui.zip
-          path: wps_scripts/build/distributions/scriptrunner/
+          path: wps_scripts/scriptrunner/
