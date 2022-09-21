@@ -305,7 +305,7 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    PropagationProcessPathData pathData = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY);
+    PropagationProcessPathData pathData = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY);
     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
         sb.append(pathData.freq_lvl.get(idfreq));
@@ -565,9 +565,9 @@ def exec(Connection connection, input) {
         environmentalDataNight.setWindRose(favOccurrences)
     }
 
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY, environmentalDataDay)
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_EVENING, environmentalDataEvening)
-    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_NIGHT, environmentalDataNight)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY, environmentalDataDay)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING, environmentalDataEvening)
+    pointNoiseMap.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT, environmentalDataNight)
 
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
