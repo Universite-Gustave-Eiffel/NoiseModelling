@@ -301,9 +301,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             // @see ComputeCnossosRays#computeOrientation
             Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation(),
                     Orientation.toVector(proPath.raySourceReceiverDirectivity), false);
-            int roseindex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
+            int roseIndex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
             // Homogenous conditions
-            if (data.getWindRose()[roseindex]!=1) {
+            if (data.getWindRose()[roseIndex] != 1) {
                 proPath.setFavorable(false);
 
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
@@ -318,7 +318,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 }
             }
             // Favorable conditions
-            if (data.getWindRose()[roseindex]!=0) {
+            if (data.getWindRose()[roseIndex] != 0) {
                 proPath.setFavorable(true);
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
                 aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
@@ -340,12 +340,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             }
 
             // Compute attenuation under the wind conditions using the ray direction
-            double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseindex]);
-
-            //For testing purpose
-            if(keepAbsorption) {
-                proPath.absorptionData.aGlobal = aGlobalMeteoRay.clone();
-            }
+            double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseIndex]);
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
@@ -359,6 +354,17 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
             }
 
+            // For line source, take account of li coefficient
+            if(sourceLi > 1.0) {
+                for (int i = 0; i < aGlobalMeteoRay.length; i++) {
+                    aGlobalMeteoRay[i] = wToDba(dbaToW(aGlobalMeteoRay[i]) * sourceLi);
+                }
+            }
+            // Keep global attenuation
+            if(keepAbsorption) {
+                proPath.absorptionData.aGlobal = aGlobalMeteoRay.clone();
+            }
+
             if (propagationAttenuationSpectrum != null) {
                 propagationAttenuationSpectrum = sumDbArray(aGlobalMeteoRay, propagationAttenuationSpectrum);
             } else {
@@ -366,12 +372,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             }
         }
         if (propagationAttenuationSpectrum != null) {
-            // For line source, take account of li coefficient
-            if(sourceLi > 1.0) {
-                for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
-                    propagationAttenuationSpectrum[i] = wToDba(dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
-                }
-            }
             return propagationAttenuationSpectrum;
         } else {
             return new double[0];

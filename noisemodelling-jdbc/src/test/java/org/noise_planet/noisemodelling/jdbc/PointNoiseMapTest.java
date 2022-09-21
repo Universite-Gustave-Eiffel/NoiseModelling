@@ -318,7 +318,7 @@ public class PointNoiseMapTest {
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
             ldenConfig.setCoefficientVersion(1);
-            ldenConfig.setKeepAbsorption(true);
+            ldenConfig.setKeepAbsorption(false);
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
@@ -361,7 +361,6 @@ public class PointNoiseMapTest {
                         // This is source orientation, not relevant to receiver position
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
                         assertOrientationEquals(new Orientation(330.07, -24.12, 0.0), path.raySourceReceiverDirectivity, 0.01);
-                        assertEquals(-5.9, path.absorptionData.aSource[0], 0.1);
 
                         path = rout.propagationPaths.remove(0);;
                         assertEquals(1, path.getIdReceiver());
@@ -369,7 +368,6 @@ public class PointNoiseMapTest {
                                 distance(path.getPointList().get(0).coordinate), 0.1);
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
                         assertOrientationEquals(new Orientation(336.90675972385696, -19.398969693698437, 0), path.raySourceReceiverDirectivity, 0.01);
-                        assertEquals(-7.8, path.absorptionData.aSource[0], 0.1);
                         path = rout.propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
@@ -406,7 +404,7 @@ public class PointNoiseMapTest {
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
             ldenConfig.setCoefficientVersion(1);
-            ldenConfig.setKeepAbsorption(true);
+            ldenConfig.setKeepAbsorption(false);
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity

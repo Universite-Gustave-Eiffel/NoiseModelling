@@ -73,6 +73,7 @@ public class PropagationPath {
     private boolean favorable; // if true, favorable meteorological condition path
     int idSource;
     int idReceiver;
+    private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     Orientation sourceOrientation = new Orientation(0,0,0);
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
     public double angle;
@@ -174,8 +175,8 @@ public class PropagationPath {
         this.difVPoints = other.difVPoints;
         this.refPoints = other.refPoints;
         this.keepAbsorption = other.keepAbsorption;
-        this.absorptionData = other.absorptionData;
-        this.groundAttenuation = other.groundAttenuation;
+        this.absorptionData = new AbsorptionData(other.absorptionData);
+        this.groundAttenuation = new GroundAttenuation(other.groundAttenuation);
         this.reflectionAttenuation = other.reflectionAttenuation;
         this.deltaH = other.deltaH;
         this.deltaF = other.deltaF;
@@ -191,10 +192,25 @@ public class PropagationPath {
         this.deltaRetroH = other.deltaRetroH;
         this.deltaRetroF = other.deltaRetroF;
         this.cutPoints = new ArrayList<>(other.cutPoints);
+        this.timePeriod = other.timePeriod;
     }
 
     public PropagationPath() {
 
+    }
+
+    /**
+     * @return time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
+     */
+    public String getTimePeriod() {
+        return timePeriod;
+    }
+
+    /**
+     * @param timePeriod time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
+     */
+    public void setTimePeriod(String timePeriod) {
+        this.timePeriod = timePeriod;
     }
 
     public Orientation getSourceOrientation() {
@@ -743,17 +759,17 @@ public class PropagationPath {
 
     //Following classes are use for testing purpose
     public static class AbsorptionData {
-        public double[] aAtm;
-        public double[] aDiv;
-        public double[] aRef;
-        public double[] aBoundaryH;
-        public double[] aBoundaryF;
-        public double[] aGlobalH;
-        public double[] aGlobalF;
-        public double[] aDifH;
-        public double[] aDifF;
-        public double[] aGlobal;
-        public double[] aSource; // directivity attenuation
+        public double[] aAtm = new double[0];
+        public double[] aDiv = new double[0];
+        public double[] aRef = new double[0];
+        public double[] aBoundaryH = new double[0];
+        public double[] aBoundaryF = new double[0];
+        public double[] aGlobalH = new double[0];
+        public double[] aGlobalF = new double[0];
+        public double[] aDifH = new double[0];
+        public double[] aDifF = new double[0];
+        public double[] aGlobal = new double[0];
+        public double[] aSource = new double[0]; // directivity attenuation
 
         public void init(int size) {
             aAtm = new double[size];
@@ -767,6 +783,23 @@ public class PropagationPath {
             aDifF = new double[size];
             aGlobal = new double[size];
             aSource = new double[size];
+        }
+
+        public AbsorptionData() {
+        }
+
+        public AbsorptionData(AbsorptionData other) {
+            this.aAtm = other.aAtm.clone();
+            this.aDiv = other.aDiv.clone();
+            this.aRef = other.aRef.clone();
+            this.aBoundaryH = other.aBoundaryH.clone();
+            this.aBoundaryF = other.aBoundaryF.clone();
+            this.aGlobalH = other.aGlobalH.clone();
+            this.aGlobalF = other.aGlobalF.clone();
+            this.aDifH = other.aDifH.clone();
+            this.aDifF = other.aDifF.clone();
+            this.aGlobal = other.aGlobal.clone();
+            this.aSource = other.aSource.clone();
         }
     }
 
@@ -785,6 +818,18 @@ public class PropagationPath {
             wF = new double[size];
             cfF = new double[size];
             aGroundF = new double[size];
+        }
+
+        public GroundAttenuation() {
+        }
+
+        public GroundAttenuation(GroundAttenuation other) {
+            this.wH = other.wH;
+            this.cfH = other.cfH;
+            this.aGroundH = other.aGroundH;
+            this.wF = other.wF;
+            this.cfF = other.cfF;
+            this.aGroundF = other.aGroundF;
         }
     }
 

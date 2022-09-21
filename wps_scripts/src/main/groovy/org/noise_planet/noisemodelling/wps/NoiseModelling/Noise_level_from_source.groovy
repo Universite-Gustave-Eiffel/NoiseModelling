@@ -252,7 +252,16 @@ inputs = [
                         '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>Default value <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
                 min        : 0, max: 1,
                 type       : String.class
-        ]
+        ],
+        confRaysTableName            : [
+                name       : 'Save each propagation ray into the specified table (ex:RAYS)',
+                title      : 'Name of the ray table',
+                description: 'You can set a table name here in order to save all the rays computed by NoiseModelling' +
+                        '. This table may be extremely large if there is a lot of receivers and sources. ' +
+                        'It will also greatly increase the computation time.' +
+                        '</br> </br> <b> Default value : empty (do not keep rays) </b>',
+                min        : 0, max: 1, type: String.class
+        ],
 ]
 
 outputs = [
@@ -364,8 +373,12 @@ def exec(Connection connection, input) {
     sources_table_name = sources_table_name.toUpperCase()
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
-    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
+    if (sridSources == 3785 || sridSources == 4326) {
+        throw new IllegalArgumentException("Error : Please use a metric projection for " + sources_table_name + ".")
+    }
+    if (sridSources == 0) {
+        throw new IllegalArgumentException("Error : The table " + sources_table_name + " does not have an associated SRID.")
+    }
 
 
     String receivers_table_name = input['tableReceivers']
@@ -505,6 +518,11 @@ def exec(Connection connection, input) {
     ldenConfig.setComputeLNight(!confSkipLnight)
     ldenConfig.setComputeLDEN(!confSkipLden)
     ldenConfig.setMergeSources(!confExportSourceId)
+    if (input['confRaysTableName'] && !((input['confRaysTableName'] as String).isEmpty())) {
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE)
+        ldenConfig.setKeepAbsorption(true);
+        ldenConfig.setRaysTable(input['confRaysTableName'] as String)
+    }
 
     LDENPointNoiseMapFactory ldenProcessing = new LDENPointNoiseMapFactory(connection, ldenConfig)
 

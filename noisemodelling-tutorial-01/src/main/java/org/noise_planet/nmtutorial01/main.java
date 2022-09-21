@@ -124,6 +124,7 @@ class Main {
 
         pointNoiseMap.setMaximumPropagationDistance(100.0);
         pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.setThreadCount(1);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -139,7 +140,8 @@ class Main {
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
-        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE);
+        ldenConfig.setKeepAbsorption(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
