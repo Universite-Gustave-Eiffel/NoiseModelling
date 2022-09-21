@@ -81,6 +81,7 @@ test {
     }
 }
 dependencies {
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
     implementation('org.geotools:gt-jdbc:21.1') {
         exclude group: 'javax.media'
     }
