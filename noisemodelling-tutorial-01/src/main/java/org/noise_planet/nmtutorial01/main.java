@@ -152,6 +152,10 @@ class Main {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY).setTemperature(20);
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING).setTemperature(16);
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT).setTemperature(10);
+
         pointNoiseMap.setGridDim(1);
 
         LocalDateTime now = LocalDateTime.now();
