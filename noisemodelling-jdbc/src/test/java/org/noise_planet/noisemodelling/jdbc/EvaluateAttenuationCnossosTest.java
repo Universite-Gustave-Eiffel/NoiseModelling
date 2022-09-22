@@ -5837,12 +5837,6 @@ public class EvaluateAttenuationCnossosTest {
 
         PropagationPath propPath = new PropagationPath();
         propPath.readStream(new DataInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(path))));
-        propPath.initPropagationPath();
-
-//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//        propPath.writeStream(new DataOutputStream(bos));
-//        String newVersion  = new String(Base64.getEncoder().encode(bos.toByteArray()));
-//        System.out.println(newVersion);
 
         PropagationProcessPathData pathData = new PropagationProcessPathData();
         EvaluateAttenuationCnossos.evaluate(propPath, pathData);

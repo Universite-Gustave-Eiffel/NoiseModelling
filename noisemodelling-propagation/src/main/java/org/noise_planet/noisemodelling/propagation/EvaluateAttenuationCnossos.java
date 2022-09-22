@@ -458,9 +458,6 @@ public class EvaluateAttenuationCnossos {
             }
         }
 
-        // init evolved path
-        path.initPropagationPath();
-
         // init atmosphere
         double[] alpha_atmo = data.getAlpha_atmo();
 

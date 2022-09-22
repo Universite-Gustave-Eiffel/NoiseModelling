@@ -249,7 +249,7 @@ public class PropagationPath {
         int i=0;
         double cutPointDistance = 0;
         int cutPointCursor = 0;
-        if(cutPoints.isEmpty()) {
+        if(cutPoints.isEmpty() || coordinates.length <= 1) {
             return geometryFactory.createLineString();
         }
         for(PointPath pointPath : pointList) {
@@ -271,7 +271,7 @@ public class PropagationPath {
                 double distanceP0P1 = p1.distance(p0);
                 // compute ratio of pointPath position between p0 and p1
                 double ratio = Math.min(1, Math.max(0, (pointPath.coordinate.x - (cutPointDistance - distanceP0P1)) / distanceP0P1));
-                // interpolate coordinates
+                // interpolate x,y coordinates
                 rayPoint = new LineSegment(p0, p1).pointAlong(ratio);
                 rayPoint.setZ(pointPath.coordinate.y);
             }
