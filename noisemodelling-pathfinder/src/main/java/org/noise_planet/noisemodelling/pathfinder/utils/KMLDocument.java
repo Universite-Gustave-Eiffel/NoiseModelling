@@ -271,14 +271,8 @@ public class KMLDocument {
         xmlOut.writeStartElement("name");
         xmlOut.writeCharacters("buildings");
         xmlOut.writeEndElement();//Name
-        xmlOut.writeStartElement("Placemark");
-        xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters("building");
-        xmlOut.writeEndElement();//Name
         List<ProfileBuilder.Building> buildings = profileBuilder.getBuildings();
-        List<Polygon> polygons = new ArrayList<>(buildings.size());
         int idPoly = 0;
-
         for(ProfileBuilder.Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
@@ -294,15 +288,18 @@ public class KMLDocument {
                 }
                 // Apply CRS transform
                 doTransform(poly);
-                polygons.add(poly);
+                xmlOut.writeStartElement("Placemark");
+                xmlOut.writeStartElement("name");
+                xmlOut.writeCharacters("building");
+                xmlOut.writeEndElement();//Name
+                //Write geometry
+                writeRawXml(KMLWriter.writeGeometry(
+                        poly, z,
+                        wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+                xmlOut.writeEndElement();//Write Placemark
             }
             idPoly++;
         }
-        //Write geometry
-        writeRawXml(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
-                        polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
-        xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;
     }
