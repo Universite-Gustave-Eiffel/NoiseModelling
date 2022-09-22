@@ -535,8 +535,8 @@ def exec(Connection connection, input) {
         ldenProcessing.directionAttributes = DirectivityTableLoader.loadTable(connection, tableSourceDirectivity, 1)
         logger.info(String.format(Locale.ROOT, "Loaded %d directivity from %s table", ldenProcessing.directionAttributes.size(), tableSourceDirectivity))
     }
-    pointNoiseMap.setComputeHorizontalDiffraction(compute_horizontal_diffraction)
-    pointNoiseMap.setComputeVerticalDiffraction(compute_vertical_diffraction)
+    pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)
+    pointNoiseMap.setComputeVerticalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
 
     // Set environmental parameters
