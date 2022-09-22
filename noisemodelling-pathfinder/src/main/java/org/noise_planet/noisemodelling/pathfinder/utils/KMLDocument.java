@@ -62,8 +62,10 @@ import org.cts.op.CoordinateOperationException;
 import org.cts.op.CoordinateOperationFactory;
 import org.cts.registry.EPSGRegistry;
 import org.cts.registry.RegistryManager;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -73,13 +75,18 @@ import org.noise_planet.noisemodelling.pathfinder.Triangle;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import java.awt.*;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,7 +97,7 @@ import java.util.logging.Logger;
  * @author Nicolas Fortin 2019
  */
 public class KMLDocument {
-//    private List<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
+    //    private List<MeshBuilder.PolygonWithHeight> buildings = new ArrayList<>();
 //    private List<TriMarkers> isoCountours = new ArrayList<>();
     private final XMLStreamWriter xmlOut;
     private final OutputStream outputStream;
@@ -100,12 +107,39 @@ public class KMLDocument {
     private int wgs84Precision = 7;
     private GeometryFactory geometryFactory = new GeometryFactory();
     private CoordinateOperation transform = null;
+    // Color scale from 0 to 1
+    private TreeMap<Double, Color> colorScale = new TreeMap<>();
 
     public KMLDocument(OutputStream outputStream) throws XMLStreamException {
         final XMLOutputFactory streamWriterFactory = XMLOutputFactory.newFactory();
         this.outputStream = outputStream;
         xmlOut = streamWriterFactory.createXMLStreamWriter(
                 new BufferedOutputStream(outputStream), "UTF-8");
+        setDefaultColorScale();
+    }
+
+    public void setDefaultColorScale() {
+        colorScale.clear();
+        // Set default color scale
+        colorScale.put(0.0, new Color(130, 166, 173));
+        colorScale.put(1 / 10.0, new Color(160, 186, 191));
+        colorScale.put(2 / 10.0, new Color(184, 214, 209));
+        colorScale.put(3 / 10.0, new Color(206, 228, 204));
+        colorScale.put(4 / 10.0, new Color(226, 242, 191));
+        colorScale.put(5 / 10.0, new Color(243, 198, 131));
+        colorScale.put(6 / 10.0, new Color(232, 126, 77));
+        colorScale.put(7 / 10.0, new Color(205, 70, 62));
+        colorScale.put(8 / 10.0, new Color(161, 26, 77));
+        colorScale.put(9 / 10.0, new Color(117, 8, 92));
+        colorScale.put(1.0, new Color(67, 10, 74));
+    }
+
+    public Map<Double, Color> getColorScale() {
+        return new HashMap<>(colorScale);
+    }
+
+    public void setColorScale(Map<Double, Color> colorScale) {
+        this.colorScale = new TreeMap<>(colorScale);
     }
 
     /**
@@ -128,7 +162,7 @@ public class KMLDocument {
 
         // Add the appropriate registry to the CRSFactory's registry manager. Here the EPSG registry is used.
         RegistryManager registryManager = cRSFactory.getRegistryManager();
-                registryManager.addRegistry(new EPSGRegistry());
+        registryManager.addRegistry(new EPSGRegistry());
 
         // CTS will read the EPSG registry seeking the 4326 code, when it finds it,
         // it will create a CoordinateReferenceSystem using the parameters found in the registry.
@@ -249,6 +283,7 @@ public class KMLDocument {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
             double z = profileBuilder.getBuilding(idPoly ).getZ();
+            // z is building height + average ground height
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
             }
@@ -265,8 +300,8 @@ public class KMLDocument {
         }
         //Write geometry
         writeRawXml(KMLWriter.writeGeometry(geometryFactory.createMultiPolygon(
-                polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
-                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
+                        polygons.toArray(new Polygon[polygons.size()])), Double.NaN,
+                wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
         xmlOut.writeEndElement();//Write Placemark
         xmlOut.writeEndElement();//Folder
         return this;
@@ -307,7 +342,32 @@ public class KMLDocument {
         return this;
     }
 
+    private String formatColorEntry(double key) {
+        return String.format(Locale.ROOT, "scale%g", key);
+    }
+
     public KMLDocument writeRays(Collection<PropagationPath> rays) throws XMLStreamException {
+        double minDb = Double.MAX_VALUE;
+        double maxDb = -Double.MAX_VALUE;
+        for(PropagationPath line : rays) {
+            if(line.absorptionData.aGlobal != null && line.absorptionData.aGlobal.length > 0) {
+                double attenuationLevel = PowerUtils.sumDbArray(line.absorptionData.aGlobal);
+                minDb = Math.min(minDb, attenuationLevel);
+                maxDb = Math.max(maxDb, attenuationLevel);
+            }
+        }
+        for (Map.Entry<Double, Color> colorEntry : colorScale.entrySet()) {
+            xmlOut.writeStartElement("Style");
+            xmlOut.writeAttribute("id", formatColorEntry(colorEntry.getKey()));
+            xmlOut.writeStartElement("LineStyle");
+            xmlOut.writeStartElement("color");
+            Color color = colorEntry.getValue();
+            xmlOut.writeCharacters(String.format("#FF%02x%02x%02x", color.getBlue(), color.getGreen(), color.getRed()));
+            xmlOut.writeEndElement(); // /color
+            xmlOut.writeEndElement(); // /LineStyle
+            xmlOut.writeEndElement(); // / Style
+        }
+
         xmlOut.writeStartElement("Schema");
         xmlOut.writeAttribute("name", "rays");
         xmlOut.writeAttribute("id", "rays");
@@ -317,10 +377,27 @@ public class KMLDocument {
         xmlOut.writeCharacters("rays");
         xmlOut.writeEndElement();//Name
         for(PropagationPath line : rays) {
+            double attenuationLevel = 0;
             xmlOut.writeStartElement("Placemark");
             xmlOut.writeStartElement("name");
-            xmlOut.writeCharacters(String.format("R:%d S:%d", line.getIdReceiver(), line.getIdSource()));
+            if(line.absorptionData.aGlobal != null && line.absorptionData.aGlobal.length > 0) {
+                attenuationLevel = PowerUtils.sumDbArray(line.absorptionData.aGlobal);
+                xmlOut.writeCharacters(String.format("%.1f dB R:%d S:%d",
+                        attenuationLevel,line.getIdReceiver(), line.getIdSource()));
+            } else {
+                xmlOut.writeCharacters(String.format("R:%d S:%d", line.getIdReceiver(), line.getIdSource()));
+            }
             xmlOut.writeEndElement();//Name
+            if(line.absorptionData.aGlobal != null && line.absorptionData.aGlobal.length > 0) {
+                Map.Entry<Double, Color> colorEntry =
+                        colorScale.floorEntry((attenuationLevel - minDb) / (maxDb - minDb));
+                if(colorEntry == null) {
+                    colorEntry = colorScale.firstEntry();
+                }
+                xmlOut.writeStartElement("styleUrl");
+                xmlOut.writeCharacters("#" + formatColorEntry(colorEntry.getKey()));
+                xmlOut.writeEndElement(); //styleurl
+            }
             LineString lineString = line.asGeom();
             // Apply CRS transform
             doTransform(lineString);

@@ -47,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Main {
-    public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50;
+    public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
     public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
         // Init output logger
@@ -140,7 +140,7 @@ class Main {
         ldenConfig.setComputeLEvening(true);
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
-        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE);
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
         ldenConfig.setKeepAbsorption(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
@@ -188,12 +188,14 @@ class Main {
                 if (out instanceof ComputeRaysOutAttenuation) {
                     ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
                     // restrict the number of rays to export
-                    List<PropagationPath> propagationPaths = new ArrayList<>();
+                    List<PropagationPath> propagationPaths = new ArrayList<>(MAX_OUTPUT_PROPAGATION_PATHS);
                     for(PropagationPath p : ((ComputeRaysOutAttenuation)out).propagationPaths) {
-                        if(p.getPointList().size() > 3) {
-                            propagationPaths.add(p);
-                            if(propagationPaths.size() > MAX_OUTPUT_PROPAGATION_PATHS) {
-                                break;
+                        if(p.getTimePeriod().equals(LDENConfig.TIME_PERIOD.DAY.name())) {
+                            if (p.getPointList().size() > 3) {
+                                propagationPaths.add(p);
+                                if (propagationPaths.size() >= MAX_OUTPUT_PROPAGATION_PATHS) {
+                                    break;
+                                }
                             }
                         }
                     }

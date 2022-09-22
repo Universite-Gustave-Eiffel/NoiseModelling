@@ -2171,7 +2171,7 @@ public class ProfileBuilder {
         private Polygon poly;
         /** Height of the building. */
         private final double height;
-        private double zTopo = 0.0;
+        private double zTopo = 0.0; // average Z ground
         /** Absorption coefficients. */
         private final List<Double> alphas;
 
@@ -2263,14 +2263,18 @@ public class ProfileBuilder {
             return pk;
         }
 
-        //TODO use instead the min Ztopo
+        /**
+         * Compute average Z ground under the building contour
+         * @param profileBuilder
+         * @return
+         */
         public double updateZTopo(ProfileBuilder profileBuilder) {
             Coordinate[] coordinates = poly.getCoordinates();
-            double minZ = 0.0;
+            double sumZ = 0.0;
             for (int i = 0; i < coordinates.length-1; i++) {
-                minZ += profileBuilder.getZGround(coordinates[i]);
+                sumZ += profileBuilder.getZGround(coordinates[i]);
             }
-            zTopo = minZ/(coordinates.length-1);
+            zTopo = sumZ/(coordinates.length-1);
             return zTopo;
         }
 
