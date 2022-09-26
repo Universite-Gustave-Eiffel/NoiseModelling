@@ -24,6 +24,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
@@ -68,6 +69,7 @@ public class LDENConfig {
 
     boolean exportProfileInRays = false;
     boolean keepAbsorption = false; // in rays, keep store detailed absorption data
+    int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
@@ -100,6 +102,20 @@ public class LDENConfig {
             default:
                 return propagationProcessPathDataNight;
         }
+    }
+
+    /**
+     * @return if export rays, do not keep more than this number of rays (0 infinite)
+     */
+    public int getMaximumRaysOutputCount() {
+        return maximumRaysOutputCount;
+    }
+
+    /**
+     * @param maximumRaysOutputCount if export rays, do not keep more than this number of rays (0 infinite)
+     */
+    public void setMaximumRaysOutputCount(int maximumRaysOutputCount) {
+        this.maximumRaysOutputCount = maximumRaysOutputCount;
     }
 
     public void setPropagationProcessPathData(TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {

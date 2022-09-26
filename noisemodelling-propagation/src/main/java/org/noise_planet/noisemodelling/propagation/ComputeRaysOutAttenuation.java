@@ -58,7 +58,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
  */
 public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public ConcurrentLinkedDeque<VerticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
-    public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+    public Deque<PropagationPath> propagationPaths = new ConcurrentLinkedDeque<PropagationPath>();
+    public AtomicInteger propagationPathsSize = new AtomicInteger(0);
 
     public PropagationProcessPathData genericMeteoData;
     public CnossosPropagationData inputData;
@@ -388,7 +389,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     public List<PropagationPath> getPropagationPaths() {
-        return propagationPaths;
+        return new ArrayList<>(propagationPaths);
     }
 
     public void clearPropagationPaths() { this.propagationPaths.clear();}

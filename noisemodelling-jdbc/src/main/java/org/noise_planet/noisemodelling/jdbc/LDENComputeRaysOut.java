@@ -210,8 +210,23 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                     return;
                 }
             }
-            stack.addAll(data);
-            ldenComputeRaysOut.ldenData.queueSize.addAndGet(data.size());
+            if(ldenConfig.getMaximumRaysOutputCount() == 0 || ldenComputeRaysOut.ldenData.totalRaysInserted.get() < ldenConfig.getMaximumRaysOutputCount()) {
+                long newTotalRays = ldenComputeRaysOut.ldenData.totalRaysInserted.addAndGet(data.size());
+                if(ldenConfig.getMaximumRaysOutputCount() > 0 && newTotalRays > ldenConfig.getMaximumRaysOutputCount()) {
+                    // too many rays, remove unwanted rays
+                    int newListSize = data.size() - (int)(newTotalRays - ldenConfig.getMaximumRaysOutputCount());
+                    List<PropagationPath> subList = new ArrayList<PropagationPath>(newListSize);
+                    for(PropagationPath propagationPath : data) {
+                        subList.add(propagationPath);
+                        if(subList.size() >= newListSize) {
+                            break;
+                        }
+                    }
+                    data = subList;
+                }
+                stack.addAll(data);
+                ldenComputeRaysOut.ldenData.queueSize.addAndGet(data.size());
+            }
         }
 
         @Override
@@ -220,7 +235,16 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                 if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_RAYS_TABLE) {
                     // Push propagation rays
                     pushInStack(ldenComputeRaysOut.ldenData.rays, propagationPaths);
-                } else if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_MEMORY){
+                } else if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_MEMORY
+                && (ldenConfig.getMaximumRaysOutputCount() == 0 ||
+                        ldenComputeRaysOut.propagationPathsSize.get() < ldenConfig.getMaximumRaysOutputCount())){
+                    int newRaysSize = ldenComputeRaysOut.propagationPathsSize.addAndGet(propagationPaths.size());
+                    if(newRaysSize > ldenConfig.getMaximumRaysOutputCount()) {
+                        // remove exceeded elements of the array
+                        propagationPaths = propagationPaths.subList(0,
+                                propagationPaths.size() - Math.min( propagationPaths.size(),
+                                        newRaysSize - ldenConfig.getMaximumRaysOutputCount()));
+                    }
                     ldenComputeRaysOut.propagationPaths.addAll(propagationPaths);
                 }
                 propagationPaths.clear();
@@ -330,6 +354,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
     public static class LdenData {
         public final AtomicLong queueSize = new AtomicLong(0);
+        public final AtomicLong totalRaysInserted = new AtomicLong(0);
         public final ConcurrentLinkedDeque<VerticeSL> lDayLevels = new ConcurrentLinkedDeque<>();
         public final ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
         public final ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();
