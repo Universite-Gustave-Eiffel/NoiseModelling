@@ -19,6 +19,8 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import org.cts.crs.CRSException
+import org.cts.op.CoordinateOperationException
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
@@ -30,6 +32,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.emission.*
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.pathfinder.utils.JVMMemoryMetric
+import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread
 import org.noise_planet.noisemodelling.pathfinder.utils.ProgressMetric
 import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric
@@ -39,6 +42,7 @@ import org.noise_planet.noisemodelling.jdbc.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import javax.xml.stream.XMLStreamException
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
@@ -256,13 +260,14 @@ inputs = [
                 min        : 0, max: 1,
                 type       : String.class
         ],
-        confRaysTableName            : [
-                name       : 'Save each propagation ray into the specified table (ex:RAYS)',
-                title      : 'Name of the ray table',
-                description: 'You can set a table name here in order to save all the rays computed by NoiseModelling' +
-                        '. This table may be extremely large if there is a lot of receivers and sources. ' +
-                        'It will also greatly increase the computation time.' +
-                        '</br> </br> <b> Default value : empty (do not keep rays) </b>',
+        confRaysName            : [
+                name       : '',
+                title      : 'Export  r',
+                description: 'Save each propagation ray into the specified table (ex:RAYS) ' +
+                        'or file URL (ex: file:///Z:/dir/map.kml)' +
+                        'You can set a table name here in order to save all the rays computed by NoiseModelling' +
+                        '. The number of rays has been limited in this script in order to avoid memory exception' +
+                        '</br> <b> Default value : empty (do not keep rays) </b>',
                 min        : 0, max: 1, type: String.class
         ]
 ]
@@ -351,6 +356,29 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER)")
     }
 }
+
+
+static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result, int crs) throws IOException {
+    try {
+        FileOutputStream outData = new FileOutputStream(name);
+        KMLDocument kmlDocument = new KMLDocument(outData);
+        kmlDocument.setInputCRS("EPSG:" + crs);
+        kmlDocument.writeHeader();
+        if(builder != null) {
+            kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
+        }
+        if(result != null) {
+            kmlDocument.writeRays(result.getPropagationPaths());
+        }
+        if(builder != null) {
+            kmlDocument.writeBuildings(builder);
+        }
+        kmlDocument.writeFooter();
+    } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
+        throw new IOException(ex);
+    }
+}
+
 
 // main function of the script
 def exec(Connection connection, input) {
@@ -531,10 +559,30 @@ def exec(Connection connection, input) {
     ldenConfig.setComputeLDEN(!confSkipLden)
     ldenConfig.setMergeSources(!confExportSourceId)
 
-    if (input['confRaysTableName'] && !((input['confRaysTableName'] as String).isEmpty())) {
-        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE)
+    int maximumRaysToExport = 5000
+
+    File folderExportKML = null
+    String kmlFileNamePrepend = ""
+    if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
+        String confRaysName = input['confRaysName'] as String
+        if(confRaysName.startsWith("file:")) {
+            ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY)
+            URL url = new URL(confRaysName)
+            File urlFile = new File(url.toURI())
+            if(urlFile.isDirectory()) {
+                folderExportKML = urlFile
+            } else {
+                folderExportKML = urlFile.getParentFile()
+                kmlFileNamePrepend = confRaysName.substring(
+                        Math.max(0, confRaysName.lastIndexOf(File.separator) + 1),
+                        Math.max(0, confRaysName.lastIndexOf(".")))
+            }
+        } else {
+            ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE)
+            ldenConfig.setRaysTable(input['confRaysName'] as String)
+        }
         ldenConfig.setKeepAbsorption(true);
-        ldenConfig.setRaysTable(input['confRaysTableName'] as String)
+        ldenConfig.setMaximumRaysOutputCount(maximumRaysToExport);
     }
 
     LDENPointNoiseMapFactory ldenProcessing = new LDENPointNoiseMapFactory(connection, ldenConfig)
@@ -642,12 +690,14 @@ def exec(Connection connection, input) {
         new TreeSet<>(cells.keySet()).each { cellIndex ->
             // Run ray propagation
             logger.info(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
-            IComputeRaysOut ro = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
-            if (ro instanceof LDENComputeRaysOut) {
-                LDENPropagationProcessData ldenPropagationProcessData = (LDENPropagationProcessData) ro.inputData;
-                logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
-                        ldenPropagationProcessData.receivers.size(), ldenPropagationProcessData.sourceGeometries.size(),
-                        ldenPropagationProcessData.profileBuilder.getBuildingCount()));
+            IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
+            // Export as a Google Earth 3d scene
+            if (out instanceof ComputeRaysOutAttenuation && folderExportKML != null) {
+                ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
+                exportScene(new File(folderExportKML.getPath(),
+                        String.format(Locale.ROOT, kmlFileNamePrepend + "_%d_%d.kml", cellIndex.getLatitudeIndex(),
+                                cellIndex.getLongitudeIndex())).getPath(),
+                        cellStorage.inputData.profileBuilder, cellStorage, sridSources)
             }
         }
     } catch(IllegalArgumentException | IllegalStateException ex) {
