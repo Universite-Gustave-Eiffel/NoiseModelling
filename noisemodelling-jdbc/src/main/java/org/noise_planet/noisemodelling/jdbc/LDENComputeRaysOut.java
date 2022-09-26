@@ -239,7 +239,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                 && (ldenConfig.getMaximumRaysOutputCount() == 0 ||
                         ldenComputeRaysOut.propagationPathsSize.get() < ldenConfig.getMaximumRaysOutputCount())){
                     int newRaysSize = ldenComputeRaysOut.propagationPathsSize.addAndGet(propagationPaths.size());
-                    if(newRaysSize > ldenConfig.getMaximumRaysOutputCount()) {
+                    if(ldenConfig.getMaximumRaysOutputCount() > 0 && newRaysSize > ldenConfig.getMaximumRaysOutputCount()) {
                         // remove exceeded elements of the array
                         propagationPaths = propagationPaths.subList(0,
                                 propagationPaths.size() - Math.min( propagationPaths.size(),

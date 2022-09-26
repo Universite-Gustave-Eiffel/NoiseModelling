@@ -112,7 +112,7 @@ public class LDENConfig {
     }
 
     /**
-     * @param maximumRaysOutputCount if export rays, do not keep more than this number of rays (0 infinite)
+     * @param maximumRaysOutputCount if export rays, do not keep more than this number of rays per computation area (0 infinite)
      */
     public void setMaximumRaysOutputCount(int maximumRaysOutputCount) {
         this.maximumRaysOutputCount = maximumRaysOutputCount;

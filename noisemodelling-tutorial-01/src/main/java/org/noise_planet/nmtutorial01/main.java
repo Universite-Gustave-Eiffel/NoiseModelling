@@ -155,6 +155,7 @@ class Main {
         ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY).setTemperature(20);
         ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING).setTemperature(16);
         ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT).setTemperature(10);
+        ldenConfig.setMaximumRaysOutputCount(MAX_OUTPUT_PROPAGATION_PATHS); // do not export more than this number of rays per computation area
 
         pointNoiseMap.setGridDim(1);
 
@@ -187,20 +188,6 @@ class Main {
                 // Export as a Google Earth 3d scene
                 if (out instanceof ComputeRaysOutAttenuation) {
                     ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
-                    // restrict the number of rays to export
-                    List<PropagationPath> propagationPaths = new ArrayList<>(MAX_OUTPUT_PROPAGATION_PATHS);
-                    for(PropagationPath p : ((ComputeRaysOutAttenuation)out).propagationPaths) {
-                        if(p.getTimePeriod().equals(LDENConfig.TIME_PERIOD.DAY.name())) {
-                            if (p.getPointList().size() > 3) {
-                                propagationPaths.add(p);
-                                if (propagationPaths.size() >= MAX_OUTPUT_PROPAGATION_PATHS) {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    ((ComputeRaysOutAttenuation)out).propagationPaths.clear();
-                    ((ComputeRaysOutAttenuation)out).propagationPaths.addAll(propagationPaths);
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }

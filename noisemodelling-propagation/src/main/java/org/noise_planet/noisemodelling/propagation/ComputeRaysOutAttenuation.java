@@ -141,6 +141,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
+            propagationPathsSize.addAndGet(propagationPath.size());
         }
         double[] aGlobalMeteo = computeAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
@@ -392,7 +393,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         return new ArrayList<>(propagationPaths);
     }
 
-    public void clearPropagationPaths() { this.propagationPaths.clear();}
+    public void clearPropagationPaths() {
+        propagationPaths.clear();
+        propagationPathsSize.set(0);
+    }
 
     public void appendReflexionPath(long added) {
         nb_reflexion_path.addAndGet(added);
@@ -499,6 +503,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         public void finalizeReceiver(final long receiverId) {
             if(keepRays && !propagationPaths.isEmpty()) {
                 multiThreadParent.propagationPaths.addAll(propagationPaths);
+                multiThreadParent.propagationPathsSize.addAndGet(propagationPaths.size());
                 propagationPaths.clear();
             }
             long receiverPK = receiverId;
