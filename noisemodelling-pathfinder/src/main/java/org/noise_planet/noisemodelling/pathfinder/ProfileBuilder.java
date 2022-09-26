@@ -1575,6 +1575,13 @@ public class ProfileBuilder {
         return getZGround(new CutPoint(c, TOPOGRAPHY, -1));
     }
 
+    /**
+     * @return True if digital elevation model has been added
+     */
+    public boolean hasDem() {
+        return topoTree != null && topoTree.size() > 0;
+    }
+
     public double getZGround(CutPoint cut) {
         if(!Double.isNaN(cut.zGround)) {
             return cut.zGround;

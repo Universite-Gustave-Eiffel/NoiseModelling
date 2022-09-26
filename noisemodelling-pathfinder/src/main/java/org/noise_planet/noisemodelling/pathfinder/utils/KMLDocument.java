@@ -274,6 +274,12 @@ public class KMLDocument {
         xmlOut.writeEndElement();//Name
         List<ProfileBuilder.Building> buildings = profileBuilder.getBuildings();
         int idPoly = 0;
+        KMLWriter buildingWriter = new KMLWriter();
+        buildingWriter.setPrecision(wgs84Precision);
+        buildingWriter.setExtrude(true);
+        buildingWriter.setTesselate(true);
+        buildingWriter.setAltitudeMode(profileBuilder.hasDem() ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND);
+
         for(ProfileBuilder.Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
@@ -294,9 +300,8 @@ public class KMLDocument {
                 xmlOut.writeCharacters("building");
                 xmlOut.writeEndElement();//Name
                 //Write geometry
-                writeRawXml(KMLWriter.writeGeometry(
-                        poly, z,
-                        wgs84Precision, true, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+                buildingWriter.setZ(z);
+                writeRawXml(buildingWriter.write(poly));
                 xmlOut.writeEndElement();//Write Placemark
             }
             idPoly++;
@@ -378,6 +383,13 @@ public class KMLDocument {
             double attenuationLevel = 0;
             xmlOut.writeStartElement("Placemark");
             xmlOut.writeStartElement("name");
+            boolean hasGroundElevation = false;
+            for(ProfileBuilder.CutPoint cutPoint : line.getCutPoints()) {
+                if(!Double.isNaN(cutPoint.getzGround())) {
+                    hasGroundElevation = true;
+                    break;
+                }
+            }
             if(line.absorptionData.aGlobal != null && line.absorptionData.aGlobal.length > 0) {
                 attenuationLevel = PowerUtils.sumDbArray(line.absorptionData.aGlobal);
                 xmlOut.writeCharacters(String.format("%.1f dB R:%d S:%d",
@@ -401,7 +413,8 @@ public class KMLDocument {
             doTransform(lineString);
             //Write geometry
             writeRawXml(KMLWriter.writeGeometry(lineString, Double.NaN,
-                    wgs84Precision, false, KMLWriter.ALTITUDE_MODE_ABSOLUTE));
+                    wgs84Precision, false,
+                    hasGroundElevation ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
             xmlOut.writeEndElement();//Write Placemark
         }
         xmlOut.writeEndElement();//Folder
