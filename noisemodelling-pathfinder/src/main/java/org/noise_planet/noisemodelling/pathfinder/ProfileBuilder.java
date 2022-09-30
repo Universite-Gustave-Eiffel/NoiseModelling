@@ -156,8 +156,9 @@ public class ProfileBuilder {
     private boolean zBuildings = false;
 
 
-    public void setzBuildings(boolean zBuildings) {
+    public ProfileBuilder setzBuildings(boolean zBuildings) {
         this.zBuildings = zBuildings;
+        return this;
     }
 
 
