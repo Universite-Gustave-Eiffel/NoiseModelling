@@ -96,11 +96,17 @@ Examples can be found in the page ":doc:`Get_Started_Script`".
 
 When a developer uses `Docker`_, he creates an application or service, which he then bundles together with the associated dependencies in a container image. An image is a static representation of the application or service, its configuration and dependencies.
 
-A docker image for the NoiseModelling v3.4.4 library has already been built by Tomáš Anda (Aka "`tomasanda`_" - thanks to him!). Please visit his Github repository: https://github.com/tomasanda/docker-noisemodelling
 
-.. warning::
-    This docker version is made with NoiseModelling **v3.4.4** which is an old release. A news Docker version with the last NoiseModelling version may be made.
+Available versions
+********************
 
+The Docker images listed below have been built by NoiseModelling contributors / users. Many thanks to them!
+
+* `v4.0.1 image`_, built by Alexander (Aka "`Xenotech81`_")
+* `v3.4.4 image`_, built by Tomáš Anda (Aka "`tomasanda`_")
 
 .. _Docker : https://www.docker.com/
+.. _v4.0.1 image : https://hub.docker.com/r/xenotech/noisemodelling
+.. _Xenotech81 : https://github.com/Xenotech81
+.. _v3.4.4 image : https://github.com/tomasanda/docker-noisemodelling
 .. _tomasanda : https://github.com/tomasanda

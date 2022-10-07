@@ -173,6 +173,7 @@ Fundings
     :maxdepth: 2
     :caption: Appendices
 
+    Noise_Map_Color_Scheme
     Support
     License
     Glossary

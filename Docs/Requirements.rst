@@ -7,9 +7,11 @@ Java environment
 Since NoiseModelling is developped with the `Java langage`_, you will need to install the Java Runtime Environment (JRE) on your computer to use the application.
 
 .. warning::
-    Only version 11.x of Java is compatible with NoiseModelling 4.x
+    **Only version 11.x of Java is compatible with NoiseModelling 4.x**. Unfortunatelay, former or newer versions are not compatible with NoiseModelling 4.x.
 
 .. _Java langage : https://en.wikipedia.org/wiki/Java_(programming_language)
+
+
 
 
 Windows
@@ -51,5 +53,5 @@ If not already done, you have to install the Java version v11.x.
 .. _proposed here: https://stackoverflow.com/questions/24641536/how-to-set-java-home-in-linux-for-all-users
 
 
-.. _OpenJDK : https://openjdk.java.net/
-.. _Oracle : https://www.java.com/fr/download/
+.. _OpenJDK : https://jdk.java.net/archive/
+.. _Oracle : https://www.oracle.com/fr/java/technologies/javase/jdk11-archive-downloads.html

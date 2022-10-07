@@ -238,7 +238,7 @@ Visualization
 Export the data
 ----------------
 
-Here we'll look at a nice way to look at the results with QGis.
+Here we'll look at a nice way to look at the results with QGIS.
 
 First we need to export the ``RESULT_GEOM`` table data into a Shapefile.
 We'll simply use the ``Export_Table WPS`` bloc with the following parameters :
@@ -249,21 +249,26 @@ We'll simply use the ``Export_Table WPS`` bloc with the following parameters :
 .. figure:: images/matsim/results_export_wps.png
    :align: center
 
-View it in QGis
+View it in QGIS
 ---------------------
 
 .. role::  raw-html(raw)
     :format: html
 
-Let's go into QGis. We are going to import 2 layers : an osm background and our results.
+Let's go into QGIS. We are going to import 2 layers : an osm background and our results.
 
-- In Layer :raw-html:`&rarr;` Add Layer :raw-html:`&rarr;` Add vector layer, you can enter the path of your ``results.shp`` file. Then click on "add".
-- In Layer :raw-html:`&rarr;` Add Layer :raw-html:`&rarr;` Add XYZ Layer, you can add the openstreetmap background.
+.. note::
+    For those who are new to GIS and want to get started with QGIS, we advise you to follow `this tutorial`_ as a start.
+
+.. _this tutorial : https://docs.qgis.org/3.22/en/docs/training_manual/basic_map/index.html
+
+- In ``Layer`` :raw-html:`&rarr;` ``Add Layer`` :raw-html:`&rarr;` ``Add vector layer``, you can enter the path of your ``results.shp`` file. Then click on ``Add``.
+- In ``Layer`` :raw-html:`&rarr;` ``Add Layer`` :raw-html:`&rarr;` ``Add XYZ Layer``, you can add the OpenStreetMap background.
 
 You should see a lot of points all of the same color.
 
-We now need to choose a timeslice we want to visualize, let's pick 10h00_10h15.
-If you right click on the receivers layer and click on Filter... you should see the filter dialog.
+We now need to choose a timeslice we want to visualize, let's pick ``10h00_10h15``.
+If you right click on the receivers layer and click on ``Filter...`` you should see the filter dialog.
 
 To filter results for the 10h00_10h15 time period you can enter the following filter query :
 
