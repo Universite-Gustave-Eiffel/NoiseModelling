@@ -259,7 +259,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("CREATE TABLE ROADS (PK serial, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
@@ -288,7 +288,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreGround) {
         sql.execute("DROP TABLE IF EXISTS GROUND")
-        sql.execute("CREATE TABLE GROUND (PK serial, ID_WAY int, THE_GEOM geometry, PRIORITY int, G double);")
+        sql.execute("CREATE TABLE GROUND (PK serial PRIMARY KEY, ID_WAY int, THE_GEOM geometry, PRIORITY int, G double);")
 
         for (Ground ground : handler.grounds) {
             if (ground.priority == 0) {
