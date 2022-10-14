@@ -380,6 +380,15 @@ public abstract class JdbcNoiseMap {
                             geo = domainConstraint.intersection(geo);
                         }
                         if(!geo.isEmpty()) {
+                            Coordinate[] coordinates = geo.getCoordinates();
+                            for(Coordinate coordinate : coordinates) {
+                                // check z value
+                                if(coordinate.getZ() == Coordinate.NULL_ORDINATE) {
+                                    throw new IllegalArgumentException("The table " + sourcesTableName +
+                                            " contain at least one source without Z ordinate." +
+                                            " You must specify X,Y,Z for each source");
+                                }
+                            }
                             propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                         }
                     }
