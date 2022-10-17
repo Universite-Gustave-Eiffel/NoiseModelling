@@ -207,7 +207,7 @@ To adapt the colors, we will apply a cartographic style. This style:
 =======
 .. _website : https://www.coloringnoise.com/theoretical_background/new-color-scheme/
 
-.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/styles/style_beate_tomio.sld
+.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.2/Docs/styles/style_beate_tomio.sld
 
 .. note::
    If you want to know more about noise map styles, you should read the ":doc:`Noise_Map_Color_Scheme`" page.
