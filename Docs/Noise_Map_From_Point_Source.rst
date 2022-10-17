@@ -1,4 +1,4 @@
-Noise Map from Point Source
+Noise Map from Point Source - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this tutorial, we are going to produce a noise map, based on a unique source point. The exercice will be made through NoiseModelling with Graphic User Interface (GUI).
@@ -19,6 +19,11 @@ Step 1: Create the source point
 To create the source point, we will use the free and opensource GIS software `QGIS`_.
 
 .. _QGIS: http://qgis.org/
+
+.. note::
+    For those who are new to GIS and want to get started with QGIS, we advise you to follow `this tutorial`_ as a start.
+
+.. _this tutorial : https://docs.qgis.org/3.22/en/docs/training_manual/basic_map/index.html
 
 Load data into QGIS
 -------------------------
@@ -192,16 +197,23 @@ In QGIS, since the isosurface table is not easy to read *(everything is grey in 
 
 To adapt the colors, we will apply a cartographic style. This style:
 
-* has been proposed by B. Weninger in *"A Color Scheme for the Presentation of Sound Immission in Maps : Requirements and Principles for Design"* (see `publication`_)
+* has been proposed by B. Tomio (Weninger) in *"A Color Scheme for the Presentation of Sound Immission in Maps : Requirements and Principles for Design"* (see `publication`_ and `website`_)
 * is provided *(by NoiseModelling team)* as a ``.sld`` *(Style Layer Descriptor)* file and can be downloaded `here`_ 
 
 
 .. _publication : https://www.semanticscholar.org/paper/A-Color-Scheme-for-the-Presentation-of-Sound-in-%3A-Weninger/a72d13fcc53488567b45a08a78f969c7b3552ac0
 
 .. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/styles/style_noisemap.sld
+=======
+.. _website : https://www.coloringnoise.com/theoretical_background/new-color-scheme/
+
+.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.2/Docs/styles/style_beate_tomio.sld
+
+.. note::
+   If you want to know more about noise map styles, you should read the ":doc:`Noise_Map_Color_Scheme`" page.
 
 Once downloaded, make a double click on the layer ``CONTOURING_NOISE_MAP``. It will opens the property panel. Here, click on the ``Symbology`` tab.
-In the ``Style`` menu *(at the bottom)*, choose ``Load style``. Then in the opened dialog, click on the ``...`` icon to search the ``style_noisemap.sld`` file. Once selected, click on ``Load style``. 
+In the ``Style`` menu *(at the bottom)*, choose ``Load style``. Then in the opened dialog, click on the ``...`` icon to search the ``style_beate_tomio.sld`` file. Once selected, click on ``Load style``.
 
 .. figure:: images/Noise_Map_From_Point_Source/style_sld.png
    :align: center
@@ -215,6 +227,7 @@ Press ``OK`` to apply and close the dialog. Your noise map is now well colorized
 
 .. figure:: images/Noise_Map_From_Point_Source/style_map.png
    :align: center
+
 
 Step 4: Change the default parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

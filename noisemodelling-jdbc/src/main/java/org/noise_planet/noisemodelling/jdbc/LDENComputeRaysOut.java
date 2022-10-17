@@ -8,6 +8,7 @@ import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,9 +54,9 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
         public double[] getTimePeriodLevel(LDENConfig.TIME_PERIOD timePeriod) {
             switch (timePeriod) {
-                case TIME_PERIOD_DAY:
+                case DAY:
                     return dayLevels;
-                case TIME_PERIOD_EVENING:
+                case EVENING:
                     return eveningLevels;
                 default:
                     return nightLevels;
@@ -63,9 +64,9 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
         }
         public void setTimePeriodLevel(LDENConfig.TIME_PERIOD timePeriod, double [] levels) {
             switch (timePeriod) {
-                case TIME_PERIOD_DAY:
+                case DAY:
                     dayLevels = levels;
-                case TIME_PERIOD_EVENING:
+                case EVENING:
                     eveningLevels = levels;
                 default:
                     nightLevels = levels;
@@ -116,26 +117,48 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
 
         @Override
-        public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            ldenComputeRaysOut.rayCount.addAndGet(propagationPath.size());
-            if(ldenComputeRaysOut.inputData != null && sourceId < ldenComputeRaysOut.inputData.sourcesPk.size() &&
-                    receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
-                for(PropagationPath path : propagationPath) {
-                    // Copy path content in order to keep original ids for other method calls
-                    PropagationPath pathPk = new PropagationPath(path);
-                    pathPk.setIdReceiver(ldenComputeRaysOut.inputData.receiversPk.get((int)receiverId).intValue());
-                    pathPk.setIdSource(ldenComputeRaysOut.inputData.sourcesPk.get((int)sourceId).intValue());
-                    propagationPaths.add(pathPk);
+        public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPathsParameter) {
+            ldenComputeRaysOut.rayCount.addAndGet(propagationPathsParameter.size());
+            if(ldenComputeRaysOut.keepRays && !ldenComputeRaysOut.keepAbsorption) {
+                for(PropagationPath propagationPath : propagationPathsParameter) {
+                    // Use only one ray as the ray is the same if we not keep absorption values
+                    if (ldenComputeRaysOut.inputData != null && sourceId < ldenComputeRaysOut.inputData.sourcesPk.size() && receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
+                        // Copy path content in order to keep original ids for other method calls
+                        PropagationPath pathPk = new PropagationPath(propagationPath);
+                        pathPk.setIdReceiver(ldenComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
+                        pathPk.setIdSource(ldenComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
+                        this.propagationPaths.add(pathPk);
+                    } else {
+                        this.propagationPaths.add(propagationPath);
+                    }
                 }
-            } else {
-                propagationPaths.addAll(propagationPath);
             }
-            double[] ldenLevels = lDENThreadRaysOut[0].addPropagationPaths(sourceId, sourceLi, receiverId, propagationPath);
-            ldenLevels = PowerUtils.sumDbArray(ldenLevels, lDENThreadRaysOut[1].addPropagationPaths(sourceId, sourceLi,
-                    receiverId, propagationPath));
-            ldenLevels = PowerUtils.sumDbArray(ldenLevels, lDENThreadRaysOut[2].addPropagationPaths(sourceId, sourceLi,
-                    receiverId, propagationPath));
-            return ldenLevels;
+            double[] globalLevel = null;
+            for(LDENConfig.TIME_PERIOD timePeriod : LDENConfig.TIME_PERIOD.values()) {
+                for(PropagationPath propagationPath : propagationPathsParameter) {
+                    if (globalLevel == null) {
+                        globalLevel = lDENThreadRaysOut[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
+                                receiverId, Collections.singletonList(propagationPath));
+                    } else {
+                        globalLevel = PowerUtils.sumDbArray(globalLevel, lDENThreadRaysOut[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
+                                receiverId, Collections.singletonList(propagationPath)));
+                    }
+                    propagationPath.setTimePeriod(timePeriod.name());
+                    if(ldenComputeRaysOut.keepRays && ldenComputeRaysOut.keepAbsorption) {
+                        // copy ray for each time period because absorption is different for each period
+                        if (ldenComputeRaysOut.inputData != null && sourceId < ldenComputeRaysOut.inputData.sourcesPk.size() && receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
+                            // Copy path content in order to keep original ids for other method calls
+                            PropagationPath pathPk = new PropagationPath(propagationPath);
+                            pathPk.setIdReceiver(ldenComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
+                            pathPk.setIdSource(ldenComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
+                            this.propagationPaths.add(pathPk);
+                        } else {
+                            this.propagationPaths.add(propagationPath);
+                        }
+                    }
+                }
+            }
+            return globalLevel;
         }
 
         /**
@@ -187,8 +210,23 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                     return;
                 }
             }
-            stack.addAll(data);
-            ldenComputeRaysOut.ldenData.queueSize.addAndGet(data.size());
+            if(ldenConfig.getMaximumRaysOutputCount() == 0 || ldenComputeRaysOut.ldenData.totalRaysInserted.get() < ldenConfig.getMaximumRaysOutputCount()) {
+                long newTotalRays = ldenComputeRaysOut.ldenData.totalRaysInserted.addAndGet(data.size());
+                if(ldenConfig.getMaximumRaysOutputCount() > 0 && newTotalRays > ldenConfig.getMaximumRaysOutputCount()) {
+                    // too many rays, remove unwanted rays
+                    int newListSize = data.size() - (int)(newTotalRays - ldenConfig.getMaximumRaysOutputCount());
+                    List<PropagationPath> subList = new ArrayList<PropagationPath>(newListSize);
+                    for(PropagationPath propagationPath : data) {
+                        subList.add(propagationPath);
+                        if(subList.size() >= newListSize) {
+                            break;
+                        }
+                    }
+                    data = subList;
+                }
+                stack.addAll(data);
+                ldenComputeRaysOut.ldenData.queueSize.addAndGet(data.size());
+            }
         }
 
         @Override
@@ -197,7 +235,16 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                 if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_RAYS_TABLE) {
                     // Push propagation rays
                     pushInStack(ldenComputeRaysOut.ldenData.rays, propagationPaths);
-                } else if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_MEMORY){
+                } else if(ldenConfig.getExportRaysMethod() == LDENConfig.ExportRaysMethods.TO_MEMORY
+                && (ldenConfig.getMaximumRaysOutputCount() == 0 ||
+                        ldenComputeRaysOut.propagationPathsSize.get() < ldenConfig.getMaximumRaysOutputCount())){
+                    int newRaysSize = ldenComputeRaysOut.propagationPathsSize.addAndGet(propagationPaths.size());
+                    if(ldenConfig.getMaximumRaysOutputCount() > 0 && newRaysSize > ldenConfig.getMaximumRaysOutputCount()) {
+                        // remove exceeded elements of the array
+                        propagationPaths = propagationPaths.subList(0,
+                                propagationPaths.size() - Math.min( propagationPaths.size(),
+                                        newRaysSize - ldenConfig.getMaximumRaysOutputCount()));
+                    }
                     ldenComputeRaysOut.propagationPaths.addAll(propagationPaths);
                 }
                 propagationPaths.clear();
@@ -307,6 +354,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
 
     public static class LdenData {
         public final AtomicLong queueSize = new AtomicLong(0);
+        public final AtomicLong totalRaysInserted = new AtomicLong(0);
         public final ConcurrentLinkedDeque<VerticeSL> lDayLevels = new ConcurrentLinkedDeque<>();
         public final ConcurrentLinkedDeque<VerticeSL> lEveningLevels = new ConcurrentLinkedDeque<>();
         public final ConcurrentLinkedDeque<VerticeSL> lNightLevels = new ConcurrentLinkedDeque<>();

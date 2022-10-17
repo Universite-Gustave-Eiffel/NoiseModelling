@@ -223,7 +223,6 @@
   },
   "angle" : 0.0,
   "gs" : 0.0,
-  "initialized" : false,
   "difHPoints" : [ 1 ],
   "difVPoints" : [ ],
   "refPoints" : [ ],

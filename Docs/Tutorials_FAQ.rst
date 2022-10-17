@@ -1,7 +1,7 @@
 Tutorials - FAQ
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Shapefiles? GeoJSON?
+Shapefiles or GeoJSON?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `Shapefile`_ is a file format for geographic information systems (GIS).
@@ -26,15 +26,15 @@ It is an alternative to the Shapefile format. It has the advantage of being read
 
 .. _GeoJSON: https://fr.wikipedia.org/wiki/GeoJSON
 
-PostGreSQL? H2?
+PostGreSQL or H2?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-`PostgreSQL`_ & `H2 Database`_ are two database management system (DBMS). They are used to store, manipulate or manage, and share information in a database, ensuring the quality, permanence and confidentiality of the information, while hiding the complexity of the operations.
+`PostgreSQL`_ & `H2 Database`_ are two DataBase Management Systems (DBMS). They are used to store, manipulate or manage, and share information in a database, ensuring the quality, permanence and confidentiality of the information, while hiding the complexity of the operations.
 NoiseModelling can connect to DBMS in H2 - H2GIS or PostGreSQL - PostGIS format.
 
 .. _PostgreSQL: https://www.postgresql.org/
 .. _H2 Database: https://www.h2database.com/
 
-OSM?
+OSM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 `OpenStreetMap`_ (OSM) is a collaborative project to create a free (and open-access) editable map of the world.
 The geodata underlying the map is considered the primary output of the project.
@@ -43,7 +43,7 @@ OSM is considered a prominent example of Volunteered Geographic Information (VGI
 
 .. _OpenStreetMap: https://www.openstreetmap.org/
 
-Metric SRID ?
+Metric SRID
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Spatial reference systems can be referred to using a **SRID integer**, including EPSG codes.
 
@@ -55,3 +55,9 @@ Here is the map : https://upload.wikimedia.org/wikipedia/commons/e/ed/Utm-zones.
 
 .. note::
   We recommand using the website https://epsg.io/ to find the appropriate **SRID** code for your location.
+
+Primary Key
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*"In the design of a database table, the Primary Key (abbreviated PK) is selected among the non-empty set of candidate keys. The PK is a column (or an irreducible group of columns) able to identify every row of the table."* (`Source`_)
+
+.. _Source : https://en.wiktionary.org/wiki/primary_key

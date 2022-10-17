@@ -22,7 +22,9 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
+import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
@@ -55,6 +57,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     static final int BATCH_MAX_SIZE = 500;
     static final int WRITER_CACHE = 65536;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
+    int srid;
 
     /**
      * Attenuation and other attributes relative to direction on sphere
@@ -99,6 +102,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, pointNoiseMap.getSourcesTableName());
+            this.srid = GeometryTableUtilities.getSRID(connection, pointNoiseMap.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
             List<Integer> allFrequencyValues = Arrays.asList(CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";
@@ -165,10 +169,10 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
      * Start creating and filling database tables
      */
     public void start() {
-        if(ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.TIME_PERIOD_DAY) == null) {
+        if(ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY) == null) {
             throw new IllegalStateException("start() function must be called after PointNoiseMap initialization call");
         }
-        tableWriter = new TableWriter(connection, ldenConfig, ldenData);
+        tableWriter = new TableWriter(connection, ldenConfig, ldenData, srid);
         ldenConfig.exitWhenDone = false;
         tableWriterThread = new Thread(tableWriter);
         tableWriterThread.start();
@@ -235,8 +239,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         double[] a_weighting;
         boolean started = false;
         Writer o;
+        int srid;
 
-        public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData) {
+        public TableWriter(Connection connection, LDENConfig ldenConfig, LDENComputeRaysOut.LdenData ldenData, int srid) {
             this.connection = connection;
             this.sqlFilePath = ldenConfig.sqlOutputFile;
             this.ldenConfig = ldenConfig;
@@ -245,28 +250,41 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
                 a_weighting[idfreq] = ldenConfig.propagationProcessPathDataDay.freq_lvl_a_weighting.get(idfreq);
             }
+            this.srid = srid;
         }
 
         void processRaysStack(ConcurrentLinkedDeque<PropagationPath> stack) throws SQLException {
-            String query;
+            StringBuilder query = new StringBuilder("INSERT INTO " + ldenConfig.raysTable +
+                    "(the_geom , IDRECEIVER , IDSOURCE");
             if(ldenConfig.exportProfileInRays) {
-                query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE, GEOJSON ) VALUES (?, ?, ?, ?);";
-            } else {
-                query = "INSERT INTO " + ldenConfig.raysTable + "(the_geom , IDRECEIVER , IDSOURCE ) VALUES (?, ?, ?);";
+                query.append(", GEOJSON");
             }
+            if(ldenConfig.keepAbsorption) {
+                query.append(", LEQ, PERIOD");
+            }
+            query.append(") VALUES (?, ?, ?");
+            if(ldenConfig.exportProfileInRays) {
+                query.append(", ?");
+            }
+            if(ldenConfig.keepAbsorption) {
+                query.append(", ?, ?");
+            }
+            query.append(");");
             // PK, GEOM, ID_RECEIVER, ID_SOURCE
             PreparedStatement ps;
             if(sqlFilePath == null) {
-                ps = connection.prepareStatement(query);
+                ps = connection.prepareStatement(query.toString());
             } else {
-                ps = new StringPreparedStatements(o, query);
+                ps = new StringPreparedStatements(o, query.toString());
             }
             int batchSize = 0;
             while(!stack.isEmpty()) {
                 PropagationPath row = stack.pop();
                 ldenData.queueSize.decrementAndGet();
                 int parameterIndex = 1;
-                ps.setObject(parameterIndex++, row.asGeom());
+                LineString lineString = row.asGeom();
+                lineString.setSRID(srid);
+                ps.setObject(parameterIndex++, lineString);
                 ps.setLong(parameterIndex++, row.getIdReceiver());
                 ps.setLong(parameterIndex++, row.getIdSource());
                 if(ldenConfig.exportProfileInRays) {
@@ -277,6 +295,11 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                         //ignore
                     }
                     ps.setString(parameterIndex++, geojson);
+                }
+                if(ldenConfig.keepAbsorption) {
+                    double globalValue = sumDbArray(row.absorptionData.aGlobal);
+                    ps.setDouble(parameterIndex++, globalValue);
+                    ps.setString(parameterIndex++, row.getTimePeriod());
                 }
                 ps.addBatch();
                 batchSize++;
@@ -411,15 +434,18 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                     String q = String.format("DROP TABLE IF EXISTS %s;", ldenConfig.raysTable);
                     processQuery(q);
                 }
-                String q;
+                StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS " + ldenConfig.raysTable + "(pk bigint auto_increment, the_geom " +
+                        "geometry(LINESTRING Z,");
+                sb.append(srid);
+                sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
                 if(ldenConfig.exportProfileInRays) {
-                    q = "CREATE TABLE IF NOT EXISTS " + ldenConfig.raysTable + "(pk bigint auto_increment, the_geom " +
-                            "geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL, GEOJSON VARCHAR);";
-                } else {
-                    q = "CREATE TABLE IF NOT EXISTS " + ldenConfig.raysTable + "(pk bigint auto_increment, the_geom " +
-                            "geometry, IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL);";
+                    sb.append(", GEOJSON VARCHAR");
                 }
-                processQuery(q);
+                if(ldenConfig.keepAbsorption) {
+                    sb.append(", LEQ DOUBLE, PERIOD VARCHAR");
+                }
+                sb.append(");");
+                processQuery(sb.toString());
             }
             if(ldenConfig.computeLDay) {
                 if(ldenConfig.dropResultsTable) {

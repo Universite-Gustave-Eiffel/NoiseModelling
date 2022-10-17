@@ -47,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Main {
-    public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50;
+    public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
     public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
         // Init output logger
@@ -124,6 +124,7 @@ class Main {
 
         pointNoiseMap.setMaximumPropagationDistance(100.0);
         pointNoiseMap.setSoundReflectionOrder(0);
+        pointNoiseMap.setThreadCount(1);
         pointNoiseMap.setComputeHorizontalDiffraction(false);
         pointNoiseMap.setComputeVerticalDiffraction(true);
         // Building height field name
@@ -140,6 +141,7 @@ class Main {
         ldenConfig.setComputeLNight(true);
         ldenConfig.setComputeLDEN(true);
         ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
+        ldenConfig.setKeepAbsorption(true);
 
         LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
@@ -149,6 +151,11 @@ class Main {
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY).setTemperature(20);
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING).setTemperature(16);
+        ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT).setTemperature(10);
+        ldenConfig.setMaximumRaysOutputCount(MAX_OUTPUT_PROPAGATION_PATHS); // do not export more than this number of rays per computation area
 
         pointNoiseMap.setGridDim(1);
 
@@ -181,18 +188,6 @@ class Main {
                 // Export as a Google Earth 3d scene
                 if (out instanceof ComputeRaysOutAttenuation) {
                     ComputeRaysOutAttenuation cellStorage = (ComputeRaysOutAttenuation) out;
-                    // restrict the number of rays to export
-                    List<PropagationPath> propagationPaths = new ArrayList<>();
-                    for(PropagationPath p : ((ComputeRaysOutAttenuation)out).propagationPaths) {
-                        if(p.getPointList().size() > 3) {
-                            propagationPaths.add(p);
-                            if(propagationPaths.size() > MAX_OUTPUT_PROPAGATION_PATHS) {
-                                break;
-                            }
-                        }
-                    }
-                    ((ComputeRaysOutAttenuation)out).propagationPaths.clear();
-                    ((ComputeRaysOutAttenuation)out).propagationPaths.addAll(propagationPaths);
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }

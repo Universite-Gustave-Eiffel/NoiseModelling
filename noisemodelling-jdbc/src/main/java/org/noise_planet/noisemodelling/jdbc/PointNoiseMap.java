@@ -171,6 +171,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     }
                     Geometry pt = rs.getGeometry();
                     if(pt != null && !pt.isEmpty()) {
+                        // check z value
+                        if(pt.getCoordinate().getZ() == Coordinate.NULL_ORDINATE) {
+                            throw new IllegalArgumentException("The table " + receiverTableName +
+                                    " contain at least one receiver without Z ordinate." +
+                                    " You must specify X,Y,Z for each receiver");
+                        }
                         propagationProcessData.addReceiver(receiverPk, pt.getCoordinate(), rs);
                     }
                 }

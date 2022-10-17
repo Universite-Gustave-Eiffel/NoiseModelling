@@ -87,9 +87,9 @@ public abstract class JdbcNoiseMap {
 
     public PropagationProcessPathData getPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period) {
         switch (time_period) {
-            case TIME_PERIOD_DAY:
+            case DAY:
                 return propagationProcessPathDataDay;
-            case TIME_PERIOD_EVENING:
+            case EVENING:
                 return propagationProcessPathDataEvening;
             default:
                 return propagationProcessPathDataNight;
@@ -98,9 +98,9 @@ public abstract class JdbcNoiseMap {
 
     public void setPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
         switch (time_period) {
-            case TIME_PERIOD_DAY:
+            case DAY:
                 propagationProcessPathDataDay = propagationProcessPathData;
-            case TIME_PERIOD_EVENING:
+            case EVENING:
                 propagationProcessPathDataEvening = propagationProcessPathData;
             default:
                 propagationProcessPathDataNight = propagationProcessPathData;
@@ -380,6 +380,15 @@ public abstract class JdbcNoiseMap {
                             geo = domainConstraint.intersection(geo);
                         }
                         if(!geo.isEmpty()) {
+                            Coordinate[] coordinates = geo.getCoordinates();
+                            for(Coordinate coordinate : coordinates) {
+                                // check z value
+                                if(coordinate.getZ() == Coordinate.NULL_ORDINATE) {
+                                    throw new IllegalArgumentException("The table " + sourcesTableName +
+                                            " contain at least one source without Z ordinate." +
+                                            " You must specify X,Y,Z for each source");
+                                }
+                            }
                             propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                         }
                     }

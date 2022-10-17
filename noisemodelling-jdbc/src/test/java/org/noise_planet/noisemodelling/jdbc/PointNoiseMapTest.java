@@ -272,11 +272,12 @@ public class PointNoiseMapTest {
                         assertEquals(53.3, sl.value[0], 1);
                         assertTrue(rout.ldenData.lDenLevels.isEmpty());
 
-                        assertEquals(2 , rout.propagationPaths.size());
-                        PropagationPath path = rout.propagationPaths.remove(0);
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        assertEquals(2 , propagationPaths.size());
+                        PropagationPath path = propagationPaths.remove(0);
                         assertEquals(1, path.getIdReceiver());
                         assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
-                        path = rout.propagationPaths.remove(0);
+                        path = propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
                         assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
 
@@ -318,7 +319,7 @@ public class PointNoiseMapTest {
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
             ldenConfig.setCoefficientVersion(1);
-            ldenConfig.setKeepAbsorption(true);
+            ldenConfig.setKeepAbsorption(false);
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
@@ -354,23 +355,22 @@ public class PointNoiseMapTest {
                         assertEquals(70.8, sl.value[0], 1);
 
                         assertEquals(3 , rout.propagationPaths.size());
-                        PropagationPath path = rout.propagationPaths.remove(0);
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        PropagationPath path = propagationPaths.remove(0);
                         assertEquals(1, path.getIdReceiver());
                         assertEquals(0, new Coordinate(0, 5.07).
                                 distance(path.getPointList().get(0).coordinate), 0.1);
                         // This is source orientation, not relevant to receiver position
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
                         assertOrientationEquals(new Orientation(330.07, -24.12, 0.0), path.raySourceReceiverDirectivity, 0.01);
-                        assertEquals(-5.9, path.absorptionData.aSource[0], 0.1);
 
-                        path = rout.propagationPaths.remove(0);;
+                        path = propagationPaths.remove(0);;
                         assertEquals(1, path.getIdReceiver());
                         assertEquals(0, new Coordinate(0, 5.02).
                                 distance(path.getPointList().get(0).coordinate), 0.1);
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
                         assertOrientationEquals(new Orientation(336.90675972385696, -19.398969693698437, 0), path.raySourceReceiverDirectivity, 0.01);
-                        assertEquals(-7.8, path.absorptionData.aSource[0], 0.1);
-                        path = rout.propagationPaths.remove(0);
+                        path = propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
                         assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
                     } else {
@@ -406,7 +406,7 @@ public class PointNoiseMapTest {
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
             ldenConfig.setCoefficientVersion(1);
-            ldenConfig.setKeepAbsorption(true);
+            ldenConfig.setKeepAbsorption(false);
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
@@ -425,20 +425,21 @@ public class PointNoiseMapTest {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof LDENComputeRaysOut) {
                         LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
-                        assertEquals(4 , rout.propagationPaths.size());
-                        PropagationPath path = rout.propagationPaths.remove(0);
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        assertEquals(4 , propagationPaths.size());
+                        PropagationPath path = propagationPaths.remove(0);
                         assertEquals(1, path.getIdReceiver());
                         // receiver is front of source
                         assertEquals(new Orientation(0, 0, 0), path.getRaySourceReceiverDirectivity());
-                        path = rout.propagationPaths.remove(0);
+                        path = propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
                         // receiver is behind of the source
                         assertEquals(new Orientation(180, 0, 0), path.getRaySourceReceiverDirectivity());
-                        path = rout.propagationPaths.remove(0);
+                        path = propagationPaths.remove(0);
                         assertEquals(3, path.getIdReceiver());
                         // receiver is on the right of the source
                         assertEquals(new Orientation(90, 0, 0), path.getRaySourceReceiverDirectivity());
-                        path = rout.propagationPaths.remove(0);
+                        path = propagationPaths.remove(0);
                         assertEquals(4, path.getIdReceiver());
                         // receiver is on the left of the source
                         assertEquals(new Orientation(360-90, 0, 0), path.getRaySourceReceiverDirectivity());

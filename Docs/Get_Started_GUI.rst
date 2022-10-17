@@ -147,13 +147,18 @@ You can now export the output tables *(one by one)* in your favorite export form
 
 For example, you can choose to export the tables in ``.shp`` format. This format can be read with most of GIS tools such as the free and open-source `QGIS`_ and `SAGA`_ softwares.
 
+.. _QGIS : https://www.qgis.org/fr/site/
+.. _SAGA : http://www.saga-gis.org/en/index.html
+
+.. note::
+    For those who are new to GIS and want to get started with QGIS, we advise you to follow `this tutorial`_ as a start.
+
+.. _this tutorial : https://docs.qgis.org/3.22/en/docs/training_manual/basic_map/index.html
+
 To obtain the following image, use the syling vector options in your GIS and assign a color gradient to ``LAEQ`` column of your exported ``LDAY_GEOM`` table.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
    :align: center
-
-.. _QGIS : https://www.qgis.org/fr/site/
-.. _SAGA : http://www.saga-gis.org/en/index.html
 
 .. tip::
     Now that you have made your first noise map (congratulations!), you can try again, adding / changing optional parameters to see the differeneces.

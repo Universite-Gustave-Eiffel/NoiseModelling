@@ -81,6 +81,7 @@ test {
     }
 }
 dependencies {
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
     implementation('org.geotools:gt-jdbc:21.1') {
         exclude group: 'javax.media'
     }
@@ -109,22 +110,12 @@ dependencies {
     implementation group: 'org.ejml', name: 'all', version: '0.29'
     implementation group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
     implementation group: 'org.orbisgis', name: 'h2gis', version: '2.1.0-SNAPSHOT'
-    implementation('org.locationtech.jts:jts-core:1.18.2') {
-        version {
-            strictly '[1.18, 1.19['
-            prefer '1.18.2'
-        }
-    }
-    implementation('org.locationtech.jts:jts-io:1.18.2') {
-        version {
-            strictly '[1.18, 1.19['
-            prefer '1.18.2'
-        }
-    }
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.1'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.1'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.1'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.1'
+    implementation('org.locationtech.jts:jts-core:1.19.0')
+    implementation('org.locationtech.jts:jts-io:1.19.0')
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.2'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.2'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.2'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.2'
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
