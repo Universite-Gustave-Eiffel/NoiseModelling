@@ -203,7 +203,7 @@ To adapt the colors, we will apply a cartographic style. This style:
 
 .. _publication : https://www.semanticscholar.org/paper/A-Color-Scheme-for-the-Presentation-of-Sound-in-%3A-Weninger/a72d13fcc53488567b45a08a78f969c7b3552ac0
 
-.. _here : ./styles/style_noisemap.sld
+.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/styles/style_noisemap.sld
 =======
 .. _website : https://www.coloringnoise.com/theoretical_background/new-color-scheme/
 
@@ -213,7 +213,7 @@ To adapt the colors, we will apply a cartographic style. This style:
    If you want to know more about noise map styles, you should read the ":doc:`Noise_Map_Color_Scheme`" page.
 
 Once downloaded, make a double click on the layer ``CONTOURING_NOISE_MAP``. It will opens the property panel. Here, click on the ``Symbology`` tab.
-In the ``Style`` menu *(at the bottom)*, choose ``Load style``. Then in the opened dialog, click on the ``...`` icon to search the ``style_beate_tomio.sld`` file. Once selected, click on ``Load style``. 
+In the ``Style`` menu *(at the bottom)*, choose ``Load style``. Then in the opened dialog, click on the ``...`` icon to search the ``style_beate_tomio.sld`` file. Once selected, click on ``Load style``.
 
 .. figure:: images/Noise_Map_From_Point_Source/style_sld.png
    :align: center
@@ -263,7 +263,7 @@ The directivity table aims at modeling a realistic directional noise source. To 
 
 Each of the sound sources has its own directivity. For the exercise we will use the directivity of a train, which is provided in the file `Directivity.csv`_ and which you are invited to download.
 
-.. _Directivity.csv: ./data/Directivity.csv
+.. _Directivity.csv: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/data/Directivity.csv
 
 .. csv-table:: Extract from the directivity table (Directivity.csv)
    :file: ./data/Directivity_short.csv
