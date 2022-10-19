@@ -262,8 +262,8 @@ inputs = [
         ],
         confRaysName            : [
                 name       : '',
-                title      : 'Export  r',
-                description: 'Save each propagation ray into the specified table (ex:RAYS) ' +
+                title      : 'Export scene',
+                description: 'Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) ' +
                         'or file URL (ex: file:///Z:/dir/map.kml)' +
                         'You can set a table name here in order to save all the rays computed by NoiseModelling' +
                         '. The number of rays has been limited in this script in order to avoid memory exception' +
