@@ -26,10 +26,10 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos;
-import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos;
-import org.noise_planet.noisemodelling.emission.Utils;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
+import org.noise_planet.noisemodelling.emission.utils.Utils;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 
@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.dbaToW;
-import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.wToDba;
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources
@@ -58,7 +57,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
-    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
+    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
     LDENConfig ldenConfig;
 
@@ -67,7 +66,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         this.ldenConfig = ldenConfig;
     }
 
-    public void setDirectionAttributes(Map<Integer, DirectionAttributes> directionAttributes) {
+    public void setDirectionAttributes(Map<Integer, DirectivitySphere> directionAttributes) {
         this.directionAttributes = directionAttributes;
     }
 
@@ -224,13 +223,13 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         // Compute emission
         int idFreq = 0;
         for (int freq : ldenConfig.propagationProcessPathDataDay.freq_lvl) {
-            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
+            RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
             rsParametersCnossos.setWay(way);
-            rsParametersCnossos.setCoeffVer(ldenConfig.coefficientVersion);
-            lvl[idFreq++] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos);
+            rsParametersCnossos.setFileVersion(ldenConfig.coefficientVersion);
+            lvl[idFreq++] = RoadCnossos.evaluate(rsParametersCnossos);
         }
         return lvl;
     }
@@ -309,7 +308,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         }
     }
 
-    public static class OmnidirectionalDirection implements DirectionAttributes {
+    public static class OmnidirectionalDirection implements DirectivitySphere {
 
         @Override
         public double getAttenuation(double frequency, double phi, double theta) {

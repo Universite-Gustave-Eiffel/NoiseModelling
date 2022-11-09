@@ -1,17 +1,21 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.junit.Test;
-import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.emission.LineSource;
+import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 public class DirectivityTest {
     final static double[] freqTest = new double[] {125, 250, 500, 1000, 2000, 4000, 8000, 16000};
+
+    List<String> noiseSource = Arrays.asList("ROLLING","TRACTIONA", "TRACTIONB","AERODYNAMICA","AERODYNAMICB","BRIDGE");
 
     @Test
     public void exportDirectivity() throws IOException {
@@ -37,8 +41,8 @@ public class DirectivityTest {
                     "}" +
                     "</style>" +
                     "<head><body><h1>500 Hz</h1>\n");
-            for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
-                RailWayLW.TrainAttenuation trainSource = new RailWayLW.TrainAttenuation(noiseSource);
+            for(String typeSource : noiseSource) {
+                RailWayCnossosParameters.RailwayDirectivitySphere trainSource = new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource(typeSource));
                 bw.write("<div class=\"wrapper\">");
                 bw.write("<div class=\"one\">");
                 bw.write(polarGraphDirectivity.generatePolarGraph(trainSource, 500,
@@ -62,10 +66,11 @@ public class DirectivityTest {
     public void exportDirectivityDiscrete() throws IOException {
 
 
-        DiscreteDirectionAttributes noiseSource = new DiscreteDirectionAttributes(1, freqTest);
+        DiscreteDirectivitySphere noiseSource = new DiscreteDirectivitySphere(1, freqTest);
         noiseSource.setInterpolationMethod(1);
 
-        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.ROLLING);
+
+        RailWayCnossosParameters.RailwayDirectivitySphere att = new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource("ROLLING"));
 
         for(int yaw = 0; yaw < 360; yaw += 5) {
             double phi = Math.toRadians(yaw);

@@ -25,7 +25,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.geom.LineString;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.*;
@@ -62,7 +62,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
-    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
+    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {

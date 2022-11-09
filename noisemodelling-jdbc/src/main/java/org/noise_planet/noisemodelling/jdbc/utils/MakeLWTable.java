@@ -4,11 +4,9 @@ import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
-import org.noise_planet.noisemodelling.jdbc.LDENConfig;
+import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -76,9 +74,9 @@ public class MakeLWTable {
         while (railWayLWIterator.hasNext()) {
             RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
 
-            RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay();
-            RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
-            RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight();
+            RailWayParameters railWayLWDay = railWayLWGeom.getRailWayLWDay();
+            RailWayParameters railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
+            RailWayParameters railWayLWNight = railWayLWGeom.getRailWayLWNight();
             List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
             int pk = railWayLWGeom.getPK();
@@ -90,44 +88,44 @@ public class MakeLWTable {
             for (int iSource = 0; iSource < 6; iSource++) {
                 switch (iSource) {
                     case 0:
-                        LWDay = railWayLWDay.getLWRolling();
-                        LWEvening = railWayLWEvening.getLWRolling();
-                        LWNight = railWayLWNight.getLWRolling();
-                        heightSource = 0.5;
+                        LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
+                        heightSource = railWayLWDay.getRailwaySourceList().get("ROLLING").getSourceHeight();
                         directivityId = 1;
                         break;
                     case 1:
-                        LWDay = railWayLWDay.getLWTractionA();
-                        LWEvening = railWayLWEvening.getLWTractionA();
-                        LWNight = railWayLWNight.getLWTractionA();
+                        LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
                         heightSource = 0.5;
                         directivityId = 2;
                         break;
                     case 2:
-                        LWDay = railWayLWDay.getLWTractionB();
-                        LWEvening = railWayLWEvening.getLWTractionB();
-                        LWNight = railWayLWNight.getLWTractionB();
+                        LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
                         heightSource = 4;
                         directivityId = 3;
                         break;
                     case 3:
-                        LWDay = railWayLWDay.getLWAerodynamicA();
-                        LWEvening = railWayLWEvening.getLWAerodynamicA();
-                        LWNight = railWayLWNight.getLWAerodynamicA();
+                        LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
                         heightSource = 0.5;
                         directivityId = 4;
                         break;
                     case 4:
-                        LWDay = railWayLWDay.getLWAerodynamicB();
-                        LWEvening = railWayLWEvening.getLWAerodynamicB();
-                        LWNight = railWayLWNight.getLWAerodynamicB();
+                        LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
                         heightSource = 4;
                         directivityId = 5;
                         break;
                     case 5:
-                        LWDay = railWayLWDay.getLWBridge();
-                        LWEvening = railWayLWEvening.getLWBridge();
-                        LWNight = railWayLWNight.getLWBridge();
+                        LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
+                        LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
+                        LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
                         heightSource = 0.5;
                         directivityId = 6;
                         break;
