@@ -12,9 +12,8 @@ package org.noise_planet.noisemodelling.emission.railway.cnossos;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
-import org.noise_planet.noisemodelling.emission.railway.Railway;
 import org.noise_planet.noisemodelling.emission.LineSource;
+import org.noise_planet.noisemodelling.emission.railway.Railway;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -205,7 +204,7 @@ public class RailwayCnossos extends Railway {
      *
      * @return LWRoll / LWTraction A and B / LWAerodynamic A and B / LWBridge level in dB
      **/
-    public RailWayParameters evaluate(RailwayVehicleCnossosParameters vehicleParameters, RailwayTrackCnossosParameters trackParameters) throws IOException {
+    public RailWayCnossosParameters evaluate(RailwayVehicleCnossosParameters vehicleParameters, RailwayTrackCnossosParameters trackParameters) throws IOException {
 
         String vehicleFileVersion = vehicleParameters.getFileVersion();
         String trackFileVersion = trackParameters.getFileVersion();
@@ -231,7 +230,7 @@ public class RailwayCnossos extends Railway {
         // %% Take into account the number of coach and the number of units
         // 10*log10(NbUnit*NbCoach);
 
-        RailWayParameters railWayParameters = new RailWayParameters();
+        RailWayCnossosParameters railWayParameters = new RailWayCnossosParameters();
 
         if (isTunnel) {
             return railWayParameters;
