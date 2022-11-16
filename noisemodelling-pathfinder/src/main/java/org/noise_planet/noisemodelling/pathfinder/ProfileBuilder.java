@@ -1534,6 +1534,9 @@ public class ProfileBuilder {
     }
 
     public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+        if(topoTree == null) {
+            return new ArrayList<>();
+        }
         List<Coordinate> outputPoints = new ArrayList<>();
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
