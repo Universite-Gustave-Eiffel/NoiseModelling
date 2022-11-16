@@ -41,6 +41,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.geom.prep.PreparedLineString;
 import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
@@ -1541,10 +1542,34 @@ public class ComputeCnossosRays {
         AbsoluteCoordinateSequenceFilter filter = new AbsoluteCoordinateSequenceFilter(data.profileBuilder, true);
         List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
         for (Geometry source : data.sourceGeometries) {
+            Geometry offsetGeometry = source.copy();
+            if(source instanceof LineString || source instanceof MultiLineString){
+                List<Coordinate> newGeomCoordinates = new ArrayList<>();
+                Coordinate[] coordinates = source.getCoordinates();
+                for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
+                    Coordinate p0 = coordinates[idPoint];
+                    Coordinate p1 = coordinates[idPoint + 1];
+                    double p1p0Length = p1.distance(p0);
+                    List<Coordinate> groundProfileCoordinates = data.profileBuilder.getTopographicProfile(p0, p1);
+                    // add first point of source
+                    newGeomCoordinates.add(p0);
+                    // add intermediate points located at the edges of MNT triangle mesh
+                    // but the Z value should be still relative to the ground
+                    // ,so we interpolate the Z (height) values of the source
+                    for(Coordinate intermediatePoint : groundProfileCoordinates) {
+                        Vector2D v = new Vector2D(p0, intermediatePoint);
+                        Coordinate relativePoint = new Coordinate(intermediatePoint.x, intermediatePoint.y,
+                                p0.z + ((v.length() / p1p0Length) * (p1.z - p0.z)));
+                        newGeomCoordinates.add(relativePoint);
+                    }
+                }
+                newGeomCoordinates.add(coordinates[coordinates.length - 1]);
+                offsetGeometry = GEOMETRY_FACTORY.createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
+            }
+            // Offset the geometry with value of elevation for each coordinate
             filter.reset();
-            Geometry cpy = source.copy();
-            cpy.apply(filter);
-            sourceCopy.add(cpy);
+            offsetGeometry.apply(filter);
+            sourceCopy.add(offsetGeometry);
         }
         data.sourceGeometries = sourceCopy;
     }
