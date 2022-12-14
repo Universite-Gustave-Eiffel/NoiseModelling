@@ -38,7 +38,8 @@ inputs = [
                 title      : 'Display columns of the tables',
                 description: 'Do you want to display also the column of the tables ? ' +
                         '</br> note : A small yellow key symbol will appear if the column as a primary key constraint.',
-                type       : Boolean.class
+                type       : Boolean.class,
+                min        : 0, max: 1
         ]
 ]
 
@@ -73,7 +74,11 @@ def exec(Connection connection, input) {
     logger.info('Start : Display database')
     logger.info("inputs {}", input) // log inputs of the run
 
-    Boolean showColumnName = input['showColumns'] as Boolean
+    Boolean showColumnName = false
+    
+    if(input['showColumns']) {
+        showColumnName = input['showColumns'].toBoolean()
+    }
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
