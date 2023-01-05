@@ -52,7 +52,7 @@ On the NoiseModelling latest `release page`_, three packages of NoiseModelling a
 
 * ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
 * ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`"" page for more info)
+* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
 
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
 
@@ -135,6 +135,17 @@ Fundings
     Numerical_Model
     Validation
     Scientific_production
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Input tables
+
+    Input_buildings
+    Input_roads
+    Input_railways
+    Input_ground
+    Input_dem
+    Input_directivity
     
 .. toctree::
     :maxdepth: 2
