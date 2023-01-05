@@ -95,11 +95,19 @@ inputs = [
                 min        : 0, 
                 max        : 1,
                 type       : Double.class
+        ],
+        distance          : [
+                name       : 'distance',
+                title      : 'Distance from wall',
+                description: 'Distance of receivers from the wall in meters (FLOAT) </br> </br>' +
+                             '<b> Default value : 2 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
         ]
 ]
 
 outputs = [
-        result : [
+        result: [
                 name       : 'Result output string',
                 title      : 'Result output string',
                 description: 'This type of result does not allow the blocks to be linked together.',
@@ -157,6 +165,13 @@ def exec(Connection connection, input) {
         h = input['height'] as Double
     }
 
+    Double distance = 2.0d
+    if (input['distance']) {
+        h = input['distance'] as Double
+    }
+
+
+
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
@@ -210,9 +225,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_receivers_lines")
 
     if (fenceGeom != null) {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom])
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom, distance_wall : distance])
     } else {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name)
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
 
     logger.info('create line of receivers')
@@ -225,7 +240,7 @@ def exec(Connection connection, input) {
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
     logger.info('truncate receiver lines')
-    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), :distance_wall)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;", [distance_wall : distance])
     logger.info('Add primary key')
     sql.execute("ALTER TABLE tmp_screen_truncated add primary key(pk_screen)")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")

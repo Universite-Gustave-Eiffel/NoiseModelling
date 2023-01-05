@@ -26,7 +26,7 @@ import java.sql.Connection
 title = 'Tutorial script'
 description = 'Long description of tutorial script'
 
-inputs = []
+inputs = [:]
 
 outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
 
