@@ -324,9 +324,9 @@ def exec(Connection connection, input) {
             plan = person.getSelectedPlan() // back to the not *experienced* version
         }
         String homeId = "";
-        String homeGeom = "";
+        String homeGeom = "POINT EMPTY";
         String workId = "";
-        String workGeom = "";
+        String workGeom = "POINT EMPTY";
         for (PlanElement element : plan.getPlanElements()) {
             if (!(element instanceof Activity)) {
                 continue;
@@ -421,7 +421,7 @@ def exec(Connection connection, input) {
                 hasActivity = true;
                 sequence[timeBin].activity_type = activity.type
                 sequence[timeBin].activity_id = activity.facilityId.toString()
-                sequence[timeBin].activity_geom = ""
+                sequence[timeBin].activity_geom = "POINT EMPTY"
                 if (activity.getCoord() == null) {
                     if (activity.type == "home" && homeGeom != "") {
                         sequence[timeBin].activity_geom = homeGeom
@@ -467,7 +467,7 @@ def exec(Connection connection, input) {
                     sequence[timeBin].activity_id = "travelling"
                     sequence[timeBin].activity_type = "travelling"
                 }
-                sequence[timeBin].activity_geom = ""
+                sequence[timeBin].activity_geom = "POINT EMPTY"
             }
         }
 
@@ -484,10 +484,20 @@ def exec(Connection connection, input) {
         WORK_GEOM geometry,
         LAEQ real
          */
-        sql.execute("INSERT INTO " + outTableName + " VALUES(" +
-                "DEFAULT, '" + personId + "', " + age + ", '" + sex + "', " + income + ", " + employed + ", " +
-                "'" + homeId + "', ST_GeomFromText('" + homeGeom + "', "+SRID+"), '" + workId + "', ST_GeomFromText('" + workGeom + "', "+SRID+"), " + LAeq + ")")
-
+        PreparedStatement insert_stmt = connection.prepareStatement("INSERT INTO " + outTableName + " VALUES(" +
+                "DEFAULT, ?, ?, ?, ?, ?, " +
+                "?, ST_GeomFromText(?, "+SRID+"), ?, ST_GeomFromText(?, "+SRID+"), ?)")
+        insert_stmt.setString(1, personId)
+        insert_stmt.setInt(2, age)
+        insert_stmt.setString(3, sex)
+        insert_stmt.setDouble(4, income)
+        insert_stmt.setBoolean(5, employed)
+        insert_stmt.setString(6, homeId)
+        insert_stmt.setString(7, homeGeom)
+        insert_stmt.setString(8, workId)
+        insert_stmt.setString(9, workGeom)
+        insert_stmt.setDouble(10, LAeq)
+        insert_stmt.execute()
         /*
         PK integer PRIMARY KEY AUTO_INCREMENT,
         PERSON_ID varchar(255),
@@ -497,18 +507,18 @@ def exec(Connection connection, input) {
         ACTIVITY_TYPE varchar,
         THE_GEOM geometry
          */
-        PreparedStatement insert_stmt = connection.prepareStatement(
+        PreparedStatement insert_stmt_sequence = connection.prepareStatement(
             "INSERT INTO " + outTableName + "_SEQUENCE VALUES(DEFAULT, '" + personId + "', ?, ?, ?, ?, ST_GeomFromText(?, "+SRID+"))"
         )
         for (int timeBin = 0; timeBin < 86400; timeBin += timeBinSize) {
-            insert_stmt.setInt(1, timeBin)
-            insert_stmt.setDouble(2, sequence[timeBin].noise_laeq)
-            insert_stmt.setString(3, sequence[timeBin].activity_id)
-            insert_stmt.setString(4, sequence[timeBin].activity_type)
-            insert_stmt.setString(5, sequence[timeBin].activity_geom)
-            insert_stmt.addBatch()
+            insert_stmt_sequence.setInt(1, timeBin)
+            insert_stmt_sequence.setDouble(2, sequence[timeBin].noise_laeq)
+            insert_stmt_sequence.setString(3, sequence[timeBin].activity_id)
+            insert_stmt_sequence.setString(4, sequence[timeBin].activity_type)
+            insert_stmt_sequence.setString(5, sequence[timeBin].activity_geom)
+            insert_stmt_sequence.addBatch()
         }
-        insert_stmt.executeBatch()
+        insert_stmt_sequence.executeBatch()
 
         if (counter >= doprint) {
             doprint *= 2
