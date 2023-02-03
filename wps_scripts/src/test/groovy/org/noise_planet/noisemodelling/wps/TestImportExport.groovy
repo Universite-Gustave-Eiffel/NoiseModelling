@@ -20,8 +20,7 @@ import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Map
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_Folder
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_BBBike
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_Pbf
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
@@ -97,7 +96,7 @@ class TestImportExport extends JdbcTestCase {
     void testImportAsc() {
 
         String res = new Import_Asc_File().exec(connection,
-                ["pathFile" : TestImportExport.getResource("precip30min.asc").getPath(),
+                ["pathFile" : TestImportExport.getResource("testAscFolder/precip30min.asc").getPath(),
                  "inputSRID": 2154])
 
         assertEquals("The table DEM has been uploaded to database ! </br>  Its SRID is : 4326. </br> Remember that to calculate a noise map, your SRID must be in metric coordinates. Please use the Wps block 'Change SRID' if needed.", res)
@@ -106,7 +105,7 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportAscFolder() {
 
-        File file = new File(TestImportExport.getResource("precip30min.asc").getPath()).getParentFile()
+        File file = new File(TestImportExport.getResource("testAscFolder/precip30min.asc").getPath()).getParentFile()
         String res = new Import_Asc_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
                  "inputSRID" : 2154])
@@ -122,7 +121,6 @@ class TestImportExport extends JdbcTestCase {
         File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
         String res = new Import_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
-                 "inputSRID" : 2154,
                  "importExt" : "shp"])
 
         assertTrue(res.contains("ROADS2"))
@@ -154,23 +152,9 @@ class TestImportExport extends JdbcTestCase {
     }
 
     @Test
-    void testImportOSMBBBike() {
-
-
-        new Import_OSM_BBBike().exec(connection,
-                ["importFolder": TestImportExport.class.getResource("BBBike/").getPath(),
-                 "inputSRID"   : 2154])
-
-        String res = new Display_Database().exec(connection, [])
-
-        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
-
-    }
-
-    @Test
     void testImportOSMPBF() {
 
-        new Import_OSM_Pbf().exec(connection, [
+        new Import_OSM().exec(connection, [
                 "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
                 "targetSRID"    : 2154,
                 "ignoreGround"  : false,
@@ -185,4 +169,20 @@ class TestImportExport extends JdbcTestCase {
     }
 
 
+    @Test
+    void testImportOSMXML() {
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.gz").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+        String res = new Display_Database().exec(connection, [])
+
+        assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
+
+    }
 }

@@ -54,7 +54,6 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     public List<double[]> wjSourcesD = new ArrayList<>();
     public List<double[]> wjSourcesE = new ArrayList<>();
     public List<double[]> wjSourcesN = new ArrayList<>();
-    public List<double[]> wjSourcesDEN = new ArrayList<>();
 
     /**
      * Attenuation and other attributes relative to direction on sphere
@@ -64,7 +63,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     LDENConfig ldenConfig;
 
     public LDENPropagationProcessData(ProfileBuilder builder, LDENConfig ldenConfig) {
-        super(builder);
+        super(builder, ldenConfig.propagationProcessPathDataDay.freq_lvl);
         this.ldenConfig = ldenConfig;
     }
 
@@ -76,17 +75,14 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
         double[][] res = computeLw(rs);
-        if(ldenConfig.computeLDay) {
+        if(ldenConfig.computeLDay || ldenConfig.computeLDEN) {
             wjSourcesD.add(res[0]);
         }
-        if(ldenConfig.computeLEvening) {
+        if(ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
             wjSourcesE.add(res[1]);
         }
-        if(ldenConfig.computeLNight) {
+        if(ldenConfig.computeLNight || ldenConfig.computeLDEN) {
             wjSourcesN.add(res[2]);
-        }
-        if(ldenConfig.computeLDEN) {
-            wjSourcesDEN.add(res[3]);
         }
     }
 
@@ -96,12 +92,13 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     }
 
     @Override
-    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
+    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
         int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
         if(directionAttributes.containsKey(directivityIdentifier)) {
-            return directionAttributes.get(directivityIdentifier).getAttenuation(frequency, phi, theta);
+            return directionAttributes.get(directivityIdentifier).getAttenuationArray(frequencies, phi, theta);
         } else {
-            return 0;
+            // This direction identifier has not been found
+            return new double[frequencies.length];
         }
     }
 
@@ -124,7 +121,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
                 sourceFields.put(fieldName.toUpperCase(), fieldId++);
             }
         }
-        double[] lvl = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
+        double[] lvl = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
         // Set default values
         double tv = 0; // old format "total vehicles"
         double hv = 0; // old format "heavy vehicles"
@@ -226,7 +223,7 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         }
         // Compute emission
         int idFreq = 0;
-        for (int freq : ldenConfig.propagationProcessPathData.freq_lvl) {
+        for (int freq : ldenConfig.propagationProcessPathDataDay.freq_lvl) {
             RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
@@ -241,14 +238,13 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
     public double[][] computeLw(SpatialResultSet rs) throws SQLException, IOException {
 
         // Compute day average level
-        double[] ld = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-        double[] le = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-        double[] ln = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-        double[] lden = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
+        double[] ld = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+        double[] le = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+        double[] ln = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
 
         if (ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_PROBA) {
             double val = dbaToW(90.0);
-            for(int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            for(int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 ld[idfreq] = dbaToW(val);
                 le[idfreq] = dbaToW(val);
                 ln[idfreq] = dbaToW(val);
@@ -256,18 +252,18 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         } else if (ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Read average 24h traffic
             if(ldenConfig.computeLDay || ldenConfig.computeLDEN) {
-                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                    ld[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "D" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+                    ld[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "D" + ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq)));
                 }
             }
             if(ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
-                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                    le[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "E" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+                    le[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "E" + ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq)));
                 }
             }
             if(ldenConfig.computeLNight || ldenConfig.computeLDEN) {
-                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                    ln[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "N" + ldenConfig.propagationProcessPathData.freq_lvl.get(idfreq)));
+                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+                    ln[idfreq] = dbaToW(rs.getDouble(ldenConfig.lwFrequencyPrepend + "N" + ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq)));
                 }
             }
         } else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
@@ -297,47 +293,12 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
             // Night
             ln = dbaToW(getEmissionFromResultSet(rs, "N", slope));
 
-        }else if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW) {
-            // Extract road slope
-            double slope = 0;
-            try {
-                Geometry g = rs.getGeometry();
-                if(profileBuilder!=null && g != null && !g.isEmpty()) {
-                    Coordinate[] c = g.getCoordinates();
-                    if(c.length >= 2) {
-                        double z0 = profileBuilder.getZ(c[0]);
-                        double z1 = profileBuilder.getZ(c[1]);
-                        if(!Double.isNaN(z0) && !Double.isNaN(z1)) {
-                            slope = Utils.computeSlope(z0, z1, g.getLength());
-                        }
-                    }
-                }
-            } catch (SQLException ex) {
-                // ignore
-            }
-            // Day
-            ld = dbaToW(getEmissionFromResultSet(rs, "D", slope));
-
-            // Evening
-            le = dbaToW(getEmissionFromResultSet(rs, "E", slope));
-
-            // Night
-            ln = dbaToW(getEmissionFromResultSet(rs, "N", slope));
-
         }
-
-        // Combine day evening night sound levels
-        for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-            lden[idfreq] = (12 * ld[idfreq] + 4 * dbaToW(wToDba(le[idfreq]) + 5) + 8 * dbaToW(wToDba(ln[idfreq]) + 10)) / 24.0;
-        }
-
-        return new double[][] {ld, le, ln, lden};
+        return new double[][] {ld, le, ln};
     }
 
     public double[] getMaximalSourcePower(int sourceId) {
-        if(ldenConfig.computeLDEN && sourceId < wjSourcesDEN.size()) {
-            return wjSourcesDEN.get(sourceId);
-        } else if(ldenConfig.computeLDay && sourceId < wjSourcesD.size()) {
+        if(ldenConfig.computeLDay && sourceId < wjSourcesD.size()) {
             return wjSourcesD.get(sourceId);
         } else if(ldenConfig.computeLEvening && sourceId < wjSourcesE.size()) {
             return wjSourcesE.get(sourceId);
@@ -353,6 +314,11 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         @Override
         public double getAttenuation(double frequency, double phi, double theta) {
             return 0;
+        }
+
+        @Override
+        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+            return new double[frequencies.length];
         }
     }
 }

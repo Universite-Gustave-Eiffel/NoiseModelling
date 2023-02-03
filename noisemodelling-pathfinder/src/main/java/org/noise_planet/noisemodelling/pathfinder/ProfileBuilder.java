@@ -156,8 +156,9 @@ public class ProfileBuilder {
     private boolean zBuildings = false;
 
 
-    public void setzBuildings(boolean zBuildings) {
+    public ProfileBuilder setzBuildings(boolean zBuildings) {
         this.zBuildings = zBuildings;
+        return this;
     }
 
 
@@ -530,6 +531,15 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addWall(Coordinate[] coords, double height, List<Double> alphas, int id) {
         return addWall(FACTORY.createLineString(coords), height, alphas, id);
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
+     */
+    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
+        return addWall(FACTORY.createLineString(coords), 0.0, alphas, id);
     }
 
     /**
@@ -1085,6 +1095,7 @@ public class ProfileBuilder {
         //Check is source is inside ground
         setGroundEffects(profile, c0, gS);
 
+
         return profile;
     }
 
@@ -1296,7 +1307,7 @@ public class ProfileBuilder {
                     profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
-                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
+                    profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection), facetLine.alphas);
                 }
                 else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
@@ -1523,12 +1534,15 @@ public class ProfileBuilder {
     }
 
     public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+        if(topoTree == null) {
+            return new ArrayList<>();
+        }
         List<Coordinate> outputPoints = new ArrayList<>();
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
         if(curTriP1 == -1) {
-            // we are outside of the bounds of the triangles
+            // we are outside the bounds of the triangles
             // Find the closest triangle to p1
             Coordinate intersectionPt = new Coordinate();
             AtomicInteger minDistanceTriangle = new AtomicInteger();
@@ -1565,12 +1579,19 @@ public class ProfileBuilder {
         return getZGround(new CutPoint(c, TOPOGRAPHY, -1));
     }
 
+    /**
+     * @return True if digital elevation model has been added
+     */
+    public boolean hasDem() {
+        return topoTree != null && topoTree.size() > 0;
+    }
+
     public double getZGround(CutPoint cut) {
-        if(cut.zGround != null) {
+        if(!Double.isNaN(cut.zGround)) {
             return cut.zGround;
         }
         if(topoTree == null) {
-            cut.zGround = null;
+            cut.zGround = NaN;
             return 0.0;
         }
         Envelope env = new Envelope(cut.coordinate);
@@ -1586,14 +1607,14 @@ public class ProfileBuilder {
                 return z;
             }
         }
-        cut.zGround = null;
+        cut.zGround = NaN;
         return 0.0;
     }
 
     /**
      * Different type of intersection.
      */
-    enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
+    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
 
         PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
             if(this.equals(SOURCE)){
@@ -1667,6 +1688,18 @@ public class ProfileBuilder {
         public void addWallCutPt(Coordinate coord, int id, boolean corner) {
             pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
             pts.get(pts.size()-1).wallId = id;
+            hasBuildingInter = true;
+        }
+
+        /**
+         * Add a building cutting point.
+         * @param coord Coordinate of the cutting point.
+         * @param id    Id of the cut building.
+         */
+        public void addWallCutPt(Coordinate coord, int id, boolean corner, List<Double> alphas) {
+            pts.add(new CutPoint(coord, IntersectionType.WALL, id, corner));
+            pts.get(pts.size()-1).wallId = id;
+            pts.get(pts.size()-1).setWallAlpha(alphas);
             hasBuildingInter = true;
         }
 
@@ -1861,9 +1894,9 @@ public class ProfileBuilder {
         /** {@link Coordinate} of the cut point. */
         private Coordinate coordinate;
         /** Intersection type. */
-        private final IntersectionType type;
+        private IntersectionType type;
         /** Identifier of the cut element. */
-        private final int id;
+        private int id;
         /** Identifier of the building containing the point. -1 if no building. */
         private int buildingId;
         /** Identifier of the wall containing the point. -1 if no wall. */
@@ -1871,11 +1904,11 @@ public class ProfileBuilder {
         /** Height of the building containing the point. NaN of no building. */
         private double height;
         /** Topographic height of the point. */
-        private Double zGround;
+        private double zGround = Double.NaN;
         /** Ground effect coefficient. 0 if there is no coefficient. */
         private double groundCoef;
         /** Wall alpha. NaN if there is no coefficient. */
-        private List<Double> wallAlpha;
+        private List<Double> wallAlpha = Collections.emptyList();
         private boolean corner;
 
         /**
@@ -1893,12 +1926,20 @@ public class ProfileBuilder {
             this.groundCoef = 0;
             this.wallAlpha = new ArrayList<>();
             this.height = 0;
-            this.zGround = null;
             this.corner = corner;
         }
         public CutPoint(Coordinate coord, IntersectionType type, int id) {
             this(coord, type, id, false);
         }
+
+        public CutPoint() {
+            coordinate = new Coordinate();
+        }
+
+        /**
+         * Copy constructor
+         * @param cut
+         */
         public CutPoint(CutPoint cut) {
             this.coordinate = new Coordinate(cut.getCoordinate());
             this.type = cut.type;
@@ -1909,7 +1950,19 @@ public class ProfileBuilder {
             this.wallAlpha = new ArrayList<>(cut.wallAlpha);
             this.height = cut.height;
             this.zGround = cut.zGround;
-            this.corner = corner;
+            this.corner = cut.corner;
+        }
+
+        public void setType(IntersectionType type) {
+            this.type = type;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public void setCoordinate(Coordinate coordinate) {
+            this.coordinate = coordinate;
         }
 
         /**
@@ -2014,7 +2067,7 @@ public class ProfileBuilder {
          * Retrieve the topographic height of the point.
          * @return The topographic height of the point.
          */
-        public double getzGround() {
+        public Double getzGround() {
             return zGround;
         }
 
@@ -2129,7 +2182,7 @@ public class ProfileBuilder {
         private Polygon poly;
         /** Height of the building. */
         private final double height;
-        private double zTopo = 0.0;
+        private double zTopo = 0.0; // minimum Z ground under building
         /** Absorption coefficients. */
         private final List<Double> alphas;
 
@@ -2221,14 +2274,18 @@ public class ProfileBuilder {
             return pk;
         }
 
-        //TODO use instead the min Ztopo
+        /**
+         * Compute minimum Z ground under the building contour
+         * @param profileBuilder
+         * @return
+         */
         public double updateZTopo(ProfileBuilder profileBuilder) {
             Coordinate[] coordinates = poly.getCoordinates();
-            double minZ = 0.0;
+            double minZ = Double.MAX_VALUE;
             for (int i = 0; i < coordinates.length-1; i++) {
-                minZ += profileBuilder.getZGround(coordinates[i]);
+                minZ = Math.min(minZ, profileBuilder.getZGround(coordinates[i]));
             }
-            zTopo = minZ/(coordinates.length-1);
+            zTopo = minZ;
             return zTopo;
         }
 

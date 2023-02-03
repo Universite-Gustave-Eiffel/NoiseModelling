@@ -1,13 +1,42 @@
 plugins {
     id 'java'
     id 'groovy'
-    id 'java-library'
     id 'maven-publish'
-    id 'signing'
+    id 'application'
+    id 'distribution'
 }
 
-group = 'org.orbisgis'
-version = '4.0.0-SNAPSHOT'
+
+sourceCompatibility = 11
+
+
+distributions {
+    main {
+        distributionBaseName = 'scriptrunner'
+        contents {
+            from '../LICENSE'
+            from '../README.md'
+            from 'get_started_tutorial.sh'
+            from 'src/main/groovy/org/noise_planet/'
+            from 'src/main/groovy/get_started_tutorial.groovy'
+            from('src/test/') { include 'resources/**' }
+        }
+    }
+}
+
+startScripts {
+    doLast {
+        windowsScript.text = windowsScript.text.replaceAll('set CLASSPATH=.*', 'set CLASSPATH=.;%APP_HOME%/lib/*')
+    }
+}
+
+
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
 
 publishing {
     publications {
@@ -21,7 +50,7 @@ publishing {
     }
 }
 repositories {
-    mavenLocal() // TODO remove this on major release
+    mavenLocal() // To test noise modelling updated locally we have to put this first
     mavenCentral()
     maven {
         url "libs/"
@@ -52,6 +81,7 @@ test {
     }
 }
 dependencies {
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
     implementation('org.geotools:gt-jdbc:21.1') {
         exclude group: 'javax.media'
     }
@@ -79,38 +109,32 @@ dependencies {
     implementation 'org.codehaus.groovy:groovy-all:2.5.5'
     implementation group: 'org.ejml', name: 'all', version: '0.29'
     implementation group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
-    implementation group: 'org.orbisgis', name: 'h2gis', version: '2.0.0'
-    implementation('org.locationtech.jts:jts-core:1.18.2') {
-        version {
-            strictly '[1.18, 1.19['
-            prefer '1.18.2'
-        }
-    }
-    implementation('org.locationtech.jts:jts-io:1.18.2') {
-        version {
-            strictly '[1.18, 1.19['
-            prefer '1.18.2'
-        }
-    }
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.0-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'h2gis', version: '2.1.0-SNAPSHOT'
+    implementation('org.locationtech.jts:jts-core:1.19.0')
+    implementation('org.locationtech.jts:jts-io:1.19.0')
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '4.0.3-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '4.0.3-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '4.0.3-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '4.0.3-SNAPSHOT'
+    implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '0.48.3'
     implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
         exclude group: 'org.geotools'
     }
 
     implementation 'com.opencsv:opencsv:4.0'
-    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
     testCompileOnly 'junit:junit:4.12'
 }
 
-task copyDependencies(type: Copy) {
-    from configurations.default
-    into 'dependencies'
+
+mainClassName = 'org.noisemodelling.runner.Main'
+
+jar {
+    manifest {
+        attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
+                'Main-Class': 'org.noisemodelling.runner.Main')
+    }
 }
-
-
-// compile group: 'org.orbisgis', name: 'osm', version: '1.0.0-SNAPSHOT'

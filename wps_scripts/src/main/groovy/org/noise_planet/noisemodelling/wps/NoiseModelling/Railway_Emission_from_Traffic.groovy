@@ -17,7 +17,9 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.functions.spatial.convert.ST_Force3D
 import org.h2gis.functions.spatial.edit.ST_AddZ
+import org.h2gis.functions.spatial.edit.ST_UpdateZ
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -29,6 +31,8 @@ import org.locationtech.jts.geom.LineString
 import org.noise_planet.noisemodelling.emission.RailWayLW
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
+import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -45,36 +49,47 @@ import java.sql.Statement
  */
 
 title = 'Compute railway emission noise map from vehicule, traffic table AND section table.'
-description = 'Compute Rail Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
-        '</br> </br> <b> The output table is called : LW_RAILWAY </b> '
+description = '&#10145;&#65039; Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br> </br>' +
+              'The output table is called <b>LW_RAILWAY</b>'
 
 inputs = [
         tableRailwayTraffic: [
-                name   : 'Railway traffic table name',
-                title  : 'Railway traffic table name',
-                description    : "<b>Name of the Rail traffic table.</b>  </br>  " +
-                        "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                        "<li><b> idTraffic </b>* : an identifier.</li>" +
-                        "<li><b> idSection </b>* : an identifier. (INT)</li>" +
-                        "<li><b> TRAINTYPE </b>* : Type vehicle (STRING)/li>" +
-                        "<li><b> TRAINSPD </b>* : Maximum Train speed (DOUBLE) </li>" +
-                        "<li><b> TDAY </b><b> TEVENING </b><b> TNIGHT </b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INT)</li>", type: String.class],
+            name : 'Railway traffic table name',
+            title : 'Railway traffic table name',
+            description : '<b>Name of the Rail traffic table.</b>  </br><br>' +
+                          'This function recognize the following columns (* mandatory): </br><ul>' +
+                          '<li><b>IDTRAFFIC</b>* : A traffic identifier (PRIMARY KEY) (INTEGER) </li>' +
+                          '<li><b>IDSECTION</b>* : A section identifier, refering to RAIL_SECTIONS table (INTEGER)</li>' +
+                          '<li><b>TRAINTYPE</b>* : Type of vehicle, listed in the <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/4.X/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/Rail_Train_SNCF_2021.json" target="_blank">Rail_Train_SNCF_2021</a> file (mainly for french SNCF) (STRING)</li>' +
+                          '<li><b>TRAINSPD</b>* : Maximum Train speed (in km/h) (DOUBLE)</li>' +
+                          '<li><b>TDAY</b>, <b>TEVENING</b> and <b>TNIGHT</b> : Hourly average train count (6-18h)(18-22h)(22-6h) (INTEGER)</li></ul>', 
+            type: String.class
+            ],
         tableRailwayTrack  : [
-                name    : 'RailWay Geom table name', title: 'RailWay Track table name', description: "<b>Name of the Railway Track table.</b>  </br>  " +
-                "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                "<li><b> idSection </b>* : an identifier. </li>" +
-                "<li><b> nTrack </b>* : Number of tracks (INTEGER) /li>" +
-                "<li><b> TrackSpd </b>* : Maximum speed on the section in km/h (DOUBLE) </li>" +
-                "<li><b> Transfer </b> : Track transfer function identifier (INTEGER) </li>" +
-                "<li><b> Roughness </b> : Rail roughness identifier (INTEGER)  </li>" +
-                "<li><b> Impact </b> : Impact noise identifier (INTEGER) </li>" +
-                "<li><b> Curvature </b> : Listed code describing the curvature of the section (INTEGER) </li>" +
-                "<li><b> Bridge </b> : Bridge transfer function identifier (INTEGER) </li>" +
-                "<li><b> TRACKSPC </b> : Commercial speed on the section in km/h (DOUBLE) </li>" +
-                "<li><b> isTUNNEL </b> : (BOOLEAN) </li>", type: String.class]
+            name : 'RailWay Geom table name', 
+            title : 'RailWay Track table name', 
+            description : '<b>Name of the Railway Track table.</b> </br><br>' +
+                          'This function recognize the following columns (* mandatory): </br><ul>' +
+                          '<li><b>IDSECTION</b>* : A section identifier (PRIMARY KEY) (INTEGER)</li>' +
+                          '<li><b>NTRACK</b>* : Number of tracks (INTEGER)</li>' +
+                          '<li><b>TRACKSPD</b>* : Maximum speed on the section (in km/h) (DOUBLE)</li>' +
+                          '<li><b>TRANSFER</b> : Track transfer function identifier (INTEGER)</li>' +
+                          '<li><b>ROUGHNESS</b> : Rail roughness identifier (INTEGER)</li>' +
+                          '<li><b>IMPACT</b> : Impact noise coefficient identifier (INTEGER)</li>' +
+                          '<li><b>CURVATURE</b> : Listed code describing the curvature of the section (INTEGER)</li>' +
+                          '<li><b>BRIDGE</b> : Bridge transfer function identifier (INTEGER)</li>' +
+                          '<li><b>TRACKSPD</b> : Commercial speed on the section (in km/h) (DOUBLE)</li>' +
+                          '<li><b>ISTUNNEL</b> : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN) </li></ul>', 
+            type: String.class
+            ]
 ]
 
-outputs = [result: [name: 'Result output string', title: 'Result output string', description: 'This type of result does not allow the blocks to be linked together.', type: String.class]]
+outputs = [result: [name: 'Result output string', 
+                    title: 'Result output string', 
+                    description: 'This type of result does not allow the blocks to be linked together.', 
+                    type: String.class
+                    ]
+           ]
 
 // Open Connection to Geoserver
 static Connection openGeoserverDataStoreConnection(String dbName) {
@@ -139,57 +154,9 @@ def exec(Connection connection, input) {
     // Init table LW_RAIL
     // -------------------
 
+
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
-
-    // drop table LW_RAILWAY if exists and the create and prepare the table
-    sql.execute("drop table if exists LW_RAILWAY;")
-
-    // Build and execute queries
-    StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
-            " the_geom geometry, DIR_ID int")
-    StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
-            " DIR_ID")
-    StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?")
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-        createTableQuery.append(", LWD")
-        createTableQuery.append(thirdOctave)
-        createTableQuery.append(" double precision")
-        insertIntoQuery.append(", LWD")
-        insertIntoQuery.append(thirdOctave)
-        insertIntoValuesQuery.append(", ?")
-    }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-        createTableQuery.append(", LWE")
-        createTableQuery.append(thirdOctave)
-        createTableQuery.append(" double precision")
-        insertIntoQuery.append(", LWE")
-        insertIntoQuery.append(thirdOctave)
-        insertIntoValuesQuery.append(", ?")
-    }
-    for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-        createTableQuery.append(", LWN")
-        createTableQuery.append(thirdOctave)
-        createTableQuery.append(" double precision")
-        insertIntoQuery.append(", LWN")
-        insertIntoQuery.append(thirdOctave)
-        insertIntoValuesQuery.append(", ?")
-    }
-    createTableQuery.append(")")
-    insertIntoQuery.append(") VALUES (")
-    insertIntoQuery.append(insertIntoValuesQuery)
-    insertIntoQuery.append(")")
-    sql.execute(createTableQuery.toString())
-
-    // --------------------------------------
-    // Start calculation and fill the table
-    // --------------------------------------
-
-    // Get Class to compute LW
-
-    LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW)
-    ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData())
-    ldenConfig.setCoefficientVersion(2)
 
     // Get size of the table (number of rail segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_geom_table_name)
@@ -200,91 +167,8 @@ def exec(Connection connection, input) {
         System.println('The table Rail Geom has ' + nSection + ' rail segments.')
     }
 
-    RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, sources_geom_table_name, sources_table_traffic_name, ldenConfig)
-    RailWayLWIterator.RailWayLWGeom railWayLWGeom;
-
-    while ((railWayLWGeom = railWayLWIterator.next()) != null) {
-
-        RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay()
-        RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening()
-        RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight()
-        List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry()
-        
-        int pk = railWayLWGeom.getPK()
-        double[] LWDay
-        double[] LWEvening
-        double[] LWNight
-        double heightSource
-        int directivityId
-        for (int iSource = 0; iSource < 6; iSource++) {
-            switch (iSource) {
-                case 0:
-                    LWDay = railWayLWDay.getLWRolling()
-                    LWEvening = railWayLWEvening.getLWRolling()
-                    LWNight = railWayLWNight.getLWRolling()
-                    heightSource = 0.5
-                    directivityId = 1
-                    break
-                case 1:
-                    LWDay = railWayLWDay.getLWTractionA()
-                    LWEvening = railWayLWEvening.getLWTractionA()
-                    LWNight = railWayLWNight.getLWTractionA()
-                    heightSource = 0.5
-                    directivityId = 2
-                    break
-                case 2:
-                    LWDay = railWayLWDay.getLWTractionB()
-                    LWEvening = railWayLWEvening.getLWTractionB()
-                    LWNight = railWayLWNight.getLWTractionB()
-                    heightSource = 4
-                    directivityId = 3
-                    break
-                case 3:
-                    LWDay = railWayLWDay.getLWAerodynamicA()
-                    LWEvening = railWayLWEvening.getLWAerodynamicA()
-                    LWNight = railWayLWNight.getLWAerodynamicA()
-                    heightSource = 0.5
-                    directivityId = 4
-                    break
-                case 4:
-                    LWDay = railWayLWDay.getLWAerodynamicB()
-                    LWEvening = railWayLWEvening.getLWAerodynamicB()
-                    LWNight = railWayLWNight.getLWAerodynamicB()
-                    heightSource = 4
-                    directivityId = 5
-                    break
-                case 5:
-                    LWDay = railWayLWDay.getLWBridge()
-                    LWEvening = railWayLWEvening.getLWBridge()
-                    LWNight = railWayLWNight.getLWBridge()
-                    heightSource = 0.5
-                    directivityId = 6
-                    break
-            }
-            for (int nTrack = 0; nTrack < geometries.size(); nTrack++) {
-
-                sql.withBatch(100, insertIntoQuery.toString()) { ps ->
-                    Geometry trackGeometry = (Geometry) geometries.get(nTrack)
-                    Geometry sourceGeometry = trackGeometry.copy()
-                    // offset geometry z
-                    sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource))
-                    def batchData = [pk as int, sourceGeometry as Geometry, directivityId as int]
-                    batchData.addAll(LWDay)
-                    batchData.addAll(LWEvening)
-                    batchData.addAll(LWNight)
-                    ps.addBatch(batchData)
-                }
-            }
-        }
-
-    }
-
-
-    // Fusion geometry and traffic table
-
-
-    // Add primary key to the LW table
-    sql.execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+    MakeLWTable.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
+            "LW_RAILWAY")
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

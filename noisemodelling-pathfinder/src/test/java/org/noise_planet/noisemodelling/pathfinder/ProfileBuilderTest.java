@@ -3,12 +3,10 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
 import org.slf4j.Logger;
@@ -293,36 +291,30 @@ public class ProfileBuilderTest {
 
         // Check found intersections
 
-        Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.1,
-                envDomain.getMinY() + envDomain.getHeight() * 0.15);
-        cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-        Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * 0.25,
-                envDomain.getMinY() + envDomain.getHeight() * 0.16);
-        cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-        for(int i = 0; i < 50; i++) {
-            // precompile
-            profileBuilder.getProfile(cutStart, cutEnd, 0);
-        }
         int loops = 800;
-        long start = System.currentTimeMillis();
+        int startLoop = 50;
+        long start = 0;
         for(int i = 0; i < loops; i++) {
+            if(i == startLoop) {
+                start = System.currentTimeMillis();
+            }
             for(double[] testPoint : testPointPositions) {
-                cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
+                Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
                 cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
+                Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
                 cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 profileBuilder.getProfile(cutStart, cutEnd, 0);
             }
         }
-        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / loops));
+        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / (loops - startLoop)));
 
-        //try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
-        //    GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
-        //    geoJSONDocument.setInputCRS("EPSG:2154");
-        //    geoJSONDocument.writeHeader();
-        //    geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-        //    geoJSONDocument.writeFooter();
-        //}
+//        try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
+//            GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
+//            geoJSONDocument.setInputCRS("EPSG:2154");
+//            geoJSONDocument.writeHeader();
+//            geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
+//            geoJSONDocument.writeFooter();
+//        }
     }
 
     @Test
@@ -376,4 +368,41 @@ public class ProfileBuilderTest {
      * TOPOGRAPHY (185.0,46.84210526315789,10.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
      * RECEIVER (200.0,50.0,14.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ]
      */
+
+
+    @Test
+    public void testRelativeSourceLineProjection() throws ParseException {
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        // left upper hill
+        profileBuilder.addTopographicLine(7.78, 112.97, 0.3, 7.78, -1.0, 0.3);
+        profileBuilder.addTopographicLine(9.78, 112.97, 1.5, 9.78, -1.0, 1.5);
+        profileBuilder.addTopographicLine(11.84, 112.97, 2.7, 11.84, -1.0, 2.7);
+        profileBuilder.addTopographicLine(13.78, 112.97, 3, 13.78, -1.0, 3);
+
+        // right downward hill
+        profileBuilder.addTopographicLine(23.94, 112.97, 3, 23.94, -1.0, 3);
+        profileBuilder.addTopographicLine(24.82, 112.97, 2.7, 24.82, -1.0, 2.7);
+        profileBuilder.addTopographicLine(26.88, 112.97, 1.5, 26.88, -1.0, 1.5);
+        profileBuilder.addTopographicLine(28.84, 112.97, 0.3, 28.84, -1.0, 0.3);
+
+        // flat zone
+        profileBuilder.addTopographicLine(29.85, 112.97, 0.0, 29.85, -1.0, 0.0);
+        profileBuilder.addTopographicLine(137.79, 112.97, 0.0, 137.79, -1.0, 0.0);
+        profileBuilder.finishFeeding();
+        CnossosPropagationData cnossosPropagationData = new CnossosPropagationData(profileBuilder);
+        WKTReader wktReader = new WKTReader();
+        Geometry geometry = wktReader.read("MultiLineStringZ ((18.27972380180239753 -1.52672398417648481 0.05, 18.27972380180239753 113.47327601582351519 0.05))");
+        cnossosPropagationData.addSource(1L, geometry);
+        ComputeCnossosRays computeCnossosRays = new ComputeCnossosRays(cnossosPropagationData);
+        assertEquals(2, cnossosPropagationData.sourceGeometries.get(0).getNumPoints());
+        computeCnossosRays.makeSourceRelativeZToAbsolute();
+        // The source line should now be made of 4 points (2 points being created by the elevated DEM)
+        assertEquals(4, cnossosPropagationData.sourceGeometries.get(0).getNumPoints());
+        double minZ = Arrays.stream(cnossosPropagationData.sourceGeometries.get(0).getCoordinates())
+                .map(coordinate -> coordinate.z).min(Double::compareTo).get();
+        assertEquals(0.05, minZ, 1e-6);
+        double maxZ = Arrays.stream(cnossosPropagationData.sourceGeometries.get(0).getCoordinates())
+                .map(coordinate -> coordinate.z).max(Double::compareTo).get();
+        assertEquals(3.05, maxZ, 1e-6);
+    }
 }

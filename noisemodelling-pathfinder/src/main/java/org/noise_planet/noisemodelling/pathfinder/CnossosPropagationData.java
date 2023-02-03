@@ -90,6 +90,18 @@ public class CnossosPropagationData {
 
     /** Maximum reflexion order */
     public int reflexionOrder = 1;
+
+    public boolean isBodyBarrier() {
+        return bodyBarrier;
+    }
+
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
+    }
+
+    /** bodyBarrier effet */
+    boolean bodyBarrier = false;
+
     /** Compute horizontal diffraction rays over vertical edges */
     protected boolean computeHorizontalDiffraction = true;
 
@@ -118,6 +130,17 @@ public class CnossosPropagationData {
     protected List<GeoWithSoilType> soilList = new ArrayList<>();
 
     Map<String, Integer> sourceFieldNames = new HashMap<>();
+    public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+    public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 1258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
+    public static final Double[] DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE = new Double[] {-30.2, -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8, -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5, -0.1, -1.1, -2.5};
+
+    public List<Integer> freq_lvl = Arrays.asList(asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+
+
+    public CnossosPropagationData(ProfileBuilder profileBuilder, List<Integer> freq_lvl) {
+        this.profileBuilder = profileBuilder;
+        this.freq_lvl = freq_lvl;
+    }
 
 
     public CnossosPropagationData(ProfileBuilder profileBuilder) {
@@ -263,8 +286,8 @@ public class CnossosPropagationData {
      * @param theta (-π/2 π/2) 0 is horizontal π is top
      * @return Attenuation in dB
      */
-    public double getSourceAttenuation(int srcIndex, double frequency, float phi, float theta) {
-        return 0;
+    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
+        return new double[frequencies.length];
     }
 
     /**
@@ -273,6 +296,35 @@ public class CnossosPropagationData {
      */
     public boolean isOmnidirectional(int srcIndex) {
         return true;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
+        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
     }
 }
 

@@ -44,6 +44,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.lang.Math.*;
+import static java.lang.Math.log10;
+import static org.noise_planet.noisemodelling.pathfinder.PointPath.POINT_TYPE.DIFH;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 
 /**
@@ -55,7 +58,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
  */
 public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public ConcurrentLinkedDeque<VerticeSL> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
-    public List<PropagationPath> propagationPaths = Collections.synchronizedList(new ArrayList<PropagationPath>());
+    public Deque<PropagationPath> propagationPaths = new ConcurrentLinkedDeque<PropagationPath>();
+    public AtomicInteger propagationPathsSize = new AtomicInteger(0);
 
     public PropagationProcessPathData genericMeteoData;
     public CnossosPropagationData inputData;
@@ -77,7 +81,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         this.genericMeteoData = pathData;
     }
 
-    public boolean keepRays = true;
+    public boolean keepRays;
     public boolean keepAbsorption = false;
     public AtomicLong rayCount = new AtomicLong();
     public AtomicLong nb_couple_receiver_src = new AtomicLong();
@@ -99,6 +103,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     /**
+     * The north slice is the last array index not the first one
+     * Ex for slice width of 20°:
+     *      - The first column 20° contain winds between 10 to 30 °
+     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
      * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
      * @return rose index
      */
@@ -112,10 +120,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         if(angleRad < 0) {
             angleRad += Math.PI * 2;
         }
-        // The north slice is the last array index not the first one
-        // Ex for slice width of 20°:
-        //      - The first column 20° contain winds between 10 to 30 °
-        //      - The last column 360° contains winds between 350° to 360° and 0 to 10°
         int index = (int)(angleRad / angle_section) - 1;
         if(index < 0) {
             index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
@@ -137,6 +141,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         rayCount.addAndGet(propagationPath.size());
         if(keepRays) {
             propagationPaths.addAll(propagationPath);
+            propagationPathsSize.addAndGet(propagationPath.size());
         }
         double[] aGlobalMeteo = computeAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
@@ -159,6 +164,14 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         if (data == null) {
             return new double[0];
         }
+        // cache frequencies
+        double[] frequencies = new double[0];
+        if(inputData != null) {
+            frequencies = new double[inputData.freq_lvl.size()];
+            for (int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+                frequencies[idFrequency] = inputData.freq_lvl.get(idFrequency);
+            }
+        }
         // Compute receiver/source attenuation
         double[] propagationAttenuationSpectrum = null;
         for (PropagationPath proPath : propagationPath) {
@@ -172,21 +185,133 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             double[] aDiv = EvaluateAttenuationCnossos.aDiv(proPath, data);
             //AAtm computation
             double[] aAtm = EvaluateAttenuationCnossos.aAtm(data, proPath.getSRSegment().d);
-            //ARef computation
+            //Reflexion computation
             double[] aRef = EvaluateAttenuationCnossos.evaluateAref(proPath, data);
+            double[] aRetroDiff;
             //ABoundary computation
             double[] aBoundary;
             double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
             double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
+            double[] deltaBodyScreen = new double[data.freq_lvl.size()];
 
             List<PointPath> ptList = proPath.getPointList();
-            int roseindex = getRoseIndex(ptList.get(0).coordinate, ptList.get(ptList.size() - 1).coordinate);
+
+            // todo get hRail from input data
+            double hRail = 0.5;
+            Coordinate src = ptList.get(0).coordinate;
+            PointPath pDif = ptList.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
+
+            if (pDif != null && pDif.alphaWall.size()>0) {
+                if (pDif.bodyBarrier){
+
+                    int n = 3;
+                    Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
+                    double[][] deltaGeo = new double[n+1][data.freq_lvl.size()];
+                    double[][] deltaAbs = new double[n+1][data.freq_lvl.size()];
+                    double[][] deltaDif = new double[n+1][data.freq_lvl.size()];
+                    double[][] deltaRef = new double[n+1][data.freq_lvl.size()];
+                    double[][] deltaRetroDifi = new double[n+1][data.freq_lvl.size()];
+                    double[][] deltaRetroDif = new double[n+1][data.freq_lvl.size()];
+                    double[] deltaL = new double[data.freq_lvl.size()];
+                    Arrays.fill(deltaL,dbaToW(0.0));
+
+                    double db = pDif.coordinate.x;
+                    double hb = pDif.coordinate.y;
+                    Coordinate B = new Coordinate(db,hb);
+
+                    double Cref = 1;
+                    double dr = rcv.x;
+                    double h0 = ptList.get(0).altitude+hRail;
+                    double hs = ptList.get(0).altitude+src.y-hRail;
+                    double hr = ptList.get(ptList.size()-1).altitude + ptList.get(ptList.size()-1).coordinate.y-h0;
+                    double[] r = new double[4];
+                    if (db<5*hb) {
+                        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                            if (pDif.alphaWall.get(idfreq)<0.8){
+
+                                double dif0 =0 ;
+                                double ch = 1.;
+                                double lambda = 340.0 / data.freq_lvl.get(idfreq);
+                                double hi = hs;
+                                double cSecond = 1;
+
+                                for (int i = 0; i <= n; i++) {
+                                    double di = -2 * i * db;
+
+                                    Coordinate si = new Coordinate(src.x+di, src.y);
+                                    r[i] = sqrt(pow(di - (db + dr), 2) + pow(hi - hr, 2));
+                                    deltaGeo[i][idfreq] =  20 * log10(r[0] / r[i]);
+                                    double deltai = si.distance(B)+B.distance(rcv)-si.distance(rcv);
+
+                                    double dif = 0;
+                                    double testForm = (40/lambda)*cSecond*deltai;
+                                    if (testForm>=-2) {
+                                        dif = 10*ch*log10(3+testForm);
+                                    }
+
+                                    if (i==0){
+                                        dif0=dif;
+                                        deltaRetroDif[i][idfreq] = dif;
+                                    }else{
+                                        deltaDif[i][idfreq] = dif0-dif;
+                                    }
+
+                                    deltaAbs[i][idfreq] = 10 * i * log10(1 - pDif.alphaWall.get(idfreq));
+                                    deltaRef[i][idfreq] = 10 * i * log10(Cref);
+
+                                    double retroDif =0 ;
+                                    Coordinate Pi = new Coordinate(-(2 * i -1)* db,hb);
+                                    Coordinate RcvPrime = new Coordinate(dr,max(hr,hb*(db+dr-di)/(db-di)));
+                                    deltai = -(si.distance(Pi)+Pi.distance(RcvPrime)-si.distance(RcvPrime));
+
+                                    testForm = (40/lambda)*cSecond*deltai;
+                                    if (testForm>=-2) {
+                                        retroDif = 10*ch*log10(3+testForm);
+                                    }
+
+                                    if (i==0){
+                                        deltaRetroDifi[i][idfreq] = 0;
+                                    }else{
+                                        deltaRetroDifi[i][idfreq] = retroDif;
+                                    }
+
+
+                                }
+                                // Compute deltaRetroDif
+                                deltaRetroDif[0][idfreq] = 0;
+                                for (int i = 1; i <= n; i++) {
+                                    double sumRetrodif = 0;
+                                    for (int j = 1; j <= i; j++) {
+                                        sumRetrodif = sumRetrodif + deltaRetroDifi[j][idfreq];
+                                    }
+                                    deltaRetroDif[i][idfreq] = - sumRetrodif;
+                                }
+                                // Compute deltaL
+                                for (int i = 0; i <= n; i++) {
+                                    deltaL[idfreq] = deltaL[idfreq] + dbaToW(deltaGeo[i][idfreq] + deltaDif[i][idfreq] + deltaAbs[i][idfreq] + deltaRef[i][idfreq] + deltaRetroDif[i][idfreq]);
+                                }
+                            }
+                        }
+                        deltaBodyScreen = wToDba(deltaL);
+                    }
+                }
+
+            }
+
+            // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
+            // just swap the inverse boolean parameter
+            // @see ComputeCnossosRays#computeOrientation
+            Vector3D fieldVectorPropagation = Orientation.rotate(proPath.getSourceOrientation(),
+                    Orientation.toVector(proPath.raySourceReceiverDirectivity), false);
+            int roseIndex = getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
             // Homogenous conditions
-            if (data.getWindRose()[roseindex]!=1) {
+            if (data.getWindRose()[roseIndex] != 1) {
                 proPath.setFavorable(false);
+
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(keepAbsorption) {
@@ -195,11 +320,12 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 }
             }
             // Favorable conditions
-            if (data.getWindRose()[roseindex]!=0) {
+            if (data.getWindRose()[roseIndex] != 0) {
                 proPath.setFavorable(true);
                 aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(keepAbsorption) {
@@ -216,31 +342,29 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             }
 
             // Compute attenuation under the wind conditions using the ray direction
-            double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseindex]);
-
-            //For testing purpose
-            if(keepAbsorption) {
-                proPath.absorptionData.aGlobal = aGlobalMeteoRay.clone();
-            }
+            double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseIndex]);
 
             // Apply attenuation due to sound direction
             if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
-                /*Orientation sourceOrientation = proPath.getSourceOrientation();
-                // fetch orientation of the first ray
-                Coordinate nextPointFromSource = proPath.getPointList().get(1).coordinate;
-                Coordinate sourceCoordinate = proPath.getPointList().get(0).coordinate;
-                Vector3D outgoingRay = new Vector3D(new Coordinate(nextPointFromSource.x - sourceCoordinate.x,
-                        nextPointFromSource.y - sourceCoordinate.y,
-                        nextPointFromSource.z - sourceCoordinate.z)).normalize();
-                Orientation directivityToPick = Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);*/
-                Orientation directivityToPick = proPath.getPointList().get(0).orientation;
-                double[] attSource = new double[data.freq_lvl.size()];
-                for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    attSource[idfreq] = inputData.getSourceAttenuation((int) sourceId,
-                            data.freq_lvl.get(idfreq), (float)Math.toRadians(directivityToPick.yaw),
-                            (float)Math.toRadians(directivityToPick.pitch));
+                Orientation directivityToPick = proPath.raySourceReceiverDirectivity;
+                double[] attSource = inputData.getSourceAttenuation((int) sourceId,
+                        frequencies, Math.toRadians(directivityToPick.yaw),
+                        Math.toRadians(directivityToPick.pitch));
+                if(keepAbsorption) {
+                    proPath.absorptionData.aSource = attSource;
                 }
                 aGlobalMeteoRay = sumArray(aGlobalMeteoRay, attSource);
+            }
+
+            // For line source, take account of li coefficient
+            if(sourceLi > 1.0) {
+                for (int i = 0; i < aGlobalMeteoRay.length; i++) {
+                    aGlobalMeteoRay[i] = wToDba(dbaToW(aGlobalMeteoRay[i]) * sourceLi);
+                }
+            }
+            // Keep global attenuation
+            if(keepAbsorption) {
+                proPath.absorptionData.aGlobal = aGlobalMeteoRay.clone();
             }
 
             if (propagationAttenuationSpectrum != null) {
@@ -250,12 +374,6 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             }
         }
         if (propagationAttenuationSpectrum != null) {
-            // For line source, take account of li coefficient
-            if(sourceLi > 1.0) {
-                for (int i = 0; i < propagationAttenuationSpectrum.length; i++) {
-                    propagationAttenuationSpectrum[i] = wToDba(dbaToW(propagationAttenuationSpectrum[i]) * sourceLi);
-                }
-            }
             return propagationAttenuationSpectrum;
         } else {
             return new double[0];
@@ -264,7 +382,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
     @Override
     public IComputeRaysOut subProcess() {
-        return new ThreadRaysOut(this);
+        return new ThreadRaysOut(this, genericMeteoData);
     }
 
     public List<VerticeSL> getVerticesSoundLevel() {
@@ -272,10 +390,13 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     public List<PropagationPath> getPropagationPaths() {
-        return propagationPaths;
+        return new ArrayList<>(propagationPaths);
     }
 
-    public void clearPropagationPaths() { this.propagationPaths.clear();}
+    public void clearPropagationPaths() {
+        propagationPaths.clear();
+        propagationPathsSize.set(0);
+    }
 
     public void appendReflexionPath(long added) {
         nb_reflexion_path.addAndGet(added);
@@ -334,25 +455,28 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     }
 
     public static class ThreadRaysOut implements IComputeRaysOut {
-        protected ComputeRaysOutAttenuation multiThreadParent;
-        protected List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
+        public ComputeRaysOutAttenuation multiThreadParent;
+        public List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
         public List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
+        public PropagationProcessPathData propagationProcessPathData;
+        public boolean keepRays = false;
 
-        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent) {
+        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent, PropagationProcessPathData propagationProcessPathData) {
             this.multiThreadParent = multiThreadParent;
+            this.keepRays = multiThreadParent.keepRays;
+            this.propagationProcessPathData = propagationProcessPathData;
         }
 
         @Override
         public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(multiThreadParent.genericMeteoData, sourceId, sourceLi, receiverId, propagationPath);
+            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(propagationProcessPathData, sourceId, sourceLi, receiverId, propagationPath);
             multiThreadParent.rayCount.addAndGet(propagationPath.size());
-            if(multiThreadParent.keepRays) {
+            if(keepRays) {
                 if(multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&
                       receiverId < multiThreadParent.inputData.receiversPk.size()) {
                     for(PropagationPath path : propagationPath) {
                         // Copy path content in order to keep original ids for other method calls
-                        PropagationPath pathPk = new PropagationPath(path.isFavorable(), path.getPointList(),
-                                path.getSegmentList(), path.getSRSegment(), path.angle);
+                        PropagationPath pathPk = new PropagationPath(path);
                         pathPk.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
                         pathPk.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                         pathPk.setSourceOrientation(path.getSourceOrientation());
@@ -377,8 +501,9 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
 
         @Override
         public void finalizeReceiver(final long receiverId) {
-            if(multiThreadParent.keepRays && !propagationPaths.isEmpty()) {
+            if(keepRays && !propagationPaths.isEmpty()) {
                 multiThreadParent.propagationPaths.addAll(propagationPaths);
+                multiThreadParent.propagationPathsSize.addAndGet(propagationPaths.size());
                 propagationPaths.clear();
             }
             long receiverPK = receiverId;

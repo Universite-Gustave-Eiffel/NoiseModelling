@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
@@ -240,26 +242,28 @@ public class PointNoiseMapTest {
             pointNoiseMap.setMaximumPropagationDistance(1000);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+            ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             ldenConfig.setCoefficientVersion(1);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
             ldenPointNoiseMapFactory.insertTrainDirectivity();
-            ldenPointNoiseMapFactory.setKeepRays(true);
+
             pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
             pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
 
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
             Set<Long> receivers = new HashSet<>();
             pointNoiseMap.setThreadCount(1);
+            pointNoiseMap.setGridDim(1);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
             for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
                 for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
                     IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof LDENComputeRaysOut) {
                         LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+
                         ComputeRaysOutAttenuation.VerticeSL sl = rout.ldenData.lDenLevels.pop();
                         assertEquals(1, sl.receiverId);
                         assertEquals(73.3, sl.value[0], 1);
@@ -268,11 +272,12 @@ public class PointNoiseMapTest {
                         assertEquals(53.3, sl.value[0], 1);
                         assertTrue(rout.ldenData.lDenLevels.isEmpty());
 
-                        assertEquals(2 , rout.ldenData.rays.size());
-                        PropagationPath path = rout.ldenData.rays.pop();
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        assertEquals(2 , propagationPaths.size());
+                        PropagationPath path = propagationPaths.remove(0);
                         assertEquals(1, path.getIdReceiver());
                         assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
-                        path = rout.ldenData.rays.pop();
+                        path = propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
                         assertEquals(new Orientation(90, 15, 0), path.getSourceOrientation());
 
@@ -282,6 +287,12 @@ public class PointNoiseMapTest {
                 }
             }
         }
+    }
+
+    public static void assertOrientationEquals(Orientation orientationA, Orientation orientationB, double epsilon) {
+        assertEquals(orientationA.pitch, orientationB.pitch, epsilon);
+        assertEquals(orientationA.roll, orientationB.roll, epsilon);
+        assertEquals(orientationA.yaw, orientationB.yaw, epsilon);
     }
 
 
@@ -305,15 +316,14 @@ public class PointNoiseMapTest {
             pointNoiseMap.setMaximumPropagationDistance(1000);
             pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
             pointNoiseMap.setHeightField("HEIGHT");
-            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
             LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
             ldenConfig.setCoefficientVersion(1);
+            ldenConfig.setKeepAbsorption(false);
+            ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
             LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
             // Use train directivity functions instead of discrete directivity
             ldenPointNoiseMapFactory.insertTrainDirectivity();
-            ldenPointNoiseMapFactory.setKeepRays(true);
             pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
             pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
 
@@ -344,16 +354,95 @@ public class PointNoiseMapTest {
                         assertEquals(2, sl.receiverId);
                         assertEquals(70.8, sl.value[0], 1);
 
-                        assertEquals(3 , rout.ldenData.rays.size());
-                        PropagationPath path = rout.ldenData.rays.pop();
+                        assertEquals(3 , rout.propagationPaths.size());
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        PropagationPath path = propagationPaths.remove(0);
                         assertEquals(1, path.getIdReceiver());
-                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
-                        path = rout.ldenData.rays.pop();
+                        assertEquals(0, new Coordinate(0, 5.07).
+                                distance(path.getPointList().get(0).coordinate), 0.1);
+                        // This is source orientation, not relevant to receiver position
+                        assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
+                        assertOrientationEquals(new Orientation(330.07, -24.12, 0.0), path.raySourceReceiverDirectivity, 0.01);
+
+                        path = propagationPaths.remove(0);;
                         assertEquals(1, path.getIdReceiver());
-                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
-                        path = rout.ldenData.rays.pop();
+                        assertEquals(0, new Coordinate(0, 5.02).
+                                distance(path.getPointList().get(0).coordinate), 0.1);
+                        assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
+                        assertOrientationEquals(new Orientation(336.90675972385696, -19.398969693698437, 0), path.raySourceReceiverDirectivity, 0.01);
+                        path = propagationPaths.remove(0);
                         assertEquals(2, path.getIdReceiver());
-                        assertEquals(new Orientation(45, 0.8102307f, 0), path.getSourceOrientation());
+                        assertOrientationEquals(new Orientation(45, 0.81, 0), path.getSourceOrientation(), 0.01);
+                    } else {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testPointRayDirectivity() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            // create source point direction east->90°
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(3.5,3,1.0 )),
+                    91, new Orientation(90,0,0),
+                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (4.5 3 1.0)');" + //front
+                    "insert into receivers(the_geom) values ('POINTZ (2.5 3 1.0)');" + //behind
+                    "insert into receivers(the_geom) values ('POINTZ (3.5 2 1.0)');" + //right
+                    "insert into receivers(the_geom) values ('POINTZ (3.5 4 1.0)');"); //left
+            PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            pointNoiseMap.setComputeHorizontalDiffraction(false);
+            pointNoiseMap.setComputeVerticalDiffraction(false);
+            pointNoiseMap.setSoundReflectionOrder(0);
+            pointNoiseMap.setReceiverHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setMaximumPropagationDistance(1000);
+            pointNoiseMap.setSourceHasAbsoluteZCoordinates(false);
+            pointNoiseMap.setHeightField("HEIGHT");
+
+            LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+            ldenConfig.setCoefficientVersion(1);
+            ldenConfig.setKeepAbsorption(false);
+            ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
+            LDENPointNoiseMapFactory ldenPointNoiseMapFactory = new LDENPointNoiseMapFactory(connection, ldenConfig);
+            // Use train directivity functions instead of discrete directivity
+            ldenPointNoiseMapFactory.insertTrainDirectivity();
+
+            pointNoiseMap.setPropagationProcessDataFactory(ldenPointNoiseMapFactory);
+            pointNoiseMap.setComputeRaysOutFactory(ldenPointNoiseMapFactory);
+
+            pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
+
+            Set<Long> receivers = new HashSet<>();
+            pointNoiseMap.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(pointNoiseMap.getGridDim() * pointNoiseMap.getGridDim(), true, 5);
+            for(int i=0; i < pointNoiseMap.getGridDim(); i++) {
+                for(int j=0; j < pointNoiseMap.getGridDim(); j++) {
+                    IComputeRaysOut out = pointNoiseMap.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof LDENComputeRaysOut) {
+                        LDENComputeRaysOut rout = (LDENComputeRaysOut) out;
+                        List<PropagationPath> propagationPaths = rout.getPropagationPaths();
+                        assertEquals(4 , propagationPaths.size());
+                        PropagationPath path = propagationPaths.remove(0);
+                        assertEquals(1, path.getIdReceiver());
+                        // receiver is front of source
+                        assertEquals(new Orientation(0, 0, 0), path.getRaySourceReceiverDirectivity());
+                        path = propagationPaths.remove(0);
+                        assertEquals(2, path.getIdReceiver());
+                        // receiver is behind of the source
+                        assertEquals(new Orientation(180, 0, 0), path.getRaySourceReceiverDirectivity());
+                        path = propagationPaths.remove(0);
+                        assertEquals(3, path.getIdReceiver());
+                        // receiver is on the right of the source
+                        assertEquals(new Orientation(90, 0, 0), path.getRaySourceReceiverDirectivity());
+                        path = propagationPaths.remove(0);
+                        assertEquals(4, path.getIdReceiver());
+                        // receiver is on the left of the source
+                        assertEquals(new Orientation(360-90, 0, 0), path.getRaySourceReceiverDirectivity());
                     } else {
                         throw new IllegalStateException();
                     }

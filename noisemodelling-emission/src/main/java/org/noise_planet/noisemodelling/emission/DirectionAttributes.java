@@ -21,4 +21,12 @@ public interface DirectionAttributes {
      * @return Attenuation in dB
      */
     double getAttenuation(double frequency, double phi, double theta);
+
+    /**
+     * @param frequencies Frequency in Hertz (same order will be returned)
+     * @param phi (0 2π) 0 is front
+     * @param theta (-π/2 π/2) 0 is horizontal π is top
+     * @return Attenuation in dB for each frequency
+     */
+    double[] getAttenuationArray(double[] frequencies, double phi, double theta);
 }

@@ -34,6 +34,7 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.junit.Test;
+import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 
 import java.util.Arrays;
 import java.util.List;
@@ -46,7 +47,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class AtmosphericAttenuationTest {
     private static final double EPSILON = 0.1;
-    private static final List<Double> freq_lvl_exact = Arrays.asList(PropagationProcessPathData.asOctaveBands(PropagationProcessPathData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+    private static final List<Double> freq_lvl_exact = Arrays.asList(PropagationProcessPathData.asOctaveBands(
+            CnossosPropagationData.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
 
     @Test
     public void atmoTestMinus20degree() {

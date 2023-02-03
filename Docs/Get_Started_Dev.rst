@@ -1,7 +1,18 @@
 Get Started 
 ^^^^^^^^^^^^^^^^^
 
-1. Use Github
-2. The repository is here : https://github.com/Ifsttar/NoiseModelling
-3. Two principal folders : noisemodelling-emission & noisemodelling-propagation
-4. Enjoy & feel free to contact us !
+#. If not already done, create an account on `Github`_,
+
+#. Go to the official NoiseModelling repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling
+
+#. There are 4 main librairies: 
+
+    * ``noisemodelling-emission`` : to determine the noise emission
+    * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database
+    * ``noisemodelling-pathfinder`` : to determine the noise path 
+    * ``noisemodelling-propagation`` : to calculate the noise propagation
+
+#. Enjoy & feel free to contact us!
+
+
+.. _Github: https://github.com/

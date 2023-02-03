@@ -271,10 +271,10 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
         Envelope computationEnvelope = new Envelope();
         DBTypes dbTypes = DBUtils.getDBType(connection);
-        if(!sourcesTableName.isEmpty()) {
+        if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
             computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
         }
-        if(!buildingsTableName.isEmpty()) {
+        if(!buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingsTableName) > 0) {
             computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(buildingsTableName, dbTypes)).getEnvelopeInternal());
         }
         return computationEnvelope;
@@ -313,7 +313,7 @@ public class TriangleNoiseMap extends JdbcNoiseMap {
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
-        CnossosPropagationData data = new CnossosPropagationData(null);
+        CnossosPropagationData data = new CnossosPropagationData(null, propagationProcessPathDataDay.freq_lvl);
         if(!sourcesTableName.isEmpty()) {
             fetchCellSource(connection, cellEnvelope, data, false);
         }

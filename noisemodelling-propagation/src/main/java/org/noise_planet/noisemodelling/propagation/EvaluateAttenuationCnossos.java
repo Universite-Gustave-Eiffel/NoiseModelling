@@ -33,9 +33,12 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.SegmentPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +61,8 @@ public class EvaluateAttenuationCnossos {
     public static double[] getaGlobal() {
         return aGlobal;
     }
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateAttenuationCnossos.class);
 
     /**
      * Eq 2.5.21
@@ -453,9 +458,6 @@ public class EvaluateAttenuationCnossos {
             }
         }
 
-        // init evolved path
-        path.initPropagationPath();
-
         // init atmosphere
         double[] alpha_atmo = data.getAlpha_atmo();
 
@@ -556,26 +558,31 @@ public class EvaluateAttenuationCnossos {
     }
 
     public static double[] deltaRetrodif(PropagationPath reflect, PropagationProcessPathData data) {
+
         double[] retroDiff = new double[data.freq_lvl.size()];
-        for(int i=0; i<data.freq_lvl.size(); i++) {
-            if(reflect.refPoints.size() == 0) {
-                retroDiff[i]=0;
-            }
-            PointPath pp = reflect.getPointList().get(reflect.refPoints.get(0));
+        Arrays.fill(retroDiff, 0.);
+        Coordinate s = reflect.getSRSegment().s;
+        Coordinate r = reflect.getSRSegment().r;
+        for(int idx : reflect.refPoints) {
+            //Get the reflexion point
+            PointPath pp = reflect.getPointList().get(idx);
+            //Get the point on the top of the obstacle
+            Coordinate o = new Coordinate(pp.coordinate.x, pp.buildingHeight);
+            //Compute de distance delta (2.5.36)
+            double deltaPrime = -(s.distance(o) + o.distance(r) - reflect.getSRSegment().d);
             double ch = 1.;
-            double lambda = 340.0 / data.freq_lvl.get(i);
-            double deltaPrime = reflect.isFavorable() ? reflect.deltaRetroF : reflect.deltaRetroH;
-            double testForm = 40.0/lambda*deltaPrime;
-            double dLRetro = testForm >= -2 ? 10*ch*log10(3+testForm) : 0;
-            double dLAbs = 10*log10(1-pp.alphaWall.get(i));
-            if(reflect.keepAbsorption) {
-                if(reflect.reflectionAttenuation.dLRetro == null) {
-                    reflect.reflectionAttenuation.init(data.freq_lvl.size());
-                }
-                reflect.reflectionAttenuation.dLRetro[i] = dLRetro;
-                reflect.reflectionAttenuation.dLAbs[i] = dLAbs;
+            for (int i = 0; i < data.freq_lvl.size(); i++) {
+                double lambda = 340.0 / data.freq_lvl.get(i);
+                double testForm = 40.0 / lambda * deltaPrime;
+                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0;
+                retroDiff[i] = dLRetro;
             }
-            retroDiff[i]= dLRetro + dLAbs;
+        }
+        if (reflect.keepAbsorption) {
+            if (reflect.reflectionAttenuation.dLRetro == null) {
+                reflect.reflectionAttenuation.init(data.freq_lvl.size());
+            }
+            reflect.reflectionAttenuation.dLRetro = retroDiff;
         }
         return retroDiff;
     }
@@ -619,8 +626,22 @@ public class EvaluateAttenuationCnossos {
 
         double aGroundSO = proPath.isFavorable() ? aGroundF(proPath, first, data, i) : aGroundH(proPath, first, data, i);
         double aGroundOR = proPath.isFavorable() ? aGroundF(proPath, last, data, i, true) : aGroundH(proPath, last, data, i, true);
+
+        //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
         double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
-        double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
+        double deltaGroundOR  = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10, -(deltaDiffSRPrime - deltaDiffSR) / 20));
+
+        //Double check NaN values
+        if(Double.isNaN(deltaGroundSO)) {
+           // LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
+            deltaGroundSO = aGroundSO;
+            deltaDiffSR = deltaDiffSPrimeR;
+        }
+        if(Double.isNaN(deltaGroundOR)) {
+         //   LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
+            deltaGroundOR = aGroundOR;
+            deltaDiffSR = deltaDiffSPrimeR;
+        }
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPath.keepAbsorption) {

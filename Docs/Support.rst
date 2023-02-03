@@ -1,8 +1,12 @@
 Support
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are having issues, please `let us know`_.
- 
-You can also contact us at: contact@noise-planet.org
+If you are having trouble with NoiseModelling, you can contact the NoiseModelling team through the following channels:
 
-.. _let us know: https://github.com/Ifsttar/NoiseModelling/issues
+#. open an issue on Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues 
+#. write a message on Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions
+#. send us an email at contact@noise-planet.org 
+
+We warmly encourage you to choose options 1 or 2 because they have the merit of being public and can therefore benefit the community.
+
+If you have more "private" issue, or if you don't have any knowledge with Github, emails are welcome !

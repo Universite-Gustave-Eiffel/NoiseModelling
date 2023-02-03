@@ -8,16 +8,14 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.functions.spatial.convert.ST_Force3D;
-import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
@@ -31,10 +29,15 @@ import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumDbArray;
 
 public class LDENPointNoiseMapFactoryTest {
 
@@ -58,7 +61,9 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmission() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY, new PropagationProcessPathData());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING, new PropagationProcessPathData());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT, new PropagationProcessPathData());
         ldenConfig.setCoefficientVersion(1);
         LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
         try(Statement st = connection.createStatement()) {
@@ -107,178 +112,269 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+    @Test
+    public void testNoiseEmissionRailWayTwoGeoms() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 2)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
 
 
+    @Test
+    public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN", ldenConfig);
-        railWayLWIterator.setDistance(2);
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
 
+
+    @Test
+    public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("RailTrain.dbf").getFile());
+
+        // Test with two track only
+        connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
+        connection.createStatement().execute("DELETE FROM RAILTRAIN WHERE PK NOT IN (SELECT R1.PK FROM RAILTRAIN R1, RAILTRACK R2 WHERE r1.IDSECTION = R2.IDSECTION LIMIT 1)");
+
+        int expectedNumberOfRows;
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
+            assertTrue(rs.next());
+            expectedNumberOfRows = rs.getInt(1);
+        }
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        int numberOfRows = 0;
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+            assertNotNull(v);
+            numberOfRows++;
+        }
+        assertEquals(expectedNumberOfRows, numberOfRows);
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
-        v.setNbTrack(3);
+        v.setNbTrack(2);
         RailWayLW railWayLW = v.getRailWayLW();
         List<LineString> geometries = v.getRailWayLWGeometry();
-        assertTrue(railWayLWIterator.hasNext());
+
+        v = railWayLWIterator.next();
+        assertFalse(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
+        double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
+
+        HashMap<String, double[]> Resultats = new HashMap<>();
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        double resD,resE,resN;
+
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+
+            RailWayLW railWayLW = v.getRailWayLWDay();
+            double[] rolling = railWayLW.getLWRolling();
+            double[] tractiona = railWayLW.getLWTractionA();
+            double[] tractionb = railWayLW.getLWTractionB();
+            double[] aeroa = railWayLW.getLWAerodynamicA();
+            double[] aerob = railWayLW.getLWAerodynamicB();
+            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            double[] LWA = sumArray(LW, dBA);
+            resD = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWEvening();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resE = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWNight();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resN = sumDbArray(LWA);
+
+            String idSection = v.getIdSection();
+
+            Resultats.put(idSection,new double[]{resD, resE, resN});
+
+        }
+
+        assertFalse(railWayLWIterator.hasNext());
+
+    }
+
+    @Test
+    public void testNoiseEmissionRailWay_Section556() throws SQLException, IOException {
+        double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
+
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
+        DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
+
+        HashMap<String, double[]> Resultats = new HashMap<>();
+
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAIL_SECTIONS", "RAIL_TRAFIC");
+
+        double resD,resE,resN;
+
+       // RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.current();
+
+        while (railWayLWIterator.hasNext()) {
+            RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+
+            RailWayLW railWayLW = v.getRailWayLWDay();
+            double[] rolling = railWayLW.getLWRolling();
+            double[] tractiona = railWayLW.getLWTractionA();
+            double[] tractionb = railWayLW.getLWTractionB();
+            double[] aeroa = railWayLW.getLWAerodynamicA();
+            double[] aerob = railWayLW.getLWAerodynamicB();
+            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            double[] LWA = sumArray(LW, dBA);
+            resD = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWEvening();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resE = sumDbArray(LWA);
+
+            railWayLW = v.getRailWayLWNight();
+            rolling = railWayLW.getLWRolling();
+            tractiona = railWayLW.getLWTractionA();
+            tractionb = railWayLW.getLWTractionB();
+            aeroa = railWayLW.getLWAerodynamicA();
+            aerob = railWayLW.getLWAerodynamicB();
+            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+            LWA = sumArray(LW, dBA);
+            resN = sumDbArray(LWA);
+
+            String idSection = v.getIdSection();
+
+            Resultats.put(idSection,new double[]{resD, resE, resN});
+
+        }
+
+        /*RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
+        RailWayLW railWayLW = v.getRailWayLWDay();
+        double[] rolling = railWayLW.getLWRolling();
+        double[] tractiona = railWayLW.getLWTractionA();
+        double[] tractionb = railWayLW.getLWTractionB();
+        double[] aeroa = railWayLW.getLWAerodynamicA();
+        double[] aerob = railWayLW.getLWAerodynamicB();
+        double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        double[] LWA = sumArray(LW, dBA);
+        double resD = sumDbArray(LWA);
+
+        railWayLW = v.getRailWayLWEvening();
+        rolling = railWayLW.getLWRolling();
+        tractiona = railWayLW.getLWTractionA();
+        tractionb = railWayLW.getLWTractionB();
+        aeroa = railWayLW.getLWAerodynamicA();
+        aerob = railWayLW.getLWAerodynamicB();
+        LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        LWA = sumArray(LW, dBA);
+        double resE = sumDbArray(LWA);
+
+        railWayLW = v.getRailWayLWNight();
+        rolling = railWayLW.getLWRolling();
+        tractiona = railWayLW.getLWTractionA();
+        tractionb = railWayLW.getLWTractionB();
+        aeroa = railWayLW.getLWAerodynamicA();
+        aerob = railWayLW.getLWAerodynamicB();*
+       /* LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
+        LWA = sumArray(LW, dBA);
+        double resN = sumDbArray(LWA);*/
+
+        /*String idSection = v.getIdSection();
+        Resultats.put(idSection,new double[]{resD, resE, resN});
+        v = railWayLWIterator.next();*/
+
+        assertFalse(railWayLWIterator.hasNext());
 
     }
 
 
-    //@Test
+    @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
-
-        // drop table LW_RAILWAY if exists and the create and prepare the table
-        connection.createStatement().execute("drop table if exists LW_RAILWAY;");
-
-        // Build and execute queries
-        StringBuilder createTableQuery = new StringBuilder("create table LW_RAILWAY (ID_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int");
-        StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO LW_RAILWAY(ID_SECTION, the_geom," +
-                " DIR_ID");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?");
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWD");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWD");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWE");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWE");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        for(int thirdOctave : PropagationProcessPathData.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWN");
-            createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWN");
-            insertIntoQuery.append(thirdOctave);
-            insertIntoValuesQuery.append(", ?");
-        }
-        createTableQuery.append(")");
-        insertIntoQuery.append(") VALUES (");
-        insertIntoQuery.append(insertIntoValuesQuery);
-        insertIntoQuery.append(")");
-        connection.createStatement().execute(createTableQuery.toString());
-
-        // --------------------------------------
-        // Start calculation and fill the table
-        // --------------------------------------
+        MakeLWTable.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY");
 
         // Get Class to compute LW
-        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_RAILWAY_FLOW);
-        ldenConfig.setPropagationProcessPathData(new PropagationProcessPathData());
-        ldenConfig.setCoefficientVersion(2);
-        ldenConfig.setExportRays(true);
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
-
-        while (railWayLWIterator.hasNext()) {
-            RailWayLWIterator.RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
-
-            RailWayLW railWayLWDay = railWayLWGeom.getRailWayLWDay();
-            RailWayLW railWayLWEvening = railWayLWGeom.getRailWayLWEvening();
-            RailWayLW railWayLWNight = railWayLWGeom.getRailWayLWNight();
-            List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
-
-            int pk = railWayLWGeom.getPK();
-            double[] LWDay = new double[0];
-            double[] LWEvening = new double[0];
-            double[] LWNight = new double[0];
-            double heightSource = 0;
-            int directivityId = 0;
-            for (int iSource = 0; iSource < 6; iSource++) {
-                switch (iSource) {
-                    case 0:
-                        LWDay = railWayLWDay.getLWRolling();
-                        LWEvening = railWayLWEvening.getLWRolling();
-                        LWNight = railWayLWNight.getLWRolling();
-                        heightSource = 0.5;
-                        directivityId = 1;
-                        break;
-                    case 1:
-                        LWDay = railWayLWDay.getLWTractionA();
-                        LWEvening = railWayLWEvening.getLWTractionA();
-                        LWNight = railWayLWNight.getLWTractionA();
-                        heightSource = 0.5;
-                        directivityId = 2;
-                        break;
-                    case 2:
-                        LWDay = railWayLWDay.getLWTractionB();
-                        LWEvening = railWayLWEvening.getLWTractionB();
-                        LWNight = railWayLWNight.getLWTractionB();
-                        heightSource = 4;
-                        directivityId = 3;
-                        break;
-                    case 3:
-                        LWDay = railWayLWDay.getLWAerodynamicA();
-                        LWEvening = railWayLWEvening.getLWAerodynamicA();
-                        LWNight = railWayLWNight.getLWAerodynamicA();
-                        heightSource = 0.5;
-                        directivityId = 4;
-                        break;
-                    case 4:
-                        LWDay = railWayLWDay.getLWAerodynamicB();
-                        LWEvening = railWayLWEvening.getLWAerodynamicB();
-                        LWNight = railWayLWNight.getLWAerodynamicB();
-                        heightSource = 4;
-                        directivityId = 5;
-                        break;
-                    case 5:
-                        LWDay = railWayLWDay.getLWBridge();
-                        LWEvening = railWayLWEvening.getLWBridge();
-                        LWNight = railWayLWNight.getLWBridge();
-                        heightSource = 0.5;
-                        directivityId = 6;
-                        break;
-                }
-                PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
-                for (Geometry trackGeometry : geometries) {
-
-                    Geometry sourceGeometry = ST_UpdateZ.updateZ(ST_Force3D.force3D(trackGeometry), heightSource).copy() ;
-
-//                    sourceGeometry.apply((GeometryFilter) new ST_Force3D());
-                    // offset geometry z
-                    //sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
-
-                    //  sourceGeometry.apply(new ST_AddZ.AddZCoordinateSequenceFilter(heightSource));
-                    int cursor = 1;
-                    ps.setInt(cursor++, pk);
-                    ps.setObject(cursor++, sourceGeometry);
-                    ps.setInt(cursor++, directivityId);
-                    for (double v : LWDay) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWEvening) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    for (double v : LWNight) {
-                        ps.setDouble(cursor++, v);
-                    }
-                    ps.addBatch();
-                }
-                ps.executeBatch();
-            }
-
-        }
-
-        // Add primary key to the LW table
-
-        connection.createStatement().execute("ALTER TABLE  LW_RAILWAY  ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
-        //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(THE_GEOM, 2154)");
-      //  connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_UPDATEZ(THE_GEOM,5.0);");
-
-        railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic", ldenConfig);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
         RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
         List<LineString> geometries = v.getRailWayLWGeometry();
@@ -287,9 +383,6 @@ public class LDENPointNoiseMapFactoryTest {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
-
-        //TODO envoyer Rail section a Gwen car je veux un DEM de la plateform et si il arrive pas demander à Pierre
-        //SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("PropaRail/DEM.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
         connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
@@ -309,16 +402,17 @@ public class LDENPointNoiseMapFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         ldenConfig.setComputeLDay(true);
         ldenConfig.setComputeLEvening(false);
         ldenConfig.setComputeLNight(false);
         ldenConfig.setComputeLDEN(false);
-        ldenConfig.setExportRays(true);
+        ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY);
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
-        factory.setKeepRays(true);
+
+        factory.insertTrainDirectivity();
 
 
         PointNoiseMap pointNoiseMap = new PointNoiseMap("SCREENS", "LW_RAILWAY",
@@ -401,7 +495,7 @@ public class LDENPointNoiseMapFactoryTest {
 
     }
 
-    //@Test
+    @Test
     public void testTableGenerationFromTraffic() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -484,86 +578,86 @@ public class LDENPointNoiseMapFactoryTest {
         // Check dB ranges of result
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDayTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for(int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+            for(int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(83, leqs[0], 2.0);
-            assertEquals(76, leqs[1], 2.0);
-            assertEquals(75, leqs[2], 2.0);
-            assertEquals(76, leqs[3], 2.0);
-            assertEquals(79, leqs[4], 2.0);
-            assertEquals(77, leqs[5], 2.0);
-            assertEquals(68, leqs[6], 2.0);
-            assertEquals(59, leqs[7], 2.0);
+            assertEquals(87, leqs[0], 2.0);
+            assertEquals(78, leqs[1], 2.0);
+            assertEquals(78, leqs[2], 2.0);
+            assertEquals(79, leqs[3], 2.0);
+            assertEquals(82, leqs[4], 2.0);
+            assertEquals(80, leqs[5], 2.0);
+            assertEquals(72, leqs[6], 2.0);
+            assertEquals(62, leqs[7], 2.0);
 
-            assertEquals(86, rs.getDouble(9), 2.0);
-            assertEquals(82,rs.getDouble(10), 2.0);
+            assertEquals(90, rs.getDouble(9), 2.0);
+            assertEquals(86,rs.getDouble(10), 2.0);
         }
 
 
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lEveningTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(78.0, leqs[0], 2.0);
-            assertEquals(72.0, leqs[1], 2.0);
-            assertEquals(70.0, leqs[2], 2.0);
-            assertEquals(72.0, leqs[3], 2.0);
-            assertEquals(74.0, leqs[4], 2.0);
-            assertEquals(72.0, leqs[5], 2.0);
-            assertEquals(63.0, leqs[6], 2.0);
-            assertEquals(54.0, leqs[7], 2.0);
+            assertEquals(82.0, leqs[0], 2.0);
+            assertEquals(74.0, leqs[1], 2.0);
+            assertEquals(74.0, leqs[2], 2.0);
+            assertEquals(75.0, leqs[3], 2.0);
+            assertEquals(78.0, leqs[4], 2.0);
+            assertEquals(75.0, leqs[5], 2.0);
+            assertEquals(67.0, leqs[6], 2.0);
+            assertEquals(57.0, leqs[7], 2.0);
 
-            assertEquals(82, rs.getDouble(9), 2.0);
-            assertEquals(78,rs.getDouble(10), 2.0);
+            assertEquals(85, rs.getDouble(9), 2.0);
+            assertEquals(81,rs.getDouble(10), 2.0);
         }
 
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(76, leqs[0], 2.0);
-            assertEquals(69, leqs[1], 2.0);
-            assertEquals(68, leqs[2], 2.0);
-            assertEquals(69, leqs[3], 2.0);
-            assertEquals(71, leqs[4], 2.0);
-            assertEquals(68, leqs[5], 2.0);
-            assertEquals(60, leqs[6], 2.0);
-            assertEquals(51, leqs[7], 2.0);
+            assertEquals(79, leqs[0], 2.0);
+            assertEquals(71, leqs[1], 2.0);
+            assertEquals(70, leqs[2], 2.0);
+            assertEquals(72, leqs[3], 2.0);
+            assertEquals(75, leqs[4], 2.0);
+            assertEquals(72, leqs[5], 2.0);
+            assertEquals(64, leqs[6], 2.0);
+            assertEquals(55, leqs[7], 2.0);
 
-            assertEquals(79, rs.getDouble(9), 2.0);
-            assertEquals(75,rs.getDouble(10), 2.0);
+            assertEquals(81, rs.getDouble(9), 2.0);
+            assertEquals(78,rs.getDouble(10), 2.0);
         }
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDenTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(84.0, leqs[0], 2.0);
-            assertEquals(77.0, leqs[1], 2.0);
-            assertEquals(76.0, leqs[2], 2.0);
-            assertEquals(77.0, leqs[3], 2.0);
-            assertEquals(80.0, leqs[4], 2.0);
-            assertEquals(77.0, leqs[5], 2.0);
-            assertEquals(69.0, leqs[6], 2.0);
-            assertEquals(59.0, leqs[7], 2.0);
+            assertEquals(87.0, leqs[0], 2.0);
+            assertEquals(79.0, leqs[1], 2.0);
+            assertEquals(79.0, leqs[2], 2.0);
+            assertEquals(80.0, leqs[3], 2.0);
+            assertEquals(83.0, leqs[4], 2.0);
+            assertEquals(81.0, leqs[5], 2.0);
+            assertEquals(72.0, leqs[6], 2.0);
+            assertEquals(63.0, leqs[7], 2.0);
 
-            assertEquals(87, rs.getDouble(9), 2.0);
-            assertEquals(83,rs.getDouble(10), 2.0);
+            assertEquals(90, rs.getDouble(9), 2.0);
+            assertEquals(87,rs.getDouble(10), 2.0);
         }
     }
 
 
-    //@Test
+    @Test
     public void testTableGenerationFromTrafficNightOnly() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -632,26 +726,26 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
-            assertEquals(75, leqs[0], 2.0);
-            assertEquals(69, leqs[1], 2.0);
-            assertEquals(68, leqs[2], 2.0);
-            assertEquals(69, leqs[3], 2.0);
-            assertEquals(71, leqs[4], 2.0);
-            assertEquals(69, leqs[5], 2.0);
-            assertEquals(60, leqs[6], 2.0);
-            assertEquals(51, leqs[7], 2.0);
+            assertEquals(78, leqs[0], 2.0);
+            assertEquals(71, leqs[1], 2.0);
+            assertEquals(70, leqs[2], 2.0);
+            assertEquals(72, leqs[3], 2.0);
+            assertEquals(75, leqs[4], 2.0);
+            assertEquals(72, leqs[5], 2.0);
+            assertEquals(64, leqs[6], 2.0);
+            assertEquals(55, leqs[7], 2.0);
 
-            assertEquals(79, rs.getDouble(9), 2.0);
-            assertEquals(75,rs.getDouble(10), 2.0);
+            assertEquals(82, rs.getDouble(9), 2.0);
+            assertEquals(78,rs.getDouble(10), 2.0);
         }
 
     }
 
-   // @Test
+    @Test
     public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
@@ -721,7 +815,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(LAEQ) LAEQ FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            assertEquals(75, rs.getDouble("LAEQ"), 2.0);
+            assertEquals(78, rs.getDouble("LAEQ"), 2.0);
         }
 
     }
@@ -744,9 +838,11 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-        assertNotNull(ldenConfig.propagationProcessPathData);
+        assertNotNull(ldenConfig.propagationProcessPathDataDay);
+        assertNotNull(ldenConfig.propagationProcessPathDataEvening);
+        assertNotNull(ldenConfig.propagationProcessPathDataNight);
 
-        assertEquals(8, ldenConfig.propagationProcessPathData.freq_lvl.size());
+        assertEquals(8, ldenConfig.propagationProcessPathDataDay.freq_lvl.size());
 
         try(Statement st = connection.createStatement()) {
             // drop all columns except 1000 Hz
@@ -777,22 +873,34 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-        assertEquals(1, ldenConfig.propagationProcessPathData.freq_lvl.size());
+        assertEquals(1, ldenConfig.propagationProcessPathDataDay.freq_lvl.size());
 
-        assertEquals(1000, (int)ldenConfig.propagationProcessPathData.freq_lvl.get(0));
+        assertEquals(1000, (int)ldenConfig.propagationProcessPathDataDay.freq_lvl.get(0));
     }
 
-   // @Test
+    @Test
     public void testNoDemBuildingsZ() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("lw_roads.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("receivers.shp").getFile());
 
+        try(Statement st = connection.createStatement()) {
+            // Alter buildings polygons Z
+            //st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(ST_FORCE3D(THE_GEOM), 50), 2154)");
+            st.execute("CREATE TABLE BUILDINGS_Z(PK SERIAL PRIMARY KEY, the_geom GEOMETRY, HEIGHT FLOAT ) AS SELECT " +
+                    "(row_number() over())::int, ST_UPDATEZ(ST_FORCE3D(THE_GEOM),50.0), HEIGHT FROM BUILDINGS;");
+            st.execute("SELECT UpdateGeometrySRID('BUILDINGS_Z', 'THE_GEOM', 2154);");
+
+            // Use only a subset of receivers
+            st.execute("SELECT UpdateGeometrySRID('RECEIVERS', 'THE_GEOM', 2154);");
+            st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('SRID=2154;POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
+        }
+
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
-        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS", "LW_ROADS",
+        PointNoiseMap pointNoiseMap = new PointNoiseMap("BUILDINGS_Z", "LW_ROADS",
                 "RECEIVERS");
 
         pointNoiseMap.setComputeRaysOutFactory(factory);
@@ -803,12 +911,7 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(0);
 
-        try(Statement st = connection.createStatement()) {
-            // Alter buildings polygons Z
-            st.execute("UPDATE BUILDINGS SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(ST_FORCE3D(THE_GEOM), 50), 2154)");
-            // Use only a subset of receivers
-            st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
-        }
+
 
 
         // Set of already processed receivers
@@ -845,7 +948,7 @@ public class LDENPointNoiseMapFactoryTest {
     }
 
     // Check regression of finding cell i,j that contains receivers
-    //@Test
+    @Test
     public void testRegression1() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
@@ -958,9 +1061,9 @@ public class LDENPointNoiseMapFactoryTest {
 
     }
 
-    //@Test
+    @Test
     public void TestPointSource() throws SQLException, IOException {
-        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_fence.shp").getFile());
+        SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/DEM_Fence.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
 
@@ -1003,9 +1106,9 @@ public class LDENPointNoiseMapFactoryTest {
         pointNoiseMap.setComputeRaysOutFactory(factory);
         pointNoiseMap.setPropagationProcessDataFactory(factory);
         pointNoiseMap.setHeightField("HEIGHT");
-        pointNoiseMap.setMaximumPropagationDistance(5000);
-        pointNoiseMap.setComputeHorizontalDiffraction(true);
-        pointNoiseMap.setComputeVerticalDiffraction(true);
+        pointNoiseMap.setMaximumPropagationDistance(100);
+        pointNoiseMap.setComputeHorizontalDiffraction(false);
+        pointNoiseMap.setComputeVerticalDiffraction(false);
         pointNoiseMap.setSoundReflectionOrder(1);
         pointNoiseMap.setDemTable("DEM_FENCE");
         pointNoiseMap.setSoilTableName("LANDCOVER");
@@ -1092,8 +1195,8 @@ public class LDENPointNoiseMapFactoryTest {
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
             }
-            if(result != null) {
-                kmlDocument.writeProfile(builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+            if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty())  {
+                kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
             }
 
             kmlDocument.writeFooter();

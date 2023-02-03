@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Buildings Grid'
-description = 'Generates receivers placed 2 meters from building facades at different levels of the building.' +
+description = 'Generates receivers placed 2 meters (default) from building facades at different levels of the building.' +
         '</br> </br> <b> The output table is called : RECEIVERS </b>'
 
 inputs = [
@@ -87,6 +87,14 @@ inputs = [
                 title      : 'height between levels',
                 description: 'Height between each level of receivers in meters (FLOAT)' +
                         '</br> </br> <b> Default value : 2.5 </b> ',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+        distance          : [
+                name       : 'distance',
+                title      : 'distance from wall',
+                description: 'Distance of receivers from the wall in meters (FLOAT)' +
+                        '</br> </br> <b> Default value : 2 </b> ',
                 min        : 0, max: 1,
                 type       : Double.class
         ]
@@ -151,6 +159,12 @@ def exec(Connection connection, input) {
         h = input['heightLevels'] as Double
     }
 
+    Double distance = 2.0d
+    if (input['distance']) {
+        h = input['distance'] as Double
+    }
+
+
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
@@ -210,9 +224,9 @@ def exec(Connection connection, input) {
     // create line of receivers
     sql.execute("create table tmp_receivers_lines as select " + buildingPk + " as " +
             "pk, " +
-            "st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom, " +
+            "st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom, " +
             "HEIGHT " +
-            "from " + building_table_name + filter_geom_query, [fenceGeom : fenceGeom])
+            "from " + building_table_name + filter_geom_query, [fenceGeom : fenceGeom, distance_wall: distance])
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
 
     // union of truncated receivers and non tructated, split line to points

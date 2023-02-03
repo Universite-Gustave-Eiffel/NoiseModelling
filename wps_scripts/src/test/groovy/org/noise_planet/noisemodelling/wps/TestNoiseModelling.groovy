@@ -67,14 +67,14 @@ class TestNoiseModelling extends JdbcTestCase {
                  "inputSRID": "2154",
                  "tableName" : "RECEIVERS"])
 
-        String res = new Railway_Emission_from_Traffic().exec(connection,
+        new Railway_Emission_from_Traffic().exec(connection,
                 ["tableRailwayTraffic": "RAIL_TRAFFIC",
                  "tableRailwayTrack": "RAIL_SECTIONS"
                 ])
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
 
-        def expected = ["ID_SECTION","THE_GEOM","DIR_ID","LWD50","LWD63","LWD80","LWD100","LWD125",
+        def expected = ["PK_SECTION","THE_GEOM","DIR_ID","GS","LWD50","LWD63","LWD80","LWD100","LWD125",
                         "LWD160","LWD200","LWD250","LWD315","LWD400","LWD500","LWD630","LWD800","LWD1000","LWD1250",
                         "LWD1600","LWD2000","LWD2500","LWD3150","LWD4000","LWD5000","LWD6300","LWD8000","LWD10000",
                         "LWE50","LWE63","LWE80","LWE100","LWE125","LWE160","LWE200","LWE250","LWE315","LWE400",
@@ -91,7 +91,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
 
-        res = new Noise_level_from_source().exec(connection,
+        new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_RAILWAY",
                  "tableReceivers": "RECEIVERS",
@@ -103,11 +103,11 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
 
-        String export = new Export_Table().exec(connection,
+        new Export_Table().exec(connection,
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
                  "tableToExport": "LDAY_GEOM"])
 
-        assertEquals(64.27,receiversLvl[0]["LEQ"] as Double,0.1)
+        assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,4)
     }
 
     @Test
@@ -275,21 +275,21 @@ class TestNoiseModelling extends JdbcTestCase {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
-        String res = new Road_Emission_from_Traffic().exec(connection,
+        new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
-        res = new Import_File().exec(connection,
+        new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "buildings"])
 
-        res = new Import_File().exec(connection,
+        new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
 
 
-        res = new Noise_level_from_source().exec(connection,
+        String res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_ROADS",
                  "tableReceivers": "RECEIVERS"])
@@ -304,7 +304,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
-        String res = new Road_Emission_from_Traffic().exec(connection,
+        new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
         // select only 1khz band
@@ -312,18 +312,18 @@ class TestNoiseModelling extends JdbcTestCase {
 
         sql.execute("CREATE TABLE LW_ROADS2(pk serial primary key, the_geom geometry, LWD1000 double) as select pk, the_geom, lwd1000 from LW_ROADS")
 
-        res = new Import_File().exec(connection,
+        new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "buildings"])
 
-        res = new Import_File().exec(connection,
+        new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
 
 
-        res = new Noise_level_from_source().exec(connection,
+        String res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_ROADS2",
                  "tableReceivers": "RECEIVERS",

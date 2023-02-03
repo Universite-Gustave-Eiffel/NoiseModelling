@@ -47,16 +47,22 @@ import java.util.Objects;
  * So 0 degrees point the end of the line segment.
  */
 public class Orientation {
-    public final float yaw;
-    public final float pitch;
-    public final float roll;
+    public double yaw;
+    public double pitch;
+    public double roll;
+
+    /**
+     * Default constructor
+     */
+    public Orientation() {
+    }
 
     /**
      * @param yaw     Orientation using degrees east of true north (0 is north, 90 is east)
      * @param pitch Vertical orientation in degrees. (0 flat, 90 vertical top, -90 vertical bottom)
      * @param roll        Longitudinal axis in degrees. A positive value lifts the left wing and lowers the right wing.
      */
-    public Orientation(float yaw, float pitch, float roll) {
+    public Orientation(double yaw, double pitch, double roll) {
         this.yaw = (360 + yaw) % 360;
         this.pitch = Math.min(90, Math.max(-90, pitch));
         this.roll = (360 + roll) % 360;
@@ -114,15 +120,19 @@ public class Orientation {
         }
         RealMatrix matrixB = new Array2DRowRealMatrix(b);
         RealMatrix res = matrixA.multiply(matrixB);
-        return new Vector3D(res.getEntry(0, 0),
-                res.getEntry(1, 0),
+        return new Vector3D(res.getEntry(1, 0),
+                res.getEntry(0, 0),
                 res.getEntry(2, 0));
     }
 
-    public static Orientation fromVector(Vector3D vector, float roll) {
-        double newYaw = Math.atan2(vector.getY(), vector.getX());
+    public static Orientation fromVector(Vector3D vector, double roll) {
+        double newYaw = Math.atan2(vector.getX(), vector.getY());
         double newPitch = Math.asin(vector.getZ());
-        return new Orientation((float) Math.toDegrees(newYaw), (float) Math.toDegrees(newPitch), roll);
+        return new Orientation(Math.toDegrees(newYaw), Math.toDegrees(newPitch), roll);
+    }
+
+    public static Vector3D toVector(Orientation orientation) {
+        return rotate(orientation, new Vector3D(0, 1, 0));
     }
 
     @Override
@@ -130,9 +140,9 @@ public class Orientation {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Orientation that = (Orientation) o;
-        return Float.compare(that.yaw, yaw) == 0 &&
-                Float.compare(that.pitch, pitch) == 0 &&
-                Float.compare(that.roll, roll) == 0;
+        return Double.compare(that.yaw, yaw) == 0 &&
+                Double.compare(that.pitch, pitch) == 0 &&
+                Double.compare(that.roll, roll) == 0;
     }
 
     @Override

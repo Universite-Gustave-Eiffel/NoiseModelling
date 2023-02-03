@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = u'NoiseModelling'
-copyright = u'2019, Ifsttar'
-author = u'Aumond P., Fortin N., Le Bescond V.'
+copyright = u'2022, UMRAE - Lab-STICC'
+author = u'Aumond P., Fortin N., Le Bescond V., Petit G.'
 
 # The short X.Y version
-version = u''
+version = u'4.0'
 # The full version, including alpha/beta/rc tags
-release = u'3.3'
+release = u'4.0.3-SNAPSHOT'
 
 
 # -- General configuration ---------------------------------------------------
@@ -46,6 +46,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -144,7 +145,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'NoiseModelling.tex', u'NoiseModelling Documentation',
-     u'Aumond P., Fortin N., Le Bescond V.', 'manual'),
+     u'Aumond P., Fortin N., Le Bescond V., Petit G.', 'manual'),
 ]
 
 

@@ -27,6 +27,8 @@ package org.noise_planet.noisemodelling.emission;
  * @author Olivier Chiello, Univ Gustave Eiffel
  */
 
+import java.util.Arrays;
+
 import static org.noise_planet.noisemodelling.emission.Utils.sumDbArray;
 
 /**
@@ -50,12 +52,14 @@ public class RailWayLW {
      */
     public static final int[] TRAIN_NOISE_SOURCE_H_INDEX = new int[] {0, 0, 1, 0, 1, 0};
 
-    private double[] lWRolling;
-    private double[] lWTractionA;
-    private double[] lWTractionB;
-    private double[] lWAerodynamicA;
-    private double[] lWAerodynamicB;
-    private double[] lWBridge;
+    public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+
+    private double[] lWRolling = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWTractionA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWTractionB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWAerodynamicA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWAerodynamicB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
+    private double[] lWBridge = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];;
 
 
     public void setLWRolling(double[] LWRolling) {
@@ -97,9 +101,12 @@ public class RailWayLW {
     }
 
     public RailWayLW(){
-    }
-
-    public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
+        Arrays.fill(lWRolling,-99.99);
+        Arrays.fill(lWTractionA,-99.99);
+        Arrays.fill(lWTractionB,-99.99);
+        Arrays.fill(lWAerodynamicA,-99.99);
+        Arrays.fill(lWAerodynamicB,-99.99);
+        Arrays.fill(lWBridge,-99.99);
 
         setLWRolling(lWRolling);
         setLWTractionA(lWTractionA);
@@ -108,6 +115,15 @@ public class RailWayLW {
         setLWAerodynamicB(lWAerodynamicB);
         setLWBridge(lWBridge);
 
+    }
+
+    public RailWayLW(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge){
+        setLWRolling(lWRolling);
+        setLWTractionA(lWTractionA);
+        setLWTractionB(lWTractionB);
+        setLWAerodynamicA(lWAerodynamicA);
+        setLWAerodynamicB(lWAerodynamicB);
+        setLWBridge(lWBridge);
     }
 
     /**
@@ -142,18 +158,20 @@ public class RailWayLW {
         if(noiseSource == TrainNoiseSource.BRIDGE) {
             return 0.0;
         }
+        theta = Math.min(Math.max(theta, -(Math.PI / 2)), Math.PI / 2);
+        phi = Math.max(0, Math.min(phi, 2 * Math.PI));
         int height_index = TRAIN_NOISE_SOURCE_H_INDEX[noiseSource.ordinal()];
         double attHorizontal = 10 * Math.log10(0.01 + 0.99 * Math.pow(Math.sin(phi), 2));
         double attVertical = 0;
-        if(height_index == 1) {
-            if(theta > 0 && theta <= Math.PI / 2.0) {
+        if(height_index == 0) {
+            if(theta > 0) {
                 attVertical = (40.0 / 3.0)
                         * (2.0 / 3.0 * Math.sin(2 * theta) - Math.sin(theta))
                         * Math.log10((frequency + 600.0) / 200.0);
             }
-        } else if(height_index == 2){
-            if(theta < 0) { // for aerodynamic effect only
-                attVertical = 10 * Math.log10(Math.pow(Math.sin(theta), 2));
+        } else if(height_index == 1 && noiseSource == TrainNoiseSource.AERODYNAMICB){// for aerodynamic effect only
+            if(theta < 0) {
+                attVertical = 10 * Math.log10(Math.pow(Math.cos(theta), 2));
             }
         }
         return attHorizontal + attVertical;
@@ -169,6 +187,15 @@ public class RailWayLW {
         @Override
         public double getAttenuation(double frequency, double phi, double theta) {
             return RailWayLW.getDirectionAttenuation(noiseSource, phi, theta, frequency);
+        }
+
+        @Override
+        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+            double[] ret = new double[frequencies.length];
+            for(int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
+                ret[idFrequency] = getAttenuation(frequencies[idFrequency], phi, theta);
+            }
+            return ret;
         }
     }
 }

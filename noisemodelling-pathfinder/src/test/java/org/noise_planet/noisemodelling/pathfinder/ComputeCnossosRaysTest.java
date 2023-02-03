@@ -150,6 +150,7 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
+                .setGs(0.2)
                 .vEdgeDiff(true)
                 .hEdgeDiff(true)
                 .build();
@@ -201,6 +202,7 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 14)
+                .setGs(0.9)
                 .build();
 
         //Out and computation settings
@@ -256,6 +258,7 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 11.5)
+                .setGs(0.9)
                 .build();
 
         //Out and computation settings
@@ -317,6 +320,7 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
+                .setGs(0.9)
                 .hEdgeDiff(true)
                 .vEdgeDiff(false)
                 .build();
@@ -372,6 +376,7 @@ public class ComputeCnossosRaysTest {
         CnossosPropagationData rayData = new PropagationDataBuilder(profileBuilder)
                 .addSource(10, 10, 1)
                 .addReceiver(200, 50, 4)
+                .setGs(0.9)
                 .hEdgeDiff(true)
                 .vEdgeDiff(true)
                 .build();

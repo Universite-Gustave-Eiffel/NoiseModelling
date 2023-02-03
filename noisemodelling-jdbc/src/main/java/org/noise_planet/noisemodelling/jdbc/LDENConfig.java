@@ -24,16 +24,20 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
  */
 public class LDENConfig {
-    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW,INPUT_MODE_RAILWAY_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
+    public enum TIME_PERIOD {DAY, EVENING, NIGHT}
+    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
     final INPUT_MODE input_mode;
 
     // This field is initialised when {@link PointNoiseMap#initialize} is called
-    PropagationProcessPathData propagationProcessPathData = null;
+    PropagationProcessPathData propagationProcessPathDataDay = null;
+    PropagationProcessPathData propagationProcessPathDataEvening = null;
+    PropagationProcessPathData propagationProcessPathDataNight = null;
 
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
@@ -44,10 +48,11 @@ public class LDENConfig {
     boolean aborted = false;
 
     // Output config
-    boolean computeLDay = false;
-    boolean computeLEvening = false;
-    boolean computeLNight = false;
+    boolean computeLDay = true;
+    boolean computeLEvening = true;
+    boolean computeLNight = true;
     boolean computeLDEN = true;
+    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
     public boolean isComputeLAEQOnly() {
         return computeLAEQOnly;
@@ -58,7 +63,13 @@ public class LDENConfig {
     }
 
     boolean computeLAEQOnly = false;
-    boolean exportRays = false;
+
+    public enum ExportRaysMethods {TO_RAYS_TABLE, TO_MEMORY, NONE}
+    ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
+
+    boolean exportProfileInRays = false;
+    boolean keepAbsorption = false; // in rays, keep store detailed absorption data
+    int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
     // Maximum result stack to be inserted in database
     // if the stack is full, the computation core is waiting
     int outputMaximumQueue = 50000;
@@ -81,8 +92,41 @@ public class LDENConfig {
         this.input_mode = input_mode;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathData() {
-        return propagationProcessPathData;
+
+    public PropagationProcessPathData getPropagationProcessPathData(TIME_PERIOD time_period) {
+        switch (time_period) {
+            case DAY:
+                return propagationProcessPathDataDay;
+            case EVENING:
+                return propagationProcessPathDataEvening;
+            default:
+                return propagationProcessPathDataNight;
+        }
+    }
+
+    /**
+     * @return if export rays, do not keep more than this number of rays (0 infinite)
+     */
+    public int getMaximumRaysOutputCount() {
+        return maximumRaysOutputCount;
+    }
+
+    /**
+     * @param maximumRaysOutputCount if export rays, do not keep more than this number of rays per computation area (0 infinite)
+     */
+    public void setMaximumRaysOutputCount(int maximumRaysOutputCount) {
+        this.maximumRaysOutputCount = maximumRaysOutputCount;
+    }
+
+    public void setPropagationProcessPathData(TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
+        switch (time_period) {
+            case DAY:
+                propagationProcessPathDataDay = propagationProcessPathData;
+            case EVENING:
+                propagationProcessPathDataEvening = propagationProcessPathData;
+            default:
+                propagationProcessPathDataNight = propagationProcessPathData;
+        }
     }
 
     public String getLwFrequencyPrepend() {
@@ -129,10 +173,6 @@ public class LDENConfig {
         this.sqlOutputFile = sqlOutputFile;
     }
 
-    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
-        this.propagationProcessPathData = propagationProcessPathData;
-    }
-
     public void setComputeLDay(boolean computeLDay) {
         this.computeLDay = computeLDay;
     }
@@ -145,20 +185,42 @@ public class LDENConfig {
         this.computeLNight = computeLNight;
     }
 
-    /**
-     * Export rays in table
-     * @return True if exported, false (default) otherwise
-     */
-    public boolean isExportRays() {
-        return exportRays;
+    public ExportRaysMethods getExportRaysMethod() {
+        return exportRaysMethod;
     }
 
     /**
-     * Export rays in table (beware this could take a lot of storage space)
-     * @param exportRays True to export rays in table RAYS (by default)
+     * Export rays in table (beware this could take a lot of storage space) or keep on memory or do not keep
+     * @param exportRaysMethod
      */
-    public void setExportRays(boolean exportRays) {
-        this.exportRays = exportRays;
+    public void setExportRaysMethod(ExportRaysMethods exportRaysMethod) {
+        this.exportRaysMethod = exportRaysMethod;
+    }
+
+    /**
+     * @return For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public boolean isExportProfileInRays() {
+        return exportProfileInRays;
+    }
+
+    /**
+     * @param  exportProfileInRays For each ray export the ground profile under it as a geojson column (take large amount of disk)
+     */
+    public void setExportProfileInRays(boolean exportProfileInRays) {
+        this.exportProfileInRays = exportProfileInRays;
+    }
+
+    public boolean isKeepAbsorption() {
+        return keepAbsorption;
+    }
+
+    /**
+     * @param keepAbsorption If true store absorption values in propagation path objects
+     * @see #setKeepAbsorption(boolean)
+     */
+    public void setKeepAbsorption(boolean keepAbsorption) {
+        this.keepAbsorption = keepAbsorption;
     }
 
     /**
@@ -226,6 +288,20 @@ public class LDENConfig {
 
     public String getlDenTable() {
         return lDenTable;
+    }
+
+    /**
+     * @return Table name that contains rays dump (profile)
+     */
+    public String getRaysTable() {
+        return raysTable;
+    }
+
+    /**
+     * @param raysTable Table name that will contain rays dump (profile)
+     */
+    public void setRaysTable(String raysTable) {
+        this.raysTable = raysTable;
     }
 
     public boolean isComputeLDay() {

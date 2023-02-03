@@ -7,6 +7,7 @@ import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -33,12 +34,14 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils.getWal
 public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-    PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData();
+    PropagationProcessPathData propagationProcessPathDataDay = new PropagationProcessPathData();
+    PropagationProcessPathData propagationProcessPathDataEvening = new PropagationProcessPathData();
+    PropagationProcessPathData propagationProcessPathDataNight = new PropagationProcessPathData();
     Logger logger = LoggerFactory.getLogger(JdbcNoiseMap.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
-    private String alphaFieldName = "ALPHA";
+    private String alphaFieldName = "G";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
     protected String soilTableName = "";
@@ -57,6 +60,8 @@ public abstract class JdbcNoiseMap {
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
+
+    protected boolean bodyBarrier = false; // it needs to be true if train propagation is computed (multiple reflection between the train and a screen)
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
@@ -80,12 +85,49 @@ public abstract class JdbcNoiseMap {
         this.sourcesTableName = sourcesTableName;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathData() {
-        return propagationProcessPathData;
+    public PropagationProcessPathData getPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period) {
+        switch (time_period) {
+            case DAY:
+                return propagationProcessPathDataDay;
+            case EVENING:
+                return propagationProcessPathDataEvening;
+            default:
+                return propagationProcessPathDataNight;
+        }
     }
 
-    public void setPropagationProcessPathData(PropagationProcessPathData propagationProcessPathData) {
-        this.propagationProcessPathData = propagationProcessPathData;
+    public void setPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
+        switch (time_period) {
+            case DAY:
+                propagationProcessPathDataDay = propagationProcessPathData;
+            case EVENING:
+                propagationProcessPathDataEvening = propagationProcessPathData;
+            default:
+                propagationProcessPathDataNight = propagationProcessPathData;
+        }
+    }
+    public PropagationProcessPathData getPropagationProcessPathDataDay() {
+        return propagationProcessPathDataDay;
+    }
+
+    public void setPropagationProcessPathDataDay(PropagationProcessPathData propagationProcessPathDataDay) {
+        this.propagationProcessPathDataDay = propagationProcessPathDataDay;
+    }
+
+    public PropagationProcessPathData getPropagationProcessPathDataEvening() {
+        return propagationProcessPathDataEvening;
+    }
+
+    public void setPropagationProcessPathDataEvening(PropagationProcessPathData propagationProcessPathDataEvening) {
+        this.propagationProcessPathDataEvening = propagationProcessPathDataEvening;
+    }
+
+    public PropagationProcessPathData getPropagationProcessPathDataNight() {
+        return propagationProcessPathDataNight;
+    }
+
+    public void setPropagationProcessPathDataNight(PropagationProcessPathData propagationProcessPathDataNight) {
+        this.propagationProcessPathDataNight = propagationProcessPathDataNight;
     }
 
     public boolean isVerbose() {
@@ -175,32 +217,40 @@ public abstract class JdbcNoiseMap {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
-                        Geometry poly = rs.getGeometry();
-                        if(poly != null) {
-                            // Split soil by square
-                            Envelope geoEnv = poly.getEnvelopeInternal();
-                            double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                            double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                            double xCursor = startXGeo;
-                            double g = rs.getDouble("G");
-                            double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
-                            double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
-                            while(xCursor < maxX)  {
-                                double yCursor = startYGeo;
-                                while(yCursor < maxY) {
-                                    Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor+groundSurfaceSplitSideLength);
-                                    Geometry envGeom = geometryFactory.toGeometry(cellEnv);
-                                    try {
-                                        Geometry inters = poly.intersection(envGeom);
-                                        if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
-                                            builder.addGroundEffect(inters, g);
+                        Geometry mainPolygon = rs.getGeometry();
+                        if(mainPolygon != null) {
+                            for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
+                                Geometry poly = mainPolygon.getGeometryN(idPoly);
+                                if (poly instanceof Polygon) {
+                                    PreparedPolygon preparedPolygon = new PreparedPolygon((Polygon) poly);
+                                    // Split soil by square
+                                    Envelope geoEnv = poly.getEnvelopeInternal();
+                                    double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double xCursor = startXGeo;
+                                    double g = rs.getDouble("G");
+                                    double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
+                                    double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
+                                    while (xCursor < maxX) {
+                                        double yCursor = startYGeo;
+                                        while (yCursor < maxY) {
+                                            Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor + groundSurfaceSplitSideLength);
+                                            Geometry envGeom = geometryFactory.toGeometry(cellEnv);
+                                            if(preparedPolygon.intersects(envGeom)) {
+                                                try {
+                                                    Geometry inters = poly.intersection(envGeom);
+                                                    if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
+                                                        builder.addGroundEffect(inters, g);
+                                                    }
+                                                } catch (TopologyException | IllegalArgumentException ex) {
+                                                    // Ignore
+                                                }
+                                            }
+                                            yCursor += groundSurfaceSplitSideLength;
                                         }
-                                    } catch (TopologyException | IllegalArgumentException ex) {
-                                        // Ignore
+                                        xCursor += groundSurfaceSplitSideLength;
                                     }
-                                    yCursor += groundSurfaceSplitSideLength;
                                 }
-                                xCursor += groundSurfaceSplitSideLength;
                             }
                         }
                     }
@@ -247,8 +297,8 @@ public abstract class JdbcNoiseMap {
                     columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
                 }
                 double oldAlpha = wallAbsorption;
-                List<Double> alphaList = new ArrayList<>(propagationProcessPathData.freq_lvl.size());
-                for(double freq : propagationProcessPathData.freq_lvl_exact) {
+                List<Double> alphaList = new ArrayList<>(propagationProcessPathDataDay.freq_lvl.size());
+                for(double freq : propagationProcessPathDataDay.freq_lvl_exact) {
                     alphaList.add(getWallAlpha(oldAlpha, freq));
                 }
                 while (rs.next()) {
@@ -267,7 +317,7 @@ public abstract class JdbcNoiseMap {
                                 // Compute building absorption value
                                 alphaList.clear();
                                 oldAlpha = rs.getDouble(alphaFieldName);
-                                for(double freq : propagationProcessPathData.freq_lvl_exact) {
+                                for(double freq : propagationProcessPathDataDay.freq_lvl_exact) {
                                     alphaList.add(getWallAlpha(oldAlpha, freq));
                                 }
                             }
@@ -330,6 +380,15 @@ public abstract class JdbcNoiseMap {
                             geo = domainConstraint.intersection(geo);
                         }
                         if(!geo.isEmpty()) {
+                            Coordinate[] coordinates = geo.getCoordinates();
+                            for(Coordinate coordinate : coordinates) {
+                                // check z value
+                                if(coordinate.getZ() == Coordinate.NULL_ORDINATE) {
+                                    throw new IllegalArgumentException("The table " + sourcesTableName +
+                                            " contain at least one source without Z ordinate." +
+                                            " You must specify X,Y,Z for each source");
+                                }
+                            }
                             propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
                         }
                     }
@@ -340,6 +399,14 @@ public abstract class JdbcNoiseMap {
                 }
             }
         }
+    }
+
+    /**
+     * true if train propagation is computed (multiple reflection between the train and a screen)
+     * @param bodyBarrier
+     */
+    public void setBodyBarrier(boolean bodyBarrier) {
+        this.bodyBarrier = bodyBarrier;
     }
 
     protected double getCellWidth() {

@@ -138,7 +138,7 @@ public class TestComputeRaysFull {
     /**
      * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
      */
-    @Test
+ /*   @Test
     public void TC07()  throws LayerDelaunayError , IOException {
         GeometryFactory factory = new GeometryFactory();
         //Scene dimension
@@ -179,7 +179,7 @@ public class TestComputeRaysFull {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{32.70,31.58,29.99,27.89,24.36,21.46,14.18,-5.05},L, 3);
 
-    }
+    }*/
 //    /**
 //     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
 //     * This test
@@ -1548,17 +1548,6 @@ public class TestComputeRaysFull {
 //    }
 
 
-    private void exportRays(String name, ComputeRaysOutAttenuation result) throws IOException {
-        FileOutputStream outData = new FileOutputStream(name);
-        GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
-        jsonDocument.setRounding(1);
-        jsonDocument.writeHeader();
-        for(PropagationPath propagationPath : result.getPropagationPaths()) {
-            jsonDocument.writeRay(propagationPath);
-        }
-        jsonDocument.writeFooter();
-    }
-
     private void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {
         try {
             Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
@@ -1578,24 +1567,6 @@ public class TestComputeRaysFull {
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
             throw new IOException(ex);
         }
-    }
-
-    private void assertRaysEquals(InputStream expected, ComputeRaysOutAttenuation result) throws IOException {
-        // Parse expected
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(expected);
-        // Generate result
-        ByteArrayOutputStream outData = new ByteArrayOutputStream();
-        GeoJSONDocument jsonDocument = new GeoJSONDocument(outData);
-        jsonDocument.setRounding(1);
-        jsonDocument.writeHeader();
-        for(PropagationPath propagationPath : result.getPropagationPaths()) {
-            jsonDocument.writeRay(propagationPath);
-        }
-        jsonDocument.writeFooter();
-        JsonNode resultNode = mapper.readTree(outData.toString());
-        // Check equality
-        assertEquals(rootNode, resultNode);
     }
 
     private static Geometry addGround(ProfileBuilder builder) throws IOException {

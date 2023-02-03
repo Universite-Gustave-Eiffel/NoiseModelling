@@ -352,7 +352,7 @@ public class EvaluateRailwaySourceCnossos {
         // get speed of the vehicle
         double speed = min(speedVehicle,min(speedTrack, speedCommercial));
 
-        boolean isTunnel = false ;//trackParameters.getIsTunnel();
+        boolean isTunnel = trackParameters.getIsTunnel();
         // %% Take into account the number of coach and the number of units
         // 10*log10(NbUnit*NbCoach);
 
@@ -470,11 +470,6 @@ public class EvaluateRailwaySourceCnossos {
                     lW[idFreq] = lW[idFreq] + 8;
                 } else if (curvature == 3) {
                     lW[idFreq] = lW[idFreq] + 8;
-                }
-                if (spectreVer==2){
-                    if (bridgeId == 2) {
-                        lW[idFreq] = lW[idFreq] + 5;
-                    }
                 }
             }
         }else if(ref.equals("Bridge")){

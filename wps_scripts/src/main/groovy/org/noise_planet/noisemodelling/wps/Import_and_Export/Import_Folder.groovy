@@ -141,7 +141,7 @@ def exec(Connection connection, input) {
             TableLocation outputTableIdentifier = TableLocation.parse(outputTableName, DBUtils.getDBType(connection))
 
             // Drop the table if already exists
-            String dropOutputTable = "drop table if exists \"" + outputTableName + "\";"
+            String dropOutputTable = "drop table if exists " + outputTableIdentifier.toString()
             stmt.execute(dropOutputTable)
 
             switch (ext) {

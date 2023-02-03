@@ -126,6 +126,10 @@ def exec(Connection connection, input) {
 
     // Get the path of the file to import
     String pathFile = input["pathFile"] as String
+    if (!input["pathFile"]) {
+        resultString = "pathFile argument has not been provided."
+        throw new Exception('ERROR : ' + resultString)
+    }
 
     def file = new File(pathFile)
     if (!file.exists()) {
@@ -235,7 +239,7 @@ def exec(Connection connection, input) {
 
         // If the table does not have an associated SRID, add a SRID
         if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
-            connection.createStatement().execute(String.format("SELECT UpdateGeometrySRID('%s', ' " + spatialFieldNames.get(0) + " ', %d);",
+            connection.createStatement().execute(String.format("SELECT UpdateGeometrySRID('%s', '" + spatialFieldNames.get(0) + "', %d);",
                     TableLocation.parse(tableName).toString(), srid))
         }
 

@@ -53,8 +53,10 @@ public class Utils {
         }
 
         @Override
-        public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathData) {
-            return new RayOut(keepRays, pathData, (DirectPropagationProcessData)threadData);
+        public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
+                                      PropagationProcessPathData pathDataEvening,
+                                      PropagationProcessPathData pathDataNight) {
+            return new RayOut(keepRays, pathDataDay, (DirectPropagationProcessData)threadData);
         }
     }
 

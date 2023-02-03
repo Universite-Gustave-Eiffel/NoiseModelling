@@ -137,9 +137,9 @@ def exec(Connection connection, input) {
         String facilityId = entry.getKey().toString();
         ActivityFacility facility = entry.getValue();
         Coord c = facility.getCoord();
-        String geom = String.format("POINTZ(%s %s %s)", Double.toString(c.getX()), Double.toString(c.getY()), Double.toString(height));
+        String geom = String.format(Locale.ROOT, "SRID=%s;POINTZ(%f %f %f)", SRID, c.getX(),c.getY(), height);
         String types = facility.getActivityOptions().keySet().join(',');
-        String query = "INSERT INTO " + outTableName + "(FACILITY, THE_GEOM, TYPES) VALUES( '" + facilityId + "', ST_GeomFromText('" + geom + "', " + SRID + "), '" + types + "')";
+        String query = "INSERT INTO " + outTableName + "(FACILITY, THE_GEOM, TYPES) VALUES( '" + facilityId + "', '" + geom + "', '" + types + "')";
         sql.execute(query);
     }
 

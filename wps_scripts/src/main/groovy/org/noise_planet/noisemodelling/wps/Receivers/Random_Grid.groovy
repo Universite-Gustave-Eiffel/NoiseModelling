@@ -141,7 +141,7 @@ def exec(Connection connection, input) {
 
     Integer nReceivers = 100
     if (input['nReceivers']) {
-        nReceivers = input['nReceivers']
+        nReceivers = input['nReceivers'] as Integer
     }
 
     Double h = 4.0d
