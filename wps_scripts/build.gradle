@@ -124,7 +124,7 @@ dependencies {
         exclude group: 'org.geotools'
     }
 
-    implementation 'com.opencsv:opencsv:4.0'
+    implementation 'com.opencsv:opencsv:5.7.1'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
     testCompileOnly 'junit:junit:4.12'
 }

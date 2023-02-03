@@ -26,30 +26,16 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.matsim.api.core.v01.Id
 import org.matsim.api.core.v01.Scenario
-import org.matsim.api.core.v01.population.Activity
-import org.matsim.api.core.v01.population.Leg
-import org.matsim.api.core.v01.population.Person
-import org.matsim.api.core.v01.population.Plan
-import org.matsim.api.core.v01.population.PlanElement
-import org.matsim.api.core.v01.population.Population
+import org.matsim.api.core.v01.population.*
 import org.matsim.core.config.ConfigUtils
 import org.matsim.core.population.io.PopulationReader
 import org.matsim.core.scenario.ScenarioUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.awt.BasicStroke
-import java.awt.Color
-import java.awt.Font
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.sql.DatabaseMetaData
-import javax.swing.JFrame
-import java.awt.BorderLayout
-import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.Statement
+import java.sql.*
 import java.util.zip.GZIPInputStream
 
 title = 'Calculate Mastim agents exposure'

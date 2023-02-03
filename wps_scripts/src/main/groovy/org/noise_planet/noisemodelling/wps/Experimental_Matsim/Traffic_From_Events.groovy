@@ -23,18 +23,8 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.matsim.api.core.v01.Coord
 import org.matsim.api.core.v01.Id
-import org.matsim.api.core.v01.events.LinkEnterEvent
-import org.matsim.api.core.v01.events.LinkLeaveEvent
-import org.matsim.api.core.v01.events.PersonEntersVehicleEvent
-import org.matsim.api.core.v01.events.PersonLeavesVehicleEvent
-import org.matsim.api.core.v01.events.VehicleEntersTrafficEvent
-import org.matsim.api.core.v01.events.VehicleLeavesTrafficEvent
-import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler
-import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler
-import org.matsim.api.core.v01.events.handler.PersonEntersVehicleEventHandler
-import org.matsim.api.core.v01.events.handler.PersonLeavesVehicleEventHandler
-import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler
-import org.matsim.api.core.v01.events.handler.VehicleLeavesTrafficEventHandler
+import org.matsim.api.core.v01.events.*
+import org.matsim.api.core.v01.events.handler.*
 import org.matsim.api.core.v01.network.Link
 import org.matsim.api.core.v01.network.Network
 import org.matsim.api.core.v01.population.Person
@@ -50,7 +40,6 @@ import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.awt.TexturePaintContext
 import java.sql.Connection
 import java.sql.PreparedStatement
 
