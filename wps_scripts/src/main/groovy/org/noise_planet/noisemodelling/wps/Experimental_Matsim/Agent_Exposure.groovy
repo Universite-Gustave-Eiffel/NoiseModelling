@@ -285,9 +285,15 @@ def exec(Connection connection, input) {
         PERSON_ID varchar(255),
         TIME int,
         LEVEL double,
-        ACTIVITY_ID varchar,
-        ACTIVITY_TYPE varchar,
-        THE_GEOM geometry
+        START_ACTIVITY_ID varchar,
+        START_ACTIVITY_TYPE varchar,
+        START_ACTIVITY_GEOM geometry,
+        MAIN_ACTIVITY_ID varchar,
+        MAIN_ACTIVITY_TYPE varchar,
+        MAIN_ACTIVITY_GEOM geometry,
+        END_ACTIVITY_ID varchar,
+        END_ACTIVITY_TYPE varchar,
+        END_ACTIVITY_GEOM geometry
     );''')
     Statement stmt = connection.createStatement();
 
@@ -353,7 +359,7 @@ def exec(Connection connection, input) {
                         ON D.IDRECEIVER = R.PK
                         WHERE R.FACILITY = \'''' + activityId + '''\'
                     '''
-            ResultSet result = stmt.executeQuery(query);
+            ResultSet result = stmt.executeQuery(query)
             Map<Integer, Double> timeSeries = new HashMap<Integer, Double>()
             while(result.next()) {
                 int timeBin = result.getInt("TIME")
@@ -419,21 +425,26 @@ def exec(Connection connection, input) {
                 }
 
                 hasActivity = true;
-                sequence[timeBin].activity_type = activity.type
-                sequence[timeBin].activity_id = activity.facilityId.toString()
-                sequence[timeBin].activity_geom = "POINT EMPTY"
+                String activity_geom = "POINT EMPTY"
                 if (activity.getCoord() == null) {
                     if (activity.type == "home" && homeGeom != "") {
-                        sequence[timeBin].activity_geom = homeGeom
+                        activity_geom = homeGeom
                     }
                 }
                 else {
-                    sequence[timeBin].activity_geom = String.format("POINT(%s %s)", Double.toString(activity.getCoord().getX()), Double.toString(activity.getCoord().getY()))
+                    activity_geom = String.format("POINT(%s %s)", Double.toString(activity.getCoord().getX()), Double.toString(activity.getCoord().getY()))
                 }
-                // exemples with timeslice : 1h to 2h (timeBin = 3600, timeBinSize = 3600
+
+                // exemples with timeslice : 1h to 2h (timeBin = 3600, timeBinSize = 3600)
                 if (activityStart <= timeSliceStart) { // activity starts before the current timeslice  (ie. 00:05:07)
+                    sequence[timeBin].start_activity_id = activity.facilityId.toString()
+                    sequence[timeBin].start_activity_type = activity.type
+                    sequence[timeBin].start_activity_geom = activity_geom
                     if (activityEnd > timeSliceEnd) { // activity ends after the current timeslice (ie. 02:30:00)
                         timeWeight = 1 / nbTimeBins;
+                        sequence[timeBin].end_activity_id = activity.facilityId.toString()
+                        sequence[timeBin].end_activity_type = activity.type
+                        sequence[timeBin].end_activity_geom = activity_geom
                     }
                     if (activityEnd < timeSliceEnd) { // activity ends in current timeslice (ie. 01:38:00)
                         timeWeight = ((activityEnd - timeSliceStart) / timeBinSize) / nbTimeBins;
@@ -442,11 +453,20 @@ def exec(Connection connection, input) {
                 if (activityStart > timeSliceStart && activityStart < timeSliceEnd) { // activity start is in the current timeslice  (ie. 01:05:07)
                     if (activityEnd > timeSliceEnd) { // activity ends after the current timeslice (ie. 02:30:00)
                         timeWeight = ((timeSliceEnd - activityStart) / timeBinSize) / nbTimeBins;
+                        sequence[timeBin].end_activity_id = activity.facilityId.toString()
+                        sequence[timeBin].end_activity_type = activity.type
+                        sequence[timeBin].end_activity_geom = activity_geom
                     }
                     if (activityEnd < timeSliceEnd) { // activity ends in current timeslice (ie. 01:38:00)
                         timeWeight = ((activityEnd - activityStart) / timeBinSize) / nbTimeBins;
                     }
                 }
+                if (timeWeight > sequence[timeBin].weight) {
+                    sequence[timeBin].main_activity_id = activity.facilityId.toString()
+                    sequence[timeBin].main_activity_type = activity.type
+                    sequence[timeBin].main_activity_geom = activity_geom
+                }
+
                 Double value = activitiesTimeSeries[activityId][timeBin]
                 if (value != null) {
                     LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, value / 10));
@@ -460,14 +480,16 @@ def exec(Connection connection, input) {
             }
             if (!hasActivity) {
                 if (isOutside) {
-                    sequence[timeBin].activity_id = "outside"
-                    sequence[timeBin].activity_type = "outside"
+                    sequence[timeBin].start_activity_id = "outside"
+                    sequence[timeBin].start_activity_type = "outside"
+                    sequence[timeBin].main_activity_id = "outside"
+                    sequence[timeBin].main_activity_type = "outside"
+                    sequence[timeBin].end_activity_id = "outside"
+                    sequence[timeBin].end_activity_type = "outside"
                 }
                 else {
-                    sequence[timeBin].activity_id = "travelling"
-                    sequence[timeBin].activity_type = "travelling"
+                    // keep default 'travelling' activity
                 }
-                sequence[timeBin].activity_geom = "POINT EMPTY"
             }
         }
 
@@ -503,19 +525,31 @@ def exec(Connection connection, input) {
         PERSON_ID varchar(255),
         TIME int,
         LEVEL double,
-        ACTIVITY_ID varchar,
-        ACTIVITY_TYPE varchar,
-        THE_GEOM geometry
+        START_ACTIVITY_ID varchar,
+        START_ACTIVITY_TYPE varchar,
+        START_ACTIVITY_GEOM geometry,
+        MAIN_ACTIVITY_ID varchar,
+        MAIN_ACTIVITY_TYPE varchar,
+        MAIN_ACTIVITY_GEOM geometry,
+        END_ACTIVITY_ID varchar,
+        END_ACTIVITY_TYPE varchar,
+        END_ACTIVITY_GEOM geometry
          */
         PreparedStatement insert_stmt_sequence = connection.prepareStatement(
-            "INSERT INTO " + outTableName + "_SEQUENCE VALUES(DEFAULT, '" + personId + "', ?, ?, ?, ?, ST_GeomFromText(?, "+SRID+"))"
+            "INSERT INTO " + outTableName + "_SEQUENCE VALUES(DEFAULT, '" + personId + "', ?, ?, ?, ?, ST_GeomFromText(?, "+SRID+"), ?, ?, ST_GeomFromText(?, "+SRID+"), ?, ?, ST_GeomFromText(?, "+SRID+"))"
         )
         for (int timeBin = 0; timeBin < 86400; timeBin += timeBinSize) {
             insert_stmt_sequence.setInt(1, timeBin)
             insert_stmt_sequence.setDouble(2, sequence[timeBin].noise_laeq)
-            insert_stmt_sequence.setString(3, sequence[timeBin].activity_id)
-            insert_stmt_sequence.setString(4, sequence[timeBin].activity_type)
-            insert_stmt_sequence.setString(5, sequence[timeBin].activity_geom)
+            insert_stmt_sequence.setString(3, sequence[timeBin].start_activity_id)
+            insert_stmt_sequence.setString(4, sequence[timeBin].start_activity_type)
+            insert_stmt_sequence.setString(5, sequence[timeBin].start_activity_geom)
+            insert_stmt_sequence.setString(6, sequence[timeBin].main_activity_id)
+            insert_stmt_sequence.setString(7, sequence[timeBin].main_activity_type)
+            insert_stmt_sequence.setString(8, sequence[timeBin].main_activity_geom)
+            insert_stmt_sequence.setString(9, sequence[timeBin].end_activity_id)
+            insert_stmt_sequence.setString(10, sequence[timeBin].end_activity_type)
+            insert_stmt_sequence.setString(11, sequence[timeBin].end_activity_geom)
             insert_stmt_sequence.addBatch()
         }
         insert_stmt_sequence.executeBatch()
@@ -536,9 +570,17 @@ def exec(Connection connection, input) {
 }
 
 class SequenceElement {
-    String activity_id
-    String activity_type
-    String activity_geom
+    double weight = -1 // used only to define 'main' activity
+
+    String start_activity_id = "travelling"
+    String start_activity_type = "travelling"
+    String start_activity_geom = "POINT EMPTY"
+    String main_activity_id = "travelling"
+    String main_activity_type = "travelling"
+    String main_activity_geom = "POINT EMPTY"
+    String end_activity_id = "travelling"
+    String end_activity_type = "travelling"
+    String end_activity_geom = "POINT EMPTY"
 
     double noise_laeq
 }
