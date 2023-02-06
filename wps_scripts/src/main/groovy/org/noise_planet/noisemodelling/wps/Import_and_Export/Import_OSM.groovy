@@ -498,6 +498,9 @@ public class OsmHandler implements Sink {
         Coordinate[] shell = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) {
+                return geomFactory.createPolygon();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             shell[i] = new Coordinate(x, y, 0.0);
