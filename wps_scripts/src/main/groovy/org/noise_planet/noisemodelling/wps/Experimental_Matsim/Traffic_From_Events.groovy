@@ -282,7 +282,7 @@ def exec(Connection connection, input) {
         );''')
     }
 
-    PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.5))")
+    PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.05))")
     PreparedStatement lwStatement = connection.prepareStatement("INSERT INTO " + lwTableName + " (LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     PreparedStatement trafficStatement = connection.prepareStatement("INSERT INTO " + trafficTableName + " (LINK_ID, LV_D, LV_SPD_D, MV_D, MV_SPD_D, HGV_D, HGV_SPD_D, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
     PreparedStatement contribStatement;
@@ -777,7 +777,7 @@ class LinkStatStruct {
             Coord[] coords = ((Coord[]) link.getAttributes().getAttribute("geometry"))
             Coordinate[] result = new Coordinate[coords.length]
             for (int i = 0; i < coords.length; i++) {
-                result[i] = new Coordinate(coords[i].getX(), coords[i].getY(), 0.5)
+                result[i] = new Coordinate(coords[i].getX(), coords[i].getY(), 0.05)
             }
             return result
         } else {
@@ -785,12 +785,12 @@ class LinkStatStruct {
             result[0] = new Coordinate(
                     link.getFromNode().getCoord().getX(),
                     link.getFromNode().getCoord().getY(),
-                    0.5
+                    0.05
             )
             result[1] = new Coordinate(
                     link.getToNode().getCoord().getX(),
                     link.getToNode().getCoord().getY(),
-                    0.5
+                    0.05
             )
             return result
         }
