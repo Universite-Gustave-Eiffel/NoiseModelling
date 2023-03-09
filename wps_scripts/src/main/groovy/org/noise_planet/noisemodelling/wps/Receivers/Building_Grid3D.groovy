@@ -161,7 +161,7 @@ def exec(Connection connection, input) {
 
     Double distance = 2.0d
     if (input['distance']) {
-        h = input['distance'] as Double
+        distance = input['distance'] as Double
     }
 
 
