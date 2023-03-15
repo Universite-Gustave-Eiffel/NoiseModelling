@@ -118,15 +118,6 @@ public class PolarGraphDirectivity {
                     } else {
                         phi = toRadian(90);
                     }
-                    if (angle <= 90) {
-                        theta = toRadian(-angle);
-                    } else if (angle < 180) {
-                        theta = -toRadian(90 - angle % 90);
-                    } else if (angle < 270) {
-                        theta = toRadian(angle % 90);
-                    } else {
-                        theta = toRadian(90 - angle % 90);
-                    }
                 } else if (orientation == ORIENTATION.SIDE) {
                     if (angle <= 90 || angle >= 270) {
                         phi = toRadian(0);
