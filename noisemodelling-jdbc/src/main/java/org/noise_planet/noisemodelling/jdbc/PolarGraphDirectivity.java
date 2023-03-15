@@ -103,19 +103,19 @@ public class PolarGraphDirectivity {
                 phi = toRadian(adjustedAngle);
                 theta = 0;
             } else if(orientation == ORIENTATION.FRONT) {
-                if(angle <= 270) {
-                    phi = toRadian(90);
-                } else {
+                if(angle <= 90 || angle >= 270) {
                     phi = toRadian(270);
+                } else {
+                    phi = toRadian(90);
                 }
-                theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
+                theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2 ;
             } else if(orientation == ORIENTATION.SIDE) {
-                if(angle <= 270) {
+                if(angle <= 90 || angle >= 270) {
                     phi = toRadian(0);
                 } else {
                     phi = toRadian(180);
                 }
-                theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2 ;
+                theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2;
             }
             double attenuation = noiseSource.getAttenuation(frequency, phi, theta);
             double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
