@@ -33,7 +33,7 @@ public class DirectivityTest {
         Connection connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(DirectivityTableLoaderTest.class.getSimpleName(), true, ""));
         Statement st = connection.createStatement();
         double back_attenuation = -40;
-        double omnidirectionalFactor = 5; // 0=omnidirectional 1=cardioid 2="super cardioid" ..
+        double omnidirectionalFactor = 1; // 0=omnidirectional 1=cardioid 2="super cardioid" ..
 
         PreparedStatement pst = connection.prepareStatement("CREATE TABLE DIRECTIVITY(DIR_ID INTEGER, THETA FLOAT, PHI FLOAT, LW500 FLOAT)" +
                 " AS SELECT 1, THETA, PHI, ? * (1 - POWER(0.5 + 0.5 * COS(RADIANS(PHI)) * COS(RADIANS(THETA)), ?)) FROM" +
