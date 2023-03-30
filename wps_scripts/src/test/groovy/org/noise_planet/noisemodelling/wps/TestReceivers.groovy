@@ -381,4 +381,19 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
+    public void testRegularGridWithTriangleTable() {
+
+        def sql = new Sql(connection)
+
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Regular_Grid().exec(connection,  ["fenceTableName" : "BUILDINGS",
+                                              "delta" : 50,
+                                              "outputTriangleTable" : true])
+
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        assertEquals(1920, sql.firstRow("SELECT COUNT(*) FROM TRIANGLES")[0] as Integer)
+    }
 }
