@@ -194,6 +194,14 @@ def exec(Connection connection, input) {
     if (input["timeBinSize"]) {
         timeBinSize = input["timeBinSize"] as int
     }
+    int timeBinMin = 0;
+    if (input["timeBinMin"]) {
+        timeBinSize = input["timeBinMin"] as int
+    }
+    int timeBinMax = 86400;
+    if (input["timeBinMax"]) {
+        timeBinSize = input["timeBinMax"] as int
+    }
 
     String SRID = "4326"
     if (input['SRID']) {
@@ -360,7 +368,7 @@ def exec(Connection connection, input) {
         roadStatement.setString(2, linkStatStruct.getOsmId())
         roadStatement.setString(3, geomString)
         roadStatement.execute()
-        for (int timeBin = 0 ; timeBin < 86400; timeBin += timeBinSize) {
+        for (int timeBin = timeBinMin ; timeBin < timeBinMax; timeBin += timeBinSize) {
             int index = 1
             lwStatement.setString(index, linkId)
             List<Double> levels = linkStatStruct.getSourceLevels(timeBin)
@@ -374,7 +382,7 @@ def exec(Connection connection, input) {
         }
         lwStatement.executeBatch()
         if (exportTraffic) {
-            for (int timeBin = 0 ; timeBin < 86400; timeBin += timeBinSize) {
+            for (int timeBin = timeBinMin ; timeBin < timeBinMax; timeBin += timeBinSize) {
                 int index = 1
                 trafficStatement.setString(index, linkId)
                 Trip.Type[] types = [Trip.Type.LV, Trip.Type.MV, Trip.Type.HV]
@@ -721,7 +729,7 @@ class LinkStatStruct {
         return min
     }
     private int getTimeBin(double time) {
-        return time - time % timeBinSize;
+        return (time - time % timeBinSize) % 86400;
     }
 
     void setLink(Link link) {
