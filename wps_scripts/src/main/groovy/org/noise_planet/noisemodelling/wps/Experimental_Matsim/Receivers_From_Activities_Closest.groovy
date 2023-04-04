@@ -144,8 +144,8 @@ def exec(Connection connection, input) {
     String create_query = "CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT,
         FACILITY varchar(255),
-        ORIGIN_GEOM geometry,
         THE_GEOM geometry,
+        ORIGIN_GEOM geometry,
         TYPES varchar(255)
     )'''
     sql.execute(create_query)
