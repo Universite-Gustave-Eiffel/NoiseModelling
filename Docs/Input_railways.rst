@@ -5,7 +5,7 @@ NoiseModelling is a tool for producing noise maps. To do so, at different stages
 
 Below are described the tables ``RAIL_SECTIONS`` and ``RAIL_TRAFFIC``. 
 
-The other tables are accessible via the left menu in the ``Input tables`` section.
+The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
 .. figure:: images/Input_tables/rails_banner.png
 	:align: center

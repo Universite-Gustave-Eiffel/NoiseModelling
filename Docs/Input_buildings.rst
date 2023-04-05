@@ -5,7 +5,7 @@ NoiseModelling is a tool for producing noise maps. To do so, at different stages
 
 Below we describe the table ``BUILDINGS``, dealing with buildings. 
 
-The other tables are accessible via the left menu in the ``Input tables`` section.
+The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
 .. figure:: images/Input_tables/building_banner.png
 	:align: center

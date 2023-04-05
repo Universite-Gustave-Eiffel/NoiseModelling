@@ -5,7 +5,7 @@ NoiseModelling is a tool for producing noise maps. To do so, at different stages
 
 Below we describe the table ``GROUND``, dealing with the land use type, with an associated ground absorption coefficient (G). 
 
-The other tables are accessible via the left menu in the ``Input tables`` section.
+The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
 .. figure:: images/Input_tables/ground_clc_banner.jpg
 	:align: center
@@ -14,7 +14,7 @@ Table definition
 ---------------------
 
 .. warning::
-	In the lists below, the two columns are mandatory
+	In the list below, the two columns are mandatory
 
 
 * ``THE_GEOM``
@@ -54,5 +54,3 @@ Topology
 ---------------------
 
 At a given point, there can only be one value of G. Consequently, in the ``GROUND`` table, the geometries must not overlap.
-
-
