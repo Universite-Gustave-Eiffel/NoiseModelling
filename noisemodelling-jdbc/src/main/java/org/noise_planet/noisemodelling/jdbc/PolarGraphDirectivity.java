@@ -35,7 +35,7 @@ public class PolarGraphDirectivity {
         return (angle / 180.0) * Math.PI;
     }
 
-    private int getAdjustedAngle(int angle, ORIENTATION orientation) {
+    private double getAdjustedAngle(double angle, ORIENTATION orientation) {
         if(orientation == ORIENTATION.TOP) {
             return (angle + 90 ) % 360; // return (630 - angle) % 360;
         } else {
@@ -71,7 +71,7 @@ public class PolarGraphDirectivity {
             double destX = centerx + Math.cos(toRadian(angle)) * radius;
             double destY = centery + Math.sin(toRadian(angle)) * radius;
             // Reverse order and rotate by 90°
-            int adjustedAngle = getAdjustedAngle(angle, orientation);
+            double adjustedAngle = getAdjustedAngle(angle, orientation);
             if(angle % 90 != 0) {
                 // Dashed segment lines
                 generateDashedLine(sb, centerx, centery, destX, destY, "grey");
@@ -81,7 +81,8 @@ public class PolarGraphDirectivity {
             }
             double textX = centerx + Math.cos(toRadian(angle)) * textRadius;
             double textY = centery + Math.sin(toRadian(angle)) * textRadius;
-            generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", adjustedAngle), "middle");
+            generateText(sb, textX, textY, 25, String.format(Locale.ROOT, "%d", (int)adjustedAngle),
+                    "middle");
         }
         // Attenuation levels legend
         double legendAngle = 285;
@@ -96,30 +97,38 @@ public class PolarGraphDirectivity {
         // Generate attenuation curve
         StringBuilder path = new StringBuilder();
         for(int angle=0; angle < 360; angle += 1) {
-            int adjustedAngle = getAdjustedAngle(angle, orientation);
             double phi=0;
             double theta=0;
             if(orientation == ORIENTATION.TOP) {
-                phi = toRadian(adjustedAngle);
+                phi = toRadian((angle + 90 ) % 360);
                 theta = 0;
-            } else if(orientation == ORIENTATION.FRONT) {
-                if(angle <= 270) {
-                    phi = toRadian(90);
+            } else {
+                if (angle <= 90) {
+                    theta = toRadian(-angle);
+                } else if (angle < 180) {
+                    theta = -toRadian(90 - angle % 90);
+                } else if (angle < 270) {
+                    theta = toRadian(angle % 90);
                 } else {
-                    phi = toRadian(270);
+                    theta = toRadian(90 - angle % 90);
                 }
-                theta = Math.sin(toRadian(adjustedAngle + 90)) * Math.PI / 2 ;
-            } else if(orientation == ORIENTATION.SIDE) {
-                if(angle <= 270) {
-                    phi = toRadian(0);
-                } else {
-                    phi = toRadian(180);
+                if (orientation == ORIENTATION.FRONT) {
+                    if (angle <= 90 || angle >= 270) {
+                        phi = toRadian(270);
+                    } else {
+                        phi = toRadian(90);
+                    }
+                } else if (orientation == ORIENTATION.SIDE) {
+                    if (angle <= 90 || angle >= 270) {
+                        phi = toRadian(0);
+                    } else {
+                        phi = toRadian(180);
+                    }
                 }
-                theta = Math.sin(toRadian(adjustedAngle)) * Math.PI / 2 ;
             }
             double attenuation = noiseSource.getAttenuation(frequency, phi, theta);
-            double maxLevelX = centerx + Math.cos((angle / 180.0) * Math.PI) * radius;
-            double maxLevelY = centery + Math.sin((angle / 180.0) * Math.PI) * radius;
+            double maxLevelX = centerx + Math.cos(Math.toRadians(angle)) * radius;
+            double maxLevelY = centery + Math.sin(Math.toRadians(angle)) * radius;
             double attenuationPercentage = (attenuation - minimumAttenuation) / (maximumAttenuation - minimumAttenuation);
             attenuationPercentage = Math.max(0, Math.min(1,attenuationPercentage));
             Vector2D interpolatedVector = Vector2D.create(new Coordinate(centerx, centery), new Coordinate(maxLevelX, maxLevelY));

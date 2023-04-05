@@ -520,6 +520,9 @@ public class OsmHandler implements Sink {
         Coordinate[] coordinates = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) { // some odd case where a node is defined here but outside of the osm file limits
+                return geomFactory.createLineString();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             coordinates[i] = new Coordinate(x, y, 0.0);
