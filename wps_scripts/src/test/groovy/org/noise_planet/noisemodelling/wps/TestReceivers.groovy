@@ -49,7 +49,7 @@ class TestReceivers extends JdbcTestCase {
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
 
-        sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
+        sql.execute("CREATE INDEX ON RECEIVERS(pk_building)")
 
         // check effective distance between receivers
 
@@ -80,7 +80,7 @@ class TestReceivers extends JdbcTestCase {
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
 
-        sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
+        sql.execute("CREATE INDEX ON RECEIVERS(pk_building)")
 
         // check effective distance between receivers
 
@@ -119,7 +119,7 @@ class TestReceivers extends JdbcTestCase {
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
 
-        sql.execute("CREATE INDEX ON RECEIVERS(build_pk)")
+        sql.execute("CREATE INDEX ON RECEIVERS(pk_building)")
 
         // check effective distance between receivers
 
