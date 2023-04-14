@@ -36,26 +36,29 @@ import org.xml.sax.Attributes
 
 
 title = 'Import Symuvia File'
-description = 'Import Symuvia outputs into the database (xml)'
+description = '&#10145;&#65039; Import <a href="https://github.com/licit-lab/Open-SymuVia" target="_blank">Symuvia</a> outputs (as .xml) into the database'
 
 inputs = [
         pathFile : [
                 name       : 'Path of the input File',
-                description: 'Path of the input File (including extension .xml)',
                 title      : 'Path of the input File',
+                description: '&#128194; Path of the input File (including extension .xml)</br> </br>' +
+                             'For example: c:/home/mysymuviafile.xml',
                 type       : String.class
         ],
         inputSRID: [
-                name       : 'SYMUVIA output file SRID',
-                title      : 'SYMUVIA output file SRID',
-                description: 'SYMUVIA output file SRID (default 2154)',
+                name       : 'Symuvia output file SRID',
+                title      : 'Symuvia output file SRID',
+                description: 'Symuvia output file SRID </br> </br>' +
+                             '&#128736; Default value: French Lambert 93 (<a href="https://epsg.io/2154" target="_blank">2154</a>)',
                 min        : 0, max: 1,
                 type       : Integer.class
         ],
         tableName: [
                 name       : 'outputTableName',
-                description: 'Do not write the name of a table that contains a space. (default : file name without extension)',
-                title      : 'Name of output table',
+                title      : 'Name of created table',
+                description: 'Do not write the name of a table that contains a space </br> </br>' +
+                             '&#128736; Default value: <b>it will take the name of the file without its extension</b> (special characters will be removed and whitespaces will be replace by an underscore.',
                 min        : 0, max: 1,
                 type       : String.class
         ]
@@ -107,7 +110,7 @@ def exec(Connection connection, input) {
     logger.info('Start : Import File')
     logger.info("inputs {}", input) // log inputs of the run
 
-    // Default SRID (Lmabert 93)
+    // Default SRID (French Lambert 93)
     Integer srid = 2154
     // Get user SRID
     if (input['inputSRID']) {

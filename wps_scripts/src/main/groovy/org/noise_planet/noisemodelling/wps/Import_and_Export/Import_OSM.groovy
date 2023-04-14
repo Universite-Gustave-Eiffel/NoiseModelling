@@ -51,12 +51,14 @@ import java.sql.Connection
 
 title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
 
-description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables.<br><br>' +
+description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables. </br>' +
+              '<hr>' +
               'The following output tables will be created: <br>' +
               '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
               '- <b> GROUND </b>: a table containing ground acoustic absorption, based on OSM landcover surfaces<br>' +
               '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2<br><br>' +
-              '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes'
+              '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes </br> </br>' +
+              '<img src="/wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
 
 inputs = [
         pathFile : [
@@ -71,7 +73,7 @@ inputs = [
                 title      : 'Target projection identifier',
                 description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
                              'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
-                             '&#10071; The target SRID must be in <b>metric</b> coordinates.',
+                             '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates.',
                 type       : Integer.class
         ],
         ignoreBuilding : [

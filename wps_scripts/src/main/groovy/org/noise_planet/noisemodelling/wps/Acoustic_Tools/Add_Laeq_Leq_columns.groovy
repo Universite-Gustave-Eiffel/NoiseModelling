@@ -28,19 +28,22 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Add Leq and LAeq columns'
-description = 'Add the columns Leq and LAeq to a table with octave band values from 63 Hz to 8000 Hz. </br> The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed.'
+description = '&#10145;&#65039; Add the columns <b>Leq</b> and <b>LAeq</b> to a table with octave band values from 63 Hz to 8000 Hz.'+
+              '<hr>' +
+              'The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed.'
 
 inputs = [
         prefix   : [
                 name       : 'Prefix of the frequency bands column',
                 title      : 'Prefix of the frequency bands column',
-                description: 'Prefix of the columns containing the octave bands. (STRING) </br> For example : HZ',
+                description: 'Prefix of the columns containing the octave bands. (STRING)</br> </br>'+
+                             'For example: HZ',
                 type       : String.class
         ],
         tableName: [
                 title      : 'Name of the table',
                 name       : 'Name of the table',
-                description: 'Name of the table to which a primary key will be added.',
+                description: 'Name of the table on which <b>Leq</b> and <b>LAeq</b> columns will be added.',
                 type       : String.class
         ]
 ]

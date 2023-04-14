@@ -42,8 +42,9 @@ import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Compute road emission noise map from road table.'
-description = 'Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). ' +
-        '</br> </br> <b> The output table is called : LW_ROADS </b> '
+description = '&#10145;&#65039; Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
+              '<hr>' +
+              '&#x2705; The output table is called: <b>LW_ROADS </b> '
 
 inputs = [
         tableRoads: [

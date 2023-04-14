@@ -49,8 +49,9 @@ import java.sql.Statement
  */
 
 title = 'Compute railway emission noise map from vehicule, traffic table AND section table.'
-description = '&#10145;&#65039; Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br> </br>' +
-              'The output table is called <b>LW_RAILWAY</b>'
+description = '&#10145;&#65039; Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
+              '<hr>' +
+              '&#x2705; The output table is called <b>LW_RAILWAY</b>'
 
 inputs = [
         tableRailwayTraffic: [

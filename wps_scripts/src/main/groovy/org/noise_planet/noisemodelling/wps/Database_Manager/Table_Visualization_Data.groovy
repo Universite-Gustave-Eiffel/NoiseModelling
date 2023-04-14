@@ -34,22 +34,24 @@ import java.sql.Connection
 
 
 title = 'Display first rows of a table.'
-description = 'Display first rows of a table containing. ' +
-        '</br> Be careful, this treatment can be very long if the table is large.'
+description = '&#10145;&#65039; Display the content of a table. </br>' +
+              '<hr>' +
+              'Using "linesNumber" parameter, you can choose the number of lines to display </br> </br>' +
+              '&#x1F6A8; Be careful, this treatment can be very long if the table is large.'
 
 inputs = [
         linesNumber: [
                 name       : 'Number of rows',
                 title      : 'Number of rows',
-                description: 'Number of rows you want to display. (INTEGER) ' +
-                        '</br> </br> <b> Default value : 10 </b> ',
+                description: 'Number of rows you want to display (INTEGER) </br> </br>' +
+                             '&#128736; Default value: <b>10 </b> ',
                 min        : 0, max: 1,
                 type       : Integer.class
         ],
         tableName  : [
                 name       : 'Name of the table',
                 title      : 'Name of the table',
-                description: 'Name of the table you want to display.',
+                description: 'Name of the table you want to display',
                 type       : String.class
         ]
 ]

@@ -36,55 +36,61 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Random Grid'
-description = '[H2GIS] Calculates a random grid of receivers. Return a table named RECEIVERS'
+description = '&#10145;&#65039; Computes a random grid of receivers.</br>' +
+              '<hr>' +
+              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '<img src="/wps_images/receivers_random_output.png" alt="Random grid output" width="95%" align="center">'
 
 inputs = [
         buildingTableName: [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                description: 'Name of the Buildings table </br> </br>' +
+                             'The table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
+                             '<li> <b>HEIGHT</b>: the height of the building (FLOAT)</li></ul>',
                 type       : String.class
         ],
         sourcesTableName : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
+                description: 'Keep only receivers at least at 1 meters of provided sources geometries </br> </br>' +
+                             'The table must contain : <ul>' +
+                             '<li> <b>THE_GEOM</b>: any geometry type. </li></ul>',
                 type       : String.class
         ],
         nReceivers       : [
                 name       : 'Number of receivers',
                 title      : 'Number of receivers',
-                description: 'Number of receivers to return </br> </br> <b> Default value : 100 </b> ',
+                description: 'Number of receivers to return </br> </br>' +
+                             '&#128736; Default value: <b>100</b> </br> </br>'+
+                             '<img src="/wps_images/receivers_random_nReceivers.png" alt="Number of receivers" width="95%" align="center">',
                 type       : Integer.class
         ],
         height           : [
-                name : 'height',
-                title: 'height', description: 'Height of receivers in meters (FLOAT)' +
-                '</br> </br> <b> Default value : 4 </b> ',
+                name :       'Height',
+                title:       'Height', 
+                description: 'Height of receivers (in meters) (FLOAT)</br> </br>' +
+                             '&#128736; Default value: <b>4 </b> ',
                 min  : 0, max: 1,
                 type : Double.class
         ],
         fence            : [
                 name       : 'Fence geometry',
                 title      : 'Extent filter',
-                description: 'Create receivers only in the' +
-                        ' provided polygon. Must be in the WGS84 SRID 4326 projection system',
+                description: 'Create receivers only in the provided polygon. </br> </br>' +
+                             'Must be in the WGS84 (EPSG:4326) projection system',
                 min        : 0, max: 1,
                 type       : Geometry.class
         ],
-        fenceTableName   : [name       : 'Fence geometry from table',
-                            title      : 'Filter using table bounding box',
-                            description: 'Extract the bounding box of the specified table then create only receivers' +
-                                    ' on the table bounding box' +
-                                    '<br>  The table shall contain : </br>' +
-                                    '- <b> THE_GEOM </b> : any geometry type. </br>',
-                            min        : 0, max: 1,
-                            type       : String.class
+        fenceTableName   : [
+                name       : 'Fence geometry from table',
+                title      : 'Filter using table bounding box',
+                description: 'Extract the bounding box of the specified table then create only receivers on the table bounding box. </br> </br>' +
+                             'The table must contain : <ul>' +
+                             '<li> <b>THE_GEOM</b>: any geometry type. </li></ul>',
+                min        : 0, max: 1,
+                type       : String.class
         ]
 ]
 
