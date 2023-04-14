@@ -53,7 +53,7 @@ class TestReceivers extends JdbcTestCase {
 
         // check effective distance between receivers
 
-        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
         // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
         //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
@@ -84,7 +84,7 @@ class TestReceivers extends JdbcTestCase {
 
         // check effective distance between receivers
 
-        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
         // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
         //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
@@ -123,7 +123,7 @@ class TestReceivers extends JdbcTestCase {
 
         // check effective distance between receivers
 
-        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
+        def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
         // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
         //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
