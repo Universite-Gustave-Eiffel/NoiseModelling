@@ -161,7 +161,7 @@ def exec(Connection connection, input) {
 
     Double distance = 2.0d
     if (input['distance']) {
-        h = input['distance'] as Double
+        distance = input['distance'] as Double
     }
 
 
@@ -230,10 +230,12 @@ def exec(Connection connection, input) {
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
 
     // union of truncated receivers and non tructated, split line to points
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE")
     sql.execute("create table TMP_SCREENS_MERGE (the_geom geometry, hBuilding float) as select  s.the_geom the_geom, s.height hBuilding from tmp_receivers_lines s where not st_isempty(s.the_geom) ;")
     sql.execute("ALTER TABLE TMP_SCREENS_MERGE ADD COLUMN PK SERIAL PRIMARY KEY")
 
     // Collect all lines and convert into points using custom method
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS")
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry, level int)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom, level) VALUES (?,?, ?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
@@ -291,7 +293,8 @@ def exec(Connection connection, input) {
         // building have population attribute
         // set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer, level integer) as select null, ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk, level from TMP_SCREENS;")
+        sql.execute("create table tmp_receivers(pk serial, the_geom geometry,build_pk integer, level integer)")
+        sql.execute("INSERT INTO tmp_receivers(the_geom, build_pk, level) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk, level from TMP_SCREENS;")
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -302,11 +305,13 @@ def exec(Connection connection, input) {
 
         if (fenceGeom != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , ST_GeomFromText('" + fenceGeom + "'));")
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , " +
+                    "ST_SETSRID(ST_GeomFromText('" + fenceGeom + "'), "+targetSrid.toInteger()+"));")
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
-        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk, level integer, pop float) as select null, a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float, level from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
+        sql.execute("create table " + receivers_table_name + "(pk serial, the_geom geometry,build_pk integer, level integer, pop float)")
+        sql.execute("insert into " + receivers_table_name + " (the_geom, build_pk, level, pop) select a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float, a.level from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, a.level, b.pop")
         sql.execute("drop table if exists tmp_receivers")
     }
 
