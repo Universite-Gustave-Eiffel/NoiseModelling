@@ -196,11 +196,11 @@ def exec(Connection connection, input) {
     }
     int timeBinMin = 0;
     if (input["timeBinMin"]) {
-        timeBinSize = input["timeBinMin"] as int
+        timeBinMin = input["timeBinMin"] as int
     }
     int timeBinMax = 86400;
     if (input["timeBinMax"]) {
-        timeBinSize = input["timeBinMax"] as int
+        timeBinMax = input["timeBinMax"] as int
     }
 
     String SRID = "4326"
@@ -311,6 +311,8 @@ def exec(Connection connection, input) {
     ProcessOutputEventHandler evHandler = new ProcessOutputEventHandler()
 
     evHandler.setTimeBinSize(timeBinSize)
+    evHandler.setTimeBinMin(timeBinMin)
+    evHandler.setTimeBinMax(timeBinMax)
     evHandler.setSRID(SRID)
     evHandler.setPopulationFactor(populationFactor)
     evHandler.initLinks((Map<Id<Link>, Link>) links)
@@ -327,7 +329,7 @@ def exec(Connection connection, input) {
     if (!link2GeometryFile.isEmpty()) {
         logger.info("Start Reading link2geom file ...")
         BufferedReader br = new BufferedReader(new FileReader(link2GeometryFile))
-        String line =  null
+        String line = null;
         while ((line = br.readLine()) != null) {
             String[] str = line.split(",", 2)
             if (str.size() > 1) {
@@ -460,6 +462,8 @@ class ProcessOutputEventHandler implements
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>()
     Map<Id<Vehicle>, List<Id<Person>>> personsInVehicle = new HashMap<Id<Vehicle>, List<Id<Person>>>()
     int timeBinSize = 3600;
+    int timeBinMin = 0;
+    int timeBinMax = 86400;
     String SRID = 4326
     double populationFactor = 1.0
 
@@ -469,6 +473,12 @@ class ProcessOutputEventHandler implements
 
     void setTimeBinSize(int timeBinSize) {
         this.timeBinSize = timeBinSize
+    }
+    void setTimeBinMin(int timeBinMin) {
+        this.timeBinMin = timeBinMin
+    }
+    void setTimeBinMax(int timeBinMax) {
+        this.timeBinMax = timeBinMax
     }
 
     void setPopulationFactor(double populationFactor) {
@@ -624,6 +634,8 @@ class LinkStatStruct {
     public boolean isUsed = false
 
     int timeBinSize = 3600
+    int timeBinMin = 0
+    int timeBinMax = 86400
 
     LinkStatStruct(int timeBinSize, double populationFactor) {
         this.timeBinSize = timeBinSize
@@ -824,7 +836,7 @@ class LinkStatStruct {
         vehicleCount = vehicleCount / populationFactor // rescale the vehicle count to match the population factor
         List<Double> empty_levels = [-99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0]
 
-        for (int timeBin = 0; timeBin < 86400; timeBin += timeBinSize) {
+        for (int timeBin = timeBinMin; timeBin < timeBinMax; timeBin += timeBinSize) {
             if (!levels.containsKey(timeBin)) {
                 levels.put(timeBin, new ArrayList<Double>(empty_levels))
             }
