@@ -18,6 +18,10 @@ import com.fasterxml.jackson.databind.node.NullNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 import static org.noise_planet.noisemodelling.emission.Utils.*;
 
@@ -90,7 +94,15 @@ public class EvaluateRoadSourceCnossos {
             default:
                 Freq_ind = 0;
         }
-        return getCnossosData(coeffVer).get("roads").get(RoadSurface).get("ref").get(vehCat).get("spectrum").get(Freq_ind).doubleValue();
+        JsonNode roadsNode = getCnossosData(coeffVer).get("roads");
+        if(!roadsNode.has(RoadSurface)) {
+            List<String> roadSurfaces = new ArrayList<>();
+            roadsNode.fieldNames().forEachRemaining(roadSurfaces::add);
+            throw new IllegalArgumentException(String.format(Locale.ROOT,
+                    "Provided road pavement \"%s\" not known ! Please provided one of the following pavements" +
+                            " instead : %s",RoadSurface, String.join(", ", roadSurfaces)));
+        }
+        return roadsNode.get(RoadSurface).get("ref").get(vehCat).get("spectrum").get(Freq_ind).doubleValue();
     }
 
     /**
@@ -101,7 +113,15 @@ public class EvaluateRoadSourceCnossos {
      * @return b Road Coeff
      */
     public static Double getB_Roadcoeff(String vehCat, String roadSurface, int coeffVer) { //CNOSSOS-EU_Road_Catalogue_Final - 01April2014.xlsx - https://circabc.europa.eu/webdav/CircaBC/env/noisedir/Library/Public/cnossos-eu/Final_methods%26software
-        return getCnossosData(coeffVer).get("roads").get(roadSurface).get("ref").get(vehCat).get("ßm").doubleValue();
+        JsonNode roadsNode = getCnossosData(coeffVer).get("roads");
+        if(!roadsNode.has(roadSurface)) {
+            List<String> roadSurfaces = new ArrayList<>();
+            roadsNode.fieldNames().forEachRemaining(roadSurfaces::add);
+            throw new IllegalArgumentException(String.format(Locale.ROOT,
+                    "Provided road pavement \"%s\" not known ! Please provided one of the following pavements" +
+                            " instead : %s",roadSurface, String.join(", ", roadSurfaces)));
+        }
+        return roadsNode.get("ref").get(vehCat).get("ßm").doubleValue();
     }
 
     /**
