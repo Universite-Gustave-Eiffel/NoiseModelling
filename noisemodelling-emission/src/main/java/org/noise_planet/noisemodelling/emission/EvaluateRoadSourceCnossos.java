@@ -121,7 +121,7 @@ public class EvaluateRoadSourceCnossos {
                     "Provided road pavement \"%s\" not known ! Please provided one of the following pavements" +
                             " instead : %s",roadSurface, String.join(", ", roadSurfaces)));
         }
-        return roadsNode.get("ref").get(vehCat).get("ßm").doubleValue();
+        return roadsNode.get(roadSurface).get("ref").get(vehCat).get("ßm").doubleValue();
     }
 
     /**
