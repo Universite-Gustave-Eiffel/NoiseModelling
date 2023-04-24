@@ -44,75 +44,91 @@ import java.sql.Connection
 import java.util.concurrent.atomic.AtomicInteger
 
 title = 'Delaunay Grid'
-description = 'Calculates a delaunay grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+description = '&#10145;&#65039; Computes a <a href="https://en.wikipedia.org/wiki/Delaunay_triangulation" target="_blank">Delaunay</a> grid of receivers.</br>' +
+              '<hr>' +
+              'The grid will be based on: <ul>' +
+              '<li> the BUILDINGS table extent (option by default)</li>' +
+              '<li> <b>OR</b> a single Geometry "fence" (Extent filter).</li></ul>' +
+              '&#x2705; Two tables are returned:<ul>' +
+              '<li> <b>RECEIVERS</b></li>' +
+              '<li> <b>TRIANGLES</b></li>' +
+              '<img src="/wps_images/delaunay_grid_output.png" alt="Delaunay grid output" width="95%" align="center">'
 
 inputs = [
         tableBuilding      : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>',
+                description: 'Name of the Buildings table. </br><br>' +
+                             'The table must contain: <ul>' +
+                             '<li> <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li></ul>',
                 type       : String.class
         ],
         fence              : [
-                name       : 'Fence geometry', title: 'Extent filter',
-                description: 'Create receivers only in the provided polygon',
+                name       : 'Extent filter', 
+                title      : 'Extent filter',
+                description: 'Create receivers only in the provided polygon (fence)',
                 min        : 0, max: 1,
                 type       : Geometry.class
         ],
         sourcesTableName   : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Road table, receivers will not be created on the specified road width',
+                description: 'Name of the Road table.</br><br>' +
+                             'Receivers will not be created on the specified road width',
                 type       : String.class
         ],
-        maxPropDist        : [
-                name       : 'Maximum Propagation Distance',
-                title      : 'Maximum Propagation Distance',
-                description: 'Set Maximum propagation distance in meters. Avoid loading to much geometries when doing Delaunay triangulation. (FLOAT)' +
-                        '</br> </br> <b> Default value : 500 </b>',
+        maxCellDist        : [
+                name       : 'Maximum cell size',
+                title      : 'Maximum cell size',
+                description: 'Maximum distance used to split the domain into sub-domains (in meters) (FLOAT).</br><br>' +
+                             'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation.</br></br>' +
+                             '&#128736; Default value: <b>600 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         roadWidth          : [
-                name       : 'Source Width',
-                title      : 'Source Width',
-                description: 'Set Road Width in meters. No receivers closer than road width distance.(FLOAT) ' +
-                        '</br> </br> <b> Default value : 2 </b>',
+                name       : 'Road width',
+                title      : 'Road width',
+                description: 'Set Road Width (in meters) (FLOAT).</br> </br>' +
+                             'No receivers closer than road width distance will be created.</br> </br>' +
+                             '&#128736; Default value: <b>2 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         maxArea            : [
                 name       : 'Maximum Area',
                 title      : 'Maximum Area',
-                description: 'Set Maximum Area in m2. No triangles larger than provided area. Smaller area will create more receivers. (FLOAT)' +
-                        '</br> </br> <b> Default value : 2500 </b> ',
+                description: 'Set Maximum Area (in m2) (FLOAT).</br> </br>' +
+                             'No triangles larger than provided area will be created.</br>' +
+                             'Smaller area will create more receivers.</br> </br> ' +
+                             '&#128736; Default value: <b>2500 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         height             : [
                 name       : 'Height',
                 title      : 'Height',
-                description: ' Receiver height relative to the ground in meters (FLOAT).' +
-                        '</br> </br> <b> Default value : 4 </b>',
+                description: 'Receiver height relative to the ground (in meters) (FLOAT).</br> </br>' +
+                             '&#128736; Default value: <b>4 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         outputTableName    : [
                 name       : 'outputTableName',
-                description: 'Do not write the name of a table that contains a space. ' +
-                        '</br> </br> <b> Default value : RECEIVERS </b>',
                 title      : 'Name of output table',
+                description: 'Name of the output table.</br> </br>' +
+                             'Do not write the name of a table that contains a space.</br> </br>' +
+                             '&#128736; Default value: <b>RECEIVERS </b>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         isoSurfaceInBuildings: [
-                name: 'Create IsoSurfaces over buildings',
-                title: 'Create IsoSurfaces over buildings',
-                description: 'If enabled isosurfaces will be visible at the location of buildings',
-                type: Boolean.class,
-                min        : 0, max: 1,
+                name        : 'Create IsoSurfaces over buildings',
+                title       : 'Create IsoSurfaces over buildings',
+                description : 'If enabled, isosurfaces will be visible at the location of buildings </br></br>' +
+                              '&#128736; Default value: <b>false </b>',,
+                min         : 0, max: 1,
+                type        : Boolean.class
         ]
 ]
 
@@ -190,9 +206,9 @@ def exec(Connection connection, input) {
     }
 
 
-    Double maxPropDist = 600.0
-    if (input['maxPropDist']) {
-        maxPropDist = input['maxPropDist'] as Double
+    Double maxCellDist = 600.0
+    if (input['maxCellDist']) {
+        maxCellDist = input['maxCellDist'] as Double
     }
 
     Double height = 4.0
@@ -247,7 +263,7 @@ def exec(Connection connection, input) {
 
 
     // Avoid loading to much geometries when doing Delaunay triangulation
-    noiseMap.setMaximumPropagationDistance(maxPropDist)
+    noiseMap.setMaximumPropagationDistance(maxCellDist)
     // Receiver height relative to the ground
     noiseMap.setReceiverHeight(height)
     // No receivers closer than road width distance

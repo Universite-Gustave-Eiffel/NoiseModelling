@@ -26,21 +26,25 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Create 0db Source From Roads'
-description = 'Creates a SOURCE table from a ROAD table.' +
-        '<br/>The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. The Noise_level_from_source output will contain a list of source-receiver attenuation matrix independent of the source absolute noise power levels.'
+description = '&#10145;&#65039; Creates a SOURCE table from a ROAD table.' +
+              '<hr>' +
+              'The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. </br></br>' +
+              'The <b>Noise_level_from_source</b> output will contain a list of "source-receiver" attenuation matrix independent of the source absolute noise power levels.'
 
 inputs = [
         roadsTableName: [
                 name: 'Input table name',
                 title: 'Intput table name',
-                description: 'The name of the Roads table.'+
-                    '<br/>Must contain at least a <b>PK<b> field with a primary key index and a <b>THE_GEOM</b> geometry field',
+                description: 'Name of the Roads table. <br/> <br/>' +
+                             'Must contain at least:</br>'+
+                             '- <b>PK</b>: identifier with a Primary Key constraint</br>' +
+                             '- <b>THE_GEOM</b>: geometric column',
                 type: String.class
         ],
         sourcesTableName: [
                 name: 'Output table name',
                 title: 'Output table name',
-                description: 'Name of the table you want to create: SOURCES_0DB',
+                description: 'Name of the table you want to create',
                 type: String.class
         ]
 ]

@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Set_Height'
-description = 'Set a new height of a set of receivers or sources (Points or LineStrings).'
+description = '&#10145;&#65039; Set a new height to a set of receivers or sources (Points or LineStrings).'
 
 inputs = [
         tableName: [
@@ -42,7 +42,7 @@ inputs = [
         height: [
                 name       : 'New height',
                 title      : 'New height',
-                description: 'New height for the input table. The height must be defined in meters. (FLOAT)',
+                description: 'New height for the input table (in meters) (FLOAT)',
                 type       : Double.class
         ]
 ]

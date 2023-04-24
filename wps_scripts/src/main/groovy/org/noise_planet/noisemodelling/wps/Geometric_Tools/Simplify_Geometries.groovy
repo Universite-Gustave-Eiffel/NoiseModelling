@@ -19,8 +19,9 @@ import java.sql.SQLException
 
 title = 'Simplify geometries'
 
-description = 'Use Douglas-Peucker algorithm to simplify geometries in the selected table.' +
-              '</br> Input table geometries will be updated.'
+description = '&#10145;&#65039; Use <a href="https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm" target="_blank">Douglas-Peucker algorithm</a> to simplify geometries in the selected table.' +
+              '<hr>' +
+              '&#x2705; The input table geometries will be updated.'
 
 inputs = [
         tableName: [
@@ -32,16 +33,16 @@ inputs = [
         distanceTolerance: [
                 name       : 'Distance tolerance',
                 title      : 'Distance tolerance',
-                description: 'Sets the distance tolerance for the simplification (FLOAT).' +
-                             '</br> </br> <b> Default value : 1 </b>',
+                description: 'Sets the tolerance distance for the simplification (FLOAT). </br> </br> ' +
+                             '&#128736; Default value: <b>1 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         preserveTopology: [
-                title      : 'Preserve topology?',
-                name       : 'Preserve topology?',
-                description: 'Do you want to preserve topology?' + 
-                             '</br> </br> <b> Default value : false </b>',
+                title      : 'Preserve topology ?',
+                name       : 'Preserve topology ?',
+                description: 'Do you want to preserve topology? </br> </br>' + 
+                             '&#128736; Default value: <b>false </b>',
                 min        : 0, max: 1,
                 type       : Boolean.class
         ]

@@ -23,7 +23,7 @@ import java.sql.PreparedStatement
 import java.sql.SQLException
 
 title = 'Compute Road Emission'
-description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (TMJA) estimates. '
+description = '&#10145;&#65039; Compute Road Emission Noise Map from Estimated Annual average daily flows (TMJA) estimates. '
 
 inputs = [databaseName    : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           sourcesTableName: [name: 'Sources table name', title: 'Sources table name', type: String.class]]

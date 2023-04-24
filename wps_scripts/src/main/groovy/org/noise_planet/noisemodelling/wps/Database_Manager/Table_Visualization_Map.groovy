@@ -36,16 +36,19 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Diplay a table on a map.'
-description = 'Display a table containing a geometric field on a map. </br> Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> Be careful, this treatment can be blocking if the table is large.'
+description = '&#10145;&#65039; Display a table containing a geometric column on a map &#128506;</br> '+
+              '<hr>' +
+              'Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> </br> '+
+              '&#x1F6A8; Be careful, this treatment can be blocked if the table is too large.'
 
 inputs = [
         inputSRID: [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
-                description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
-                        '</br>  <b> Default value : 4326 </b> ',
+                description: '&#127757; Original projection identifier (also called SRID) of your table. It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER) </br> </br>' +
+                             'All coordinates will be projected from the specified EPSG to <a href="https://epsg.io/4326" target="_blank">WGS84</a> coordinates. </br> </br>' +
+                             'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
+                             '&#128736; Default value: <b>4326 </b> ',
                 type       : Integer.class,
                 min        : 0, max: 1
         ],

@@ -5,7 +5,7 @@ NoiseModelling is a tool for producing noise maps. To do so, at different stages
 
 Below we describe the table ``ROADS``, dealing with the roads network. 
 
-The other tables are accessible via the left menu in the ``Input tables`` section.
+The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
 .. figure:: images/Input_tables/roads_banner.png
 	:align: center

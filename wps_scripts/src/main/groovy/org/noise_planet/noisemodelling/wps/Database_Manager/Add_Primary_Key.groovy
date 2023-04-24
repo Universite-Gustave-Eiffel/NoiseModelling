@@ -29,21 +29,23 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Add primary key column or constraint'
-description = 'Add a primary key column or add a primary key constraint to a column of a table. </br> ' +
-        'It is necessary to add a primary key on one of the columns for the source and receiver tables before doing a calculation. </br> ' +
-        'If the table already has a primary key, it will remove the constraint before the operation.'
+description = '&#10145;&#65039; Add a Primary Key (&#128273;) column or add a Primary Key constraint to a column of a table. </br> ' +
+              '<hr>' +
+              'It is necessary to add a Primary Key on one of the columns for the source and receiver tables before doing a calculation. </br> </br>' +
+              '&#128161; If the table already has a Primary Key, it will remove the constraint before the operation.'
 
 inputs = [
         pkName: [
                 name: 'Name of the column',
                 title: 'Name of the column',
-                description: 'Name of the column to be added, or for which the main key constraint will be added. </br> Primary keys must contain UNIQUE values, and cannot contain NULL values.',
+                description: 'Name of the column to be added, or for which the main key constraint will be added. </br> </br>'+
+                '&#128161; Primary keys must contain <b>UNIQUE</b> values, and cannot contain <b>NULL</b> values',
                 type: String.class
         ],
         tableName : [
                 name: 'Name of the table',
                 title: 'Name of the table',
-                description: 'Name of the table to which a primary key will be added.',
+                description: 'Name of the table on which a primary key will be added',
                 type: String.class
         ]
 ]

@@ -24,7 +24,6 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -36,67 +35,76 @@ import java.sql.*
 import groovy.sql.Sql
 
 title = 'Regular Grid'
-description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+description = '&#10145;&#65039; Computes a regular grid of receivers. </br>' +
+              '<hr>' +
+              'The receivers are spaced at a distance "delta" (Offset) in the Cartesian plane in meters. </br> </br>'+
+              'The grid will be based on:<ul>' +
+              '<li> the BUILDINGS table extent (option by default)</li>' +
+              '<li> <b>OR</b> a single Geometry "fence" (see "Extent filter" parameter).</li></ul></br>' +
+              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '<img src="/wps_images/regular_grid_output.png" alt="Regular grid output" width="95%" align="center">'
 
 inputs = [
         buildingTableName : [
-                name : 'Buildings table name',
-                title: 'Buildings table name',
-                description: 'Buildings table, receivers that are into this tables geometries will be deleted',
-                min        : 0, max: 1,
+                name :       'Buildings table name',
+                title:       'Buildings table name',
+                description: 'Name of the Buildings table. </br></br>' +
+                             'The table must contain: <ul>' +
+                             '<li><b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li></ul>',
                 type : String.class
         ],
         fence             : [
-                name       : 'Fence geometry',
+                name       : 'Extent geometry',
                 title      : 'Extent filter',
-                description: 'Create receivers only in the provided polygon',
+                description: 'Create receivers only in the provided polygon (fence)',
                 min        : 0, max: 1,
                 type       : Geometry.class
         ],
-        fenceTableName    : [
+        fenceTableName : [
                 name       : 'Fence geometry from table',
                 title      : 'Filter using table bounding box',
-                description: 'Extract the bounding box of the specified table then create only receivers on the table bounding box' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
-                min        : 0, max: 1,
+                description: 'Filter receivers, using the bounding box of the given table name: <ol>' +
+                             '<li> Extract the bounding box of the specified table,</li>' +
+                             '<li> then create only receivers on the table bounding box.</li></ol>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
+                min        : 0, max        : 1,
                 type       : String.class
         ],
         sourcesTableName  : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
+                description: 'Keep only receivers at least at 1 meters of provided sources geometries </br> </br>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         delta             : [
-                name       : 'offset',
-                title      : 'offset',
-                description: 'Offset in the Cartesian plane in meters',
+                name       : 'Offset',
+                title      : 'Offset',
+                description: 'Offset in the Cartesian plane (in meters) </br> </br>' +
+                             '&#128736; Default value: <b>10 </b>',
+                min        : 0, max        : 1,
                 type       : Double.class
         ],
         receiverstablename: [
                 name       : 'receiverstablename',
-                description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)',
                 title      : 'Name of receivers table',
+                description: 'Name of the output table.</br> </br>' +
+                             'Do not write the name of a table that contains a space.</br> </br>' +
+                             '&#128736; Default value: <b>RECEIVERS </b>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
-        height            : [
-                name       : 'height',
-                title      : 'height',
-                description: 'Height of receivers in meters',
-                min        : 0, max: 1,
+        height : [
+                name       : 'Height',
+                title      : 'Height',
+                description: 'Height of receivers (in meter) (FLOAT) </br> </br>' +
+                             '&#128736; Default value: <b>4</b>',
+                min        : 0, 
+                max        : 1,
                 type       : Double.class
-        ],
-        outputTriangleTable            : [
-                name       : 'Output triangle table',
-                title      : 'Output triangle table',
-                description: 'Output a triangle table in order to be used to generate iso contours with Create_Isosurface',
-                min        : 0, max: 1,
-                type       : Boolean.class
         ]
 ]
 
@@ -256,4 +264,3 @@ def exec(connection, input) {
 
     return [tableNameCreated: "Process done. Table of receivers " + receivers_table_name + " created !"]
 }
-

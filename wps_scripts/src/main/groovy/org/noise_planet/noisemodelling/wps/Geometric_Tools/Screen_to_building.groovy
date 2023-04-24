@@ -31,29 +31,31 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Convert screens to building format.'
-description = 'Convert the screens to the building format. A width of 10 cm will be defined. If you also give a building table, this WPS block allows you to merge the two layers together.' +
-        '</br> Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.' +
-        '</br> </br> <b> The output table is called : BUILDINGS_SCREENS </b> and contain : </br>' +
-        '- <b> THE_GEOM </b> : the 2D geometry of the created table (POLYGON or MULTIPOLYGON). </br>' +
-        '- <b> HEIGHT </b> : the height of the created polygons (FLOAT)'
+description = '&#10145;&#65039; Convert the screens to the building format. ' +
+              '<hr>' +
+              'A width of 10 cm will be defined. If you also give a building table, this WPS script allows you to merge the two layers together. </br> </br> ' +
+              'Tables must be projected in a same metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. </br> </br>' +
+              '&#x2705; The output table is called : <b>BUILDINGS_SCREENS</b> and contain: </br>' +
+              '- <b> THE_GEOM </b>: the 2D geometry of the created table (POLYGON or MULTIPOLYGON). </br>' +
+              '- <b> HEIGHT </b>: the height of the created polygons (FLOAT)'
 
 inputs = [
         tableBuilding: [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                description: '<b>Name of the Buildings table.</b> </br> </br> ' +
+                             'The table must contain: </br>' +
+                             '- <b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
+                             '- <b> HEIGHT </b>: the height of the building (FLOAT)',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         tableScreens : [
                 name       : 'Screens table name', title: 'Screens table name',
-                description: '<b>Name of the Screens table.</b>  </br>  ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the screens (FLOAT)',
+                description: '<b>Name of the Screens table.</b>  </br> </br>' +
+                             'The table must contain: </br>' +
+                             '- <b> THE_GEOM </b> : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). </br>' +
+                             '- <b> HEIGHT </b> : the height of the screens (FLOAT)',
                 type       : String.class
         ]
 ]

@@ -5,7 +5,7 @@ NoiseModelling is a tool for producing noise maps. To do so, at different stages
 
 Below we describe the table ``DEM``, dealing with the Digital Elevation Model matrix. 
 
-The other tables are accessible via the left menu in the ``Input tables`` section.
+The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
 
 .. figure:: images/Input_tables/dem_banner.png
@@ -30,6 +30,9 @@ DEM enrichment
 ---------------------
 
 If you have input data with a good elevation quality (better than the DEM one) / higher density and if you are comfortable with GIS tools, you are invited to enrich your DEM so that it takes into account the structuring elements of the territory.
+
+.. note::
+	You can find dedicated scripts (*e.g* ``Enrich_DEM_with_lines``, ...) in the ``Geometric Tools`` section of the left-side menu of NoiseModelling
 
 Below is an example of DEM enrichment using road network:
 

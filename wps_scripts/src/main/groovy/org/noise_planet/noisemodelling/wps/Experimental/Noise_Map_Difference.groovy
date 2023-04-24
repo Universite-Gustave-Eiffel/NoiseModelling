@@ -26,31 +26,32 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Map Difference'
-description = 'Map Difference.'
+description = '&#10145;&#65039; Computes the difference between two noise maps'
 
 inputs = [
         mainMapTable : [
                 name: 'Primary map table name',
                 title: 'Primary map table name',
-                description: 'Name of the table containing the primary noise map data.' +
-                        '<br/>The table must contain the following fields : ' +
-                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
+                description: 'Name of the table containing the primary noise map data. <br/> <br/>' +
+                             'The table must contain the following columns: <br/>' +
+                             'PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ],
         secondMapTable: [
                 name: 'Secondary map table name',
                 title: 'Secondary map table name',
-                description: 'Name of the table containing the second noise map data.' +
-                        '<br/>The table must contain the following fields : ' +
-                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
+                description: 'Name of the table containing the second noise map data. <br/> <br/>' +
+                             'The table must contain the following columns: <br/>' +
+                             'PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ],
         invert: [
                 name: 'Invert the substraction',
                 title: 'Invert the substraction ?',
-                description: 'Invert the substraction ?' +
-                        '<br/>False (default) : Primary map - Second map' +
-                        '<br/>True : Second map - Primary map',
+                description: 'Invert the substraction? </br>' +
+                             '<ul>' +
+                             '<li>False (default) : Primary map - Second map</li>' +
+                             '<li>True : Second map - Primary map</li></ul>',
                 min: 0,
                 max: 1,
                 type: Boolean.class
@@ -58,9 +59,9 @@ inputs = [
         outTable: [
                 name: 'Output table name',
                 title: 'Name of created table',
-                description: 'Name of the table you want to create' +
-                        '<br/>The table will contain the following fields : ' +
-                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
+                description: 'Name of the table you want to create <br/> <br/>' +
+                             'The table will contain the following columns: <br/> ' +
+                             'PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ',
                 type: String.class
         ]
 ]

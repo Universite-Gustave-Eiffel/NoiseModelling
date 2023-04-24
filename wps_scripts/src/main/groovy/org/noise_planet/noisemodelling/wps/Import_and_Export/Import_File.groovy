@@ -41,31 +41,37 @@ import java.sql.ResultSet
 import java.sql.Statement
 
 title = 'Import File'
-description = 'Import file into the database. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv). </br>'
+description = '&#10145;&#65039; Import file into the database. </br>'+
+              '<hr>' +
+              'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv </br> </br>' +
+              '<img src="/wps_images/import_file.png" alt="Import file" width="95%" align="center">'
 
 inputs = [
         pathFile : [
                 name       : 'Path of the input File',
                 title      : 'Path of the input File',
-                description: 'Path of the file you want to import, including its extension. ' +
-                        '</br> For example : c:/home/receivers.geojson',
+                description: '&#128194; Path of the file you want to import, including its extension. </br></br>' +
+                             'For example: c:/home/buildings.geojson',
                 type       : String.class
         ],
         inputSRID: [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
-                description: 'Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> ' +
-                        '</br> <b> Default value : 4326 </b> ',
+                description: '&#127757; Original projection identifier (also called SRID) of your table. </br> </br>' +
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
+                             'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
+                             'If the table is geometric and if this parameter is not filled and:</br>' +
+                             '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
+                             '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +                          
+                             '&#128736; Default value: <b>4326 </b> ',
                 type       : Integer.class,
                 min        : 0, max: 1
         ],
         tableName: [
                 name       : 'Output table name',
                 title      : 'Name of created table',
-                description: 'Name of the table you want to create from the file. ' +
-                        '</br> <b> Default value : it will take the name of the file without its extension (special characters will be removed and whitespaces will be replace by an underscore. </b> ',
+                description: 'Name of the table you want to create from the file. </br> </br>' +
+                             '&#128736; Default value: <b>it will take the name of the file without its extension</b> (special characters will be removed and whitespaces will be replace by an underscore.',
                 min        : 0, max: 1,
                 type       : String.class
         ]

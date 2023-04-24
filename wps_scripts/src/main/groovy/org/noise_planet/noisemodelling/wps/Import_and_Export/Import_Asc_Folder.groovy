@@ -32,32 +32,34 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.Statement
 
-title = 'Import all Asc files from a folder'
-description = 'Import all files with a Asc extension from a folder to the database. </br>'
+title = 'Import all .asc files from a folder'
+description = '&#10145;&#65039; Import all files with .asc extension from a folder to the database </br>' +
+              '<hr>' +
+              '&#x2705; The resulting tables will have the same name as the input files </br> </br>' +
+              '<img src="/wps_images/import_asc_folder.png" alt="Import asc folder" width="95%" align="center">'
 
 inputs = [
         pathFolder: [
                 name       : 'Path of the folder',
                 title      : 'Path of the folder',
-                description: 'Path of the folder ' +
-                        '</br> For example : c:/home/inputdata/ ',
+                description: '&#128194; Path of the folder </br> </br>' +
+                             'For example: c:/home/inputdata/ ',
                 type       : String.class
         ],
-        inputSRID : [
+        inputSRID: [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
-                description: 'Original projection identifier (also called SRID) of all the table that contain a geometry attribute. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.' +
-                        '</br>  <b> Default value : 4326 </b> ',
+                description: '&#127757; Original projection identifier (also called SRID) of the .asc file. </br> </br>' +
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
+                             '&#128736; Default value: <b>4326 </b> ',
                 type       : Integer.class,
                 min        : 0, max: 1
         ],
-        downscale : [
+        downscale: [
                 name       : 'Skip pixels on each axis',
                 title      : 'Skip pixels on each axis',
-                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) ' +
-                        '</br> </br> <b> Default value : 1.0 </b>',
+                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) </br> </br>' +
+                             '&#128736; Default value: <b>1.0 </b>',
                 min        : 0, max: 1,
                 type       : Integer.class
         ]

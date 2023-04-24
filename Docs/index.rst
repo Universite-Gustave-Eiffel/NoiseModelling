@@ -93,7 +93,7 @@ Fundings
 - `ANR Eval-PDU`_ (ANR-08-VILL-0005) 2008-2011
 - `ANR VegDUD`_ (ANR-09-VILL-0007) 2009-2014
 - `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
-- `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
+- `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement N°730468
 - `PlaMADE`_ 2020-2022
 
 *Institutional (public) fundings:*
@@ -138,7 +138,7 @@ Fundings
 
 .. toctree::
     :maxdepth: 1
-    :caption: Input tables
+    :caption: Input tables & parameters
 
     Input_buildings
     Input_roads
@@ -146,6 +146,8 @@ Fundings
     Input_ground
     Input_dem
     Input_directivity
+    Input_receivers
+    Input_acoustics
     
 .. toctree::
     :maxdepth: 2

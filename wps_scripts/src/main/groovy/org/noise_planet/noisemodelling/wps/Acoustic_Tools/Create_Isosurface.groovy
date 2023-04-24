@@ -30,32 +30,37 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-title = 'Create an isosurface from a NoiseModelling result table and its associated TRIANGLES table.'
+title = 'Create isosurfaces from a NoiseModelling resulting table and its associated TRIANGLES table.'
 
-description = 'Create an isosurface from a NoiseModelling result table and its associated TRIANGLES table. The Triangle vertices table must have been created using the WPS block <b> Receivers/Delaunay_Grid </b> . ' +
-        '</br> </br> <b> The output table is called :  CONTOURING_NOISE_MAP'
+description = '&#10145;&#65039; Create isosurfaces from a NoiseModelling resulting table and its associated TRIANGLES table.'+
+              '<hr>' +
+              '&#x1F6A8; The triangle table must have been created using the WPS block "<b>Receivers/Delaunay_Grid</b>". </br> </br> ' +
+              '&#x2705; The output table is called <b>CONTOURING_NOISE_MAP</b> </br> </br> ' +
+              '<img src="/wps_images/create_isosurface.png" alt="Create isosurfaces" width="95%" align="center">'
 
 inputs = [
         resultTable      : [
                 name       : 'Sound levels table',
                 title      : 'Sound levels table',
-                description: 'Name of the sound levels table, generated from Noise_level_from_source. (STRING) ' +
-                        '</br> </br>  example : LDEN_GEOM.',
+                description: 'Name of the sound levels table, generated from "Noise_level_from_source". (STRING)</br> </br>' +
+                             'Example : LDEN_GEOM.',
                 type       : String.class
         ],
         isoClass         : [
                 name       : 'Iso levels in dB',
                 title      : 'Iso levels in dB',
-                description: 'Separation of sound levels for isosurfaces. ' +
-                        '</br> </br> <b> Default value : 35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0 </b>',
+                description: 'Separation of sound levels for isosurfaces. </br> </br>' +
+                             'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes. </br> </br>' +
+                             '&#128736; Default value: <b>35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0 </b>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         smoothCoefficient: [
                 name       : 'Polygon smoothing coefficient',
                 title      : 'Polygon smoothing coefficient',
-                description: 'This coefficient (Bezier curve coefficient) will smooth generated isosurfaces. If equal to 0, it disables the smoothing step.' +
-                        '</br> </br> <b> Default value : 1.0 </b>',
+                description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>'+
+                             'If equal to 0, it disables the smoothing step.</br> </br>' +
+                             '&#128736; Default value: <b>0.5 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ]
@@ -121,6 +126,10 @@ def exec(Connection connection, input) {
             bezierContouring.setSmooth(true)
             bezierContouring.setSmoothCoefficient(coefficient)
         }
+    }
+    else {
+        bezierContouring.setSmooth(true)
+        bezierContouring.setSmoothCoefficient(0.5)
     }
 
     bezierContouring.createTable(connection)

@@ -37,24 +37,26 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Buildings Grid'
-description = '&#10145;&#65039; Generates receivers, 2m around the building facades, at a given height. </br></br>' +
-              'The output table is called <b>RECEIVERS</b>'
+description = '&#10145;&#65039; Generates receivers, 2m around the building facades, at a given height. </br>' +
+              '<hr>' +
+              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '<img src="/wps_images/building_grid_output.png" alt="Building grid output" width="95%" align="center">'
 
 inputs = [
         tableBuilding : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b> <br></br>' +
-                             'The table shall contain : </br>' +
-                             '- <b>THE_GEOM</b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</br>' +
-                             '- <b>HEIGHT</b> : the height of the building (in meter) (FLOAT)</br>' +
-                             '- <b>POP</b> : (optional field) building population to add in the receiver attribute (FLOAT)',
+                description: 'Name of the Buildings table. <br></br>' +
+                             'The table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
+                             '<li> <b>HEIGHT</b> : the height of the building (in meter) (FLOAT)</li>' +
+                             '<li> <b>POP</b> : (optional field) building population to add in the receiver attribute (FLOAT)</li></ul>',
                 type       : String.class
         ],
         fence : [
                 name       : 'Fence geometry',
                 title      : 'Extent filter',
-                description: 'Create receivers only in the provided polygon',
+                description: 'Create receivers only in the provided polygon (fence)',
                 min        : 0, 
                 max        : 1,
                 type       : Geometry.class
@@ -62,11 +64,11 @@ inputs = [
         fenceTableName : [
                 name       : 'Fence geometry from table',
                 title      : 'Filter using table bounding box',
-                description: 'Filter receivers, using the bounding box of the given table name:<br>' +
-                             '1- Extract the bounding box of the specified table,<br>' +
-                             '2- then create only receivers on the table bounding box.<br><br>' +
-                             'The given table shall contain: </br>' +
-                             '- <b>THE_GEOM</b> : any geometry type. </br>',
+                description: 'Filter receivers, using the bounding box of the given table name:<br><ol>' +
+                             '<li> Extract the bounding box of the specified table,</li>' +
+                             '<li> then create only receivers on the table bounding box.</li></ol>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
                 min        : 0, 
                 max        : 1,
                 type       : String.class
@@ -74,9 +76,9 @@ inputs = [
         sourcesTableName : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Keep only receivers that are at least 1 meter from the provided source geometries.<br><br>' +
-                             'The source geometries table shall contain: </br>' +
-                             '- <b>THE_GEOM</b> : any geometry type. </br>',
+                description: 'Keep only receivers that are at least 1 meter from the provided source geometries.</br></br>' +
+                             'The source geometries table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
                 min        : 0, 
                 max        : 1,
                 type       : String.class
@@ -84,23 +86,26 @@ inputs = [
         delta : [
                 name       : 'Receivers minimal distance',
                 title      : 'Distance between receivers',
-                description: '<b>Distance between receivers</b> (in the Cartesian plane - in meter) (FLOAT)',
+                description: 'Distance between receivers (in the Cartesian plane - in meter) (FLOAT) </br></br>'+
+                             '&#128736; Default value: <b>10 </b>',
+                min        : 0, 
+                max        : 1,
                 type       : Double.class
         ],
         height : [
                 name       : 'Height',
                 title      : 'Height',
-                description: '<b>Height of receivers</b> (in meter) (FLOAT) </br></br>' +
-                             'Default value: <b>4</b>',
+                description: 'Height of receivers (in meter) (FLOAT) </br></br>' +
+                             '&#128736; Default value: <b>4</b>',
                 min        : 0, 
                 max        : 1,
                 type       : Double.class
         ],
         distance          : [
-                name       : 'distance',
+                name       : 'Distance',
                 title      : 'Distance from wall',
-                description: 'Distance of receivers from the wall in meters (FLOAT) </br> </br>' +
-                             '<b> Default value : 2 </b>',
+                description: 'Distance of receivers from the wall in meters (FLOAT) </br></br>' +
+                             '&#128736; Default value: <b>2 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ]
