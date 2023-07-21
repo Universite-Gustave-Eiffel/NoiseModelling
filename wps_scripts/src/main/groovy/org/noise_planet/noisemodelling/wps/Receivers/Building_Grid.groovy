@@ -37,57 +37,75 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Buildings Grid'
-description = 'Generates receivers placed 2 meters from building facades at specified height.' +
-        '</br> </br> <b> The output table is called : RECEIVERS </b>'
+description = '&#10145;&#65039; Generates receivers, 2m around the building facades, at a given height. </br>' +
+              '<hr>' +
+              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '<img src="/wps_images/building_grid_output.png" alt="Building grid output" width="95%" align="center">'
 
 inputs = [
-        tableBuilding   : [
+        tableBuilding : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b>  </br>  ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT)' +
-                        '- <b> POP </b> : optional field, building population to add in the receiver attribute (FLOAT)',
+                description: 'Name of the Buildings table. <br></br>' +
+                             'The table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
+                             '<li> <b>HEIGHT</b> : the height of the building (in meter) (FLOAT)</li>' +
+                             '<li> <b>POP</b> : (optional field) building population to add in the receiver attribute (FLOAT)</li></ul>',
                 type       : String.class
         ],
-        fence           : [
+        fence : [
                 name       : 'Fence geometry',
                 title      : 'Extent filter',
-                description: 'Create receivers only in the provided polygon',
-                min        : 0, max: 1,
+                description: 'Create receivers only in the provided polygon (fence)',
+                min        : 0, 
+                max        : 1,
                 type       : Geometry.class
         ],
-        fenceTableName  : [
+        fenceTableName : [
                 name       : 'Fence geometry from table',
                 title      : 'Filter using table bounding box',
-                description: 'Extract the bounding box of the specified table then create only receivers on the table bounding box' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
-                min        : 0, max: 1,
+                description: 'Filter receivers, using the bounding box of the given table name:<br><ol>' +
+                             '<li> Extract the bounding box of the specified table,</li>' +
+                             '<li> then create only receivers on the table bounding box.</li></ol>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
+                min        : 0, 
+                max        : 1,
                 type       : String.class
         ],
-        sourcesTableName: [
+        sourcesTableName : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Keep only receivers at least at 1 meters of' +
-                        ' provided sources geometries' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
-                min        : 0, max: 1,
+                description: 'Keep only receivers that are at least 1 meter from the provided source geometries.</br></br>' +
+                             'The source geometries table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
+                min        : 0, 
+                max        : 1,
                 type       : String.class
         ],
-        delta           : [
+        delta : [
                 name       : 'Receivers minimal distance',
                 title      : 'Distance between receivers',
-                description: 'Distance between receivers in the Cartesian plane in meters',
+                description: 'Distance between receivers (in the Cartesian plane - in meter) (FLOAT) </br></br>'+
+                             '&#128736; Default value: <b>10 </b>',
+                min        : 0, 
+                max        : 1,
                 type       : Double.class
         ],
-        height          : [
-                name       : 'height',
-                title      : 'height',
-                description: 'Height of receivers in meters (FLOAT)' +
-                        '</br> </br> <b> Default value : 4 </b> ',
+        height : [
+                name       : 'Height',
+                title      : 'Height',
+                description: 'Height of receivers (in meter) (FLOAT) </br></br>' +
+                             '&#128736; Default value: <b>4</b>',
+                min        : 0, 
+                max        : 1,
+                type       : Double.class
+        ],
+        distance          : [
+                name       : 'Distance',
+                title      : 'Distance from wall',
+                description: 'Distance of receivers from the wall in meters (FLOAT) </br></br>' +
+                             '&#128736; Default value: <b>2 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ]
@@ -152,6 +170,13 @@ def exec(Connection connection, input) {
         h = input['height'] as Double
     }
 
+    Double distance = 2.0d
+    if (input['distance']) {
+        distance = input['distance'] as Double
+    }
+
+
+
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
@@ -205,9 +230,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_receivers_lines")
 
     if (fenceGeom != null) {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom])
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom, distance_wall : distance])
     } else {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, 2, 'join=bevel')), 0.05) the_geom from " + building_table_name)
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
 
     logger.info('create line of receivers')
@@ -220,7 +245,7 @@ def exec(Connection connection, input) {
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
     logger.info('truncate receiver lines')
-    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), 2)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;")
+    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), :distance_wall)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;", [distance_wall : distance])
     logger.info('Add primary key')
     sql.execute("ALTER TABLE tmp_screen_truncated add primary key(pk_screen)")
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")

@@ -26,7 +26,7 @@ author = u'Aumond P., Fortin N., Le Bescond V., Petit G.'
 # The short X.Y version
 version = u'4.0'
 # The full version, including alpha/beta/rc tags
-release = u'4.0.3-SNAPSHOT'
+release = u'4.0.4'
 
 
 # -- General configuration ---------------------------------------------------
@@ -46,6 +46,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.autosectionlabel'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

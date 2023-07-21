@@ -40,83 +40,124 @@ import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Road traffic probabilistic modeling'
-description = 'Compute road traffic probabilistic modeling as describe in <b>Aumond, P., Jacquesson, L., & Can, A. (2018). Probabilistic modeling framework for multisource sound mapping. Applied Acoustics, 139, 34-43. </b>.' +
-        '</br>The user can indicate the number of iterations he wants the model to calculate.' +
-        '</br> </br> <b> The first output table is called : L_PROBA_GEOM </b> ' +
-        'and contain : </br>' +
-        '-  <b> I  </b> : The i iteration (INTEGER).</br>' +
-        '-  <b> IDRECEIVER  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-        '- <b> THE_GEOM </b> : the 3D geometry of the receivers (POINT). </br> ' +
-        '-  <b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT).'
+description = '&#10145;&#65039; Compute road traffic probabilistic modeling</br>' +
+              '<hr>' +
+              'This approach is described in Aumond, P., Jacquesson, L., & Can, A. (2018). <a href="https://www.sciencedirect.com/science/article/pii/S0003682X17311283" target="_blank">Probabilistic modeling framework for multisource sound mapping</a>. Applied Acoustics, 139, 34-43 .</br></br>' +
+              'The user can indicate the number of iterations he wants the model to calculate.</br> </br>' +
+              '&#x2705; The first output table is called: <b>L_PROBA_GEOM </b> and contain the following columns:' +
+              '<ul>' +
+              '<li> <b> I </b>: The i iteration (INTEGER)</li>' +
+              '<li> <b> IDRECEIVER </b>: an identifier (INTEGER, PRIMARY KEY)</li>' +
+              '<li> <b> THE_GEOM </b>: the 3D geometry of the receivers (POINT)</li> ' +
+              '<li> <b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b>: 8 columns giving the day emission sound level for each octave band (FLOAT)</li></ul>'
 
 inputs = [
-        tableBuilding     : [name       : 'Buildings table name', title: 'Buildings table name',
-                             description: '<b>Name of the Buildings table.</b>  </br>  ' +
+        tableBuilding     : [
+                name       : 'Buildings table name', 
+                title: 'Buildings table name',
+                description: '<b>Name of the Buildings table.</b>  </br>  ' +
                                      '<br>  The table shall contain : </br>' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
                                      '- <b> HEIGHT </b> : the height of the building (FLOAT)',
-                             type       : String.class],
-        tableRoads    : [name                                                                                 : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
-                "<br>  The table shall contain : </br>" +
-                "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                "- <b> TV_D </b> : Hourly average light and heavy vehicle count (DOUBLE)<br/>" +
-                "- <b> HV_D </b> :  Hourly average heavy vehicle count (DOUBLE)<br/>" +
-                "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
-                "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
-                "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                "</br> </br> <b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", type: String.class],
-        tableReceivers    : [name       : 'Receivers table name', title: 'Receivers table name',
-                             description: '<b>Name of the Receivers table.</b></br>  ' +
+                type       : String.class],
+        tableRoads    : [
+                name: 'Roads table name', 
+                title: 'Roads table name', 
+                description: "<b>Name of the Roads table.</b> </br> <br>" +
+                    "The table shall contain: </br>" +
+                    "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
+                    "- <b> TV_D </b> : Hourly average light and heavy vehicle count (DOUBLE)<br/>" +
+                    "- <b> HV_D </b> :  Hourly average heavy vehicle count (DOUBLE)<br/>" +
+                    "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (DOUBLE)<br/>" +
+                    "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed  (DOUBLE)<br/>" +
+                    "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
+                    "</br> </br> <b> This table can be generated from the WPS Block 'Import_OSM'. </b>.", 
+                type: String.class],
+        tableReceivers    : [
+                name       : 'Receivers table name', 
+                title: 'Receivers table name',
+                description: '<b>Name of the Receivers table.</b></br>  ' +
                                      '</br>  The table shall contain : </br> ' +
                                      '- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY). </br> ' +
                                      '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
                                      '</br> </br> <b> This table can be generated from the WPS Blocks in the "Receivers" folder. </b>',
-                             type       : String.class],
-        tableDEM          : [name       : 'DEM table name', title: 'DEM table name',
-                             description: '<b>Name of the Digital Elevation Model table.</b></br>  ' +
-                                     '</br>The table shall contain : </br> ' +
-                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> ' +
-                                     '</br> </br> <b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
-                             min        : 0, max: 1, type: String.class],
-        tableGroundAbs    : [name       : 'Ground absorption table name', title: 'Ground absorption table name',
-                             description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
+                type       : String.class],
+        tableDEM          : [
+                name       : 'DEM table name', 
+                title: 'DEM table name',
+                description: '<b>Name of the Digital Elevation Model table.</b></br>' +
+                                     'The table shall contain : </br> ' +
+                                     '- <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT).</br> </br> ' +
+                                     '<b> This table can be generated from the WPS Block "Import_Asc_File". </b>',
+                min        : 0, max: 1, 
+                type: String.class],
+        tableGroundAbs    : [
+                name       : 'Ground absorption table name', 
+                title: 'Ground absorption table name',
+                description: '<b>Name of the surface/ground acoustic absorption table.</b></br>  ' +
                                      '</br>The table shall contain : </br> ' +
                                      '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
                                      '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                             min        : 0, max: 1, type: String.class],
-        paramWallAlpha    : [name       : 'wallAlpha', title: 'Wall absorption coefficient',
-                             description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)' +
-                                     '</br> </br> <b> Default value : 0.1 </b> ',
-                             min        : 0, max: 1, type: String.class],
-        confReflOrder     : [name       : 'Order of reflexion', title: 'Order of reflexion',
-                             description: 'Maximum number of reflections to be taken into account (INTEGER).' +
-                                     '</br> </br> <b> Default value : 1 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confMaxSrcDist    : [name       : 'Maximum source-receiver distance', title: 'Maximum source-receiver distance',
-                             description: 'Maximum distance between source and receiver (FLOAT, in meters).' +
-                                     '</br> </br> <b> Default value : 150 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confMaxReflDist   : [name       : 'Maximum source-reflexion distance', title: 'Maximum source-reflexion distance',
-                             description: 'Maximum reflection distance from the source (FLOAT, in meters).' +
-                                     '</br> </br> <b> Default value : 50 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confThreadNumber  : [name       : 'Thread number', title: 'Thread number',
-                             description: 'Number of thread to use on the computer (INTEGER).' +
+                min        : 0, max: 1, 
+                type: String.class],
+        paramWallAlpha    : [
+                name       : 'wallAlpha', 
+                title: 'Wall absorption coefficient',
+                description: 'Wall absorption coefficient (FLOAT between 0 : fully absorbent and strictly less than 1 : fully reflective)</br> </br>' +
+                             '&#128736; Default value : <b>0.1 </b> ',
+                min        : 0, max: 1, 
+                type: String.class],
+        confReflOrder     : [
+                name       : 'Order of reflexion', 
+                title: 'Order of reflexion',
+                description: 'Maximum number of reflections to be taken into account (INTEGER) </br> </br>' +
+                             '&#128736; Default value: <b>1 </b>',
+                min        : 0, max: 1, 
+                type: String.class],
+        confMaxSrcDist    : [
+                name       : 'Maximum source-receiver distance', 
+                title: 'Maximum source-receiver distance',
+                description: 'Maximum distance between source and receiver (in meters) (FLOAT)</br> </br>' +
+                             '&#128736; Default value: <b>150 </b>',
+                min        : 0, max: 1, 
+                type: String.class],
+        confMaxReflDist   : [
+                name       : 'Maximum source-reflexion distance', 
+                title:       'Maximum source-reflexion distance',
+                description: 'Maximum reflection distance from the source (in meters) (FLOAT)</br> </br>' +
+                                     '&#128736; Default value: <b>50 </b>',
+                min        : 0, max: 1, 
+                type: String.class],
+        confThreadNumber  : [
+                name       : 'Thread number', 
+                title: 'Thread number',
+                description: 'Number of thread to use on the computer (INTEGER).' +
                                      '</br> To set this value, look at the number of cores you have.' +
-                                     '</br> If it is set to 0, use the maximum number of cores available.' +
-                                     '</br> </br> <b> Default value : 1 </b>',
-                             min        : 0, max: 1, type: String.class],
-        confDiffVertical  : [name       : 'Diffraction on vertical edges', title: 'Diffraction on vertical edges',
-                             description: 'Compute or not the diffraction on vertical edges.' +
-                                     '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class],
-        confDiffHorizontal: [name       : 'Diffraction on horizontal edges', title: 'Diffraction on horizontal edges',
-                             description: 'Compute or not the diffraction on horizontal edges.' +
-                                     '</br> </br> <b> Default value : false </b>',
-                             min        : 0, max: 1, type: Boolean.class],
-        nIterations       : [name       : 'Iteration number', title: 'Iteration number',
-                             description: 'Number of the iterations to compute (INTEGER). </br> </br> <b> Default value : 100 </b>',
-                             min        : 0, max: 1, type: Integer.class],
+                                     '</br> If it is set to 0, use the maximum number of cores available.</br> </br>' +
+                                     '&#128736; Default value: <b>1 </b>',
+                min        : 0, max: 1, 
+                type: String.class],
+        confDiffVertical  : [
+                name       : 'Diffraction on vertical edges', 
+                title: 'Diffraction on vertical edges',
+                description: 'Compute or not the diffraction on vertical edges.</br> </br>' +
+                              '&#128736; Default value: <b>false </b>',
+                min        : 0, max: 1, 
+                type: Boolean.class],
+        confDiffHorizontal: [
+                name       : 'Diffraction on horizontal edges', 
+                title: 'Diffraction on horizontal edges',
+                description: 'Compute or not the diffraction on horizontal edges.</br> </br>' +
+                              '&#128736; Default value: <b>false </b>',
+                min        : 0, max: 1, 
+                type: Boolean.class],
+        nIterations       : [
+                name       : 'Iteration number', 
+                title: 'Iteration number',
+                description: 'Number of the iterations to compute (INTEGER).</br> </br>' +
+                             '&#128736; Default value : <b>100 </b>',
+                min        : 0, max: 1, 
+                type: Integer.class],
 ]
 
 outputs = [

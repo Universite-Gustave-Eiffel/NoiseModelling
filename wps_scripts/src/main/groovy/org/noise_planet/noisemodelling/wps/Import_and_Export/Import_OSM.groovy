@@ -50,83 +50,98 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection
 
 title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
-description = 'Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file to input tables.' +
-        '<br> The user can choose to create one to three output tables: <br>' +
-        '- <b> BUILDINGS </b>: a table containing the building. </br>' +
-        '- <b> GROUND </b>: surface/ground acoustic absorption table. </br>' +
-        '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
+
+description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables. </br>' +
+              '<hr>' +
+              'The following output tables will be created: <br>' +
+              '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
+              '- <b> GROUND </b>: a table containing ground acoustic absorption, based on OSM landcover surfaces<br>' +
+              '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2<br><br>' +
+              '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes </br> </br>' +
+              '<img src="/wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
 
 inputs = [
-        pathFile        : [
+        pathFile : [
                 name       : 'Path of the OSM file',
                 title      : 'Path of the OSM file',
-                description: 'Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).' +
-                        '</br> For example : c:/home/area.osm.pbf',
+                description: '&#128194; Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
+                             'For example: c:/home/area.osm.pbf',
                 type       : String.class
         ],
-        ignoreBuilding: [
-                name       : 'Do not import Buildings',
-                title      : 'Do not import Buildings',
-                description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
-                        '<br>  The table will contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
-                        'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                        'Finally, if no information is available, a height of 5 m is set by default.',
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        ignoreGround  : [
-                name       : 'Do not import Surface acoustic absorption',
-                title      : 'Do not import Surface acoustic absorption',
-                description: 'If the box is checked, the table GROUND will NOT be extracted.' +
-                        '</br>The table will contain: </br> ' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
-                        '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        ignoreRoads   : [
-                name       : 'Do not import Roads',
-                title      : 'Do not import Roads',
-                description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
-                        "<br>  The table will contain : </br>" +
-                        "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                        "- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                        "- <b> LV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                        "- <b> LV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                        "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                        "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                        "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
-                        "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                        "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        targetSRID      : [
+        targetSRID : [
                 name       : 'Target projection identifier',
                 title      : 'Target projection identifier',
-                description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  The target SRID must be in metric coordinates. </br>',
+                description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
+                             '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates.',
                 type       : Integer.class
         ],
-        removeTunnels  : [
+        ignoreBuilding : [
+                name       : 'Do not import Buildings',
+                title      : 'Do not import Buildings',
+                description: '&#9989; If the box is checked</i> &#8594; the table BUILDINGS will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table BUILDINGS will be created and will contain:<br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
+                             '- <b> THE_GEOM </b> : The 2D geometry of the building (POLYGON or MULTIPOLYGON). <br>' +
+                             '- <b> HEIGHT </b> : The height of the building (FLOAT). ' +
+                             'If this information is not available then it is deduced from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
+                             'Finally, if no information is available, a height of 5m is set by default.',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        ignoreGround : [
+                name       : 'Do not import Surface acoustic absorption',
+                title      : 'Do not import Surface acoustic absorption',
+                description: '&#9989; If the box is checked &#8594; the table GROUND will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table GROUND will be created and will contain: <br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' + 
+                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' + 
+                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (POLYGON or MULTIPOLYGON)<br>' +
+                             '- <b> PRIORITY </b> : Since NoiseModelling does not allowed overlapping geometries, if this is the case, this column is used to prioritize the geometry that will win over the other one when cutting. The order is given according to the type of land use<br>' +
+                             '- <b> G </b> : The acoustic absorption of a ground (FLOAT) (between 0 : very hard and 1 : very soft)',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        ignoreRoads : [
+                name       : 'Do not import Roads',
+                title      : 'Do not import Roads',
+                description: '&#9989; If the box is checked &#8594; the table ROADS will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table ROADS will be created and will contain:<br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
+                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' +
+                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (LINESTRING or MULTILINESTRING)<br>' +                        
+                             '- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br>' +
+                             '- <b> LV_E </b> : Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br>' +
+                             '- <b> LV_N </b> : Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br>' +
+                             '- <b> HGV_D </b> : Hourly average heavy vehicle count (6-18h) (DOUBLE)<br>' +
+                             '- <b> HGV_E </b> : Hourly average heavy vehicle count (18-22h) (DOUBLE)<br>' +
+                             '- <b> HGV_N </b> : Hourly average heavy vehicle count (22-6h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_D </b> : Hourly average light vehicle speed (6-18h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_E </b> : Hourly average light vehicle speed (18-22h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_N </b> : Hourly average light vehicle speed (22-6h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_D </b> : Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_E </b> : Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_N </b> : Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br>' +
+                             '- <b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)<br> <br>' +
+                             '&#128161; <b>These information are deduced from the roads importance in OSM.</b>.',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        removeTunnels : [
                 name       : 'Remove tunnels from OSM data',
                 title      : 'Remove tunnels from OSM data',
-                description: 'Remove roads from OSM data which contains OSM tag <b>tunnel=yes</b>.',
-                min        : 0, max: 1,
+                description: '&#9989; If checked, remove roads from OSM data that contain OSM tag <b>tunnel=yes</b>.',
+                min        : 0, 
+                max        : 1,
                 type       : Boolean.class
         ],
 ]
 
 outputs = [
-        result: [
+        result : [
                 name: 'Result output string',
                 title: 'Result output string',
                 description: 'This type of result does not allow the blocks to be linked together.',
@@ -259,7 +274,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HGV_D integer,HGV_E integer,HGV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HGV_SPD_D integer, HGV_SPD_E integer,HGV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
@@ -269,9 +284,9 @@ def exec(Connection connection, input) {
                     'THE_GEOM, ' +
                     'TYPE, ' +
                     'LV_D, LV_E, LV_N, ' +
-                    'HV_D, HV_E, HV_N, ' +
+                    'HGV_D, HGV_E, HGV_N, ' +
                     'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
-                    'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
+                    'HGV_SPD_D, HGV_SPD_E, HGV_SPD_N, ' +
                     'PVMT) ' +
                     ' VALUES (?,' +
                     'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
@@ -303,7 +318,6 @@ def exec(Connection connection, input) {
     }
 
     logger.info('SQL INSERT done')
-
 
     resultString = "nodes : " + handler.nb_nodes
     resultString += "<br>\n"
@@ -486,6 +500,9 @@ public class OsmHandler implements Sink {
         Coordinate[] shell = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) {
+                return geomFactory.createPolygon();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             shell[i] = new Coordinate(x, y, 0.0);
@@ -505,6 +522,9 @@ public class OsmHandler implements Sink {
         Coordinate[] coordinates = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) { // some odd case where a node is defined here but outside of the osm file limits
+                return geomFactory.createLineString();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             coordinates[i] = new Coordinate(x, y, 0.0);
@@ -531,7 +551,6 @@ public class OsmHandler implements Sink {
         return geomFactory.createPolygon(shell);
     }
 }
-
 
 public class Building {
 
@@ -935,4 +954,3 @@ public class Ground {
         this.geom = geom;
     }
 }
-

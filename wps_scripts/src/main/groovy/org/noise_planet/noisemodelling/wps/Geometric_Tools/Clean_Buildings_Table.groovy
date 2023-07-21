@@ -31,18 +31,20 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Clean BUILDINGS Table'
-description = 'Clean the BUILDINGS table, avoiding all overlapping areas and unclosed polygons. NoiseModelling propagation code does not support well intersecting polygons' +
-        '</br> The input table will be erased and replaced by the cleaned table.'
+description = '&#10145;&#65039; Clean the BUILDINGS table, avoiding overlapping areas and unclosed polygons.' +
+              '<hr>' +
+              'NoiseModelling propagation code does not support well intersecting polygons </br> </br>' +
+              '&#x2705;  The input table will be erased and replaced by the cleaned one.'
 
 inputs = [
         tableName: [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
-                description: '<b>Name of the Buildings table.</b> ' +
-                        '</br> The table must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON).' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT)',
+                description: '<b>Name of the Buildings table.</b> </br> </br>' +
+                             'The table must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. </br> </br>' +
+                             'The table shall contain: </br>' +
+                             '- <b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON).</br>' +
+                             '- <b> HEIGHT </b>: the height of the building (FLOAT)',
                 type       : String.class
         ]
 ]

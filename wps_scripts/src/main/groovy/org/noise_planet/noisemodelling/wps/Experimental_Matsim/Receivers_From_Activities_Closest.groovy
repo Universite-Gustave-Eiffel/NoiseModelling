@@ -17,8 +17,10 @@ package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.GroovyRowResult
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -102,34 +104,96 @@ def exec(Connection connection, input) {
     String outTableName = input['outTableName']
     String activitiesTable = input['activitiesTable']
     String receiversTable = input['receiversTable']
+    int dist = 50
+    if (input['maxDistance']) {
+        dist = input['maxDistance'] as Integer;
+    }
+
+    DatabaseMetaData metadata = connection.getMetaData();
+
+    boolean geomIndexFound = false;
+    ResultSet resultSet = metadata.getIndexInfo(null, null, receiversTable, false, false);
+    while (resultSet.next()) {
+        String name = resultSet.getString("COLUMN_NAME");
+        if (name == "THE_GEOM") {
+            geomIndexFound = true;
+        }
+    }
+    if (!geomIndexFound) {
+        logger.info("THE_GEOM index missing from receivers table, creating one ...")
+        sql.execute("CREATE SPATIAL INDEX ON " + receiversTable + " (THE_GEOM)");
+    }
+
+    geomIndexFound = false;
+    resultSet = metadata.getIndexInfo(null, null, activitiesTable, false, false);
+    while (resultSet.next()) {
+        String name = resultSet.getString("COLUMN_NAME");
+        if (name == "THE_GEOM") {
+            geomIndexFound = true;
+        }
+    }
+    if (!geomIndexFound) {
+        logger.info("THE_GEOM index missing from activities table, creating one ...")
+        sql.execute("CREATE SPATIAL INDEX ON " + activitiesTable + " (THE_GEOM)");
+    }
+
+    logger.info("Checking indexes done, running script ...")
 
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
-    String query = "CREATE TABLE " + outTableName + '''( 
+    String create_query = "CREATE TABLE " + outTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT,
         FACILITY varchar(255),
-        ORIGIN_GEOM geometry,
         THE_GEOM geometry,
+        ORIGIN_GEOM geometry,
         TYPES varchar(255)
-    ) AS
-    SELECT A.PK, A.FACILITY, A.THE_GEOM AS ORIGIN_GEOM, (
-        SELECT R.THE_GEOM 
-        FROM ''' + receiversTable + ''' R
-        WHERE ST_EXPAND(A.THE_GEOM, 200, 200) && R.THE_GEOM
-        ORDER BY ST_Distance(A.THE_GEOM, R.THE_GEOM) ASC LIMIT 1
-    ) AS THE_GEOM, A.TYPES 
-    FROM ''' + activitiesTable + ''' A ''';
-    sql.execute(query);
+    )'''
+    sql.execute(create_query)
+
+    PreparedStatement insert_stmt = connection.prepareStatement(
+            "INSERT INTO " + outTableName + " VALUES(DEFAULT, ?, ST_GeomFromText(?, ?), ST_GeomFromText(?, ?), ?)"
+    )
+    List<GroovyRowResult> activities_res = sql.rows("SELECT A.PK, A.FACILITY, A.THE_GEOM AS ORIGIN_GEOM, ST_SRID(A.THE_GEOM) as SRID, A.TYPES FROM " + activitiesTable + " A");
+    long nb_activities = activities_res.size()
+    long count = 0, do_print = 1
+    int srid = 0
+    long start = System.currentTimeMillis();
+    for (GroovyRowResult activity: activities_res) {
+        Geometry activityGeom = activity["ORIGIN_GEOM"] as Geometry;
+        String facility = activity["FACILITY"] as String;
+        String types = activity["TYPES"] as String;
+        srid = activity["SRID"] as Integer
+        List<GroovyRowResult> receiver_res = sql.rows(String.format('''
+            SELECT R.THE_GEOM 
+            FROM %s R
+            WHERE ST_EXPAND(ST_GeomFromText('%s', %s), %s, %s) && R.THE_GEOM
+            ORDER BY ST_Distance(ST_GeomFromText('%s', %s), R.THE_GEOM) ASC LIMIT 1
+        ''', receiversTable, activityGeom.toText(), srid, dist, dist, activityGeom.toText(), srid));
+        Geometry receiverGeom = (receiver_res.size() == 0) ? activityGeom : (receiver_res.get(0)["THE_GEOM"] as Geometry);
+        insert_stmt.setString(1, facility)
+        insert_stmt.setString(2, receiverGeom.toText())
+        insert_stmt.setInt(3, srid)
+        insert_stmt.setString(4, activityGeom.toText())
+        insert_stmt.setInt(5, srid)
+        insert_stmt.setString(6, types)
+        insert_stmt.execute()
+
+        if (count >= do_print) {
+            double elapsed = (System.currentTimeMillis() - start + 1) / 1000
+            logger.info(String.format("Processing Activity %d (max:%d) - elapsed : %ss (%.1fit/s)",
+                    count, nb_activities, elapsed, count/elapsed))
+            do_print *= 2
+        }
+        count ++
+    }
+
+    logger.info("Creating index on " + outTableName + "(FACILITY)");
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");
+    logger.info("Creating spatial index on " + outTableName + "(THE_GEOM)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 
-    sql.execute("UPDATE " + outTableName + " SET THE_GEOM = CASE " + '''
-        WHEN THE_GEOM IS NULL 
-        THEN ST_UpdateZ(ORIGIN_GEOM, 4.0)
-        ELSE THE_GEOM 
-        END
-    ''')
-
+    sql.execute("UPDATE " + outTableName + " SET THE_GEOM = ST_UpdateZ(THE_GEOM, 4.0), ORIGIN_GEOM  = ST_UpdateZ(ORIGIN_GEOM, 4.0)")
+    
     logger.info('End : Receivers_From_Activities_Closest')
     resultString = "Process done. Table of receivers " + outTableName + " created !"
     logger.info('Result : ' + resultString)

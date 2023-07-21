@@ -40,24 +40,33 @@ import java.sql.Connection
 
 
 title = 'Plot the directivity graph of the specified DIR_ID'
-description = 'Plot the directivity graph of the specified DIR_ID'
+description = '&#10145;&#65039; Plot the directivity graph of the specified "DIR_ID"'
 
 inputs = [
         tableSourceDirectivity          : [
                 name       : 'Source directivity table name',
                 title      : 'Source directivity table name',
-                description: '<b>Name of the emission directivity table. If not specified the default is train directivity of cnossos</b></br>  ' +
-                        '</br>The table shall contain the following fields : </br> ' +
-                        '- <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</br> ' +
-                        '- <b> THETA </b> : [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</br> ' +
-                        '- <b> PHI </b> : [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</br> ' +
-                        '- <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </br> ' ,
+                description: 'Name of the emission directivity table.</br></br>' +
+                             '&#128736;  If not specified the default is train directivity of CNOSSOS-EU </br> </br>' +
+                             'The table must contain the following columns: <ul> ' +
+                             '<li> <b> DIR_ID </b> : identifier of the directivity sphere (INTEGER)</li> ' +
+                             '<li> <b> THETA </b> : [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</li> ' +
+                             '<li> <b> PHI </b> : [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</li> ' +
+                             '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </li></ul> ' ,
                 min        : 0, max: 1, type: String.class
         ],
         confDirId            : [
                 name       : 'Directivity Index',
                 title      : 'Directivity Index',
-                description: 'Identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if tableSourceDirectivity field is not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER).</br>',
+                description: 'Identifier of the directivity sphere from "tableSourceDirectivity" parameter or train directivity if "tableSourceDirectivity" parameter is not filled (INTEGER)</br> </br>' +
+                             'In case of train, you can use these values: <ul>'+
+                             '<li>0 = OMNIDIRECTIONAL</li>' +
+                             '<li>1 = ROLLING</li>' +
+                             '<li>2 = TRACTIONA</li>' + 
+                             '<li>3 = TRACTIONB</li>' +
+                             '<li>4 = AERODYNAMICA</li>' +
+                             '<li>5 = AERODYNAMICB</li>' +
+                             '<li>6 = BRIDGE</li></ul>',
                 type       : Integer.class
         ],
         confFrequency            : [
@@ -69,14 +78,16 @@ inputs = [
         confScaleMinimum            : [
                 name       : 'Minimum scale attenuation (dB)',
                 title      : 'Minimum scale attenuation (dB)',
-                description: 'Minimum scale attenuation (default -35 dB)',
+                description: 'Minimum scale attenuation (in dB) </br> </br>'+
+                             '&#128736; Default value: <b>-35 dB</b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
         confScaleMaximum            : [
                 name       : 'Maximum scale attenuation (dB)',
                 title      : 'Maximum scale attenuation (dB)',
-                description: 'Maximum scale attenuation (default 0 dB)',
+                description: 'Maximum scale attenuation (in dB) </br> </br>'+
+                             '&#128736; Default value: <b>0 dB</b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ]

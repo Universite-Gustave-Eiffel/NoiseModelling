@@ -28,17 +28,19 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Display the list of tables (and their attributes).'
-description = 'Displays the list of tables that are in the database. ' +
-        '</br> Optional: It is also possible to display their attributes (columns). ' +
-        '</br> For a visualization of an extract of a table or an entire table, you can use Table_Visualization_Data.'
+description = '&#10145;&#65039; Displays the list of tables that are in the database. </br> ' +
+              '<hr>' +
+              'Optionally it is also possible to display their attributes ("showColumns" parameter). </br> </br>' +
+              '&#128161; To visualize the content of (a part of) a table, you can use "Table Visualization Data" script.'
 
 inputs = [
         showColumns: [
                 name       : 'Display columns of the tables',
                 title      : 'Display columns of the tables',
-                description: 'Do you want to display also the column of the tables ? ' +
-                        '</br> note : A small yellow key symbol will appear if the column as a primary key constraint.',
-                type       : Boolean.class
+                description: 'Do you want to display also the column of the tables ? </br></br>' +
+                             '&#128161; Note : A small yellow key symbol (&#128273;) will appear if the column as a Primary Key constraint.',
+                type       : Boolean.class,
+                min        : 0, max: 1
         ]
 ]
 
@@ -73,7 +75,11 @@ def exec(Connection connection, input) {
     logger.info('Start : Display database')
     logger.info("inputs {}", input) // log inputs of the run
 
-    Boolean showColumnName = input['showColumns'] as Boolean
+    Boolean showColumnName = false
+    
+    if(input['showColumns']) {
+        showColumnName = input['showColumns'].toBoolean()
+    }
 
     // list of the system tables
     List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]

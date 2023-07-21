@@ -203,8 +203,6 @@ To adapt the colors, we will apply a cartographic style. This style:
 
 .. _publication : https://www.semanticscholar.org/paper/A-Color-Scheme-for-the-Presentation-of-Sound-in-%3A-Weninger/a72d13fcc53488567b45a08a78f969c7b3552ac0
 
-.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/styles/style_noisemap.sld
-=======
 .. _website : https://www.coloringnoise.com/theoretical_background/new-color-scheme/
 
 .. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.2/Docs/styles/style_beate_tomio.sld

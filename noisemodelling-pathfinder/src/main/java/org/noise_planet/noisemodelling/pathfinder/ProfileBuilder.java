@@ -1534,12 +1534,15 @@ public class ProfileBuilder {
     }
 
     public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+        if(topoTree == null) {
+            return new ArrayList<>();
+        }
         List<Coordinate> outputPoints = new ArrayList<>();
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
         if(curTriP1 == -1) {
-            // we are outside of the bounds of the triangles
+            // we are outside the bounds of the triangles
             // Find the closest triangle to p1
             Coordinate intersectionPt = new Coordinate();
             AtomicInteger minDistanceTriangle = new AtomicInteger();
