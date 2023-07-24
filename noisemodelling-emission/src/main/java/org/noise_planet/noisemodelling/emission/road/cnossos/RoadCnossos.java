@@ -29,6 +29,8 @@ import static org.noise_planet.noisemodelling.emission.utils.Utils.*;
  */
 
 public class RoadCnossos {
+    private static JsonNode RoadCnossos_2015 = parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2015.json")); // old coefficients in 2015 amendments
+    private static JsonNode cnossosData2020 =parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2020.json")); // new coefficients in 2020 amendments
 
     private static JsonNode parse(InputStream inputStream) {
         try {
@@ -46,9 +48,9 @@ public class RoadCnossos {
      */
     public static JsonNode getCnossosData(int fileVersion) {
         if (fileVersion == 1) {
-            return parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2015.json")); // old coefficients in 2015 amendments
+            return RoadCnossos_2015; // old coefficients in 2015 amendments
         } else {
-            return parse(RoadCnossos.class.getResourceAsStream("RoadCnossos_2020.json")); // new coefficients in 2020 amendments
+            return cnossosData2020; // new coefficients in 2020 amendments
         }
     }
 

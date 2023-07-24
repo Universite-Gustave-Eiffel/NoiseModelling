@@ -245,13 +245,8 @@ public class RoadCnossosTest {
             rsParameters.setSlopePercentage(slope);
             rsParameters.setWay(3);
             rsParameters.setFileVersion(1);
-            /*try {*/
-                RoadCnossos.evaluate(rsParameters);
-            /*} catch (RuntimeException ex) {
-                String expectedMessage = "java.io.IOException: Error : the pavement wrongPavement doesn't exist in the database.";
-                String actualMessage = ex.getMessage();
-                assertTrue(actualMessage.equals(expectedMessage));
-            }*/
+            RoadCnossos.evaluate(rsParameters);
+
         }
     }
 }

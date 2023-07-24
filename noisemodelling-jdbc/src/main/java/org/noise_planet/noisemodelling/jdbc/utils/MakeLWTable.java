@@ -11,6 +11,7 @@ import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -80,56 +81,65 @@ public class MakeLWTable {
             List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
             int pk = railWayLWGeom.getPK();
-            double[] LWDay = new double[0];
-            double[] LWEvening = new double[0];
-            double[] LWNight = new double[0];
+            double[] LWDay = new double[CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            double[] LWEvening = new double[CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            double[] LWNight = new double[CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            Arrays.fill(LWDay, -99.00);
+            Arrays.fill(LWEvening, -99.00);
+            Arrays.fill(LWNight, -99.00);
             double heightSource = 0;
             int directivityId = 0;
-            for (int iSource = 0; iSource < 6; iSource++) {
+            boolean day = (railWayLWDay.getRailwaySourceList().size()>0);
+            boolean evening = (railWayLWEvening.getRailwaySourceList().size()>0);
+            boolean night = (railWayLWNight.getRailwaySourceList().size()>0);
+                for (int iSource = 0; iSource < 6; iSource++) {
+
+                heightSource = 0;
                 switch (iSource) {
                     case 0:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
-                        heightSource = railWayLWDay.getRailwaySourceList().get("ROLLING").getSourceHeight();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
+                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
+                        if (day) heightSource = 4; //railWayLWDay.getRailwaySourceList().get("ROLLING").getSourceHeight();
                         directivityId = 1;
                         break;
                     case 1:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
+                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
                         heightSource = 0.5;
                         directivityId = 2;
                         break;
                     case 2:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
+                        if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
                         heightSource = 4;
                         directivityId = 3;
                         break;
                     case 3:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
+                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
                         heightSource = 0.5;
                         directivityId = 4;
                         break;
                     case 4:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
+                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
                         heightSource = 4;
                         directivityId = 5;
                         break;
                     case 5:
-                        LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
-                        LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
-                        LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
+                        if (day) LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
+                        if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
+                        if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
                         heightSource = 0.5;
                         directivityId = 6;
                         break;
                 }
+
                 PreparedStatement ps = connection.prepareStatement(insertIntoQuery.toString());
                 for (Geometry trackGeometry : geometries) {
 
