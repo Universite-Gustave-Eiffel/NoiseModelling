@@ -14,8 +14,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
+import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
+import org.noise_planet.noisemodelling.emission.utils.Utils;
 import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -236,33 +238,39 @@ public class LDENPointNoiseMapFactoryTest {
             RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
 
             RailWayParameters railWayLW = v.getRailWayLWDay();
-            double[] rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            double[] tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            double[] tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            double[] aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            double[] aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            double[] LWA = sumArray(LW, dBA);
+            double[] lW = new double[24];
+            Arrays.fill(lW, -99.00);
+
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+
+            double[] LWA = sumArray(lW, dBA);
             resD = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWEvening();
-            rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            LWA = sumArray(LW, dBA);
+            Arrays.fill(lW, -99.00);
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+            LWA = sumArray(lW, dBA);
             resE = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWNight();
-            rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            LWA = sumArray(LW, dBA);
+            Arrays.fill(lW, -99.00);
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+            LWA = sumArray(lW, dBA);
             resN = sumDbArray(LWA);
 
             String idSection = v.getIdSection();
@@ -294,33 +302,40 @@ public class LDENPointNoiseMapFactoryTest {
             RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
 
             RailWayParameters railWayLW = v.getRailWayLWDay();
-            double[] rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            double[] tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            double[] tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            double[] aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            double[] aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            double[] LWA = sumArray(LW, dBA);
+
+            double[] lW = new double[24];
+            Arrays.fill(lW, -99.00);
+
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+
+            double[] LWA = sumArray(lW, dBA);
             resD = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWEvening();
-            rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            LWA = sumArray(LW, dBA);
+            Arrays.fill(lW, -99.00);
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+            LWA = sumArray(lW, dBA);
             resE = sumDbArray(LWA);
 
             railWayLW = v.getRailWayLWNight();
-            rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-            tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-            tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-            aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-            aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-            LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-            LWA = sumArray(LW, dBA);
+            Arrays.fill(lW, -99.00);
+            if (railWayLW.getRailwaySourceList().size()>0){
+                for (Map.Entry<String, LineSource> railwaySourceEntry : railWayLW.getRailwaySourceList().entrySet()) {
+                    double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                    lW = Utils.sumDbArray(lW, lW1);
+                }
+            }
+            LWA = sumArray(lW, dBA);
             resN = sumDbArray(LWA);
 
             String idSection = v.getIdSection();
@@ -328,41 +343,6 @@ public class LDENPointNoiseMapFactoryTest {
             Resultats.put(idSection,new double[]{resD, resE, resN});
 
         }
-
-        /*RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
-        RailWayParameters railWayLW = v.getRailWayLWDay();
-        double[] rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-        double[] tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-        double[] tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-        double[] aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-        double[] aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-        double[] LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-        double[] LWA = sumArray(LW, dBA);
-        double resD = sumDbArray(LWA);
-
-        railWayLW = v.getRailWayLWEvening();
-        rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-        tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-        tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-        aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-        aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();
-        LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-        LWA = sumArray(LW, dBA);
-        double resE = sumDbArray(LWA);
-
-        railWayLW = v.getRailWayLWNight();
-        rolling = railWayLW.getRailwaySourceList().get("ROLLING").getlW();
-        tractiona = railWayLW.getRailwaySourceList().get("TRACTIONA").getlW();
-        tractionb = railWayLW.getRailwaySourceList().get("TRACTIONB").getlW();
-        aeroa = railWayLW.getRailwaySourceList().get("AERODYNAMICA").getlW();
-        aerob = railWayLW.getRailwaySourceList().get("AERODYNAMICB").getlW();*
-       /* LW = sumDbArray(sumDbArray(sumDbArray(sumDbArray(rolling, tractiona), tractionb), aeroa), aerob);
-        LWA = sumArray(LW, dBA);
-        double resN = sumDbArray(LWA);*/
-
-        /*String idSection = v.getIdSection();
-        Resultats.put(idSection,new double[]{resD, resE, resN});
-        v = railWayLWIterator.next();*/
 
         assertFalse(railWayLWIterator.hasNext());
 

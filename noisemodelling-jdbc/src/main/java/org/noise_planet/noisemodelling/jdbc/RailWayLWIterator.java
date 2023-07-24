@@ -149,10 +149,10 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
             while (spatialResultSet.next()) {
                 hasNext = true;
                 if (incompleteRecord.pk == spatialResultSet.getInt("trackid")) {
-                    incompleteRecord.setRailWayLW(RailWayCnossosParameters.sumRailWayLW(incompleteRecord.railWayLW, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
-                    incompleteRecord.setRailWayLWDay(RailWayCnossosParameters.sumRailWayLW(incompleteRecord.railWayLWDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
-                    incompleteRecord.setRailWayLWEvening(RailWayCnossosParameters.sumRailWayLW(incompleteRecord.railWayLWEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING")));
-                    incompleteRecord.setRailWayLWNight(RailWayCnossosParameters.sumRailWayLW(incompleteRecord.railWayLWNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT")));
+                    incompleteRecord.setRailWayLW(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLW, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
+                    incompleteRecord.setRailWayLWDay(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWDay, getRailwayEmissionFromResultSet(spatialResultSet, "DAY")));
+                    incompleteRecord.setRailWayLWEvening(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING")));
+                    incompleteRecord.setRailWayLWNight(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT")));
                 } else {
                     // railWayLWIncomplete is complete
                     completeRecord = new RailWayLWGeom(incompleteRecord);
@@ -289,7 +289,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                     if (i == 0) {
                         lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
                     } else {
-                        lWRailWay = RailWayCnossosParameters.sumRailWayLW(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
+                        lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
                     }
                 }
                 i++;

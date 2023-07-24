@@ -20,19 +20,16 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-
-import org.noise_planet.noisemodelling.emission.*
-import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
+import org.noise_planet.noisemodelling.jdbc.LDENConfig
+import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils
-
+import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

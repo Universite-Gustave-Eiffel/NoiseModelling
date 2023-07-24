@@ -20,16 +20,10 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.GeometryTableUtilities
-import org.h2gis.utilities.TableLocation
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.io.WKTWriter
-import org.noise_planet.noisemodelling.emission.DirectionAttributes
-import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes
-import org.noise_planet.noisemodelling.emission.RailWayLW
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere
+import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere
+import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters
 import org.noise_planet.noisemodelling.jdbc.DirectivityTableLoader
 import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.jdbc.PolarGraphDirectivity
@@ -37,7 +31,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-
 
 title = 'Plot the directivity graph of the specified DIR_ID'
 description = '&#10145;&#65039; Plot the directivity graph of the specified "DIR_ID"'
@@ -118,7 +111,7 @@ def exec(Connection connection, input) {
 
 
     String tableSourceDirectivity = ""
-    Map<Integer, DirectionAttributes> directivityData;
+    Map<Integer,DiscreteDirectivitySphere> directivityData;
     if (input['tableSourceDirectivity']) {
         tableSourceDirectivity = input['tableSourceDirectivity']
         // do it case-insensitive
@@ -127,8 +120,8 @@ def exec(Connection connection, input) {
     } else {
         directivityData = new HashMap<>();
         directivityData.put(0, new LDENPropagationProcessData.OmnidirectionalDirection());
-        for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
-            directivityData.put(noiseSource.ordinal() + 1, new RailWayLW.TrainAttenuation(noiseSource));
+        for(RailWayNMPBParameters.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
+            directivityData.put(noiseSource.ordinal() + 1, new RailWayNMPBParameters.TrainAttenuation(noiseSource));
         }
     }
 
@@ -158,8 +151,7 @@ def exec(Connection connection, input) {
     if (input['confScaleMaximum']) {
         scaleMaximum = input['confScaleMaximum'] as Double
     }
-
-    DirectionAttributes directionAttributes = directivityData.get(directivityIndex)
+    directionAttributes = directivityData.get(directivityIndex)
     PolarGraphDirectivity polarGraphDirectivity = new PolarGraphDirectivity()
     StringBuilder sb = new StringBuilder()
     sb.append("<h2>Top</h2>")

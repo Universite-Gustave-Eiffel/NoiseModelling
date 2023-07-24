@@ -28,15 +28,16 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-
-import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
+import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
+import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
 import org.noise_planet.noisemodelling.pathfinder.*
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
 
 
 import java.sql.Connection
-import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Road traffic probabilistic modeling'
@@ -626,28 +627,28 @@ class WpsPropagationProcessDataProba extends CnossosPropagationData {
             // Day
             int idFreq = 0
             for (int freq : freq_lvl) {
-                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
+                RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lvSpeedD, hvSpeedD, hvSpeedD, lvSpeedD,
                         lvSpeedD, Math.max(0, tvD - hvD), 0, hvD, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-                ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                ld[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
             }
 
             // Evening
             idFreq = 0
             for (int freq : freq_lvl) {
-                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
+                RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lvSpeedE, hvSpeedE, hvSpeedE, lvSpeedE,
                         lvSpeedE, Math.max(0, tvE - hvE), 0, hvE, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-                le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                le[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
             }
 
             // Night
             idFreq = 0
             for (int freq : freq_lvl) {
-                RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
+                RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lvSpeedN, hvSpeedN, hvSpeedN, lvSpeedN,
                         lvSpeedN, Math.max(0, tvN - hvN), 0, hvN, 0, 0, freq, Temperature,
                         pavement, Ts_stud, Pm_stud, Junc_dist, Junc_type)
-                ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                ln[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
             }
 
 
@@ -752,11 +753,11 @@ class WpsPropagationProcessDataProba extends CnossosPropagationData {
                 hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
                 int idFreq = 0;
                 for (int freq : freq_lvl) {
-                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType);
-                    ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                    ld[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
                 }
             }
             // Average
@@ -770,11 +771,11 @@ class WpsPropagationProcessDataProba extends CnossosPropagationData {
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
                 for (int freq : freq_lvl) {
-                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-                    le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                    le[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
                 }
             }
 
@@ -788,11 +789,11 @@ class WpsPropagationProcessDataProba extends CnossosPropagationData {
                 mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
                 int idFreq = 0
                 for (int freq : freq_lvl) {
-                    RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+                    RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                             speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                             roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
                     rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-                    ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+                    ln[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
                 }
             }
             for (int i = 0; i < ln.size(); i++) {
@@ -866,10 +867,10 @@ class ProbabilisticProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
 
-                res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }
 
@@ -890,10 +891,10 @@ class ProbabilisticProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
 
-                res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }
         }

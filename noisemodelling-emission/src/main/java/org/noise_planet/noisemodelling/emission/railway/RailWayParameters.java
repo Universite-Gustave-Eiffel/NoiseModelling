@@ -37,9 +37,6 @@ import static org.noise_planet.noisemodelling.emission.utils.Utils.sumDbArray;
  * Data result stockage
  */
 public class RailWayParameters {
-
-
-
     public Map<String, LineSource> railwaySourceList = new HashMap<>();
 
 
@@ -55,9 +52,15 @@ public class RailWayParameters {
         this.railwaySourceList.put(ID, lineSource);
     }
 
-    public void sumRailwaySource(String ID, LineSource lineSource1, LineSource lineSource2) {
-        lineSource1.setlW(sumDbArray(lineSource1.getlW(), lineSource2.getlW()));
-        this.railwaySourceList.put(ID, lineSource1);
+    public RailWayParameters sumRailwaySource(RailWayParameters lineSource1, RailWayParameters lineSource2) {
+        if (lineSource2.getRailwaySourceList().size()>0){
+            for (Map.Entry<String, LineSource> railwaySourceEntry : lineSource1.getRailwaySourceList().entrySet()) {
+                double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                double[]  lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
+                lineSource1.getRailwaySourceList().get(railwaySourceEntry.getKey()).setlW(sumDbArray(lW1, lW2));
+            }
+        }
+        return lineSource1;
     }
 
     public void appendVperHour(double Qm, double vm) throws IOException {

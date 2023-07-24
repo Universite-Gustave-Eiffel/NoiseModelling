@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.noise_planet.noisemodelling.emission.utils.Utils.sumDbArray;
 
@@ -77,11 +78,21 @@ public class RailWayCnossosParameters extends RailWayParameters {
 
     /**
      * Sum two train emission instances
-     * @param railWayLW1 Emission 1
-     * @param railWayLW2 Emission 2
+     * @param lineSource1 Emission 1
+     * @param lineSource2 Emission 2
      * @return Merged level
      */
-    public static RailWayCnossosParameters sumRailWayLW(RailWayCnossosParameters railWayLW1, RailWayCnossosParameters railWayLW2) {
+    public static RailWayCnossosParameters sumRailwaySource(RailWayCnossosParameters lineSource1, RailWayCnossosParameters lineSource2) {
+        if (lineSource2.getRailwaySourceList().size()>0){
+            for (Map.Entry<String, LineSource> railwaySourceEntry : lineSource1.getRailwaySourceList().entrySet()) {
+                double[]  lW1 = railwaySourceEntry.getValue().getlW();
+                double[]  lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
+                lineSource1.getRailwaySourceList().get(railwaySourceEntry.getKey()).setlW(sumDbArray(lW1, lW2));
+            }
+        }
+        return lineSource1;
+    }
+   /* public static RailWayCnossosParameters sumRailwaySource(RailWayCnossosParameters railWayLW1, RailWayCnossosParameters railWayLW2) {
         RailWayCnossosParameters railWayLW = new RailWayCnossosParameters();
 
         railWayLW.setLWRolling(sumDbArray(railWayLW1.getLWRolling(), railWayLW2.getLWRolling()));
@@ -91,8 +102,10 @@ public class RailWayCnossosParameters extends RailWayParameters {
         railWayLW.setLWTractionA(sumDbArray(railWayLW1.getLWTractionA(), railWayLW2.getLWTractionA()));
         railWayLW.setLWTractionB(sumDbArray(railWayLW1.getLWTractionB(), railWayLW2.getLWTractionB()));
 
+
         return railWayLW;
-    }
+    }*/
+
 
 
 
