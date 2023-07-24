@@ -8,6 +8,8 @@
  */
 package org.noise_planet.noisemodelling.emission.road;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.junit.Test;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
@@ -15,6 +17,7 @@ import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParamete
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test the Road model CNOSSOS as implemented in RoadCnossos.java
@@ -220,7 +223,7 @@ public class RoadCnossosTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IOException.class)
     public void testWrongPavement() throws IOException {
         String vehCat="1";
         double vehiclePerHour = 1000;
@@ -234,16 +237,21 @@ public class RoadCnossosTest {
         int juncType = 1;
         double[] expectedValues = new double[]{88.421,77.09,75.54,75.01,72.79,71.13,68.07,63.44};
         for(int idFreq = 1; idFreq < FREQUENCIES.length; idFreq++) {
-            RoadSourceParametersCnossos rsParameters = new RoadSourceParametersCnossos(vehicleSpeed, vehicleSpeed, vehicleSpeed,
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(vehicleSpeed, vehicleSpeed, vehicleSpeed,
                     vehicleSpeed, vehicleSpeed, "1".equals(vehCat) ? vehiclePerHour : 0,
                     "2".equals(vehCat) ? vehiclePerHour : 0, "3".equals(vehCat) ? vehiclePerHour : 0,
                     "4a".equals(vehCat) ? vehiclePerHour : 0, "4b".equals(vehCat) ? vehiclePerHour : 0,
                     FREQUENCIES[idFreq], temperature, surfRef, tsStud, pmStud, juncDist, juncType);
             rsParameters.setSlopePercentage(slope);
             rsParameters.setWay(3);
-            rsParameters.setCoeffVer(1);
-            double result = EvaluateRoadSourceCnossos.evaluate(rsParameters);
-            assertEquals(String.format("%d Hz", FREQUENCIES[idFreq]), expectedValues[idFreq], result, EPSILON_TEST1);
+            rsParameters.setFileVersion(1);
+            /*try {*/
+                RoadCnossos.evaluate(rsParameters);
+            /*} catch (RuntimeException ex) {
+                String expectedMessage = "java.io.IOException: Error : the pavement wrongPavement doesn't exist in the database.";
+                String actualMessage = ex.getMessage();
+                assertTrue(actualMessage.equals(expectedMessage));
+            }*/
         }
     }
 }

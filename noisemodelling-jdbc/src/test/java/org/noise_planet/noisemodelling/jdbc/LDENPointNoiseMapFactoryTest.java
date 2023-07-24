@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
@@ -42,6 +43,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.sumDbA
 public class LDENPointNoiseMapFactoryTest {
 
     static Logger LOGGER = LoggerFactory.getLogger(LDENPointNoiseMapFactoryTest.class);
+    RailwayCnossos railway = new RailwayCnossos();
+
 
     private Connection connection;
 
@@ -117,7 +120,8 @@ public class LDENPointNoiseMapFactoryTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
             RailWayLWIterator.RailWayLWGeom v = railWayLWIterator.next();
@@ -225,7 +229,7 @@ public class LDENPointNoiseMapFactoryTest {
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {

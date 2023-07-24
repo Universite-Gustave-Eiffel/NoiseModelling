@@ -61,7 +61,7 @@ public class RoadCnossos {
      * @param fileVersion 2015 or 2019 coefficients version
      * @return a Road Coeff
      */
-    public static Double getA_RoadSurfaceCoeff(int Freq, String vehCat, String roadSurface, int fileVersion) {
+    public static Double getA_RoadSurfaceCoeff(int Freq, String vehCat, String roadSurface, int fileVersion) throws IOException {
         int Freq_ind;
         switch (Freq) {
             case 63:
@@ -91,6 +91,7 @@ public class RoadCnossos {
             default:
                 Freq_ind = 0;
         }
+        if (getCnossosData(fileVersion).get("roads").get(roadSurface)==null)  throw new IOException("Error : the pavement "+roadSurface + " doesn't exist in the database.");
         return getCnossosData(fileVersion).get("roads").get(roadSurface).get("ref").get(vehCat).get("spectrum").get(Freq_ind).doubleValue();
     }
 

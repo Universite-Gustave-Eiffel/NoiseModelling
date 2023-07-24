@@ -13,6 +13,8 @@ import org.junit.Test;
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar;
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters;
 
+import java.io.IOException;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -25,7 +27,7 @@ public class RoadVehicleCnossosvarTest {
     private static final double EPSILON_TEST1 = 0.1;
 
     @Test
-    public void testRoadNoise1() {
+    public void testRoadNoise1() throws IOException {
         double speed = 50;
         int acc = 1;
         int FreqParam = 500;
@@ -51,7 +53,7 @@ public class RoadVehicleCnossosvarTest {
     }
 
     @Test
-    public void testRoadNoise2_speed0() {
+    public void testRoadNoise2_speed0() throws IOException {
         double speed = 0;
         int acc = 1;
         int FreqParam = 500;
@@ -77,7 +79,7 @@ public class RoadVehicleCnossosvarTest {
 
 
     @Test
-    public void testRoadNoise3_speed60() {
+    public void testRoadNoise3_speed60() throws IOException {
         int FreqParam = 8000;
         double speed = 60;
         int acc = 0;

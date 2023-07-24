@@ -1,18 +1,32 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Locale;
+import java.util.Map;
 
 public class DirectivityTest {
     final static double[] freqTest = new double[] {125, 250, 500, 1000, 2000, 4000, 8000, 16000};
 
+    /**
+     * Create cardioid using equation from
+     * Farina, Angelo & Capra, Andrea & Chiesi, Lorenzo & Scopece, Leonardo. (2010). A Spherical Microphone Array for
+     * Synthesizing Virtual Directive Microphones in Live Broadcasting and in Post Production.
+     * @throws Exception
+     */
     @Test
     public void exportDirectivityCardioid() throws Exception {
         PolarGraphDirectivity polarGraphDirectivity = new PolarGraphDirectivity();
@@ -29,7 +43,7 @@ public class DirectivityTest {
         pst.execute();
         // DEBUG st.execute("UPDATE DIRECTIVITY SET LW500=-10 WHERE THETA=45 AND PHI=270 ");
         // Data is inserted now fetch it from the database
-        Map<Integer, DiscreteDirectionAttributes> directivities =
+        Map<Integer, DiscreteDirectivitySphere> directivities =
                 DirectivityTableLoader.loadTable(connection, "DIRECTIVITY", 1);
 
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/cardioid_dir.html"))) {
@@ -57,8 +71,10 @@ public class DirectivityTest {
                     "}" +
                     "</style>" +
                     "<head><body><h1>500 Hz</h1>\n");
-            for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
-                RailWayLW.TrainAttenuation trainSource = new RailWayLW.TrainAttenuation(noiseSource);
+            Logger logger = LoggerFactory.getLogger(DirectivityTest.class);
+            for (Map.Entry<Integer, DiscreteDirectivitySphere> entry : directivities.entrySet()) {
+                // DEBUG logger.info(String.format("phi 0 theta 0 %f",
+                //       entry.getValue().getAttenuation(500, Math.toRadians(0), Math.toRadians(0))));
                 bw.write("<div class=\"wrapper\">");
                 bw.write("<div class=\"one\">");
                 bw.write(polarGraphDirectivity.generatePolarGraph(entry.getValue(), 500,
@@ -77,13 +93,10 @@ public class DirectivityTest {
                 bw.write("</div>");
                 bw.write("</div>");
             }
-
-
             bw.write("</body>\n" +
                     "</html>\n ");
         }
     }
-
 
     @Test
     public void exportDirectivityDiscrete() throws IOException {
@@ -92,8 +105,7 @@ public class DirectivityTest {
         DiscreteDirectivitySphere noiseSource = new DiscreteDirectivitySphere(1, freqTest);
         noiseSource.setInterpolationMethod(1);
 
-
-        RailWayCnossosParameters.RailwayDirectivitySphere att = new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource("ROLLING"));
+        RailWayNMPBParameters.TrainAttenuation att = new RailWayNMPBParameters.TrainAttenuation(RailWayNMPBParameters.TrainNoiseSource.ROLLING);
 
         for(int yaw = 0; yaw < 360; yaw += 5) {
             double phi = Math.toRadians(yaw);
@@ -129,16 +141,16 @@ public class DirectivityTest {
                     "}" +
                     "</style>" +
                     "<head><body><h1>500 Hz</h1>\n");
-                bw.write("<div class=\"wrapper\">");
-                bw.write("<div class=\"one\">");
-                bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
-                        -35, 0, PolarGraphDirectivity.ORIENTATION.TOP));
-                bw.write(String.format(Locale.ROOT, "<p>%s Horizontal</p>", "Discrete directivity"));
-                bw.write("</div><div class=\"two\">");
-                bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
-                        -35, 0, PolarGraphDirectivity.ORIENTATION.SIDE));
-                bw.write(String.format(Locale.ROOT, "<p>%s Side</p>", "Discrete directivity"));
-                bw.write("</div></div>");
+            bw.write("<div class=\"wrapper\">");
+            bw.write("<div class=\"one\">");
+            bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
+                    -35, 0, PolarGraphDirectivity.ORIENTATION.TOP));
+            bw.write(String.format(Locale.ROOT, "<p>%s Horizontal</p>", "Discrete directivity"));
+            bw.write("</div><div class=\"two\">");
+            bw.write(polarGraphDirectivity.generatePolarGraph(noiseSource, 500,
+                    -35, 0, PolarGraphDirectivity.ORIENTATION.SIDE));
+            bw.write(String.format(Locale.ROOT, "<p>%s Side</p>", "Discrete directivity"));
+            bw.write("</div></div>");
 
 
             bw.write("</body>\n" +

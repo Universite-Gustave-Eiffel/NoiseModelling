@@ -10,14 +10,14 @@
 package org.noise_planet.noisemodelling.emission.directivity;
 
 /**
- * Interface that returns the attenuation in dB link to a specific directivity pattern.
+ * Interface that returns the attenuation in dB due to a specific directivity pattern.
  * @author Nicolas Fortin, Université Gustave Eiffel
  */
 
 public interface DirectivitySphere {
 
     /**
-     * Returns the attenuation in dB for a particular frequency of the directivity pattern for a certain angle (phi, theta)
+     * Returns the attenuation in dB due to a particular frequency of the directivity pattern at a given angle (phi, theta)
      * @param frequency Frequency in Hertz
      * @param phi (0 2π) with 0 is front
      * @param theta (-π/2 π/2) with 0 is horizontal; π is top
@@ -26,8 +26,8 @@ public interface DirectivitySphere {
     double getAttenuation(double frequency, double phi, double theta);
 
     /**
-     * Returns the attenuation in dB of the directivity pattern for a certain angle (phi, theta).
-     * @param frequencies Frequency in Hertz (same order will be returned)
+     * Returns the attenuation in dB of the directivity pattern at a given angle (phi, theta).
+     * @param frequencies Frequency array in Hertz (same order will be returned)
      * @param phi (0 2π) 0 is front
      * @param theta (-π/2 π/2) 0 is horizontal π is top
      * @return Attenuation in dB for each frequency

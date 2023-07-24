@@ -16,7 +16,7 @@ import java.util.*;
 
 /**
  * Describe Attenuation directivity over a sphere
- * Values between specified angles are interpolated following an interpolation method (linear by default or closest neighbor)
+ * Values between specified angles are interpolated following an interpolation method (linear=1 by default or closest neighbor=0)
  * @author Nicolas Fortin, Université Gustave Eiffel
  */
 
@@ -66,14 +66,26 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
         this.interpolationMethod = interpolationMethod;
     }
 
+    /**
+     * Get the directivity values for a given Theta angle
+     * @return List of the records
+     */
     public List<DirectivityRecord> getRecordsTheta() {
         return recordsTheta;
     }
 
+    /**
+     * Get the directivity records for a given Phi angle
+     * @return List of the records
+     */
     public List<DirectivityRecord> getRecordsPhi() {
         return recordsPhi;
     }
 
+    /**
+     * Get the primary key of the directional sphere (a table with various directional sphere can be given by the user)
+     * @return integer and primary key
+     */
     public int getDirectionIdentifier() {
         return directionIdentifier;
     }
@@ -105,11 +117,11 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
     }
 
     /**
-     * Returns the attenuation in dB of the directivity pattern for a certain angle (phi, theta)
-     * @param frequencies Frequency in Hertz (same order will be returned)
+     * Returns the attenuation in dB of the directivity pattern at a given angle (phi, theta)
+     * @param frequencies Frequency array in Hertz (same order will be returned)
      * @param phi (0 2π) with 0 is front
      * @param theta (-π/2 π/2) with 0 is horizontal; π is top
-     * @return Attenuation level in dB
+     * @return Attenuation array level in dB
      */
     @Override
     public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
@@ -167,7 +179,7 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
     }
 
     /**
-     * Retrieve DirectivityRecord for the specified angles
+     * Retrieve DirectivityRecord for the specified angle (theta, phi)
      * @param theta in radians
      * @param phi in radians
      * @param interpolate 0 for closest neighbor, 1 for Bilinear interpolation

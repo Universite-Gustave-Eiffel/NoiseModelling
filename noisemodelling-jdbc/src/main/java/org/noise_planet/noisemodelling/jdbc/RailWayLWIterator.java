@@ -26,7 +26,7 @@ import static org.noise_planet.noisemodelling.jdbc.MakeParallelLines.MakeParalle
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGeom> {
-    private final RailwayCnossos evaluateRailwaySourceCnossos = new RailwayCnossos();
+    private RailwayCnossos railway = new RailwayCnossos();
     private Connection connection;
     private RailWayLWGeom railWayLWComplete = null;
     private RailWayLWGeom railWayLWIncomplete = new RailWayLWGeom();
@@ -35,6 +35,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
     private SpatialResultSet spatialResultSet;
     public Map<String, Integer> sourceFields = null;
 
+
     /**
      * Generate sound source for train (with train source directivity) from traffic and geometry tracks tables
      * @param connection
@@ -42,12 +43,31 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
      * @param tableTrainTraffic Train traffic associated with tracks
      */
     public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) {
+        this.railway.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        this.railway.setTrainSetDataFile("RailwayTrainsets.json");
+        this.railway.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
         railWayLWComplete = fetchNext(railWayLWIncomplete);
     }
 
+
+    /**
+     * Generate sound source for train (with train source directivity) from traffic and geometry tracks tables
+     * @param connection
+     * @param tableTrackGeometry Track geometry and metadata
+     * @param tableTrainTraffic Train traffic associated with tracks
+     */
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayDataFile) {
+       this.railway.setVehicleDataFile(vehicleDataFile);
+        this.railway.setTrainSetDataFile(trainSetDataFile);
+        this.railway.setRailwayDataFile(railwayDataFile);
+        this.connection = connection;
+        this.tableTrackGeometry = tableTrackGeometry;
+        this.tableTrainTraffic = tableTrainTraffic;
+        railWayLWComplete = fetchNext(railWayLWIncomplete);
+    }
     @Override
     public boolean hasNext() {
         return railWayLWComplete != null;
@@ -255,7 +275,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
         RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
-        Map<String, Integer> vehicles = evaluateRailwaySourceCnossos.getVehicleFromTrainset(train);
+        Map<String, Integer> vehicles = railway.getVehicleFromTrainset(train);
        // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
             int i = 0;
@@ -267,19 +287,19 @@ public class RailWayLWIterator implements Iterator<RailWayLWIterator.RailWayLWGe
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
 
                     if (i == 0) {
-                        lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+                        lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
                     } else {
-                        lWRailWay = RailWayCnossosParameters.sumRailWayLW(lWRailWay, evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters));
+                        lWRailWay = RailWayCnossosParameters.sumRailWayLW(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
                     }
                 }
                 i++;
             }
 
-        }else if (evaluateRailwaySourceCnossos.isInVehicleList(train)){
+        }else if (railway.isInVehicleList(train)){
             if (vehiclePerHour>0) {
                 RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(train, vehicleSpeed,
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
-                lWRailWay = evaluateRailwaySourceCnossos.evaluate(vehicleParameters, trackParameters);
+                lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
             }
         }
 

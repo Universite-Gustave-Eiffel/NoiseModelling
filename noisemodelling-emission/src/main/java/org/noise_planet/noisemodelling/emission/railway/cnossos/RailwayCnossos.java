@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import org.noise_planet.noisemodelling.emission.LineSource;
-import org.noise_planet.noisemodelling.emission.railway.Railway;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,7 @@ import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interp
  * @author Olivier Chiello, Université Gustave Eiffel
  */
 
-public class RailwayCnossos extends Railway {
+public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.railway.Railway {
 
     public RailwayCnossos() {
     }

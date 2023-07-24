@@ -13,7 +13,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,20 +53,14 @@ public class Railway {
         return () -> iterator;
     }
 
-    public void setEvaluateRailwaySourceCnossos(InputStream VehicleData, InputStream TrainsetData, InputStream RailWayData) {
-        this.vehicleData = parse(VehicleData);
-        this.trainsetData = parse(TrainsetData);
-        this.railWayData = parse(RailWayData);
-    }
-
     public void setVehicleDataFile(String VehicleData) {
-        this.vehicleData = parse(RailwayCnossos.class.getResourceAsStream(VehicleData));
+        this.vehicleData = parse(Railway.class.getResourceAsStream(VehicleData));
     }
     public void setTrainSetDataFile(String TrainsetData) {
-        this.trainsetData = parse(RailwayCnossos.class.getResourceAsStream(TrainsetData));
+        this.trainsetData = parse(Railway.class.getResourceAsStream(TrainsetData));
     }
     public void setRailwayDataFile(String RailWayData) {
-        this.railWayData = parse(RailwayCnossos.class.getResourceAsStream(RailWayData));
+        this.railWayData = parse(Railway.class.getResourceAsStream(RailWayData));
     }
 
     public JsonNode getVehicleNode(String typeVehicle) {

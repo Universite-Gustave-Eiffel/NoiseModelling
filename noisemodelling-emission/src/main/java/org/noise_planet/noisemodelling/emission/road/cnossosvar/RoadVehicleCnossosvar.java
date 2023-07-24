@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.emission.road.cnossosvar;
 
+import java.io.IOException;
 import java.util.Random;
 
 import static org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos.*;
@@ -31,7 +32,7 @@ public class RoadVehicleCnossosvar {
      * @param parameters Noise emission parameters
      * @return Noise level in dB
      */
-    public static double evaluate(RoadVehicleCnossosvarParameters parameters) {
+    public static double evaluate(RoadVehicleCnossosvarParameters parameters) throws IOException {
         final boolean Stud = parameters.getStud();
         final double Junc_dist = parameters.getJunc_dist();
         final int Junc_type = parameters.getJunc_type();
