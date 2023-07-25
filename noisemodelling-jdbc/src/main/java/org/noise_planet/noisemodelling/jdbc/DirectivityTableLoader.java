@@ -12,7 +12,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.JDBCUtilities;
-import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
+import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -36,8 +36,8 @@ public class DirectivityTableLoader {
      * @param defaultInterpolation
      * @return
      */
-    public static Map<Integer, DiscreteDirectionAttributes> loadTable(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
-        Map<Integer, DiscreteDirectionAttributes> directionAttributes = new HashMap<>();
+    public static Map<Integer, DiscreteDirectivitySphere> loadTable(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
+        Map<Integer, DiscreteDirectivitySphere> directionAttributes = new HashMap<>();
         List<String> fields = JDBCUtilities.getColumnNames(connection, tableName);
         // fetch provided frequencies
         List<String> frequenciesFields = new ArrayList<>();
@@ -70,12 +70,12 @@ public class DirectivityTableLoader {
         sb.append(" ORDER BY DIR_ID");
         try(Statement st = connection.createStatement()) {
             try(ResultSet rs = st.executeQuery(sb.toString())) {
-                List<DiscreteDirectionAttributes.DirectivityRecord> rows = new ArrayList<>();
+                List<DiscreteDirectivitySphere.DirectivityRecord> rows = new ArrayList<>();
                 int lastDirId = Integer.MIN_VALUE;
                 while (rs.next()) {
                     int dirId = rs.getInt(1);
                     if(lastDirId != dirId && !rows.isEmpty()) {
-                        DiscreteDirectionAttributes attributes = new DiscreteDirectionAttributes(lastDirId, frequencies);
+                        DiscreteDirectivitySphere attributes = new DiscreteDirectivitySphere(lastDirId, frequencies);
                         attributes.setInterpolationMethod(defaultInterpolation);
                         attributes.addDirectivityRecords(rows);
                         directionAttributes.put(lastDirId, attributes);
@@ -88,11 +88,11 @@ public class DirectivityTableLoader {
                     for(int freqColumn = 0; freqColumn < frequencies.length; freqColumn++) {
                         att[freqColumn] = rs.getDouble(freqColumn + 4);
                     }
-                    DiscreteDirectionAttributes.DirectivityRecord r = new DiscreteDirectionAttributes.DirectivityRecord(theta, phi, att);
+                    DiscreteDirectivitySphere.DirectivityRecord r = new DiscreteDirectivitySphere.DirectivityRecord(theta, phi, att);
                     rows.add(r);
                 }
                 if(!rows.isEmpty()) {
-                    DiscreteDirectionAttributes attributes = new DiscreteDirectionAttributes(lastDirId, frequencies);
+                    DiscreteDirectivitySphere attributes = new DiscreteDirectivitySphere(lastDirId, frequencies);
                     attributes.setInterpolationMethod(defaultInterpolation);
                     attributes.addDirectivityRecords(rows);
                     directionAttributes.put(lastDirId, attributes);

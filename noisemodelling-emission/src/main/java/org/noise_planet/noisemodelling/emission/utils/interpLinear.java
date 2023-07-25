@@ -3,7 +3,10 @@ package org.noise_planet.noisemodelling.emission.utils;
 import java.util.Arrays;
 
 /**
+ * Linear Interpolation
  * Copy from https://github.com/mobilesec/timeseries-signal-processing/blob/master/Interpolation.java
+ * todo replace this by org.apache.commons.math3.analysis.interpolation
+ *
  * @author Muhammad Muaaz
  */
 
@@ -41,14 +44,12 @@ public class interpLinear {
         for (int i = 0; i < xi.length; i++) {
             if ((xi[i] > x[x.length - 1]) || (xi[i] < x[0])) {
                 yi[i] = Double.NaN;
-            }
-            else {
+            } else {
                 int loc = Arrays.binarySearch(x, xi[i]);
                 if (loc < -1) {
                     loc = -loc - 2;
                     yi[i] = slope[loc] * xi[i] + intercept[loc];
-                }
-                else {
+                } else {
                     yi[i] = y[loc];
                 }
             }

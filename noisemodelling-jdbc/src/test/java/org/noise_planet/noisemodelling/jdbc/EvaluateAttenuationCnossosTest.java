@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
-import static java.lang.Double.max;
 import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;

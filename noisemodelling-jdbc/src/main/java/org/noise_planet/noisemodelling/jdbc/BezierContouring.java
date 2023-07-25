@@ -36,7 +36,8 @@ import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
-import static org.noise_planet.noisemodelling.emission.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.emission.utils.Utils.dbaToW;
+
 
 /**
  * Create isosurfaces

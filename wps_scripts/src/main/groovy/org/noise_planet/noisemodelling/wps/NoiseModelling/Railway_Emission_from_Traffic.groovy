@@ -17,31 +17,19 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.functions.spatial.convert.ST_Force3D
-import org.h2gis.functions.spatial.edit.ST_AddZ
-import org.h2gis.functions.spatial.edit.ST_UpdateZ
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.LineString
-import org.noise_planet.noisemodelling.emission.RailWayLW
-import org.noise_planet.noisemodelling.jdbc.LDENConfig
-import org.noise_planet.noisemodelling.jdbc.RailWayLWIterator
 import org.noise_planet.noisemodelling.jdbc.utils.MakeLWTable
-import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
-import java.sql.Statement
-
 /**
  * @Author Pierre Aumond,  Univ Gustave Eiffel
  * @Author Adrien Le Bellec,  Univ Gustave Eiffel

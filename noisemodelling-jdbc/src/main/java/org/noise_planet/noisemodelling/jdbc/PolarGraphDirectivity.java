@@ -2,8 +2,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector2D;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 
 import java.util.Locale;
 
@@ -50,7 +49,7 @@ public class PolarGraphDirectivity {
                 "%.0f dB", value), "middle");
     }
 
-    public String generatePolarGraph(DirectionAttributes noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
+    public String generatePolarGraph(DirectivitySphere noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
 
         // HEADER
         StringBuilder sb = new StringBuilder(String.format("<svg height=\"%d\" width=\"%d\">\n", (int)dheight, (int)dwidth));

@@ -36,8 +36,8 @@ import org.matsim.core.events.MatsimEventsReader
 import org.matsim.core.network.io.MatsimNetworkReader
 import org.matsim.core.scenario.ScenarioUtils
 import org.matsim.vehicles.Vehicle
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -762,13 +762,13 @@ class LinkStatStruct {
             return result
         }
         for (int i = 0; i < freqs.length; i++) {
-            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(
+            RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(
                     LVAvgSpeed,MVAvgSpeed,HVAvgSpeed,0.0,0.0,
                     LVCount,MVCount,HVCount,0.0,0.0,
                     freqs[i],20.0,"NL08",0.0,0.0,
                     100,2)
 
-            result[i] = EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            result[i] = RoadCnossos.evaluate(rsParametersCnossos)
         }
         return result
     }
