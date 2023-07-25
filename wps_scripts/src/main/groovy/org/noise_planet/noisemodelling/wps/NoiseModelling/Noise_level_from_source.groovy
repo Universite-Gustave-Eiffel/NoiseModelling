@@ -588,7 +588,7 @@ def exec(Connection connection, input) {
     String kmlFileNamePrepend = ""
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
         String confRaysName = input['confRaysName'] as String
-        if(confRaysName.startsWith("file:")) {
+        if(confRaysName.toLowerCase().startsWith("file:")) {
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_MEMORY)
             URL url = new URL(confRaysName)
             File urlFile = new File(url.toURI())
@@ -596,9 +596,9 @@ def exec(Connection connection, input) {
                 folderExportKML = urlFile
             } else {
                 folderExportKML = urlFile.getParentFile()
-                kmlFileNamePrepend = confRaysName.substring(
-                        Math.max(0, confRaysName.lastIndexOf(File.separator) + 1),
-                        Math.max(0, confRaysName.lastIndexOf(".")))
+                String fileName = urlFile.getName()
+                int positionExt = fileName.lastIndexOf(".")
+                kmlFileNamePrepend = fileName.substring(0, positionExt > 0 ? positionExt : fileName.length())
             }
         } else {
             ldenConfig.setExportRaysMethod(LDENConfig.ExportRaysMethods.TO_RAYS_TABLE)
