@@ -10,127 +10,66 @@
  *
  */
 /**
- * @Author Valentin Le Bescond, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  * @Author Gwendall Petit, Cerema
- * @Author Pierre Aumond, Université Gustave Eiffel
- * @Author buildingParams.json is from https://github.com/orbisgis/geoclimate/
+ * @Author Part of this file are inspired of https://github.com/orbisgis/geoclimate/wiki
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.wps.Import_and_Export;
 
-import crosby.binary.osmosis.OsmosisReader
-import geoserver.GeoServer
+import geoserver.GeoServer;
 import geoserver.catalog.Store
-import groovy.json.JsonSlurper
+import groovy.json.JsonSlurper;
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Coordinate
+import org.h2gis.utilities.wrapper.ConnectionWrapper;
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
-import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer
-import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer
-import org.openstreetmap.osmosis.core.container.v0_6.WayContainer
-import org.openstreetmap.osmosis.core.domain.v0_6.*
-import org.openstreetmap.osmosis.core.task.v0_6.Sink
-import org.openstreetmap.osmosis.xml.common.CompressionMethod
-import org.openstreetmap.osmosis.xml.v0_6.XmlReader
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Coordinate
+import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.WayContainer;
+import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
+import org.openstreetmap.osmosis.core.domain.v0_6.Way;
+import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
+import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
+import org.openstreetmap.osmosis.core.domain.v0_6.Node;
+import org.openstreetmap.osmosis.core.task.v0_6.Sink;
+
+import org.openstreetmap.osmosis.xml.v0_6.XmlReader;
+import org.openstreetmap.osmosis.xml.common.CompressionMethod;
+
+import crosby.binary.osmosis.OsmosisReader
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection
 
-title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
+title = 'Import Pedestrian tables from OSM'
 
-description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables. We recommend using OSMBBBike : https://extract.bbbike.org/ </br>' +
-              '<hr>' +
-              'The following output tables will be created: <br>' +
-              '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
-              '- <b> GROUND </b>: a table containing ground acoustic absorption, based on OSM landcover surfaces<br>' +
-              '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2<br><br>' +
-              '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes </br> </br>' +
-              '<img src="/wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
+description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables.<br><br>' +
+        'The following output tables will be created: <br>' +
+        '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
+        '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes'
 
 inputs = [
         pathFile : [
                 name       : 'Path of the OSM file',
                 title      : 'Path of the OSM file',
                 description: '&#128194; Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
-                             'For example: c:/home/area.osm.pbf',
+                        'For example: c:/home/area.osm.pbf',
                 type       : String.class
         ],
         targetSRID : [
                 name       : 'Target projection identifier',
                 title      : 'Target projection identifier',
                 description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
-                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
-                             '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates.',
+                        'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
+                        '&#10071; The target SRID must be in <b>metric</b> coordinates.',
                 type       : Integer.class
-        ],
-        ignoreBuilding : [
-                name       : 'Do not import Buildings',
-                title      : 'Do not import Buildings',
-                description: '&#9989; If the box is checked</i> &#8594; the table BUILDINGS will <b>NOT</b> be created.<br><br>' +
-                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table BUILDINGS will be created and will contain:<br>' +
-                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
-                             '- <b> THE_GEOM </b> : The 2D geometry of the building (POLYGON or MULTIPOLYGON). <br>' +
-                             '- <b> HEIGHT </b> : The height of the building (FLOAT). ' +
-                             'If this information is not available then it is deduced from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                             'Finally, if no information is available, a height of 5m is set by default.',
-                min        : 0, 
-                max        : 1,
-                type       : Boolean.class
-        ],
-        ignoreGround : [
-                name       : 'Do not import Surface acoustic absorption',
-                title      : 'Do not import Surface acoustic absorption',
-                description: '&#9989; If the box is checked &#8594; the table GROUND will <b>NOT</b> be created.<br><br>' +
-                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table GROUND will be created and will contain: <br>' +
-                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' + 
-                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' + 
-                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (POLYGON or MULTIPOLYGON)<br>' +
-                             '- <b> PRIORITY </b> : Since NoiseModelling does not allowed overlapping geometries, if this is the case, this column is used to prioritize the geometry that will win over the other one when cutting. The order is given according to the type of land use<br>' +
-                             '- <b> G </b> : The acoustic absorption of a ground (FLOAT) (between 0 : very hard and 1 : very soft)',
-                min        : 0, 
-                max        : 1,
-                type       : Boolean.class
-        ],
-        ignoreRoads : [
-                name       : 'Do not import Roads',
-                title      : 'Do not import Roads',
-                description: '&#9989; If the box is checked &#8594; the table ROADS will <b>NOT</b> be created.<br><br>' +
-                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table ROADS will be created and will contain:<br>' +
-                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
-                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' +
-                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (LINESTRING or MULTILINESTRING)<br>' +                        
-                             '- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br>' +
-                             '- <b> LV_E </b> : Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br>' +
-                             '- <b> LV_N </b> : Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br>' +
-                             '- <b> HGV_D </b> : Hourly average heavy vehicle count (6-18h) (DOUBLE)<br>' +
-                             '- <b> HGV_E </b> : Hourly average heavy vehicle count (18-22h) (DOUBLE)<br>' +
-                             '- <b> HGV_N </b> : Hourly average heavy vehicle count (22-6h) (DOUBLE)<br>' +
-                             '- <b> LV_SPD_D </b> : Hourly average light vehicle speed (6-18h) (DOUBLE)<br>' +
-                             '- <b> LV_SPD_E </b> : Hourly average light vehicle speed (18-22h) (DOUBLE)<br>' +
-                             '- <b> LV_SPD_N </b> : Hourly average light vehicle speed (22-6h) (DOUBLE)<br>' +
-                             '- <b> HGV_SPD_D </b> : Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br>' +
-                             '- <b> HGV_SPD_E </b> : Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br>' +
-                             '- <b> HGV_SPD_N </b> : Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br>' +
-                             '- <b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)<br> <br>' +
-                             '&#128161; <b>These information are deduced from the roads importance in OSM.</b>.',
-                min        : 0, 
-                max        : 1,
-                type       : Boolean.class
-        ],
-        removeTunnels : [
-                name       : 'Remove tunnels from OSM data',
-                title      : 'Remove tunnels from OSM data',
-                description: '&#9989; If checked, remove roads from OSM data that contain OSM tag <b>tunnel=yes</b>.',
-                min        : 0, 
-                max        : 1,
-                type       : Boolean.class
-        ],
+        ]
 ]
 
 outputs = [
@@ -152,6 +91,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+
 // run the script
 def run(input) {
 
@@ -170,8 +110,6 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
-
-    //Map buildingsParamsMap = buildingsParams.toMap();
     connection = new ConnectionWrapper(connection)
 
     Sql sql = new Sql(connection)
@@ -188,29 +126,9 @@ def exec(Connection connection, input) {
 
     String pathFile = input["pathFile"] as String
 
-    Boolean ignoreBuilding = false
-    if ('ignoreBuilding' in input) {
-        ignoreBuilding = input['ignoreBuilding'] as Boolean
-    }
-
-    Boolean ignoreGround = false
-    if ('ignoreGround' in input) {
-        ignoreGround = input['ignoreGround'] as Boolean
-    }
-
-    Boolean ignoreRoads = false
-    if ('ignoreRoads' in input) {
-        ignoreRoads = input['ignoreRoads'] as Boolean
-    }
-
     Integer srid = 3857
     if (input['targetSRID']) {
         srid = input['targetSRID'] as Integer
-    }
-
-    Boolean removeTunnels = false
-    if ('removeTunnels' in input) {
-        removeTunnels = input['removeTunnels'] as Boolean
     }
 
     // Read the OSM file, depending on its extension
@@ -224,95 +142,239 @@ def exec(Connection connection, input) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
     }
 
-    OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
+    OsmHandlerPedestrian handler = new OsmHandlerPedestrian(logger)
     reader.setSink(handler);
     reader.run();
 
     logger.info('OSM Read done')
 
-    if (!ignoreBuilding) {
-        String tableName = "MAP_BUILDINGS_GEOM";
 
-        sql.execute("DROP TABLE IF EXISTS " + tableName)
-        sql.execute("CREATE TABLE " + tableName + '''( 
-            ID_WAY integer PRIMARY KEY, 
-            THE_GEOM geometry,
-            HEIGHT real
-        );''')
+    String tableName = "MAP_BUILDINGS_GEOM";
 
-        for (Building building: handler.buildings) {
-            sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MakeValid(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
-        }
+    sql.execute("DROP TABLE IF EXISTS " + tableName)
+    sql.execute("CREATE TABLE " + tableName + '''( 
+        ID_WAY integer PRIMARY KEY, 
+        THE_GEOM geometry,
+        HEIGHT real
+    );''')
 
-        sql.execute('''
-            CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
-            -- List buildings that intersects with other buildings that have a greater area
-            DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
-            CREATE TABLE tmp_relation_buildings_buildings AS SELECT s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;
-            
-            -- Alter that small area buildings by removing shared area
-            DROP TABLE IF EXISTS tmp_buildings_truncated;
-            CREATE TABLE tmp_buildings_truncated AS SELECT PK_BUILDING, ST_DIFFERENCE(s1.the_geom, ST_BUFFER(ST_Collect(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
-            
-            -- Merge original buildings with altered buildings 
-            DROP TABLE IF EXISTS BUILDINGS;
-            CREATE TABLE BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real) AS SELECT s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
-    
-            DROP TABLE IF EXISTS tmp_buildings_truncated;
-            DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
-            DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
-        ''');
-
-        sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS BUILDING_GEOM_INDEX ON " + "BUILDINGS" + "(THE_GEOM)")
-
+    for (Building_Pedestrian building: handler.buildings) {
+        sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MakeValid(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
     }
 
-    if (!ignoreRoads) {
-        sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HGV_D integer,HGV_E integer,HGV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HGV_SPD_D integer, HGV_SPD_E integer,HGV_SPD_N integer, PVMT varchar(10));")
+    sql.execute('''
+        CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
+        -- List buildings that intersects with other buildings that have a greater area
+        DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
+        CREATE TABLE tmp_relation_buildings_buildings AS SELECT s1.ID_WAY as PK_BUILDING, S2.ID_WAY as PK2_BUILDING FROM MAP_BUILDINGS_GEOM S1, MAP_BUILDINGS_GEOM S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.1;
+        
+        -- Alter that small area buildings by removing shared area
+        DROP TABLE IF EXISTS tmp_buildings_truncated;
+        CREATE TABLE tmp_buildings_truncated AS SELECT PK_BUILDING, ST_DIFFERENCE(s1.the_geom, ST_BUFFER(ST_Collect(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
+        
+        -- Merge original buildings with altered buildings 
+        DROP TABLE IF EXISTS BUILDINGS;
+        CREATE TABLE BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real) AS SELECT s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
 
-        for (Road road: handler.roads) {
-            if (road.geom.isEmpty()) {
-                continue;
-            }
-            String query = 'INSERT INTO ROADS(ID_WAY, ' +
-                    'THE_GEOM, ' +
-                    'TYPE, ' +
-                    'LV_D, LV_E, LV_N, ' +
-                    'HGV_D, HGV_E, HGV_N, ' +
-                    'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
-                    'HGV_SPD_D, HGV_SPD_E, HGV_SPD_N, ' +
-                    'PVMT) ' +
-                    ' VALUES (?,' +
-                    'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
-                    '?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
-            sql.execute(query, [road.id, road.geom, road.type,
-                                road.getNbLV("d"), road.getNbLV("e"), road.getNbLV("n"),
-                                road.getNbHV("d"), road.getNbHV("e"), road.getNbHV("n"),
-                                Road.speed[road.category], Road.speed[road.category], Road.speed[road.category],
-                                Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]), Math.min(90, Road.speed[road.category]),
-                                'NL08'])
+        DROP TABLE IF EXISTS tmp_buildings_truncated;
+        DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
+        DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;
+    ''');
+
+    sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS BUILDING_GEOM_INDEX ON " + "BUILDINGS" + "(THE_GEOM)")
+
+
+    sql.execute("DROP TABLE IF EXISTS PEDESTRIAN_WAYS")
+    sql.execute("CREATE TABLE PEDESTRIAN_WAYS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar);")
+
+    for (PedestrianWay pedestrianWay: handler.pedestrianWays) {
+        if (pedestrianWay.geom.isEmpty()) {
+            continue;
         }
-        sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS ROADS_GEOM_INDEX ON " + "ROADS" + "(THE_GEOM)")
+        String query = 'INSERT INTO PEDESTRIAN_WAYS(ID_WAY, ' +
+                'THE_GEOM, ' +
+                'TYPE ) ' +
+                ' VALUES (?,' +
+                'st_setsrid(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.01),0.1), ' + srid + '),' +
+                '?);'
+        sql.execute(query, [pedestrianWay.id, pedestrianWay.geom, pedestrianWay.type])
     }
+    sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS PEDESTRIAN_WAYS_GEOM_INDEX ON " + "PEDESTRIAN_WAYS" + "(THE_GEOM)")
 
-    if (!ignoreGround) {
-        sql.execute("DROP TABLE IF EXISTS GROUND")
-        sql.execute("CREATE TABLE GROUND (PK serial PRIMARY KEY, ID_WAY int, THE_GEOM geometry, PRIORITY int, G double);")
 
-        for (Ground ground : handler.grounds) {
-            if (ground.priority == 0) {
-                continue
-            }
-            if (ground.geom.isEmpty()) {
-                continue
-            }
-            sql.execute("INSERT INTO GROUND (ID_WAY, THE_GEOM, PRIORITY, G) VALUES (" + ground.id + ", ST_Transform(ST_GeomFromText('" + ground.geom + "', 4326), " + srid + "), " + ground.priority + ", " + ground.coeff_G + ")")
+    sql.execute("DROP TABLE IF EXISTS PEDESTRIAN_POIS")
+    sql.execute("CREATE TABLE PEDESTRIAN_POIS (PK serial PRIMARY KEY, ID_WAY BIGINT, THE_GEOM geometry, TYPE varchar);")
+
+    for (PedestrianPOI pedestrianPOI: handler.pedestrianPOIs) {
+        if (pedestrianPOI.geom.isEmpty()) {
+            continue;
         }
-        sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS GROUND_GEOM_INDEX ON " + "GROUND" + "(THE_GEOM)")
+        String query = 'INSERT INTO PEDESTRIAN_POIS(ID_WAY, ' +
+                'THE_GEOM, ' +
+                'TYPE ) ' +
+                ' VALUES (?,' +
+                'st_setsrid(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.01),0.1), ' + srid + '),' +
+                '?);'
+        sql.execute(query, [pedestrianPOI.id, pedestrianPOI.geom, pedestrianPOI.type])
     }
+    sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS PEDESTRIAN_POIS_GEOM_INDEX ON " + "PEDESTRIAN_POIS" + "(THE_GEOM)")
+
+
+    sql.execute("DROP TABLE IF EXISTS GROUND")
+    sql.execute("CREATE TABLE GROUND (PK serial PRIMARY KEY,ID_WAY BIGINT, TYPE varchar, THE_GEOM geometry,PRIORITY int, G double);")
+
+
+    for (Grounds grounds : handler.grounds) {
+        if (grounds.priority == 0) {
+            continue
+        }
+        if (grounds.geom.isEmpty()) {
+            continue
+        }
+
+        String query = 'INSERT INTO GROUND(ID_WAY, THE_GEOM, TYPE, PRIORITY ,G ) ' +
+                ' VALUES (?,' +
+                'st_setsrid(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.01),0.1), ' + srid + '),' +
+                '?, ?, ?);'
+
+        sql.execute(query, [grounds.id, grounds.geom, grounds.type, grounds.priority , grounds.coeff_G])
+    }
+    sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS GROUND_GEOM_INDEX ON " + "GROUND" + "(THE_GEOM)")
 
     logger.info('SQL INSERT done')
+
+
+    String query2 = '''-- Define Road width
+            DROP TABLE ROADS IF EXISTS;
+            CREATE TABLE ROADS(the_geom geometry, wb float, PK INTEGER) AS SELECT
+            ST_FORCE2D(the_geom),
+            CASEWHEN(TYPE = 'primary', 6,
+            CASEWHEN(TYPE = 'primary_link', 6,
+            CASEWHEN(TYPE = 'secondary', 6,
+            CASEWHEN(TYPE = 'secondary_link', 6,
+            CASEWHEN(TYPE = 'tertiary', 3.5,
+            CASEWHEN(TYPE = 'tertiary_link', 3.5,
+            CASEWHEN(TYPE = 'motorway', 6,
+            CASEWHEN(TYPE = 'motorway_link', 6,
+            CASEWHEN(TYPE = 'trunk', 6,
+            CASEWHEN(TYPE = 'trunk_link', 6,
+            CASEWHEN(TYPE = 'cycleway', 1.75,
+            CASEWHEN(TYPE = 'residential', 3.5,
+            CASEWHEN(TYPE = 'bus_guideway', 3.5,
+            CASEWHEN(TYPE = 'busway', 3.5,
+            CASEWHEN(TYPE = 'road', 3.5,
+            CASEWHEN(TYPE = 'escape', 3.5,
+            CASEWHEN(TYPE = 'raceway', 3.5,
+            CASEWHEN(TYPE = 'road', 3.5,
+            CASEWHEN(TYPE = 'unclassified', 6, 0))))))))))))))))))),
+            PK
+            FROM PEDESTRIAN_WAYS;
+            
+            -- Create Sidewalk layer
+            DROP TABLE sidewalk IF EXISTS;
+            CREATE TABLE sidewalk(the_geom geometry,lt float, PK float) AS
+            SELECT
+            the_geom,
+            CASEWHEN(TYPE = 'primary', 0,
+            CASEWHEN(TYPE = 'primary_link', 0,
+            CASEWHEN(TYPE = 'secondary', 0,
+            CASEWHEN(TYPE = 'secondary_link', 0,
+            CASEWHEN(TYPE = 'tertiary', 2,
+            CASEWHEN(TYPE = 'tertiary_link', 2,
+            CASEWHEN(TYPE = 'motorway', 0,
+            CASEWHEN(TYPE = 'motorway_link', 0,
+            CASEWHEN(TYPE = 'trunk', 0,
+            CASEWHEN(TYPE = 'trunk_link', 0,
+            CASEWHEN(TYPE = 'cycleway', 1,
+            CASEWHEN(TYPE = 'residential', 2,
+            CASEWHEN(TYPE = 'bus_guideway', 2,
+            CASEWHEN(TYPE = 'busway',2,
+            CASEWHEN(TYPE = 'road', 1.5,
+            CASEWHEN(TYPE = 'escape', 1.5,
+            CASEWHEN(TYPE = 'raceway', 1.5,
+            CASEWHEN(TYPE = 'road', 1.5,
+            CASEWHEN(TYPE = 'unclassified', 1.5, 0))))))))))))))))))),
+            PK
+            FROM PEDESTRIAN_WAYS;
+            
+            -- Create Road + Sidewalk layer
+            DROP TABLE roads_sidewalk IF EXISTS;
+            CREATE TABLE roads_sidewalk(the_geom geometry) AS
+            SELECT ST_UNION(ST_ACCUM(ST_PRECISIONREDUCER(ST_BUFFER(a.the_geom,a.wb + 2*b.lt),0.1))) FROM ROADS a, sidewalk b WHERE a.PK = b.PK;
+            DROP TABLE sidewalk IF EXISTS;
+            
+            -- Create PedestrianNetwork
+            DROP TABLE pedestrian_streets IF EXISTS;
+             CREATE TABLE pedestrian_streets AS SELECT ST_UNION(ST_ACCUM(ST_PRECISIONREDUCER(ST_BUFFER(the_geom,3.0),0.1))) the_geom FROM PEDESTRIAN_WAYS
+            WHERE
+            TYPE = 'pedestrian'
+            OR TYPE = 'path'
+            OR TYPE = 'footway'
+            OR TYPE = 'living_street'
+            OR TYPE = 'crossing'
+            OR TYPE = 'service'
+            OR TYPE = 'sidewalk'
+            OR TYPE = 'steps';
+            
+            -- Create Full area where pedestrians can be
+            DROP TABLE RoadsAndPedestrianStreets IF EXISTS;
+            CREATE TABLE RoadsAndPedestrianStreets AS
+            SELECT * FROM  PEDESTRIAN_STREETS ps UNION SELECT  * FROM  roads_sidewalk rb ;
+            DROP TABLE PEDESTRIAN_STREETS_AREA IF EXISTS;
+            CREATE TABLE PEDESTRIAN_STREETS_AREA AS SELECT ST_UNION(ST_ACCUM(the_geom)) the_geom FROM RoadsAndPedestrianStreets ps ;
+            DROP TABLE PEDESTRIAN_STREETS,RoadsAndPedestrianStreets, roads_sidewalk, PEDESTRIAN_STREETS IF EXISTS;
+            
+            -- Create Areas where Pedestrian can also be
+            DROP TABLE Ok_areas IF EXISTS;
+            CREATE TABLE Ok_areas AS SELECT ST_FORCE2D(ST_UNION(ST_ACCUM(the_geom))) the_geom FROM GROUND pa WHERE TYPE = 'park';
+            
+            DROP TABLE PEDESTRIAN_STREETS_AREA_GO_ZONES IF EXISTS;
+            CREATE TABLE PEDESTRIAN_STREETS_AREA_GO_ZONES AS
+            SELECT * FROM  PEDESTRIAN_STREETS_AREA ps UNION SELECT * FROM  Ok_areas rb ;
+            DROP TABLE PEDESTRIAN_STREETS_GO_ZONES_AREA IF EXISTS;
+            CREATE TABLE PEDESTRIAN_STREETS_GO_ZONES_AREA AS SELECT ST_UNION(ST_ACCUM(the_geom)) the_geom FROM PEDESTRIAN_STREETS_AREA_GO_ZONES ps ;
+            DROP TABLE PEDESTRIAN_STREETS, PEDESTRIAN_STREETS_AREA, roads_sidewalk,Ok_areas, PEDESTRIAN_STREETS,PEDESTRIAN_STREETS_AREA_GO_ZONES IF EXISTS;
+               
+            -- Remove Road Areas to final area
+            -- Create Roads area where Pedestrian can''t be
+            DROP TABLE ROADS_AREA IF EXISTS;
+            CREATE TABLE ROADS_AREA AS SELECT ST_FORCE2D(ST_UNION(ST_ACCUM(ST_PRECISIONREDUCER(ST_BUFFER(the_geom,wb),0.1)))) the_geom FROM ROADS;
+            
+            DROP TABLE PSA_ROADS IF EXISTS;
+            CREATE TABLE PSA_ROADS AS
+            SELECT ST_DIFFERENCE(b.the_geom, a.the_geom) the_geom FROM
+             ROADS_AREA a,
+             PEDESTRIAN_STREETS_GO_ZONES_AREA b;
+            DROP TABLE PEDESTRIAN_STREETS_GO_ZONES_AREA, ROADS, ROADS_AREA  IF EXISTS;
+            
+            -- Remove BUILDINGS Areas to final area
+            DROP TABLE BUILDINGS_AREA IF EXISTS;
+            CREATE TABLE BUILDINGS_AREA AS SELECT ST_FORCE2D(st_union(st_accum(ST_PRECISIONREDUCER(ST_BUFFER(the_geom,0.5),0.1)))) the_geom FROM BUILDINGS;
+            DROP TABLE PSA_ROADS_BUILDINGS IF EXISTS;
+            CREATE TABLE PSA_ROADS_BUILDINGS AS
+            SELECT ST_DIFFERENCE(b.the_geom, a.the_geom) the_geom FROM
+             BUILDINGS_AREA a,
+             PSA_ROADS b;
+            DROP TABLE PSA_ROADS,BUILDINGS_AREA  IF EXISTS;
+            
+            -- Remove NOGOZONES Areas to final area
+            -- Create Areas area where Pedestrian can''t be
+            DROP TABLE No_GoZones IF EXISTS;
+            CREATE TABLE No_GoZones AS SELECT ST_FORCE2D(ST_UNION(ST_ACCUM(the_geom))) the_geom FROM GROUND pa WHERE TYPE = 'water' OR TYPE ='parking';
+            
+            DROP TABLE PEDESTRIAN_AREA  IF EXISTS;
+            CREATE TABLE PEDESTRIAN_AREA AS
+            SELECT ST_DIFFERENCE(b.the_geom, a.the_geom) the_geom FROM
+             No_GoZones a,
+             PSA_ROADS_BUILDINGS b;
+            DROP TABLE PSA_ROADS_BUILDINGS,No_GoZones IF EXISTS;'''
+
+    logger.info('SQL Compute Pedestrian Areas')
+
+    sql.execute(query2)
+
+
+    logger.info('SQL Compute Pedestrian Areas Done !')
 
     resultString = "nodes : " + handler.nb_nodes
     resultString += "<br>\n"
@@ -322,9 +384,9 @@ def exec(Connection connection, input) {
     resultString += "<br>\n"
     resultString += "buildings : " + handler.nb_buildings
     resultString += "<br>\n"
-    resultString += "roads : " + handler.nb_roads
+    resultString += "pedestrianWays : " + handler.nb_pedestrianWays
     resultString += "<br>\n"
-    resultString += "grounds : " + handler.nb_grounds
+    resultString += "pedestrianAreas : " + handler.nb_pedestrianAreas
     resultString += "<br>\n"
 
     logger.info('End : Get Buildings from OSM')
@@ -332,36 +394,33 @@ def exec(Connection connection, input) {
     return resultString
 }
 
-public class OsmHandler implements Sink {
+public class OsmHandlerPedestrian implements Sink {
 
     public int nb_ways = 0;
     public int nb_nodes = 0;
     public int nb_relations = 0;
+    public int nb_noGoZones = 0;
     public int nb_buildings = 0;
-    public int nb_roads = 0;
-    public int nb_grounds = 0;
+    public int nb_pedestrianWays = 0;
+    public int nb_pedestrianAreas = 0;
+    public int nb_pedestrianPOI = 0;
 
     Random rand = new Random();
 
     public Map<Long, Node> nodes = new HashMap<Long, Node>();
     public Map<Long, Way> ways = new HashMap<Long, Way>();
     public Map<Long, Relation> relations = new HashMap<Long, Relation>();
-    public List<Building> buildings = new ArrayList<Building>();
-    public List<Road> roads = new ArrayList<Road>();
-    public List<Ground> grounds = new ArrayList<Ground>();
+    public List<Building_Pedestrian> buildings = new ArrayList<Building_Pedestrian>();
+    public List<PedestrianWay> pedestrianWays = new ArrayList<PedestrianWay>();
+    public List<Grounds> grounds = new ArrayList<Grounds>();
+    public List<PedestrianPOI> pedestrianPOIs = new ArrayList<PedestrianPOI>();
 
     Logger logger
-    boolean ignoreBuildings
-    boolean ignoreRoads
-    boolean ignoreGround
-    boolean removeTunnels
 
-    OsmHandler(Logger logger, boolean ignoreBuildings, boolean ignoreRoads, boolean ignoreGround, boolean removeTunnels) {
+
+    OsmHandlerPedestrian(Logger logger) {
         this.logger = logger
-        this.ignoreBuildings = ignoreBuildings
-        this.ignoreRoads = ignoreRoads
-        this.ignoreGround = ignoreGround
-        this.removeTunnels = removeTunnels
+
     }
 
     @Override
@@ -370,15 +429,232 @@ public class OsmHandler implements Sink {
 
     @Override
     public void process(EntityContainer entityContainer) {
-
-
-
         if (entityContainer instanceof NodeContainer) {
             nb_nodes++;
             Node node = ((NodeContainer) entityContainer).getEntity();
             nodes.put(node.getId(), node);
-        } else if (entityContainer instanceof WayContainer) {
+            boolean isPedestrianPOI = false;
+            for (Tag tag : node.getTags()) {
+                if ("tourism".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["hotel", "guest-house", "apartment", "hostel"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "tourism_sleep"));
+                        nb_pedestrianPOI++;
+                    }
+                    list = ["information","attraction", "artwork", "viewpoint", "museum", "gallery", "yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "tourism"));
+                        nb_pedestrianPOI++;
+                    }
+                }
 
+                if ("shop".equalsIgnoreCase(tag.getKey())) {
+                    isPedestrianPOI = true;
+                    pedestrianPOIs.add(new PedestrianPOI(node, "shop"));
+                    nb_pedestrianPOI++;
+                }
+
+                if ("place".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["square"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "place"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+                if ("natural".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["tree","tree_row"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "trees"));
+                        nb_pedestrianPOI++;
+                    }
+                    list = ["water"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "water"));
+                        nb_pedestrianPOI++;
+                    }
+                    list = ["grass"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "grass"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("crossing".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["marked","unmarked","uncontrolled","traffic_signals","zebra"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "footpath"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("public_transport".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["platform","stop_position","stop_area","station","pole"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "public_transport"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+                if ("bus".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "public_transport"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("railway".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["platform","tram_stop","subway_entrance"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "public_transport"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("leisure".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["pitch","swimming_pool","sports_centre","fitness_centre","fitness_station","swimming_area"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "sport"));
+                        nb_pedestrianPOI++;
+                    }
+                    list = ["park","garden"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "grass"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["playground","picnic_table","outdoor_seating","common"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "leisure"));
+                        nb_pedestrianPOI++;
+                    }
+
+                }
+
+                if ("bench".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "leisure"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("foot".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes","designated","use_sidepath"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "footpath"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+                if ("religion".equalsIgnoreCase(tag.getKey())) {
+                    isPedestrianPOI = true;
+                    pedestrianPOIs.add(new PedestrianPOI(node, "religion"));
+                    nb_pedestrianPOI++;
+                }
+
+
+                if ("bicycle_parking".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["stands","wall_llops","rack","shed","bollard"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "individual_transport"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("parking".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["surface","street_side","underground","multi-storey","lane","yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "individual_transport"));
+                        nb_pedestrianPOI++;
+                    }
+                }
+
+                if ("sport".equalsIgnoreCase(tag.getKey())) {
+                    isPedestrianPOI = true;
+                    pedestrianPOIs.add(new PedestrianPOI(node, "sport"));
+                    nb_pedestrianPOI++;
+                }
+                if ("amenity".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["parking","bicycle_parking"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "individual_transport"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["bus_station"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "public_transport"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["bank", "pharmarcy","marketplace"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "shop"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["bench"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "leisure"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["cafe", "fast_food","bar","pub","nightclub","food_court","biergarten","casino"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "food_drink"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["place_of_worship"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "religion"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["school","college","university"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "education"));
+                        nb_pedestrianPOI++;
+                    }
+
+                    list = ["theatre","cinema"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        isPedestrianPOI = true;
+                        pedestrianPOIs.add(new PedestrianPOI(node, "culture"));
+                        nb_pedestrianPOI++;
+                    }
+
+                }
+
+
+
+
+            }
+
+        } else if (entityContainer instanceof WayContainer) {
 
             // This is a copy of the GeoClimate file : buildingsParams.json (https://github.com/orbisgis/geoclimate/tree/master/osm/src/main/resources/org/orbisgis/geoclimate/osm)
             String buildingParams = """{
@@ -1053,10 +1329,11 @@ public class OsmHandler implements Sink {
             Way way = ((WayContainer) entityContainer).getEntity();
             ways.put(way.getId(), way);
             boolean isBuilding = false;
-            boolean isRoad = false;
             boolean isTunnel = false;
+            boolean isPedestrianWay = false;
             double height = 4.0 + rand.nextDouble() * 2.1;
             boolean trueHeightFound = false;
+            String type =null;
             boolean closedWay = way.isClosed();
 
             for (Tag tag : way.getTags()) {
@@ -1080,37 +1357,227 @@ public class OsmHandler implements Sink {
                     }
                 }
 
+                if ("tourism".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["hotel", "guest-house", "apartment", "hostel"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "tourism_sleep";
+                    }
+                    list = ["information","attraction", "artwork", "viewpoint", "museum", "gallery", "yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "tourism";
+                    }
+                    list = ["information", "museum", "gallery", "yes","hotel", "guest-house", "apartment", "hostel"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                }
+
+                if ("shop".equalsIgnoreCase(tag.getKey())) {
+                    type = "shop";
+                    if (way.isClosed()) {isBuilding = true}
+                }
+
+                if ("place".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["square"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "place";
+                    }
+                }
+                if ("natural".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["tree","tree_row"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "vegetation";
+                    }
+                    list = ["water"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "water";
+                    }
+                    list = ["grass"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "vegetation";
+                    }
+                }
+
+                if ("crossing".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["marked","unmarked","uncontrolled","traffic_signals","zebra"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "footpath";
+                    }
+                }
+
+                if ("public_transport".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["platform","stop_position","stop_area","station","pole"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "public_transport";
+                    }
+                }
+                if ("bus".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "public_transport";
+                    }
+                }
+
+                if ("railway".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["platform","tram_stop","subway_entrance"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "public_transport";
+                    }
+                }
+
+                if ("leisure".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["pitch","swimming_pool","sports_centre","fitness_centre","fitness_station","swimming_area"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "sport";
+                    }
+                    list = ["swimming_pool","sports_centre","fitness_centre"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                    list = ["park","garden"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "vegetation";
+                    }
+
+                    list = ["playground","picnic_table","outdoor_seating","common"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "leisure";
+                    }
+
+                }
+
+                if ("bench".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "leisure";
+                    }
+                }
+
+                if ("foot".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["yes","designated","use_sidepath"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "footpath";
+                    }
+                }
+                if ("religion".equalsIgnoreCase(tag.getKey())) {
+                    type = "religion";
+                    if (way.isClosed()) {isBuilding = true}
+                }
+
+
+                if ("bicycle_parking".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["stands","wall_llops","rack","shed","bollard"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "individual_transport";
+                    }
+                }
+
+                if ("parking".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["surface","street_side","underground","multi-storey","lane","yes"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "individual_transport";
+                    }
+                }
+
+                if ("sport".equalsIgnoreCase(tag.getKey())) {
+                    type = "sport";
+                }
+                if ("amenity".equalsIgnoreCase(tag.getKey())) {
+                    List list = ["parking","bicycle_parking"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "individual_transport";
+                    }
+
+                    list = ["bus_station"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "public_transport";
+                    }
+
+                    list = ["bank", "pharmarcy","marketplace"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "shop";
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                    list = ["bench"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "leisure";
+                    }
+
+                    list = ["cafe", "fast_food","bar","pub","nightclub","food_court","biergarten","casino"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "food_drink";
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                    list = ["place_of_worship"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "religion";
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                    list = ["school","college","university"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "education";
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                    list = ["theatre","cinema"]
+                    if (list.any { it == (tag.getValue()) }) {
+                        type = "x";
+                        if (way.isClosed()) {isBuilding = true}
+                    }
+
+                }
+
+                if ("building".equalsIgnoreCase(tag.getKey())) {
+                    isBuilding = true;
+                }
+
                 if ("tunnel".equalsIgnoreCase(tag.getKey()) && "yes".equalsIgnoreCase(tag.getValue())) {
                     isTunnel = true;
                 }
+
                 if ("highway".equalsIgnoreCase((tag.getKey()))) {
-                    isRoad = true
+                    isPedestrianWay = true
                 }
+
+                if ("height".equalsIgnoreCase(tag.getKey()) && way.isClosed()) {
+                    isBuilding = true;
+                }
+
                 if (isBuilding) {
-                    if (!trueHeightFound && "building:levels".equalsIgnoreCase(tag.getKey())) {
+                    if (!trueHeightFound && !tag.getValue().replaceAll("[^0-9]+", "").isEmpty() && "building:levels".equalsIgnoreCase(tag.getKey())) {
                         height = height - 4 + Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", "")) * 3.0;
                     }
-                    if ("height".equalsIgnoreCase(tag.getKey())) {
+                    if ("height".equalsIgnoreCase(tag.getKey()) && !tag.getValue().replaceAll("[^0-9]+", "").isEmpty()) {
                         height = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
                         trueHeightFound = true;
                     }
                 }
+                if (!isBuilding && !isPedestrianWay && way.isClosed()) {
+                    grounds.add(new Grounds(way,tag.getKey(), tag.getValue(), type));
+                    nb_pedestrianAreas++;
+                }
             }
-            if (!ignoreBuildings && isBuilding && closedWay) {
-                buildings.add(new Building(way, height));
+
+            if (isBuilding && way.isClosed()) {
+                buildings.add(new Building_Pedestrian(way, height, type));
                 nb_buildings++;
             }
-            if (!ignoreRoads && isRoad) {
-                if (removeTunnels && isTunnel) {
+
+            if (isPedestrianWay) {
+                if (isTunnel) {
                     return
                 }
-                roads.add(new Road(way));
-                nb_roads++;
+                pedestrianWays.add(new PedestrianWay(way));
+                nb_pedestrianWays++;
             }
-            if (!ignoreGround && !isBuilding && !isRoad && closedWay) {
-                grounds.add(new Ground(way));
-                nb_grounds++;
-            }
+
+
+
         } else if (entityContainer instanceof RelationContainer) {
             nb_relations++;
             Relation rel = ((RelationContainer) entityContainer).getEntity();
@@ -1122,20 +1589,24 @@ public class OsmHandler implements Sink {
 
     @Override
     public void complete() {
-        for(Building building: buildings) {
+        for(Building_Pedestrian building: buildings) {
             building.setGeom(calculateBuildingGeometry(building.way));
         }
-        for(Road road: roads) {
-            road.setGeom(calculateRoadGeometry(road.way));
+        for(PedestrianWay pedestrianWay: pedestrianWays) {
+            pedestrianWay.setGeom(calculatePedestrianWayGeometry(pedestrianWay.way));
         }
+        for(PedestrianPOI pedestrianPOI: pedestrianPOIs) {
+            pedestrianPOI.setGeom(calculatePedestrianNodeGeometry(pedestrianPOI.node));
+        }
+
         GeometryFactory geomFactory = new GeometryFactory();
-        for(Ground ground: grounds) {
-            if (ground.priority == 0) {
-                ground.setGeom(geomFactory.createPolygon())
+        for(Grounds pedestrianArea: grounds) {
+            if (pedestrianArea.priority == 0) {
+                pedestrianArea.setGeom(geomFactory.createPolygon())
                 continue
             }
-            Geometry geom = calculateGroundGeometry(ground.way)
-            ground.setGeom(geom)
+            Geometry geom = calculatePedestrianAreaGeometry(pedestrianArea.way)
+            pedestrianArea.setGeom(geom)
         }
         int doPrint = 2
         for (int j = 0; j < grounds.size(); j++) {
@@ -1198,7 +1669,15 @@ public class OsmHandler implements Sink {
         return geomFactory.createPolygon(shell);
     }
 
-    public Geometry calculateRoadGeometry(Way way) {
+    public Geometry calculatePedestrianNodeGeometry(Node node) {
+        GeometryFactory geomFactory = new GeometryFactory();
+        if (node == null) {
+            return geomFactory.createPoint();
+        }
+        return geomFactory.createPoint(new Coordinate(node.getLongitude(),node.getLatitude(), 0.0));
+    }
+
+    public Geometry calculatePedestrianWayGeometry(Way way) {
         GeometryFactory geomFactory = new GeometryFactory();
         if (way == null) {
             return geomFactory.createLineString();
@@ -1210,9 +1689,6 @@ public class OsmHandler implements Sink {
         Coordinate[] coordinates = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
-            if (node == null) { // some odd case where a node is defined here but outside of the osm file limits
-                return geomFactory.createLineString();
-            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             coordinates[i] = new Coordinate(x, y, 0.0);
@@ -1220,7 +1696,7 @@ public class OsmHandler implements Sink {
         return geomFactory.createLineString(coordinates);
     }
 
-    public Geometry calculateGroundGeometry(Way way) {
+    public Geometry calculatePedestrianAreaGeometry(Way way) {
         GeometryFactory geomFactory = new GeometryFactory();
         if (way == null) {
             return geomFactory.createPolygon();
@@ -1240,16 +1716,18 @@ public class OsmHandler implements Sink {
     }
 }
 
-public class Building {
+public class Building_Pedestrian {
 
     long id;
     Way way;
     Geometry geom;
     double height = 0.0;
+    String type;
 
-    Building(Way way) {
+    Building_Pedestrian(Way way, String type) {
         this.way = way;
         this.id = way.getId();
+        this.type = type;
         double h = 4.0 + rand.nextDouble() * 2.1;
         boolean trueHeightFound = false;
         for (Tag tag : way.getTags()) {
@@ -1263,10 +1741,12 @@ public class Building {
         }
         this.height = h;
     }
-    Building(Way way, double height) {
+
+    Building_Pedestrian(Way way, double height, String type) {
         this.way = way;
         this.id = way.getId();
         this.height = height;
+        this.type = type;
     }
 
     void setGeom(Geometry geom) {
@@ -1278,43 +1758,19 @@ public class Building {
     }
 }
 
-public class Road {
-
-    def static aadf_d = [26103, 17936, 7124, 1400, 700, 350, 175]
-    def static aadf_e = [7458, 3826, 1069, 400, 200, 100, 50]
-    def static aadf_n = [3729, 2152, 712, 200, 100, 50, 25]
-    def static hv_d = [0.25, 0.2, 0.2, 0.15, 0.10, 0.05, 0.02]
-    def static hv_e = [0.35, 0.2, 0.15, 0.10, 0.06, 0.02, 0.01]
-    def static hv_n = [0.45, 0.2, 0.1, 0.05, 0.03, 0.01, 0.0]
-    def static speed = [130, 110, 80, 80, 50, 30, 30]
-
-    def static hours_in_d = 12
-    def static hours_in_e = 4
-    def static hours_in_n = 8
+public class PedestrianWay {
 
     long id;
     Way way;
     Geometry geom;
-    double maxspeed = 0.0;
     boolean oneway = false;
     String type = null;
     int category = 5;
 
-    Road(Way way) {
+    PedestrianWay(Way way) {
         this.way = way;
         this.id = way.getId();
         for (Tag tag : way.getTags()) {
-            if ("maxspeed".equalsIgnoreCase(tag.getKey())) {
-                try {
-                    this.maxspeed = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
-                }
-                catch (NumberFormatException e) {
-                    // in case maxspeed does not contain a numerical value
-                }
-                if (tag.getValue().contains("mph")) {
-                    maxspeed = maxspeed * 1.60934
-                }
-            }
             if ("highway".equalsIgnoreCase(tag.getKey())) {
                 this.type = tag.getValue();
             }
@@ -1323,40 +1779,6 @@ public class Road {
             }
         }
         updateCategory();
-    }
-
-    double getNbLV(String period) {
-        double lv
-        if (period == "d") {
-            lv = (1 - hv_d[category]) * aadf_d[category] / hours_in_d
-        }
-        else if (period == "e") {
-            lv = (1 - hv_e[category]) * aadf_e[category] / hours_in_e
-        }
-        else { // n
-            lv = (1 - hv_n[category]) * aadf_n[category] / hours_in_n
-        }
-        if (oneway) {
-            lv /= 2
-        }
-        return lv
-    }
-
-    double getNbHV(String period) {
-        double hv
-        if (period == "d") {
-            hv = hv_d[category] * aadf_d[category] / hours_in_d
-        }
-        else if (period == "e") {
-            hv = hv_e[category] * aadf_e[category] / hours_in_e
-        }
-        else { // n
-            hv = hv_n[category] * aadf_n[category] / hours_in_n
-        }
-        if (oneway) {
-            hv /= 2
-        }
-        return hv
     }
 
     void updateCategory() {
@@ -1381,6 +1803,9 @@ public class Road {
         if (["service", "living_street"].contains(type)) {
             category = 6
         }
+        if (["footway", "path", "crossing", "steps", "pedestrian"].contains(type)) {
+            category = 7
+        }
     }
 
     void setGeom(Geometry geom) {
@@ -1392,36 +1817,58 @@ public class Road {
     }
 }
 
-public class Ground {
+public class PedestrianPOI {
+
+    long id;
+    Node node;
+    Geometry geom;
+    String type = null;
+
+    PedestrianPOI(Node node, String type) {
+        this.node = node;
+        this.id = node.getId();
+        this.type = type;
+
+
+    }
+
+    void setGeom(Geometry geom) {
+        this.geom = geom;
+    }
+
+
+}
+
+public class Grounds {
 
     long id;
     Way way;
     Geometry geom;
-
+    String type ;
     int priority = 0;
     float coeff_G = 0.0;
 
-    Ground(Way way) {
+    Grounds(Way way, String wayTag, String wayKey, String type) {
         this.way = way;
         this.id = way.getId();
-
+        this.type = type;
         String primaryTagKey = "";
         String primaryTagValue = "";
         String secondaryTagKey = "";
         String secondaryTagValue = "";
 
-        for (Tag tag : way.getTags()) {
-            String key = tag.getKey()
-            String value = tag.getValue()
-            if (["aeroway","amenity","landcover","landuse","leisure","natural","water","waterway"].contains(key)) {
-                primaryTagKey = key
-                primaryTagValue = value
-            }
-            if (["parking","covered","surface","wetland"].contains(key)) {
-                secondaryTagKey = key
-                secondaryTagValue = value
-            }
+        // for (Tag tag : way.getTags()) {
+        String key = wayKey
+        String value = wayTag
+        if (["aeroway","amenity","landcover","landuse","leisure","natural","water","waterway"].contains(key)) {
+            primaryTagKey = key
+            primaryTagValue = value
         }
+        if (["parking","covered","surface","wetland"].contains(key)) {
+            secondaryTagKey = key
+            secondaryTagValue = value
+        }
+        //}
         if (primaryTagKey == "aeroway" &&
                 ["taxiway","runway","aerodrome","helipad","apron","taxilane"].contains(primaryTagValue)) {
             priority = 29
@@ -1432,15 +1879,21 @@ public class Ground {
                 priority = 22
                 coeff_G = 0.1
             }
+            if (primaryTagValue == "taxi") {
+                priority = 22
+                coeff_G = 0.1
+            }
             if (primaryTagValue == "parking" && secondaryTagKey == "parking" && !secondaryTagValue.contains("underground")) {
                 priority = 22
                 coeff_G = 0.1
+                type = "parking"
             }
         }
         if (primaryTagKey == "landcover") {
             if (primaryTagValue == "water") {
                 priority = 7
                 coeff_G = 0.3
+                type = "water"
             }
             if (["bedrock","bare_ground","concrete","asphalt"].contains(primaryTagValue)) {
                 priority = 8
@@ -1457,10 +1910,12 @@ public class Ground {
             if (["bushes","vegetation"].contains(primaryTagValue)) {
                 priority = 11
                 coeff_G = 0.8
+                type = "vegetation"
             }
             if (["flowerbed","trees, grass","trees","grass","tree","grassland","wood"].contains(primaryTagValue)) {
                 priority = 12
                 coeff_G = 1.0
+                type = "vegetation"
             }
         }
         if (primaryTagKey == "landuse") {
@@ -1492,6 +1947,7 @@ public class Ground {
             if (["meadow","forest","grass"].contains(primaryTagValue)) {
                 priority = 28
                 coeff_G = 1.0
+                type = "vegetation"
             }
         }
         if (primaryTagKey == "leisure") {
@@ -1515,6 +1971,7 @@ public class Ground {
                 if (["grass"].contains(secondaryTagValue)) {
                     priority = 6
                     coeff_G = 1.0
+                    type = "vegetation"
                 }
             }
             if (primaryTagValue == "marina") {
@@ -1524,10 +1981,12 @@ public class Ground {
             if (primaryTagValue == "park") {
                 priority = 31
                 coeff_G = 0.7
+                type = "park"
             }
             if (["garden","nature_reserve","golf_course"].contains(primaryTagValue)) {
                 priority = 32
                 coeff_G = 1.0
+                type = "vegetation"
             }
         }
         if (primaryTagKey == "natural") {
@@ -1634,6 +2093,7 @@ public class Ground {
             if (["stream","riverbank","canal","artificial"].contains(primaryTagValue)) {
                 priority = 7
                 coeff_G = 0.3
+                type = "water"
             }
         }
     }
@@ -1641,5 +2101,5 @@ public class Ground {
     void setGeom(Geometry geom) {
         this.geom = geom;
     }
-}
 
+}
