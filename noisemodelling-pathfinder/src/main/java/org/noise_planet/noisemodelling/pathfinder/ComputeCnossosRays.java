@@ -43,6 +43,7 @@ import org.locationtech.jts.geom.prep.PreparedLineString;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.ReceiverStatsMetric;
@@ -55,7 +56,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays.ComputationSide.LEFT;
@@ -617,6 +617,10 @@ public class ComputeCnossosRays {
                 for(int i=0; i<coordinates.size()-1; i++) {
                     ProfileBuilder.CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS);
                     profile.setSrcOrientation(orientation);
+                    if (!profile.isFreeField()){
+                        path = null;
+                        return path;
+                    }
                     double dist = dist2D(coordinates.get(i), coordinates.get(i+1));
                     g+=profile.getGPath()*dist;
                     d+=dist;
@@ -737,22 +741,25 @@ public class ComputeCnossosRays {
         if(pts2D.size() != cutPts.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
-        //Remove aligned cut points
+        //Remove aligned cut points thanks to jts DouglasPeuckerSimplifier algo
         List<ProfileBuilder.CutPoint> newCutPts = new ArrayList<>(cutPts.size());
-        List<Coordinate> newPts2D = new ArrayList<>(pts2D.size());
-        newCutPts.add(cutPts.get(0));
-        newPts2D.add(pts2D.get(0));
-        for(int i=0; i<pts2D.size()-2; i++) {
-            Coordinate c0 = pts2D.get(i);
-            Coordinate c1 = pts2D.get(i+1);
-            Coordinate c2 = pts2D.get(i+2);
-            if(new LineSegment(c0, c2).distance(c1) >= 0.1) {
-                newPts2D.add(c1);
-                newCutPts.add(cutPts.get(i+1));
+       Geometry lineString = new GeometryFactory().createLineString(pts2D.toArray(new Coordinate[0]));
+        List<Coordinate> newPts2D = List.of(DouglasPeuckerSimplifier.simplify(lineString, 0.5*cutProfile.getDistanceToSR()).getCoordinates());
+        List<Integer> matchingIndices = new ArrayList<>();
+        for (int i = 0; i < pts2D.size(); i++) {
+            Coordinate coordinate1 = pts2D.get(i);
+            for (int j = 0; j < newPts2D.size(); j++) {
+                Coordinate coordinate2 = newPts2D.get(j);
+                if (coordinate1.equals(coordinate2)) {
+                    matchingIndices.add(i);
+                    break; // Move to the next coordinate in list1 once a match is found
+                }
             }
         }
-        newPts2D.add(pts2D.get(pts2D.size()-1));
-        newCutPts.add(cutPts.get(cutPts.size() - 1));
+        for (int index : matchingIndices) {
+            newCutPts.add(cutPts.get(index));
+        }
+
         pts2D = newPts2D;
         cutPts = newCutPts;
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
@@ -765,39 +772,50 @@ public class ComputeCnossosRays {
         propagationPath.setCutPoints(cutPts);
         LineSegment srcRcvLine = new LineSegment(firstPts2D, lastPts2D);
         List<Coordinate> pts = new ArrayList<>();
-        pts.add(firstPts2D);
-        for(int i=1; i<pts2D.size(); i++) {
-            Coordinate pt = pts2D.get(i);
-            double frac = srcRcvLine.segmentFraction(pt);
-            double y = -Double.MAX_VALUE;
-            for(int j=i+1; j<pts2D.size(); j++) {
-                y = max(y, srcRcvLine.p0.y + frac*(pts2D.get(j).y-srcRcvLine.p0.y));
-            }
-            if(y <= pt.y){
-                pts.add(pt);
-                srcRcvLine = new LineSegment(pt, lastPts2D);
 
-                //Filter point to only keep hull.
-                List<Coordinate> toRemove = new ArrayList<>();
-                //check if last-1 point is under or not the surrounding points
-                for(int j = pts.size()-2; j > 0; j--) {
-                    Coordinate jPt = pts.get(j);
-                    if(jPt.y==Double.MAX_VALUE || isInfinite(jPt.y)) {
-                        toRemove.add(jPt);
-                    }
-                    //line between last point and previous-1 point
-                    else {
-                        LineSegment lineRm = new LineSegment(pts.get(j - 1), pt);
-                        double fracRm = lineRm.segmentFraction(jPt);
-                        double zRm = lineRm.p0.z + fracRm * (lineRm.p1.z - lineRm.p0.z);
-                        if (zRm >= jPt.z) {
-                            toRemove.add(jPt);
-                        }
-                    }
-                }
-                pts.removeAll(toRemove);
+        // Extract the first and last points to define the line segment
+        Coordinate firstPt = pts2D.get(0);
+        Coordinate lastPt = pts2D.get(pts2D.size() - 1);
+
+        // Compute the slope and y-intercept of the line segment
+        double slope = (lastPt.y - firstPt.y) / (lastPt.x - firstPt.x);
+        double yIntercept = firstPt.y - slope * firstPt.x;
+
+         // Filter out points that are below the line segment
+        List<Coordinate> filteredCoordinates = new ArrayList<>();
+        for (Coordinate coord : pts2D) {
+            double lineY = slope * coord.x + yIntercept;
+            if (coord.y >= lineY-0.001) { // espilon to avoir float issues
+                filteredCoordinates.add(coord);
             }
         }
+
+       // Compute the convex hull using JTS
+        GeometryFactory geomFactory = new GeometryFactory();
+        Coordinate[] coordsArray = filteredCoordinates.toArray(new Coordinate[0]);
+        ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
+        Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
+        Arrays.sort(convexHullCoords, Comparator.comparingDouble(coord -> coord.x));
+
+        CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
+        Geometry geom = geomFactory.createLineString(coordSequence);
+        Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
+        convexHullCoords = uniqueGeom.getCoordinates();
+
+        // Convert the result back to your format (List<Point2D> pts)
+        List<Coordinate> convexHullPoints = new ArrayList<>();
+        if (convexHullCoords.length ==3){
+            convexHullPoints = Arrays.asList(convexHullCoords);
+       }else {
+            for (int j = 0; j < convexHullCoords.length; j++) {
+                // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
+                if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
+                    continue; // Skip this point as it's not part of the hull
+                }
+                convexHullPoints.add(convexHullCoords[j]);
+            }
+        }
+        pts = convexHullPoints;
 
         double e = 0;
         Coordinate src = null;
