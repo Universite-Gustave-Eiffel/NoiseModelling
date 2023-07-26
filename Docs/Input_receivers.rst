@@ -21,7 +21,7 @@ Table definition
 	* Description: receiver's unique identifier. 
 	* Type: Integer - Primary Key
 * ``THE_GEOM``
-	* Description: 3D receiver's geometry. Z coordinate correspond to the receiver's altitude 
+	* Description: 3D receiver's geometry. Z coordinate correspond to the receiver's height (relative to ground altitude) 
 	* Type: Geometry (``POINT`` or ``MULTIPOINT``)
 
 If you are working with receivers based on buildings (*e.g* 50 cm around the building's facades - see ``Building_grid`` script), your ``RECEIVERS`` table will need this additional column:
