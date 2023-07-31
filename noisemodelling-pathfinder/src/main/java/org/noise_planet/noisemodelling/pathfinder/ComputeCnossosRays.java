@@ -785,7 +785,7 @@ public class ComputeCnossosRays {
         List<Coordinate> filteredCoordinates = new ArrayList<>();
         for (Coordinate coord : pts2D) {
             double lineY = slope * coord.x + yIntercept;
-            if (coord.y >= lineY-0.001) { // espilon to avoir float issues
+            if (coord.y >= lineY-0.000001) { // espilon to avoir float issues
                 filteredCoordinates.add(coord);
             }
         }
@@ -795,7 +795,9 @@ public class ComputeCnossosRays {
         Coordinate[] coordsArray = filteredCoordinates.toArray(new Coordinate[0]);
         ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
         Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-        Arrays.sort(convexHullCoords, Comparator.comparingDouble(coord -> coord.x));
+        int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
+        int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
+        convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast+1);
 
         CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
         Geometry geom = geomFactory.createLineString(coordSequence);
