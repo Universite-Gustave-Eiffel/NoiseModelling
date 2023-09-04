@@ -745,23 +745,18 @@ public class ComputeCnossosRays {
         List<ProfileBuilder.CutPoint> newCutPts = new ArrayList<>(cutPts.size());
        Geometry lineString = new GeometryFactory().createLineString(pts2D.toArray(new Coordinate[0]));
         List<Coordinate> newPts2D = List.of(DouglasPeuckerSimplifier.simplify(lineString, 0.5*cutProfile.getDistanceToSR()).getCoordinates());
-        List<Integer> matchingIndices = new ArrayList<>();
-        for (int i = 0; i < pts2D.size(); i++) {
-            Coordinate coordinate1 = pts2D.get(i);
-            for (int j = 0; j < newPts2D.size(); j++) {
-                Coordinate coordinate2 = newPts2D.get(j);
-                if (coordinate1.equals(coordinate2)) {
-                    matchingIndices.add(i);
-                    break; // Move to the next coordinate in list1 once a match is found
-                }
-            }
+
+        for (int i = 0; i < newPts2D.size(); i++) {
+            newCutPts.add(cutPts.get(pts2D.indexOf(newPts2D.get(i))));
         }
-        for (int index : matchingIndices) {
-            newCutPts.add(cutPts.get(index));
-        }
+
 
         pts2D = newPts2D;
         cutPts = newCutPts;
+        if(pts2D.size() != cutPts.size()) {
+            throw new IllegalArgumentException("The two arrays size should be the same");
+        }
+        
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
@@ -785,7 +780,7 @@ public class ComputeCnossosRays {
         List<Coordinate> filteredCoordinates = new ArrayList<>();
         for (Coordinate coord : pts2D) {
             double lineY = slope * coord.x + yIntercept;
-            if (coord.y >= lineY-0.001) { // espilon to avoir float issues
+            if (coord.y >= lineY-0.000001) { // espilon to avoir float issues
                 filteredCoordinates.add(coord);
             }
         }
@@ -795,7 +790,9 @@ public class ComputeCnossosRays {
         Coordinate[] coordsArray = filteredCoordinates.toArray(new Coordinate[0]);
         ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
         Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-        Arrays.sort(convexHullCoords, Comparator.comparingDouble(coord -> coord.x));
+        int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
+        int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
+        convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast+1);
 
         CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
         Geometry geom = geomFactory.createLineString(coordSequence);
