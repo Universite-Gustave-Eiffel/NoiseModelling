@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
@@ -107,10 +108,10 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
             return levels;
         }
 
-        double[] processAndPushResult(long receiverPK, List<double[]> wjSources,List<VerticeSL> receiverAttenuationLevels, ConcurrentLinkedDeque<VerticeSL> result, boolean feedStack) {
+        double[] processAndPushResult(long receiverPK,Coordinate receiverCoordinate, List<double[]> wjSources,List<VerticeSL> receiverAttenuationLevels, ConcurrentLinkedDeque<VerticeSL> result, boolean feedStack) {
             double[] levels = sumLevels(wjSources, receiverAttenuationLevels);
             if(feedStack) {
-                pushInStack(result, new VerticeSL(receiverPK, -1, wToDba(levels)));
+                pushInStack(result, new VerticeSL(receiverPK, -1, wToDba(levels), receiverCoordinate));
             }
             return levels;
         }
@@ -250,7 +251,9 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                 propagationPaths.clear();
             }
             long receiverPK = receiverId;
+            Coordinate receiverPosition = null;
             if(ldenComputeRaysOut.inputData != null) {
+                receiverPosition = ldenComputeRaysOut.inputData.receivers.get((int)receiverId);
                 if(receiverId < ldenComputeRaysOut.inputData.receiversPk.size()) {
                     receiverPK = ldenComputeRaysOut.inputData.receiversPk.get((int)receiverId);
                 }
@@ -291,19 +294,19 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                     if (ldenConfig.computeLDay || ldenConfig.computeLDEN) {
                         dayLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesD.get((int) sourceId)), entry.getValue().dayLevels);
                         if(ldenConfig.computeLDay) {
-                            pushInStack(ldenComputeRaysOut.ldenData.lDayLevels, new VerticeSL(receiverPK, sourcePK, dayLevels));
+                            pushInStack(ldenComputeRaysOut.ldenData.lDayLevels, new VerticeSL(receiverPK, sourcePK, dayLevels, receiverPosition));
                         }
                     }
                     if (ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
                         eveningLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesE.get((int) sourceId)), entry.getValue().eveningLevels);
                         if(ldenConfig.computeLEvening) {
-                            pushInStack(ldenComputeRaysOut.ldenData.lEveningLevels, new VerticeSL(receiverPK, sourcePK, eveningLevels));
+                            pushInStack(ldenComputeRaysOut.ldenData.lEveningLevels, new VerticeSL(receiverPK, sourcePK, eveningLevels, receiverPosition));
                         }
                     }
                     if (ldenConfig.computeLNight || ldenConfig.computeLDEN) {
                         nightLevels = sumArray(wToDba(ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesN.get((int) sourceId)), entry.getValue().nightLevels);
                         if(ldenConfig.computeLNight) {
-                            pushInStack(ldenComputeRaysOut.ldenData.lNightLevels, new VerticeSL(receiverPK, sourcePK, nightLevels));
+                            pushInStack(ldenComputeRaysOut.ldenData.lNightLevels, new VerticeSL(receiverPK, sourcePK, nightLevels, receiverPosition));
                         }
                     }
                     if (ldenConfig.computeLDEN) {
@@ -313,25 +316,25 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                                     4 * dbaToW(wToDba(eveningLevels[idFrequency]) + 5) +
                                     8 * dbaToW(wToDba(nightLevels[idFrequency]) + 10)) / 24.0;
                         }
-                        pushInStack(ldenComputeRaysOut.ldenData.lDenLevels, new VerticeSL(receiverPK, sourcePK, levels));
+                        pushInStack(ldenComputeRaysOut.ldenData.lDenLevels, new VerticeSL(receiverPK, sourcePK, levels, receiverPosition));
                     }
                 }
             } else {
                 // Merge all results
                 if (ldenConfig.computeLDay || ldenConfig.computeLDEN) {
-                    dayLevels = processAndPushResult(receiverPK,
+                    dayLevels = processAndPushResult(receiverPK, receiverPosition,
                             ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesD,
                             lDENThreadRaysOut[0].receiverAttenuationLevels, ldenComputeRaysOut.ldenData.lDayLevels,
                             ldenConfig.computeLDay);
                 }
                 if (ldenConfig.computeLEvening || ldenConfig.computeLDEN) {
-                    eveningLevels = processAndPushResult(receiverPK,
+                    eveningLevels = processAndPushResult(receiverPK, receiverPosition,
                             ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesE,
                             lDENThreadRaysOut[1].receiverAttenuationLevels, ldenComputeRaysOut.ldenData.lEveningLevels,
                             ldenConfig.computeLEvening);
                 }
                 if (ldenConfig.computeLNight || ldenConfig.computeLDEN) {
-                    nightLevels = processAndPushResult(receiverPK,
+                    nightLevels = processAndPushResult(receiverPK, receiverPosition,
                             ldenComputeRaysOut.ldenPropagationProcessData.wjSourcesN,
                             lDENThreadRaysOut[2].receiverAttenuationLevels, ldenComputeRaysOut.ldenData.lNightLevels,
                             ldenConfig.computeLNight);
@@ -343,7 +346,7 @@ public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
                                 4 * dbaToW(wToDba(eveningLevels[idFrequency]) + 5) +
                                 8 * dbaToW(wToDba(nightLevels[idFrequency]) + 10)) / 24.0;
                     }
-                    pushInStack(ldenComputeRaysOut.ldenData.lDenLevels, new VerticeSL(receiverPK, -1, wToDba(levels)));
+                    pushInStack(ldenComputeRaysOut.ldenData.lDenLevels, new VerticeSL(receiverPK, -1, wToDba(levels), receiverPosition));
                 }
             }
             for (ThreadRaysOut threadRaysOut : lDENThreadRaysOut) {

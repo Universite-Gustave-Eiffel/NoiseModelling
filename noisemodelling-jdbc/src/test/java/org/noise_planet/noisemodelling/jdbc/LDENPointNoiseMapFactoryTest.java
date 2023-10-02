@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
@@ -1066,6 +1067,7 @@ public class LDENPointNoiseMapFactoryTest {
         ldenConfig.setComputeLNight(false);
         ldenConfig.setComputeLDEN(false);
         ldenConfig.setMergeSources(true); // No idsource column
+        ldenConfig.setExportReceiverPosition(true); // create geometry columns with receiver position
 
         LDENPointNoiseMapFactory factory = new LDENPointNoiseMapFactory(connection, ldenConfig);
 
@@ -1134,32 +1136,15 @@ public class LDENPointNoiseMapFactoryTest {
             assertEquals(4361, rs.getInt(1));
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, LVL.* FROM "+ ldenConfig.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK");
-        SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), true,new EmptyProgressVisitor());
-
-
-
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ ldenConfig.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ ldenConfig.lDayTable+" ORDER BY IDRECEIVER")) {
             assertTrue(rs.next());
-         /*   double[] leqs = new double[ldenConfig.propagationProcessPathData.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathData.freq_lvl.size(); idfreq++) {
-                leqs[idfreq - 1] = rs.getDouble(idfreq);
-            }
-            assertEquals(75, leqs[0], 2.0);
-            assertEquals(69, leqs[1], 2.0);
-            assertEquals(68, leqs[2], 2.0);
-            assertEquals(69, leqs[3], 2.0);
-            assertEquals(71, leqs[4], 2.0);
-            assertEquals(69, leqs[5], 2.0);
-            assertEquals(60, leqs[6], 2.0);
-            assertEquals(51, leqs[7], 2.0);
-
-            assertEquals(79, rs.getDouble(9), 2.0);
-            assertEquals(75,rs.getDouble(10), 2.0);*/
+            assertEquals(1, rs.getInt("IDRECEIVER"));
+            Object geom = rs.getObject("THE_GEOM");
+            assertNotNull(geom);
+            assertTrue(geom instanceof Point);
+            // We get receiver Altitude not height
+            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);
         }
-
-
     }
 
     public static void exportScene(String name, ProfileBuilder builder, ComputeRaysOutAttenuation result) throws IOException {

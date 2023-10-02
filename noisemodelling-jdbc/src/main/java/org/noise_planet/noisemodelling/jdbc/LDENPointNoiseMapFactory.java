@@ -24,7 +24,9 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
@@ -334,6 +336,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             if(!ldenConfig.mergeSources) {
                 query.append(", ?"); // ID_SOURCE
             }
+            if(ldenConfig.exportReceiverPosition) {
+                query.append(", ?"); // THE_GEOM
+            }
             if (!ldenConfig.computeLAEQOnly) {
                 query.append(", ?".repeat(ldenConfig.propagationProcessPathDataDay.freq_lvl.size())); // freq value
                 query.append(", ?, ?);"); // laeq, leq
@@ -347,6 +352,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 ps = new StringPreparedStatements(o, query.toString());
             }
             int batchSize = 0;
+            GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
             while(!stack.isEmpty()) {
                 ComputeRaysOutAttenuation.VerticeSL row = stack.pop();
                 ldenData.queueSize.decrementAndGet();
@@ -355,7 +361,11 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 if(!ldenConfig.mergeSources) {
                     ps.setLong(parameterIndex++, row.sourceId);
                 }
-
+                if(ldenConfig.exportReceiverPosition) {
+                    ps.setObject(parameterIndex++,  row.receiverPosition != null ?
+                            factory.createPoint(row.receiverPosition):
+                            factory.createPoint());
+                }
                 if (!ldenConfig.computeLAEQOnly){
                     for(int idfreq=0;idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                         double value = row.value[idfreq];
@@ -400,6 +410,11 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(", IDSOURCE bigint NOT NULL");
             } else {
                 sb.append(" (IDRECEIVER bigint NOT NULL");
+            }
+            if(ldenConfig.exportReceiverPosition) {
+                sb.append(", THE_GEOM GEOMETRY(POINTZ,");
+                sb.append(srid);
+                sb.append(")");
             }
             if (ldenConfig.computeLAEQOnly){
                 sb.append(", LAEQ numeric(5, 2)");

@@ -440,6 +440,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         public final long sourceId;
         public final long receiverId;
         public final double[] value;
+        public final Coordinate receiverPosition;
 
         /**
          *
@@ -451,6 +452,21 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
+            this.receiverPosition = null;
+        }
+
+
+        /**
+         *
+         * @param receiverId Receiver identifier
+         * @param sourceId Source identifier
+         * @param value Noise level in dB
+         */
+        public VerticeSL(long receiverId, long sourceId, double[] value, Coordinate receiverPosition) {
+            this.sourceId = sourceId;
+            this.receiverId = receiverId;
+            this.value = value;
+            this.receiverPosition = receiverPosition;
         }
     }
 
@@ -488,7 +504,10 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 }
             }
             if (aGlobalMeteo != null) {
-                receiverAttenuationLevels.add(new VerticeSL(receiverId, sourceId, aGlobalMeteo));
+                receiverAttenuationLevels.add(new VerticeSL(receiverId, sourceId, aGlobalMeteo,
+                        multiThreadParent.inputData != null ?
+                                multiThreadParent.inputData.receivers.get((int)receiverId) :
+                                null));
                 return aGlobalMeteo;
             } else {
                 return new double[0];

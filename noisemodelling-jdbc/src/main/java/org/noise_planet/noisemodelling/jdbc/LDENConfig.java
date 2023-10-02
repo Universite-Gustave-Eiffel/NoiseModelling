@@ -88,11 +88,30 @@ public class LDENConfig {
     Boolean sqlOutputFileCompression = true;
     Boolean dropResultsTable = true;
 
+    /**
+     * If true the position of the receiver (with the altitude if available) will be exported into the results tables
+     */
+    boolean exportReceiverPosition = false;
+
     public LDENConfig(INPUT_MODE input_mode) {
         this.input_mode = input_mode;
     }
 
+    /**
+     * @return If true the position of the receiver (with the altitude if available) will be exported into the results
+     * tables
+     */
+    public boolean isExportReceiverPosition() {
+        return exportReceiverPosition;
+    }
 
+    /**
+     * @param exportReceiverPosition If true the position of the receiver (with the altitude if available) will be
+     *                               exported into the results tables
+     */
+    public void setExportReceiverPosition(boolean exportReceiverPosition) {
+        this.exportReceiverPosition = exportReceiverPosition;
+    }
     public PropagationProcessPathData getPropagationProcessPathData(TIME_PERIOD time_period) {
         switch (time_period) {
             case DAY:
