@@ -300,56 +300,6 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String geomField, String tableReceiver, String tableResult) {
-    // Create a logger to display messages in the geoserver logs and in the command prompt.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-
-    StringBuilder sb = new StringBuilder("create table ");
-    sb.append(tableName);
-    if (!ldenConfig.mergeSources) {
-        sb.append(" (IDRECEIVER bigint NOT NULL");
-        sb.append(", IDSOURCE bigint NOT NULL");
-    } else {
-        sb.append(" (IDRECEIVER bigint NOT NULL");
-    }
-    sb.append(", THE_GEOM geometry")
-    List<Integer> freqLvl = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY).freq_lvl;
-    for (int idfreq = 0; idfreq < freqLvl.size(); idfreq++) {
-        sb.append(", HZ");
-        sb.append(freqLvl.get(idfreq));
-        sb.append(" numeric(5, 2)");
-    }
-    sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
-    if (!ldenConfig.mergeSources) {
-        sb.append(", IDSOURCE");
-    }
-    sb.append(", ")
-    sb.append(geomField)
-    for (int idfreq = 0; idfreq < freqLvl.size(); idfreq++) {
-        sb.append(", HZ");
-        sb.append(freqLvl.get(idfreq));
-    }
-    sb.append(", LAEQ, LEQ FROM ")
-    sb.append(tableReceiver)
-    if (!ldenConfig.mergeSources) {
-        // idsource can't be null so we can't left join
-        sb.append(" a, ")
-        sb.append(tableResult)
-        sb.append(" b WHERE a.PK = b.IDRECEIVER")
-    } else {
-        sb.append(" a LEFT JOIN ")
-        sb.append(tableResult)
-        sb.append(" b ON a.PK = b.IDRECEIVER")
-    }
-    sql.execute(sb.toString())
-    // apply pk
-    logger.info("Add primary key on " + tableName)
-    if (!ldenConfig.mergeSources) {
-        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)")
-    } else {
-        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER)")
-    }
-}
 // run the script
 def run(input) {
 
@@ -581,6 +531,26 @@ def exec(Connection connection, input) {
     ldenConfig.setComputeLNight(!confSkipLnight)
     ldenConfig.setComputeLDEN(!confSkipLden)
     ldenConfig.setMergeSources(!confExportSourceId)
+    ldenConfig.setExportReceiverPosition(true)
+    ldenConfig.setlDayTable("LDAY_GEOM")
+    ldenConfig.setlEveningTable("LEVENING_GEOM")
+    ldenConfig.setlNightTable("LNIGHT_GEOM")
+    ldenConfig.setlDenTable("LDEN_GEOM")
+
+
+    Sql sql = new Sql(connection)
+    if(!confSkipLday) {
+        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDayTable()))
+    }
+    if(!confSkipLevening) {
+        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlEveningTable()))
+    }
+    if(!confSkipLnight) {
+        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlNightTable()))
+    }
+    if(!confSkipLden) {
+        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDenTable()))
+    }
 
     int maximumRaysToExport = 5000
 
@@ -742,44 +712,20 @@ def exec(Connection connection, input) {
         ldenProcessing.stop()
     }
 
-    // Create a sql connection to interact with the database in SQL
-    Sql sql = new Sql(connection)
-
-    // Associate Geometry column to the table LDEN
     StringBuilder createdTables = new StringBuilder()
 
 
     if (ldenConfig.computeLDay) {
-        sql.execute("drop table if exists LDAY_GEOM;")
-        logger.info('create table LDAY_GEOM')
-        forgeCreateTable(sql, "LDAY_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
-                ldenConfig.lDayTable)
         createdTables.append(" LDAY_GEOM")
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDayTable()))
     }
     if (ldenConfig.computeLEvening) {
-        sql.execute("drop table if exists LEVENING_GEOM;")
-        logger.info('create table LEVENING_GEOM')
-        forgeCreateTable(sql, "LEVENING_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
-                ldenConfig.lEveningTable)
         createdTables.append(" LEVENING_GEOM")
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlEveningTable()))
     }
     if (ldenConfig.computeLNight) {
-        sql.execute("drop table if exists LNIGHT_GEOM;")
-        logger.info('create table LNIGHT_GEOM')
-        forgeCreateTable(sql, "LNIGHT_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
-                ldenConfig.lNightTable)
         createdTables.append(" LNIGHT_GEOM")
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlNightTable()))
     }
     if (ldenConfig.computeLDEN) {
-        sql.execute("drop table if exists LDEN_GEOM;")
-        logger.info('create table LDEN_GEOM')
-        forgeCreateTable(sql, "LDEN_GEOM", ldenConfig, geomFieldsRcv.get(0), receivers_table_name,
-                ldenConfig.lDenTable)
         createdTables.append(" LDEN_GEOM")
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDenTable()))
     }
 
     resultString = "Calculation Done ! " + createdTables.toString() + " table(s) have been created."

@@ -409,11 +409,11 @@ public abstract class JdbcNoiseMap {
         this.bodyBarrier = bodyBarrier;
     }
 
-    protected double getCellWidth() {
+    public double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;
     }
 
-    protected double getCellHeight() {
+    public double getCellHeight() {
         return mainEnvelope.getHeight() / gridDim;
     }
 
