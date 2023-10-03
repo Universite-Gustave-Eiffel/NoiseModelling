@@ -63,6 +63,13 @@ public class PointNoiseMap extends JdbcNoiseMap {
     }
 
     /**
+     * @return Receiver table name
+     */
+    public String getReceiverTableName() {
+        return receiverTableName;
+    }
+
+    /**
      * Computation stacks and timing are collected by this class in order
      * to profile the execution of the simulation
      * @param profilerThread Instance of ProfilerThread

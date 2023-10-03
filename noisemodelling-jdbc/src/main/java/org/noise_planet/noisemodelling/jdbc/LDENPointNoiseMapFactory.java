@@ -107,10 +107,16 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     @Override
     public void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
+        this.srid = GeometryTableUtilities.getSRID(connection, pointNoiseMap.getSourcesTableName());
+        if(this.srid == 0) {
+            this.srid = GeometryTableUtilities.getSRID(connection, pointNoiseMap.getBuildingsTableName());
+        }
+        if(this.srid == 0) {
+            this.srid = GeometryTableUtilities.getSRID(connection, pointNoiseMap.getReceiverTableName());
+        }
         if(ldenConfig.input_mode == LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, pointNoiseMap.getSourcesTableName());
-            this.srid = GeometryTableUtilities.getSRID(connection, pointNoiseMap.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
             List<Integer> allFrequencyValues = Arrays.asList(CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";
