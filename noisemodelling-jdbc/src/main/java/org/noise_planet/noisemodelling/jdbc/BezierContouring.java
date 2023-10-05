@@ -21,6 +21,7 @@
  */
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.jts_utils.Contouring;
@@ -53,6 +54,8 @@ public class BezierContouring {
     List<Double> isoLevels;
     List<String> isoLabels;
     boolean smooth = true;
+
+    boolean mergeTriangles = true;
     double smoothCoefficient = 1.0;
     double deltaPoints = 0.5; // minimal distance between bezier points
     double epsilon = 0.05;
@@ -94,6 +97,20 @@ public class BezierContouring {
 
     public double getSmoothCoefficient() {
         return smoothCoefficient;
+    }
+
+    /**
+     * @return True if triangles will be merged using isolevel attribute
+     */
+    public boolean isMergeTriangles() {
+        return mergeTriangles;
+    }
+
+    /**
+     * @param mergeTriangles True if triangles will be merged using isolevel attribute, Z ordinate will be lost
+     */
+    public void setMergeTriangles(boolean mergeTriangles) {
+        this.mergeTriangles = mergeTriangles;
     }
 
     /**
@@ -181,11 +198,11 @@ public class BezierContouring {
 
     static Coordinate[] generateBezierCurves(Coordinate[] coordinates, Quadtree segmentTree, double pointsDelta) {
         ArrayList<Coordinate> pts = new ArrayList<>();
-        pts.add(coordinates[0]);
+        pts.add(new Coordinate(coordinates[0].x, coordinates[0].y));
         for(int i = 0; i < coordinates.length - 1; i++) {
             final int i2 = i + 1;
-            Coordinate p1 = coordinates[i];
-            Coordinate p2 = coordinates[i2];
+            Coordinate p1 = new Coordinate(coordinates[i].x, coordinates[i].y);
+            Coordinate p2 = new Coordinate(coordinates[i2].x, coordinates[i2].y);
 
             Segment segment = new Segment(p1, p2);
             List<Segment> segments = (List<Segment>)segmentTree.query(segment.getEnvelope());
@@ -409,7 +426,7 @@ public class BezierContouring {
                 + "(cell_id, the_geom, ISOLVL, ISOLABEL) VALUES (?, ?, ?, ?);")) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
                 ArrayList<Polygon> polygons = new ArrayList<>();
-                if(!smooth) {
+                if(!smooth && mergeTriangles) {
                     // Merge triangles
                     try {
                         CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
@@ -454,12 +471,21 @@ public class BezierContouring {
         Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
+            String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
+            if(smooth || mergeTriangles) {
+                geometryType = "GEOMETRY(POLYGON,"+srid+")";
+            }
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
-            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) + "(PK SERIAL, CELL_ID INTEGER, THE_GEOM GEOMETRY, ISOLVL INTEGER, ISOLABEL VARCHAR);");
-            String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya,ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb,ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
+            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) +
+                    "(PK SERIAL, CELL_ID INTEGER, THE_GEOM "+geometryType+", ISOLVL INTEGER, ISOLABEL VARCHAR);");
+            String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za," +
+                    "ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb, ST_Z(p2.the_geom) zb," +
+                    "ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, ST_Z(p3.the_geom) zc," +
+                    " p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
             try(ResultSet rs = st.executeQuery(query)) {
                 // Cache columns index
-                int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, lvla = 0, lvlb = 0, lvlc = 0, cell_id = 0;
+                int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, za = 0, zb = 1, zc = 1, lvla = 0, lvlb = 0,
+                        lvlc = 0, cell_id = 0;
                 ResultSetMetaData resultSetMetaData = rs.getMetaData();
                 for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
                     switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
@@ -481,6 +507,15 @@ public class BezierContouring {
                         case "YC":
                             yc = columnId;
                             break;
+                        case "ZA":
+                            za = columnId;
+                            break;
+                        case "ZB":
+                            zb = columnId;
+                            break;
+                        case "ZC":
+                            zc = columnId;
+                            break;
                         case "LVLA":
                             lvla = columnId;
                             break;
@@ -495,8 +530,8 @@ public class BezierContouring {
                             break;
                     }
                 }
-                if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0 || lvla == 0 || lvlb == 0 ||
-                        lvlc == 0 || cell_id == 0) {
+                if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0  || za == 0 || zb == 0 || zc == 0
+                        || lvla == 0 || lvlb == 0 || lvlc == 0 || cell_id == 0) {
                     throw new SQLException("Missing field in input tables");
                 }
                 while(rs.next()) {
@@ -508,9 +543,9 @@ public class BezierContouring {
                     }
                     lastCellId = cellId;
                     // Split current triangle
-                    Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya));
-                    Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb));
-                    Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc));
+                    Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya), rs.getDouble(za));
+                    Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb), rs.getDouble(zb));
+                    Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc), rs.getDouble(zc));
                     // Fetch data
                     TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
                             dbaToW(rs.getDouble(lvlb)),
