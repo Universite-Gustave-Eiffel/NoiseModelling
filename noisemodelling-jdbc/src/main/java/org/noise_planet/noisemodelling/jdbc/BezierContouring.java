@@ -83,12 +83,14 @@ public class BezierContouring {
         for (int idiso = 0; idiso < isoLevels.size(); idiso++) {
             double lvl = isoLevels.get(idiso);
             this.isoLevels.add(dbaToW(lvl));
+            // Symbols ( and [ are used for ordering legend in application
+            // in ascii ( is 40 and [ is 91, numbers are between the two
             if (idiso == 0) {
-                this.isoLabels.add(String.format(Locale.ROOT, "< %s", format.format(lvl)));
+                this.isoLabels.add(String.format(Locale.ROOT, "%s)", format.format(lvl)));
             } else if(idiso < isoLevels.size() - 1){
                 this.isoLabels.add(String.format(Locale.ROOT, "%s-%s", format.format(isoLevels.get(idiso - 1)), format.format(lvl)));
             } else {
-                this.isoLabels.add(String.format(Locale.ROOT, "> %s", format.format(isoLevels.get(idiso - 1))));
+                this.isoLabels.add(String.format(Locale.ROOT, "[%s", format.format(isoLevels.get(idiso - 1))));
             }
         }
     }
