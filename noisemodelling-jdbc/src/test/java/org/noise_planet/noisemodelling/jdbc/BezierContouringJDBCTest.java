@@ -62,6 +62,7 @@ public class BezierContouringJDBCTest {
         bezierContouring.setPointTable("LDEN_GEOM");
         bezierContouring.setPointTableField("LAEQ");
         bezierContouring.setSmooth(true);
+        bezierContouring.setSmoothCoefficient(0.5);
         bezierContouring.createTable(connection);
         System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
 
@@ -125,6 +126,51 @@ public class BezierContouringJDBCTest {
                 assertEquals(-1.79, rs.getDouble("MINZ"), 0.01);
             }
         }
+    }
 
+
+    @Test
+    public void testContouring3DMerge() throws SQLException, IOException, LayerDelaunayError {
+        // Will create elevation iso from DEM table
+        GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
+                "wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/dem.geojson").toString());
+        LayerTinfour delaunayTool = new LayerTinfour();
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT the_geom FROM DEM")) {
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry pt = rs.getGeometry();
+                    if(pt != null) {
+                        delaunayTool.addVertex(pt.getCoordinate());
+                    }
+                }
+            }
+        }
+        delaunayTool.processDelaunay();
+        TriangleNoiseMap.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
+                new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
+                0, 0, 1);
+        try(Statement st = connection.createStatement()) {
+            st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
+            st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
+        }
+        long start = System.currentTimeMillis();
+        BezierContouring bezierContouring = new BezierContouring(Arrays.asList(0.,5.,10.,15.,20.,25.,30.,35.), 2154);
+        bezierContouring.setPointTable("RECEIVERS");
+        bezierContouring.setPointTableField("HEIGHT");
+        bezierContouring.setSmooth(false);
+        bezierContouring.createTable(connection);
+        System.out.println("Contouring done in " + (System.currentTimeMillis() - start) + " ms");
+
+        assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"));
+
+        // Check Z values in CONTOURING_NOISE_MAP
+        try(Statement st = connection.createStatement()) {
+            try(ResultSet rs = st.executeQuery("SELECT MAX(ST_ZMAX(THE_GEOM)) MAXZ, MIN(ST_ZMIN(THE_GEOM)) MINZ FROM CONTOURING_NOISE_MAP")) {
+                assertTrue(rs.next());
+                assertEquals(33.2, rs.getDouble("MAXZ"), 0.01);
+                assertEquals(-1.37, rs.getDouble("MINZ"), 0.01);
+            }
+        }
     }
 }

@@ -21,6 +21,12 @@
  */
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2.util.geometry.JTSUtils;
+import org.h2.value.ValueGeometry;
+import org.h2gis.functions.spatial.convert.ST_Force2D;
+import org.h2gis.functions.spatial.convert.ST_Force3D;
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
+import org.h2gis.utilities.GeometryMetaData;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
@@ -30,6 +36,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
+import org.noise_planet.noisemodelling.pathfinder.utils.GeometryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +69,8 @@ public class BezierContouring {
 
     int srid;
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
+
+    private int exportDimension = 2;
 
     /**
      * @param isoLevels Iso levels in dB
@@ -440,6 +449,34 @@ public class BezierContouring {
                     explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
                 }
                 for(Polygon polygon : polygons) {
+                    int geomDim = 0;
+                    boolean mixedDimension = false;
+                    for(Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
+                        if(Double.isNaN(coordinate.getZ())) {
+                            if(geomDim == 0) {
+                                geomDim = 2;
+                            } else if (geomDim == 3) {
+                                mixedDimension = true;
+                            }
+                        } else {
+                            if(geomDim == 0) {
+                                geomDim = 3;
+                            } else if (geomDim == 2) {
+                                mixedDimension = true;
+                            }
+                        }
+                    }
+                    if(geomDim != exportDimension || mixedDimension) {
+                        // Have to force geometry dimension one way
+                        if(exportDimension == 3) {
+                            polygon = ST_Force3D.convert(polygon, 0);
+                            polygon.setSRID(srid);
+                        } else {
+                            // remove z
+                            polygon = (Polygon)ST_Force2D.force2D(polygon);
+                            polygon.setSRID(srid);
+                        }
+                    }
                     int parameterIndex = 1;
                     ps.setInt(parameterIndex++, cellId);
                     ps.setObject(parameterIndex++, polygon);
@@ -472,8 +509,11 @@ public class BezierContouring {
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
-            if(smooth || mergeTriangles) {
+            exportDimension = 3;
+            if(smooth && smoothCoefficient > 0) {
+                // Bezier interpolation we loose 3d
                 geometryType = "GEOMETRY(POLYGON,"+srid+")";
+                exportDimension = 2;
             }
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
             st.execute("CREATE TABLE " + TableLocation.parse(outputTable) +
