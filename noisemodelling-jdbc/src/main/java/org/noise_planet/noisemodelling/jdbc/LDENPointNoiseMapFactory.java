@@ -402,15 +402,15 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" (IDRECEIVER bigint NOT NULL");
             }
             if (ldenConfig.computeLAEQOnly){
-                sb.append(", LAEQ numeric(5, 2)");
+                sb.append(", LAEQ REAL");
                 sb.append(");");
             } else {
                 for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                     sb.append(", HZ");
                     sb.append(ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq));
-                    sb.append(" numeric(5, 2)");
+                    sb.append(" REAL");
                 }
-                sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
+                sb.append(", LAEQ REAL, LEQ REAL");
                 sb.append(");");
             }
             return sb.toString();
