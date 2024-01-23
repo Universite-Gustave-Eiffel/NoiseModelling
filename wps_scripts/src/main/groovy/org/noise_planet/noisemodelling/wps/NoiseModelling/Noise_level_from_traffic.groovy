@@ -339,9 +339,9 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
         sb.append(pathData.freq_lvl.get(idfreq));
-        sb.append(" numeric(5, 2)");
+        sb.append(" REAL");
     }
-    sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2) ) AS SELECT PK");
+    sb.append(", LAEQ REAL, LEQ REAL ) AS SELECT PK");
     if (!ldenConfig.mergeSources) {
         sb.append(", IDSOURCE");
     }
