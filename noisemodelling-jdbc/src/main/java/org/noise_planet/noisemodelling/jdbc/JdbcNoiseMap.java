@@ -16,11 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
@@ -35,6 +33,8 @@ public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
     PropagationProcessPathData propagationProcessPathDataDay = new PropagationProcessPathData();
+
+    HashMap<String , PropagationProcessPathData > propagationProcessPathDataT= new HashMap<String,PropagationProcessPathData >();
     PropagationProcessPathData propagationProcessPathDataEvening = new PropagationProcessPathData();
     PropagationProcessPathData propagationProcessPathDataNight = new PropagationProcessPathData();
     Logger logger = LoggerFactory.getLogger(JdbcNoiseMap.class);
@@ -43,7 +43,7 @@ public abstract class JdbcNoiseMap {
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
     private String alphaFieldName = "G";
     protected final String buildingsTableName;
-    protected final String sourcesTableName;
+    protected String sourcesTableName;
     protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
@@ -96,6 +96,10 @@ public abstract class JdbcNoiseMap {
         }
     }
 
+    public PropagationProcessPathData getPropagationProcessPathData(String time_period) {
+        return propagationProcessPathDataT.get(time_period);
+    }
+
     public void setPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
         switch (time_period) {
             case DAY:
@@ -105,6 +109,10 @@ public abstract class JdbcNoiseMap {
             default:
                 propagationProcessPathDataNight = propagationProcessPathData;
         }
+    }
+
+    public void setPropagationProcessPathData(String time_period, PropagationProcessPathData propagationProcessPathData) {
+        propagationProcessPathDataT.put(time_period, propagationProcessPathData);
     }
     public PropagationProcessPathData getPropagationProcessPathDataDay() {
         return propagationProcessPathDataDay;
@@ -401,6 +409,76 @@ public abstract class JdbcNoiseMap {
         }
     }
 
+
+    /**
+     * Fetch source geometries and power
+     * @param connection Active connection
+     * @throws SQLException
+     */
+    public List<Integer> fetchSourceNumber(Connection connection)
+            throws SQLException, IOException {
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        Statement st  = connection.createStatement();
+        ResultSet rs = st.executeQuery("SELECT DISTINCT(PK) PK FROM " + sourcesTableName +";");
+        // Create a List to store the values
+        List<Integer> distinctSources = new ArrayList<>();
+
+
+        // Iterate through the ResultSet and add values to the List
+        while (rs.next()) {
+            Integer value = rs.getInt("PK"); // Change "IT" to the actual column name
+            distinctSources.add(value);
+        }
+
+        List<Integer> distinctTimesteps = new ArrayList<>();
+
+        rs = st.executeQuery("SELECT DISTINCT(IT) IT FROM " + sourcesTableName +";");
+
+        // Iterate through the ResultSet and add values to the List
+        while (rs.next()) {
+            Integer value = rs.getInt("IT"); // Change "IT" to the actual column name
+            distinctTimesteps.add(value);
+        }
+
+        return distinctSources;
+    }
+
+    public void createSourcesTable(Connection connection, List<Integer> frequencyValues)
+            throws SQLException, IOException {
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        Statement st  = connection.createStatement();
+
+        st.execute("CREATE TABLE LW_SOURCES_130DB AS SELECT DISTINCT PK, THE_GEOM  FROM " + sourcesTableName +";");
+
+        for (int freq : frequencyValues) {
+            st.execute("ALTER TABLE LW_SOURCES_130DB ADD HZ"+ freq +" DOUBLE NOT NULL DEFAULT 130.0;");
+        }
+
+        st.execute("ALTER TABLE LW_SOURCES_130DB ALTER COLUMN PK INTEGER NOT NULL;");
+        st.execute("ALTER TABLE LW_SOURCES_130DB ADD CONSTRAINT PK PRIMARY KEY (PK);");
+
+
+
+    }
+
+    public List<String> fetchTimeSteps(Connection connection)
+            throws SQLException, IOException {
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        Statement st  = connection.createStatement();
+
+        List<String> distinctTimesteps = new ArrayList<>();
+
+        ResultSet rs = st.executeQuery("SELECT DISTINCT(IT) IT FROM " + sourcesTableName +";");
+
+        // Iterate through the ResultSet and add values to the List
+        while (rs.next()) {
+            String value = rs.getString("IT"); // Change "IT" to the actual column name
+            distinctTimesteps.add(value);
+        }
+
+        return distinctTimesteps;
+    }
+
     /**
      * true if train propagation is computed (multiple reflection between the train and a screen)
      * @param bodyBarrier
@@ -496,6 +574,10 @@ public abstract class JdbcNoiseMap {
      */
     public String getSourcesTableName() {
         return sourcesTableName;
+    }
+
+    public void setSourcesTableName(String sourcesTableName) {
+        this.sourcesTableName = sourcesTableName;
     }
 
     /**
