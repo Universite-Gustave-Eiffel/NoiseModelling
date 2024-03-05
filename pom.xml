@@ -23,7 +23,7 @@
         <jts-core-version>1.19.0</jts-core-version>
         <jts-io-version>1.19.0</jts-io-version>
         <h2-version>2.1.214</h2-version>
-        <h2gis-version>2.2.0-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.2.2-SNAPSHOT</h2gis-version>
         <cts-version>1.6.0</cts-version>
         <slf4j-version>1.7.36</slf4j-version>
     </properties>

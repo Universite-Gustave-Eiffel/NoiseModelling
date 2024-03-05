@@ -21,6 +21,7 @@ import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -45,6 +46,21 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 
+    @Test
+    void testDynamicRoadEmission() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        String res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                "method" : "PROBA",
+                "timestep" : 1,
+                 "gridStep":10,
+                "duration":100])
+
+
+        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+    }
 
     @Test
     void testRailWayEmissionFromDEN() {
