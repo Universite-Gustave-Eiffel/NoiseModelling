@@ -209,5 +209,10 @@ public class RailWayNMPBParameters {
             }
             return ret;
         }
+
+        @Override
+        public boolean coverFrequency(double frequency) {
+            return true;
+        }
     }
 }

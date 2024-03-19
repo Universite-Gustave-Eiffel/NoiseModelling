@@ -39,6 +39,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.dbaToW;
@@ -68,6 +69,16 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
 
     public void setDirectionAttributes(Map<Integer, DirectivitySphere> directionAttributes) {
         this.directionAttributes = directionAttributes;
+        // Check if the directivities contain all required frequencies
+        directionAttributes.forEach((integer, directivitySphere) -> {
+            freq_lvl.forEach(frequency->{
+                if(!directivitySphere.coverFrequency(frequency)) {
+                    throw new IllegalArgumentException(
+                            String.format(Locale.ROOT,
+                                    "The provided DirectivitySphere does not handle %d Hertz", frequency));
+                }
+            });
+        });
     }
 
     @Override
@@ -318,6 +329,11 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         @Override
         public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
             return new double[frequencies.length];
+        }
+
+        @Override
+        public boolean coverFrequency(double frequency) {
+            return true;
         }
     }
 }

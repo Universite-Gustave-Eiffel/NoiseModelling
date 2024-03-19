@@ -13,6 +13,7 @@ import org.noise_planet.noisemodelling.emission.utils.Utils;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.DoublePredicate;
 
 /**
  * Describe Attenuation directivity over a sphere
@@ -99,49 +100,36 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
      */
     @Override
     public double getAttenuation(double frequency, double phi, double theta) {
-        DirectivityRecord query = new DirectivityRecord(theta, phi, null);
-
-        // look for frequency index
-        Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
-        if (idFreq == null) {
-            // get closest index
-            idFreq = Arrays.binarySearch(frequencies, frequency);
-            if (idFreq < 0) {
-                int last = Math.min(-idFreq - 1, frequencies.length - 1);
-                int first = Math.max(last - 1, 0);
-                idFreq = Math.abs(frequencies[first] - frequency) < Math.abs(frequencies[last] - frequency) ?
-                        first : last;
-            }
-        }
-        return getRecord(query.theta, query.phi, interpolationMethod).getAttenuation()[idFreq];
+        return getAttenuationArray(new double[]{frequency}, phi, theta)[0];
     }
 
     /**
      * Returns the attenuation in dB of the directivity pattern at a given angle (phi, theta)
-     * @param frequencies Frequency array in Hertz (same order will be returned)
+     * @param requestFrequencies Frequency array in Hertz (same order will be returned)
      * @param phi (0 2π) with 0 is front
      * @param theta (-π/2 π/2) with 0 is horizontal; π is top
      * @return Attenuation array level in dB
      */
     @Override
-    public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
+    public double[] getAttenuationArray(double[] requestFrequencies, double phi, double theta) {
         DirectivityRecord query = new DirectivityRecord(theta, phi, null);
 
         DirectivityRecord record = getRecord(query.theta, query.phi, interpolationMethod);
 
-        double[] returnAttenuation = new double[frequencies.length];
+        double[] returnAttenuation = new double[requestFrequencies.length];
 
-        for (int frequencyIndex = 0; frequencyIndex < frequencies.length; frequencyIndex++) {
-            double frequency = frequencies[frequencyIndex];
+        for (int frequencyIndex = 0; frequencyIndex < requestFrequencies.length; frequencyIndex++) {
+            double frequency = requestFrequencies[frequencyIndex];
             // look for frequency index
             Integer idFreq = frequencyMapping.get(Double.doubleToLongBits(frequency));
             if (idFreq == null) {
                 // get closest index
-                idFreq = Arrays.binarySearch(frequencies, frequency);
+                idFreq = Arrays.binarySearch(this.frequencies, frequency);
                 if (idFreq < 0) {
-                    int last = Math.min(-idFreq - 1, frequencies.length - 1);
+                    int last = Math.min(-idFreq - 1, this.frequencies.length - 1);
                     int first = Math.max(last - 1, 0);
-                    idFreq = Math.abs(frequencies[first] - frequency) < Math.abs(frequencies[last] - frequency) ? first : last;
+                    idFreq = Math.abs(this.frequencies[first] - frequency) <
+                            Math.abs(this.frequencies[last] - frequency) ? first : last;
                 }
             }
             returnAttenuation[frequencyIndex] = record.attenuation[idFreq];
@@ -362,5 +350,10 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
         public double[] getAttenuation() {
             return attenuation;
         }
+    }
+
+    @Override
+    public boolean coverFrequency(double frequency) {
+        return Arrays.stream(frequencies).anyMatch(x -> x == frequency);
     }
 }
