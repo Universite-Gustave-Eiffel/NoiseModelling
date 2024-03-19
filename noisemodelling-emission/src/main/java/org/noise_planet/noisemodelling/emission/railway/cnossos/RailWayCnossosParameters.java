@@ -213,5 +213,10 @@ public class RailWayCnossosParameters extends RailWayParameters {
             }
             return ret;
         }
+
+        @Override
+        public boolean coverFrequency(double frequency) {
+            return true;
+        }
     }
 }

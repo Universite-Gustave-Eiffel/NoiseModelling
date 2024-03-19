@@ -66,6 +66,13 @@ public class DiscreteDirectivitySphereTest {
         assertArrayEquals(new double[]{-5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63}, r.getAttenuation(),
                 0.1);
 
+        // check for non-existing frequency
+        assertArrayEquals(new double[]{-5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63,
+                        -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63},
+                d.getAttenuationArray(new double[]{125.0, 160.0, 200.0, 250.0, 315.0, 400.0, 500.0, 630.0, 800.0,
+                                1000.0, 1250.0, 1600.0, 2000.0, 2500.0, 3150.0, 4000.0, 5000.0, 6300.0, 8000.0},
+                        (float) Math.toRadians(31), (float) Math.toRadians(26)), 0.1);
+
 
         assertEquals(-5.63, d.getAttenuation(freqTest[0], (float) Math.toRadians(31),
                 (float) Math.toRadians(26)), 0.1);
@@ -77,6 +84,7 @@ public class DiscreteDirectivitySphereTest {
                 (float) Math.toRadians(26)), 0.1);
         assertEquals(-5.63, d.getAttenuation(freqTest[freqTest.length - 1] + 1, (float) Math.toRadians(31),
                 (float) Math.toRadians(26)), 0.1);
+
     }
 
 }
