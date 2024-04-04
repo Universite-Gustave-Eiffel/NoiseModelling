@@ -3,8 +3,8 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,13 +20,13 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 public class LDENComputeRaysOut extends ComputeRaysOutAttenuation {
     LdenData ldenData;
     LDENPropagationProcessData ldenPropagationProcessData;
-    public PropagationProcessPathData dayPathData;
-    public PropagationProcessPathData eveningPathData;
-    public PropagationProcessPathData nightPathData;
+    public AttenuationCnossosParameters dayPathData;
+    public AttenuationCnossosParameters eveningPathData;
+    public AttenuationCnossosParameters nightPathData;
     public LDENConfig ldenConfig;
 
-    public LDENComputeRaysOut(PropagationProcessPathData dayPathData, PropagationProcessPathData eveningPathData,
-                              PropagationProcessPathData nightPathData, LDENPropagationProcessData inputData,
+    public LDENComputeRaysOut(AttenuationCnossosParameters dayPathData, AttenuationCnossosParameters eveningPathData,
+                              AttenuationCnossosParameters nightPathData, LDENPropagationProcessData inputData,
                               LdenData ldenData, LDENConfig ldenConfig) {
         super(inputData.ldenConfig.exportRaysMethod != LDENConfig.ExportRaysMethods.NONE, null, inputData);
         this.keepAbsorption = inputData.ldenConfig.keepAbsorption;

@@ -1,25 +1,20 @@
 package org.noise_planet.noisemodelling.jdbc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Densifier3D;
-import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,7 +50,7 @@ public class TestComputeRaysFull {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
         rayData.noiseFloor = 40;
@@ -89,7 +84,7 @@ public class TestComputeRaysFull {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
 
@@ -123,7 +118,7 @@ public class TestComputeRaysFull {
         rayData.setComputeHorizontalDiffraction(true);
         rayData.setComputeVerticalDiffraction(true);
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
 

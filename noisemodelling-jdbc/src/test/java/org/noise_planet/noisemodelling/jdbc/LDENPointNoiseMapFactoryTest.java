@@ -23,8 +23,8 @@ import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,9 +66,9 @@ public class LDENPointNoiseMapFactoryTest {
     public void testNoiseEmission() throws SQLException, IOException {
         SHPRead.importTable(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile());
         LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
-        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY, new PropagationProcessPathData());
-        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING, new PropagationProcessPathData());
-        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT, new PropagationProcessPathData());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY, new AttenuationCnossosParameters());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING, new AttenuationCnossosParameters());
+        ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters());
         ldenConfig.setCoefficientVersion(1);
         LDENPropagationProcessData process = new LDENPropagationProcessData(null, ldenConfig);
         try(Statement st = connection.createStatement()) {
@@ -562,8 +562,8 @@ public class LDENPointNoiseMapFactoryTest {
         // Check dB ranges of result
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDayTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
-            for(int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl.size()];
+            for(int idfreq = 1; idfreq <= ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(87, leqs[0], 2.0);
@@ -583,8 +583,8 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lEveningTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(82.0, leqs[0], 2.0);
@@ -603,8 +603,8 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(79, leqs[0], 2.0);
@@ -622,8 +622,8 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lDenTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(87.0, leqs[0], 2.0);
@@ -710,8 +710,8 @@ public class LDENPointNoiseMapFactoryTest {
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenConfig.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(78, leqs[0], 2.0);
@@ -822,11 +822,11 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-        assertNotNull(ldenConfig.propagationProcessPathDataDay);
-        assertNotNull(ldenConfig.propagationProcessPathDataEvening);
-        assertNotNull(ldenConfig.propagationProcessPathDataNight);
+        assertNotNull(ldenConfig.attenuationCnossosParametersDay);
+        assertNotNull(ldenConfig.attenuationCnossosParametersEvening);
+        assertNotNull(ldenConfig.attenuationCnossosParametersNight);
 
-        assertEquals(8, ldenConfig.propagationProcessPathDataDay.freq_lvl.size());
+        assertEquals(8, ldenConfig.attenuationCnossosParametersDay.freq_lvl.size());
 
         try(Statement st = connection.createStatement()) {
             // drop all columns except 1000 Hz
@@ -857,9 +857,9 @@ public class LDENPointNoiseMapFactoryTest {
 
         pointNoiseMap.initialize(connection, new EmptyProgressVisitor());
 
-        assertEquals(1, ldenConfig.propagationProcessPathDataDay.freq_lvl.size());
+        assertEquals(1, ldenConfig.attenuationCnossosParametersDay.freq_lvl.size());
 
-        assertEquals(1000, (int)ldenConfig.propagationProcessPathDataDay.freq_lvl.get(0));
+        assertEquals(1000, (int)ldenConfig.attenuationCnossosParametersDay.freq_lvl.get(0));
     }
 
     @Test

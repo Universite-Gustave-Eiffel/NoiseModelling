@@ -21,10 +21,9 @@
  */
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Configuration of NoiseModelling computation based on database data using standard Lden outputs
@@ -35,9 +34,9 @@ public class LDENConfig {
     final INPUT_MODE input_mode;
 
     // This field is initialised when {@link PointNoiseMap#initialize} is called
-    PropagationProcessPathData propagationProcessPathDataDay = null;
-    PropagationProcessPathData propagationProcessPathDataEvening = null;
-    PropagationProcessPathData propagationProcessPathDataNight = null;
+    AttenuationCnossosParameters attenuationCnossosParametersDay = null;
+    AttenuationCnossosParameters attenuationCnossosParametersEvening = null;
+    AttenuationCnossosParameters attenuationCnossosParametersNight = null;
 
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
@@ -93,14 +92,14 @@ public class LDENConfig {
     }
 
 
-    public PropagationProcessPathData getPropagationProcessPathData(TIME_PERIOD time_period) {
+    public AttenuationCnossosParameters getPropagationProcessPathData(TIME_PERIOD time_period) {
         switch (time_period) {
             case DAY:
-                return propagationProcessPathDataDay;
+                return attenuationCnossosParametersDay;
             case EVENING:
-                return propagationProcessPathDataEvening;
+                return attenuationCnossosParametersEvening;
             default:
-                return propagationProcessPathDataNight;
+                return attenuationCnossosParametersNight;
         }
     }
 
@@ -118,14 +117,14 @@ public class LDENConfig {
         this.maximumRaysOutputCount = maximumRaysOutputCount;
     }
 
-    public void setPropagationProcessPathData(TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
+    public void setPropagationProcessPathData(TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
         switch (time_period) {
             case DAY:
-                propagationProcessPathDataDay = propagationProcessPathData;
+                attenuationCnossosParametersDay = attenuationCnossosParameters;
             case EVENING:
-                propagationProcessPathDataEvening = propagationProcessPathData;
+                attenuationCnossosParametersEvening = attenuationCnossosParameters;
             default:
-                propagationProcessPathDataNight = propagationProcessPathData;
+                attenuationCnossosParametersNight = attenuationCnossosParameters;
         }
     }
 

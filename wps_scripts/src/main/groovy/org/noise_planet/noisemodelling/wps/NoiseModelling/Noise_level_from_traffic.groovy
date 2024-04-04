@@ -36,7 +36,7 @@ import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder
 import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
 import org.noise_planet.noisemodelling.pathfinder.utils.*
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -335,7 +335,7 @@ def forgeCreateTable(Sql sql, String tableName, LDENConfig ldenConfig, String ge
         sb.append(" (IDRECEIVER bigint NOT NULL");
     }
     sb.append(", THE_GEOM geometry")
-    PropagationProcessPathData pathData = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY);
+    AttenuationCnossosParameters pathData = ldenConfig.getPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY);
     for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
         sb.append(", HZ");
         sb.append(pathData.freq_lvl.get(idfreq));
@@ -608,7 +608,7 @@ def exec(Connection connection, input) {
 
 
     // Set environmental parameters
-    PropagationProcessPathData environmentalDataDay = new PropagationProcessPathData(false)
+    AttenuationCnossosParameters environmentalDataDay = new AttenuationCnossosParameters(false)
 
     if (input.containsKey('confHumidity')) {
         environmentalDataDay.setHumidity(input['confHumidity'] as Double)
@@ -617,8 +617,8 @@ def exec(Connection connection, input) {
         environmentalDataDay.setTemperature(input['confTemperature'] as Double)
     }
 
-    PropagationProcessPathData environmentalDataEvening = new PropagationProcessPathData(environmentalDataDay)
-    PropagationProcessPathData environmentalDataNight = new PropagationProcessPathData(environmentalDataDay)
+    AttenuationCnossosParameters environmentalDataEvening = new AttenuationCnossosParameters(environmentalDataDay)
+    AttenuationCnossosParameters environmentalDataNight = new AttenuationCnossosParameters(environmentalDataDay)
     if (input.containsKey('confFavorableOccurrencesDay')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDay'] as String, ',')
         double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]

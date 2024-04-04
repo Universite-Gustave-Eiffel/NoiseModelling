@@ -61,21 +61,21 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public Deque<PropagationPath> propagationPaths = new ConcurrentLinkedDeque<PropagationPath>();
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
 
-    public PropagationProcessPathData genericMeteoData;
+    public AttenuationCnossosParameters genericMeteoData;
     public CnossosPropagationData inputData;
 
-    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData, CnossosPropagationData inputData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, AttenuationCnossosParameters pathData, CnossosPropagationData inputData) {
         this.keepRays = keepRays;
         this.genericMeteoData = pathData;
         this.inputData = inputData;
     }
 
-    public ComputeRaysOutAttenuation(boolean keepRays, PropagationProcessPathData pathData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, AttenuationCnossosParameters pathData) {
         this.keepRays = keepRays;
         this.genericMeteoData = pathData;
     }
 
-    public ComputeRaysOutAttenuation(boolean keepRays, boolean keepAbsorption, PropagationProcessPathData pathData) {
+    public ComputeRaysOutAttenuation(boolean keepRays, boolean keepAbsorption, AttenuationCnossosParameters pathData) {
         this.keepRays = keepRays;
         this.keepAbsorption = keepAbsorption;
         this.genericMeteoData = pathData;
@@ -90,7 +90,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
     public AtomicLong nb_reflexion_path = new AtomicLong();
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
-    private static final double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
+    private static final double angle_section = (2 * Math.PI) / AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length;
 
     /**
      * get the rose index to search the mean occurrence p of favourable conditions in the direction of the path (S,R):
@@ -122,7 +122,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         }
         int index = (int)(angleRad / angle_section) - 1;
         if(index < 0) {
-            index = PropagationProcessPathData.DEFAULT_WIND_ROSE.length - 1;
+            index = AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length - 1;
         }
         return index;
     }
@@ -160,7 +160,7 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         }
     }
 
-    public double[] computeAttenuation(PropagationProcessPathData data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+    public double[] computeAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
         if (data == null) {
             return new double[0];
         }
@@ -180,13 +180,13 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
                 proPath.groundAttenuation.init(data.freq_lvl.size());
                 proPath.absorptionData.init(data.freq_lvl.size());
             }
-            EvaluateAttenuationCnossos.init(data);
+            AttenuationCnossos.init(data);
             //ADiv computation
-            double[] aDiv = EvaluateAttenuationCnossos.aDiv(proPath, data);
+            double[] aDiv = AttenuationCnossos.aDiv(proPath, data);
             //AAtm computation
-            double[] aAtm = EvaluateAttenuationCnossos.aAtm(data, proPath.getSRSegment().d);
+            double[] aAtm = AttenuationCnossos.aAtm(data, proPath.getSRSegment().d);
             //Reflexion computation
-            double[] aRef = EvaluateAttenuationCnossos.evaluateAref(proPath, data);
+            double[] aRef = AttenuationCnossos.evaluateAref(proPath, data);
             double[] aRetroDiff;
             //ABoundary computation
             double[] aBoundary;
@@ -308,8 +308,8 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             if (data.getWindRose()[roseIndex] != 1) {
                 proPath.setFavorable(false);
 
-                aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
-                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
+                aBoundary = AttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = AttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                     aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
                 }
@@ -322,8 +322,8 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
             // Favorable conditions
             if (data.getWindRose()[roseIndex] != 0) {
                 proPath.setFavorable(true);
-                aBoundary = EvaluateAttenuationCnossos.aBoundary(proPath, data);
-                aRetroDiff = EvaluateAttenuationCnossos.deltaRetrodif(proPath, data);
+                aBoundary = AttenuationCnossos.aBoundary(proPath, data);
+                aRetroDiff = AttenuationCnossos.deltaRetrodif(proPath, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
                     aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
                 }
@@ -458,18 +458,18 @@ public class ComputeRaysOutAttenuation implements IComputeRaysOut {
         public ComputeRaysOutAttenuation multiThreadParent;
         public List<VerticeSL> receiverAttenuationLevels = new ArrayList<>();
         public List<PropagationPath> propagationPaths = new ArrayList<PropagationPath>();
-        public PropagationProcessPathData propagationProcessPathData;
+        public AttenuationCnossosParameters attenuationCnossosParameters;
         public boolean keepRays = false;
 
-        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent, PropagationProcessPathData propagationProcessPathData) {
+        public ThreadRaysOut(ComputeRaysOutAttenuation multiThreadParent, AttenuationCnossosParameters attenuationCnossosParameters) {
             this.multiThreadParent = multiThreadParent;
             this.keepRays = multiThreadParent.keepRays;
-            this.propagationProcessPathData = propagationProcessPathData;
+            this.attenuationCnossosParameters = attenuationCnossosParameters;
         }
 
         @Override
         public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
-            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(propagationProcessPathData, sourceId, sourceLi, receiverId, propagationPath);
+            double[] aGlobalMeteo = multiThreadParent.computeAttenuation(attenuationCnossosParameters, sourceId, sourceLi, receiverId, propagationPath);
             multiThreadParent.rayCount.addAndGet(propagationPath.size());
             if(keepRays) {
                 if(multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&

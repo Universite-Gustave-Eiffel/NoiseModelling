@@ -14,8 +14,8 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -202,7 +202,7 @@ public class PointNoiseMapTest {
         values.append(" ROLL, ");
         values.append(directivityId);
         values.append(" DIR_ID");
-        PropagationProcessPathData data = new PropagationProcessPathData(false);
+        AttenuationCnossosParameters data = new AttenuationCnossosParameters(false);
         for(String period : new String[] {"D", "E", "N"}) {
             for (int freq : data.freq_lvl) {
                 String fieldName = "LW" + period + freq;

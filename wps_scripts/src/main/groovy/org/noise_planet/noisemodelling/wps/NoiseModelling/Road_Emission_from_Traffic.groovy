@@ -29,7 +29,7 @@ import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.LDENConfig
 import org.noise_planet.noisemodelling.jdbc.LDENPropagationProcessData
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -177,9 +177,9 @@ def exec(Connection connection, input) {
     // Get Class to compute LW
     LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
     ldenConfig.setCoefficientVersion(2)
-    ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.DAY, new PropagationProcessPathData(false));
-    ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.EVENING, new PropagationProcessPathData(false));
-    ldenConfig.setPropagationProcessPathData(LDENConfig.TIME_PERIOD.NIGHT, new PropagationProcessPathData(false));
+    ldenConfig.setAttenuationCnossosParameters(LDENConfig.TIME_PERIOD.DAY, new AttenuationCnossosParameters(false));
+    ldenConfig.setAttenuationCnossosParameters(LDENConfig.TIME_PERIOD.EVENING, new AttenuationCnossosParameters(false));
+    ldenConfig.setAttenuationCnossosParameters(LDENConfig.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters(false));
 
     LDENPropagationProcessData ldenData = new LDENPropagationProcessData(null, ldenConfig)
 

@@ -11,7 +11,7 @@ import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +34,9 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils.getWal
 public abstract class JdbcNoiseMap {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-    PropagationProcessPathData propagationProcessPathDataDay = new PropagationProcessPathData();
-    PropagationProcessPathData propagationProcessPathDataEvening = new PropagationProcessPathData();
-    PropagationProcessPathData propagationProcessPathDataNight = new PropagationProcessPathData();
+    AttenuationCnossosParameters attenuationCnossosParametersDay = new AttenuationCnossosParameters();
+    AttenuationCnossosParameters attenuationCnossosParametersEvening = new AttenuationCnossosParameters();
+    AttenuationCnossosParameters attenuationCnossosParametersNight = new AttenuationCnossosParameters();
     Logger logger = LoggerFactory.getLogger(JdbcNoiseMap.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -85,49 +85,49 @@ public abstract class JdbcNoiseMap {
         this.sourcesTableName = sourcesTableName;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period) {
+    public AttenuationCnossosParameters getPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period) {
         switch (time_period) {
             case DAY:
-                return propagationProcessPathDataDay;
+                return attenuationCnossosParametersDay;
             case EVENING:
-                return propagationProcessPathDataEvening;
+                return attenuationCnossosParametersEvening;
             default:
-                return propagationProcessPathDataNight;
+                return attenuationCnossosParametersNight;
         }
     }
 
-    public void setPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period, PropagationProcessPathData propagationProcessPathData) {
+    public void setPropagationProcessPathData(LDENConfig.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
         switch (time_period) {
             case DAY:
-                propagationProcessPathDataDay = propagationProcessPathData;
+                attenuationCnossosParametersDay = attenuationCnossosParameters;
             case EVENING:
-                propagationProcessPathDataEvening = propagationProcessPathData;
+                attenuationCnossosParametersEvening = attenuationCnossosParameters;
             default:
-                propagationProcessPathDataNight = propagationProcessPathData;
+                attenuationCnossosParametersNight = attenuationCnossosParameters;
         }
     }
-    public PropagationProcessPathData getPropagationProcessPathDataDay() {
-        return propagationProcessPathDataDay;
+    public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
+        return attenuationCnossosParametersDay;
     }
 
-    public void setPropagationProcessPathDataDay(PropagationProcessPathData propagationProcessPathDataDay) {
-        this.propagationProcessPathDataDay = propagationProcessPathDataDay;
+    public void setPropagationProcessPathDataDay(AttenuationCnossosParameters attenuationCnossosParametersDay) {
+        this.attenuationCnossosParametersDay = attenuationCnossosParametersDay;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathDataEvening() {
-        return propagationProcessPathDataEvening;
+    public AttenuationCnossosParameters getPropagationProcessPathDataEvening() {
+        return attenuationCnossosParametersEvening;
     }
 
-    public void setPropagationProcessPathDataEvening(PropagationProcessPathData propagationProcessPathDataEvening) {
-        this.propagationProcessPathDataEvening = propagationProcessPathDataEvening;
+    public void setPropagationProcessPathDataEvening(AttenuationCnossosParameters attenuationCnossosParametersEvening) {
+        this.attenuationCnossosParametersEvening = attenuationCnossosParametersEvening;
     }
 
-    public PropagationProcessPathData getPropagationProcessPathDataNight() {
-        return propagationProcessPathDataNight;
+    public AttenuationCnossosParameters getPropagationProcessPathDataNight() {
+        return attenuationCnossosParametersNight;
     }
 
-    public void setPropagationProcessPathDataNight(PropagationProcessPathData propagationProcessPathDataNight) {
-        this.propagationProcessPathDataNight = propagationProcessPathDataNight;
+    public void setPropagationProcessPathDataNight(AttenuationCnossosParameters attenuationCnossosParametersNight) {
+        this.attenuationCnossosParametersNight = attenuationCnossosParametersNight;
     }
 
     public boolean isVerbose() {
@@ -297,8 +297,8 @@ public abstract class JdbcNoiseMap {
                     columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
                 }
                 double oldAlpha = wallAbsorption;
-                List<Double> alphaList = new ArrayList<>(propagationProcessPathDataDay.freq_lvl.size());
-                for(double freq : propagationProcessPathDataDay.freq_lvl_exact) {
+                List<Double> alphaList = new ArrayList<>(attenuationCnossosParametersDay.freq_lvl.size());
+                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
                     alphaList.add(getWallAlpha(oldAlpha, freq));
                 }
                 while (rs.next()) {
@@ -317,7 +317,7 @@ public abstract class JdbcNoiseMap {
                                 // Compute building absorption value
                                 alphaList.clear();
                                 oldAlpha = rs.getDouble(alphaFieldName);
-                                for(double freq : propagationProcessPathDataDay.freq_lvl_exact) {
+                                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
                                     alphaList.add(getWallAlpha(oldAlpha, freq));
                                 }
                             }

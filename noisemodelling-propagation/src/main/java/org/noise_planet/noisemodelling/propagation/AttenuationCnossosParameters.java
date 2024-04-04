@@ -43,7 +43,7 @@ import java.util.List;
  * Data input for a propagation Path process.
  *@author Pierre Aumond
  */
-public class PropagationProcessPathData {
+public class AttenuationCnossosParameters {
     // Thermodynamic constants
 	static final double K_0 = 273.15;	// Absolute zero in Celsius
     static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
@@ -73,12 +73,12 @@ public class PropagationProcessPathData {
     /** probability occurrence favourable condition */
     private double[] windRose  = DEFAULT_WIND_ROSE;
 
-    public PropagationProcessPathData() {
+    public AttenuationCnossosParameters() {
         this(false);
     }
 
 
-    public PropagationProcessPathData(boolean thirdOctave) {
+    public AttenuationCnossosParameters(boolean thirdOctave) {
         if(!thirdOctave) {
             // Default frequencies are in octave bands
             freq_lvl = Arrays.asList(asOctaveBands(CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
@@ -97,7 +97,7 @@ public class PropagationProcessPathData {
      * Copy constructor
      * @param other
      */
-    public PropagationProcessPathData(PropagationProcessPathData other) {
+    public AttenuationCnossosParameters(AttenuationCnossosParameters other) {
         this.freq_lvl = other.freq_lvl;
         this.freq_lvl_exact = other.freq_lvl_exact;
         this.freq_lvl_a_weighting = other.freq_lvl_a_weighting;
@@ -117,8 +117,8 @@ public class PropagationProcessPathData {
      * @param freq_lvl_exact Exact frequency values for computations
      * @param freq_lvl_a_weighting A weighting values
      */
-    public PropagationProcessPathData(List<Integer> freq_lvl, List<Double> freq_lvl_exact,
-                                      List<Double> freq_lvl_a_weighting) {
+    public AttenuationCnossosParameters(List<Integer> freq_lvl, List<Double> freq_lvl_exact,
+                                        List<Double> freq_lvl_a_weighting) {
         this.freq_lvl = Collections.unmodifiableList(freq_lvl);
         this.freq_lvl_exact = Collections.unmodifiableList(freq_lvl_exact);
         this.freq_lvl_a_weighting = Collections.unmodifiableList(freq_lvl_a_weighting);
@@ -187,7 +187,7 @@ public class PropagationProcessPathData {
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100
      */
-    public PropagationProcessPathData setHumidity(double humidity) {
+    public AttenuationCnossosParameters setHumidity(double humidity) {
 
         this.humidity = humidity;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
@@ -197,7 +197,7 @@ public class PropagationProcessPathData {
     /**
      * @param pressure Atmospheric pressure in pa. 1 atm is PropagationProcessData.Pref
      */
-    public PropagationProcessPathData setPressure(double pressure) {
+    public AttenuationCnossosParameters setPressure(double pressure) {
         this.pressure = pressure;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
@@ -256,12 +256,12 @@ public class PropagationProcessPathData {
         this.defaultOccurance = defaultOccurance;
     }
 
-    public PropagationProcessPathData setGDisc(boolean gDisc) {
+    public AttenuationCnossosParameters setGDisc(boolean gDisc) {
         this.gDisc = gDisc;
         return this;
     }
 
-    public PropagationProcessPathData setPrime2520(boolean prime2520) {
+    public AttenuationCnossosParameters setPrime2520(boolean prime2520) {
         this.prime2520 = prime2520;
         return this;
     }
@@ -278,7 +278,7 @@ public class PropagationProcessPathData {
     /**
      * @param temperature Temperature in ° celsius
      */
-    public PropagationProcessPathData setTemperature(double temperature) {
+    public AttenuationCnossosParameters setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);

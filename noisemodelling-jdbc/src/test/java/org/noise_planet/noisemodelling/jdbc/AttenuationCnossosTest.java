@@ -8,9 +8,9 @@ import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AlphaUtils;
 import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.EvaluateAttenuationCnossos;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +30,9 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 /**
  * Test class evaluation and testing attenuation values.
  */
-public class EvaluateAttenuationCnossosTest {
+public class AttenuationCnossosTest {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(EvaluateAttenuationCnossosTest.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossosTest.class);
 
     private static final double ERROR_EPSILON_HIGHEST = 1e5;
     private static final double ERROR_EPSILON_VERY_HIGH = 15;
@@ -100,7 +100,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setBodyBarrier(true);
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -217,7 +217,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=0;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -276,7 +276,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -325,7 +325,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -360,7 +360,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -392,7 +392,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -430,7 +430,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -465,7 +465,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -547,7 +547,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -628,7 +628,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -713,7 +713,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -809,7 +809,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -907,7 +907,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -1030,7 +1030,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -1189,7 +1189,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -1442,7 +1442,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -1685,7 +1685,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -1905,7 +1905,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -2116,7 +2116,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -2344,7 +2344,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -2576,7 +2576,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -2829,7 +2829,7 @@ public class EvaluateAttenuationCnossosTest {
                 .build();
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3042,7 +3042,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3214,7 +3214,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3439,7 +3439,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3519,7 +3519,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3767,7 +3767,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -3884,7 +3884,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -4112,7 +4112,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -4306,7 +4306,7 @@ public class EvaluateAttenuationCnossosTest {
      */
     @Test
     public void TC23() {
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         GeometryFactory factory = new GeometryFactory();
 
         // Add building 20% abs
@@ -4477,7 +4477,7 @@ public class EvaluateAttenuationCnossosTest {
     @Test
     public void TC24() {
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         GeometryFactory factory = new GeometryFactory();
 
         // Add building 20% abs
@@ -4740,7 +4740,7 @@ public class EvaluateAttenuationCnossosTest {
      */
     @Test
     public void TC25() {
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         GeometryFactory factory = new GeometryFactory();
 
         // Add building 20% abs
@@ -5054,7 +5054,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5202,7 +5202,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.reflexionOrder=1;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5369,7 +5369,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.maxSrcDist = 1500;
 
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5462,7 +5462,7 @@ public class EvaluateAttenuationCnossosTest {
         double[][] windRoseTest = new double[receivers.size()][];
         // generate favorable condition for each direction
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
-            windRoseTest[idReceiver] = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length];
+            windRoseTest[idReceiver] = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length];
             double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
             Arrays.fill(windRoseTest[idReceiver], 1);
             int roseIndex = ComputeRaysOutAttenuation.getRoseIndex(angle);
@@ -5471,7 +5471,7 @@ public class EvaluateAttenuationCnossosTest {
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
             double[] favorableConditionDirections = windRoseTest[idReceiver];
             //Propagation process path data building
-            PropagationProcessPathData attData = new PropagationProcessPathData();
+            AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
             attData.setHumidity(HUMIDITY);
             attData.setTemperature(TEMPERATURE);
             attData.setWindRose(favorableConditionDirections);
@@ -5529,7 +5529,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.maxSrcDist = 2000;
         rayData.maximumError = 3; // 3 dB error max
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
         RayOut propDataOut = new RayOut(true, attData, rayData);
@@ -5546,9 +5546,9 @@ public class EvaluateAttenuationCnossosTest {
 
     @Test
     public void testRoseIndex() {
-        double angle_section = (2 * Math.PI) / PropagationProcessPathData.DEFAULT_WIND_ROSE.length;
+        double angle_section = (2 * Math.PI) / AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length;
         double angleStart = Math.PI / 2 - angle_section / 2;
-        for(int i = 0; i < PropagationProcessPathData.DEFAULT_WIND_ROSE.length; i++) {
+        for(int i = 0; i < AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length; i++) {
             double angle = angleStart - angle_section * i - angle_section / 3;
             int index = ComputeRaysOutAttenuation.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
@@ -5603,7 +5603,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.setComputeVerticalDiffraction(true);
         rayData.maxSrcDist = 2000;
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
 
@@ -5670,7 +5670,7 @@ public class EvaluateAttenuationCnossosTest {
     @Test
     public void testReflexionConvergence() {
         //Profile building
-        List<Integer> alphaWallFrequencies = Arrays.asList(PropagationProcessPathData.asOctaveBands(
+        List<Integer> alphaWallFrequencies = Arrays.asList(AttenuationCnossosParameters.asOctaveBands(
                 CnossosPropagationData.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
         List<Double> alphaWall = new ArrayList<>(alphaWallFrequencies.size());
         for(int frequency : alphaWallFrequencies) {
@@ -5700,7 +5700,7 @@ public class EvaluateAttenuationCnossosTest {
         rayData.maxSrcDist = 60000000;
         rayData.maxRefDist = 60000000;
         //Propagation process path data building
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5773,7 +5773,7 @@ public class EvaluateAttenuationCnossosTest {
 
         rayData.maxSrcDist = 2000;
 
-        PropagationProcessPathData attData = new PropagationProcessPathData();
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(70);
         attData.setTemperature(10);
         RayOut propDataOut = new RayOut(true, attData, rayData);
@@ -5798,13 +5798,13 @@ public class EvaluateAttenuationCnossosTest {
     private static final class RayOut extends ComputeRaysOutAttenuation {
         private DirectPropagationProcessData processData;
 
-        public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
+        public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPropagationProcessData processData) {
             super(keepRays, pathData);
             this.processData = processData;
         }
 
         @Override
-        public double[] computeAttenuation(PropagationProcessPathData data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+        public double[] computeAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.computeAttenuation(data, sourceId, sourceLi, receiverId, propagationPath);
             double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;
@@ -5875,9 +5875,9 @@ public class EvaluateAttenuationCnossosTest {
         PropagationPath propPath = new PropagationPath();
         propPath.readStream(new DataInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(path))));
 
-        PropagationProcessPathData pathData = new PropagationProcessPathData();
-        EvaluateAttenuationCnossos.evaluate(propPath, pathData);
-        double[] aGlobalMeteoHom = EvaluateAttenuationCnossos.getaGlobal();
+        AttenuationCnossosParameters pathData = new AttenuationCnossosParameters();
+        AttenuationCnossos.evaluate(propPath, pathData);
+        double[] aGlobalMeteoHom = AttenuationCnossos.getaGlobal();
         for (int i = 0; i < aGlobalMeteoHom.length; i++) {
             assertFalse(String.format("freq %d Hz with nan value", pathData.freq_lvl.get(i)),
                     Double.isNaN(aGlobalMeteoHom[i]));

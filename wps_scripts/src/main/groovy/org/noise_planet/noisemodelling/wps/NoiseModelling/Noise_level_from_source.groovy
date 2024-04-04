@@ -624,7 +624,7 @@ def exec(Connection connection, input) {
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
 
     // Set environmental parameters
-    PropagationProcessPathData environmentalDataDay = new PropagationProcessPathData()
+    AttenuationCnossosParameters environmentalDataDay = new AttenuationCnossosParameters()
 
     if (input.containsKey('confHumidity')) {
         environmentalDataDay.setHumidity(input['confHumidity'] as Double)
@@ -633,8 +633,8 @@ def exec(Connection connection, input) {
         environmentalDataDay.setTemperature(input['confTemperature'] as Double)
     }
 
-    PropagationProcessPathData environmentalDataEvening = new PropagationProcessPathData(environmentalDataDay)
-    PropagationProcessPathData environmentalDataNight = new PropagationProcessPathData(environmentalDataDay)
+    AttenuationCnossosParameters environmentalDataEvening = new AttenuationCnossosParameters(environmentalDataDay)
+    AttenuationCnossosParameters environmentalDataNight = new AttenuationCnossosParameters(environmentalDataDay)
     if (input.containsKey('confFavorableOccurrencesDay')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDay'] as String, ',')
         double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]

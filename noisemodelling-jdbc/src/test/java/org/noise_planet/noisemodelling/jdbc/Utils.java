@@ -4,8 +4,8 @@ import org.h2.util.StringUtils;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,9 +53,9 @@ public class Utils {
         }
 
         @Override
-        public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
-                                      PropagationProcessPathData pathDataEvening,
-                                      PropagationProcessPathData pathDataNight) {
+        public IComputeRaysOut create(CnossosPropagationData threadData, AttenuationCnossosParameters pathDataDay,
+                                      AttenuationCnossosParameters pathDataEvening,
+                                      AttenuationCnossosParameters pathDataNight) {
             return new RayOut(keepRays, pathDataDay, (DirectPropagationProcessData)threadData);
         }
     }
@@ -63,13 +63,13 @@ public class Utils {
     private static final class RayOut extends ComputeRaysOutAttenuation {
         private DirectPropagationProcessData processData;
 
-        public RayOut(boolean keepRays, PropagationProcessPathData pathData, DirectPropagationProcessData processData) {
+        public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPropagationProcessData processData) {
             super(keepRays, pathData, processData);
             this.processData = processData;
         }
 
         @Override
-        public double[] computeAttenuation(PropagationProcessPathData data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
+        public double[] computeAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<PropagationPath> propagationPath) {
             double[] attenuation = super.computeAttenuation(data, sourceId, sourceLi, receiverId, propagationPath);
             double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
             return soundLevel;

@@ -31,8 +31,8 @@ import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosPa
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,9 +147,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             // Instance of PropagationProcessPathData maybe already set
             for(LDENConfig.TIME_PERIOD timePeriod : LDENConfig.TIME_PERIOD.values()) {
                 if (pointNoiseMap.getPropagationProcessPathData(timePeriod) == null) {
-                    PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData(frequencyValues, exactFrequencies, aWeighting);
-                    ldenConfig.setPropagationProcessPathData(timePeriod, propagationProcessPathData);
-                    pointNoiseMap.setPropagationProcessPathData(timePeriod, propagationProcessPathData);
+                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyValues, exactFrequencies, aWeighting);
+                    ldenConfig.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                    pointNoiseMap.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
                 } else {
                     pointNoiseMap.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyValues);
                     pointNoiseMap.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencies);
@@ -161,9 +161,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             for(LDENConfig.TIME_PERIOD timePeriod : LDENConfig.TIME_PERIOD.values()) {
                 if (pointNoiseMap.getPropagationProcessPathData(timePeriod) == null) {
                     // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
-                    PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData(false);
-                    ldenConfig.setPropagationProcessPathData(timePeriod, propagationProcessPathData);
-                    pointNoiseMap.setPropagationProcessPathData(timePeriod, propagationProcessPathData);
+                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
+                    ldenConfig.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                    pointNoiseMap.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
                 } else {
                     ldenConfig.setPropagationProcessPathData(timePeriod, pointNoiseMap.getPropagationProcessPathData(timePeriod));
                 }
@@ -230,8 +230,8 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     }
 
     @Override
-    public IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
-                                  PropagationProcessPathData pathDataEvening, PropagationProcessPathData pathDataNight) {
+    public IComputeRaysOut create(CnossosPropagationData threadData, AttenuationCnossosParameters pathDataDay,
+                                  AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight) {
         return new LDENComputeRaysOut(pathDataDay, pathDataEvening, pathDataNight,
                 (LDENPropagationProcessData)threadData, ldenData, ldenConfig);
     }
@@ -252,9 +252,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
             this.sqlFilePath = ldenConfig.sqlOutputFile;
             this.ldenConfig = ldenConfig;
             this.ldenData = ldenData;
-            a_weighting = new double[ldenConfig.propagationProcessPathDataDay.freq_lvl_a_weighting.size()];
+            a_weighting = new double[ldenConfig.attenuationCnossosParametersDay.freq_lvl_a_weighting.size()];
             for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
-                a_weighting[idfreq] = ldenConfig.propagationProcessPathDataDay.freq_lvl_a_weighting.get(idfreq);
+                a_weighting[idfreq] = ldenConfig.attenuationCnossosParametersDay.freq_lvl_a_weighting.get(idfreq);
             }
             this.srid = srid;
         }
@@ -335,7 +335,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 query.append(", ?"); // ID_SOURCE
             }
             if (!ldenConfig.computeLAEQOnly) {
-                query.append(", ?".repeat(ldenConfig.propagationProcessPathDataDay.freq_lvl.size())); // freq value
+                query.append(", ?".repeat(ldenConfig.attenuationCnossosParametersDay.freq_lvl.size())); // freq value
                 query.append(", ?, ?);"); // laeq, leq
             }else{
                 query.append(", ?);"); // laeq, leq
@@ -357,7 +357,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 }
 
                 if (!ldenConfig.computeLAEQOnly){
-                    for(int idfreq=0;idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+                    for(int idfreq = 0; idfreq < ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                         double value = row.value[idfreq];
                         if(!Double.isFinite(value)) {
                             value = -99.0;
@@ -405,9 +405,9 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(", LAEQ REAL");
                 sb.append(");");
             } else {
-                for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
+                for (int idfreq = 0; idfreq < ldenConfig.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                     sb.append(", HZ");
-                    sb.append(ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq));
+                    sb.append(ldenConfig.attenuationCnossosParametersDay.freq_lvl.get(idfreq));
                     sb.append(" REAL");
                 }
                 sb.append(", LAEQ REAL, LEQ REAL");

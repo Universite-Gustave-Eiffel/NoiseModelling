@@ -24,8 +24,8 @@ import org.noise_planet.noisemodelling.pathfinder.ComputeCnossosRays;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
-import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,7 +128,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
         if(propagationProcessDataFactory != null) {
             propagationProcessData = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathDataDay.freq_lvl);
+            propagationProcessData = new CnossosPropagationData(builder, attenuationCnossosParametersDay.freq_lvl);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
@@ -265,10 +265,10 @@ public class PointNoiseMap extends JdbcNoiseMap {
         }
         IComputeRaysOut computeRaysOut;
         if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathDataDay, threadData);
+            computeRaysOut = new ComputeRaysOutAttenuation(false, attenuationCnossosParametersDay, threadData);
         } else {
-            computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathDataDay,
-                    propagationProcessPathDataEvening, propagationProcessPathDataNight);
+            computeRaysOut = computeRaysOutFactory.create(threadData, attenuationCnossosParametersDay,
+                    attenuationCnossosParametersEvening, attenuationCnossosParametersNight);
         }
 
         ComputeCnossosRays computeRays = new ComputeCnossosRays(threadData);
@@ -309,8 +309,8 @@ public class PointNoiseMap extends JdbcNoiseMap {
     }
 
     public interface IComputeRaysOutFactory {
-        IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
-                               PropagationProcessPathData pathDataEvening, PropagationProcessPathData pathDataNight);
+        IComputeRaysOut create(CnossosPropagationData threadData, AttenuationCnossosParameters pathDataDay,
+                               AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight);
     }
 
     /**

@@ -3,7 +3,6 @@ package org.noise_planet.noisemodelling.propagation;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.pathfinder.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.PropagationPath;
 
 import java.io.IOException;
@@ -26,8 +25,8 @@ public class RayAttenuationTest {
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         PropagationPath path = mapper.readValue(
                 RayAttenuationTest.class.getResourceAsStream("special_ray.json"), PropagationPath.class);
-        PropagationProcessPathData propagationProcessPathData = new PropagationProcessPathData(false);
-        double[] aBoundary = EvaluateAttenuationCnossos.aBoundary(path, propagationProcessPathData);
+        AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
+        double[] aBoundary = AttenuationCnossos.aBoundary(path, attenuationCnossosParameters);
         for(double value : aBoundary) {
             assertFalse(Double.isNaN(value));
         }
