@@ -25,8 +25,9 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.geom.LineString;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.emission.LineSource;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread;
@@ -58,11 +59,13 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
     static final int WRITER_CACHE = 65536;
     LDENComputeRaysOut.LdenData ldenData = new LDENComputeRaysOut.LdenData();
     int srid;
+    List<String> noiseSource = Arrays.asList("ROLLING","TRACTIONA", "TRACTIONB","AERODYNAMICA","AERODYNAMICB","BRIDGE");
+
 
     /**
      * Attenuation and other attributes relative to direction on sphere
      */
-    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
+    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
 
     public LDENPointNoiseMapFactory(Connection connection, LDENConfig ldenConfig) {
@@ -89,11 +92,14 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
         return ldenData;
     }
 
+
     public void insertTrainDirectivity() {
         directionAttributes.clear();
         directionAttributes.put(0, new LDENPropagationProcessData.OmnidirectionalDirection());
-        for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
-            directionAttributes.put(noiseSource.ordinal() + 1, new RailWayLW.TrainAttenuation(noiseSource));
+        int i=1;
+        for(String typeSource : noiseSource) {
+            directionAttributes.put(i, new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource(typeSource)));
+            i++;
         }
     }
 
@@ -396,15 +402,15 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
                 sb.append(" (IDRECEIVER bigint NOT NULL");
             }
             if (ldenConfig.computeLAEQOnly){
-                sb.append(", LAEQ numeric(5, 2)");
+                sb.append(", LAEQ REAL");
                 sb.append(");");
             } else {
                 for (int idfreq = 0; idfreq < ldenConfig.propagationProcessPathDataDay.freq_lvl.size(); idfreq++) {
                     sb.append(", HZ");
                     sb.append(ldenConfig.propagationProcessPathDataDay.freq_lvl.get(idfreq));
-                    sb.append(" numeric(5, 2)");
+                    sb.append(" REAL");
                 }
-                sb.append(", LAEQ numeric(5, 2), LEQ numeric(5, 2)");
+                sb.append(", LAEQ REAL, LEQ REAL");
                 sb.append(");");
             }
             return sb.toString();

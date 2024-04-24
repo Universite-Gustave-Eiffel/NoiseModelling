@@ -13,120 +13,128 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  * @Author Gwendall Petit, Cerema
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author buildingParams.json is from https://github.com/orbisgis/geoclimate/
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export;
-
-import geoserver.GeoServer;
-import geoserver.catalog.Store;
-
-import groovy.sql.Sql
-import groovy.transform.CompileStatic;
-import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.wrapper.ConnectionWrapper;
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryCollection;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Coordinate;
-
-import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.WayContainer;
-import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
-import org.openstreetmap.osmosis.core.domain.v0_6.Way;
-import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
-import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
-import org.openstreetmap.osmosis.core.domain.v0_6.Node;
-import org.openstreetmap.osmosis.core.task.v0_6.Sink;
-
-import org.openstreetmap.osmosis.xml.v0_6.XmlReader;
-import org.openstreetmap.osmosis.xml.common.CompressionMethod;
+package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import crosby.binary.osmosis.OsmosisReader
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import groovy.json.JsonSlurper
+import groovy.sql.Sql
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
+import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer
+import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer
+import org.openstreetmap.osmosis.core.container.v0_6.WayContainer
+import org.openstreetmap.osmosis.core.domain.v0_6.*
+import org.openstreetmap.osmosis.core.task.v0_6.Sink
+import org.openstreetmap.osmosis.xml.common.CompressionMethod
+import org.openstreetmap.osmosis.xml.v0_6.XmlReader
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory;
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
 title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
-description = 'Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file to input tables.' +
-        '<br> The user can choose to create one to three output tables: <br>' +
-        '- <b> BUILDINGS </b>: a table containing the building. </br>' +
-        '- <b> GROUND </b>: surface/ground acoustic absorption table. </br>' +
-        '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2-. </br>'
+
+description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables. We recommend using OSMBBBike : https://extract.bbbike.org/ </br>' +
+              '<hr>' +
+              'The following output tables will be created: <br>' +
+              '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
+              '- <b> GROUND </b>: a table containing ground acoustic absorption, based on OSM landcover surfaces<br>' +
+              '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2<br><br>' +
+              '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes </br> </br>' +
+              '<img src="/wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
 
 inputs = [
-        pathFile        : [
+        pathFile : [
                 name       : 'Path of the OSM file',
                 title      : 'Path of the OSM file',
-                description: 'Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).' +
-                        '</br> For example : c:/home/area.osm.pbf',
+                description: '&#128194; Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
+                             'For example: c:/home/area.osm.pbf',
                 type       : String.class
         ],
-        ignoreBuilding: [
-                name       : 'Do not import Buildings',
-                title      : 'Do not import Buildings',
-                description: 'If the box is checked, the table BUILDINGS will NOT be extracted. ' +
-                        '<br>  The table will contain : </br>' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON). </br>' +
-                        '- <b> HEIGHT </b> : the height of the building (FLOAT). ' +
-                        'If the height of the buildings is not available then it is deducted from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
-                        'Finally, if no information is available, a height of 5 m is set by default.',
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        ignoreGround  : [
-                name       : 'Do not import Surface acoustic absorption',
-                title      : 'Do not import Surface acoustic absorption',
-                description: 'If the box is checked, the table GROUND will NOT be extracted.' +
-                        '</br>The table will contain: </br> ' +
-                        '- <b> THE_GEOM </b> : the 2D geometry of the sources (POLYGON or MULTIPOLYGON).</br> ' +
-                        '- <b> G </b> : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft).</br> ',
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        ignoreRoads   : [
-                name       : 'Do not import Roads',
-                title      : 'Do not import Roads',
-                description: 'If the box is checked, the table ROADS will NOT be extracted. ' +
-                        "<br>  The table will contain : </br>" +
-                        "- <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br/>" +
-                        "- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                        "- <b> LV_E </b> :  Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                        "- <b> LV_N </b> :  Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                        "- <b> HV_D </b> :  Hourly average heavy vehicle count (6-18h) (DOUBLE)<br/>" +
-                        "- <b> HV_E </b> :  Hourly average heavy vehicle count (18-22h) (DOUBLE)<br/>" +
-                        "- <b> HV_N </b> :  Hourly average heavy vehicle count (22-6h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_D </b> :  Hourly average light vehicle speed (6-18h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_E </b> :  Hourly average light vehicle speed (18-22h) (DOUBLE)<br/>" +
-                        "- <b> LV_SPD_N </b> :  Hourly average light vehicle speed (22-6h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_D </b> :  Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_E </b> :  Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br/>" +
-                        "- <b> HV_SPD_N </b> :  Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br/>" +
-                        "- <b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)" +
-                        "</br> </br> <b> This information is created using the importance of the roads in OSM.</b>.",
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        targetSRID      : [
+        targetSRID : [
                 name       : 'Target projection identifier',
                 title      : 'Target projection identifier',
-                description: 'Target projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  The target SRID must be in metric coordinates. </br>',
+                description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
+                             '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates.',
                 type       : Integer.class
         ],
-        removeTunnels  : [
+        ignoreBuilding : [
+                name       : 'Do not import Buildings',
+                title      : 'Do not import Buildings',
+                description: '&#9989; If the box is checked</i> &#8594; the table BUILDINGS will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table BUILDINGS will be created and will contain:<br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
+                             '- <b> THE_GEOM </b> : The 2D geometry of the building (POLYGON or MULTIPOLYGON). <br>' +
+                             '- <b> HEIGHT </b> : The height of the building (FLOAT). ' +
+                             'If this information is not available then it is deduced from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
+                             'Finally, if no information is available, a height of 5m is set by default.',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        ignoreGround : [
+                name       : 'Do not import Surface acoustic absorption',
+                title      : 'Do not import Surface acoustic absorption',
+                description: '&#9989; If the box is checked &#8594; the table GROUND will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table GROUND will be created and will contain: <br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' + 
+                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' + 
+                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (POLYGON or MULTIPOLYGON)<br>' +
+                             '- <b> PRIORITY </b> : Since NoiseModelling does not allowed overlapping geometries, if this is the case, this column is used to prioritize the geometry that will win over the other one when cutting. The order is given according to the type of land use<br>' +
+                             '- <b> G </b> : The acoustic absorption of a ground (FLOAT) (between 0 : very hard and 1 : very soft)',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        ignoreRoads : [
+                name       : 'Do not import Roads',
+                title      : 'Do not import Roads',
+                description: '&#9989; If the box is checked &#8594; the table ROADS will <b>NOT</b> be created.<br><br>' +
+                             '&#129001; If the box is <b>NOT</b> checked &#8594; the table ROADS will be created and will contain:<br>' +
+                             '- <b> PK </b> : An identifier. It shall be a primary key (INTEGER, PRIMARY KEY)<br>' +
+                             '- <b> ID_WAY </b> : OSM identifier (INTEGER)<br>' +
+                             '- <b> THE_GEOM </b> : The 2D geometry of the sources (LINESTRING or MULTILINESTRING)<br>' +                        
+                             '- <b> LV_D </b> : Hourly average light and heavy vehicle count (6-18h) (DOUBLE)<br>' +
+                             '- <b> LV_E </b> : Hourly average light and heavy vehicle count (18-22h) (DOUBLE)<br>' +
+                             '- <b> LV_N </b> : Hourly average light and heavy vehicle count (22-6h) (DOUBLE)<br>' +
+                             '- <b> HGV_D </b> : Hourly average heavy vehicle count (6-18h) (DOUBLE)<br>' +
+                             '- <b> HGV_E </b> : Hourly average heavy vehicle count (18-22h) (DOUBLE)<br>' +
+                             '- <b> HGV_N </b> : Hourly average heavy vehicle count (22-6h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_D </b> : Hourly average light vehicle speed (6-18h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_E </b> : Hourly average light vehicle speed (18-22h) (DOUBLE)<br>' +
+                             '- <b> LV_SPD_N </b> : Hourly average light vehicle speed (22-6h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_D </b> : Hourly average heavy vehicle speed (6-18h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_E </b> : Hourly average heavy vehicle speed (18-22h) (DOUBLE)<br>' +
+                             '- <b> HGV_SPD_N </b> : Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br>' +
+                             '- <b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)<br> <br>' +
+                             '&#128161; <b>These information are deduced from the roads importance in OSM.</b>.',
+                min        : 0, 
+                max        : 1,
+                type       : Boolean.class
+        ],
+        removeTunnels : [
                 name       : 'Remove tunnels from OSM data',
                 title      : 'Remove tunnels from OSM data',
-                description: 'Remove roads from OSM data which contains OSM tag <b>tunnel=yes</b>.',
-                min        : 0, max: 1,
+                description: '&#9989; If checked, remove roads from OSM data that contain OSM tag <b>tunnel=yes</b>.',
+                min        : 0, 
+                max        : 1,
                 type       : Boolean.class
         ],
 ]
 
 outputs = [
-        result: [
+        result : [
                 name: 'Result output string',
                 title: 'Result output string',
                 description: 'This type of result does not allow the blocks to be linked together.',
@@ -162,6 +170,8 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+
+    //Map buildingsParamsMap = buildingsParams.toMap();
     connection = new ConnectionWrapper(connection)
 
     Sql sql = new Sql(connection)
@@ -205,13 +215,15 @@ def exec(Connection connection, input) {
 
     // Read the OSM file, depending on its extension
     def reader
-    if (pathFile.endsWith(".pbf")) {
+    if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".pbf")) {
         InputStream inputStream = new FileInputStream(pathFile);
         reader = new OsmosisReader(inputStream);
-    } else if (pathFile.endsWith(".osm")) {
+    } else if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".osm")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.None);
-    } else if (pathFile.endsWith(".osm.gz")) {
+    } else if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".osm.gz")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
+    } else {
+        throw new IllegalArgumentException("File extension not known.Should be pbf, osm or osm.gz but got " + pathFile)
     }
 
     OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
@@ -259,7 +271,7 @@ def exec(Connection connection, input) {
 
     if (!ignoreRoads) {
         sql.execute("DROP TABLE IF EXISTS ROADS")
-        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HV_D integer,HV_E integer,HV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HV_SPD_D integer, HV_SPD_E integer,HV_SPD_N integer, PVMT varchar(10));")
+        sql.execute("CREATE TABLE ROADS (PK serial PRIMARY KEY, ID_WAY integer, THE_GEOM geometry, TYPE varchar, LV_D integer, LV_E integer,LV_N integer,HGV_D integer,HGV_E integer,HGV_N integer,LV_SPD_D integer,LV_SPD_E integer,LV_SPD_N integer,HGV_SPD_D integer, HGV_SPD_E integer,HGV_SPD_N integer, PVMT varchar(10));")
 
         for (Road road: handler.roads) {
             if (road.geom.isEmpty()) {
@@ -269,9 +281,9 @@ def exec(Connection connection, input) {
                     'THE_GEOM, ' +
                     'TYPE, ' +
                     'LV_D, LV_E, LV_N, ' +
-                    'HV_D, HV_E, HV_N, ' +
+                    'HGV_D, HGV_E, HGV_N, ' +
                     'LV_SPD_D, LV_SPD_E, LV_SPD_N, ' +
-                    'HV_SPD_D, HV_SPD_E, HV_SPD_N, ' +
+                    'HGV_SPD_D, HGV_SPD_E, HGV_SPD_N, ' +
                     'PVMT) ' +
                     ' VALUES (?,' +
                     'st_setsrid(st_updatez(ST_precisionreducer(ST_SIMPLIFYPRESERVETOPOLOGY(ST_TRANSFORM(ST_GeomFromText(?, 4326), '+srid+'),0.1),1), 0.05), ' + srid + '),' +
@@ -303,7 +315,6 @@ def exec(Connection connection, input) {
     }
 
     logger.info('SQL INSERT done')
-
 
     resultString = "nodes : " + handler.nb_nodes
     resultString += "<br>\n"
@@ -361,11 +372,685 @@ public class OsmHandler implements Sink {
 
     @Override
     public void process(EntityContainer entityContainer) {
+
+
+
         if (entityContainer instanceof NodeContainer) {
             nb_nodes++;
             Node node = ((NodeContainer) entityContainer).getEntity();
             nodes.put(node.getId(), node);
         } else if (entityContainer instanceof WayContainer) {
+
+
+            // This is a copy of the GeoClimate file : buildingsParams.json (https://github.com/orbisgis/geoclimate/tree/master/osm/src/main/resources/org/orbisgis/geoclimate/osm)
+            String buildingParams = """{
+                  "tags": {
+                    "building": [],
+                    "railway": [
+                      "station",
+                      "train_station"
+                    ]
+                  },
+                  "columns": [
+                    "height",
+                    "roof:height",
+                    "building:levels",
+                    "roof:levels",
+                    "building",
+                    "amenity",
+                    "layer",
+                    "aeroway",
+                    "historic",
+                    "leisure",
+                    "monument",
+                    "place_of_worship",
+                    "military",
+                    "railway",
+                    "public_transport",
+                    "barrier",
+                    "government",
+                    "historic:building",
+                    "grandstand",
+                    "house",
+                    "shop",
+                    "industrial",
+                    "man_made",
+                    "residential",
+                    "apartments",
+                    "ruins",
+                    "agricultural",
+                    "barn",
+                    "healthcare",
+                    "education",
+                    "restaurant",
+                    "sustenance",
+                    "office",
+                    "tourism",
+                    "roof:shape"
+                  ],
+                  "level": {
+                    "building": 1,
+                    "house": 1,
+                    "detached": 1,
+                    "residential": 1,
+                    "apartments": 1,
+                    "bungalow": 0,
+                    "historic": 0,
+                    "monument": 0,
+                    "ruins": 0,
+                    "castle": 0,
+                    "agricultural": 0,
+                    "farm": 0,
+                    "farm_auxiliary": 0,
+                    "barn": 0,
+                    "greenhouse": 0,
+                    "silo": 0,
+                    "commercial": 2,
+                    "industrial": 0,
+                    "sport": 0,
+                    "sports_centre": 0,
+                    "grandstand": 0,
+                    "transportation": 0,
+                    "train_station": 0,
+                    "toll_booth": 0,
+                    "toll": 0,
+                    "terminal": 0,
+                    "healthcare": 1,
+                    "education": 1,
+                    "entertainment_arts_culture": 0,
+                    "sustenance": 1,
+                    "military": 0,
+                    "religious": 0,
+                    "chapel": 0,
+                    "church": 0,
+                    "government": 1,
+                    "townhall": 1,
+                    "office": 1,
+                    "heavy_industry": 0,
+                    "light_industry": 0,
+                    "emergency": 0,
+                    "hotel": 2,
+                    "hospital": 2,
+                    "parking": 1
+                  },
+                  "type": {
+                    "terminal:transportation": {
+                      "aeroway": [
+                        "terminal",
+                        "airport_terminal"
+                      ],
+                      "amenity": [
+                        "terminal",
+                        "airport_terminal"
+                      ],
+                      "building": [
+                        "terminal",
+                        "airport_terminal"
+                      ]
+                    },
+                    "parking:transportation": {
+                      "building": [
+                        "parking"
+                      ]
+                    },
+                    "monument": {
+                      "building": [
+                        "monument"
+                      ],
+                      "historic": [
+                        "monument"
+                      ],
+                      "leisure": [
+                        "monument"
+                      ],
+                      "monument": [
+                        "yes"
+                      ]
+                    },
+                    "chapel:religious": {
+                      "building": [
+                        "chapel"
+                      ],
+                      "amenity": [
+                        "chapel"
+                      ],
+                      "place_of_worship": [
+                        "chapel"
+                      ]
+                    },
+                    "church:religious": {
+                      "building": [
+                        "church"
+                      ],
+                      "amenity": [
+                        "church"
+                      ],
+                      "place_of_worship": [
+                        "church"
+                      ]
+                    },
+                    "castle:heritage": {
+                      "building": [
+                        "castle",
+                        "fortress"
+                      ]
+                    },
+                    "religious": {
+                      "building": [
+                        "religious",
+                        "abbey",
+                        "cathedral",
+                        "mosque",
+                        "musalla",
+                        "temple",
+                        "synagogue",
+                        "shrine",
+                        "place_of_worship",
+                        "wayside_shrine"
+                      ],
+                      "amenity": [
+                        "religious",
+                        "abbey",
+                        "cathedral",
+                        "chapel",
+                        "church",
+                        "mosque",
+                        "musalla",
+                        "temple",
+                        "synagogue",
+                        "shrine",
+                        "place_of_worship",
+                        "wayside_shrine"
+                      ],
+                      "place_of_worship": [
+                        "! no",
+                        "! chapel",
+                        "! church"
+                      ]
+                    },
+                    "sport:entertainment_arts_culture": {
+                      "building": [
+                        "swimming_pool",
+                        "fitness_centre",
+                        "horse_riding",
+                        "ice_rink",
+                        "pitch",
+                        "stadium",
+                        "track"
+                      ],
+                      "leisure": [
+                        "swimming_pool",
+                        "fitness_centre",
+                        "horse_riding",
+                        "ice_rink",
+                        "pitch",
+                        "stadium",
+                        "track"
+                      ],
+                      "amenity": [
+                        "swimming_pool",
+                        "fitness_centre",
+                        "horse_riding",
+                        "ice_rink",
+                        "pitch",
+                        "stadium",
+                        "track"
+                      ]
+                    },
+                    "sports_centre:entertainment_arts_culture": {
+                      "building": [
+                        "sports_centre",
+                        "sports_hall"
+                      ],
+                      "leisure": [
+                        "sports_centre",
+                        "sports_hall"
+                      ],
+                      "amenity": [
+                        "sports_centre",
+                        "sports_hall"
+                      ]
+                    },
+                    "military": {
+                      "military": [
+                        "ammunition",
+                        "bunker",
+                        "barracks",
+                        "casemate",
+                        "office",
+                        "shelter"
+                      ],
+                      "building": [
+                        "ammunition",
+                        "bunker",
+                        "barracks",
+                        "casemate",
+                        "military",
+                        "shelter"
+                      ],
+                      "office": [
+                        "military"
+                      ]
+                    },
+                    "train_station:transportation": {
+                      "building": [
+                        "train_station"
+                      ],
+                      "railway": [
+                        "station",
+                        "train_station"
+                      ],
+                      "public_transport": [
+                        "train_station"
+                      ],
+                      "amenity": [
+                        "train_station"
+                      ]
+                    },
+                    "townhall:government": {
+                      "amenity": [
+                        "townhall"
+                      ],
+                      "building": [
+                        "townhall"
+                      ]
+                    },
+                    "toll:transportation": {
+                      "barrier": [
+                        "toll_booth"
+                      ],
+                      "building": [
+                        "toll_booth"
+                      ]
+                    },
+                    "government": {
+                      "building": [
+                        "government",
+                        "government_office"
+                      ],
+                      "government": [
+                        "! no"
+                      ],
+                      "office": [
+                        "government"
+                      ]
+                    },
+                    "historic": {
+                      "building": [
+                        "historic"
+                      ],
+                      "historic": [
+                      ],
+                      "historic_building": [
+                        "! no"
+                      ]
+                    },
+                    "grandstand:entertainment_arts_culture": {
+                      "building": [
+                        "grandstand"
+                      ],
+                      "leisure": [
+                        "grandstand"
+                      ],
+                      "amenity": [
+                        "grandstand"
+                      ],
+                      "grandstand": [
+                        "yes"
+                      ]
+                    },
+                    "detached:residential": {
+                      "building": [
+                        "detached"
+                      ],
+                      "house": [
+                        "detached"
+                      ]
+                    },
+                    "farm_auxiliary:agricultural": {
+                      "building": [
+                        "farm_auxiliary",
+                        "barn",
+                        "stable",
+                        "sty",
+                        "cowshed",
+                        "digester",
+                        "greenhouse"
+                      ]
+                    },
+                    "commercial": {
+                      "building": [
+                        "bank",
+                        "bureau_de_change",
+                        "boat_rental",
+                        "car_rental",
+                        "commercial",
+                        "internet_cafe",
+                        "kiosk",
+                        "money_transfer",
+                        "market",
+                        "market_place",
+                        "pharmacy",
+                        "post_office",
+                        "retail",
+                        "shop",
+                        "store",
+                        "supermarket",
+                        "warehouse"
+                      ],
+                      "amenity": [
+                        "bank",
+                        "bureau_de_change",
+                        "boat_rental",
+                        "car_rental",
+                        "commercial",
+                        "internet_cafe",
+                        "kiosk",
+                        "money_transfer",
+                        "market",
+                        "market_place",
+                        "pharmacy",
+                        "post_office",
+                        "retail",
+                        "shop",
+                        "store",
+                        "supermarket",
+                        "warehouse"
+                      ],
+                      "shop": [
+                        "!= no"
+                      ]
+                    },
+                    "light_industry:industrial": {
+                      "building": [
+                        "industrial",
+                        "factory",
+                        "warehouse"
+                      ],
+                      "industrial": [
+                        "factory"
+                      ],
+                      "amenity": [
+                        "factory"
+                      ]
+                    },
+                    "heavy_industry:industrial": {
+                      "building": [
+                        "digester"
+                      ],
+                      "industrial": [
+                        "gas",
+                        "heating_station",
+                        "oil_mill",
+                        "oil",
+                        "wellsite",
+                        "well_cluster"
+                      ]
+                    },
+                    "greenhouse:agricultural": {
+                      "building": [
+                        "greenhouse"
+                      ],
+                      "amenity": [
+                        "greenhouse"
+                      ],
+                      "industrial": [
+                        "greenhouse"
+                      ]
+                    },
+                    "silo:agricultural": {
+                      "building": [
+                        "silo",
+                        "grain_silo"
+                      ],
+                      "man_made": [
+                        "silo",
+                        "grain_silo"
+                      ]
+                    },
+                    "house:residential": {
+                      "building": [
+                        "house"
+                      ],
+                      "house": [
+                        "! no",
+                        "! detached",
+                        "! residential",
+                        "! villa",
+                        "residential"
+                      ],
+                      "amenity": [
+                        "house"
+                      ]
+                    },
+                    "apartments:residential": {
+                      "building": [
+                        "apartments"
+                      ],
+                      "residential": [
+                        "apartments"
+                      ],
+                      "amenity": [
+                        "apartments"
+                      ],
+                      "apartments": [
+                        "yes"
+                      ]
+                    },
+                    "bungalow:residential": {
+                      "building": [
+                        "bungalow"
+                      ],
+                      "house": [
+                        "bungalow"
+                      ],
+                      "amenity": [
+                        "bungalow"
+                      ]
+                    },
+                    "residential": {
+                      "building": [
+                        "residential",
+                        "villa",
+                        "dormitory",
+                        "condominium",
+                        "sheltered_housing",
+                        "workers_dormitory",
+                        "terrace"
+                      ],
+                      "residential": [
+                        "university",
+                        "detached",
+                        "dormitory",
+                        "condominium",
+                        "sheltered_housing",
+                        "workers_dormitory",
+                        "building"
+                      ],
+                      "house": [
+                        "residential"
+                      ],
+                      "amenity": [
+                        "residential"
+                      ]
+                    },
+                    "ruins:heritage": {
+                      "building": [
+                        "ruins"
+                      ],
+                      "ruins": [
+                        "ruins"
+                      ]
+                    },
+                    "agricultural": {
+                      "building": [
+                        "agricultural"
+                      ],
+                      "agricultural": [
+                        "building"
+                      ]
+                    },
+                    "farm:agricultural": {
+                      "building": [
+                        "farm",
+                        "farmhouse"
+                      ]
+                    },
+                    "barn:agricultural": {
+                      "building": [
+                        "barn"
+                      ],
+                      "barn": [
+                        "! no"
+                      ]
+                    },
+                    "transportation": {
+                      "building": [
+                        "train_station",
+                        "transportation",
+                        "station"
+                      ],
+                      "aeroway": [
+                        "hangar",
+                        "tower",
+                        "bunker",
+                        "control_tower",
+                        "building"
+                      ],
+                      "railway": [
+                        "station",
+                        "train_station",
+                        "building"
+                      ],
+                      "public_transport": [
+                        "train_station",
+                        "station"
+                      ],
+                      "amenity": [
+                        "train_station",
+                        "terminal"
+                      ]
+                    },
+                    "healthcare": {
+                      "amenity": [
+                        "healthcare",
+                        "social_facility"
+                      ],
+                      "building": [
+                        "healthcare",
+                        "hospital"
+                      ],
+                      "healthcare": [
+                        "! no"
+                      ]
+                    },
+                    "education": {
+                      "amenity": [
+                        "education",
+                        "college",
+                        "kindergarten",
+                        "school",
+                        "university",
+                        "research_institute"
+                      ],
+                      "building": [
+                        "education",
+                        "college",
+                        "kindergarten",
+                        "school",
+                        "university"
+                      ],
+                      "education": [
+                        "college",
+                        "kindergarten",
+                        "school",
+                        "university"
+                      ]
+                    },
+                    "entertainment_arts_culture": {
+                      "leisure": [
+                        "! no"
+                      ]
+                    },
+                    "sustenance:commercial": {
+                      "amenity": [
+                        "restaurant",
+                        "bar",
+                        "cafe",
+                        "fast_food",
+                        "ice_cream",
+                        "pub"
+                      ],
+                      "building": [
+                        "restaurant",
+                        "bar",
+                        "cafe",
+                        "fast_food",
+                        "ice_cream",
+                        "pub"
+                      ],
+                      "restaurant": [
+                        "! no"
+                      ],
+                      "shop": [
+                        "restaurant",
+                        "bar",
+                        "cafe",
+                        "fast_food",
+                        "ice_cream",
+                        "pub"
+                      ],
+                      "sustenance": [
+                        "! no"
+                      ]
+                    },
+                    "office": {
+                      "building": [
+                        "office"
+                      ],
+                      "amenity": [
+                        "office"
+                      ],
+                      "office": [
+                        "! no"
+                      ]
+                    },
+                    "building:public": {
+                      "building": [
+                        "public"
+                      ]
+                    },
+                    "emergency": {
+                      "building": [
+                        "fire_station"
+                      ]
+                    },
+                    "hotel:tourism": {
+                      "building": [
+                        "hotel"
+                      ],
+                      "tourism": [
+                        "hotel"
+                      ]
+                    },
+                    "attraction:tourism": {
+                      "tourism": [
+                        "attraction"
+                      ]
+                    },
+                    "building": {
+                      "building": [
+                        "yes"
+                      ]
+                    }
+                  }
+                }"""
+
+            def parametersMap = new JsonSlurper().parseText(buildingParams)
+            def tags = parametersMap.get("tags")
+            def columnsToKeep = parametersMap.get("columns")
+            def typeBuildings = parametersMap.get("type")
+
             nb_ways++;
             Way way = ((WayContainer) entityContainer).getEntity();
             ways.put(way.getId(), way);
@@ -374,10 +1059,29 @@ public class OsmHandler implements Sink {
             boolean isTunnel = false;
             double height = 4.0 + rand.nextDouble() * 2.1;
             boolean trueHeightFound = false;
+            boolean closedWay = way.isClosed();
+
             for (Tag tag : way.getTags()) {
-                if ("building".equalsIgnoreCase(tag.getKey())) {
-                    isBuilding = true;
+                if (tags.containsKey(tag.getKey()) && closedWay){
+                    if (tags.get(tag.getKey()).isEmpty() || tags.get(tag.getKey()).any{it == (tag.getValue())})
+                    {
+                        isBuilding = true;
+                    }
                 }
+
+                if ( closedWay && columnsToKeep.any{ (it == tag.getKey()) }) {
+                    for (typeHighLevel in typeBuildings) {
+                        for (typeLowLevel in typeHighLevel.getValue()) {
+                            if (typeLowLevel.getKey() == (tag.getKey())) {
+                                if (typeLowLevel.getValue().any { it == (tag.getValue()) }) {
+                                    isBuilding = true;
+                                }
+                            }
+
+                        }
+                    }
+                }
+
                 if ("tunnel".equalsIgnoreCase(tag.getKey()) && "yes".equalsIgnoreCase(tag.getValue())) {
                     isTunnel = true;
                 }
@@ -394,7 +1098,7 @@ public class OsmHandler implements Sink {
                     }
                 }
             }
-            if (!ignoreBuildings && isBuilding && way.isClosed()) {
+            if (!ignoreBuildings && isBuilding && closedWay) {
                 buildings.add(new Building(way, height));
                 nb_buildings++;
             }
@@ -405,7 +1109,7 @@ public class OsmHandler implements Sink {
                 roads.add(new Road(way));
                 nb_roads++;
             }
-            if (!ignoreGround && !isBuilding && !isRoad && way.isClosed()) {
+            if (!ignoreGround && !isBuilding && !isRoad && closedWay) {
                 grounds.add(new Ground(way));
                 nb_grounds++;
             }
@@ -486,6 +1190,9 @@ public class OsmHandler implements Sink {
         Coordinate[] shell = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) {
+                return geomFactory.createPolygon();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             shell[i] = new Coordinate(x, y, 0.0);
@@ -505,6 +1212,9 @@ public class OsmHandler implements Sink {
         Coordinate[] coordinates = new Coordinate[wayNodes.size()];
         for(int i = 0; i < wayNodes.size(); i++) {
             Node node = nodes.get(wayNodes.get(i).getNodeId());
+            if (node == null) { // some odd case where a node is defined here but outside of the osm file limits
+                return geomFactory.createLineString();
+            }
             double x = node.getLongitude();
             double y = node.getLatitude();
             coordinates[i] = new Coordinate(x, y, 0.0);
@@ -531,7 +1241,6 @@ public class OsmHandler implements Sink {
         return geomFactory.createPolygon(shell);
     }
 }
-
 
 public class Building {
 

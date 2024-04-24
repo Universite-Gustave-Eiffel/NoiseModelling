@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Create a SOURCE table from imported MATSim tables'
-description = 'Create a ROADS table from imported MATSim tables, for a specific timeString' +
-        '<br/>The timeString can be "D", "E", "N" for DEN analysis or "0h15_0h30" ofr example for 15minutes analysis.' +
+description = 'Create a ROADS table from imported MATSim tables, for a specific timeBin' +
+        '<br/>The timeBin can be 0, 900, 1800, etc. for example for 15minutes analysis.' +
         '<br/>The resulting table will contain the following fields :' +
         '<br/><br/> - '
 
@@ -39,23 +39,23 @@ inputs = [
                 '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
         type: String.class
     ],
-    statsTableName: [
-        name: 'Table name of the MATSIM table containing the roads LW stats per timeString',
-        title: 'Table name of the MATSIM table containing the roads LW stats per timeString',
-        description: 'Table name of the MATSIM table containing the roads LW stats per timeString' +
+    lwTableName: [
+        name: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+        title: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+        description: 'Table name of the MATSIM table containing the roads LW stats per timeBin' +
                 '<br/>The table must contain the following fields : ' +
-                '<br/>(PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIMESTRING)' +
-                '<br/>default : roadsTableName + "_STATS"',
+                '<br/>(PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME)' +
+                '<br/>default : roadsTableName + "_LW"',
         min: 0,
         max: 1,
         type: String.class
     ],
-    timeString: [
-        name: 'TIMESTRING Field value',
-        title: 'TIMESTRING Field value',
-        description: 'TIMESTRING Field value' +
-            '<br/>The timeString can be "D", "E", "N" for DEN analysis, "12_14" for example for hour analysis or "0h15_0h30" for example for 15minutes analysis.',
-        type: String.class
+    timeBin: [
+        name: 'TIME Field value',
+        title: 'TIME Field value',
+        description: 'TIME Field value' +
+            '<br/>The timeBin is an integer representing the starting time of the desired timebin in seconds, it should exist in the traffic data tables',
+        type: Integer.class
     ],
     outTableName: [
         name: 'Output table name',

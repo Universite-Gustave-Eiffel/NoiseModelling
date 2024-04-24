@@ -203,8 +203,6 @@ To adapt the colors, we will apply a cartographic style. This style:
 
 .. _publication : https://www.semanticscholar.org/paper/A-Color-Scheme-for-the-Presentation-of-Sound-in-%3A-Weninger/a72d13fcc53488567b45a08a78f969c7b3552ac0
 
-.. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.1/Docs/styles/style_noisemap.sld
-=======
 .. _website : https://www.coloringnoise.com/theoretical_background/new-color-scheme/
 
 .. _here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v4.0.2/Docs/styles/style_beate_tomio.sld
@@ -349,7 +347,7 @@ Now, in NoiseModelling we have to:
 * Reimport the ``Point_Source.geojson`` file in order to take into account the changes
 * Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling_4.0.0/data_dir/data/wpsdata/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
 
-To do so, just use the ``Import_and_Export:Export_Table`` WPS script.
+To do so, just use the ``Import_and_Export:Import_Table`` WPS script.
 
 
 Generate the Delaunay triangulation
@@ -368,7 +366,7 @@ Compute noise level from source
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the following parameters and click on ``Run Process`` button:
 
-* ``Sources table name`` : ``SOURCES``
+* ``Sources table name`` : ``POINT_SOURCE``
 * ``Buildings table name`` : ``BUILDINGS``
 * ``Receivers table name`` : ``RECEIVERS``
 * ``Ground absorption table name`` : ``GROUND_TYPE``

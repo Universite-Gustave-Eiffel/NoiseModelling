@@ -35,57 +35,75 @@ import java.sql.*
 import groovy.sql.Sql
 
 title = 'Regular Grid'
-description = 'Calculates a regular grid of receivers based on a single Geometry geom or a table tableName of Geometries with delta as offset in the Cartesian plane in meters.'
+description = '&#10145;&#65039; Computes a regular grid of receivers. </br>' +
+              '<hr>' +
+              'The receivers are spaced at a distance "delta" (Offset) in the Cartesian plane in meters. </br> </br>'+
+              'The grid will be based on:<ul>' +
+              '<li> the BUILDINGS table extent (option by default)</li>' +
+              '<li> <b>OR</b> a single Geometry "fence" (see "Extent filter" parameter).</li></ul></br>' +
+              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '<img src="/wps_images/regular_grid_output.png" alt="Regular grid output" width="95%" align="center">'
 
 inputs = [
         buildingTableName : [
-                name : 'Buildings table name',
-                title: 'Buildings table name',
+                name :       'Buildings table name',
+                title:       'Buildings table name',
+                description: 'Name of the Buildings table. </br></br>' +
+                             'The table must contain: <ul>' +
+                             '<li><b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li></ul>',
                 type : String.class
         ],
         fence             : [
-                name       : 'Fence geometry',
+                name       : 'Extent geometry',
                 title      : 'Extent filter',
-                description: 'Create receivers only in the provided polygon',
+                description: 'Create receivers only in the provided polygon (fence)',
                 min        : 0, max: 1,
                 type       : Geometry.class
         ],
-        fenceTableName    : [
+        fenceTableName : [
                 name       : 'Fence geometry from table',
                 title      : 'Filter using table bounding box',
-                description: 'Extract the bounding box of the specified table then create only receivers on the table bounding box' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
-                min        : 0, max: 1,
+                description: 'Filter receivers, using the bounding box of the given table name: <ol>' +
+                             '<li> Extract the bounding box of the specified table,</li>' +
+                             '<li> then create only receivers on the table bounding box.</li></ol>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
+                min        : 0, max        : 1,
                 type       : String.class
         ],
         sourcesTableName  : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Keep only receivers at least at 1 meters of provided sources geometries' +
-                        '<br>  The table shall contain : </br>' +
-                        '- <b> THE_GEOM </b> : any geometry type. </br>',
+                description: 'Keep only receivers at least at 1 meters of provided sources geometries </br> </br>' +
+                             'The given table must contain: <ul>' +
+                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         delta             : [
-                name       : 'offset',
-                title      : 'offset',
-                description: 'Offset in the Cartesian plane in meters',
+                name       : 'Offset',
+                title      : 'Offset',
+                description: 'Offset in the Cartesian plane (in meters) </br> </br>' +
+                             '&#128736; Default value: <b>10 </b>',
+                min        : 0, max        : 1,
                 type       : Double.class
         ],
         receiverstablename: [
                 name       : 'receiverstablename',
-                description: 'Do not write the name of a table that contains a space. (default : RECEIVERS)',
                 title      : 'Name of receivers table',
+                description: 'Name of the output table.</br> </br>' +
+                             'Do not write the name of a table that contains a space.</br> </br>' +
+                             '&#128736; Default value: <b>RECEIVERS </b>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
-        height            : [
-                name       : 'height',
-                title      : 'height',
-                description: 'Height of receivers in meters',
-                min        : 0, max: 1,
+        height : [
+                name       : 'Height',
+                title      : 'Height',
+                description: 'Height of receivers (in meter) (FLOAT) </br> </br>' +
+                             '&#128736; Default value: <b>4</b>',
+                min        : 0, 
+                max        : 1,
                 type       : Double.class
         ]
 ]
@@ -127,6 +145,8 @@ def run(input) {
 
 def exec(connection, input) {
 
+    Sql sql = new Sql(connection)
+
     // output string, the information given back to the user
     String resultString = null
 
@@ -155,39 +175,44 @@ def exec(connection, input) {
         h = input['height'] as Double
     }
 
-    String sources_table_name = "SOURCES"
+    boolean createTriangles = false
+    if(input['outputTriangleTable']) {
+        createTriangles = Boolean.parseBoolean(input['outputTriangleTable'] as String)
+    }
+
+    String sources_table_name = ""
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
     }
     sources_table_name = sources_table_name.toUpperCase()
 
-    String building_table_name = "BUILDINGS"
+    String building_table_name = ""
     if (input['buildingTableName']) {
         building_table_name = input['buildingTableName']
     }
     building_table_name = building_table_name.toUpperCase()
 
-    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    // Try to find the best SRID for receivers table
+    int srid = 0
+    if(input['buildingTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    }
 
-    Sql sql = new Sql(connection)
-    //Delete previous receivers grid.
-    sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
-    String queryGrid = null
+    if (srid == 0 && input['sourcesTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name) as String)
+    }
 
-
-    // Reproject fence
-    int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-    if (targetSrid == 0 && input['sourcesTableName']) {
-        targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    if (srid == 0 && input['fenceTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
     }
 
     Geometry fenceGeom = null
     if (input['fence']) {
-        if (targetSrid != 0) {
+        if (srid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             WKTReader wktReader = new WKTReader()
-            fence = wktReader.read(input['fence'] as String)
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
+            def fence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), srid)
         } else {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
@@ -197,7 +222,10 @@ def exec(connection, input) {
         fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM")
     }
 
-    sql.execute("CREATE TABLE " + receivers_table_name + "(THE_GEOM GEOMETRY) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
+    //Delete previous receivers grid.
+    sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
+
+    sql.execute("CREATE TABLE " + receivers_table_name + "(THE_GEOM GEOMETRY, ID_COL INTEGER, ID_ROW INTEGER) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM, ID_COL, ID_ROW FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
     sql.execute("ALTER TABLE " + receivers_table_name + " ADD COLUMN PK SERIAL PRIMARY KEY")
 
     logger.info("Create spatial index on " + receivers_table_name)
@@ -216,7 +244,23 @@ def exec(connection, input) {
         logger.info("Delete receivers near sources")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
+    if(createTriangles) {
+        sql.execute("DROP TABLE IF EXISTS TRIANGLES")
+        sql.execute("CREATE TABLE TRIANGLES(pk serial NOT NULL, the_geom geometry(POLYGON Z, "+srid+"), PK_1 integer not null," +
+                " PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))")
+        sql.execute("INSERT INTO TRIANGLES(THE_GEOM, PK_1, PK_2, PK_3, CELL_ID) " +
+                "SELECT ST_ConvexHull(ST_UNION(A.THE_GEOM, ST_UNION(B.THE_GEOM, C.THE_GEOM))) THE_GEOM, " +
+                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
+                "  FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
+                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL AND " +
+                "A.ID_ROW = C.ID_ROW + 1 AND A.ID_COL = C.ID_COL + 1;")
+        sql.execute("INSERT INTO TRIANGLES(THE_GEOM, PK_1, PK_2, PK_3, CELL_ID) " +
+                "SELECT ST_ConvexHull(ST_UNION(A.THE_GEOM, ST_UNION(B.THE_GEOM, C.THE_GEOM))) THE_GEOM, " +
+                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
+                "  FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
+                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL + 1" +
+                " AND A.ID_ROW = C.ID_ROW AND A.ID_COL = C.ID_COL + 1;")
+    }
 
     return [tableNameCreated: "Process done. Table of receivers " + receivers_table_name + " created !"]
 }
-

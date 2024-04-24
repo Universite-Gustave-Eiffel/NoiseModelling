@@ -29,7 +29,8 @@ import java.sql.Connection
 import java.sql.Statement
 
 title = 'Delete all database tables'
-description = 'Delete all non-system tables of the database.'
+description = '&#10145;&#65039; Delete all non-system tables of the database. </br> </br>'+
+              '&#x1F6A8; Use with caution'
 
 inputs = [
         areYouSure: [

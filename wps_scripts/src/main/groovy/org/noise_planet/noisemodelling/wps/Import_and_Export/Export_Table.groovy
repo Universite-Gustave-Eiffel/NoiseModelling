@@ -37,19 +37,23 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 
 title = 'Export table'
-description = 'Export table from the database to a local file. </br> Valid file extensions : (csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv).'
+description = '&#10145;&#65039; Export table from the database into a local file. </br> '+
+              '<hr>' +
+              'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv </br> </br>' +
+              '<img src="/wps_images/export_table.png" alt="Export table" width="95%" align="center">'
 
 inputs = [
         exportPath   : [
-                name: 'Export path', title: 'Path of the file you want to export',
-                description: 'Path of the file, including its extension. ' +
-                        '</br> For example : c:/home/receivers.geojson',
+                name:        'Export path', 
+                title:       'Path of the file you want to export',
+                description: '&#128194; Path of the file, including its extension. </br> </br>' +
+                             'For example: c:/home/receivers.geojson',
                 type: String.class
         ],
         tableToExport: [
-                name: 'Name of the table to export',
-                title: 'Name of the table',
-                description: 'Name of the table you want to export.',
+                name:        'Name of the table to export',
+                title:       'Name of the table',
+                description: 'Name of the table you want to export',
                 type: String.class
         ]
 ]

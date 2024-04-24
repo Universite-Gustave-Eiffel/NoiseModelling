@@ -31,22 +31,25 @@ import java.sql.Connection
 import java.sql.Statement
 
 title = 'Change or set SRID'
-description = 'Transforms table from its original coordinate reference system (CRS) to the CRS specified by Spatial Reference Identifier (SRID). </br> If the table does not have an associated SRID, the new SRID is associated with the table.'
+description = '&#10145;&#65039; Affect a new Spatial Reference Identifier (SRID) to the specified table'+
+              '<hr>' +
+              '&#x1F6A8; If the table: </br>' +
+              '- has <b>already an associated SRID</b>: the new SRID is applied to the table and a <b>reprojection of geometries is done</b>, </br>'+
+              '- has <b>no associated SRID</b>: the new SRID is applied to the table but <b>without doing a reprojection</b> of geometries. </br> </br>'+
+              '<img src="/wps_images/change_SRID.png" alt="Change SRID" width="95%" align="center">'
 
 inputs = [
         newSRID  : [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
-                description: 'New projection identifier (also called SRID) of your table. ' +
-                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). ' +
-                        '</br>  All coordinates will be projected from the specified EPSG to WGS84 coordinates. ' +
-                        '</br> This entry is optional because many formats already include the projection and you can also import files without geometry attributes.',
+                description: '&#127757; New projection identifier (also called SRID) of your table. </br> </br>' +
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection)',
                 type       : Integer.class
         ],
         tableName: [
                 name       : 'Name of the table',
                 title      : 'Name of the table',
-                description: 'Name of the table you want to display.',
+                description: 'Name of the table you want to change the SRID (and reproject if the table has already a SRID)',
                 type       : String.class
         ]
 ]

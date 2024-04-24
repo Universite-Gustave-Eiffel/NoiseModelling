@@ -5,8 +5,10 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noise_planet.noisemodelling.emission.DiscreteDirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
+import org.noise_planet.noisemodelling.emission.LineSource;
+import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -42,7 +44,9 @@ public class DirectivityTableLoaderTest {
         try(Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE DIRTEST(DIR_ID INTEGER, THETA FLOAT, PHI FLOAT, LW63 FLOAT, LW125 FLOAT, LW250 FLOAT, LW500 FLOAT, LW1000 FLOAT, LW2000 FLOAT, LW4000 FLOAT, LW8000 FLOAT)");
         }
-        RailWayLW.TrainAttenuation att = new RailWayLW.TrainAttenuation(RailWayLW.TrainNoiseSource.TRACTIONB);
+
+        RailWayCnossosParameters.RailwayDirectivitySphere att = new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource("TRACTIONB"));
+
         try(PreparedStatement st = connection.prepareStatement("INSERT INTO DIRTEST VALUES(?,?,?,?,?,?,?,?,?,?,?)")) {
             for(int yaw = 0; yaw < 360; yaw += 5) {
                 double phi = Math.toRadians(yaw);
@@ -65,14 +69,14 @@ public class DirectivityTableLoaderTest {
         }
 
         // Data is inserted now fetch it from the database
-        Map<Integer, DiscreteDirectionAttributes> directivities = DirectivityTableLoader.loadTable(connection, "DIRTEST", 1);
+        Map<Integer, DiscreteDirectivitySphere> directivities = DirectivityTableLoader.loadTable(connection, "DIRTEST", 1);
 
         assertEquals(1, directivities.size());
 
         assertTrue(directivities.containsKey(1));
 
-        DiscreteDirectionAttributes d = directivities.get(1);
-        for(DiscreteDirectionAttributes.DirectivityRecord directivityRecord : d.getRecordsTheta()) {
+        DiscreteDirectivitySphere d = directivities.get(1);
+        for(DiscreteDirectivitySphere.DirectivityRecord directivityRecord : d.getRecordsTheta()) {
             double[] attSpectrum = att.getAttenuationArray(freqTest, directivityRecord.getPhi(), directivityRecord.getTheta());
             assertArrayEquals(attSpectrum, directivityRecord.getAttenuation(), 1e-2);
         }

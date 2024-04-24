@@ -15,8 +15,8 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceCnossos
-import org.noise_planet.noisemodelling.emission.RoadSourceParametersCnossos
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
+import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData
 
 import java.sql.Connection
@@ -24,12 +24,10 @@ import java.sql.PreparedStatement
 import java.sql.SQLException
 
 title = 'Compute Road Emission'
-description = 'Compute Road Emission Noise Map from Estimated Annual average daily flows (AADF) estimates. ' +
-        'This block allows to calculate a road traffic noise emission map ' +
-        'from the AADF estimates given in the ROADS.shp file of the tutorial.' +
-        'The average traffic is first converted to hourly traffic before the calculation of Lday, Levening and Lnight using' +
-        'distribution in Berengier et al., 2019 : "DEUFRABASE: A Simple Tool for the Evaluation of the Noise Impact of ' +
-        'Pavements in Typical Road Geometries".'
+description = '&#10145;&#65039; Compute Road Emission Noise Map from Estimated Annual average daily flows (AADF) estimates.' +
+              '<hr>' +
+              'This block allows to calculate a road traffic noise emission map from the AADF estimates given in the ROADS.shp file of the tutorial.</br> </br>' +
+              'The average traffic is first converted to hourly traffic before the calculation of Lday, Levening and Lnight using distribution in Berengier et al., 2019 : "DEUFRABASE: A Simple Tool for the Evaluation of the Noise Impact of Pavements in Typical Road Geometries".'
 
 inputs = [databaseName      : [name: 'Name of the database', title: 'Name of the database', description: 'Name of the database (default : first found db)', min: 0, max: 1, type: String.class],
           sourcesTableName  : [name: 'Sources table name', title: 'Sources table name', type: String.class]]
@@ -252,11 +250,11 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         hgvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0);
         int idFreq = 0;
         for (int freq : CnossosPropagationData.freq_lvl) {
-            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType);
-            ld[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            ld[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
         }
     }
     // Average
@@ -270,11 +268,11 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
         int idFreq = 0
         for(int freq : CnossosPropagationData.freq_lvl) {
-            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-            le[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            le[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
         }
     }
 
@@ -288,11 +286,11 @@ static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws 
         mvPerHour = tmja * HV_PERCENTAGE * (hv_hourly_distribution[h] / 100.0)
         int idFreq = 0
         for(int freq : CnossosPropagationData.freq_lvl) {
-            RoadSourceParametersCnossos rsParametersCnossos = new RoadSourceParametersCnossos(speedLv, speedMv, speedHgv, speedWav,
+            RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(speedLv, speedMv, speedHgv, speedWav,
                     speedWbv, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, Temperature,
                     roadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
             rsParametersCnossos.setSpeedFromRoadCaracteristics(speed_lv, speed_lv, false, speed_lv, roadType)
-            ln[idFreq++] += EvaluateRoadSourceCnossos.evaluate(rsParametersCnossos)
+            ln[idFreq++] += RoadCnossos.evaluate(rsParametersCnossos)
         }
     }
     for(int i=0; i<ln.size(); i++) {

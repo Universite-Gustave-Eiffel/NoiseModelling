@@ -52,7 +52,7 @@ On the NoiseModelling latest `release page`_, three packages of NoiseModelling a
 
 * ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
 * ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`"" page for more info)
+* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
 
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
 
@@ -93,7 +93,7 @@ Fundings
 - `ANR Eval-PDU`_ (ANR-08-VILL-0005) 2008-2011
 - `ANR VegDUD`_ (ANR-09-VILL-0007) 2009-2014
 - `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
-- `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement No 730468
+- `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement N°730468
 - `PlaMADE`_ 2020-2022
 
 *Institutional (public) fundings:*
@@ -135,6 +135,19 @@ Fundings
     Numerical_Model
     Validation
     Scientific_production
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Input tables & parameters
+
+    Input_buildings
+    Input_roads
+    Input_railways
+    Input_ground
+    Input_dem
+    Input_directivity
+    Input_receivers
+    Input_acoustics
     
 .. toctree::
     :maxdepth: 2

@@ -29,13 +29,14 @@ import java.sql.Connection
 import java.sql.Statement
 
 title = 'Remove a table from the database.'
-description = 'Remove a table from the database.'
+description = '&#10145;&#65039; Remove a table from the database. </br> </br>' +
+              '&#x1F6A8; Use with caution'
 
 inputs = [
         tableToDrop: [
-                name       : 'Name of the table to drop.',
-                title      : 'Name of the table to drop.',
-                description: 'Name of the table to drop.',
+                name       : 'Name of the table to drop',
+                title      : 'Name of the table to drop',
+                description: 'Name of the table to drop',
                 type       : String.class
         ]
 ]

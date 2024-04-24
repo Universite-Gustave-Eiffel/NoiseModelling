@@ -1534,12 +1534,15 @@ public class ProfileBuilder {
     }
 
     public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+        if(topoTree == null) {
+            return new ArrayList<>();
+        }
         List<Coordinate> outputPoints = new ArrayList<>();
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
         if(curTriP1 == -1) {
-            // we are outside of the bounds of the triangles
+            // we are outside the bounds of the triangles
             // Find the closest triangle to p1
             Coordinate intersectionPt = new Coordinate();
             AtomicInteger minDistanceTriangle = new AtomicInteger();
@@ -1644,6 +1647,7 @@ public class ProfileBuilder {
         /** True if contains a ground effect cutting point. */
         private Boolean hasGroundEffectInter = false;
         private Boolean isFreeField;
+        private double distanceToSR = 0;
         private Orientation srcOrientation;
 
         /**
@@ -1744,6 +1748,11 @@ public class ProfileBuilder {
             return source;
         }
 
+        /**
+         * get Distance of the not free field point to the Source-Receiver Segement
+         * @return
+         */
+        public double getDistanceToSR(){return distanceToSR;}
         /**
          * Retrieve the profile receiver.
          * @return The profile receiver.
@@ -1866,13 +1875,67 @@ public class ProfileBuilder {
                 for(CutPoint pt : ptsWithouGroundEffect) {
                     double frac = (pt.coordinate.x-s.x)/(r.x-s.x);
                     double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
-                    if(z < pt.getCoordinate().z && !pt.isCorner()) {
+                    double[] distanceSRpt = distance3D(source.getCoordinate(), receiver.getCoordinate(), pt.getCoordinate());
+                    if(distanceSRpt[0]>0 && distanceSRpt[1]>0 && !pt.isCorner()) {
                         isFreeField = false;
+                        distanceToSR = distanceSRpt[0];
                         break;
                     }
                 }
             }
             return isFreeField;
+        }
+
+        /**
+         * Get distance between a segment (p1,p2) and a point (point) with point perpendicular to (p1,p2)
+         * @param p1
+         * @param p2
+         * @param point
+         * @return distance in meters
+         */
+        private static double[] distance3D(Coordinate p1, Coordinate p2, Coordinate point) {
+            double[] DistanceInfo = new double[2];
+            double x1 = p1.getX();
+            double y1 = p1.getY();
+            double z1 = p1.getZ();
+
+            double x2 = p2.getX();
+            double y2 = p2.getY();
+            double z2 = p2.getZ();
+
+            double x0 = point.getX();
+            double y0 = point.getY();
+            double z0 = point.getZ();
+
+            // Vector representing the LineSegment
+            double dx = x2 - x1;
+            double dy = y2 - y1;
+            double dz = z2 - z1;
+
+            // Vector from the start point of the LineSegment to the Point
+            double px = x0 - x1;
+            double py = y0 - y1;
+            double pz = z0 - z1;
+
+            // Compute the dot product of the vectors
+            double dotProduct = dx * px + dy * py + dz * pz;
+
+            // Calculate the projection of the Point onto the LineSegment
+            double t = dotProduct / (dx * dx + dy * dy + dz * dz);
+
+            // Calculate the closest point on the LineSegment to the Point
+            double closestX = x1 + t * dx;
+            double closestY = y1 + t * dy;
+            double closestZ = z1 + t * dz;
+
+            // Calculate the distance between the closest point and the Point
+            double distance = Math.sqrt((x0 - closestX) * (x0 - closestX)
+                    + (y0 - closestY) * (y0 - closestY)
+                    + (z0 - closestZ) * (z0 - closestZ));
+            double sign = z0 - closestZ;
+            DistanceInfo[0]=distance;
+            DistanceInfo[1]=sign;
+            return DistanceInfo;
         }
 
         @Override

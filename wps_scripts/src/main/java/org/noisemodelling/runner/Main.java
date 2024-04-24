@@ -193,7 +193,9 @@ public class Main {
                 ((Map) shell.getVariable("inputs")).forEach((key, value) -> {
                     Map<String, Object> optionAttributes = ((Map)value);
                     Option customOption = new Option(key.toString(),
-                            optionAttributes.get("type") != Boolean.class, optionAttributes.get("description").toString().replaceAll("<[^>]*>", ""));
+                            optionAttributes.get("type") != Boolean.class,
+                            optionAttributes.getOrDefault("description", "").
+                                    toString().replaceAll("<[^>]*>", ""));
                     customOption.setType((Class)optionAttributes.get("type"));
                     customOption.setArgs(1);
                     customOption.setArgName(optionAttributes.get("name").toString());

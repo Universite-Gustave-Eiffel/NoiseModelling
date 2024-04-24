@@ -3,7 +3,6 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.dbtypes.DBUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,11 +11,9 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
 
@@ -230,7 +227,7 @@ public class PointNoiseMapTest {
             st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
             st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
                     91, new Orientation(90,15,0),
-                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+                    4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
                     "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
@@ -303,8 +300,7 @@ public class PointNoiseMapTest {
             st.execute(createSource(new GeometryFactory().createLineString(
                     new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
                             new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
-                    new Orientation(0,0,0),
-                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+                    new Orientation(0,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 0.0)');" +
                     "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 0.0)');");
@@ -388,8 +384,7 @@ public class PointNoiseMapTest {
             st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
             // create source point direction east->90°
             st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(3.5,3,1.0 )),
-                    91, new Orientation(90,0,0),
-                    RailWayLW.TrainNoiseSource.TRACTIONB.ordinal() + 1));
+                    91, new Orientation(90,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (4.5 3 1.0)');" + //front
                     "insert into receivers(the_geom) values ('POINTZ (2.5 3 1.0)');" + //behind
