@@ -11,9 +11,10 @@
  */
 /**
  * @Author Valentin Le Bescond, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Experimental_Matsim
+package org.noise_planet.noisemodelling.wps.NoiseModelling
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -30,31 +31,16 @@ description = 'Noise Map From Attenuation Matrix.' +
         '<br/>'
 
 inputs = [
-    matsimRoads: [
-        name: 'Table name of the MATSIM table containing the roads geometries',
-        title: 'Table name of the MATSIM table containing the roads geometries',
-        description: 'Table name of the MATSIM table containing the roads geometries' +
-                '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
-        type: String.class
-    ],
-    matsimRoadsStats : [
-        name: 'Table name of the MATSIM table containing the roads LW stats per timeString',
-        title: 'Table name of the MATSIM table containing the roads LW stats per timeString',
-        description: 'Table name of the MATSIM table containing the roads LW stats per timeString' +
-                '<br/>The table must contain the following fields : ' +
-                '<br/>PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIMESTRING',
-        type: String.class
-    ],
-    timeString: [
-        name: 'TIMESTRING Field value',
-        title: 'TIMESTRING Field value.',
-        description: 'TIMESTRING Field value. If defined will only output data for the specified timeString.' +
-                '<br/>The timeString can be "D", "E", "N" for DEN analysis, "12_14" for example for hour analysis or "0h15_0h30" for example for 15minutes analysis.',
-        min: 0,
-        max : 1,
-        type: String.class
-    ],
-    attenuationTable : [
+        lwTable : [
+                name: 'LW(t)',
+                title: 'LW(t)',
+                description: 'LW(t)' +
+                        '<br/>The table must contain the following fields :' +
+                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, T' +
+                        '<br/> with PK, the IDSOURCE and T a timestring',
+                type: String.class
+        ],
+        attenuationTable : [
         name: 'Attenuation Matrix Table name',
         title: 'Attenuation Matrix Table name',
         description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
@@ -62,14 +48,12 @@ inputs = [
                 '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
         type: String.class
     ],
-    outTableName: [
-        name: 'Output table name',
-        title: 'Output table name',
-        description: 'Output table name' +
-                '<br/>The table will contain the following fields :' +
-                '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIMESTRING',
-        type: String.class
-    ]
+        outputTable : [
+                name: 'outputTable Matrix Table name',
+                title: 'outputTable Matrix Table name',
+                description: 'outputTable',
+                type: String.class
+        ]
 ]
 
 outputs = [
@@ -113,19 +97,14 @@ def exec(Connection connection, input) {
     String resultString
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Noise_From_Attenuation_Matrix')
+    logger.info('Start : Noise_From_Attenuation_Matrix_MatSim')
     logger.info("inputs {}", input)
 
-    String matsimRoads = input['matsimRoads']
-    String matsimRoadsStats = input['matsimRoadsStats']
 
-    String timeString = ""
-    if (input["timeString"]) {
-        timeString = input["timeString"];
-    }
-
-    String attenuationTable = input['attenuationTable']
-    String outTableName = input['outTableName']
+    String outputTable = input['outputTable'].toString().toUpperCase()
+    String attenuationTable = input['attenuationTable'].toString().toUpperCase()
+    String lwTable = input['lwTable'].toString().toUpperCase()
+    String timeString = "IT"
 
     DatabaseMetaData dbMeta = connection.getMetaData();
     ResultSet rs = dbMeta.getIndexInfo(null, null, attenuationTable, false, false);
@@ -155,9 +134,8 @@ def exec(Connection connection, input) {
         sql.execute("CREATE SPATIAL INDEX ON " + attenuationTable + " (THE_GEOM)");
     }
 
-    sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
-    String query = "CREATE TABLE " + outTableName + '''( 
+    String query = '''CREATE TABLE  ''' + outputTable + '''(
             PK integer PRIMARY KEY AUTO_INCREMENT,
             IDRECEIVER integer,
             THE_GEOM geometry,
@@ -171,34 +149,55 @@ def exec(Connection connection, input) {
             HZ8000 double precision,
             TIMESTRING varchar
         );
-        INSERT INTO RESULT_GEOM(IDRECEIVER , THE_GEOM , HZ63 , HZ125 , HZ250 , HZ500 , HZ1000 , HZ2000 , HZ4000 , HZ8000 , TIMESTRING ) 
+        INSERT INTO ''' + outputTable +'''(IDRECEIVER , THE_GEOM , HZ63 , HZ125 , HZ250 , HZ500 , HZ1000 , HZ2000 , HZ4000 , HZ8000 , TIMESTRING ) 
         SELECT lg.IDRECEIVER,  lg.THE_GEOM,
-            10 * LOG10( SUM(POWER(10,(mrs.LW63 + lg.HZ63) / 10))) AS HZ63,
-            10 * LOG10( SUM(POWER(10,(mrs.LW125 + lg.HZ125) / 10))) AS HZ125,
-            10 * LOG10( SUM(POWER(10,(mrs.LW250 + lg.HZ250) / 10))) AS HZ250,
-            10 * LOG10( SUM(POWER(10,(mrs.LW500 + lg.HZ500) / 10))) AS HZ500,
-            10 * LOG10( SUM(POWER(10,(mrs.LW1000 + lg.HZ1000) / 10))) AS HZ1000,
-            10 * LOG10( SUM(POWER(10,(mrs.LW2000 + lg.HZ2000) / 10))) AS HZ2000,
-            10 * LOG10( SUM(POWER(10,(mrs.LW4000 + lg.HZ4000) / 10))) AS HZ4000,
-            10 * LOG10( SUM(POWER(10,(mrs.LW8000 + lg.HZ8000) / 10))) AS HZ8000,
-            mrs.TIMESTRING AS TIMESTRING
+            10 * LOG10( SUM(POWER(10,(mr.HZ63 + lg.HZ63) / 10))) AS HZ63,
+            10 * LOG10( SUM(POWER(10,(mr.HZ125 + lg.HZ125) / 10))) AS HZ125,
+            10 * LOG10( SUM(POWER(10,(mr.HZ250 + lg.HZ250) / 10))) AS HZ250,
+            10 * LOG10( SUM(POWER(10,(mr.HZ500 + lg.HZ500) / 10))) AS HZ500,
+            10 * LOG10( SUM(POWER(10,(mr.HZ1000 + lg.HZ1000) / 10))) AS HZ1000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ2000 + lg.HZ2000) / 10))) AS HZ2000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ4000 + lg.HZ4000) / 10))) AS HZ4000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ8000 + lg.HZ8000) / 10))) AS HZ8000,
+            mr.T AS TIMESTRING
         FROM ''' + attenuationTable + '''  lg 
-        INNER JOIN ''' + matsimRoads + ''' mr ON lg.IDSOURCE = mr.PK
-        INNER JOIN ''' + matsimRoadsStats + ''' mrs ON mr.LINK_ID = mrs.LINK_ID
-        ''' + ((timeString != "") ? "WHERE mrs.TIMESTRING = \'" + timeString + "\' " : "") + '''
-        GROUP BY lg.IDRECEIVER, lg.THE_GEOM, mrs.TIMESTRING;
+        INNER JOIN ''' + lwTable + ''' mr ON lg.IDSOURCE = mr.PK
+        GROUP BY lg.IDRECEIVER, lg.THE_GEOM, mr.T;
     '''
 
+    String query2 = '''CREATE TABLE '''+outputTable+''' AS SELECT lg.IDRECEIVER,  lg.THE_GEOM,
+            10 * LOG10( SUM(POWER(10,(mr.HZ63 + lg.HZ63) / 10))) AS HZ63,
+            10 * LOG10( SUM(POWER(10,(mr.HZ125 + lg.HZ125) / 10))) AS HZ125,
+            10 * LOG10( SUM(POWER(10,(mr.HZ250 + lg.HZ250) / 10))) AS HZ250,
+            10 * LOG10( SUM(POWER(10,(mr.HZ500 + lg.HZ500) / 10))) AS HZ500,
+            10 * LOG10( SUM(POWER(10,(mr.HZ1000 + lg.HZ1000) / 10))) AS HZ1000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ2000 + lg.HZ2000) / 10))) AS HZ2000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ4000 + lg.HZ4000) / 10))) AS HZ4000,
+            10 * LOG10( SUM(POWER(10,(mr.HZ8000 + lg.HZ8000) / 10))) AS HZ8000,
+            mr.T AS TIMESTRING
+        FROM ''' + attenuationTable + '''  lg , ''' + lwTable + ''' mr WHERE lg.IDSOURCE = mr.PK 
+        GROUP BY lg.IDRECEIVER, lg.THE_GEOM, mr.T;
+    '''
+
+    long start = System.currentTimeMillis();
+    sql.execute(String.format("DROP TABLE IF EXISTS LT_GEOM"))
     logger.info(query)
-
     sql.execute(query)
+    long stop = System.currentTimeMillis();
+    println(stop-start)
+     start = System.currentTimeMillis();
+    sql.execute(String.format("DROP TABLE IF EXISTS "+outputTable+";"))
+    logger.info(query2)
+    sql.execute(query2)
+     stop = System.currentTimeMillis();
+    println(stop-start)
 
-    prefix = "HZ"
-    sql.execute("ALTER TABLE " + outTableName + " ADD COLUMN LEQA float as 10*log10((power(10,(" + prefix + "63-26.2)/10)+power(10,(" + prefix + "125-16.1)/10)+power(10,(" + prefix + "250-8.6)/10)+power(10,(" + prefix + "500-3.2)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000+1.2)/10)+power(10,(" + prefix + "4000+1)/10)+power(10,(" + prefix + "8000-1.1)/10)))")
-    sql.execute("ALTER TABLE " + outTableName + " ADD COLUMN LEQ float as 10*log10((power(10,(" + prefix + "63)/10)+power(10,(" + prefix + "125)/10)+power(10,(" + prefix + "250)/10)+power(10,(" + prefix + "500)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000)/10)+power(10,(" + prefix + "4000)/10)+power(10,(" + prefix + "8000)/10)))")
+    String prefix = "HZ"
+    sql.execute("ALTER TABLE  "+outputTable+" ADD COLUMN LEQA float as 10*log10((power(10,(" + prefix + "63-26.2)/10)+power(10,(" + prefix + "125-16.1)/10)+power(10,(" + prefix + "250-8.6)/10)+power(10,(" + prefix + "500-3.2)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000+1.2)/10)+power(10,(" + prefix + "4000+1)/10)+power(10,(" + prefix + "8000-1.1)/10)))")
+    sql.execute("ALTER TABLE "+outputTable+" ADD COLUMN LEQ float as 10*log10((power(10,(" + prefix + "63)/10)+power(10,(" + prefix + "125)/10)+power(10,(" + prefix + "250)/10)+power(10,(" + prefix + "500)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000)/10)+power(10,(" + prefix + "4000)/10)+power(10,(" + prefix + "8000)/10)))")
 
-    logger.info('End : Noise_From_Attenuation_Matrix')
-    resultString = "Process done. Table of receivers " + outTableName + " created !"
+    logger.info('End : Noise_From_Attenuation_Matrix_MatSim')
+    resultString = "Process done. Table of receivers LT_GEOM created !"
     logger.info('Result : ' + resultString)
     return resultString
 }
