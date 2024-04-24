@@ -27,8 +27,8 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
-import org.noise_planet.noisemodelling.emission.EvaluateRoadSourceDynamic
-import org.noise_planet.noisemodelling.emission.RoadSourceParametersDynamic
+import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
+import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
 
 import java.security.InvalidParameterException
 import java.sql.Connection
@@ -606,12 +606,12 @@ class Vehicle {
             return result;
         }
         for (int i = 0; i < freqs.length; i++) {
-            RoadSourceParametersDynamic rsParametersDynamic = new RoadSourceParametersDynamic(
-                    speed * 3.6, 0, vehicle_type, 1, freqs[i], 20,"NL08", true, 100, 1,
-                    0, id
-            )
+
+            RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
+                    speed * 3.6, 0, vehicle_type, 0,  true, 1, id      )
+            rsParametersDynamic.setRoadSurface("DEF")
             // remove lw_correction
-            result[i] = EvaluateRoadSourceDynamic.evaluate(rsParametersDynamic) + lw_correction;
+            result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic) + lw_correction;
         }
         return result;
     }
@@ -800,7 +800,7 @@ class IndividualVehicleEmissionProcessData {
                 int FreqParam = f
                 double Temperature = 20
                 String RoadSurface = "DEF"
-                boolean Stud = true
+                boolean Stud = false
                 double Junc_dist = 200
                 int Junc_type = 1
                 String veh_type = "1"
@@ -808,10 +808,11 @@ class IndividualVehicleEmissionProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
+                rsParameters.setRoadSurface(RoadSurface)
                 rsParameters.setSlopePercentage(0)
 
-                res_LV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }
 
@@ -821,11 +822,11 @@ class IndividualVehicleEmissionProcessData {
             int kk = 0
             for (f in list) {
                 double speed = SPEED_HV.get(idSource)
-                int acc = 0
+                double acc = 0
                 int FreqParam = f
                 double Temperature = 20
                 String RoadSurface = "DEF"
-                boolean Stud = true
+                boolean Stud = false
                 double Junc_dist = 200
                 int Junc_type = 1
                 String veh_type = "3"
@@ -833,10 +834,10 @@ class IndividualVehicleEmissionProcessData {
                 double LwStd = 1
                 int VehId = 10
 
-                RoadSourceParametersDynamic rsParameters = new RoadSourceParametersDynamic(speed, acc, veh_type, acc_type, FreqParam, Temperature, RoadSurface, Stud, Junc_dist, Junc_type, LwStd, VehId)
+                RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
-
-                res_HV[kk] = EvaluateRoadSourceDynamic.evaluate(rsParameters)
+                rsParameters.setRoadSurface(RoadSurface)
+                res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }
         }

@@ -25,7 +25,6 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.PropagationProcessPathData;
@@ -52,20 +51,12 @@ public class LTPropagationProcessData extends CnossosPropagationData {
     public HashMap<String, List<double[]>> wjSourcesT ;
 
 
-    /**
-     * Attenuation and other attributes relative to direction on sphere
-     */
-    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
 
     LTConfig ltConfig;
 
     public LTPropagationProcessData(ProfileBuilder builder, LTConfig ltConfig, List<Integer> freq_lvl) {
         super(builder, freq_lvl);
         this.ltConfig = ltConfig;
-    }
-
-    public void setDirectionAttributes(Map<Integer, DirectionAttributes> directionAttributes) {
-        this.directionAttributes = directionAttributes;
     }
 
     @Override
@@ -83,12 +74,10 @@ public class LTPropagationProcessData extends CnossosPropagationData {
     @Override
     public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
         int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
-        if(directionAttributes.containsKey(directivityIdentifier)) {
-            return directionAttributes.get(directivityIdentifier).getAttenuationArray(frequencies, phi, theta);
-        } else {
-            // This direction identifier has not been found
-            return new double[frequencies.length];
-        }
+      // todo add direction attributes
+        // This direction identifier has not been found
+        return new double[frequencies.length];
+
     }
 
     @Override
@@ -148,16 +137,4 @@ public class LTPropagationProcessData extends CnossosPropagationData {
         }
     }
 
-    public static class OmnidirectionalDirection implements DirectionAttributes {
-
-        @Override
-        public double getAttenuation(double frequency, double phi, double theta) {
-            return 0;
-        }
-
-        @Override
-        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
-            return new double[frequencies.length];
-        }
-    }
 }

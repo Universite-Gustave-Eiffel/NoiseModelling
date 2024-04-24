@@ -25,8 +25,6 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.geom.LineString;
-import org.noise_planet.noisemodelling.emission.DirectionAttributes;
-import org.noise_planet.noisemodelling.emission.RailWayLW;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.CnossosPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.IComputeRaysOut;
@@ -43,7 +41,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.zip.GZIPOutputStream;
 
@@ -62,10 +63,6 @@ public class LTPointNoiseMapFactory implements PointNoiseMap.PropagationProcessD
     LTComputeRaysOut.LtData ltData = new LTComputeRaysOut.LtData();
     int srid;
 
-    /**
-     * Attenuation and other attributes relative to direction on sphere
-     */
-    public Map<Integer, DirectionAttributes> directionAttributes = new HashMap<>();
 
 
     public LTPointNoiseMapFactory(Connection connection, LTConfig ltConfig) {
@@ -92,13 +89,6 @@ public class LTPointNoiseMapFactory implements PointNoiseMap.PropagationProcessD
         return ltData;
     }
 
-    public void insertTrainDirectivity() {
-        directionAttributes.clear();
-        directionAttributes.put(0, new LTPropagationProcessData.OmnidirectionalDirection());
-        for(RailWayLW.TrainNoiseSource noiseSource : RailWayLW.TrainNoiseSource.values()) {
-            directionAttributes.put(noiseSource.ordinal() + 1, new RailWayLW.TrainAttenuation(noiseSource));
-        }
-    }
 
     @Override
     public void initialize(Connection connection, PointNoiseMap pointNoiseMap) throws SQLException {
@@ -222,7 +212,7 @@ public class LTPointNoiseMapFactory implements PointNoiseMap.PropagationProcessD
     @Override
     public LTPropagationProcessData create(ProfileBuilder builder) {
         LTPropagationProcessData ltPropagationProcessData = new LTPropagationProcessData(builder, ltConfig, ltConfig.propagationProcessPathDataT.entrySet().iterator().next().getValue().freq_lvl);
-        ltPropagationProcessData.setDirectionAttributes(directionAttributes);
+
         return ltPropagationProcessData;
     }
 

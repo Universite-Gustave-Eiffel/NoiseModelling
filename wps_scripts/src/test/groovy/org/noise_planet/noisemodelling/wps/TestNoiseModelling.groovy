@@ -62,7 +62,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 "duration":100])
 
 
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+        assertEquals("Calculation Done ! The table LW_DYNAMIC_GEOM has been created.", res)
     }
 
     @Test
@@ -89,15 +89,15 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableRoads": "ROADS2",
                  "method" : "PROBA",
                  "timestep" : 1,
-                 "gridStep":10,
+                 "gridStep":20,
                  "duration":100])
 
         res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 250,
-                 "confDiffHorizontal" : true,
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,
                  "confSkipLnight":true,
@@ -121,15 +121,15 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableRoads": "ROADS2",
                  "method" : "VALENTIN",
                  "timestep" : 1,
-                 "gridStep":10,
-                 "duration":300])
+                 "gridStep":20,
+                 "duration":100])
 
         res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 250,
-                 "confDiffHorizontal" : true,
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,
                  "confSkipLnight":true,
@@ -151,7 +151,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
 
 
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
     }
 
     @Test
