@@ -14,13 +14,17 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2.value.ValueBoolean
-import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
+import org.noise_planet.noisemodelling.wps.Experimental.Noise_Map_Difference
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Noise_From_Attenuation_Matrix_MatSim
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -45,6 +49,110 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 
+    @Test
+    void testDynamicRoadEmission() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        String res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                "method" : "oj",
+                "timestep" : 1,
+                 "gridStep":10,
+                "duration":100])
+
+
+        assertEquals("Calculation Done ! The table LW_DYNAMIC_GEOM has been created.", res)
+    }
+
+    @Test
+    void testDynamicRoadEmissionPropagation() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1
+                ]
+        )
+
+        String res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                 "method" : "PROBA",
+                 "timestep" : 1,
+                 "gridStep":20,
+                 "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+
+        res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                 "method" : "VALENTIN",
+                 "timestep" : 1,
+                 "gridStep":20,
+                 "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_VAL"
+                ])
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_VAL",
+                 "columnName"   : "LEQA"
+                ])
+
+
+
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
+    }
 
     @Test
     void testRailWayEmissionFromDEN() {
