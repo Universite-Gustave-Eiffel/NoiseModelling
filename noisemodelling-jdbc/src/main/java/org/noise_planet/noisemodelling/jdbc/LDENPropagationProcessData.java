@@ -319,21 +319,4 @@ public class LDENPropagationProcessData extends CnossosPropagationData {
         }
     }
 
-    public static class OmnidirectionalDirection implements DirectivitySphere {
-
-        @Override
-        public double getAttenuation(double frequency, double phi, double theta) {
-            return 0;
-        }
-
-        @Override
-        public double[] getAttenuationArray(double[] frequencies, double phi, double theta) {
-            return new double[frequencies.length];
-        }
-
-        @Override
-        public boolean coverFrequency(double frequency) {
-            return true;
-        }
-    }
 }

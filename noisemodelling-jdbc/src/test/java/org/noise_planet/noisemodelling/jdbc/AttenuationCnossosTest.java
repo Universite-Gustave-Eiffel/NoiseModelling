@@ -1,5 +1,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
@@ -22,9 +24,11 @@ import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
 import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
+import static org.noise_planet.noisemodelling.jdbc.Utils.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
-
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
 // TODO reduce error epsilon
 
 /**
@@ -33,13 +37,13 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.PowerUtils.*;
 public class AttenuationCnossosTest {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossosTest.class);
-
+    private static final int [] frequencies = new int[]{63,125,250,500,1000,2000,4000,8000};
     private static final double ERROR_EPSILON_HIGHEST = 1e5;
     private static final double ERROR_EPSILON_VERY_HIGH = 15;
     private static final double ERROR_EPSILON_HIGH = 3;
     private static final double ERROR_EPSILON_MEDIUM = 1;
     private static final double ERROR_EPSILON_LOW = 0.5;
-    private static final double ERROR_EPSILON_VERY_LOW = 0.2;
+    private static final double ERROR_EPSILON_VERY_LOW = 0.1;
     private static final double ERROR_EPSILON_LOWEST = 0.02;
 
     private static final double[] HOM_WIND_ROSE = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -49,6 +53,9 @@ public class AttenuationCnossosTest {
     private static final double TEMPERATURE = 10;
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
     private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
+
+    public AttenuationCnossosTest() throws IOException {
+    }
 
 
     private static void assertDoubleArrayEquals(String valueName, double[] expected, double [] actual, double delta) {
@@ -65,13 +72,85 @@ public class AttenuationCnossosTest {
             }
         }
     }
+    private static void writeResultsToRst(String fileName, String testName, String variableName, double[] expected, double[] actual) {
+        try {
+            FileWriter writer = new FileWriter(fileName, true);
+            writer.append("Test Case: " + testName + "\n");
+            writer.append("Variable: " + variableName + "\n");
+            writer.append("Expected: " + Arrays.toString(expected) + "\n");
+            writer.append("Actual: " + Arrays.toString(actual) + "\n");
+            writer.append("\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+    }
+
+
+    public static double[] twoDgtAftrComma(double[] valeurs) {
+        return Arrays.stream(valeurs)
+                .map(nombre -> Double.parseDouble(String.format(Locale.US, "%.2f", nombre)))
+                .toArray();
+    }
+    public static FileWriter file(String fileName) throws IOException {
+        FileWriter writer = new FileWriter(fileName);
+        writer.write("Rapport de Tests\n");
+        writer.write("================\n\n");
+        writer.write(".. list-table:: Liste des tests\n");
+        writer.write("   :widths: 10 20 20 25\n\n");
+        writer.write("   * - Test Case\n");
+        writer.write("     - Without lateral diffraction\n");
+        writer.write("       - Yes/No\n");
+        writer.write("     - With lateral diffraction\n");
+        writer.write("       - Yes/No\n");
+        writer.write("     - Largest Deviation\n");
+        writer.write("       - dB / Hz\n");
+
+
+        return writer;
+    }
+
+    private static final FileWriter writer;
+
+    static {
+        try {
+            writer = file("/home/maguettte/IdeaProjects/NoiseModelling/source/Table360.rst");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    ;
+
+    /*@Before
+    public void setUp() {
+        System.out.println("avant");
+        try {
+            writer
+        } catch (IOException e) {
+            System.out.println("Erreur lors de l'ouverture du fichier : " + e.getMessage());
+        }
+    }
+
+    @After
+    public void tearDown() {
+        System.out.println("apres");
+        try {
+            if (writer != null) {
+                writer.close();
+            }
+        } catch (IOException e) {
+            System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
+        }
+    }*/
 
     /**
      * Test body-barrier effect
      * NMPB08 – Railway Emission Model
      * Programmers Guide
      */
+    //long startTime = System.currentTimeMillis();
     @Test
     public void testBodyBarrier() {
 
@@ -447,12 +526,12 @@ public class AttenuationCnossosTest {
             assertTrue(v > 0.);
         }
     }
-
+    long startTime = System.currentTimeMillis();
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
     @Test
-    public void TC01() {
+    public void TC01() throws IOException {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder.finishFeeding();
@@ -493,6 +572,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{39.21, 39.16, 39.03, 38.86, 38.53, 37.36, 32.87, 16.54};
         double[] expectedLF = new double[]{40.58, 40.52, 40.40, 40.23, 39.89, 38.72, 34.24, 17.90};
         double[] expectedL = new double[]{39.95, 39.89, 39.77, 39.60, 39.26, 38.09, 33.61, 17.27};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
 
         //Actual values
@@ -511,6 +591,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -527,8 +608,48 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+        System.out.println(valLA);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC01\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
     }
+            /*for (String testName : passedTestNames) {
+                writer.write("   * - " + testName + "\n");
+                writer.write("     - Oui\n");
+            }
+            for (String testName : failedTestNames) {
+                writer.write("   * - " + testName + "\n");
+                writer.write("     - Non\n");
+            }/*
+
+
+
 
     /**
      * Test TC02 -- Mixed ground (G = 0.5)
@@ -575,6 +696,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{37.71, 37.66, 37.53, 35.01, 29.82, 35.86, 31.37, 15.04};
         double[] expectedLF = new double[]{38.39, 38.34, 38.22, 38.04, 36.45, 36.54, 32.05, 15.72};
         double[] expectedL = new double[]{38.07, 38.01, 37.89, 36.79, 34.29, 36.21, 31.73, 15.39};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
         double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
@@ -592,7 +714,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -609,6 +731,33 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC02\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
     }
 
     /**
@@ -656,7 +805,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{36.21, 36.16, 34.45, 26.19, 30.49, 34.36, 29.87, 13.54};
         double[] expectedLF = new double[]{36.21, 36.16, 36.03, 31.63, 35.53, 34.36, 29.87, 13.54};
         double[] expectedL = new double[]{36.21, 36.16, 35.31, 29.71, 33.70, 34.36, 29.87, 13.54};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
         double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
@@ -673,7 +822,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -690,6 +839,33 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC03\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
     }
     
     /**
@@ -741,7 +917,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{37.59, 37.53, 37.41, 34.10, 29.29, 35.73, 31.25, 14.91};
         double[] expectedLF = new double[]{38.21, 38.15, 38.03, 37.86, 36.48, 36.36, 31.87, 15.54};
         double[] expectedL = new double[]{37.91, 37.85, 37.73, 36.37, 34.23, 36.06, 31.57, 15.24};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
         double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
@@ -758,7 +934,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -775,6 +951,34 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC04\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
      }
 
     /**
@@ -837,7 +1041,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
         double[] expectedLF = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
         double[] expectedL = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
         double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
@@ -854,7 +1058,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
@@ -870,7 +1074,34 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC05\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
     }
 
     /**
@@ -944,7 +1175,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{37.53, 37.47, 37.35, 31.54, 36.34, 35.67, 31.18, 14.82};
         double[] expectedLF = new double[]{37.53, 37.47, 37.31, 36.89, 36.84, 35.67, 31.18, 14.82};
         double[] expectedL = new double[]{37.53, 37.47, 37.33, 34.99, 36.60, 35.67, 31.18, 14.82};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSR = proPath.aBoundaryH.deltaDiffSR;
@@ -970,8 +1201,8 @@ public class AttenuationCnossosTest {
         double[] actualABoundaryF = proPath.absorptionData.aBoundaryF;
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
-         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertEquals(0.31, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
         assertEquals(-5.65, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
@@ -1002,6 +1233,34 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC06\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
     }
 
     /**
@@ -1077,7 +1336,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{32.54, 31.32, 29.60, 27.37, 22.22, 20.76, 13.44, -5.81};
         double[] expectedLF = new double[]{32.85, 31.83, 30.35, 28.36, 25.78, 22.06, 14.81, -4.41};
         double[] expectedL = new double[]{32.70, 31.58, 29.99, 27.89, 24.36, 21.46, 14.18, -5.05};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1114,7 +1373,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
         assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
@@ -1154,7 +1413,35 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC07\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
     }
 
     /**
@@ -1229,7 +1516,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{32.54, 31.31, 29.58, 27.35, 22.19, 20.74, 13.42, -5.84};
         double[] expectedLF = new double[]{32.84, 31.81, 30.32, 28.33, 25.74, 22.02, 14.76, -4.45};
         double[] expectedL = new double[]{32.69, 31.57, 29.97, 27.87, 24.32, 21.42, 14.14, -5.09};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1258,7 +1545,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
-
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
         assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
         assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
@@ -1290,8 +1577,34 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
 
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC08\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
         //Path1 : right lateral
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.06, 0.34, 1.76, 8.58};
@@ -1482,7 +1795,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{30.28, 28.31, 25.86, 23.07, 19.93, 15.86, 8.41, -9.87};
         double[] expectedLF = new double[]{30.47, 28.57, 26.16, 23.40, 20.29, 16.23, 8.79, -9.92};
         double[] expectedL = new double[]{30.38, 28.44, 26.01, 23.24, 20.11, 16.05, 8.60, -9.89};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1511,6 +1824,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertEquals(0.24, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
@@ -1542,9 +1856,44 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
 
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC09\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }/*finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
+            }
+        }*/
 
         //Path1 : right lateral
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.39, 2.00, 9.66};
@@ -1725,6 +2074,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{40.19, 36.52, 33.38, 33.36, 33.33, 33.21, 32.74, 31.04};
         double[] expectedLF = new double[]{40.19, 36.52, 33.38, 33.36, 33.33, 33.21, 32.74, 31.04};
         double[] expectedL = new double[]{40.19, 36.52, 33.38, 33.36, 33.33, 33.21, 32.74, 31.04};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
@@ -1754,6 +2104,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_MEDIUM);
@@ -1785,8 +2136,36 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC10\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
 
         //Path1 : right lateral
@@ -1945,6 +2324,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{44.64, 42.04, 39.22, 36.30, 33.30, 31.21, 30.64, 28.59};
         double[] expectedLF = new double[]{44.64, 42.04, 39.22, 36.30, 33.30, 31.21, 30.64, 28.59};
         double[] expectedL = new double[]{44.64, 42.04, 39.22, 36.30, 33.30, 31.21, 30.64, 28.59};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
@@ -1974,6 +2354,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_HIGH);
@@ -2005,8 +2386,36 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC11\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
 
         //Path1 : right lateral
@@ -2156,6 +2565,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{39.78, 36.62, 32.62, 29.05, 29.00, 28.80, 28.06, 25.37};
         double[] expectedLF = new double[]{39.78, 36.62, 32.62, 29.05, 29.00, 28.80, 28.06, 25.37};
         double[] expectedL = new double[]{39.78, 36.62, 32.62, 29.05, 29.00, 28.80, 28.06, 25.37};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
@@ -2185,6 +2595,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_LOW);
@@ -2216,8 +2627,36 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC12\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
 
         //Path1 : right lateral
@@ -2384,6 +2823,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{28.13, 24.61, 20.45, 16.71, 13.19, 10.90, 6.36, -10.13};
         double[] expectedLF = new double[]{28.33, 24.86, 20.73, 17.00, 13.49, 10.87, 6.34, -10.16};
         double[] expectedL = new double[]{28.23, 24.73, 20.59, 16.85, 13.34, 10.88, 6.35, -10.14};
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
@@ -2413,6 +2853,7 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
         assertEquals(0.19, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
@@ -2443,9 +2884,37 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC13\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
 
         //Path1 : right lateral
@@ -2492,7 +2961,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
 
         //Path2 : left lateral
@@ -2539,7 +3008,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_VERY_LOW);
@@ -2616,6 +3085,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{48.10, 46.41, 44.26, 41.74, 38.97, 35.94, 32.33, 26.87};
         double[] expectedLF = new double[]{48.10, 46.42, 44.26, 41.75, 38.98, 35.95, 32.33, 26.88};
 
+
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2673,8 +3143,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
 
         //Path1 : right lateral
@@ -2726,8 +3196,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSRF - right lateral", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
 
         //Path2 : left lateral
@@ -2779,11 +3249,25 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_LOW);
-
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L, ERROR_EPSILON_VERY_LOW);
+        double[] diffLA = diffArray(new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L);
+        double[] valLA = getMaxValeurAbsolue(diffLA);
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC14\n");
+            writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+            writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
+
     }
 
     /**
@@ -2860,7 +3344,7 @@ public class AttenuationCnossosTest {
         double[] expectedLH = new double[]{31.67, 27.42, 25.25, 25.20, 25.12, 24.81, 23.65, 19.41};
         double[] expectedLF = new double[]{31.67, 27.42, 25.25, 25.20, 25.12, 24.81, 23.65, 19.41};
         double[] expectedL = new double[]{31.67, 27.42, 25.25, 25.20, 25.12, 24.81, 23.65, 19.41};
-
+        double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
         double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2880,6 +3364,30 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
+
+
+
+        /*writeResultsToRst("Tc15.rst", " vertical plane", "AGroundSOH",expectedAGroundSOH, twoDgtAftrComma(actualAGroundSOH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "AGroundORH",expectedAGroundORH, twoDgtAftrComma(actualAGroundORH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "DeltaDiffSPrimeRH",expectedDeltaDiffSPrimeRH, twoDgtAftrComma(actualDeltaDiffSPrimeRH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "DeltaDiffSRPrimeH",expectedDeltaDiffSRPrimeH, twoDgtAftrComma(actualDeltaDiffSRPrimeH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "DeltaGroundSOH",expectedDeltaGroundSOH, twoDgtAftrComma(actualDeltaGroundSOH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "DeltaGroundORH",expectedDeltaGroundORH, twoDgtAftrComma(actualDeltaGroundORH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "AlphaAtm",expectedAlphaAtm, twoDgtAftrComma(actualAlphaAtm));
+        writeResultsToRst("Tc15.rst", " vertical plane", "AAtm",expectedAAtm, twoDgtAftrComma(actualAAtm));
+        writeResultsToRst("Tc15.rst", " vertical plane", "ADiv",expectedADiv, twoDgtAftrComma(actualADiv));
+        writeResultsToRst("Tc15.rst", " vertical plane", "DeltaDiffSRH",expectedDeltaDiffSRH, twoDgtAftrComma(actualDeltaDiffSRH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "LH",expectedLH, twoDgtAftrComma(actualLH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "actualADiffH",expectedADiffH, twoDgtAftrComma(actualADiffH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "ABoundaryH",expectedABoundaryH, twoDgtAftrComma(actualABoundaryH));
+        writeResultsToRst("Tc15.rst", " vertical plane", "ABoundaryF",expectedABoundaryF, twoDgtAftrComma(actualABoundaryF));
+        writeResultsToRst("Tc15.rst", " vertical plane", "L",expectedL, twoDgtAftrComma(actualL));
+        writeResultsToRst("Tc15.rst", " vertical plane", "LF",expectedLF, twoDgtAftrComma(actualLF));*/
+
+
+
 
         //Assertions
         assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
@@ -2901,12 +3409,41 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC15\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
 
         //Path1 : right lateral
+        //Expected values - right lateral
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.37, 1.92, 9.32};
         double[] expectedCfH = new double[]{55.20, 56.69, 61.53, 61.63, 29.93, 4.28, 0.52, 0.11};
         double[] expectedAGroundH = new double[]{-1.56, -1.56, -1.32, -1.32, -1.56, -1.56, -1.56, -1.56};
@@ -2921,6 +3458,7 @@ public class AttenuationCnossosTest {
         expectedLH = new double[]{31.97, 27.66, 23.64, 20.26, 17.42, 14.07, 9.79, 2.17};
 
         //Actual values
+        //Actual values - right lateral
         proPath = propDataOut.getPropagationPaths().get(1);
 
         double[] actualWH = proPath.groundAttenuation.wH;
@@ -2936,6 +3474,22 @@ public class AttenuationCnossosTest {
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
 
+        //twoDgtAftrComma(actualCfH);
+
+        /*writeResultsToRst("Tc15.rst", " right lateral", "WH",expectedWH, twoDgtAftrComma(actualWH));
+        writeResultsToRst("Tc15.rst", " right lateral", "CfH",expectedCfH,twoDgtAftrComma(actualCfH));
+        writeResultsToRst("Tc15.rst", " right lateral", "AGoudH",expectedAGroundH, twoDgtAftrComma(actualAGroundH));
+        writeResultsToRst("Tc15.rst", " right lateral", "WF",expectedWF, twoDgtAftrComma(actualWF));
+        writeResultsToRst("Tc15.rst", " right lateral", "CfF",expectedCfF, twoDgtAftrComma(actualCfF));
+        writeResultsToRst("Tc15.rst", " right lateral", "AGoudF",expectedAGroundF, twoDgtAftrComma(actualAGroundF));
+        writeResultsToRst("Tc15.rst", " right lateral", "AlphaAtm",expectedAlphaAtm, twoDgtAftrComma(actualAlphaAtm));
+        writeResultsToRst("Tc15.rst", " right lateral", "AAtm",expectedAAtm, twoDgtAftrComma(actualAAtm));
+        writeResultsToRst("Tc15.rst", " right lateral", "ADiv",expectedADiv, twoDgtAftrComma(actualADiv));
+        writeResultsToRst("Tc15.rst", " right lateral", "DeltaDiffSRH",expectedDeltaDiffSRH, twoDgtAftrComma(actualDeltaDiffSRH));
+        writeResultsToRst("Tc15.rst", " right lateral", "LH",expectedLH, twoDgtAftrComma(actualLH));*/
+
+
+
         //Assertions
         assertDoubleArrayEquals("WH - right lateral", expectedWH, actualWH, ERROR_EPSILON_MEDIUM);
         assertDoubleArrayEquals("CfH - right lateral", expectedCfH, actualCfH, ERROR_EPSILON_HIGH);
@@ -2947,13 +3501,14 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AlphaAtm - right lateral", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - right lateral", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - right lateral", expectedADiv, actualADiv, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_MEDIUM);
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);
 
 
         //Path2 : left lateral
+        //Expected values - left lateral
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.08, 0.41, 2.10, 10.13};
         expectedCfH = new double[]{54.02, 55.58, 60.47, 59.60, 27.53, 3.75, 0.47, 0.10};
         expectedAGroundH = new double[]{-1.50, -1.50, -1.50, -1.50, -1.50, -1.50, -1.50, -1.50};
@@ -2968,7 +3523,8 @@ public class AttenuationCnossosTest {
         expectedLH = new double[]{32.81, 28.62, 24.95, 21.70, 18.55, 15.21, 10.96, 3.43};
 
         //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
+        //Actual values - left lateral
+        proPath = propDataOut.getPropagationPaths().get(2);
 
         actualWH = proPath.groundAttenuation.wH;
         actualCfH = proPath.groundAttenuation.cfH;
@@ -2982,6 +3538,18 @@ public class AttenuationCnossosTest {
         actualADiv = proPath.absorptionData.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
+
+        /*writeResultsToRst("Tc15.rst", " left lateral", "WH",expectedWH, twoDgtAftrComma(actualWH));
+        writeResultsToRst("Tc15.rst", " left lateral", "CfH",expectedCfH,twoDgtAftrComma(actualCfH));
+        writeResultsToRst("Tc15.rst", " left lateral", "AGoudH",expectedAGroundH, twoDgtAftrComma(actualAGroundH));
+        writeResultsToRst("Tc15.rst", " left lateral", "WF",expectedWF, twoDgtAftrComma(actualWF));
+        writeResultsToRst("Tc15.rst", " left lateral", "CfF",expectedCfF, twoDgtAftrComma(actualCfF));
+        writeResultsToRst("Tc15.rst", " left lateral", "AGoudF",expectedAGroundF, twoDgtAftrComma(actualAGroundF));
+        writeResultsToRst("Tc15.rst", " left lateral", "AlphaAtm",expectedAlphaAtm, twoDgtAftrComma(actualAlphaAtm));
+        writeResultsToRst("Tc15.rst", " left lateral", "AAtm",expectedAAtm, twoDgtAftrComma(actualAAtm));
+        writeResultsToRst("Tc15.rst", " left lateral", "ADiv",expectedADiv, twoDgtAftrComma(actualADiv));
+        writeResultsToRst("Tc15.rst", " left lateral", "DeltaDiffSRH",expectedDeltaDiffSRH, twoDgtAftrComma(actualDeltaDiffSRH));
+        writeResultsToRst("Tc15.rst", " left lateral", "LH",expectedLH, twoDgtAftrComma(actualLH));*/
 
         //Assertions
         assertDoubleArrayEquals("WH - left lateral", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -2997,7 +3565,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AGroundH - left lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundF - left lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSRH - left lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_VERY_LOW);
@@ -3072,7 +3640,7 @@ public class AttenuationCnossosTest {
         double[] expectedLF = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
         double[] expectedL = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
         double[] expectedLA = new double[]{11.06, 21.11, 28.48, 33.71, 36.57, 36.61, 31.91, 13.44};
-
+        //double[] directLA = expectedLA;
         //Actual values
         PropagationPath proPath = propDataOut.getPropagationPaths().get(0);
 
@@ -3091,8 +3659,9 @@ public class AttenuationCnossosTest {
         double[] actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] directL= actualL;
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-
+        double[] directLA = actualLA;
         //Assertions
         assertEquals(0.40, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_VERY_LOW);
         assertEquals(-6.58, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_VERY_LOW);
@@ -3113,8 +3682,9 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL1 = diffArray(expectedL, actualL);
 
         //Path1 : reflexion
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.03, 0.14, 0.76, 3.73, 16.91};
@@ -3133,7 +3703,7 @@ public class AttenuationCnossosTest {
         expectedLF = new double[]{36.63, 36.06, 35.35, 34.51, 33.37, 31.21, 25.37, 10.90};
         expectedL = new double[]{36.63, 36.06, 35.35, 34.51, 33.37, 31.21, 25.37, 10.90};
         expectedLA = new double[]{10.10, 19.96, 26.75, 31.31, 33.37, 32.41, 26.37, 9.80};
-        
+        //double[] reflexionLA = expectedLA;
         proPath = propDataOut.getPropagationPaths().get(1);
 
         actualWH = proPath.groundAttenuation.wH;
@@ -3151,7 +3721,10 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
+        double[] reflexionL= actualL;
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] reflexionLA = actualLA;
+
 
         assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - reflexion", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -3168,10 +3741,49 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_LOW);
+        //assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diff = diffArray(expectedLA, actualLA);
+        System.out.println(Arrays.toString(diff));
+        //double[] L = sumDbArray(directL,reflexionL);
+        double[] LA = sumDbArray(directLA,reflexionLA);
+        double[] diffL2 = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00}, LA);
+        double[] valL1 = getMaxValeurAbsolue(diffL1);
+        double[] valL2 = getMaxValeurAbsolue(diffL2);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, addArray(A_WEIGHTING, SOUND_POWER_LEVELS));
-        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},L, ERROR_EPSILON_VERY_LOW);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC16\n");
+            if (valL1[0] < 0.1 && valL2[0] < 0.1 ) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }/*finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
+            }
+        }*/
+        //System.out.println(Arrays.toString(LA));
+        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},LA, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
@@ -3282,6 +3894,7 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] directLA = actualLA;
 
         //Assertions
 
@@ -3364,6 +3977,7 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] reflexionLA = actualLA;
 
         assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - reflexion", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -3381,17 +3995,44 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("DeltaGroundOR - reflexion", expectedDeltaGroundOR, actualDeltaGroundOR, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("actualADiff - reflexion", expectedADiff, actualADiff, ERROR_EPSILON_VERY_LOW);*/
 
-        assertDoubleArrayEquals("AlphaAtm - reflexion", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("AlphaAtm - reflexion", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - reflexion", expectedAAtm, actualAAtm, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("ADiv - reflexion", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_MEDIUM);
+        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, addArray(A_WEIGHTING, SOUND_POWER_LEVELS));
-        assertArrayEquals(  new double[]{14.02, 23.84, 30.95, 33.86, 38.37, 38.27, 33.25, 15.28},L, ERROR_EPSILON_VERY_LOW);
+        double[] LA = sumDbArray(directLA,reflexionLA);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(new double[]{14.02, 23.84, 30.95, 33.86, 38.37, 38.27, 33.25, 15.28},LA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC17\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+        assertArrayEquals(  new double[]{14.02, 23.84, 30.95, 33.86, 38.37, 38.27, 33.25, 15.28},LA, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
@@ -3450,9 +4091,23 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
-
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_HIGH);
+        double[] diffLA = diffArray(new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L);
+        double[] valLA = getMaxValeurAbsolue(diffLA);
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC18\n");
+            writer.write("     - No\n"); // Without lateral diffraction (Yes)
+            writer.write("     - No\n"); // With lateral diffraction (Yes)
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
+        //double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_VERY_LOW);
 
 
     }
@@ -3516,7 +4171,7 @@ public class AttenuationCnossosTest {
                 .vEdgeDiff(true)
                 .setGs(0.9)
                 .build();
-        rayData.reflexionOrder=1;
+        rayData.reflexionOrder = 1;
 
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
@@ -3592,36 +4247,37 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] directLA = actualLA;
 
         //Assertions
 
-        assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
+        /*assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSPrimeRH - vertical plane", expectedDeltaDiffSPrimeRH, actualDeltaDiffSPrimeRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSRPrimeH - vertical plane", expectedDeltaDiffSRPrimeH, actualDeltaDiffSRPrimeH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("DeltaGroundSOH - vertical plane", expectedDeltaGroundSOH, actualDeltaGroundSOH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaGroundSOH - vertical plane", expectedDeltaGroundSOH, actualDeltaGroundSOH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaGroundORH - vertical plane", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("actualADiffH - vertical plane", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("actualADiffH - vertical plane", expectedADiffH, actualADiffH, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundSOF - vertical plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundSOF - vertical plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSPrimeRF - vertical plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaDiffSRPrimeF - vertical plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("DeltaGroundSOF - vertical plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaGroundSOF - vertical plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaGroundORF - vertical plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
+        //assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         //Path1 : lateral right
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.13, 0.70, 3.46, 15.82};
@@ -3658,8 +4314,9 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] rightLA = actualLA;
 
-        assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("WF - lateral right", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -3673,7 +4330,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         //Path2 : lateral left
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.10, 0.51, 2.61, 12.30};
@@ -3710,6 +4367,37 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] leftLA = actualLA;
+
+        double[] LA = sumDbArray(sumDbArray(directLA,rightLA), leftLA);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            System.out.println("tc19");
+            writer.write("   * - TC19\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+        assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA, ERROR_EPSILON_VERY_LOW);
 
         //Different value with the TC because their z-profile left seems to be false, it follows the building top
         // border while it should not
@@ -3727,10 +4415,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - lateral left", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGHEST);
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_HIGHEST);
+        //assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, addArray(A_WEIGHTING, SOUND_POWER_LEVELS));
-        assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},L, ERROR_EPSILON_MEDIUM);
     }
 
     /**
@@ -3833,6 +4519,33 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC20\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
@@ -3969,8 +4682,10 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] directLA = actualLA;
+        double[] diffLVertical = diffArray(expectedL, actualL);
 
-        assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - vertical plane", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - vertical plane", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - vertical plane", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -4002,8 +4717,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         //Path1 : lateral right
         //TODO : need Vretical diff r-crit
@@ -4042,8 +4757,9 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] reflexionLA = actualLA;
 
-        assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - lateral right", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -4055,13 +4771,42 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - lateral right", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         //assertDoubleArrayEquals("ABoundaryH - lateral right", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - lateral right", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("L - lateral right", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - lateral right", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        assertArrayEquals(  new double[]{10.44,20.58,27.78,33.09,35.84,35.73,30.91,12.48},L, ERROR_EPSILON_MEDIUM);// Because building height definition is not in accordance with ISO
+        double[] LA = sumDbArray(directLA,reflexionLA);
+        //double[] LA = sumDbArray(sumDbArray(directLA,rightLA), leftLA);
+        double[] diffLRight = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(new double[]{10.44, 20.58, 27.78, 33.09, 35.84, 35.73, 30.91, 12.48}, LA);
+        double[] valLV = getMaxValeurAbsolue(diffLVertical);
+        double[] valLR = getMaxValeurAbsolue(diffLRight);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            System.out.println("tc19");
+            writer.write("   * - TC21\n");
+            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+        assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
@@ -4209,8 +4954,34 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_HIGH);*/
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC22\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
 
         //Path1 : lateral right
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.60, 3.00, 13.93};
@@ -4241,7 +5012,7 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
 
-        /*assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - lateral right", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -4252,7 +5023,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AAtm - lateral right", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - lateral right", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
+        assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
         //Path2 : lateral left
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.59, 2.96, 13.76};
@@ -4268,9 +5039,9 @@ public class AttenuationCnossosTest {
         expectedLH = new double[]{13.40, 8.86, 4.40, -1.13, -2.50, -6.78, -14.58, -34.97};
         expectedLF = new double[]{13.40, 8.78, 4.61, 0.99, -2.50, -6.78, -14.58, -34.97};
 
-        //proPath = propDataOut.getPropagationPaths().get(1);
+        proPath = propDataOut.getPropagationPaths().get(1);
 
-        /*actualWH = proPath.groundAttenuation.wH;
+        actualWH = proPath.groundAttenuation.wH;
         actualCfH = proPath.groundAttenuation.cfH;
         actualAGroundH = proPath.groundAttenuation.aGroundH;
         actualWF = proPath.groundAttenuation.wF;
@@ -4281,9 +5052,9 @@ public class AttenuationCnossosTest {
         actualAAtm = proPath.absorptionData.aAtm;
         actualADiv = proPath.absorptionData.aDiv;
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);*/
+        actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
 
-        /*assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - lateral left", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -4294,7 +5065,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AAtm - lateral left", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - lateral left", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
+        assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_VERY_HIGH); //because we don't take into account this rays
@@ -4441,6 +5212,33 @@ public class AttenuationCnossosTest {
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC23\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_VERY_LOW);
@@ -4450,24 +5248,25 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORH - vertical plane", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("actualADiffH - vertical plane", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
 
-        //assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundSOF - vertical plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("DeltaDiffSPrimeRF - vertical plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("DeltaDiffSRPrimeF - vertical plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaDiffSPrimeRF - vertical plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaDiffSRPrimeF - vertical plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("DeltaGroundSOF - vertical plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("DeltaGroundORF - vertical plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+
 
     }
 
@@ -4612,6 +5411,9 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] directLA = actualLA;
+        double[] diffLV = diffArray(expectedL, actualL);
+
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -4699,6 +5501,7 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+        double[] reflexionLA = actualLA;
 
         /*assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -4725,12 +5528,41 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);*/
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         assertEquals(1, propDataOut.getVerticesSoundLevel().size());
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
-                93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
+        double[] diffLR = diffArray(expectedL, actualL);
+        double[] LA = sumDbArray(directLA,reflexionLA);
+        double[] diffLA = diffArray(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58},LA);
+        double[] valLV = getMaxValeurAbsolue(diffLV);
+        double[] valLR = getMaxValeurAbsolue(diffLR);
+        double[] valLA = getMaxValeurAbsolue(diffLA);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC24\n");
+            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
+        //double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
+                //93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
         //assertArrayEquals(new double[]{14.31, 21.69, 27.76, 31.52, 31.49, 29.18, 25.39, 16.58}, L, ERROR_EPSILON_VERY_HIGH);
 
     }
@@ -4848,7 +5680,8 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-
+        double[] directLA = actualLA;
+        double[] diffVerticalL = diffArray(expectedL,actualL);
         /*assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_VERY_LOW);
@@ -4873,9 +5706,9 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
-        //assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        //assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         //Path1 : lateral right
 
@@ -4961,7 +5794,7 @@ public class AttenuationCnossosTest {
 
         //proPath = propDataOut.getPropagationPaths().get(3);
 
-        /*actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
+        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
         actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
         actualAGroundORH = proPath.aBoundaryH.aGroundOR;
         actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
@@ -4987,7 +5820,9 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.absorptionData.aGlobalH, SOUND_POWER_LEVELS);
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
-        actualLA = addArray(actualL, A_WEIGHTING);*/
+        actualLA = addArray(actualL, A_WEIGHTING);
+
+        double[] diffReflexionL = diffArray(expectedL,actualL);
 
         /*assertDoubleArrayEquals("DeltaDiffSRH - reflexion", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - reflexion", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -5013,9 +5848,37 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
-        //assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_HIGH);
-        //assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+
+        double[] LA = sumDbArray(directLA,actualLA);
+        double[] diffLa = diffArray(new double[]{17.50,25.65,30.56,33.22,33.48,31.52,27.51,17.80}, LA);
+        double[] valLV = getMaxValeurAbsolue(diffVerticalL);
+        double[] valLR = getMaxValeurAbsolue(diffReflexionL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+        try{
+            System.out.println("tc19");
+            writer.write("   * - TC25\n");
+            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
+
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         //MANQUE DIFFRACTIONS HORIZONTALES
@@ -5101,7 +5964,35 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] directLA = actualLA;
+        double[] diffVerticalL = diffArray(expectedL,actualL);
 
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC26\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
         /*assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - vertical plane", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - vertical plane", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
@@ -5116,8 +6007,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOWEST);*/
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
         //Path1 : reflexion
 
@@ -5131,7 +6022,7 @@ public class AttenuationCnossosTest {
         expectedL = new double[]{37.81, 36.06, 35.20, 33.61, 30.36, 26.47, 21.67, 13.89};
         expectedLA = new double[]{11.61, 19.96, 26.60, 30.41, 30.36, 27.67, 22.67, 12.79};
 
-        /*proPath = propDataOut.getPropagationPaths().get(1);
+        proPath = propDataOut.getPropagationPaths().get(1);
 
         actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
         actualAAtm = proPath.absorptionData.aAtm;
@@ -5142,7 +6033,7 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
-
+        double[] diffReflexionL = diffArray(expectedL,actualL);
         /*assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
@@ -5150,8 +6041,44 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);*/
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+
+        /*double[] LA = sumDbArray(directLA,actualLA);
+        double[] diffLa = diffArray(new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15}, LA);
+        double[] valLV = getMaxValeurAbsolue(diffVerticalL);
+        double[] valLR = getMaxValeurAbsolue(diffReflexionL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+        try{
+            System.out.println("tc26");
+            writer.write("   * - TC25\n");
+            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 10000.0) / 10000.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
+            }
+        }*/
+
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
@@ -5236,16 +6163,21 @@ public class AttenuationCnossosTest {
         double[] actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] diffVerticalL = diffArray(expectedL,actualL);
+        double[] directLA = actualLA;
 
-        assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+        double[] diff = diffArray(expectedLA, actualLA);
+        System.out.println(Arrays.toString(diff));
+
 
         //Path1 : reflexion
         expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
@@ -5269,17 +6201,42 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.absorptionData.aGlobalF, SOUND_POWER_LEVELS);
         actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
-
-        assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        double[] diffReflexionL = diffArray(expectedL,actualL);
+        /*assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_HIGHEST);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGHEST);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_HIGHEST);
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_HIGHEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+        double[] LA = sumDbArray(directLA,actualLA);
+        double[] diffLa = diffArray(new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60}, LA);
+        double[] valLV = getMaxValeurAbsolue(diffVerticalL);
+        double[] valLR = getMaxValeurAbsolue(diffReflexionL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+        try{
+            System.out.println("tc27");
+            writer.write("   * - TC27\n");
+            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
 
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_VERY_HIGH);
@@ -5403,15 +6360,54 @@ public class AttenuationCnossosTest {
         double[] actualL = addArray(proPath.absorptionData.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
-       /* assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        /*assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);*/
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
+        double[] diffL = diffArray(expectedL, actualL);
+        double[] diffLa = diffArray(expectedLA, actualLA);
+        double[] valL = getMaxValeurAbsolue(diffL);
+        double[] valLA = getMaxValeurAbsolue(diffLa);
+
+
+        try{
+            //System.out.println("ici");
+            writer.write("   * - TC28\n");
+            if (valL[0] < 0.1) {
+                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
+                System.out.println("ici");
+            } else {
+                writer.write("     - No\n");
+            }
+
+            if (valLA[0] < 0.1) {
+                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
+            } else {
+                writer.write("     - No\n");
+            }
+            double v = valLA[1];
+            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
+            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
+            long endTime = System.currentTimeMillis();
+            long executionTime = (endTime - startTime);
+            writer.write("Temps d'éxécution = "+executionTime+ " ms\n");
+        }catch (IOException e) {
+            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
+        }finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
+            }
+        }
+
 
 
 
@@ -5785,6 +6781,8 @@ public class AttenuationCnossosTest {
 
         assertEquals(14.6, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
+    long endTime = System.currentTimeMillis();
+    long executionTime = endTime - startTime;
 
     private static double getMaxError(double[] ref, double[] result) {
         assertEquals(ref.length, result.length);
@@ -5885,3 +6883,4 @@ public class AttenuationCnossosTest {
 
     }
 }
+

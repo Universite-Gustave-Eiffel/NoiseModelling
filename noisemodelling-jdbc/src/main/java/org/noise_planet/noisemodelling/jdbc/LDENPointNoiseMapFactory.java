@@ -95,7 +95,7 @@ public class LDENPointNoiseMapFactory implements PointNoiseMap.PropagationProces
 
     public void insertTrainDirectivity() {
         directionAttributes.clear();
-        directionAttributes.put(0, new LDENPropagationProcessData.OmnidirectionalDirection());
+        directionAttributes.put(0, new OmnidirectionalDirection());
         int i=1;
         for(String typeSource : noiseSource) {
             directionAttributes.put(i, new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource(typeSource)));

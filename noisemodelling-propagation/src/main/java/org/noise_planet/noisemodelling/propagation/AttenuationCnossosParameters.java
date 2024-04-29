@@ -59,6 +59,9 @@ public class AttenuationCnossosParameters {
     public List<Double> freq_lvl_exact;
     public List<Double> freq_lvl_a_weighting;
     // Wind rose for each directions
+    /**
+     * Cnossos
+     */
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     private double temperature = 15;
@@ -66,12 +69,12 @@ public class AttenuationCnossosParameters {
     private double humidity = 70;
     private double pressure = Pref;
     private double[] alpha_atmo;
-    private double defaultOccurance = 0.5;
+    private double defaultOccurance = 0.5; // cnossos
 
-    private boolean gDisc = true;     // choose between accept G discontinuity or not
-    private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
+    private boolean gDisc = true;     // choose between accept G discontinuity or not Cnossos
+    private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20 Cnossos
     /** probability occurrence favourable condition */
-    private double[] windRose  = DEFAULT_WIND_ROSE;
+    private double[] windRose  = DEFAULT_WIND_ROSE; // Cnossos
 
     public AttenuationCnossosParameters() {
         this(false);

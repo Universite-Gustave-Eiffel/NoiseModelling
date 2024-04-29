@@ -31,7 +31,7 @@ import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.noise_planet.noisemodelling.jdbc.*;
 import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -536,37 +536,5 @@ public class BezierContouring {
         connection.commit();
     }
 
-    static class Segment {
-        Coordinate p0;
-        Coordinate p1;
-        List<Coordinate> controlPoints = new ArrayList<>();
 
-        public Segment(Coordinate p0, Coordinate p1) {
-            this.p0 = p0;
-            this.p1 = p1;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if(!(obj instanceof Segment)) {
-                return false;
-            }
-            Segment other = (Segment) obj;
-            return (this.p0.equals(other.p0) && this.p1.equals(other.p1)) ||
-                    (this.p1.equals(other.p0) && this.p0.equals(other.p1));
-        }
-
-        Envelope getEnvelope(){
-            return new Envelope(p0, p1);
-        }
-
-        public void addControlPoints(Coordinate controlPoint1, Coordinate controlPoint2) {
-            controlPoints.add(controlPoint1);
-            controlPoints.add(controlPoint2);
-        }
-
-        public List<Coordinate> getControlPoints() {
-            return controlPoints;
-        }
-    }
 }

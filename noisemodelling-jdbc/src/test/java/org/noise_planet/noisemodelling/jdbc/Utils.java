@@ -2,12 +2,15 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2.util.StringUtils;
 import org.h2gis.utilities.SpatialResultSet;
+import org.junit.runner.Description;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation;
+import java.util.Locale;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -28,9 +31,40 @@ public class Utils {
 
         return result;
     }
+    public static double [] diffArray(double[] array1, double[] array2) {
+        double[] difference = new double[array1.length];
+        if (array1.length == array2.length) {
+            for (int i = 0; i < array1.length; i++) {
+                difference[i] = array1[i] - array2[i];
+            }
+        }else {
+            throw new IllegalArgumentException("Arrays with different size");
+        }
+        return difference;
+
+    }
+
+    public static double[] getMaxValeurAbsolue(double[] listes) {
+        if (listes == null || listes.length == 0) {
+            throw new IllegalArgumentException("La liste ne peut pas être vide ou nulle.");
+        }
+        double[] result = null;
+        double maxAbsolue = Double.MIN_VALUE; // Initialiser avec la plus petite valeur possible
+        for (int i = 0; i < listes.length; i++) {
+            double valeurAbsolue = Math.abs(listes[i]);
+            if (valeurAbsolue > maxAbsolue) {
+                maxAbsolue = valeurAbsolue;
+                result = new double[] {maxAbsolue,i};
+            }
+        }
+
+        return result;
+    }
+
+
     public static String getRunScriptRes(String fileName) throws URISyntaxException {
-        File resourceFile = new File(PointNoiseMapTest.class.getResource(fileName).toURI());
-        return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
+    File resourceFile = new File(PointNoiseMapTest.class.getResource(fileName).toURI());
+    return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
     public static class JDBCPropagationData implements PointNoiseMap.PropagationProcessDataFactory {
@@ -108,3 +142,6 @@ public class Utils {
                 lvls.get(5) + 1.2, lvls.get(6) + 1, lvls.get(7)  - 1.1};
     }
 }
+
+
+//////sphinx-build -b html -c "/home/maguettte/IdeaProjects/NoiseModelling/source"  "/home/maguettte/IdeaProjects/NoiseModelling/source"  "/home/maguettte/IdeaProjects/NoiseModelling/Docs"

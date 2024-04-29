@@ -3,7 +3,7 @@ Roads
 
 NoiseModelling is a tool for producing noise maps. To do so, at different stages of the process, the application needs input data, respecting a strict formalism.
 
-Below we describe the table ``ROADS``, dealing with the roads network. 
+Below we describe the table ``ROADS``, dealing with the roads network.
 
 The other tables are accessible via the left menu in the ``Input tables & parameters`` section.
 
@@ -26,7 +26,7 @@ Table definition
 	* Type: Geometry
 * ``PK`` *
 	* Description: An identifier (PRIMARY KEY)
-	* Type:  Integer 
+	* Type:  Integer
 * ``LV_D``, ``LV_E``, ``LV_N``
 	* Description: Hourly average light vehicle count
 	* Type: Double
@@ -73,7 +73,7 @@ Table definition
 	* Description: Distance to the junction *(in meters)*. When approaching less than 100m from a junction, it is advisable to subdivide the section into 10m pieces and calculate the distance from the centroid of this sub-section to the junction. This allows for a finer calculation.
 	* Type: Double
 * ``JUNC_TYPE``
-	* Description: Integer defining the type of junction 
+	* Description: Integer defining the type of junction
 		* ``0`` : None
 		* ``1`` : A crossing with traffic lights
 		* ``2`` : A roundabout
@@ -82,7 +82,7 @@ Table definition
 	* Description: Slope (in %) of the road section. If the column is not filled in, the ``LINESTRING`` Z-values will be used to calculate the slope and the traffic direction (``WAY`` column) will be force to ``3`` (bi-directional)
 	* Type: Double
 * ``WAY``
-	* Description: Integer defining the way of the road section. 
+	* Description: Integer defining the way of the road section.
 		* ``1`` = One way road section and the traffic goes in the same way that the slope definition you have used
 		* ``2`` = One way road section and the traffic goes in the opposite way that the slope definition you have used
 		* ``3`` = Bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill
@@ -97,12 +97,12 @@ Table definition
 Geometry modelling
 ---------------------
 
-In NoiseModelling, road geometries are used as a medium for road noise emission and propagation. 
+In NoiseModelling, road geometries are used as a medium for road noise emission and propagation.
 
 Emission
 ~~~~~~~~~~~~~~~~~~~
 
-According to CNOSSOS-EU, emissions from road traffic should be 5cm above the ground. 
+According to CNOSSOS-EU, emissions from road traffic should be 5cm above the ground.
 
 You can create your own emmission layer or use the dedicated NoiseModelling block called ``Road_Emission_from_Traffic.groovy``. In this script, the table ``ROADS`` is used to create the emission table ``LW_ROADS``. As a consequence, whether or not your roads have a Z value in ``ROADS``, NoiseModelling forces a ``Zsource`` value of 5cm in ``LW_ROADS``.
 
