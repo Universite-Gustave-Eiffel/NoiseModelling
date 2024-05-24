@@ -6,7 +6,6 @@
  * Official webpage : http://noise-planet.org/noisemodelling.html
  * Contact: contact@noise-planet.org
  */
-
 package org.noise_planet.noisemodelling.emission.railway.nmpb;
 
 /**
@@ -51,13 +50,13 @@ public class RailwayVehicleNMPBParameters {
         setIdlingTime(idlingTime);
     }
 
-    public int getSpectreVer() {
+    /*public int getSpectreVer() {
         return this.spectreVer;
     }
 
     public void setSpectreVer(int spectreVer) {
         this.spectreVer = spectreVer;
-    }
+    }*/
 
     public void setVehiclePerHour(double vehiclePerHour) {
         this.vehiclePerHour = vehiclePerHour;

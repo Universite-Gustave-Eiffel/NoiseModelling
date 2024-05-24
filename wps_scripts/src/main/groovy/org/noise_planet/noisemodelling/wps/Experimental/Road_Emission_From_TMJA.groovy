@@ -16,7 +16,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
-import org.noise_planet.noisemodelling.propagation.AttenuationCnossosParameters
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 
 import java.sql.Connection
 import java.sql.PreparedStatement

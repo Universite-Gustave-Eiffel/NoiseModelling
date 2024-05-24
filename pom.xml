@@ -38,8 +38,8 @@
         <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
         <developerConnection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</developerConnection>
         <url>git@github.com:Ifsttar/NoiseModelling.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
     <build>
         <plugins>
             <plugin>
@@ -107,6 +107,8 @@
                     </plugin>
                 </plugins>
             </build>
+
+
         </profile>
     </profiles>
     <developers>

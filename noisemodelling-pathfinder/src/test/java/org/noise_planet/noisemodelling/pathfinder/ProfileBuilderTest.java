@@ -1,3 +1,12 @@
+/**
+ * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and education, as well as by experts in a professional use.
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ * <p>
+ * Official webpage : http://noise-planet.org/noisemodelling.html
+ * Contact: contact@noise-planet.org
+ */
+
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.cts.crs.CRSException;
@@ -6,17 +15,16 @@ import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.pathfinder.utils.GeoJSONDocument;
-import org.noise_planet.noisemodelling.pathfinder.utils.KMLDocument;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.xml.stream.XMLStreamException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,7 +54,7 @@ public class ProfileBuilderTest {
 
         profileBuilder.finishFeeding();
 
-        List<ProfileBuilder.Building> list = profileBuilder.getBuildings();
+        List<Building> list = profileBuilder.getBuildings();
         assertEquals(3, list.size());
         assertEquals("POLYGON ((1 1, 5 1, 5 5, 1 5, 1 1))", list.get(0).getGeometry().toText());
         assertEquals(10, list.get(0).getGeometry().getCoordinate().z, 0);
@@ -68,7 +76,7 @@ public class ProfileBuilderTest {
         profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23);
         profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56);
 
-        List<ProfileBuilder.Building> list = profileBuilder.getBuildings();
+        List<Building> list = profileBuilder.getBuildings();
         assertEquals(1, list.size());
     }
 
@@ -84,8 +92,8 @@ public class ProfileBuilderTest {
         profileBuilder.addBuilding(READER.read("POLYGON((7 6, 10 6, 10 2, 7 2, 7 6))"), 5.6);
         profileBuilder.finishFeeding();
 
-        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
-        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
+        List<CutPoint> pts = profile.getCutPoints();
         assertEquals(8, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
@@ -153,8 +161,8 @@ public class ProfileBuilderTest {
         profileBuilder.addTopographicPoint(new Coordinate(8, 2, 2.0));
         profileBuilder.finishFeeding();
 
-        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
-        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
+        List<CutPoint> pts = profile.getCutPoints();
         assertEquals(10, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
@@ -203,8 +211,8 @@ public class ProfileBuilderTest {
         profileBuilder.addGroundEffect(READER.read("POLYGON((8 1, 7 2, 7 4.5, 8 5, 9 4.5, 10 3.5, 9.5 2, 8 1))"), 0.25);
         profileBuilder.finishFeeding();
 
-        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
-        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
+        List<CutPoint> pts = profile.getCutPoints();
         assertEquals(4, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
@@ -242,9 +250,9 @@ public class ProfileBuilderTest {
         profileBuilder.addGroundEffect(READER.read("POLYGON((8 1, 7 2, 7 4.5, 8 5, 9 4.5, 10 3.5, 9.5 2, 8 1))"), 0.25);
         profileBuilder.finishFeeding();
 
-        ProfileBuilder.CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
+        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
 
-        List<ProfileBuilder.CutPoint> pts = profile.getCutPoints();
+        List<CutPoint> pts = profile.getCutPoints();
         assertEquals(19, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
@@ -300,9 +308,9 @@ public class ProfileBuilderTest {
             }
             for(double[] testPoint : testPointPositions) {
                 Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
-                cutStart.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+                cutStart.setZ(profileBuilder.getZGround(new CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
-                cutEnd.setZ(profileBuilder.getZGround(new ProfileBuilder.CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
+                cutEnd.setZ(profileBuilder.getZGround(new CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 profileBuilder.getProfile(cutStart, cutEnd, 0);
             }
         }
@@ -345,7 +353,7 @@ public class ProfileBuilderTest {
 
         Coordinate receiver = new Coordinate(200, 50, 14);
         Coordinate source = new Coordinate(10, 10, 1);
-        ProfileBuilder.CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0);
+        CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0);
         assertEquals(9, cutProfile.getCutPoints().size());
         assertEquals(0, cutProfile.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
@@ -389,19 +397,19 @@ public class ProfileBuilderTest {
         profileBuilder.addTopographicLine(29.85, 112.97, 0.0, 29.85, -1.0, 0.0);
         profileBuilder.addTopographicLine(137.79, 112.97, 0.0, 137.79, -1.0, 0.0);
         profileBuilder.finishFeeding();
-        CnossosPropagationData cnossosPropagationData = new CnossosPropagationData(profileBuilder);
+        Scene scene = new Scene(profileBuilder);
         WKTReader wktReader = new WKTReader();
         Geometry geometry = wktReader.read("MultiLineStringZ ((18.27972380180239753 -1.52672398417648481 0.05, 18.27972380180239753 113.47327601582351519 0.05))");
-        cnossosPropagationData.addSource(1L, geometry);
-        ComputeCnossosRays computeCnossosRays = new ComputeCnossosRays(cnossosPropagationData);
-        assertEquals(2, cnossosPropagationData.sourceGeometries.get(0).getNumPoints());
-        computeCnossosRays.makeSourceRelativeZToAbsolute();
+        scene.addSource(1L, geometry);
+        PathFinder pathFinder = new PathFinder(scene);
+        assertEquals(2, scene.sourceGeometries.get(0).getNumPoints());
+        pathFinder.makeSourceRelativeZToAbsolute();
         // The source line should now be made of 4 points (2 points being created by the elevated DEM)
-        assertEquals(4, cnossosPropagationData.sourceGeometries.get(0).getNumPoints());
-        double minZ = Arrays.stream(cnossosPropagationData.sourceGeometries.get(0).getCoordinates())
+        assertEquals(4, scene.sourceGeometries.get(0).getNumPoints());
+        double minZ = Arrays.stream(scene.sourceGeometries.get(0).getCoordinates())
                 .map(coordinate -> coordinate.z).min(Double::compareTo).get();
         assertEquals(0.05, minZ, 1e-6);
-        double maxZ = Arrays.stream(cnossosPropagationData.sourceGeometries.get(0).getCoordinates())
+        double maxZ = Arrays.stream(scene.sourceGeometries.get(0).getCoordinates())
                 .map(coordinate -> coordinate.z).max(Double::compareTo).get();
         assertEquals(3.05, maxZ, 1e-6);
     }
