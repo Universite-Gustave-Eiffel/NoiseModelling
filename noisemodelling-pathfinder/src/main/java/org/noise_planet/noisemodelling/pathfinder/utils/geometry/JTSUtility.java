@@ -289,7 +289,7 @@ public class JTSUtility {
      * @param coordinates Coordinates
      * @return Parts of the clock-wise ConvexHull where x value are increasing from the minimum X value
      */
-    public static List<Coordinate> getXAscendingHullPoints(Coordinate[] coordinates) {
+    public static List<Coordinate> getXAscendingHullPoints(Coordinate[] coordinates){
         ConvexHull convexHull = new ConvexHull(coordinates, new GeometryFactory());
         Geometry hullGeom = convexHull.getConvexHull();
         Coordinate[] hull = hullGeom.getCoordinates();

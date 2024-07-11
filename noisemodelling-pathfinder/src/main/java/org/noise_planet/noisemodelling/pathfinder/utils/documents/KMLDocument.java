@@ -29,10 +29,8 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -290,6 +288,54 @@ public class KMLDocument {
     }
 
     /**
+     * mapping the walls
+     * @param profileBuilder
+     * @return
+     * @throws XMLStreamException
+     */
+
+    public KMLDocument writeWalls(ProfileBuilder profileBuilder) throws XMLStreamException {
+        xmlOut.writeStartElement("Schema");
+        xmlOut.writeAttribute("name", "walls");
+        xmlOut.writeAttribute("id", "walls");
+        xmlOut.writeEndElement();//Write schema
+        xmlOut.writeStartElement("Folder");
+        xmlOut.writeStartElement("name");
+        xmlOut.writeCharacters("walls");
+        xmlOut.writeEndElement();//Name
+        List<Wall> walls = profileBuilder.getWalls();
+        int idPoly = 0;
+        KMLWriter wallWriter = new KMLWriter();
+        wallWriter.setPrecision(wgs84Precision);
+        wallWriter.setExtrude(true);
+        wallWriter.setTesselate(true);
+        wallWriter.setAltitudeMode(profileBuilder.hasDem() ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND);
+        for(Wall wall : walls) {
+            Coordinate[] original = new Coordinate[]{wall.p0,wall.p1};
+            Coordinate[] coordinates = new Coordinate[original.length];
+            for(int i = 0; i < coordinates.length; i++) {
+                coordinates[i] = copyCoord(original[i]);
+            }
+            LineString poly = geometryFactory.createLineString(coordinates);
+            if(!Orientation.isCCW(poly.getCoordinates())) {
+                poly = (LineString) poly.reverse();
+            }
+            // Apply CRS transform
+            doTransform(poly);
+            xmlOut.writeStartElement("Placemark");
+            xmlOut.writeStartElement("name");
+            xmlOut.writeCharacters("walls");
+            xmlOut.writeEndElement();//Name
+            //Write geometry
+            writeRawXml(wallWriter.write(poly));
+            xmlOut.writeEndElement();//Write Placemark
+            idPoly++;
+        }
+        xmlOut.writeEndElement();//Folder
+        return this;
+    }
+
+    /**
      *
      * @param layerName
      * @param profile
@@ -401,7 +447,15 @@ public class KMLDocument {
                 xmlOut.writeCharacters("#" + formatColorEntry(colorEntry.getKey()));
                 xmlOut.writeEndElement(); //styleurl
             }
-            LineString lineString = line.asGeom();
+            Coordinate[] coordinates = new Coordinate[line.getPointList().size()];
+            int i=0;
+
+            for(Coordinate coordinate : line.asGeom().getCoordinates()) {
+
+                coordinates[i++] = copyCoord(coordinate);
+            }
+            //LineString lineString = line.asGeom();
+            LineString lineString = geometryFactory.createLineString(coordinates);
             // Apply CRS transform
             doTransform(lineString);
             //Write geometry

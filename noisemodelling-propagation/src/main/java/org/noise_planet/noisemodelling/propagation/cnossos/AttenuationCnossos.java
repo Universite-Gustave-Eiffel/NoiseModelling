@@ -21,8 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Math.*;
-import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.DIFH_RCRIT;
-import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.DIFV;
+import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 //import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 
 /**
@@ -62,8 +61,7 @@ public class AttenuationCnossos {
             }
 
             //(7.11) NMP2008 P.32
-            double testForm = (40 / freq_lambda[idfreq])
-                    * cprime * srpath.getDelta();
+            double testForm = 40 / freq_lambda[idfreq]* cprime * srpath.getDelta();
 
             double deltaDif = 0.;
             if (testForm >= -2.) {
@@ -148,7 +146,7 @@ public class AttenuationCnossos {
                         (pow(segmentPath.zrF, 2) - sqrt(2 * cf / k) * segmentPath.zrF + cf / k));
             } else {
                 /* eq. 2.5.15 */
-                AGround = -10 * log10(4 * pow(k, 2) / pow(segmentPath.dp, 2) *
+                AGround = -10 * log10(4 * pow(k, 2)/ pow(segmentPath.dp, 2) *
                         (pow(segmentPath.zsH, 2) - sqrt(2 * cf / k) * segmentPath.zsH + cf / k) *
                         (pow(segmentPath.zrH, 2) - sqrt(2 * cf / k) * segmentPath.zrH + cf / k));
                 /* eq. 2.5.18 */
@@ -234,10 +232,10 @@ public class AttenuationCnossos {
 
             if (pathParameters.isFavorable()) {
                 // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
-                if (segmentPath.testFormH <= 1) {
+                if (segmentPath.testFormF <= 1) {
                     aGroundMin = -3 * (1 - segmentPath.gm);
                 } else {
-                    aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormH)));
+                    aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
                 }
             } else {
                 aGroundMin = -3;
@@ -572,19 +570,45 @@ public class AttenuationCnossos {
         double[] retroDiff = new double[data.freq_lvl.size()];
         Arrays.fill(retroDiff, 0.);
         Coordinate s = reflect.getSRSegment().s;
+        //Coordinate s = reflect.getSegmentList().get(idx).s;
+
         Coordinate r = reflect.getSRSegment().r;
         for(int idx : reflect.refPoints) {
             //Get the reflexion point
             PointPath pp = reflect.getPointList().get(idx);
             //Get the point on the top of the obstacle
             Coordinate o = new Coordinate(pp.coordinate.x, pp.buildingHeight);
+            //s = reflect.getSegmentList().get(idx).s;
+            double SO = s.distance(o);
+            double OR = o.distance(r);
+            double SR = reflect.getSRSegment().d;
             //Compute de distance delta (2.5.36)
-            double deltaPrime = -(s.distance(o) + o.distance(r) - reflect.getSRSegment().d);
+            double deltaPrime = -(s.distance(o) + o.distance(r) - s.distance(r)); //2.5.36
+            //double ch = Double.parseDouble(null);
+            /*if (reflect.isFavorable()){
+                double ch = min(fm*max(reflect.getSRSegment().zsF,reflect.getSRSegment().zrF)/250,1);
+                for(int i = 0; i < data.freq_lvl.size(); i++) {
+                    double lambda = 340.0 / data.freq_lvl.get(i);
+                    double testForm = 40.0 / lambda * deltaPrime;
+                    double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                    retroDiff[i] = dLRetro;
+                }
+            }
+            else {
+                double ch = min(fm*max(reflect.getSRSegment().zsH,reflect.getSRSegment().zrH)/250,1);
+                for(int i = 0; i < data.freq_lvl.size(); i++) {
+                    double lambda = 340.0 / data.freq_lvl.get(i);
+                    double testForm = 40.0 / lambda * deltaPrime;
+                    double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                    retroDiff[i] = dLRetro;
+                }
+            }*/
             double ch = 1.;
-            for (int i = 0; i < data.freq_lvl.size(); i++) {
+            //int divlam = data.freq_lvl.get(0);
+            for(int i = 0; i < data.freq_lvl.size(); i++) {
                 double lambda = 340.0 / data.freq_lvl.get(i);
                 double testForm = 40.0 / lambda * deltaPrime;
-                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0;
+                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
                 retroDiff[i] = dLRetro;
             }
         }
@@ -618,6 +642,7 @@ public class AttenuationCnossos {
         double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime+ proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1).dPrime- proPathParameters.getSRSegment().dPrime);
         double deltaDiffSR = 0;
         double testForm = 40/lambda*cSecond*_delta;
+
         if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
             deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
         }
@@ -790,7 +815,9 @@ public class AttenuationCnossos {
             proPathParameters.groundAttenuation.cfF[idFreq] = cf;
         }
         double gm = forceGPath ? path.gPath : path.gPathPrime;
-        double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
+        double aGroundFMin = path.dp <= 30*(path.zsH +path.zrH) ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - 30*(path.zsH +path.zrH)/path.dp));
+                //path.testFormF <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormF)));
+
         if(path.gPath == 0) {
             return aGroundFMin;
         }

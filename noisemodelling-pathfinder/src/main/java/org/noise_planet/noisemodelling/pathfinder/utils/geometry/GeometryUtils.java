@@ -45,11 +45,11 @@ public class GeometryUtils {
     }
 
     /**
-     *
-     * @param c
-     * @param a
-     * @param b
-     * @return
+     * projette un point sur une ligne donnée.
+     * @param c représente les coordonnées du point à projeter.
+     * @param a la pente (x) de la ligne.
+     * @param b l'ordonnée (y) à l'origine de la ligne.
+     * @return les coordonnées du point projeté
      */
     public static Coordinate projectPointOnLine(Coordinate c, double a, double b) {
         double x = (c.x-a*b+a*c.y)/(1+a*a);

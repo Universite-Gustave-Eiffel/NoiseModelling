@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
-import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
+//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 //TODO use NaN for building height
@@ -390,7 +390,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(geom == null && ! (geom instanceof Polygon)) {
+        if(geom == null && !(geom instanceof Polygon)) {
             LOGGER.error("Building geometry should be Polygon");
             return null;
         }
@@ -1002,7 +1002,7 @@ public class ProfileBuilder {
     public static List<LineSegment> splitSegment(Coordinate c0, Coordinate c1, double maxLineLength) {
         List<LineSegment> lines = new ArrayList<>();
         LineSegment fullLine = new LineSegment(c0, c1);
-        double l = dist2D(c0, c1);
+        double l = c0.distance(c1);
         //If the line length if greater than the MAX_LINE_LENGTH value, split it into multiple lines
         if(l < maxLineLength) {
             lines.add(fullLine);
@@ -1070,6 +1070,7 @@ public class ProfileBuilder {
     }
 
 
+
     /**
      *
      * @param profile
@@ -1107,13 +1108,23 @@ public class ProfileBuilder {
                     //If the current ground effect list has never been filled, fill it.
                     if(first && next.type == GROUND_EFFECT){
                         currGrounds.add(next.id);
+                    /*  Point p1 = FACTORY.createPoint(next.coordinate);
+                        List<Integer> indexREsult = (List<Integer>)groundEffectsRtree.query(new Envelope(next.coordinate));
+                        for(Integer groundEffectIndex : indexREsult) {
+                            GroundAbsorption ground = groundAbsorptions.get(groundEffectIndex);
+                            if(ground.geom.contains(p1) || ground.geom.touches(p1)){
+                                currentGround = ground;
+
+                            }
+                        }*/
                     }
                     //Apply the current ground effect tfor the case that the current cut point is at the same position as the receiver point.
                     next.groundCoef = currentGround != null ? currentGround.coef : gS;
                     if(j+1==pts.size()){
                         break;
                     }
-                    next = pts.get(++j);
+                    j++;
+                    next = pts.get(j);
                 }
                 first = false;
                 //Try to find the next ground effect cut point
@@ -1302,7 +1313,7 @@ public class ProfileBuilder {
                 }
                 else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
-                        //Add cut point only if the a same orifinId is for two different coordinate to avoid having
+                        //Add cut point only if the same origin Id is for two different coordinate to avoid having
                         // more than one cutPoint with the same id on the same coordinate
                         if(processedGround.containsKey(facetLine.originId) ){
                             if(intersection.equals(processedGround.get(facetLine.originId))) {

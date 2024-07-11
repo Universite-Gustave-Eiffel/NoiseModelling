@@ -43,7 +43,7 @@ import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
-import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
+//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
@@ -63,6 +63,21 @@ public class PathFinder {
     public static final Logger LOGGER = LoggerFactory.getLogger(PathFinder.class);
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
+
+    public List<Coordinate> getZ_profile() {
+        return z_profile;
+    }
+
+    private List<Coordinate> z_profile = new ArrayList<>();
+
+    public static List<Coordinate> getMirrorPoints() {
+        return mirrorPoints;
+    }
+
+    private static final List<Coordinate> mirrorPoints = new ArrayList<>();
+    public Scene getData() {
+        return data;
+    }
 
     /** Propagation data to use for computation. */
     private final Scene data;
@@ -328,7 +343,7 @@ public class PathFinder {
 
 
     /**
-     *
+     * Eq.2.5.24 and Eq. 2.5.25
      * @param mn
      * @param d
      * @return
@@ -382,19 +397,24 @@ public class PathFinder {
         Coordinate rcvZ = new Coordinate(rcv.x, rz);
         Coordinate srcMeanPlane = projectPointOnLine(srcZ, meanPlane[0], meanPlane[1]);
         Coordinate rcvMeanPlane = projectPointOnLine(rcvZ, meanPlane[0], meanPlane[1]);
-
         seg.s = srcZ;
         seg.r = rcvZ;
         seg.sMeanPlane = srcMeanPlane;
         seg.rMeanPlane = rcvMeanPlane;
         seg.sPrime = new Coordinate(seg.s.x+(seg.sMeanPlane.x-seg.s.x)*2, seg.s.y+(seg.sMeanPlane.y-seg.s.y)*2);
         seg.rPrime = new Coordinate(seg.r.x+(seg.rMeanPlane.x-seg.r.x)*2, seg.r.y+(seg.rMeanPlane.y-seg.r.y)*2);
-        seg.d = dist2D(src, rcv);
-        seg.dp = dist2D(srcMeanPlane, rcvMeanPlane);
-        seg.zsH = dist2D(srcZ, srcMeanPlane);
-        seg.zrH = dist2D(rcvZ, rcvMeanPlane);
+        mirrorPoints.add(seg.sPrime);
+        mirrorPoints.add(seg.rPrime);
+
+        seg.d = src.distance(rcv);
+        seg.dp =srcMeanPlane.distance(rcvMeanPlane);
+        seg.zsH = srcZ.distance(srcMeanPlane);
+        seg.zrH = rcvZ.distance(rcvMeanPlane);
         seg.a = meanPlane[0];
         seg.b = meanPlane[1];
+        //double deltaZs = a0*(seg.zsH/(seg.zsH+seg.zrH) * seg.zsH/(seg.zsH+seg.zrH))* (seg.dp*seg.dp)/2;
+        //double deltaZr = a0*(seg.zrH/(seg.zsH+seg.zrH) * seg.zrH/(seg.zsH+seg.zrH))* (seg.dp*seg.dp)/2;
+        //double deltaZt = 6*(10^-3)*seg.dp/seg.zsH+seg.zrH;
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
         seg.gPath = gPath;
         seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath;
@@ -404,7 +424,6 @@ public class PathFinder {
         double deltaZR = ALPHA0 * Math.pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
         seg.zrF = seg.zrH + deltaZR + deltaZT;
         seg.testFormF = seg.dp/(30*(seg.zsF +seg.zrF));
-
         return seg;
     }
 
@@ -429,35 +448,40 @@ public class PathFinder {
      * @param data
      * @return the computed coordinate list
      */
-    private static List<Coordinate> computePts2DGround(CutProfile cutProfile, Scene data) {
-        List<Coordinate> pts2D = cutProfile.getCutPoints().stream()
+    List<Coordinate> computePts2DGround(CutProfile cutProfile, Scene data) {
+        List<Coordinate> pts2D= cutProfile.getCutPoints().stream()
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
                 .map(cut -> new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, data.profileBuilder.getZGround(cut)))
                 .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        List<Coordinate> pointts2D = JTSUtility.getNewCoordinateSystem(pts2D);
         List<Coordinate> toRemove = new ArrayList<>();
-        for(int i=1; i<pts2D.size(); i++) {
-            if(pts2D.get(i).x == pts2D.get(i-1).x) {
-                toRemove.add(pts2D.get(i));
+        for(int i=1; i<pointts2D.size(); i++) {
+            if(pointts2D.get(i).x == pointts2D.get(i-1).x) {
+                toRemove.add(pointts2D.get(i));
             }
         }
         for(Coordinate c : toRemove) {
-            pts2D.remove(c);
+            pointts2D.remove(c);
         }
 
         List<Coordinate> pts2DGround = new ArrayList<>();
-        for(int i=0; i<pts2D.size(); i++) {
-            Coordinate c = new Coordinate(pts2D.get(i));
+        for(int i=0; i<pointts2D.size(); i++) {
+            Coordinate c = new Coordinate(pointts2D.get(i));
             if(i==0) {
-                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
+                c = new Coordinate(pointts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
             }
-            else if(i == pts2D.size()-1) {
-                c = new Coordinate(pts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
+            else if(i == pointts2D.size()-1) {
+                c = new Coordinate(pointts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
             }
             pts2DGround.add(c);
+
+        }
+        if(z_profile.isEmpty()){
+            z_profile = pts2DGround;
         }
         return pts2DGround;
     }
+
 
 
     /**
@@ -562,7 +586,7 @@ public class PathFinder {
     }
 
 
-    /**
+    /*
      *
      * @param pts2DGround
      * @param src
@@ -576,7 +600,7 @@ public class PathFinder {
      * @param cuts
      * @param segments
      * @param points
-     */
+
     private void computeDiff(List<Coordinate> pts2DGround, Coordinate src, Coordinate rcv,
                              CutPoint srcCut, CutPoint rcvCut,
                              SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
@@ -584,8 +608,8 @@ public class PathFinder {
         for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
             Coordinate o = pts2DGround.get(iO);
 
-            double dSO = dist2D(src, o);
-            double dOR = dist2D(o, rcv);
+            double dSO = src.distance(o);
+            double dOR = o.distance(rcv);
             pathParameters.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
             List<Integer> freqs = data.freq_lvl;
             boolean rcrit = false;
@@ -613,9 +637,9 @@ public class PathFinder {
                 Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
 
                 LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-                srSeg.dPrime = dist2D(srcPrime, rcvPrime);
-                seg1.dPrime = dist2D(srcPrime, o);
-                seg2.dPrime = dist2D(o, rcvPrime);
+                srSeg.dPrime = srcPrime.distance(rcvPrime);
+                seg1.dPrime = srcPrime.distance(o);
+                seg2.dPrime = o.distance(rcvPrime);
 
                 pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
                 for(int f : freqs) {
@@ -633,17 +657,17 @@ public class PathFinder {
                     }
                     else {
                         Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                        pathParameters.deltaF =2*toCurve(dist2D(src, pA), srSeg.d) + 2*toCurve(dist2D(pA, rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                        pathParameters.deltaF =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
                     }
 
                     LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                    double dSPrimeO = dist2D(seg1.sPrime, o);
-                    double dSPrimeR = dist2D(seg1.sPrime, rcv);
+                    double dSPrimeO = seg1.sPrime.distance(o);
+                    double dSPrimeR = seg1.sPrime.distance(rcv);
                     pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
 
                     LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                    double dORPrime = dist2D(o, seg2.rPrime);
-                    double dSRPrime = dist2D(src, seg2.rPrime);
+                    double dORPrime = o.distance(seg2.rPrime);
+                    double dSRPrime = src.distance(seg2.rPrime);
                     pathParameters.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
 
                     if(dSPrimeRPrime.orientationIndex(o) == 1) {
@@ -651,7 +675,98 @@ public class PathFinder {
                     }
                     else {
                         Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        pathParameters.deltaPrimeF =2*toCurve(dist2D(srcPrime, pA), srSeg.dPrime) + 2*toCurve(dist2D(pA, srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                        pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                    }
+
+                    segments.add(seg1);
+                    segments.add(seg2);
+
+                    points.add(new PointPath(o, o.z, new ArrayList<>(), DIFH_RCRIT));
+                    pathParameters.difHPoints.add(points.size() - 1);
+                }
+            }
+        }
+    }*/
+
+    private void computeDiff(List<Coordinate> pts2DGround, Coordinate src, Coordinate rcv,
+                             CutPoint srcCut, CutPoint rcvCut,
+                             SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
+                             LineSegment dSR, List<CutPoint> cuts, List<SegmentPath> segments, List<PointPath> points) {
+        /*List<Coordinate> pts = new ArrayList<>();
+        for(PointPath point : points){
+            pts.add(point.coordinate);
+        }*/
+        for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
+            Coordinate o = pts2DGround.get(iO);
+
+            double dSO = src.distance(o);
+            double dOR = o.distance(rcv);
+            pathParameters.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            List<Integer> freqs = data.freq_lvl;
+            boolean rcrit = false;
+            for(int f : freqs) {
+                if(pathParameters.deltaH > -(340./f) / 20) {
+                    rcrit = true;
+                    break;
+                }
+            }
+            if (rcrit) {
+                rcrit = false;
+                //Add point path
+
+                //Plane S->O
+                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), 0, iO + 1);
+                double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
+                SegmentPath seg1 = computeSegment(src, o, abs);
+
+                //Plane O->R
+                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
+                double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
+                SegmentPath seg2 = computeSegment(o, rcv, abr);
+
+                Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
+                Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
+
+                LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
+                srSeg.dPrime = srcPrime.distance(rcvPrime);
+                seg1.dPrime = srcPrime.distance(o);
+                seg2.dPrime = o.distance(rcvPrime);
+
+                pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
+                for(int f : freqs) {
+                    if(pathParameters.deltaH > (340./f) / 4 - pathParameters.deltaPrimeH) {
+                        rcrit = true;
+                        break;
+                    }
+                }
+                if (rcrit) {
+                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(iO)), srcCut.getGroundCoef());
+                    seg2.setGpath(cutProfile.getGPath(cuts.get(iO), rcvCut), srcCut.getGroundCoef());
+
+                    if(dSR.orientationIndex(o) == 1) {
+                        pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                    }
+                    else {
+                        Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
+                        pathParameters.deltaF =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                    }
+
+                    LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
+                    double dSPrimeO = seg1.sPrime.distance(o);
+                    double dSPrimeR = seg1.sPrime.distance(rcv);
+                    pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
+
+                    LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
+                    double dORPrime = o.distance(seg2.rPrime);
+                    double dSRPrime = src.distance(seg2.rPrime);
+                    pathParameters.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
+
+                    if(dSPrimeRPrime.orientationIndex(o) == 1) {
+                        pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                    }
+                    else {
+                        Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+                        pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
                     }
 
                     segments.add(seg1);
@@ -693,7 +808,7 @@ public class PathFinder {
                         pathParameters = null;
                         return null;
                     }
-                    double dist = dist2D(coordinates.get(i), coordinates.get(i+1));
+                    double dist = coordinates.get(i).distance(coordinates.get(i+1));
                     g+=profile.getGPath()*dist;
                     d+=dist;
                     topoPts.addAll(profile.getCutPoints().stream()
@@ -795,7 +910,7 @@ public class PathFinder {
 
 
     /**
-     *
+     * convertit une série de points 3D en une série de points 2D
      * @param coordinates
      * @return
      */
@@ -807,7 +922,7 @@ public class PathFinder {
         Coordinate prev = coordinates.get(0);
         double d = 0;
         for(Coordinate c : coordinates) {
-            d+=dist2D(prev, c);
+            d+=prev.distance(c);
             prev = c;
             coords.add(new Coordinate(d, c.z));
         }
@@ -927,6 +1042,7 @@ public class PathFinder {
                     subList.get(j).y = data.profileBuilder.getZGround(cutPts.get(j+i0));
                 }
             }
+            //subList = toDirectLine(subList);
             meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
             segments.add(path);
@@ -978,19 +1094,19 @@ public class PathFinder {
         SegmentPath seg1 = segments.get(0);
         SegmentPath seg2 = segments.get(segments.size()-1);
 
-        double dSO0 = dist2D(src,c0);
-        double dOnR = dist2D(cn, rcv);
+        double dSO0 = src.distance(c0);
+        double dOnR = cn.distance(rcv);
         LineSegment sr = new LineSegment(src, rcv);
 
         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-        double dSPrimeR = dist2D(seg1.sPrime, rcv);
-        double dSPrimeO = dist2D(seg1.sPrime, c0);
+        double dSPrimeR = seg1.sPrime.distance(rcv);
+        double dSPrimeO = seg1.sPrime.distance(c0);
         pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + e + dOnR - dSPrimeR);
         pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
 
         LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-        double dSRPrime = dist2D(src, seg2.rPrime);
-        double dORPrime = dist2D(cn, seg2.rPrime);
+        double dSRPrime = src.distance(seg2.rPrime);
+        double dORPrime = cn.distance(seg2.rPrime);
         pathParameters.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + e + dORPrime - dSRPrime);
         pathParameters.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
 
@@ -998,9 +1114,9 @@ public class PathFinder {
         Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
 
         LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-        srPath.dPrime = dist2D(srcPrime, rcvPrime);
-        seg1.dPrime = dist2D(srcPrime, c0);
-        seg2.dPrime = dist2D(cn, rcvPrime);
+        srPath.dPrime = srcPrime.distance(rcvPrime);
+        seg1.dPrime = srcPrime.distance(c0);
+        seg2.dPrime = cn.distance(rcvPrime);
 
 
         pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
@@ -1009,7 +1125,7 @@ public class PathFinder {
         }
         else {
             Coordinate pA = sr.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            pathParameters.deltaF =2*toCurve(dist2D(srcPrime, pA), srPath.dPrime) + 2*toCurve(dist2D(pA, rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            pathParameters.deltaF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
@@ -1020,7 +1136,7 @@ public class PathFinder {
         }
         else {
             Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            pathParameters.deltaPrimeF =2*toCurve(dist2D(srcPrime, pA), srPath.dPrime) + 2*toCurve(dist2D(pA, srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
+            pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         return pathParameters;
@@ -1336,7 +1452,7 @@ public class PathFinder {
                 pathParameters.setFavorable(favorable);
                 pathParameters.setPointList(points);
                 pathParameters.setSegmentList(segments);
-                pathParameters.setSRSegment(srPath);
+                pathParameters.setSRSegment(srPath); //null
                // pathParameters.init(8);
                 pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
                 pathParameters.refPoints = reflIdx;
@@ -1442,7 +1558,7 @@ public class PathFinder {
                             topoPts.add(topoPts.get(topoPts.size()-1));
                             topoPts.add(topoPts.get(topoPts.size()-1));
                         }
-                        double dist = dist2D(pts.get(i), pts.get(i+1));
+                        double dist =pts.get(i).distance(pts.get(i+1));
                         g+=profile.getGPath()*dist;
                         d+=dist;
                     }

@@ -8,6 +8,9 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.utils;
 
+import java.util.Arrays;
+import java.util.Locale;
+
 public class Utils {
 
     /**
@@ -54,6 +57,14 @@ public class Utils {
         }
         return ret;
     }
+
+    public static double[] twoDgtAftrComma(double[] valeurs) {
+        return Arrays.stream(valeurs)
+                .map(nombre -> Double.parseDouble(String.format(Locale.US, "%.2f", nombre)))
+                .toArray();
+    }
+
+
 
 
     /**
