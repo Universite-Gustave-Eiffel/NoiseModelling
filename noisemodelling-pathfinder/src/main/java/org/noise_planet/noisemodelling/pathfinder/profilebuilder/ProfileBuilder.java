@@ -96,7 +96,7 @@ public class ProfileBuilder {
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
-    private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
+    private STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** Global RTree. */
     private STRtree rtree;
     private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
@@ -487,6 +487,7 @@ public class ProfileBuilder {
             else {
                 envelope.expandToInclude(geom.getEnvelopeInternal());
             }
+
             for(int i=0; i<geom.getNumPoints()-1; i++) {
                 Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING, i!=0, i!=geom.getNumPoints()-2);
                 wall.setHeight(height);
@@ -1028,10 +1029,18 @@ public class ProfileBuilder {
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
-
         //Topography
         if(topoTree != null) {
             addTopoCutPts(c0, c1, profile);
+            for (CutPoint cut : profile.getCutPoints()){
+                List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(cut.coordinate));
+                if (groundEffectsResult.size() >0) {
+                    cut.groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
+                }
+                else {
+                    cut.groundCoef = gS;
+                }
+            }
         }
         // Split line into segments for structures based on RTree in order to limit the number of queries
         // (for large area of the line segment envelope)
@@ -1047,8 +1056,22 @@ public class ProfileBuilder {
         profile.sort(c0, c1);
         //Add base cut for buildings
         addBuildingBaseCutPts(profile, c0, c1);
-
-
+        /*profile.addSource(c0);
+        profile.addReceiver(c1);*/
+        List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(0).coordinate));
+        if (groundEffectsResult.size() >0) {
+            profile.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
+        }
+        else {
+            profile.pts.get(0).groundCoef = gS;
+        }
+        List<Integer> groundEffectsResults = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
+        if (groundEffectsResults.size() >0) {
+            profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResults.get(groundEffectsResults.size() - 1)).getCoefficient();
+        }
+        else {
+            profile.pts.get(profile.pts.size() - 1).groundCoef = gS;
+        }
         //If ordering puts source at last position, reverse the list
         if(profile.pts.get(0) != profile.source) {
             if(profile.pts.get(profile.pts.size()-1) != profile.source && profile.pts.get(0) != profile.source) {
@@ -1059,160 +1082,46 @@ public class ProfileBuilder {
             }
             profile.reverse();
         }
+        // Remove all
+        int k = 0;
+        for (int i = 0; i<profile.pts.size()-2; i++) {
+            if (profile.pts.get(i).getType().equals(profile.pts.get(i + 1).getType()) && !profile.pts.get(i).getType().equals(BUILDING)  && profile.pts.get(i).coordinate.equals(profile.pts.get(i + 1).coordinate)) {
+                for (int j = i + 1; j < profile.pts.size() - 1; j++) {
+                    if (profile.pts.get(i).getType().equals(profile.pts.get(j).getType()) && profile.pts.get(i).coordinate.equals(profile.pts.get(j).coordinate) && profile.pts.get(i).groundCoef == profile.pts.get(j).getGroundCoef()) {
+                        profile.pts.remove(j);
+                        j--;
+                    }
+                }
 
+            }
+        }
+        for (int i = 0; i<profile.pts.size()-2; i++){
+            if(profile.pts.get(i).getType().equals(profile.pts.get(i+1).getType())  && !profile.pts.get(i).getType().equals(BUILDING) && profile.pts.get(i).coordinate.equals(profile.pts.get(i+1).coordinate) && profile.pts.get(i).groundCoef!= profile.pts.get(i+1).getGroundCoef()){
+                k++;
+                if (k%2 != 0.0 ){ // la division entière
+                    if (profile.pts.get(i).groundCoef == 0.0 ) {
+                        profile.pts.remove(i+1);
+                        i--;
+                    }
+                    else {
+                        profile.pts.remove(i);
+                    }
+                }
+                else {
+                    if (profile.pts.get(i).groundCoef == 0.0 ) {
+                        profile.pts.remove(i);
+                    }
+                    else {
+                        profile.pts.remove(i+1);
+                        i--;
+                    }
+                }
 
-        //Sets the ground effects
-        //Check is source is inside ground
-        setGroundEffects(profile, c0, gS);
-
+            }
+        }
 
         return profile;
     }
-
-
-
-    /**
-     *
-     * @param profile
-     * @param c0
-     * @param gS
-     */
-    private void setGroundEffects(CutProfile profile, Coordinate c0, double gS) {
-        Stack<List<Integer>> stack = new Stack<>();
-        GroundAbsorption currentGround = null;
-        int currGrdI = -1;
-        Point p0 = FACTORY.createPoint(c0);
-        List<Integer> groundEffectsResult = (List<Integer>)groundEffectsRtree.query(new Envelope(c0));
-        for(Integer groundEffectIndex : groundEffectsResult) {
-            GroundAbsorption ground = groundAbsorptions.get(groundEffectIndex);
-            if(ground.geom.contains(p0)) {
-                currentGround = ground;
-                break;
-            }
-        }
-        List<Integer> currGrounds = new ArrayList<>();
-        List<Integer> nextGrounds = new ArrayList<>();
-        boolean first = true;
-        List<CutPoint> pts = profile.pts;
-        //Loop on each cut points
-        for (int i = 0; i < pts.size(); i++) {
-            CutPoint cut = pts.get(i);
-            //If the cut point is not a Ground effect, simply apply the current ground coef
-            if (cut.type != GROUND_EFFECT) {
-                cut.groundCoef = currentGround != null ? currentGround.coef : gS;
-            } else {
-                int j=i;
-                CutPoint next = pts.get(j);
-                //Pass all the cut points located at the same position as the current point.
-                while(cut.coordinate.equals2D(next.coordinate)){
-                    //If the current ground effect list has never been filled, fill it.
-                    if(first && next.type == GROUND_EFFECT){
-                        currGrounds.add(next.id);
-                    /*  Point p1 = FACTORY.createPoint(next.coordinate);
-                        List<Integer> indexREsult = (List<Integer>)groundEffectsRtree.query(new Envelope(next.coordinate));
-                        for(Integer groundEffectIndex : indexREsult) {
-                            GroundAbsorption ground = groundAbsorptions.get(groundEffectIndex);
-                            if(ground.geom.contains(p1) || ground.geom.touches(p1)){
-                                currentGround = ground;
-
-                            }
-                        }*/
-                    }
-                    //Apply the current ground effect tfor the case that the current cut point is at the same position as the receiver point.
-                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
-                    if(j+1==pts.size()){
-                        break;
-                    }
-                    j++;
-                    next = pts.get(j);
-                }
-                first = false;
-                //Try to find the next ground effect cut point
-                while((next = pts.get(j)).type != GROUND_EFFECT && j<pts.size()-1){
-                    next.groundCoef = currentGround != null ? currentGround.coef : gS;
-                    j++;
-                }
-                //If there is no more ground effect, exit loop
-                if(j==pts.size()-1){
-                    //Use the current ground effect for the remaining cut point
-                    for(int idx : currGrounds) {
-                        if(currentGround != null && currentGround.coef != groundAbsorptions.get(idx).coef){
-                            currentGround = groundAbsorptions.get(idx);
-                        }
-                    }
-                    continue;
-                }
-                CutPoint nextNext = pts.get(j);
-                //Fill the next ground effect list
-                while(next.coordinate.equals2D(nextNext.coordinate)){
-                    if(nextNext.type == GROUND_EFFECT){
-                        nextGrounds.add(nextNext.id);
-                    }
-                    if(j+1==pts.size()){
-                        break;
-                    }
-                    nextNext = pts.get(++j);
-                }
-                nextNext = pts.get(j-1);
-
-                boolean found = false;
-                //Find the ground effect which will be applied from current position to next
-                for(int idx : currGrounds) {
-                    if(nextGrounds.contains(idx)){
-                        currGrdI = idx;
-                        found = true;
-                        break;
-                    }
-                }
-                //If no ground effect found, it means that the current ground effect contains an other ground effect.
-                //Store the current ground effect in a stack and use the next ground effect
-                if(!found){
-                    currGrdI = nextGrounds.get(0);
-                    stack.push(currGrounds);
-                }
-                if(currGrdI != -1) {
-                    currentGround = groundAbsorptions.get(currGrdI);
-                }
-                CutPoint cutPt = pts.get(i);
-                //Apply the ground effect after the current coint up to the next ground effect
-                while(!nextNext.coordinate.equals2D(cutPt.coordinate)){
-                    if(found){
-                        cutPt.groundCoef = currentGround != null ? currentGround.coef : gS;
-                    }
-                    i++;
-                    if(i==pts.size()){
-                        break;
-                    }
-                    cutPt = pts.get(i);
-                }
-                i--;
-                currGrounds = nextGrounds;
-                //remove the used ground effect from the list of next ground effect to avoid to reuse it
-                if(found) {
-                    currGrounds.remove((Object) currGrdI);
-                }
-                nextGrounds = new ArrayList<>();
-                if(!currGrounds.isEmpty()) {
-                    currentGround = groundAbsorptions.get(currGrounds.get(0));
-                }
-                else {
-                    if(stack.isEmpty()) {
-                        currentGround = null;
-                    }
-                    //If there is no more ground effect, try to pop the stack
-                    else{
-                        currGrounds = stack.pop();
-                        if(currGrounds.isEmpty()) {
-                            currentGround = null;
-                        } else {
-                            currentGround = groundAbsorptions.get(currGrounds.get(0));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 
     /**
      *
@@ -1281,6 +1190,7 @@ public class ProfileBuilder {
      */
     private void addGroundBuildingCutPts(List<LineSegment> lines, LineSegment fullLine, CutProfile profile) {
         List<Integer> indexes = new ArrayList<>();
+        int k = 0;
         for (LineSegment line : lines) {
             indexes.addAll(rtree.query(new Envelope(line.p0, line.p1)));
         }
@@ -1307,31 +1217,63 @@ public class ProfileBuilder {
                 }
                 if(facetLine.type == IntersectionType.BUILDING) {
                     profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
+                    k=1;
+
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
                     profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection), facetLine.alphas);
+                    List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
+                    if(groundEffectsResult.size()>0){
+                        profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
+                    }
+                    else {
+                        profile.pts.get(profile.pts.size()-1).groundCoef = groundAbsorptions.get(facetLine.originId).getCoefficient();
+                    }
                 }
                 else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
+                        processedGround.put(facetLine.originId, intersection);
                         //Add cut point only if the same origin Id is for two different coordinate to avoid having
                         // more than one cutPoint with the same id on the same coordinate
-                        if(processedGround.containsKey(facetLine.originId) ){
-                            if(intersection.equals(processedGround.get(facetLine.originId))) {
-                                processedGround.remove(facetLine.originId);
-                            }else{
+                        if(processedGround.containsKey(facetLine.originId) ) {
+                            if (k > 0) {
+                                CutProfile cutpt = new CutProfile();
+                                cutpt.addGroundCutPt(intersection, facetLine.originId);
+                                cutpt.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
+                                cutpt.pts.sort(CutPoint::compareTox01y01);
+                                List<Integer> groundEffectsResult1 = (List<Integer>) groundEffectsRtree.query(new Envelope(cutpt.pts.get(0).coordinate));
+                                List<Integer> groundEffectsResult2 = (List<Integer>) groundEffectsRtree.query(new Envelope(cutpt.pts.get(1).coordinate));
+                                if (groundEffectsResult1.equals(groundEffectsResult2) && groundEffectsResult2.size() > 1){
+                                    if (groundEffectsResult1.get(0) < groundEffectsResult1.get(1)){
+                                        cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 2)).getCoefficient();
+                                        cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 1)).getCoefficient();
+                                    }
+                                    else {
+                                        cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 1)).getCoefficient();
+                                        cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 2)).getCoefficient();
+                                    }
+                                }
+                                else {
+                                    cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 1)).getCoefficient();
+                                    cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 1)).getCoefficient();
+                                }
+                                cutpt.pts.get(0).coordinate.z = 0.0;
+                                cutpt.pts.get(1).coordinate.z = 0.0;
+                                profile.addCutPt(cutpt.pts.get(0));
+                                profile.addCutPt(cutpt.pts.get(1));
+                                k--;
+                            } else {
                                 profile.addGroundCutPt(intersection, facetLine.originId);
+                                List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size() - 1).coordinate));
+                                profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
                                 profile.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
+                                List<Integer> groundEffectsResults = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size() - 1).coordinate));
+                                profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResults.get(groundEffectsResults.size() - 1)).getCoefficient();
                             }
-                        }
-                        else {
-                            processedGround.put(facetLine.originId, intersection);
                         }
                     }
                 }
             }
-        }
-        for(Map.Entry<Integer, Coordinate> entry : processedGround.entrySet()){
-            profile.addGroundCutPt(entry.getValue(), entry.getKey());
         }
     }
 
@@ -1738,7 +1680,7 @@ public class ProfileBuilder {
             List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
             for(LineSegment segment : lines) {
                 Envelope pathEnv = new Envelope(segment.p0, segment.p1);
-                    buildingTree.query(pathEnv, visitor);
+                buildingTree.query(pathEnv, visitor);
             }
         } catch (IllegalStateException ex) {
             //Ignore

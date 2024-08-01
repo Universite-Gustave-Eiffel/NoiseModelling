@@ -113,9 +113,9 @@ public  class CutPoint implements Comparable<CutPoint> {
      * Sets the ground coefficient of this point.
      * @param groundCoef The ground coefficient of this point.
      */
-    /*public void setGroundCoef(double groundCoef) {
+    public void setGroundCoef(double groundCoef) {
         this.groundCoef = groundCoef;
-    }*/
+    }
 
     /**
      * Sets the building height.

@@ -126,7 +126,10 @@ public class CutProfile {
      * @return The cutting points.
      */
     public List<CutPoint> getCutPoints() {
-        return Collections.unmodifiableList(pts);
+        return pts;
+    }
+    public void setCutPoints ( ArrayList<CutPoint> ge){
+        pts = ge;
     }
 
     /**
@@ -218,6 +221,7 @@ public class CutProfile {
         CutPoint current = p0;
         double totLength = p0.getCoordinate().distance(p1.getCoordinate());
         double rsLength = 0.0;
+
         List<CutPoint> pts = new ArrayList<>();
         for(CutPoint cut : getCutPoints()) {
             if(cut.getType() != TOPOGRAPHY && cut.getType() != BUILDING) {
@@ -229,12 +233,6 @@ public class CutProfile {
         } else {
             pts.sort(Collections.reverseOrder());
         }
-        //List<CutPoint> norepeat = new ArrayList<>();
-        for (int i = 0; i<pts.size()-2; i++){
-            if(pts.get(i).coordinate.equals(pts.get(i+1).coordinate) && pts.get(i).getGroundCoef() == pts.get(i+1).getGroundCoef()){
-                pts.remove(i+1);
-            }
-        }
 
         int dir = -p0.compareTo(p1);
         for(CutPoint cut : pts) {
@@ -243,7 +241,7 @@ public class CutProfile {
                 current = cut;
             }
         }
-        rsLength += current.getCoordinate().distance(p1.getCoordinate()) * p1.getGroundCoef();
+        rsLength += current.getCoordinate().distance(p1.getCoordinate()) * current.getGroundCoef();
         return rsLength / totLength;
     }
 

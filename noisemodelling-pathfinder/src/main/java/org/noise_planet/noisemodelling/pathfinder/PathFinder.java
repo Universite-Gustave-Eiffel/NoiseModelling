@@ -64,21 +64,9 @@ public class PathFinder {
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
-    public List<Coordinate> getZ_profile() {
-        return z_profile;
-    }
-
-    private List<Coordinate> z_profile = new ArrayList<>();
-
-    public static List<Coordinate> getMirrorPoints() {
-        return mirrorPoints;
-    }
-
-    private static final List<Coordinate> mirrorPoints = new ArrayList<>();
     public Scene getData() {
         return data;
     }
-
     /** Propagation data to use for computation. */
     private final Scene data;
 
@@ -128,7 +116,7 @@ public class PathFinder {
     public void run(IComputePathsOut computeRaysOut) {
         ProgressVisitor visitor = data.cellProg;
         ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) Math.ceil(data.receivers.size() / (double) threadCount);
+        int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
         int endReceiverRange = 0;
         //Launch execution of computation by batch
         while (endReceiverRange < data.receivers.size()) {
@@ -136,7 +124,7 @@ public class PathFinder {
             if (visitor != null && visitor.isCanceled()) {
                 break;
             }
-            int newEndReceiver = Math.min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
+            int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
                     this, visitor, computeRaysOut, data);
             if (threadCount != 1) {
@@ -238,7 +226,7 @@ public class PathFinder {
             totalPowerRemaining = max(0, totalPowerRemaining);
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
             if ((visitor != null && visitor.isCanceled()) || (data.maximumError > 0 &&
-                            wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
+                    wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
                 break; //Stop looking for more rays
             }
         }
@@ -308,6 +296,7 @@ public class PathFinder {
     public List<CnossosPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction, boolean bodyBarrier) {
         List<CnossosPath> pathsParameters = new ArrayList<>();
         CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
+        cutProfile.getSource().setGroundCoef(data.gS);
         cutProfile.setSrcOrientation(orientation);
         //If the field is free, simplify the computation
         if(cutProfile.isFreeField()) {
@@ -403,8 +392,6 @@ public class PathFinder {
         seg.rMeanPlane = rcvMeanPlane;
         seg.sPrime = new Coordinate(seg.s.x+(seg.sMeanPlane.x-seg.s.x)*2, seg.s.y+(seg.sMeanPlane.y-seg.s.y)*2);
         seg.rPrime = new Coordinate(seg.r.x+(seg.rMeanPlane.x-seg.r.x)*2, seg.r.y+(seg.rMeanPlane.y-seg.r.y)*2);
-        mirrorPoints.add(seg.sPrime);
-        mirrorPoints.add(seg.rPrime);
 
         seg.d = src.distance(rcv);
         seg.dp =srcMeanPlane.distance(rcvMeanPlane);
@@ -419,9 +406,9 @@ public class PathFinder {
         seg.gPath = gPath;
         seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath;
         double deltaZT = 6e-3 * seg.dp / (seg.zsH + seg.zrH);
-        double deltaZS = ALPHA0 * Math.pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
+        double deltaZS = ALPHA0 * pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
         seg.zsF = seg.zsH + deltaZS + deltaZT;
-        double deltaZR = ALPHA0 * Math.pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
+        double deltaZR = ALPHA0 * pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
         seg.zrF = seg.zrH + deltaZR + deltaZT;
         seg.testFormF = seg.dp/(30*(seg.zsF +seg.zrF));
         return seg;
@@ -475,9 +462,6 @@ public class PathFinder {
             }
             pts2DGround.add(c);
 
-        }
-        if(z_profile.isEmpty()){
-            z_profile = pts2DGround;
         }
         return pts2DGround;
     }
@@ -553,7 +537,7 @@ public class PathFinder {
         List<SegmentPath> segments = new ArrayList<>();
 
         List<PointPath> points = new ArrayList<>();
-        PointPath srcPP = new PointPath(src, data.profileBuilder.getZGround(srcCut), srcCut.getWallAlpha(), PointPath.POINT_TYPE.SRCE);
+        PointPath srcPP = new PointPath(src, data.profileBuilder.getZGround(srcCut), srcCut.getWallAlpha(), SRCE);
         srcPP.buildingId = srcCut.getBuildingId();
         srcPP.wallId = srcCut.getWallId();
         srcPP.orientation = computeOrientation(cutProfile.getSrcOrientation(), srcCut, rcvCut);
@@ -577,7 +561,7 @@ public class PathFinder {
         if(segments.isEmpty()) {
             segments.add(srSeg);
         }
-        PointPath rcvPP = new PointPath(rcv, data.profileBuilder.getZGround(rcvCut), rcvCut.getWallAlpha(), PointPath.POINT_TYPE.RECV);
+        PointPath rcvPP = new PointPath(rcv, data.profileBuilder.getZGround(rcvCut), rcvCut.getWallAlpha(), RECV);
         rcvPP.buildingId = rcvCut.getBuildingId();
         rcvPP.wallId = rcvCut.getWallId();
         points.add(rcvPP);
@@ -692,10 +676,7 @@ public class PathFinder {
                              CutPoint srcCut, CutPoint rcvCut,
                              SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
                              LineSegment dSR, List<CutPoint> cuts, List<SegmentPath> segments, List<PointPath> points) {
-        /*List<Coordinate> pts = new ArrayList<>();
-        for(PointPath point : points){
-            pts.add(point.coordinate);
-        }*/
+
         for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
             Coordinate o = pts2DGround.get(iO);
 
@@ -816,9 +797,9 @@ public class PathFinder {
                             .map(CutPoint::getCoordinate)
                             .collect(Collectors.toList()));
                     allCutPoints.addAll(profile.getCutPoints());
+
                 }
-                g/=d;
-                //Filter bridge
+                double res = g/d;
                 List<Integer> toRemove = new ArrayList<>();
                 for(int i=0; i<coordinates.size()-1; i++) {
                     Coordinate c0 = coordinates.get(i);
@@ -870,7 +851,7 @@ public class PathFinder {
                 src.orientation = computeOrientation(orientation, coords.get(0), coords.get(1));
                 PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
-                SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, g, data.gS);
+                SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, res, data.gS);
                 srSeg.dc = sqrt(pow(rcvCoord.x-srcCoord.x, 2) + pow(rcvCoord.y-srcCoord.y, 2) + pow(rcvCoord.z-srcCoord.z, 2));
 
                 List<PointPath> pps = new ArrayList<>();
@@ -891,14 +872,14 @@ public class PathFinder {
                     PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), new ArrayList<>(), DIFV);
                     pps.add(diff);
                     pathParameters.difVPoints.add(i);
-                    SegmentPath seg = computeSegment(previous.coordinate, diff.coordinate, meanPlan, g, data.gS);
+                    SegmentPath seg = computeSegment(previous.coordinate, diff.coordinate, meanPlan, res, data.gS);
                     segs.add(seg);
                     if(i>1) {
                         e += seg.d;
                     }
                     previous = diff;
                 }
-                segs.add(computeSegment(previous.coordinate, coords.get(coords.size()-1), meanPlan, g, data.gS));
+                segs.add(computeSegment(previous.coordinate, coords.get(coords.size()-1), meanPlan, res, data.gS));
                 pps.add(rcv);
                 pathParameters.deltaH = segs.get(0).d + e + segs.get(segs.size()-1).d - srSeg.dc;
                 pathParameters.e = e;
@@ -949,7 +930,7 @@ public class PathFinder {
         }
         //Remove aligned cut points thanks to jts DouglasPeuckerSimplifier algo
         List<CutPoint> newCutPts = new ArrayList<>(cutPts.size());
-       Geometry lineString = new GeometryFactory().createLineString(pts2D.toArray(new Coordinate[0]));
+        Geometry lineString = new GeometryFactory().createLineString(pts2D.toArray(new Coordinate[0]));
         List<Coordinate> newPts2D = List.of(DouglasPeuckerSimplifier.simplify(lineString, 0.5*cutProfile.getDistanceToSR()).getCoordinates());
 
         for (int i = 0; i < newPts2D.size(); i++) {
@@ -962,14 +943,14 @@ public class PathFinder {
         if(pts2D.size() != cutPts.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
-        
+
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
 
         //CnossosPathParameters propagationPathParameters = new CnossosPathParameters(true, points, segments, srPath,
-                //Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate()));
+        //Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate()));
         CnossosPath pathParameters = new CnossosPath();
         //(favorable=false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
         pathParameters.setFavorable(true);
@@ -990,7 +971,7 @@ public class PathFinder {
         double slope = (lastPt.y - firstPt.y) / (lastPt.x - firstPt.x);
         double yIntercept = firstPt.y - slope * firstPt.x;
 
-         // Filter out points that are below the line segment
+        // Filter out points that are below the line segment
         List<Coordinate> filteredCoordinates = new ArrayList<>();
         for (Coordinate coord : pts2D) {
             double lineY = slope * coord.x + yIntercept;
@@ -999,7 +980,7 @@ public class PathFinder {
             }
         }
 
-       // Compute the convex hull using JTS
+        // Compute the convex hull using JTS
         GeometryFactory geomFactory = new GeometryFactory();
         Coordinate[] coordsArray = filteredCoordinates.toArray(new Coordinate[0]);
         ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
@@ -1017,7 +998,7 @@ public class PathFinder {
         List<Coordinate> convexHullPoints = new ArrayList<>();
         if (convexHullCoords.length ==3){
             convexHullPoints = Arrays.asList(convexHullCoords);
-       }else {
+        }else {
             for (int j = 0; j < convexHullCoords.length; j++) {
                 // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
                 if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
@@ -1030,38 +1011,68 @@ public class PathFinder {
 
         double e = 0;
         Coordinate src = null;
+
         for (int i = 1; i < pts.size(); i++) {
+            boolean isSource = false;
+            int k =0;
             int i0 = pts2D.indexOf(pts.get(i-1));
             int i1 = pts2D.indexOf(pts.get(i));
             CutPoint cutPt0 = cutPts.get(i0);
             CutPoint cutPt1 = cutPts.get(i1);
-            CutProfile profile = data.profileBuilder.getProfile(cutPt0, cutPt1, data.gS);
+
+
+            CutProfile profileSeg = new CutProfile();
+            profileSeg.addSource(cutPt0.getCoordinate());
+            profileSeg.getSource().setGroundCoef(cutPt0.getGroundCoef());
+            for (CutPoint cpt : cutProfile.getCutPoints()){
+                k++;
+                if (cpt.equals(cutPt0)){
+                    for(int n=k;n<cutProfile.getCutPoints().size()-1;n++){
+                        profileSeg.addCutPt(cutProfile.getCutPoints().get(n));
+                        if (cutProfile.getCutPoints().get(n).equals(cutPt1)){
+                            break;
+                        }
+                    }
+                }
+            }
+            int indexG = 0;
+            profileSeg.addReceiver(cutPt1.getCoordinate());
+            profileSeg.getReceiver().setGroundCoef(cutPt1.getGroundCoef());
+            if (profileSeg.getReceiver().getCoordinate().equals(cutProfile.getReceiver().getCoordinate())){
+                for (int j = 0; j<profileSeg.getCutPoints().size()-1;j++){
+                    if (profileSeg.getCutPoints().get(j).getType().equals(GROUND_EFFECT)){
+                        indexG = j;
+                    }
+                }
+            }
+            //profile.sou
             List<Coordinate> subList = pts2D.subList(i0, i1+1).stream().map(Coordinate::new).collect(Collectors.toList());
             for(int j=0; j<=i1-i0; j++){
                 if(!cutPts.get(j+i0).getType().equals(BUILDING) && !cutPts.get(j+i0).getType().equals(TOPOGRAPHY)){
                     subList.get(j).y = data.profileBuilder.getZGround(cutPts.get(j+i0));
                 }
             }
+            if(indexG>0)profileSeg.getCutPoints().get(indexG).setGroundCoef(profileSeg.getReceiver().getGroundCoef());
             //subList = toDirectLine(subList);
             meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
-            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profile.getGPath(), profile.getSource().getGroundCoef());
+            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
             segments.add(path);
             if(points.isEmpty()) {
                 //todo check this getBuildingId when DIFH is on floor or line wall
-                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), cutPt1.getBuildingId(),PointPath.POINT_TYPE.SRCE));
+                points.add(new PointPath(path.s,  data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
                 points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = path.s;
             }
             //todo check this getBuildingId when DIFH is on floor or line wall
-            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), cutPt1.getBuildingId(),PointPath.POINT_TYPE.RECV));
+            points.add(new PointPath(path.r,  data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
             if(i != pts.size()-1) {
                 if(i != 1) {
                     e += path.d;
                 }
                 pathParameters.difHPoints.add(i);
                 PointPath pt = points.get(points.size()-1);
-                pt.type = PointPath.POINT_TYPE.DIFH;
+                pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
                 if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
@@ -1285,9 +1296,9 @@ public class PathFinder {
     public static Plane computeZeroRadPlane(Coordinate p0, Coordinate p1) {
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
-        double angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+        double angle = atan2(p1.y - p0.y, p1.x - p0.x);
         // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
-        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(Math.cos(angle - Math.PI / 2), Math.sin(angle - Math.PI / 2), 0));
+        org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(cos(angle - PI / 2), sin(angle - PI / 2), 0));
         Plane p = new Plane(r, s, rPrime, 1e-6);
         // Normal of the cut plane should be upward
         if (p.getNormal().getZ() < 0) {
@@ -1396,10 +1407,10 @@ public class PathFinder {
                 validReflection = isNaN(receiverReflectionCursor.getReceiverPos().z) ||
                         isNaN(reflectionPt.z) || isNaN(destinationPt.z) /*|| seg.getOriginId() == 0*/
                         || (
-                            (seg.getType().equals(BUILDING) && reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z ||
-                            seg.getType().equals(WALL) && reflectionPt.z < data.profileBuilder.getWall(seg.getOriginId()).getLine().getCoordinate().z)
-                        && reflectionPt.z > data.profileBuilder.getZGround(reflectionPt)
-                        && destinationPt.z > data.profileBuilder.getZGround(destinationPt));
+                        (seg.getType().equals(BUILDING) && reflectionPt.z < data.profileBuilder.getBuilding(seg.getOriginId()).getGeometry().getCoordinate().z ||
+                                seg.getType().equals(WALL) && reflectionPt.z < data.profileBuilder.getWall(seg.getOriginId()).getLine().getCoordinate().z)
+                                && reflectionPt.z > data.profileBuilder.getZGround(reflectionPt)
+                                && destinationPt.z > data.profileBuilder.getZGround(destinationPt));
                 if (validReflection) // Source point can see receiver image
                 {
                     MirrorReceiver reflResult = new MirrorReceiver(receiverReflectionCursor);
@@ -1453,7 +1464,7 @@ public class PathFinder {
                 pathParameters.setPointList(points);
                 pathParameters.setSegmentList(segments);
                 pathParameters.setSRSegment(srPath); //null
-               // pathParameters.init(8);
+                // pathParameters.init(8);
                 pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
                 pathParameters.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
@@ -1463,7 +1474,7 @@ public class PathFinder {
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
                 reflIdx.add(points.size() - 1);
-                reflPoint.setType(PointPath.POINT_TYPE.REFL);
+                reflPoint.setType(REFL);
                 if(rayPath.get(0).getType().equals(BUILDING)) {
                     reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
                     reflPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
@@ -1478,7 +1489,7 @@ public class PathFinder {
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiver refl = rayPath.get(idPt + 1);
-                    reflPoint = new PointPath(refl.getReceiverPos(), 0, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
+                    reflPoint = new PointPath(refl.getReceiverPos(), 0, new ArrayList<>(), REFL);
 
                     if(rayPath.get(0).getType().equals(BUILDING)) {
                         reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
@@ -1512,8 +1523,11 @@ public class PathFinder {
                     if (points.get(i).type == REFL) {
                         if (i < points.size() - 1) {
                             // A diffraction point may have offset in height the reflection coordinate
-                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
-                            //check if in building && if under floor
+                            final Coordinate p0 = points.get(i - 1).coordinate;
+                            final Coordinate p1 = points.get(i).coordinate;
+                            final Coordinate p2 = points.get(i + 1).coordinate;
+                            // compute Y value (altitude) by interpolating the Y values of the two neighboring points
+                            points.get(i).coordinate = new CoordinateXY(p1.x, (p1.x-p0.x)/(p2.x-p0.x)*(p2.y-p0.y)+p0.y);                            //check if in building && if under floor
                             Geometry geom;
                             if(points.get(i).getBuildingId()!=-1) {
                                 geom = data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry();
@@ -1547,8 +1561,10 @@ public class PathFinder {
                     double g = 0;
                     double d = 0;
                     List<CutPoint> allCutPoints = new ArrayList<>();
+                    List<Double> res = new ArrayList<>();
                     for(int i=0; i<pts.size()-1; i++) {
                         CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS);
+                        if(i==0)profile.getSource().setGroundCoef(data.gS);
                         topoPts.addAll(profile.getCutPoints().stream()
                                 .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                                 .map(CutPoint::getCoordinate)
@@ -1559,13 +1575,19 @@ public class PathFinder {
                             topoPts.add(topoPts.get(topoPts.size()-1));
                         }
                         double dist =pts.get(i).distance(pts.get(i+1));
-                        g+=profile.getGPath()*dist;
+
+                        res.add(profile.getGPath());
+                        g+=res.get(res.size()-1)*dist;
                         d+=dist;
                     }
                     g/=d;
                     for (final Coordinate pt : topoPts) {
                         pt.z = data.profileBuilder.getZGround(pt);
                     }
+
+                    /*for(int i=0;i< pathParameters.getSegmentList().size()-1;i++){
+                        pathParameters.getSegmentList().get(i).gPath = res.get(i);
+                    }*/
                     pathParameters.setCutPoints(allCutPoints);
                     topoPts = toDirectLine(topoPts);
                     double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
@@ -1645,7 +1667,7 @@ public class PathFinder {
             }
             return geom.getLength();
         } else {
-            double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
+            double targetSegmentSize = geomLength / ceil(geomLength / segmentSizeConstraint);
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0.;
 

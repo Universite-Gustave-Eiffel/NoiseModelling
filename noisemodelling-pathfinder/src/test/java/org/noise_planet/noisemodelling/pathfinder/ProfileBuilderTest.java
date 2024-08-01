@@ -354,16 +354,16 @@ public class ProfileBuilderTest {
         Coordinate receiver = new Coordinate(200, 50, 14);
         Coordinate source = new Coordinate(10, 10, 1);
         CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0);
-        assertEquals(9, cutProfile.getCutPoints().size());
+        assertEquals(7, cutProfile.getCutPoints().size());
         assertEquals(0, cutProfile.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(3).getCoordinate().distance3D(new Coordinate(120, 33.158, 0)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(4).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(6).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(7).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(8).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
+        //assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(120, 33.158, 0)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(3).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
+        //assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(4).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(6).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
     }
 
     /*
