@@ -2,13 +2,21 @@ name: Generate and Deploy Javadoc
 
 on:
   push:
-    branches:
-      - 5.X
+    branches: ["5.X"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -18,14 +26,33 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '11'
-          cache: maven
 
-      - name: Build project and generate Javadoc
-        run: mvn clean javadoc:aggregate
+      - name: Build and generate Javadoc
+        run: |
+          mvn clean install -DskipTests
+          mvn clean javadoc:aggregate
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: javadoc
+          path: docs
 
-      - name: Deploy Javadoc to GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: javadoc
+          path: ./javadoc
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./docs
+          publish_dir: ./javadoc
