@@ -4,7 +4,7 @@ name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["MaguetteD-patch-1"]
+    branches: ["4.X"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
