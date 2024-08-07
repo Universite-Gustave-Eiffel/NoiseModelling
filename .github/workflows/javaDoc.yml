@@ -32,10 +32,13 @@ jobs:
       - name: Build and generate Javadoc
         run: mvn clean javadoc:aggregate
 
+      - name: List files for debugging
+        run: ls -R target/site/apidocs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          name: javadoc
+          name: github-pages
           path: target/site/apidocs
 
   deploy:
