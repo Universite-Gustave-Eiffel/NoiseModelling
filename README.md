@@ -30,6 +30,7 @@ Documentation
 ---------------------------
 
 An online documentation is available [here](https://noisemodelling.readthedocs.io/en/latest/).
+
 Here is the [documentation](https://maguetted.github.io/NoiseModelling/) JavaDoc of source code.
 
 Authors
