@@ -1222,7 +1222,7 @@ public class ProfileBuilder {
                 }
                 else if(facetLine.type == IntersectionType.WALL) {
                     profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection), facetLine.alphas);
-                    List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
+                    //List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
                     List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
                     if(groundEffectsResult.size()>0 && groundAbsorptions.size() > 0){
                         profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
