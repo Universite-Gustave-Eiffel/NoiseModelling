@@ -45,9 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy javadoc to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
-          branch: gh-pages # The branch to deploy to
-          folder: target/site/apidocs
+          name: javadoc
+          path: ./javadoc
+
+      - name: Deploy javadoc to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./javadoc
+          destination_dir: target/site/apidocs
