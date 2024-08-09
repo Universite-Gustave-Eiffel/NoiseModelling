@@ -2025,8 +2025,8 @@ public class PathFinderTest {
                 .addTopographicLine(110.0, 20.0, -0.5, 110.0, 80.0, -0.5)
                 .addTopographicLine(111.0, 20.0, 0.0, 111.0, 80.0, 0.0)
 
-                .addGroundEffect(0.0, 120, 0.0, 100, 0.0)
-                .addGroundEffect(0.0, 250, 0.0, 100, 1.0)
+                .addGroundEffect(80, 110, 20, 80, 0.0)
+                .addGroundEffect(110, 215, 20, 80, 1.0)
                 .addWall(new Coordinate[]{
                         new Coordinate(114.0, 52.0, 2.5),
                         new Coordinate(170.0, 60.0, 4.5)}, -1)
@@ -2075,7 +2075,7 @@ public class PathFinderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        //assertPlanes(segmentsMeanPlanesH,propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanesH,propDataOut.getPropagationPaths().get(0).getSegmentList());
 
 
     }
