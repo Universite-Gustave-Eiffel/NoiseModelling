@@ -13,7 +13,7 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Geometric_Tools
+package org.noise_planet.noisemodelling.wps.Acoustic_Tools
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -25,17 +25,17 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-title = 'Create 0db Source From Roads'
-description = '&#10145;&#65039; Creates a SOURCE table from a ROAD table.' +
+title = 'Create 0db Source table'
+description = '&#10145;&#65039; Creates a SOURCE table' +
               '<hr>' +
               'The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. </br></br>' +
               'The <b>Noise_level_from_source</b> output will contain a list of "source-receiver" attenuation matrix independent of the source absolute noise power levels.'
 
 inputs = [
-        roadsTableName: [
+        tableName: [
                 name: 'Input table name',
                 title: 'Intput table name',
-                description: 'Name of the Roads table. <br/> <br/>' +
+                description: 'Name of the table. <br/> <br/>' +
                              'Must contain at least:</br>'+
                              '- <b>PK</b>: identifier with a Primary Key constraint</br>' +
                              '- <b>THE_GEOM</b>: geometric column',
@@ -93,7 +93,7 @@ def exec(connection, input) {
     logger.info('Start : Create_0db_Source_From_Roads')
     logger.info("inputs {}", input)
 
-    String roadsTableName = input['roadsTableName']
+    String tableName = input['tableName']
 
     String sourcesTableName = input['sourcesTableName']
 
@@ -110,12 +110,12 @@ def exec(connection, input) {
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-        FROM ''' + roadsTableName + ''' 
+        FROM ''' + tableName + ''' 
     ;'''
 
     sql.execute(query)
 
-    logger.info('End : Create_0db_Source_From_Roads')
+    logger.info('End : Create_0db_Source')
     resultString = "Process done. Table " + sourcesTableName + " created !"
     logger.info('Result : ' + resultString)
     return resultString

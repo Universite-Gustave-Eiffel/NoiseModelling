@@ -238,7 +238,8 @@ def exec(Connection connection, input) {
 
     // union of truncated receivers and non tructated, split line to points
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE")
-    sql.execute("CREATE TABLE TMP_SCREENS_MERGE (the_geom geometry, hBuilding float, pk_building integer) as SELECT s.the_geom, s.height, s.pk_building FROM tmp_receivers_lines s WHERE not st_isempty(s.the_geom) ;")
+    sql.execute("CREATE TABLE TMP_SCREENS_MERGE (the_geom geometry, hBuilding float, pk_building integer) " +
+            "as SELECT s.the_geom, s.height, s.pk_building FROM tmp_receivers_lines s WHERE not st_isempty(s.the_geom) ;")
     sql.execute("ALTER TABLE TMP_SCREENS_MERGE ADD COLUMN PK SERIAL PRIMARY KEY")
 
     // Collect all lines and convert into points using custom method

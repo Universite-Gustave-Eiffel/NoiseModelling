@@ -18,11 +18,16 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
-import org.noise_planet.noisemodelling.wps.Experimental.Noise_Map_Difference
-import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Noise_From_Attenuation_Matrix_MatSim
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.ZerodB_Source
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
+import org.noise_planet.noisemodelling.wps.Source_Activity.PedestrianActivity
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Voices_Emission_from_PedestrianActivity
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_Pedestrian
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
@@ -65,6 +70,100 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals("Calculation Done ! The table LW_DYNAMIC_GEOM has been created.", res)
     }
 
+
+    @Test
+    void test_Pedestrian_Positioning() {
+
+        new Import_OSM_Pedestrian().exec(connection, [
+                "pathFile"  : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID": 2154
+        ]);
+
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+
+        new PedestrianActivity().exec(connection, [
+                "walkableArea"        : "PEDESTRIAN_AREA",
+                "cellSize"            : 25,
+                "pointsOfInterests"   : "PEDESTRIAN_POIS",
+                "coeffLeisure"        : Math.pow(3.398, 8),
+                "coeffCulture"        : Math.pow(5.44, 7),
+                "coeffFoodDrink"      : 0,
+                "coeffEducation"      : 0,
+                "coeffFootpath"       : 0,
+                "coeffTourismSleep"   : 0,
+                "coeffPublicTransport": 0,
+                "coeffReligion"       : 0,
+                "coeffTourism"        : Math.pow(-7.64, 8),
+                "coeffShop"           : Math.pow(3.635, 8),
+                "coeffSport"          : 0,
+                "coeffTrees"          : 0,
+                "coeffIndTransport"   : Math.pow(-3.858, 8)
+
+        ]);
+    }
+
+    @Test
+    void test_Pedestrian_Full_Chain() {
+
+        new Import_OSM_Pedestrian().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154
+        ]);
+
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+
+        new PedestrianActivity().exec(connection, [
+                "walkableArea"      : "PEDESTRIAN_AREA",
+                "cellSize"          : 25,
+                "pointsOfInterests" : "PEDESTRIAN_POIS",
+                "coeffLeisure"      : Math.pow(3.398,8),
+                "coeffCulture"      : Math.pow(5.44,7),
+                "coeffFoodDrink"    : 0,
+                "coeffEducation"    : 0,
+                "coeffFootpath"     : 0,
+                "coeffTourismSleep" : 0,
+                "coeffPublicTransport" : 0,
+                "coeffReligion"     : 0,
+                "coeffTourism"      : Math.pow(-7.64,8),
+                "coeffShop"         : Math.pow(3.635,8),
+                "coeffSport"        : 0,
+                "coeffTrees"        : 0,
+                "coeffIndTransport" : Math.pow(-3.858,8)
+
+        ]);
+
+        new Dynamic_Voices_Emission_from_PedestrianActivity().exec(connection, [
+                  "pathBDD"        : System.getProperty("user.dir") +"/src/main/resources/VoiceModel/BDD_Info.json",
+                  "pathSpectrums"  : System.getProperty("user.dir") +"/src/main/resources/VoiceModel/Spectrums_500ms.json",
+                  "tablePedestrian": "PEDESTRIANS"]);
+
+          new Export_Table().exec(connection,
+                  ["exportPath"   : System.getProperty("user.dir") +"/target/output.geojson",
+                   "tableToExport": "LW_PEDESTRIAN"
+                  ]);
+
+
+
+    }
+
+
+
     @Test
     void testDynamicRoadEmissionPropagation() {
 
@@ -79,6 +178,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
+
         new Set_Height().exec(connection,
                 [ "tableName":"RECEIVERS",
                   "height": 1
@@ -96,7 +196,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 100,
+                 "confMaxSrcDist" : 150,
                  "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,
@@ -128,7 +228,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 100,
+                 "confMaxSrcDist" : 150,
                  "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,
@@ -147,9 +247,6 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableName"   : "LT_GEOM_VAL",
                  "columnName"   : "LEQA"
                 ])
-
-
-
 
         assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
     }
