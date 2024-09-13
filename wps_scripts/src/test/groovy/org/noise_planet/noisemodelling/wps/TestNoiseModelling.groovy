@@ -20,6 +20,7 @@ import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.ZerodB_Source
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Vehicles
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Source_Activity.PedestrianActivity
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Voices_Emission_from_PedestrianActivity
@@ -163,6 +164,74 @@ class TestNoiseModelling extends JdbcTestCase {
     }
 
 
+    @Test
+    void testDynamicRoadEmissionPropagationVehicles() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/buildings_nm_ready_pop_heights.shp",
+                 "inputSRID": "32635",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/lw_discrete_roads_zero.shp",
+                 "inputSRID": "32635",
+                 "tableName": "ALL_VEH_POS_0DB"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/receivers_python_method0_50m_pop.shp",
+                 "inputSRID": "32635",
+                 "tableName": "receivers"])
+
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1.5
+                ]
+        )
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/SUMO.geojson",
+                 "inputSRID": "32635",
+                 "tableName": "vehicle"])
+
+         String res = new Dynamic_Road_Emission_from_Vehicles().exec(connection,
+                 ["tableRoads": "ROADS2",
+                  "tableVehicles" : "vehicle",
+                  "timestep" : 1,
+                  "gridStep":20,
+                  "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "maxError" : 0.0,
+                 "confMaxSrcDist" : 150,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
+    }
+
+
 
     @Test
     void testDynamicRoadEmissionPropagation() {
@@ -178,7 +247,6 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
-
         new Set_Height().exec(connection,
                 [ "tableName":"RECEIVERS",
                   "height": 1
@@ -196,7 +264,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 150,
+                 "confMaxSrcDist" : 100,
                  "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,
@@ -228,7 +296,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "ALL_VEH_POS_0DB",
                  "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 150,
+                 "confMaxSrcDist" : 100,
                  "confDiffHorizontal" : false,
                  "confExportSourceId": true,
                  "confSkipLevening":true,

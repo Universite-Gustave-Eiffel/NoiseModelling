@@ -75,7 +75,7 @@ public class RoadCnossosParameters {
      * @param wbvPerHour  Average heavy vehicle per hour
      * @param frequency   Studied Frequency (must be octave band)
      * @param Temperature Temperature (Celsius)
-     * @param roadSurface roadSurface empty default, NL01 FR01 .. (look at src/main/resources/org/noise_planet/noisemodelling/emission/RoadCnossos_2020.json)
+     * @param roadSurface roadSurface empty default, NL01 FR01 .. (look at src/main/resources/org/noise_planet/noisemodelling/emission/RoadCnossos_2020.jsonRoadCnossos_2020.json)
      * @param Ts_stud     A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres and during .
      * @param Pm_stud     Average proportion of vehicles equipped with studded tyres
      * @param Junc_dist   Distance to the junction (in m) near an intersection, the road segment should be cut into small parts of 10 m..
