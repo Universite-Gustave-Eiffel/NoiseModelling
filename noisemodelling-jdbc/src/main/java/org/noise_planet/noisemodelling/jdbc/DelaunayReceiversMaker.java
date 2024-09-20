@@ -335,6 +335,60 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         this.geometrySimplificationDistance = geometrySimplificationDistance;
     }
 
+    public static void generateResultTable(Connection connection, String receiverTableName, String trianglesTableName,
+                                           AtomicInteger receiverPK, List<Coordinate> vertices,
+                                           GeometryFactory geometryFactory, List<Triangle> triangles, int cellI,
+                                           int cellJ, int gridDim) throws SQLException {
+
+        if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
+            Statement st = connection.createStatement();
+            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry not null, PRIMARY KEY (PK))");
+        }
+        if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
+            Statement st = connection.createStatement();
+            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, the_geom geometry , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+        }
+        int receiverPkOffset = receiverPK.get();
+        // Add vertices to receivers
+        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ?);");
+        int batchSize = 0;
+        for(Coordinate v : vertices) {
+            ps.setInt(1, receiverPK.getAndAdd(1));
+            ps.setObject(2, geometryFactory.createPoint(v));
+            ps.addBatch();
+            batchSize++;
+            if (batchSize >= BATCH_MAX_SIZE) {
+                ps.executeBatch();
+                ps.clearBatch();
+                batchSize = 0;
+            }
+        }
+        if (batchSize > 0) {
+            ps.executeBatch();
+        }
+        // Add triangles
+        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);");
+        batchSize = 0;
+        for(Triangle t : triangles) {
+            ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
+                    vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
+            ps.setInt(2, t.getA() + receiverPkOffset);
+            ps.setInt(3, t.getC() + receiverPkOffset);
+            ps.setInt(4, t.getB() + receiverPkOffset);
+            ps.setInt(5, cellI * gridDim + cellJ);
+            ps.addBatch();
+            batchSize++;
+            if (batchSize >= BATCH_MAX_SIZE) {
+                ps.executeBatch();
+                ps.clearBatch();
+                batchSize = 0;
+            }
+        }
+        if (batchSize > 0) {
+            ps.executeBatch();
+        }
+    }
+
     /**
      * @param epsilon Merge points that are closer that this epsilon value
      */
@@ -342,18 +396,6 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         this.epsilon = epsilon;
     }
 
-    /**
-     * Generates receiver points and triangulates the cell for sound level evaluation.
-     * @param connection the database connection.
-     * @param cellI  I cell index
-     * @param cellJ  J cell index
-     * @param receiverTableName the name of the database table to store receiver points.
-     * @param trianglesTableName  the name of the database table to store triangles.
-     * @param receiverPK the atomic integer for generating primary keys for receiver points.
-     * @throws SQLException
-     * @throws LayerDelaunayError
-     * @throws IOException
-     */
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
 
         int ij = cellI * gridDim + cellJ + 1;
@@ -422,53 +464,8 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         }
         nbreceivers += vertices.size();
 
-        if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
-            Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry not null, PRIMARY KEY (PK))");
-        }
-        if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
-            Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, the_geom geometry , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
-        }
-        int receiverPkOffset = receiverPK.get();
-        // Add vertices to receivers
-        PreparedStatement ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(receiverTableName)+" VALUES (?, ?);");
-        int batchSize = 0;
-        for(Coordinate v : vertices) {
-            ps.setInt(1, receiverPK.getAndAdd(1));
-            ps.setObject(2, geometryFactory.createPoint(v));
-            ps.addBatch();
-            batchSize++;
-            if (batchSize >= BATCH_MAX_SIZE) {
-                ps.executeBatch();
-                ps.clearBatch();
-                batchSize = 0;
-            }
-        }
-        if (batchSize > 0) {
-            ps.executeBatch();
-        }
-        // Add triangles
-        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);");
-        batchSize = 0;
-        for(Triangle t : triangles) {
-            ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
-                    vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
-            ps.setInt(2, t.getA() + receiverPkOffset);
-            ps.setInt(3, t.getC() + receiverPkOffset);
-            ps.setInt(4, t.getB() + receiverPkOffset);
-            ps.setInt(5, cellI * gridDim + cellJ);
-            ps.addBatch();
-            batchSize++;
-            if (batchSize >= BATCH_MAX_SIZE) {
-                ps.executeBatch();
-                ps.clearBatch();
-                batchSize = 0;
-            }
-        }
-        if (batchSize > 0) {
-            ps.executeBatch();
-        }
+        generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
+                triangles, cellI, cellJ, gridDim);
     }
 
     public double getRoadWidth() {

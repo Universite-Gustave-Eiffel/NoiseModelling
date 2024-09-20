@@ -761,7 +761,7 @@ public class AttenuationCnossos {
      * @param path
      * @param data
      * @param idFreq
-     * @return homogeneous ground Attenuation in db
+     * @return homogeneous ground Atktenuation in db
      */
     public static double aGroundH(CnossosPath proPathParameters, SegmentPath path, AttenuationCnossosParameters data, int idFreq) {
         return aGroundH(proPathParameters, path, data, idFreq, false);

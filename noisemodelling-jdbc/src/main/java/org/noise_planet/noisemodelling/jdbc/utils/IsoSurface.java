@@ -9,6 +9,13 @@
 
 package org.noise_planet.noisemodelling.jdbc.utils;
 
+import org.h2.util.geometry.JTSUtils;
+import org.h2.value.ValueGeometry;
+import org.h2gis.functions.spatial.convert.ST_Force2D;
+import org.h2gis.functions.spatial.convert.ST_Force3D;
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
+import org.h2gis.utilities.GeometryMetaData;
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.jts_utils.Contouring;
@@ -41,12 +48,16 @@ public class IsoSurface {
     List<Double> isoLevels;
     List<String> isoLabels;
     boolean smooth = true;
+
+    boolean mergeTriangles = true;
     double smoothCoefficient = 1.0;
     double deltaPoints = 0.5; // minimal distance between bezier points
     double epsilon = 0.05;
 
     int srid;
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
+
+    private int exportDimension = 2;
 
     /**
      * @param isoLevels Iso levels in dB
@@ -59,12 +70,14 @@ public class IsoSurface {
         for (int idiso = 0; idiso < isoLevels.size(); idiso++) {
             double lvl = isoLevels.get(idiso);
             this.isoLevels.add(dbaToW(lvl));
+            // Symbols ( and [ are used for ordering legend in application
+            // in ascii ( is 40 and [ is 91, numbers are between the two
             if (idiso == 0) {
-                this.isoLabels.add(String.format(Locale.ROOT, "< %s", format.format(lvl)));
+                this.isoLabels.add(String.format(Locale.ROOT, "%s)", format.format(lvl)));
             } else if(idiso < isoLevels.size() - 1){
                 this.isoLabels.add(String.format(Locale.ROOT, "%s-%s", format.format(isoLevels.get(idiso - 1)), format.format(lvl)));
             } else {
-                this.isoLabels.add(String.format(Locale.ROOT, "> %s", format.format(isoLevels.get(idiso - 1))));
+                this.isoLabels.add(String.format(Locale.ROOT, "[%s", format.format(isoLevels.get(idiso - 1))));
             }
         }
     }
@@ -82,6 +95,20 @@ public class IsoSurface {
 
     public double getSmoothCoefficient() {
         return smoothCoefficient;
+    }
+
+    /**
+     * @return True if triangles will be merged using isolevel attribute
+     */
+    public boolean isMergeTriangles() {
+        return mergeTriangles;
+    }
+
+    /**
+     * @param mergeTriangles True if triangles will be merged using isolevel attribute, Z ordinate will be lost
+     */
+    public void setMergeTriangles(boolean mergeTriangles) {
+        this.mergeTriangles = mergeTriangles;
     }
 
     /**
@@ -176,11 +203,11 @@ public class IsoSurface {
      */
     static Coordinate[] generateBezierCurves(Coordinate[] coordinates, Quadtree segmentTree, double pointsDelta) {
         ArrayList<Coordinate> pts = new ArrayList<>();
-        pts.add(coordinates[0]);
+        pts.add(new Coordinate(coordinates[0].x, coordinates[0].y));
         for(int i = 0; i < coordinates.length - 1; i++) {
             final int i2 = i + 1;
-            Coordinate p1 = coordinates[i];
-            Coordinate p2 = coordinates[i2];
+            Coordinate p1 = new Coordinate(coordinates[i].x, coordinates[i].y);
+            Coordinate p2 = new Coordinate(coordinates[i2].x, coordinates[i2].y);
 
             Segment segment = new Segment(p1, p2);
             List<Segment> segments = (List<Segment>)segmentTree.query(segment.getEnvelope());
@@ -403,7 +430,7 @@ public class IsoSurface {
                 + "(cell_id, the_geom, ISOLVL, ISOLABEL) VALUES (?, ?, ?, ?);")) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
                 ArrayList<Polygon> polygons = new ArrayList<>();
-                if(!smooth) {
+                if(!smooth && mergeTriangles) {
                     // Merge triangles
                     try {
                         CascadedPolygonUnion union = new CascadedPolygonUnion(entry.getValue());
@@ -417,6 +444,34 @@ public class IsoSurface {
                     explode(factory.createGeometryCollection(entry.getValue().toArray(new Geometry[0])), polygons);
                 }
                 for(Polygon polygon : polygons) {
+                    int geomDim = 0;
+                    boolean mixedDimension = false;
+                    for(Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
+                        if(Double.isNaN(coordinate.getZ())) {
+                            if(geomDim == 0) {
+                                geomDim = 2;
+                            } else if (geomDim == 3) {
+                                mixedDimension = true;
+                            }
+                        } else {
+                            if(geomDim == 0) {
+                                geomDim = 3;
+                            } else if (geomDim == 2) {
+                                mixedDimension = true;
+                            }
+                        }
+                    }
+                    if(geomDim != exportDimension || mixedDimension) {
+                        // Have to force geometry dimension one way
+                        if(exportDimension == 3) {
+                            polygon = ST_Force3D.convert(polygon, 0);
+                            polygon.setSRID(srid);
+                        } else {
+                            // remove z
+                            polygon = (Polygon)ST_Force2D.force2D(polygon);
+                            polygon.setSRID(srid);
+                        }
+                    }
                     int parameterIndex = 1;
                     ps.setInt(parameterIndex++, cellId);
                     ps.setObject(parameterIndex++, polygon);
@@ -453,12 +508,24 @@ public class IsoSurface {
         Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
+            String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
+            exportDimension = 3;
+            if(smooth && smoothCoefficient > 0) {
+                // Bezier interpolation we loose 3d
+                geometryType = "GEOMETRY(POLYGON,"+srid+")";
+                exportDimension = 2;
+            }
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
-            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) + "(PK SERIAL, CELL_ID INTEGER, THE_GEOM GEOMETRY, ISOLVL INTEGER, ISOLABEL VARCHAR);");
-            String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya,ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb,ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
+            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) +
+                    "(PK SERIAL, CELL_ID INTEGER, THE_GEOM "+geometryType+", ISOLVL INTEGER, ISOLABEL VARCHAR);");
+            String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za," +
+                    "ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb, ST_Z(p2.the_geom) zb," +
+                    "ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, ST_Z(p3.the_geom) zc," +
+                    " p1."+pointTableField+" lvla, p2."+pointTableField+" lvlb, p3."+pointTableField+" lvlc FROM "+triangleTable+" t, "+pointTable+" p1,"+pointTable+" p2,"+pointTable+" p3 WHERE t.PK_1 = p1."+pkField+" and t.PK_2 = p2."+pkField+" AND t.PK_3 = p3."+pkField+" order by cell_id;";
             try(ResultSet rs = st.executeQuery(query)) {
                 // Cache columns index
-                int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, lvla = 0, lvlb = 0, lvlc = 0, cell_id = 0;
+                int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, za = 0, zb = 1, zc = 1, lvla = 0, lvlb = 0,
+                        lvlc = 0, cell_id = 0;
                 ResultSetMetaData resultSetMetaData = rs.getMetaData();
                 for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
                     switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
@@ -480,6 +547,15 @@ public class IsoSurface {
                         case "YC":
                             yc = columnId;
                             break;
+                        case "ZA":
+                            za = columnId;
+                            break;
+                        case "ZB":
+                            zb = columnId;
+                            break;
+                        case "ZC":
+                            zc = columnId;
+                            break;
                         case "LVLA":
                             lvla = columnId;
                             break;
@@ -494,8 +570,8 @@ public class IsoSurface {
                             break;
                     }
                 }
-                if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0 || lvla == 0 || lvlb == 0 ||
-                        lvlc == 0 || cell_id == 0) {
+                if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0  || za == 0 || zb == 0 || zc == 0
+                        || lvla == 0 || lvlb == 0 || lvlc == 0 || cell_id == 0) {
                     throw new SQLException("Missing field in input tables");
                 }
                 while(rs.next()) {
@@ -507,9 +583,9 @@ public class IsoSurface {
                     }
                     lastCellId = cellId;
                     // Split current triangle
-                    Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya));
-                    Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb));
-                    Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc));
+                    Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya), rs.getDouble(za));
+                    Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb), rs.getDouble(zb));
+                    Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc), rs.getDouble(zc));
                     // Fetch data
                     TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
                             dbaToW(rs.getDouble(lvlb)),

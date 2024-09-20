@@ -55,11 +55,19 @@ inputs = [
                 min        : 0, max: 1,
                 type       : String.class
         ],
+        keepTriangles: [
+                name       : 'Keep triangles',
+                title      : 'Keep triangles',
+                description: 'Point inside areas with the same iso levels are kept so elevation variation into ' +
+                        'same iso level areas will be preserved but the output data size will be higher.',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
         smoothCoefficient: [
                 name       : 'Polygon smoothing coefficient',
                 title      : 'Polygon smoothing coefficient',
                 description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>'+
-                             'If equal to 0, it disables the smoothing step.</br> </br>' +
+                             'If equal to 0, it disables the smoothing step and will keep the altitude of receivers (3D geojson can be viewed on https://kepler.gl).</br> </br>' +
                              '&#128736; Default value: <b>0.5 </b>',
                 min        : 0, max: 1,
                 type       : Double.class

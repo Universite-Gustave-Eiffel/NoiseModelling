@@ -423,6 +423,7 @@ public class Attenuation implements IComputePathsOut {
         public final long sourceId;
         public final long receiverId;
         public final double[] value;
+        public final Coordinate receiverPosition;
 
         /**
          *
@@ -434,6 +435,12 @@ public class Attenuation implements IComputePathsOut {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.value = value;
+            this.receiverPosition = null;
         }
+
+
+
     }
+
+
 }

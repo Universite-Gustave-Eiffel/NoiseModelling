@@ -16,12 +16,14 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
@@ -1083,7 +1085,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
         connection.createStatement().execute("SELECT UpdateGeometrySRID('RCVSCIRCLE', 'THE_GEOM', 2154);");
 
-        connection.createStatement().execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, the_geom GEOMETRY(POINTZ) ) AS SELECT (row_number() over())::int, ST_UPDATEZ(ST_FORCE3D(THE_GEOM),5.0) FROM RCVSCIRCLE;");
+        connection.createStatement().execute("CREATE TABLE RECEIVERS(PK SERIAL PRIMARY KEY, the_geom GEOMETRY(POINTZ, 2154) ) AS SELECT (row_number() over())::int, ST_UPDATEZ(ST_FORCE3D(THE_GEOM),5.0) FROM RCVSCIRCLE;");
        // connection.createStatement().execute("UPDATE RCVS20 SET THE_GEOM = ST_UPDATEZ(ST_FORCE3D(THE_GEOM),5.0);");
         connection.createStatement().execute("UPDATE SOURCESI SET THE_GEOM = ST_UPDATEZ(THE_GEOM,10.0);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('NO_BUILD', 'THE_GEOM', 2154);");
@@ -1148,13 +1150,17 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), true,new EmptyProgressVisitor());
 
+        //assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
 
-
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ NoiseMapParameters.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ NoiseMapParameters.lDayTable+" ORDER BY IDRECEIVER")) {
             assertTrue(rs.next());
+            /* assertEquals(1, rs.getInt("IDRECEIVER"));
+            Object geom = rs.getObject("THE_GEOM");
+            assertNotNull(geom);
+            assertTrue(geom instanceof Point);
+            // We get receiver Altitude not height
+            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);*/
         }
-
-
     }
 
     public static void exportScene(String name, ProfileBuilder builder, Attenuation result) throws IOException {
