@@ -57,7 +57,6 @@ public class AttenuationVisitor implements IComputePathsOut {
                     pathParameter.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
                     pathParameter.setSourceOrientation(pathParameter.getSourceOrientation());
                     pathParameter.setGs(pathParameter.getGs());
-                    //pathParametersPk.init(multiThreadParent.inputData.freq_lvl.size());
                     pathParameters.add(pathParameter);
                 }
             } else {

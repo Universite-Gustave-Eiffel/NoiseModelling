@@ -110,7 +110,7 @@ public class AttenuationCnossos {
         double aGroundMin;
         double AGround;
 
-        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+        for(int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
             int fm = data.freq_lvl.get(idfreq);
             double gw = segmentPath.gw;
             double dp = segmentPath.dp;
@@ -538,7 +538,7 @@ public class AttenuationCnossos {
                     aGround[i] = 0.;
                 }
             }
-            // With diff
+            // With refl
             else {
                 aDif[i] = 0.;
             }
@@ -570,46 +570,52 @@ public class AttenuationCnossos {
         double[] retroDiff = new double[data.freq_lvl.size()];
         Arrays.fill(retroDiff, 0.);
         Coordinate s = reflect.getSRSegment().s;
-        //Coordinate s = reflect.getSegmentList().get(idx).s;
-
         Coordinate r = reflect.getSRSegment().r;
-        for(int idx : reflect.refPoints) {
+
+        for(int idx : reflect.refPoints){
             //Get the reflexion point
             PointPath pp = reflect.getPointList().get(idx);
             //Get the point on the top of the obstacle
             Coordinate o = new Coordinate(pp.coordinate.x, pp.buildingHeight);
-            //s = reflect.getSegmentList().get(idx).s;
             double SO = s.distance(o);
             double OR = o.distance(r);
-            double SR = reflect.getSRSegment().d;
-            //Compute de distance delta (2.5.36)
-            double deltaPrime = -(s.distance(o) + o.distance(r) - s.distance(r)); //2.5.36
-            //double ch = Double.parseDouble(null);
-            /*if (reflect.isFavorable()){
-                double ch = min(fm*max(reflect.getSRSegment().zsF,reflect.getSRSegment().zrF)/250,1);
-                for(int i = 0; i < data.freq_lvl.size(); i++) {
-                    double lambda = 340.0 / data.freq_lvl.get(i);
-                    double testForm = 40.0 / lambda * deltaPrime;
-                    double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
-                    retroDiff[i] = dLRetro;
-                }
-            }
-            else {
-                double ch = min(fm*max(reflect.getSRSegment().zsH,reflect.getSRSegment().zrH)/250,1);
-                for(int i = 0; i < data.freq_lvl.size(); i++) {
-                    double lambda = 340.0 / data.freq_lvl.get(i);
-                    double testForm = 40.0 / lambda * deltaPrime;
-                    double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
-                    retroDiff[i] = dLRetro;
-                }
-            }*/
+            double SR = reflect.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate (reflect.getCutPoints().get(reflect.getCutPoints().size()-1).getCoordinate().x,reflect.getCutPoints().get(reflect.getCutPoints().size()-1).getCoordinate().y,reflect.getPointList().get(reflect.getPointList().size()-1).coordinate.y));
             double ch = 1.;
-            //int divlam = data.freq_lvl.get(0);
-            for(int i = 0; i < data.freq_lvl.size(); i++) {
-                double lambda = 340.0 / data.freq_lvl.get(i);
-                double testForm = 40.0 / lambda * deltaPrime;
-                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
-                retroDiff[i] = dLRetro;
+            if (reflect.isFavorable()){
+                double gamma = 2*max(1000, 8*SR);
+                double e =reflect.e;
+                double deltaPrime = 0.0;
+                double SpO = gamma * asin(SO/gamma);
+                double OpR = gamma* asin(OR/gamma);
+                double SpR = gamma* asin(s.distance(r)/gamma);
+                deltaPrime = -(SpO + OpR - SpR);
+                if(e < 0.3) {
+                    for (int i = 0; i < data.freq_lvl.size(); i++) {
+                        double lambda = 340.0 / data.freq_lvl.get(i);
+                        double testForm = 40.0 / lambda * deltaPrime;
+                        double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                        retroDiff[i] = dLRetro;
+                    }
+                }
+                else{
+
+                    for (int i = 0; i < data.freq_lvl.size(); i++) {
+                        double lambda = 340.0 / data.freq_lvl.get(i);
+                        double Csecond = 1+(5*lambda/e * 5*lambda/e)/1/3+ (5*lambda/e * 5*lambda/e);
+                        double testForm = 40.0 / lambda * Csecond * deltaPrime;
+                        double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                        retroDiff[i] = dLRetro;
+                    }
+
+                }
+            }else {
+                double deltaPrime = -((s.distance(o) + o.distance(r)) - s.distance(r)); //2.5.36
+                for(int i = 0; i < data.freq_lvl.size(); i++) {
+                    double lambda = 340.0 / data.freq_lvl.get(i);
+                    double testForm = 40.0 / lambda * deltaPrime;
+                    double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                    retroDiff[i] = dLRetro;
+                }
             }
         }
         if (reflect.keepAbsorption) {
@@ -638,6 +644,7 @@ public class AttenuationCnossos {
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && proPathParameters.difHPoints.size() <= 1) || (type.equals(DIFV) && proPathParameters.difVPoints.size() <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
+        // à vérifier les valeurs de testform plus precisément la valeur de deltaF et deltaH
         double _delta = proPathParameters.isFavorable() && (type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT)) ? proPathParameters.deltaF : proPathParameters.deltaH;
         double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime+ proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1).dPrime- proPathParameters.getSRSegment().dPrime);
         double deltaDiffSR = 0;
@@ -658,6 +665,7 @@ public class AttenuationCnossos {
             }
             return deltaDiffSR;
         }
+        // à vérifier les valeurs de testform plus precisément la valeur de delta
 
         _delta = proPathParameters.isFavorable() ? proPathParameters.deltaSPrimeRF : proPathParameters.deltaSPrimeRH;
         testForm = 40/lambda*cSecond*_delta;
@@ -672,15 +680,15 @@ public class AttenuationCnossos {
 
         //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
         double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
-        double deltaGroundOR  = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10, -(deltaDiffSRPrime - deltaDiffSR) / 20));
+        double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
 
         //Double check NaN values
-        if(Double.isNaN(deltaGroundSO)) {
+        if(Double.isNaN(deltaGroundSO)){
            // LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
             deltaGroundSO = aGroundSO;
             deltaDiffSR = deltaDiffSPrimeR;
         }
-        if(Double.isNaN(deltaGroundOR)) {
+        if(Double.isNaN(deltaGroundOR)){
          //   LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
             deltaGroundOR = aGroundOR;
             deltaDiffSR = deltaDiffSPrimeR;
@@ -815,8 +823,8 @@ public class AttenuationCnossos {
             proPathParameters.groundAttenuation.cfF[idFreq] = cf;
         }
         double gm = forceGPath ? path.gPath : path.gPathPrime;
-        double aGroundFMin = path.dp <= 30*(path.zsH +path.zrH) ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - 30*(path.zsH +path.zrH)/path.dp));
-                //path.testFormF <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormF)));
+        double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
+       // path.dp <= 30*(path.zsH +path.zrH) ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - 30*(path.zsH +path.zrH)/path.dp));
 
         if(path.gPath == 0) {
             return aGroundFMin;

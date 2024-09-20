@@ -404,9 +404,9 @@ public class PathFinder {
         //double deltaZt = 6*(10^-3)*seg.dp/seg.zsH+seg.zrH;
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
         seg.gPath = gPath;
-        seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath;
+        seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath; // 2.5.14
         double deltaZT = 6e-3 * seg.dp / (seg.zsH + seg.zrH);
-        double deltaZS = ALPHA0 * pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
+        double deltaZS = ALPHA0 * pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2); //2.5.19
         seg.zsF = seg.zsH + deltaZS + deltaZT;
         double deltaZR = ALPHA0 * pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
         seg.zrF = seg.zrH + deltaZR + deltaZT;
