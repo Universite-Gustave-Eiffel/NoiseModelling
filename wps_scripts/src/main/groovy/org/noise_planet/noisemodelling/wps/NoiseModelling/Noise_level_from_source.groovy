@@ -607,7 +607,7 @@ def exec(Connection connection, input) {
             ldenConfig.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE)
             ldenConfig.setRaysTable(input['confRaysName'] as String)
         }
-        ldenConfig.setKeepAbsorption(true);
+        //ldenConfig.setKeepAbsorption(true);
         ldenConfig.setMaximumRaysOutputCount(maximumRaysToExport);
     }
 

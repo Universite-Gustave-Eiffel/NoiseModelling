@@ -105,6 +105,81 @@ class TestTutorials extends JdbcTestCase {
 
     }
 
+    void testTutorialPointSourceEliseMadrid() {
+        Sql sql = new Sql(connection)
+
+        // Check empty database
+        Object res = new Display_Database().exec(connection, [])
+        assertEquals("", res)
+
+        new Import_Folder().exec(connection,
+                ["pathFolder": TestImportExport.class.getResource("elise/").getPath(),
+                 "inputSRID" : "2062",
+                 "importExt" : "geojson"])
+
+        // Check SRID
+        assertEquals(2062, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
+
+        // Check database
+        res = new Display_Database().exec(connection, [])
+
+        assertTrue(res.contains("POINT_SOURCE"))
+        assertTrue(res.contains("BUILDINGS"))
+
+        /* new Delaunay_Grid().exec(connection,
+                 ["tableBuilding": "BUILDINGS", "sourcesTableName": "POINT_SOURCE", "maxArea": 1500, 'Height':2.0])*/
+        new Regular_Grid().exec(connection, ["sourcesTableName": "POINT_SOURCE",
+                                             delta             : 700,
+                                             "buildingTableName"   : "BUILDINGS"])
+
+        // Check database
+        res = new Display_Database().exec(connection, [])
+
+        assertTrue(res.contains("RECEIVERS"))
+
+
+        res = new Noise_level_from_source().exec(connection, ["tableSources"  : "POINT_SOURCE",
+                                                              "tableBuilding" : "BUILDINGS",
+                                                              "tableReceivers": "RECEIVERS",
+                                                              "confReflOrder" : 2,
+                                                              "confRaysName" : "RAYS",
+                                                              "confMaxReflDist": "1000",
+                                                              "confMaxSrcDist": "1000",
+                                                              "confDiffVertical" : true,
+                                                              "confDiffHorizontal" : true,
+                                                              "confSkipLevening" : true,
+                                                              "confSkipLnight" : true,
+                                                              "confSkipLden" : true])
+
+        res =  new Display_Database().exec(connection, [])
+
+        // Check database
+        new Table_Visualization_Data().exec(connection, ["tableName": "LDAY_GEOM"])
+
+        assertTrue(res.contains("LDAY_GEOM"))
+
+        def rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDAY_GEOM")
+        //assertEquals(72, rowResult[0] as Double, 5.0)
+        // assertEquals(69, rowResult[1] as Double, 5.0)
+
+        // Check export geojson
+        File testPath = new File("target/tutoPointSource.geojson")
+
+        if(testPath.exists()) {
+            testPath.delete()
+        }
+
+        /*new Export_Table().exec(connection,
+                ["exportPath"   : "target/tutoPointSource.geojson",
+                 "tableToExport": "LDAY_GEOM"])*/
+
+        new Export_Table().exec(connection,
+                ["exportPath"   : "target/tutoRaysElise.geojson",
+                 "tableToExport": "RAYS"])
+
+    }
+
+
     @Test
     void testTutorialPointSourceDirectivity() {
         Logger logger = LoggerFactory.getLogger(TestTutorials.class)
