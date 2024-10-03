@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "Point_Source_complet",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2062" } },
+"features":[
+{ "type": "Feature", "properties": { "PK": 1, "LWD63": 70.0,"LWD125": 70.0,"LWD250":70,"LWD500": 70.0, "LWD1000": 70.0, "LWD2000": 70.0, "LWD4000":70,"LWD8000": 70.0, 
+"YAW": 0, "PITCH": 0, "ROLL": 0 }, "geometry": { "type": "Point", "coordinates": [ 599095.21, 646283.77, 4.0 ] } }
+]
+}
