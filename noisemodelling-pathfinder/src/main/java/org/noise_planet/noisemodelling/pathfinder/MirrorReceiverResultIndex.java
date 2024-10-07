@@ -181,27 +181,45 @@ public class MirrorReceiverResultIndex {
         WKTWriter wktWriter = new WKTWriter();
         GeometryFactory factory = new GeometryFactory();
         if(includeHeader) {
-            sb.append("the_geom,type,t\n");
+            sb.append("the_geom,type,ref_index,ref_order,wall_id,t\n");
         }
+        int refIndex = 0;
         for (MirrorReceiverResult res : mirrorReceiverResultList) {
             Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
                     res.getReceiverPos(), res.getWall().getLineSegment(),
                     maxPropagationDistance, maxPropagationDistanceFromWall);
             if(!visibilityCone.isEmpty()) {
+                int refOrder=1;
+                MirrorReceiverResult parent = res.getParentMirror();
+                while (parent != null) {
+                    refOrder++;
+                    parent = parent.getParentMirror();
+                }
+
                 sb.append("\"");
                 sb.append(wktWriter.write(visibilityCone));
                 sb.append("\",0");
+                sb.append(",").append(refIndex);
+                sb.append(",").append(refOrder);
+                sb.append(",").append(res.getWall().getOriginId());
                 sb.append(",").append(t).append("\n");
                 sb.append("\"");
                 sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
                         12, BufferParameters.CAP_ROUND)));
                 sb.append("\",4");
+                sb.append(",").append(refIndex);
+                sb.append(",").append(refOrder);
+                sb.append(",").append(res.getWall().getOriginId());
                 sb.append(",").append(t).append("\n");
                 sb.append("\"");
                 sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
                         buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
                 sb.append("\",1");
+                sb.append(",").append(refIndex);
+                sb.append(",").append(refOrder);
+                sb.append(",").append(res.getWall().getOriginId());
                 sb.append(",").append(t).append("\n");
+                refIndex+=1;
             }
         }
         sb.append("\"");
@@ -267,36 +285,6 @@ public class MirrorReceiverResultIndex {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
-                    } else {
-                        reflectionPoint = li.getIntersection(0);
-                        double wallReflectionPointZ = Vertex.interpolateZ(reflectionPoint, currentWallLineSegment.p0,
-                                currentWallLineSegment.p1);
-                        double propagationReflectionPointZ =  Vertex.interpolateZ(reflectionPoint, srcMirrRcvLine.p0,
-                                srcMirrRcvLine.p1);
-                        if(propagationReflectionPointZ > wallReflectionPointZ) {
-                            // The receiver image is not visible because the wall is not tall enough
-                            return;
-                        }
-                    }
-                    // Check if other surface of this wall obstruct the view
-                    //Check if another wall is masking the current
-                    for (ProfileBuilder.Wall otherWall : currentWall.getObstacle().getWalls()) {
-                        if(!otherWall.equals(currentWall)) {
-                            LineSegment otherWallSegment = otherWall.getLineSegment();
-                            li = new RobustLineIntersector();
-                            li.computeIntersection(otherWall.p0, otherWall.p1, reflectionPoint, source);
-                            if (li.hasIntersection()) {
-                                Coordinate otherReflectionPoint = li.getIntersection(0);
-                                double wallReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
-                                        otherWallSegment.p0, otherWallSegment.p1);
-                                double propagationReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
-                                        srcMirrRcvLine.p0, srcMirrRcvLine.p1);
-                                if (propagationReflectionPointZ <= wallReflectionPointZ) {
-                                    // This wall is obstructing the view of the propagation line (other wall too tall)
-                                    return;
-                                }
-                            }
-                        }
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }

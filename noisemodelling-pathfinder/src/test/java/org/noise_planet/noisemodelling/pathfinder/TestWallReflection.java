@@ -113,9 +113,9 @@ public class TestWallReflection {
         inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 1)));
         inputData.setComputeHorizontalDiffraction(false);
         inputData.setComputeVerticalDiffraction(false);
-        inputData.maxRefDist = 500;
-        inputData.maxSrcDist = 1000;
-        inputData.setReflexionOrder(3);
+        inputData.maxRefDist = 80;
+        inputData.maxSrcDist = 180;
+        inputData.setReflexionOrder(2);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(inputData);
         computeRays.setThreadCount(1);
 
@@ -130,7 +130,13 @@ public class TestWallReflection {
         //Keep only mirror receivers potentially visible from the source
         List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(
                 inputData.sourceGeometries.get(0).getCoordinate());
-
+//        var lst = receiverMirrorIndex.mirrorReceiverTree.query(new Envelope(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+//                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+//        for(var item : lst) {
+//            if(item instanceof MirrorReceiverResult) {
+//                mirrorResults.add((MirrorReceiverResult) item);
+//            }
+//        }
 
         List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
@@ -140,7 +146,7 @@ public class TestWallReflection {
         try {
             try (FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
                 StringBuilder sb = new StringBuilder();
-                receiverMirrorIndex.exportVisibility(sb, 80, 80,
+                receiverMirrorIndex.exportVisibility(sb, inputData.maxSrcDist, inputData.maxRefDist,
                         0, mirrorResults, true);
                 fileWriter.write(sb.toString());
             }
@@ -148,7 +154,8 @@ public class TestWallReflection {
             //ignore
         }
 
-        assertEquals(1, mirrorResults.size());
+        assertEquals(16, mirrorResults.size());
+        assertEquals(16, propagationPaths.size());
 
     }
 
