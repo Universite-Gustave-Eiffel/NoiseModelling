@@ -115,7 +115,7 @@ public class TestWallReflection {
         inputData.setComputeVerticalDiffraction(false);
         inputData.maxRefDist = 500;
         inputData.maxSrcDist = 1000;
-        inputData.setReflexionOrder(2);
+        inputData.setReflexionOrder(3);
         ComputeCnossosRays computeRays = new ComputeCnossosRays(inputData);
         computeRays.setThreadCount(1);
 
@@ -124,28 +124,31 @@ public class TestWallReflection {
         Envelope receiverPropagationEnvelope = new Envelope(receiver);
         receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
         List<ProfileBuilder.Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, rcv.getCoord(),
+        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
                 inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        //Keep only mirror receivers potentially visible from the source
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(
+                inputData.sourceGeometries.get(0).getCoordinate());
+
 
         List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
                 new Orientation(), receiverMirrorIndex);
 
 
-        //Keep only mirror receivers potentially visible from the source
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(
-                inputData.sourceGeometries.get(0).getCoordinate());
         try {
             try (FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
                 StringBuilder sb = new StringBuilder();
-                receiverMirrorIndex.exportVisibility(sb, 500, 500, 0, mirrorResults);
+                receiverMirrorIndex.exportVisibility(sb, 80, 80,
+                        0, mirrorResults, true);
                 fileWriter.write(sb.toString());
             }
         } catch (IOException ex) {
             //ignore
         }
 
-        assertEquals(1, propagationPaths.size());
+        assertEquals(1, mirrorResults.size());
 
     }
 

@@ -177,9 +177,12 @@ public class MirrorReceiverResultIndex {
     }
 
     public void exportVisibility(StringBuilder sb, double maxPropagationDistance,
-                                 double maxPropagationDistanceFromWall, int t, List<MirrorReceiverResult> mirrorReceiverResultList) {
+                                 double maxPropagationDistanceFromWall, int t, List<MirrorReceiverResult> mirrorReceiverResultList, boolean includeHeader) {
         WKTWriter wktWriter = new WKTWriter();
         GeometryFactory factory = new GeometryFactory();
+        if(includeHeader) {
+            sb.append("the_geom,type,t\n");
+        }
         for (MirrorReceiverResult res : mirrorReceiverResultList) {
             Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
                     res.getReceiverPos(), res.getWall().getLineSegment(),
@@ -194,14 +197,12 @@ public class MirrorReceiverResultIndex {
                         12, BufferParameters.CAP_ROUND)));
                 sb.append("\",4");
                 sb.append(",").append(t).append("\n");
+                sb.append("\"");
+                sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
+                        buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+                sb.append("\",1");
+                sb.append(",").append(t).append("\n");
             }
-        }
-        for (ProfileBuilder.Wall wall : buildWalls) {
-            sb.append("\"");
-            sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1}).
-                    buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
-            sb.append("\",1");
-            sb.append(",").append(t).append("\n");
         }
         sb.append("\"");
         sb.append(wktWriter.write(factory.createPoint(receiverCoordinate).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
