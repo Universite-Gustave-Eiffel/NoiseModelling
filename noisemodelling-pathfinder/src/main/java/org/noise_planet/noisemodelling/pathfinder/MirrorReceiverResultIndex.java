@@ -43,7 +43,10 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
@@ -171,6 +174,39 @@ public class MirrorReceiverResultIndex {
 
     public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {
         this.mirrorReceiverCapacity = mirrorReceiverCapacity;
+    }
+
+    public void exportVisibility(StringBuilder sb, double maxPropagationDistance,
+                                 double maxPropagationDistanceFromWall, int t, List<MirrorReceiverResult> mirrorReceiverResultList) {
+        WKTWriter wktWriter = new WKTWriter();
+        GeometryFactory factory = new GeometryFactory();
+        for (MirrorReceiverResult res : mirrorReceiverResultList) {
+            Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+                    res.getReceiverPos(), res.getWall().getLineSegment(),
+                    maxPropagationDistance, maxPropagationDistanceFromWall);
+            if(!visibilityCone.isEmpty()) {
+                sb.append("\"");
+                sb.append(wktWriter.write(visibilityCone));
+                sb.append("\",0");
+                sb.append(",").append(t).append("\n");
+                sb.append("\"");
+                sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
+                        12, BufferParameters.CAP_ROUND)));
+                sb.append("\",4");
+                sb.append(",").append(t).append("\n");
+            }
+        }
+        for (ProfileBuilder.Wall wall : buildWalls) {
+            sb.append("\"");
+            sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1}).
+                    buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+            sb.append("\",1");
+            sb.append(",").append(t).append("\n");
+        }
+        sb.append("\"");
+        sb.append(wktWriter.write(factory.createPoint(receiverCoordinate).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
+        sb.append("\",2");
+        sb.append(",").append(t).append("\n");
     }
 
     public List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition) {
