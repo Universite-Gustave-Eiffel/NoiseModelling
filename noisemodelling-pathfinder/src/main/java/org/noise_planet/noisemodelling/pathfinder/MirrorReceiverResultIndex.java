@@ -196,29 +196,38 @@ public class MirrorReceiverResultIndex {
                     parent = parent.getParentMirror();
                 }
 
-                sb.append("\"");
-                sb.append(wktWriter.write(visibilityCone));
-                sb.append("\",0");
-                sb.append(",").append(refIndex);
-                sb.append(",").append(refOrder);
-                sb.append(",").append(res.getWall().getOriginId());
-                sb.append(",").append(t).append("\n");
-                sb.append("\"");
-                sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
-                        12, BufferParameters.CAP_ROUND)));
-                sb.append("\",4");
-                sb.append(",").append(refIndex);
-                sb.append(",").append(refOrder);
-                sb.append(",").append(res.getWall().getOriginId());
-                sb.append(",").append(t).append("\n");
-                sb.append("\"");
-                sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
-                        buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
-                sb.append("\",1");
-                sb.append(",").append(refIndex);
-                sb.append(",").append(refOrder);
-                sb.append(",").append(res.getWall().getOriginId());
-                sb.append(",").append(t).append("\n");
+                while(res != null) {
+                    sb.append("\"");
+                    sb.append(wktWriter.write(visibilityCone));
+                    sb.append("\",0");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    sb.append("\"");
+                    sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
+                            12, BufferParameters.CAP_ROUND)));
+                    sb.append("\",4");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    sb.append("\"");
+                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
+                            buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+                    sb.append("\",1");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    res = res.getParentMirror();
+                    if(res != null) {
+                        visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+                                res.getReceiverPos(), res.getWall().getLineSegment(),
+                                maxPropagationDistance, maxPropagationDistanceFromWall);
+                    }
+                    refOrder-=1;
+                }
                 refIndex+=1;
             }
         }
