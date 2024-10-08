@@ -119,6 +119,7 @@ public class MirrorReceiverResultIndex {
     public MirrorReceiverResultIndex(List<ProfileBuilder.Wall> buildWalls, Coordinate receiverCoordinates,
                                      int reflectionOrder, double maximumPropagationDistance,
                                      double maximumDistanceFromWall) {
+        GeometryFactory gf = new GeometryFactory();
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
         this.maximumDistanceFromWall = maximumDistanceFromWall;
@@ -132,6 +133,13 @@ public class MirrorReceiverResultIndex {
             ArrayList<MirrorReceiverResult> nextParentsToProcess = new ArrayList<>();
             for(MirrorReceiverResult parent : parentsToProcess) {
                 for (ProfileBuilder.Wall wall : buildWalls) {
+                    if(parent != null) {
+                        // check if the wall is visible from the previous image receiver
+                        if(!parent.getImageReceiverVisibilityCone().intersects(
+                                wall.getLineSegment().toGeometry(new GeometryFactory()))) {
+                            continue; // this wall is out of the bound of the receiver visibility
+                        }
+                    }
                     Coordinate receiverImage;
                     if (parent != null) {
                         if(wall == parent.getWall()) {
@@ -150,13 +158,14 @@ public class MirrorReceiverResultIndex {
                         // wall is too far from the receiver image, there is no receiver image
                         continue;
                     }
-                    MirrorReceiverResult receiverResult = new MirrorReceiverResult(rcvMirror, parent, wall,
-                            wall.getOriginId(), wall.getType());
                     // create the visibility cone of this receiver image
                     Polygon imageReceiverVisibilityCone = createWallReflectionVisibilityCone(rcvMirror,
                             wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
-                    mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(), receiverResult);
-                    nextParentsToProcess.add(receiverResult);
+                    MirrorReceiverResult receiverResultNext = new MirrorReceiverResult(rcvMirror, parent, wall,
+                            wall.getOriginId(), wall.getType());
+                    receiverResultNext.setImageReceiverVisibilityCone(imageReceiverVisibilityCone);
+                    mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(),receiverResultNext.copyWithoutCone());
+                    nextParentsToProcess.add(receiverResultNext);
                     numberOfImageReceivers++;
                     if(numberOfImageReceivers >= mirrorReceiverCapacity) {
                         return;
@@ -294,6 +303,9 @@ public class MirrorReceiverResultIndex {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
+                    } else{
+                        // update reflection point for inferior reflection order
+                        reflectionPoint = li.getIntersection(0);
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }

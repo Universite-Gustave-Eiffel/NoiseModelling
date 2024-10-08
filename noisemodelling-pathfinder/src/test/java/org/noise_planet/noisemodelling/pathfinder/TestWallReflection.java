@@ -49,10 +49,7 @@ import org.locationtech.jts.operation.buffer.BufferParameters;
 import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -127,84 +124,56 @@ public class TestWallReflection {
         MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
                 inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
 
-        //Keep only mirror receivers potentially visible from the source
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(
-                inputData.sourceGeometries.get(0).getCoordinate());
-//        var lst = receiverMirrorIndex.mirrorReceiverTree.query(new Envelope(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
-//                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
-//        for(var item : lst) {
-//            if(item instanceof MirrorReceiverResult) {
-//                mirrorResults.add((MirrorReceiverResult) item);
-//            }
-//        }
 
         List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
                 new Orientation(), receiverMirrorIndex);
 
+        // Only one second order reflexion propagation path must be found
+        assertEquals(1, propagationPaths.size());
 
-        try {
-            try (FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
-                StringBuilder sb = new StringBuilder();
-                receiverMirrorIndex.exportVisibility(sb, inputData.maxSrcDist, inputData.maxRefDist,
-                        0, mirrorResults, true);
-                fileWriter.write(sb.toString());
-            }
-        } catch (IOException ex) {
-            //ignore
-        }
 
-        assertEquals(16, mirrorResults.size());
-        assertEquals(16, propagationPaths.size());
+//        int idPath = 1;
+//        for(PropagationPath path : propagationPaths) {
+//            try {
+//                try (FileWriter fileWriter = new FileWriter(String.format(Locale.ROOT, "target/testVisibilityPath_%03d.geojson", idPath))) {
+//                    fileWriter.write(path.asGeom()));
+//                }
+//            } catch (IOException ex) {
+//                //ignore
+//            }
+//            idPath++;
+//        }
+
+        // Keep only mirror receivers potentially visible from the source
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+                sourceGeometries.get(0).getCoordinate());
+        assertEquals(18, mirrorResults.size());
+
+        // // Or Take all reflections
+        //        List<MirrorReceiverResult> mirrorResults = new ArrayList<>();
+        //        var lst = receiverMirrorIndex.mirrorReceiverTree.query(new Envelope(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+        //                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+        //        for(var item : lst) {
+        //            if(item instanceof MirrorReceiverResult) {
+        //                mirrorResults.add((MirrorReceiverResult) item);
+        //            }
+        //        }
+        //        try {
+        //            try (FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
+        //                StringBuilder sb = new StringBuilder();
+        //                receiverMirrorIndex.exportVisibility(sb, inputData.maxSrcDist, inputData.maxRefDist,
+        //                        0, mirrorResults, true);
+        //                fileWriter.write(sb.toString());
+        //            }
+        //        } catch (IOException ex) {
+        //            //ignore
+        //        }
+        //
+
+
+
 
     }
-
-
-//    @Test
-//    public void testExportVisibilityCones() throws Exception {
-//        double maxPropagationDistance = 30;
-//        double maxPropagationDistanceFromWall = 9999;
-//        int reflectionOrder = 4;
-//
-//        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
-//        Coordinate cA = new Coordinate(1, 1, 5);
-//        Coordinate cB = new Coordinate(1, 8, 5);
-//        Coordinate cC = new Coordinate(8, 8, 5);
-//        Coordinate cD = new Coordinate(8, 5, 5);
-//        Coordinate cE = new Coordinate(5, 5, 5);
-//        Coordinate cF = new Coordinate(5, 1, 5);
-//        Coordinate cG = new Coordinate(10, -5, 2.5);
-//        Coordinate cH = new Coordinate(13, 8, 2.5);
-//        Coordinate cI = new Coordinate(8, 9, 2.5);
-//        Coordinate cJ = new Coordinate(12, 8, 2.5);
-//        buildWalls.add(new ProfileBuilder.Wall(cE, cF, 0, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cG, cH, 2, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cI, cJ, 2, ProfileBuilder.IntersectionType.WALL));
-//
-//
-//        GeometryFactory factory = new GeometryFactory();
-//        List<Coordinate> pts = new ArrayList<>();
-//        LineString pathReceiver = factory.createLineString(new Coordinate[] {
-//                new Coordinate(5, -1, 0.1),
-//                new Coordinate(7.8, 1.62, 0.1),
-//                new Coordinate(8.06, 6.01, 0.1),
-//                new Coordinate(4.73, 9.95)
-//        });
-//
-//        ComputeCnossosRays.splitLineStringIntoPoints(pathReceiver, 0.5 ,pts);
-//
-//        WKTWriter wktWriter = new WKTWriter();
-//        try(FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
-//            fileWriter.write("geom, type, time\n");
-//            int t = 0;
-//            for (Coordinate receiverCoordinates : pts) {
-//                MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls, receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
-//                StringBuilder sb = new StringBuilder();
-//                mirrorReceiverResultIndex.exportVisibility(sb, maxPropagationDistance, maxPropagationDistanceFromWall, t);
-//                fileWriter.write(sb.toString());
-//                t+=1;
-//            }
-//        }
-//    }
 
 }
