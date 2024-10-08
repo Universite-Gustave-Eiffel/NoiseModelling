@@ -394,12 +394,12 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
             lambdaToFreqLog[idLambda] = Math.log10(speed / Lambda[idLambda] * 1000 / 3.6);
 
             roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId,  trackFileVersion, idLambda) / 10);
-            if (impactId != 0) {
-                roughnessTotLambda[idLambda] = roughnessTotLambda[idLambda] + Math.pow(10, getImpactNoise(impactId,  idLambda) / 10);
-            }
 
             contactFilter[idLambda] = getContactFilter(typeVehicle,  idLambda);
             roughnessLtot[idLambda] = 10 * Math.log10(roughnessTotLambda[idLambda]) + contactFilter[idLambda];
+            if (impactId != 0) {
+                roughnessLtot[idLambda] =  10 * Math.log10(Math.pow(10,roughnessLtot[idLambda]/ 10) + Math.pow(10, getImpactNoise(impactId,  idLambda) / 10));
+            }
             roughnessLtot[idLambda] = Math.pow(10, roughnessLtot[idLambda] / 10);
             m--;
         }
