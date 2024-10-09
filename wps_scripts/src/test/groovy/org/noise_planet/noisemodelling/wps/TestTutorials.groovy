@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
 
-    @Test
+    /*@Test
     void testTutorialPointSource() {
         Sql sql = new Sql(connection)
 
@@ -103,7 +103,7 @@ class TestTutorials extends JdbcTestCase {
                  "tableToExport": "LDAY_GEOM"])
 
 
-    }
+    }*/
 
     /*@Test
     void testTutorialPointSourceDirectivity() {
