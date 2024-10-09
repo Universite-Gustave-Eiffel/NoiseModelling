@@ -9,65 +9,60 @@
  * Contact: contact@noise-planet.org
  *
  */
+
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
- * @Author Nicolas Fortin, Université Gustave Eiffel
- * @Author Gwendall Petit, Cerema
- * @Author Part of this file are inspired of https://github.com/orbisgis/geoclimate/wiki
+ * @Author Jonathan Siliezar, Université Gustave Eiffel
+ * @Author buildingParams.json is from https://github.com/orbisgis/geoclimate/
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export;
-
-import geoserver.GeoServer;
-import geoserver.catalog.Store
-import groovy.json.JsonSlurper;
-import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.wrapper.ConnectionWrapper;
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Coordinate
-import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer;
-import org.openstreetmap.osmosis.core.container.v0_6.WayContainer;
-import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
-import org.openstreetmap.osmosis.core.domain.v0_6.Way;
-import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
-import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
-import org.openstreetmap.osmosis.core.domain.v0_6.Node;
-import org.openstreetmap.osmosis.core.task.v0_6.Sink;
-
-import org.openstreetmap.osmosis.xml.v0_6.XmlReader;
-import org.openstreetmap.osmosis.xml.common.CompressionMethod;
+package org.noise_planet.noisemodelling.wps.Import_and_Export
 
 import crosby.binary.osmosis.OsmosisReader
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import groovy.json.JsonSlurper
+import groovy.sql.Sql
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
+import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer
+import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer
+import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer
+import org.openstreetmap.osmosis.core.container.v0_6.WayContainer
+import org.openstreetmap.osmosis.core.domain.v0_6.*
+import org.openstreetmap.osmosis.core.task.v0_6.Sink
+import org.openstreetmap.osmosis.xml.common.CompressionMethod
+import org.openstreetmap.osmosis.xml.v0_6.XmlReader
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory;
+import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
 title = 'Import Pedestrian tables from OSM'
 
-description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables.<br><br>' +
+description = 'Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.pbf</b> file into NoiseModelling input tables dedicated for pedestrian voices simulation.<br><br>' +
         'The following output tables will be created: <br>' +
-        '- <b> BUILDINGS </b>: a table containing the buildings<br>' +
-        '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes'
+        '- <b> PEDESTRIAN_AREA </b>: a table containing the area where pedestrians can move, sit, talk, etc. <br>'
+        '- <b> PEDESTRIAN_WAYS </b>: a table containing the ways where pedestrians can move, sit, talk, etc. <br>'
+        '- <b> PEDESTRIAN_POIS </b>: a table containing the point of interests to estimate pedestrians density <br>'
 
 inputs = [
         pathFile : [
                 name       : 'Path of the OSM file',
                 title      : 'Path of the OSM file',
-                description: '&#128194; Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
+                description: 'Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
                         'For example: c:/home/area.osm.pbf',
                 type       : String.class
         ],
         targetSRID : [
                 name       : 'Target projection identifier',
                 title      : 'Target projection identifier',
-                description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
+                description: 'arget projection identifier (also called SRID) of your table.<br>' +
                         'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
-                        '&#10071; The target SRID must be in <b>metric</b> coordinates.',
+                        'The target SRID must be in <b>metric</b> coordinates.',
                 type       : Integer.class
         ]
 ]
@@ -143,8 +138,8 @@ def exec(Connection connection, input) {
     }
 
     OsmHandlerPedestrian handler = new OsmHandlerPedestrian(logger)
-    reader.setSink(handler);
-    reader.run();
+    reader.setSink(handler)
+    reader.run()
 
     logger.info('OSM Read done')
 
@@ -162,6 +157,7 @@ def exec(Connection connection, input) {
         sql.execute("INSERT INTO " + tableName + " VALUES (" + building.id + ", ST_MakeValid(ST_SIMPLIFYPRESERVETOPOLOGY(ST_Transform(ST_GeomFromText('" + building.geom + "', 4326), "+srid+"),0.1)), " + building.height + ")")
     }
 
+    // CREATE BUILDING TABLE
     sql.execute('''
         CREATE SPATIAL INDEX IF NOT EXISTS BUILDINGS_INDEX ON ''' + tableName + '''(the_geom);
         -- List buildings that intersects with other buildings that have a greater area
@@ -394,7 +390,8 @@ def exec(Connection connection, input) {
     return resultString
 }
 
-public class OsmHandlerPedestrian implements Sink {
+// get all osm objects link with pedestrians
+class OsmHandlerPedestrian implements Sink {
 
     public int nb_ways = 0;
     public int nb_nodes = 0;
@@ -424,11 +421,11 @@ public class OsmHandlerPedestrian implements Sink {
     }
 
     @Override
-    public void initialize(Map<String, Object> arg0) {
+    void initialize(Map<String, Object> arg0) {
     }
 
     @Override
-    public void process(EntityContainer entityContainer) {
+    void process(EntityContainer entityContainer) {
         if (entityContainer instanceof NodeContainer) {
             nb_nodes++;
             Node node = ((NodeContainer) entityContainer).getEntity();

@@ -43,10 +43,13 @@ import java.util.*;
 public class PointNoiseMap extends JdbcNoiseMap {
     private final String receiverTableName;
     private PropagationProcessDataFactory propagationProcessDataFactory;
+    public String Type ="DEN";
     private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(PointNoiseMap.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+
+
 
     public PointNoiseMap(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
@@ -60,6 +63,16 @@ public class PointNoiseMap extends JdbcNoiseMap {
      */
     public ProfilerThread getProfilerThread() {
         return profilerThread;
+    }
+
+
+
+    public String getType() {
+        return Type;
+    }
+
+    public void setType(String type) {
+        Type = type;
     }
 
     /**
@@ -78,6 +91,7 @@ public class PointNoiseMap extends JdbcNoiseMap {
     public void setPropagationProcessDataFactory(PropagationProcessDataFactory propagationProcessDataFactory) {
         this.propagationProcessDataFactory = propagationProcessDataFactory;
     }
+
 
     public int getThreadCount() {
         return threadCount;
@@ -127,9 +141,12 @@ public class PointNoiseMap extends JdbcNoiseMap {
         CnossosPropagationData propagationProcessData;
         if(propagationProcessDataFactory != null) {
             propagationProcessData = propagationProcessDataFactory.create(builder);
-        } else {
+        } else if(Objects.equals(this.getType(), "DEN")){
             propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathDataDay.freq_lvl);
+        } else {
+            propagationProcessData = new CnossosPropagationData(builder, propagationProcessPathDataT.entrySet().iterator().next().getValue().freq_lvl);
         }
+
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
         propagationProcessData.maximumError = getMaximumError();
@@ -263,12 +280,24 @@ public class PointNoiseMap extends JdbcNoiseMap {
                     threadData.receivers.size(), threadData.sourceGeometries.size(),
                     threadData.profileBuilder.getBuildingCount()));
         }
+
         IComputeRaysOut computeRaysOut;
-        if(computeRaysOutFactory == null) {
-            computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathDataDay, threadData);
+        if (this.getType() == "DEN") {
+            if (computeRaysOutFactory == null) {
+                computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathDataDay, threadData);
+            } else {
+                computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathDataDay,
+                        propagationProcessPathDataEvening, propagationProcessPathDataNight);
+            }
         } else {
-            computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathDataDay,
-                    propagationProcessPathDataEvening, propagationProcessPathDataNight);
+            propagationProcessPathDataDay = propagationProcessPathDataT.get(1);
+            if (computeRaysOutFactory == null) {
+                computeRaysOut = new ComputeRaysOutAttenuation(false, propagationProcessPathDataDay, threadData);
+            } else {
+                computeRaysOut = computeRaysOutFactory.create(threadData, propagationProcessPathDataDay,
+                        propagationProcessPathDataEvening, propagationProcessPathDataNight);
+            }
+
         }
 
         ComputeCnossosRays computeRays = new ComputeCnossosRays(threadData);
@@ -312,6 +341,11 @@ public class PointNoiseMap extends JdbcNoiseMap {
         IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataDay,
                                PropagationProcessPathData pathDataEvening, PropagationProcessPathData pathDataNight);
     }
+
+    public interface IComputeRaysOutFactoryT {
+        IComputeRaysOut create(CnossosPropagationData threadData, PropagationProcessPathData pathDataT);
+    }
+
 
     /**
      * Cell metadata computed from receivers table

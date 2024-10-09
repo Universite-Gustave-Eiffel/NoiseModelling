@@ -271,6 +271,14 @@ inputs = [
                 min        : 0, max: 1,
                 type       : String.class
         ],
+        maxError            : [
+                name       : 'maxError',
+                title      : 'maxError',
+                description: 'maxError',
+                min        : 0, max: 1, type: Double.class
+        ],
+
+
         confRaysName            : [
                 name       : '',
                 title      : 'Export scene',
@@ -407,6 +415,8 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
+
+
     String sources_table_name = input['tableSources']
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
@@ -501,10 +511,14 @@ def exec(Connection connection, input) {
         tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
     }
 
-
     int reflexion_order = 0
     if (input['confReflOrder']) {
         reflexion_order = Integer.valueOf(input['confReflOrder'])
+    }
+
+    double maxError = 0.1
+    if (input['maxError']) {
+        maxError = Double.valueOf(input['maxError'])
     }
 
     double max_src_dist = 150
@@ -690,7 +704,8 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.1d)
+
+    pointNoiseMap.setMaximumError(maxError)
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 

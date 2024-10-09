@@ -14,13 +14,23 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2.value.ValueBoolean
-import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.ZerodB_Source
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Vehicles
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
+import org.noise_planet.noisemodelling.wps.Source_Activity.PedestrianActivity
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Voices_Emission_from_PedestrianActivity
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM_Pedestrian
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Dynamic_Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -45,6 +55,269 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 
+    @Test
+    void testDynamicRoadEmission() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        String res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                "method" : "oj",
+                "timestep" : 1,
+                 "gridStep":10,
+                "duration":100])
+
+
+        assertEquals("Calculation Done ! The table LW_DYNAMIC_GEOM has been created.", res)
+    }
+
+
+    @Test
+    void test_Pedestrian_Positioning() {
+
+        new Import_OSM_Pedestrian().exec(connection, [
+                "pathFile"  : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID": 2154
+        ]);
+
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+
+        new PedestrianActivity().exec(connection, [
+                "walkableArea"        : "PEDESTRIAN_AREA",
+                "cellSize"            : 25,
+                "pointsOfInterests"   : "PEDESTRIAN_POIS",
+                "coeffLeisure"        : Math.pow(3.398, 8),
+                "coeffCulture"        : Math.pow(5.44, 7),
+                "coeffFoodDrink"      : 0,
+                "coeffEducation"      : 0,
+                "coeffFootpath"       : 0,
+                "coeffTourismSleep"   : 0,
+                "coeffPublicTransport": 0,
+                "coeffReligion"       : 0,
+                "coeffTourism"        : Math.pow(-7.64, 8),
+                "coeffShop"           : Math.pow(3.635, 8),
+                "coeffSport"          : 0,
+                "coeffTrees"          : 0,
+                "coeffIndTransport"   : Math.pow(-3.858, 8)
+
+        ]);
+    }
+
+    @Test
+    void test_Pedestrian_Full_Chain() {
+
+        new Import_OSM_Pedestrian().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154
+        ]);
+
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
+                "targetSRID"    : 2154,
+                "ignoreGround"  : false,
+                "ignoreBuilding": false,
+                "ignoreRoads"   : false,
+                "removeTunnels" : true
+        ]);
+
+        new PedestrianActivity().exec(connection, [
+                "walkableArea"      : "PEDESTRIAN_AREA",
+                "cellSize"          : 25,
+                "pointsOfInterests" : "PEDESTRIAN_POIS",
+                "coeffLeisure"      : Math.pow(3.398,8),
+                "coeffCulture"      : Math.pow(5.44,7),
+                "coeffFoodDrink"    : 0,
+                "coeffEducation"    : 0,
+                "coeffFootpath"     : 0,
+                "coeffTourismSleep" : 0,
+                "coeffPublicTransport" : 0,
+                "coeffReligion"     : 0,
+                "coeffTourism"      : Math.pow(-7.64,8),
+                "coeffShop"         : Math.pow(3.635,8),
+                "coeffSport"        : 0,
+                "coeffTrees"        : 0,
+                "coeffIndTransport" : Math.pow(-3.858,8)
+
+        ]);
+
+        new Dynamic_Voices_Emission_from_PedestrianActivity().exec(connection, [
+                  "pathBDD"        : System.getProperty("user.dir") +"/src/main/resources/VoiceModel/BDD_Info.json",
+                  "pathSpectrums"  : System.getProperty("user.dir") +"/src/main/resources/VoiceModel/Spectrums_500ms.json",
+                  "tablePedestrian": "PEDESTRIANS"]);
+
+          new Export_Table().exec(connection,
+                  ["exportPath"   : System.getProperty("user.dir") +"/target/output.geojson",
+                   "tableToExport": "LW_PEDESTRIAN"
+                  ]);
+
+
+
+    }
+
+
+    @Test
+    void testDynamicRoadEmissionPropagationVehicles() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/buildings_nm_ready_pop_heights.shp",
+                 "inputSRID": "32635",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/lw_discrete_roads_zero.shp",
+                 "inputSRID": "32635",
+                 "tableName": "ALL_VEH_POS_0DB"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/receivers_python_method0_50m_pop.shp",
+                 "inputSRID": "32635",
+                 "tableName": "receivers"])
+
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1.5
+                ]
+        )
+
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/aumond/Documents/Projets/2024_XX Invit_Sacha/comparison NoiseModelling-attenuation/SUMO.geojson",
+                 "inputSRID": "32635",
+                 "tableName": "vehicle"])
+
+         String res = new Dynamic_Road_Emission_from_Vehicles().exec(connection,
+                 ["tableRoads": "ROADS2",
+                  "tableVehicles" : "vehicle",
+                  "timestep" : 1,
+                  "gridStep":20,
+                  "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "maxError" : 0.0,
+                 "confMaxSrcDist" : 150,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
+    }
+
+
+
+    @Test
+    void testDynamicRoadEmissionPropagation() {
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1
+                ]
+        )
+
+        String res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                 "method" : "PROBA",
+                 "timestep" : 1,
+                 "gridStep":20,
+                 "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+
+        res = new Dynamic_Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2",
+                 "method" : "VALENTIN",
+                 "timestep" : 1,
+                 "gridStep":20,
+                 "duration":100])
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "ALL_VEH_POS_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "confMaxSrcDist" : 100,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_VAL"
+                ])
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_VAL",
+                 "columnName"   : "LEQA"
+                ])
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
+    }
 
     @Test
     void testRailWayEmissionFromDEN() {
