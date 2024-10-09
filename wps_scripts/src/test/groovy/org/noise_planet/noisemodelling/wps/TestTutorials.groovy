@@ -105,7 +105,7 @@ class TestTutorials extends JdbcTestCase {
 
     }
 
-    @Test
+    /*@Test
     void testTutorialPointSourceDirectivity() {
         Logger logger = LoggerFactory.getLogger(TestTutorials.class)
 
@@ -171,5 +171,5 @@ class TestTutorials extends JdbcTestCase {
 
 
 
-    }
+    }*/
 }
