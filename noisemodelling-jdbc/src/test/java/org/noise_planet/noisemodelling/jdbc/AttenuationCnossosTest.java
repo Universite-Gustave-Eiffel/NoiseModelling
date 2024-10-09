@@ -111,7 +111,7 @@ public class AttenuationCnossosTest {
                 .map(nombre -> Double.parseDouble(String.format(Locale.US, "%.2f", nombre)))
                 .toArray();
     }
-    public static FileWriter file(String fileName) throws IOException {
+   /* public static FileWriter file(String fileName) throws IOException {
         FileWriter writer = new FileWriter(fileName);
         writer.write("Rapport de Tests\n");
         writer.write("================\n\n");
@@ -695,7 +695,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+       /* try{
             //System.out.println("ici");
             writer.write("   * - TC01\n");
             if (valL[0] < 0.1) {
@@ -716,7 +716,7 @@ public class AttenuationCnossosTest {
             writer.write("     - `Details <./.build/TC01_D.html>`_\n");
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
     }
     /*for (String testName : passedTestNames) {
@@ -726,7 +726,7 @@ public class AttenuationCnossosTest {
     for (String testName : failedTestNames) {
         writer.write("   * - " + testName + "\n");
         writer.write("     - Non\n");
-    }/*
+    }*/
 
 
 
@@ -880,7 +880,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC02\n");
             if (valL[0] < 0.1) {
@@ -902,7 +902,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
     }
 
     /**
@@ -1056,7 +1056,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC03\n");
             if (valL[0] < 0.1) {
@@ -1078,7 +1078,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
     }
 
     /**
@@ -1242,7 +1242,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC04\n");
             if (valL[0] < 0.1) {
@@ -1264,7 +1264,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
     }
 
     /**
@@ -1436,7 +1436,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC05\n");
             if (valL[0] < 0.1) {
@@ -1458,7 +1458,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
     }
 
     /**
@@ -1688,7 +1688,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC06\n");
             if (valL[0] < 0.1) {
@@ -1710,7 +1710,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
     }
 
@@ -1989,7 +1989,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC07\n");
             if (valL[0] < 0.1) {
@@ -2011,7 +2011,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
     }
 
     /**
@@ -2263,7 +2263,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC08\n");
             if (valL[0] < 0.1) {
@@ -2285,7 +2285,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //Path1 : right lateral
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.06, 0.34, 1.76, 8.58};
@@ -2771,7 +2771,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC09\n");
             if (valL[0] < 0.1) {
@@ -2793,7 +2793,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //Path1 : right lateral
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.39, 2.00, 9.66};
@@ -3269,7 +3269,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC10\n");
             if (valL[0] < 0.1) {
@@ -3291,7 +3291,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         //Path1 : right lateral
@@ -3717,7 +3717,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+       /* try{
             //System.out.println("ici");
             writer.write("   * - TC11\n");
             if (valL[0] < 0.1) {
@@ -3739,7 +3739,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         //Path1 : right lateral
@@ -4147,7 +4147,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC12\n");
             if (valL[0] < 0.1) {
@@ -4169,7 +4169,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         //Path1 : right lateral
@@ -4595,7 +4595,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+       /* try{
             //System.out.println("ici");
             writer.write("   * - TC13\n");
             if (valL[0] < 0.1) {
@@ -4617,7 +4617,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         //Path1 : right lateral
@@ -5275,7 +5275,7 @@ public class AttenuationCnossosTest {
         assertArrayEquals(  new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L, ERROR_EPSILON_VERY_LOW);
         double[] diffLA = diffArray(new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L);
         double[] valLA = getMaxValeurAbsolue(diffLA);
-        try{
+        /*try{
             System.out.println("ici");
             writer.write("   * - TC14\n");
             writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
@@ -5287,7 +5287,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
     }
@@ -5502,7 +5502,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC15\n");
             if (valL[0] < 0.1) {
@@ -5524,7 +5524,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         //Path1 : right lateral
@@ -6044,7 +6044,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+       /* try{
             //System.out.println("ici");
             writer.write("   * - TC16\n");
             if (valL1[0] < 0.1 && valL2[0] < 0.1 ) {
@@ -6066,7 +6066,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }/*finally {
+        }finally {
             try {
                 if (writer != null) {
                     writer.close();
@@ -6444,7 +6444,7 @@ public class AttenuationCnossosTest {
         double[] diffLa = diffArray(new double[]{14.02, 23.84, 30.95, 33.86, 38.37, 38.27, 33.25, 15.28},LA);
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC17\n");
             if (valL[0] < 0.1) {
@@ -6466,7 +6466,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         /*assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - reflexion", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -6852,7 +6852,7 @@ public class AttenuationCnossosTest {
 
         double[] diffLA = diffArray(new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},sumDbArray(directLA,reflexionLA));
         double[] valLA = getMaxValeurAbsolue(diffLA);
-        try{
+       /* try{
             System.out.println("ici");
             writer.write("   * - TC18\n");
             writer.write("     - No\n"); // Without lateral diffraction (Yes)
@@ -6864,7 +6864,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         //assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_VERY_LOW);
@@ -7334,7 +7334,7 @@ public class AttenuationCnossosTest {
         }*/
 
 
-        try{
+       /* try{
             System.out.println("ici");
             writer.write("   * - TC19\n");
             if (valL[0] < 0.1) {
@@ -7356,7 +7356,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //Different value with the TC because their z-profile left seems to be false, it follows the building top
         // border while it should not
@@ -7553,7 +7553,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC20\n");
             if (valL[0] < 0.1) {
@@ -7575,7 +7575,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
@@ -7981,7 +7981,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+        /*try{
             System.out.println("ici");
             writer.write("   * - TC21\n");
             if (valLV[0] < 0.1 && valLR[0] < 0.1) {
@@ -8003,7 +8003,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
         //assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -8255,7 +8255,7 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC22\n");
             System.out.println("ici");
@@ -8277,7 +8277,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //Path1 : lateral right
         /*double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.60, 3.00, 13.93};
@@ -8750,7 +8750,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
 
 
-        try{
+       /* try{
             //System.out.println("ici");
             writer.write("   * - TC23\n");
             System.out.println("ici8");
@@ -8772,7 +8772,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
     }
@@ -9231,7 +9231,7 @@ public class AttenuationCnossosTest {
         double[] valLR = getMaxValeurAbsolue(diffLR);
         double[] valLA = getMaxValeurAbsolue(diffLA);
 
-        try{
+        /*try{
             //System.out.println("ici");
             writer.write("   * - TC24\n");
             System.out.println("ici");
@@ -9254,7 +9254,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         //double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93 - 26.2, 93 - 16.1,
         //93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
@@ -9657,7 +9657,7 @@ public class AttenuationCnossosTest {
         double[] valLV = getMaxValeurAbsolue(diffVerticalL);
         double[] valLR = getMaxValeurAbsolue(diffReflexionL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
-        try{
+        /*try{
             System.out.println("ici");
             writer.write("   * - TC25\n");
             if (valLV[0] < 0.1 && valLR[0] < 0.1) {
@@ -9679,7 +9679,7 @@ public class AttenuationCnossosTest {
 
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
         /*assertDoubleArrayEquals("DeltaDiffSRH - reflexion", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - reflexion", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -9822,7 +9822,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        try{
+        /*try{
             System.out.println("ici");
             writer.write("   * - TC26\n");
             if (valL[0] < 0.1) {
@@ -9843,7 +9843,7 @@ public class AttenuationCnossosTest {
             writer.write("     - `Details <./.build/TC26_D.html>`_\n");
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
 
 
        /* FileWriter writerTc01 = new FileWriter("/home/maguettte/IdeaProjects/NoiseModelling/source/TC26_D.rst");
@@ -10241,7 +10241,7 @@ public class AttenuationCnossosTest {
         double[] valLV = getMaxValeurAbsolue(diffVerticalL);
         double[] valLR = getMaxValeurAbsolue(diffReflexionL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
-        try{
+       /* try{
             System.out.println("ici");
             writer.write("   * - TC27\n");
             if (valLV[0] < 0.1 && valLR[0] < 0.1) {
@@ -10262,7 +10262,7 @@ public class AttenuationCnossosTest {
             writer.write("     - `Details <./.build/TC27_D.html>`_\n");
         }catch (IOException e) {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
+        }*/
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         //assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_VERY_HIGH);
@@ -10450,7 +10450,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-        try{
+       /* try{
             System.out.println("ici");
             writer.write("   * - TC28\n");
             if (valL[0] < 0.1) {
@@ -10483,7 +10483,7 @@ public class AttenuationCnossosTest {
             } catch (IOException e) {
                 System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
             }
-        }
+        }*/
 
         /*double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
         assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_VERY_HIGH);*/
