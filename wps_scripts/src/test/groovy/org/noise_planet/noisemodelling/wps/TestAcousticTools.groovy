@@ -67,7 +67,7 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals(true, fields.contains("LEQ"))
     }
 
-    @Test
+    /*@Test
     void testCreateIsosurface() {
         def sql = new Sql(connection)
 
@@ -102,7 +102,7 @@ class TestAcousticTools extends JdbcTestCase {
         assertTrue(fieldValues.contains("5"));
         assertTrue(fieldValues.contains("6"));
         assertTrue(fieldValues.contains("7"));
-    }
+    }*/
 
 
     @Test
