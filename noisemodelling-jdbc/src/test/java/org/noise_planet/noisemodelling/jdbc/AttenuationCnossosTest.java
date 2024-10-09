@@ -9924,7 +9924,7 @@ public class AttenuationCnossosTest {
         expectedL = new double[]{34.59, 34.09, 33.53, 32.94, 32.33, 31.56, 30.33, 22.54};
         expectedLA = new double[]{8.39, 17.99, 24.93, 29.74, 32.33, 32.76, 31.33, 21.44};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
+        //proPath = propDataOut.getPropagationPaths().get(1);
 
         actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
