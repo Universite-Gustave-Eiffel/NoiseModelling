@@ -74,8 +74,6 @@ public class AttenuationCnossosTest {
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
     private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
 
-    public AttenuationCnossosTest() throws IOException {
-    }
 
 
     private static void assertDoubleArrayEquals(String valueName, double[] expected, double [] actual, double delta) {
