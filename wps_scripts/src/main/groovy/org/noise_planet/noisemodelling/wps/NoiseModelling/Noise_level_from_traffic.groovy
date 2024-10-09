@@ -584,7 +584,7 @@ def exec(Connection connection, input) {
     ldenConfig.setComputeLNight(!confSkipLnight)
     ldenConfig.setComputeLDEN(!confSkipLden)
     ldenConfig.setMergeSources(!confExportSourceId)
-    ldenConfig.setExportReceiverPosition(true)
+    //ldenConfig.setExportReceiverPosition(true)
     ldenConfig.setlDayTable("LDAY_GEOM")
     ldenConfig.setlEveningTable("LEVENING_GEOM")
     ldenConfig.setlNightTable("LNIGHT_GEOM")
