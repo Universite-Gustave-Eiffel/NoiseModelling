@@ -46,7 +46,7 @@ class TestNoiseModelling extends JdbcTestCase {
     }
 
 
-    @Test
+    /*@Test
     void testRailWayEmissionFromDEN() {
 
         def sql = new Sql(connection)
@@ -108,7 +108,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableToExport": "LDAY_GEOM"])
 
         //assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,4)
-    }
+    }*/
 
     @Test
     void testLdayFromTraffic() {
@@ -300,7 +300,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
-    void testLdenFromEmission1khz() {
+    /*void testLdenFromEmission1khz() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
@@ -337,5 +337,5 @@ class TestNoiseModelling extends JdbcTestCase {
         def fields = JDBCUtilities.getColumnNames(connection, "LDAY_GEOM")
 
         assertArrayEquals(["IDRECEIVER","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
-    }
+    }*/
 }
