@@ -77,27 +77,6 @@ public class Triangle {
 		this.c = c;
 	}
 
-	/**
-	 * Get triangle side (a side is the opposite of vertex index
-     *    0
-     *   /\
-     * c/  \ b
-	 * /____\ 
-     *1  a   2
-	 *
-	 */
-	public IntSegment getSegment(int side) {
-		switch (side) {
-		default:
-		case 0: // a side
-			return new IntSegment(this.b, this.c);
-		case 1: // b side
-			return new IntSegment(this.c, this.a);
-		case 2: // c side
-			return new IntSegment(this.a, this.b);
-		}
-	}
-
 	public Triangle(int a, int b, int c, int attribute) {
 		super();
 		this.a = a;
