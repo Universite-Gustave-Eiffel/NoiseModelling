@@ -17,7 +17,6 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
-//import org.noise_planet.noisemodelling.propagation.AttenuationParameters.GroundAttenuation;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -139,9 +138,9 @@ public class Path {
         return raySourceReceiverDirectivity;
     }
 
-    /*public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
+    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
         this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
-    }*/
+    }
 
     /**
      * @return Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast
@@ -233,31 +232,7 @@ public class Path {
         this.idReceiver = idReceiver;
     }
 
-    /**
-     * Writes the content of this object into <code>out</code>.
-     * @param out the stream to write into
-     * @throws IOException if an I/O-error occurs
-     */
-    /*
-    public void writeStream( DataOutputStream out ) throws IOException {
-        out.writeBoolean(favorable);
-        out.writeInt(idSource);
-        out.writeFloat(sourceOrientation.yaw);
-        out.writeFloat(sourceOrientation.pitch);
-        out.writeFloat(sourceOrientation.roll);
-        out.writeFloat((float) gs);
-        out.writeInt(idReceiver);
-        out.writeInt(pointList.size());
-        for(PointPath pointPath : pointList) {
-            pointPath.writeStream(out);
-        }
-        out.writeInt(segmentList.size());
-        for(SegmentPath segmentPath : segmentList) {
-            segmentPath.writeStream(out);
-        }
-        srSegment.writeStream(out);
-    }
-*/
+
     /**
      * Reads the content of this object from <code>out</code>. All
      * properties should be set to their default value or to the value read
@@ -360,12 +335,13 @@ public class Path {
      * @param dSeg
      * @param d
      * @return
+     */
 
     private double getRayCurveLength(double dSeg,double d) {
         double gamma = Math.max(1000,8*d); // Eq. 2.5.24
         return 2*gamma*Math.asin(dSeg/(2*gamma)); // Eq. 2.5.25
 
-    }*/
+    }
 
 
     /**
@@ -415,19 +391,6 @@ public class Path {
     }
 
     /**
-     * Writes the content of this object into <code>out</code>.
-     * @param out the stream to write into
-     * @throws IOException if an I/O-error occurs
-     */
-    /*
-    public static void writePropagationPathListStream( DataOutputStream out, List<PropagationPath> propagationPaths ) throws IOException {
-        out.writeInt(propagationPaths.size());
-        for(PropagationPath propagationPath : propagationPaths) {
-            propagationPath.writeStream(out);
-        }
-    }*/
-
-    /**
      * Reads the content of this object from <code>out</code>. All
      * properties should be set to their default value or to the value read
      * from the stream.
@@ -443,11 +406,5 @@ public class Path {
             pathsParameters.add(path);
         }
     }
-
-    //Following classes are use for testing purpose
-
-
-
-
 
 }
