@@ -66,15 +66,6 @@ public class RailWayCnossosParameters extends RailWayParameters {
 
 
 
-    /*public RailWayCnossosParameters(double[] lWRolling, double[] lWTractionA, double[] lWTractionB, double[] lWAerodynamicA, double[] lWAerodynamicB, double[] lWBridge) {
-        setLWRolling(lWRolling);
-        setLWTractionA(lWTractionA);
-        setLWTractionB(lWTractionB);
-        setLWAerodynamicA(lWAerodynamicA);
-        setLWAerodynamicB(lWAerodynamicB);
-        setLWBridge(lWBridge);
-    }*/
-
     /**
      * Sum two train emission instances
      * @param lineSource1 Emission 1
@@ -91,21 +82,6 @@ public class RailWayCnossosParameters extends RailWayParameters {
         }
         return lineSource1;
     }
-   /* public static RailWayCnossosParameters sumRailwaySource(RailWayCnossosParameters railWayLW1, RailWayCnossosParameters railWayLW2) {
-        RailWayCnossosParameters railWayLW = new RailWayCnossosParameters();
-
-        railWayLW.setLWRolling(sumDbArray(railWayLW1.getLWRolling(), railWayLW2.getLWRolling()));
-        railWayLW.setLWAerodynamicA(sumDbArray(railWayLW1.getLWAerodynamicA(), railWayLW2.getLWAerodynamicA()));
-        railWayLW.setLWAerodynamicB(sumDbArray(railWayLW1.getLWAerodynamicB(), railWayLW2.getLWAerodynamicB()));
-        railWayLW.setLWBridge(sumDbArray(railWayLW1.getLWBridge(), railWayLW2.getLWBridge()));
-        railWayLW.setLWTractionA(sumDbArray(railWayLW1.getLWTractionA(), railWayLW2.getLWTractionA()));
-        railWayLW.setLWTractionB(sumDbArray(railWayLW1.getLWTractionB(), railWayLW2.getLWTractionB()));
-
-
-        return railWayLW;
-    }*/
-
-
 
 
     public double[] getLWRolling() {
