@@ -88,10 +88,6 @@ public class PathFinderVisitor implements IComputePathsOut {
         return pathParameters;
     }
 
-    /*public void clearPropagationPaths() {
-        this.propagationPaths.clear();
-    }*/
-
     public static class ThreadPathsOut implements IComputePathsOut {
         protected PathFinderVisitor multiThreadParent;
         public List<CnossosPath> pathParameters = new ArrayList<>();
@@ -113,11 +109,8 @@ public class PathFinderVisitor implements IComputePathsOut {
                 if (multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&
                         receiverId < multiThreadParent.inputData.receiversPk.size()) {
                     for (CnossosPath pathParameter : path) {
-                        // Copy path content in order to keep original ids for other method calls
-                        //CnossosPathParameters pathParametersPk = new CnossosPathParameters(pathParameter);
                         pathParameter.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int) receiverId).intValue());
                         pathParameter.setIdSource(multiThreadParent.inputData.sourcesPk.get((int) sourceId).intValue());
-                        //pathParametersPk.init(multiThreadParent.inputData.freq_lvl.size());
                         pathParameters.add(pathParameter);
                     }
                 } else {
