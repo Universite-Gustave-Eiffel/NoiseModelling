@@ -22,7 +22,7 @@ import java.util.List;
 
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
-//import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
+
 
 /**
  * Return the dB value corresponding to the parameters
@@ -81,7 +81,6 @@ public class AttenuationCnossos {
      * of sound wave.
      */
     private static double getADiv(double distance) {
-        //return Utils.wToDb(4 * Math.PI * Math.max(1, distance * distance));
         return 20*log10(distance)+11;
     }
 
@@ -341,7 +340,6 @@ public class AttenuationCnossos {
             }
 
             aBoundary = aDif;
-        //} else {
             // Aground is calculated with no diffraction (Adif = 0 dB) and Aboundary = Aground;
             // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
             aGround = aGround(srPath, pathParameters, data);
@@ -357,7 +355,6 @@ public class AttenuationCnossos {
                 }
 
             }
-        //}
 
         return aBoundary;
     }
@@ -404,12 +401,9 @@ public class AttenuationCnossos {
         double[] aAtm = new double[data.freq_lvl.size()];
         // init atmosphere
         double[] alpha_atmo = data.getAlpha_atmo();
-        //System.out.println("size=        "+data.freq_lvl.size());
         for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-            //System.out.println("here        "+getAAtm(distance, alpha_atmo[idfreq]));
             aAtm[idfreq] = getAAtm(distance, alpha_atmo[idfreq]);
         }
-        //System.out.println("aAtm    "+ Arrays.toString(aAtm));
         return aAtm;
     }
 
@@ -643,8 +637,7 @@ public class AttenuationCnossos {
         double lambda = 340.0 / data.freq_lvl.get(i);
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && proPathParameters.difHPoints.size() <= 1) || (type.equals(DIFV) && proPathParameters.difVPoints.size() <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
-
-        // à vérifier les valeurs de testform plus precisément la valeur de deltaF et deltaH
+        
         double _delta = proPathParameters.isFavorable() && (type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT)) ? proPathParameters.deltaF : proPathParameters.deltaH;
         double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime+ proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1).dPrime- proPathParameters.getSRSegment().dPrime);
         double deltaDiffSR = 0;
@@ -665,7 +658,6 @@ public class AttenuationCnossos {
             }
             return deltaDiffSR;
         }
-        // à vérifier les valeurs de testform plus precisément la valeur de delta
 
         _delta = proPathParameters.isFavorable() ? proPathParameters.deltaSPrimeRF : proPathParameters.deltaSPrimeRH;
         testForm = 40/lambda*cSecond*_delta;
@@ -684,12 +676,10 @@ public class AttenuationCnossos {
 
         //Double check NaN values
         if(Double.isNaN(deltaGroundSO)){
-           // LOGGER.error("The deltaGroundSO value is NaN. Has been fixed but should be checked");
             deltaGroundSO = aGroundSO;
             deltaDiffSR = deltaDiffSPrimeR;
         }
         if(Double.isNaN(deltaGroundOR)){
-         //   LOGGER.error("The deltaGroundOR value is NaN. Has been fixed but should be checked");
             deltaGroundOR = aGroundOR;
             deltaDiffSR = deltaDiffSPrimeR;
         }
@@ -824,8 +814,6 @@ public class AttenuationCnossos {
         }
         double gm = forceGPath ? path.gPath : path.gPathPrime;
         double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
-       // path.dp <= 30*(path.zsH +path.zrH) ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - 30*(path.zsH +path.zrH)/path.dp));
-
         if(path.gPath == 0) {
             return aGroundFMin;
         }
