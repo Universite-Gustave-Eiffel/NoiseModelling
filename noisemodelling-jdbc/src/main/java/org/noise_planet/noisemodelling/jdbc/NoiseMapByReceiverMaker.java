@@ -57,9 +57,9 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * to profile the execution of the simulation
      * @return Instance of ProfilerThread or null
      */
-    /*public ProfilerThread getProfilerThread() {
+    public ProfilerThread getProfilerThread() {
         return profilerThread;
-    }*/
+    }
 
     /**
      * @return Receiver table name
