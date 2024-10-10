@@ -80,28 +80,29 @@ public class ComplexNumber
      * @param z the complex number to be subtracted from the current complex number
      */
 
-    /*public void subtract(ComplexNumber z)
+    public void subtract(ComplexNumber z)
     {
         set(subtract(this,z));
-    }*/
+    }
 
     /**
      * Multiplies another <code>ComplexNumber</code> to the current complex number.
      * @param z the complex number to be multiplied to the current complex number
      */
-
-    /*public void multiply(ComplexNumber z)
+    public void multiply(ComplexNumber z)
     {
         set(multiply(this,z));
-    }*/
+    }
+    
     /**
      * Divides the current <code>ComplexNumber</code> by another <code>ComplexNumber</code>.
      * @param z the divisor
      */
-    /*public void divide(ComplexNumber z)
+    public void divide(ComplexNumber z)
     {
         set(divide(this,z));
-    }*/
+    }
+    
     /**
      * Sets the value of current complex number to the passed complex number.
      * @param z the complex number
@@ -128,10 +129,11 @@ public class ComplexNumber
      * @param z2 the second <code>ComplexNumber</code>.
      * @return the resultant <code>ComplexNumber</code> (z1 - z2).
      */
-    /*public static ComplexNumber subtract(ComplexNumber z1, ComplexNumber z2)
+    public static ComplexNumber subtract(ComplexNumber z1, ComplexNumber z2)
     {
         return new ComplexNumber(z1.real - z2.real, z1.imaginary - z2.imaginary);
-    }*/
+    }
+    
     /**
      * Multiplies one <code>ComplexNumber</code> to another.
      * @param z1 the first <code>ComplexNumber</code>.
@@ -181,13 +183,13 @@ public class ComplexNumber
      * The square of the current complex number.
      * @return a <code>ComplexNumber</code> which is the square of the current complex number.
      */
-
-    /*public ComplexNumber square()
+    public ComplexNumber square()
     {
         double _real = this.real*this.real - this.imaginary*this.imaginary;
         double _imaginary = 2*this.real*this.imaginary;
         return new ComplexNumber(_real,_imaginary);
-    }*/
+    }
+    
     /**
      * @return the complex number in x + yi format
      */
