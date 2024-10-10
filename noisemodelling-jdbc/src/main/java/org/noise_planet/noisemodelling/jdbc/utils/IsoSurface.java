@@ -336,9 +336,9 @@ public class IsoSurface {
     /**
      * Triangle table with fields THE_GEOM, PK_1, PK_2, PK_3, CELL_ID
      */
-    /*public void setTriangleTable(String triangleTable) {
+    public void setTriangleTable(String triangleTable) {
         this.triangleTable = triangleTable;
-    }*/
+    }
 
     public String getOutputTable() {
         return outputTable;
