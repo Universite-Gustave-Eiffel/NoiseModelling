@@ -42,7 +42,6 @@ public class LayerTinfourTest {
 
 
         List<org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle> triangleList = layerTinfour.getTriangles();
-        //List<Triangle> neighbors = layerTinfour.getNeighbors();
         assertEquals(8, triangleList.size());
     }
 
@@ -79,7 +78,6 @@ public class LayerTinfourTest {
         }
         // 2 triangle inside a rectangular building
         assertEquals(2, numbertri55);
-        //List<Triangle> neighbors = layerTinfour.getNeighbors();
         assertEquals(10, triangleList.size());
     }
 
