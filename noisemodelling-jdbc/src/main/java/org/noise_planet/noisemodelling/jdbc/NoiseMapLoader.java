@@ -205,7 +205,7 @@ public abstract class NoiseMapLoader {
                 attenuationCnossosParametersNight = attenuationCnossosParameters;
         }
     }
-    /*public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
+    public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
         return attenuationCnossosParametersDay;
     }
 
@@ -239,6 +239,7 @@ public abstract class NoiseMapLoader {
 
     /**
      * @return Get building absorption coefficient column name
+     */
 
     public String getAlphaFieldName() {
         return alphaFieldName;
@@ -246,10 +247,11 @@ public abstract class NoiseMapLoader {
 
     /**
      * @param alphaFieldName Set building absorption coefficient column name (default is ALPHA)
+     */
 
     public void setAlphaFieldName(String alphaFieldName) {
         this.alphaFieldName = alphaFieldName;
-    }*/
+    }
 
     /**
      * Compute the envelope corresping to parameters
@@ -273,9 +275,9 @@ public abstract class NoiseMapLoader {
         return groundSurfaceSplitSideLength;
     }
 
-    /*public void setGroundSurfaceSplitSideLength(double groundSurfaceSplitSideLength) {
+    public void setGroundSurfaceSplitSideLength(double groundSurfaceSplitSideLength) {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
-    }*/
+    }
 
     /**
      * Fetches digital elevation model (DEM) data for the specified cell envelope and adds it to the mesh.
@@ -531,9 +533,9 @@ public abstract class NoiseMapLoader {
     /**
      * true if train propagation is computed (multiple reflection between the train and a screen)
      */
-    /*public void setBodyBarrier(boolean bodyBarrier) {
+    public void setBodyBarrier(boolean bodyBarrier) {
         this.bodyBarrier = bodyBarrier;
-    }*/
+    }
 
     public double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;
@@ -542,10 +544,6 @@ public abstract class NoiseMapLoader {
     public double getCellHeight() {
         return mainEnvelope.getHeight() / gridDim;
     }
-
-    /*protected static Double DbaToW(Double dBA) {
-        return Math.pow(10., dBA / 10.);
-    }*/
 
     abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
 
@@ -611,9 +609,9 @@ public abstract class NoiseMapLoader {
      * It may also contain a height field (0-N] average building height from the ground.
      * @return Table name that contains buildings
      */
-    /*public String getBuildingsTableName() {
+    public String getBuildingsTableName() {
         return buildingsTableName;
-    }*/
+    }
 
     /**
      * This table must contain a POINT or LINESTRING column, and spectrum in dB(A).
@@ -634,7 +632,7 @@ public abstract class NoiseMapLoader {
      *  - Smooth concrete G=0
      * @return Table name of grounds properties
      */
-    /*public String getSoilTableName() {
+    public String getSoilTableName() {
         return soilTableName;
     }
 
@@ -643,7 +641,7 @@ public abstract class NoiseMapLoader {
 
     public boolean isReceiverHasAbsoluteZCoordinates() {
         return receiverHasAbsoluteZCoordinates;
-    }*/
+    }
 
     /**
      *
@@ -656,9 +654,9 @@ public abstract class NoiseMapLoader {
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    /*public boolean isSourceHasAbsoluteZCoordinates() {
+    public boolean isSourceHasAbsoluteZCoordinates() {
         return sourceHasAbsoluteZCoordinates;
-    }*/
+    }
 
     /**
      * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
@@ -672,9 +670,9 @@ public abstract class NoiseMapLoader {
         return zBuildings;
     }
 
-    /*public void setzBuildings(boolean zBuildings) {
+    public void setzBuildings(boolean zBuildings) {
         this.zBuildings = zBuildings;
-    }*/
+    }
 
 
     /**
@@ -696,9 +694,9 @@ public abstract class NoiseMapLoader {
      * DEM points too close with buildings are not fetched.
      * @return Digital Elevation model table name
      */
-    /*public String getDemTable() {
+    public String getDemTable() {
         return demTable;
-    }*/
+    }
 
     /**
      * Digital Elevation model table name. Currently only a table with POINTZ column is supported.
@@ -714,26 +712,27 @@ public abstract class NoiseMapLoader {
      * Without the hertz value.
      * @return Hertz field prefix
      */
-    /*public String getSound_lvl_field() {
+    public String getSound_lvl_field() {
         return sound_lvl_field;
-    }*/
+    }
 
     /**
      * Field name of the {@link #sourcesTableName}HERTZ. Where HERTZ is a number [100-5000].
      * Without the hertz value.
      * @param sound_lvl_field Hertz field prefix
      */
-    /*public void setSound_lvl_field(String sound_lvl_field) {
+    public void setSound_lvl_field(String sound_lvl_field) {
         this.sound_lvl_field = sound_lvl_field;
     }
 
     /**
      * @return Sound propagation stop at this distance, default to 750m.
      * Computation cell size if proportional with this value.
+     */
 
     public double getMaximumPropagationDistance() {
         return maximumPropagationDistance;
-    }*/
+    }
 
     /**
      * @param maximumPropagationDistance  Sound propagation stop at this distance, default to 750m.
@@ -746,9 +745,9 @@ public abstract class NoiseMapLoader {
     /**
      *
      */
-    /*public void setGs(double gs) {
+    public void setGs(double gs) {
         this.gs = gs;
-    }*/
+    }
 
     public double getGs() {
         return this.gs;
@@ -837,10 +836,11 @@ public abstract class NoiseMapLoader {
 
     /**
      * @return {@link #buildingsTableName} table field name for buildings height above the ground.
+     */
 
     public String getHeightField() {
         return heightField;
-    }*/
+    }
 
     /**
      * @param heightField {@link #buildingsTableName} table field name for buildings height above the ground.
