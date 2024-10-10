@@ -56,25 +56,13 @@ public class RailWayLWGeom {
         this.gs = other.gs;
     }
 
-    /*public RailWayLWGeom(RailWayCnossosParameters RailWayParameters, RailWayCnossosParameters railWayLWDay, RailWayCnossosParameters railWayLWEvening, RailWayCnossosParameters railWayLWNight, List<LineString> geometry, int pk, int nbTrack, double distance, double gs) {
-        this.railWayLW = railWayLW;
-        this.railWayLWDay = railWayLWDay;
-        this.railWayLWEvening = railWayLWEvening;
-        this.railWayLWNight = railWayLWNight;
-        this.geometry = geometry;
-        this.pk = pk;
-        this.nbTrack = nbTrack;
-        this.distance = distance;
-        this.gs = gs;
-    }*/
-
     public double getGs() {
         return gs;
     }
 
-    /*public void setGs(double gs) {
+    public void setGs(double gs) {
         this.gs = gs;
-    }*/
+    }
 
     public double getDistance() {
         return distance;
@@ -113,17 +101,17 @@ public class RailWayLWGeom {
         this.railWayLWNight = railWayLWNight;
     }
 
-    /*public int getNbTrack() {
+    public int getNbTrack() {
         return nbTrack;
-    }*/
+    }
 
     public String getIdSection() {
         return idSection;
     }
 
-    /*public void setIdSection(String idSection) {
+    public void setIdSection(String idSection) {
         this.idSection = idSection;
-    }*/
+    }
     public void setNbTrack(int nbTrack) {
         this.nbTrack = nbTrack;
     }
@@ -137,9 +125,9 @@ public class RailWayLWGeom {
         return pk;
     }
 
-    /*public int setPK(int pk) {
+    public int setPK(int pk) {
         return this.pk=pk;
-    }*/
+    }
 
     public void setGeometry(List<LineString> geometry) {
         this.geometry = geometry;
