@@ -116,7 +116,7 @@ public class Railway {
 
 
     /**
-     * Find if a specific vehicle is in the Vehicle List
+     * Find if a specific vehicle is in the Vehucle List
      * @param vehicleName Name of a Vehucle
      * @return true if in list
      */
