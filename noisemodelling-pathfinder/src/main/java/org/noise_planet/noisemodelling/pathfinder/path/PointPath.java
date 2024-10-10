@@ -14,6 +14,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -115,8 +116,8 @@ public class PointPath {
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
-    /*public void writeStream( DataOutputStream out ) throws IOException {
-        PropagationPath.writeCoordinate(out, coordinate);
+    public void writeStream( DataOutputStream out ) throws IOException {
+        Path.writeCoordinate(out, coordinate);
         out.writeDouble(altitude);
         out.writeShort(alphaWall.size());
         for (Double bandAlpha : alphaWall) {
@@ -124,7 +125,7 @@ public class PointPath {
         }
         out.writeInt(buildingId);
         out.writeInt(type.ordinal());
-    }*/
+    }
 
     /**
      * Reads the content of this object from <code>out</code>. All
