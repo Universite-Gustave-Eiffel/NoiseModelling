@@ -80,7 +80,6 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         this.freq_lvl = Collections.unmodifiableList(freq_lvl);
         this.freq_lvl_exact = Collections.unmodifiableList(freq_lvl_exact);
         this.freq_lvl_a_weighting = Collections.unmodifiableList(freq_lvl_a_weighting);
-        //init();
     }
 
     /**
@@ -118,9 +117,6 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         return index;
     }
 
-    /*void init() {
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
-    }*/
 
     public List<Integer> getFrequencies() {
         return freq_lvl;
@@ -130,18 +126,17 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         this.freq_lvl = freq_lvl;
     }
 
-    /*public List<Double> getFrequenciesExact() {
+    public List<Double> getFrequenciesExact() {
         return freq_lvl_exact;
-    }*/
+    }
 
     public void setFrequenciesExact(List<Double> freq_lvl_exact) {
         this.freq_lvl_exact = freq_lvl_exact;
-        //this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
     }
 
-    /*public List<Double> getFrequenciesAWeighting() {
+    public List<Double> getFrequenciesAWeighting() {
         return freq_lvl_a_weighting;
-    }*/
+    }
 
     public void setFrequenciesAWeighting(List<Double> freq_lvl_a_weighting) {
         this.freq_lvl_a_weighting = freq_lvl_a_weighting;
@@ -179,21 +174,21 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
     /**
      * Set relative humidity in percentage.
      */
-    /*public AttenuationCnossosParameters setHumidity(double humidity) {
+    public AttenuationCnossosParameters setHumidity(double humidity) {
 
         this.humidity = humidity;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
-    }*/
+    }
 
- //   /**
-   //  * @param pressure Atmospheric pressure in pa. 1 atm is PropagationProcessData.Pref
-   //  */
-    /*public AttenuationCnossosParameters setPressure(double pressure) {
+       /**
+        * @param pressure Atmospheric pressure in pa. 1 atm is PropagationProcessData.Pref
+        */
+    public AttenuationCnossosParameters setPressure(double pressure) {
         this.pressure = pressure;
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
-    }*/
+    }
 
     public double[] getWindRose() {
         return windRose;
@@ -206,21 +201,21 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         this.windRose = windRose;
     }
 
-    /*public double getTemperature() {
+    public double getTemperature() {
         return temperature;
-    }*/
+    }
 
-    /*public double getCelerity() {
+    public double getCelerity() {
         return celerity;
-    }*/
+    }
 
-    /*public double getHumidity() {
+    public double getHumidity() {
         return humidity;
     }
 
     public double getPressure() {
         return pressure;
-    }*/
+    }
 
     public boolean isPrime2520() {
         return prime2520;
@@ -230,12 +225,13 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         return gDisc;
     }
 
-    /*public void setgDisc(boolean gDisc) {
+    public void setgDisc(boolean gDisc) {
         this.gDisc = gDisc;
     }
 
     /**
      * @return Default favorable probability (0-1)
+     */
 
     public double getDefaultOccurance() {
         return defaultOccurance;
@@ -243,6 +239,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
 
     /**
      * @param defaultOccurance Default favorable probability (0-1)
+     */
 
     public void setDefaultOccurance(double defaultOccurance) {
         this.defaultOccurance = defaultOccurance;
@@ -256,7 +253,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
     public AttenuationCnossosParameters setPrime2520(boolean prime2520) {
         this.prime2520 = prime2520;
         return this;
-    }*/
+    }
 
     /**
      * Compute sound celerity in air ISO 9613-1:1993(F)
@@ -270,12 +267,12 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
     /**
      * @param temperature Temperature in ° celsius
      */
-    /*public AttenuationCnossosParameters setTemperature(double temperature) {
+    public AttenuationCnossosParameters setTemperature(double temperature) {
         this.temperature = temperature;
         this.celerity = computeCelerity(temperature + K_0);
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
-    }*/
+    }
 
     /**
      *
@@ -285,7 +282,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
      * @param T_kel Temperature in kelvin
      * @return Atmospheric absorption dB/km
      */
-    /*public static double getCoefAttAtmosCnossos(double freq, double humidity, double pressure, double T_kel) {
+    public static double getCoefAttAtmosCnossos(double freq, double humidity, double pressure, double T_kel) {
         double tcor = T_kel/ Kref ;
         double xmol = humidity * Math.pow (10., 4.6151 - 6.8346 * Math.pow (K01 / T_kel, 1.261));
 
@@ -299,7 +296,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
                 * (1.84e-11 * Math.pow(tcor,0.5) + Math.pow(tcor,-2.5) * (a1 + a2)) ;
 
         return a0 * 1000;
-    }*/
+    }
 
     /**
      * Compute AAtm
@@ -350,7 +347,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
      * @return atmospheric attenuation coefficient (db/km)
      * @author Judicaël Picaut, UMRAE
      */
-    /*public static double getCoefAttAtmosSpps(double frequency, double humidity, double pressure, double tempKelvin) {
+    public static double getCoefAttAtmosSpps(double frequency, double humidity, double pressure, double tempKelvin) {
         // Sound celerity
         double cson = computeCelerity(tempKelvin);
 
@@ -376,7 +373,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
         double alpha = (Acr + AvibO + AvibN);
 
         return alpha * 1000;
-    }*/
+    }
 
     /**
      * ISO-9613 p1
@@ -404,9 +401,9 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
      * get the atmospheric attenuation coefficient in dB/km at the nominal centre frequency for each frequency band, in accordance with ISO 9613-1.
      * @return alpha_atmo
      */
-    /*public double[] getAlpha_atmo() {
+    public double[] getAlpha_atmo() {
         return alpha_atmo;
-    }*/
+    }
 
 
 
