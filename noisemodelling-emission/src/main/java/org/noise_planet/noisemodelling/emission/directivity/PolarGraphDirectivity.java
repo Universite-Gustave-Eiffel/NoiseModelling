@@ -218,7 +218,7 @@ public class PolarGraphDirectivity {
         return sb.toString();
     }
 
-    /*public double getDwidth() {
+    public double getDwidth() {
         return dwidth;
     }
 
@@ -266,5 +266,5 @@ public class PolarGraphDirectivity {
 
     public void setCentery(double centery) {
         this.centery = centery;
-    }*/
+    }
 }
