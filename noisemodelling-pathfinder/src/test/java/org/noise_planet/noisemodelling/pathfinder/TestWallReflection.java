@@ -161,19 +161,5 @@ public class TestWallReflection {
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
         assertEquals(61.14, current.coordinate.x, 0.01);
-
-        int idPath = 1;
-        for(PropagationPath path : propagationPaths) {
-            try {
-                try (FileWriter fileWriter = new FileWriter(String.format(Locale.ROOT, "target/testNReflexion_testVisibilityPath_%03d.geojson", idPath))) {
-                    fileWriter.write(path.profileAsJSON(Integer.MAX_VALUE));
-                }
-            } catch (IOException ex) {
-                //ignore
-            }
-            idPath++;
-        }
-
-
     }
 }
