@@ -50,13 +50,13 @@ public class RailwayVehicleNMPBParameters {
         setIdlingTime(idlingTime);
     }
 
-    /*public int getSpectreVer() {
+    public int getSpectreVer() {
         return this.spectreVer;
     }
 
     public void setSpectreVer(int spectreVer) {
         this.spectreVer = spectreVer;
-    }*/
+    }
 
     public void setVehiclePerHour(double vehiclePerHour) {
         this.vehiclePerHour = vehiclePerHour;
