@@ -31,8 +31,6 @@ public class LayerTinfour implements LayerDelaunay {
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
     public String dumpFolder = "";
 
-    //private Map<Vertex, Integer> pts = new HashMap<Vertex, Integer>();
-    //private List<Integer> segments = new ArrayList<Integer>();
     List<IConstraint> constraints = new ArrayList<>();
     List<Integer> constraintIndex = new ArrayList<>();
 
@@ -88,9 +86,9 @@ public class LayerTinfour implements LayerDelaunay {
     /**
      * @return When an exception occur, this folder with receiver the input data
      */
-    /*public String getDumpFolder() {
+    public String getDumpFolder() {
         return dumpFolder;
-    }*/
+    }
 
     /**
      * @param dumpFolder When an exception occur, this folder with receiver the input data
@@ -128,50 +126,6 @@ public class LayerTinfour implements LayerDelaunay {
         double cz = ( va.getZ() + vb.getZ() + vc.getZ() ) / 3d;
         return new Coordinate( cx, cy, cz);
     }
-
-
-
-    /*public void dumpDataClass() {
-        try {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(dumpFolder, "tinfour_data.dump")))) {
-                writer.write("Vertex " + ptsIndex.size() + "\n");
-                int index = 0;
-                for(Object vObj : ptsIndex.queryAll()) {
-                    if(vObj instanceof Vertex) {
-                        final Vertex v = (Vertex)vObj;
-                        v.setIndex(index++);
-                        writer.write(String.format(Locale.ROOT, "%d %d %d\n", Double.doubleToLongBits(v.getX()),
-                                Double.doubleToLongBits(v.getY()),
-                                Double.doubleToLongBits(v.getZ())));
-                    }
-                }
-                writer.write("Constraints " + constraints.size() + " \n");
-                for (IConstraint constraint : constraints) {
-                    if (constraint instanceof LinearConstraint) {
-                        writer.write("LinearConstraint");
-                        List<Vertex> vertices = constraint.getVertices();
-                        for (final Vertex v : vertices) {
-                            writer.write(" " + v.getIndex());
-                        }
-                        writer.write("\n");
-                    } else if (constraint instanceof PolygonConstraint) {
-                        List<Vertex> vertices = constraint.getVertices();
-                        if(vertices != null && vertices.size() >= 3) {
-                            writer.write("PolygonConstraint " + constraint.getConstraintIndex());
-                            for (final Vertex v : vertices) {
-                                writer.write(" " + v.getIndex());
-                            }
-                            writer.write("\n");
-                        } else {
-                            LOGGER.info("Weird null polygon " + constraint);
-                        }
-                    }
-                }
-            }
-        }  catch (IOException ioEx) {
-            // ignore
-        }
-    }*/
 
     public void dumpData() {
         GeometryFactory factory = new GeometryFactory();
