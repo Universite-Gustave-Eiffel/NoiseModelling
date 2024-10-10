@@ -116,8 +116,8 @@ public class Railway {
 
 
     /**
-     * Find if a specific vehicle is in the Vehucle List
-     * @param vehicleName Name of a Vehucle
+     * Find if a specific vehicle is in the Vehicle List
+     * @param vehicleName Name of a Vehicle
      * @return true if in list
      */
     public boolean isInVehicleList(String vehicleName) {
