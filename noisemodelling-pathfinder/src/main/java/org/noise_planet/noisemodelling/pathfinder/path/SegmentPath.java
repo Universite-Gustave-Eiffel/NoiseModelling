@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class SegmentPath {
@@ -86,11 +87,11 @@ public class SegmentPath {
      * @param out the stream to write into
      * @throws java.io.IOException if an I/O-error occurs
      */
-    /*public void writeStream( DataOutputStream out ) throws IOException {
+    public void writeStream( DataOutputStream out ) throws IOException {
         out.writeDouble(gPath);
-        PropagationPath.writeVector(out, meanGdPlane);
-        PropagationPath.writeCoordinate(out, pInit);
-    }*/
+        Path.writeVector(out, meanGdPlane);
+        Path.writeCoordinate(out, pInit);
+    }
 
     /**
      * Reads the content of this object from <code>out</code>. All
@@ -119,7 +120,7 @@ public class SegmentPath {
         this.gPathPrime = this.testFormH <= 1 ? this.gPath*(this.testFormH) + gS*(1-this.testFormH) : this.gPath;
     }
 
-    /*public Double getGw() {
+    public Double getGw() {
         return gw;
     }
 
@@ -127,40 +128,25 @@ public class SegmentPath {
         return gm;
     }
 
-    public Double getgPathPrime(PropagationPath path) {
-        if(gPathPrime == null) {
-            path.computeAugmentedSegments();
-        }
+    public Double getgPathPrime() {
         return gPathPrime;
-    }*/
+    }
 
 
 
-    /*public Double getZs(PropagationPath path, SegmentPath segmentPath) {
-        if(zsH == null) {
-            zsH = path.computeZs(segmentPath);
-        }
+    public Double getZs() {
         return zsH;
     }
 
-    public Double getZr(PropagationPath path, SegmentPath segmentPath) {
-        if(zrH == null) {
-            zrH = path.computeZr(segmentPath);
-        }
+    public Double getZr() {
         return zrH;
     }
 
-    public Double getZsPrime(PropagationPath path, SegmentPath segmentPath) {
-        if(zsF == null) {
-            zsF = path.computeZsPrime(segmentPath);
-        }
+    public Double getZsPrime() {
         return zsF;
     }
 
-    public Double getZrPrime(PropagationPath path, SegmentPath segmentPath) {
-        if(zrF == null) {
-            zrF = path.computeZrPrime(segmentPath);
-        }
+    public Double getZrPrime() {
         return zrF;
-    }*/
+    }
 }
