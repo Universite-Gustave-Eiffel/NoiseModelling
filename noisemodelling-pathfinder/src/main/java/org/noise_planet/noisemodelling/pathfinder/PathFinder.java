@@ -43,7 +43,6 @@ import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
-//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
@@ -399,9 +398,6 @@ public class PathFinder {
         seg.zrH = rcvZ.distance(rcvMeanPlane);
         seg.a = meanPlane[0];
         seg.b = meanPlane[1];
-        //double deltaZs = a0*(seg.zsH/(seg.zsH+seg.zrH) * seg.zsH/(seg.zsH+seg.zrH))* (seg.dp*seg.dp)/2;
-        //double deltaZr = a0*(seg.zrH/(seg.zsH+seg.zrH) * seg.zrH/(seg.zsH+seg.zrH))* (seg.dp*seg.dp)/2;
-        //double deltaZt = 6*(10^-3)*seg.dp/seg.zsH+seg.zrH;
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
         seg.gPath = gPath;
         seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath; // 2.5.14
@@ -544,7 +540,6 @@ public class PathFinder {
         points.add(srcPP);
         boolean favorable= false;
         CnossosPath pathParameters = new CnossosPath();
-        //(favorable=false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
         pathParameters.setFavorable(favorable);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
@@ -569,108 +564,6 @@ public class PathFinder {
         return pathParameters;
     }
 
-
-    /*
-     *
-     * @param pts2DGround
-     * @param src
-     * @param rcv
-     * @param srcCut
-     * @param rcvCut
-     * @param srSeg
-     * @param cutProfile
-     * @param pathParameters
-     * @param dSR
-     * @param cuts
-     * @param segments
-     * @param points
-
-    private void computeDiff(List<Coordinate> pts2DGround, Coordinate src, Coordinate rcv,
-                             CutPoint srcCut, CutPoint rcvCut,
-                             SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
-                             LineSegment dSR, List<CutPoint> cuts, List<SegmentPath> segments, List<PointPath> points) {
-        for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
-            Coordinate o = pts2DGround.get(iO);
-
-            double dSO = src.distance(o);
-            double dOR = o.distance(rcv);
-            pathParameters.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
-            List<Integer> freqs = data.freq_lvl;
-            boolean rcrit = false;
-            for(int f : freqs) {
-                if(pathParameters.deltaH > -(340./f) / 20) {
-                    rcrit = true;
-                    break;
-                }
-            }
-            if (rcrit) {
-                rcrit = false;
-                //Add point path
-
-                //Plane S->O
-                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), 0, iO + 1);
-                double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
-                SegmentPath seg1 = computeSegment(src, o, abs);
-
-                //Plane O->R
-                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
-                double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
-                SegmentPath seg2 = computeSegment(o, rcv, abr);
-
-                Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
-                Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
-
-                LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-                srSeg.dPrime = srcPrime.distance(rcvPrime);
-                seg1.dPrime = srcPrime.distance(o);
-                seg2.dPrime = o.distance(rcvPrime);
-
-                pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
-                for(int f : freqs) {
-                    if(pathParameters.deltaH > (340./f) / 4 - pathParameters.deltaPrimeH) {
-                        rcrit = true;
-                        break;
-                    }
-                }
-                if (rcrit) {
-                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(iO)), srcCut.getGroundCoef());
-                    seg2.setGpath(cutProfile.getGPath(cuts.get(iO), rcvCut), srcCut.getGroundCoef());
-
-                    if(dSR.orientationIndex(o) == 1) {
-                        pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-                    else {
-                        Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                        pathParameters.deltaF =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-
-                    LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                    double dSPrimeO = seg1.sPrime.distance(o);
-                    double dSPrimeR = seg1.sPrime.distance(rcv);
-                    pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
-
-                    LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                    double dORPrime = o.distance(seg2.rPrime);
-                    double dSRPrime = src.distance(seg2.rPrime);
-                    pathParameters.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
-
-                    if(dSPrimeRPrime.orientationIndex(o) == 1) {
-                        pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-                    else {
-                        Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-
-                    segments.add(seg1);
-                    segments.add(seg2);
-
-                    points.add(new PointPath(o, o.z, new ArrayList<>(), DIFH_RCRIT));
-                    pathParameters.difHPoints.add(points.size() - 1);
-                }
-            }
-        }
-    }*/
 
     private void computeDiff(List<Coordinate> pts2DGround, Coordinate src, Coordinate rcv,
                              CutPoint srcCut, CutPoint rcvCut,
@@ -948,11 +841,7 @@ public class PathFinder {
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
-
-        //CnossosPathParameters propagationPathParameters = new CnossosPathParameters(true, points, segments, srPath,
-        //Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate()));
         CnossosPath pathParameters = new CnossosPath();
-        //(favorable=false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
         pathParameters.setFavorable(true);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
@@ -1681,7 +1570,6 @@ public class PathFinder {
                     length = a.distance(b);
                 }
                 while (length + segmentLength > targetSegmentSize) {
-                    //LineSegment segment = new LineSegment(a, b);
                     double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                     Coordinate splitPoint = new Coordinate();
                     splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
@@ -1809,7 +1697,6 @@ public class PathFinder {
      */
     private static double insertPtSource(Coordinate source, Coordinate receiverPos, Integer sourceId,
                                          List<PointPath.SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
-        //
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
