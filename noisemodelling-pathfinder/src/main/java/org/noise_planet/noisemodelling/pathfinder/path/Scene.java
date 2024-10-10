@@ -95,7 +95,7 @@ public class Scene {
 
     /** Maximum source distance */
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
-    /** Maximum reflection wall distance from receiver vers source line */
+    /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
     /** Source factor absorption */
     public double gS = DEFAULT_GS;
@@ -112,7 +112,6 @@ public class Scene {
     /** Progression information */
     public ProgressVisitor cellProg;
     /** list Geometry of soil and the type of this soil */
-    //protected List<GeoWithSoilType> soilList = new ArrayList<>();
 
     Map<String, Integer> sourceFieldNames = new HashMap<>();
     public static final Integer[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new Integer[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
