@@ -86,7 +86,7 @@ public class Triangle {
      *1  a   2
 	 *
 	 */
-	/*public IntSegment getSegment(int side) {
+	public IntSegment getSegment(int side) {
 		switch (side) {
 		default:
 		case 0: // a side
@@ -96,7 +96,7 @@ public class Triangle {
 		case 2: // c side
 			return new IntSegment(this.a, this.b);
 		}
-	}*/
+	}
 
 	public Triangle(int a, int b, int c, int attribute) {
 		super();
