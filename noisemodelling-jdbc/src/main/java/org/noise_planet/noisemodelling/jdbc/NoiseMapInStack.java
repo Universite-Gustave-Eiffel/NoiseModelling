@@ -11,7 +11,6 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
-//import org.noise_planet.noisemodelling.pathfinder.path.CnossosPathParameters;
 import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
@@ -90,15 +89,11 @@ public class NoiseMapInStack implements IComputePathsOut {
         noiseMapComputeRaysOut.rayCount.addAndGet(pathsParameter.size());
         if(noiseMapComputeRaysOut.exportPaths && !noiseMapComputeRaysOut.exportAttenuationMatrix) {
             for(CnossosPath cnossosPath : pathsParameter) {
-                //noiseMapComputeRaysOut.pathParameters.add(pathParameter);
-                //System.out.println(cnossosPathParameters.getSourceOrientation());
                 // Use only one ray as the ray is the same if we not keep absorption values
                 if (noiseMapComputeRaysOut.inputData != null && sourceId < noiseMapComputeRaysOut.inputData.sourcesPk.size() && receiverId < noiseMapComputeRaysOut.inputData.receiversPk.size()) {
                     // Copy path content in order to keep original ids for other method calls
-                    //CnossosPathParameters pathParametersPk = new CnossosPathParameters(cnossosPathParameters);
                     cnossosPath.setIdReceiver(noiseMapComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
                     cnossosPath.setIdSource(noiseMapComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
-                    //pathParametersPk.init(noiseMapComputeRaysOut.inputData.freq_lvl.size());
                     this.pathParameters.add(cnossosPath);
                 } else {
                     this.pathParameters.add(cnossosPath);
@@ -123,7 +118,6 @@ public class NoiseMapInStack implements IComputePathsOut {
                         CnossosPath pathParametersPk = new CnossosPath(pathParameters);
                         pathParametersPk.setIdReceiver(noiseMapComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
                         pathParametersPk.setIdSource(noiseMapComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
-                        //pathParametersPk.init(noiseMapComputeRaysOut.inputData.freq_lvl.size());
                         this.pathParameters.add(pathParametersPk);
                     } else {
                         this.pathParameters.add(pathParameters);
