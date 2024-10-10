@@ -1323,7 +1323,7 @@ public class ComputeCnossosRays {
                 proPath.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
-                if (points.isEmpty()) {
+                if (points.isEmpty()) { // no valid path between the two points
                     continue;
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
@@ -1338,58 +1338,67 @@ public class ComputeCnossosRays {
                     reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
                     reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
                 }
-                reflPoint.altitude = data.profileBuilder.getZGround(reflPoint.coordinate);
+                reflPoint.altitude = data.profileBuilder.getZGround(rayPath.get(0).getReceiverPos());
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
-                    Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
-                    MirrorReceiverResult refl = rayPath.get(idPt + 1);
-                    reflPoint = new PointPath(refl.getReceiverPos(), 0, new ArrayList<>(), PointPath.POINT_TYPE.REFL);
-
-                    if(rayPath.get(0).getType().equals(BUILDING)) {
-                        reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
-                        reflPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
-                        reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
-                    } else {
-                        reflPoint.buildingHeight = rayPath.get(0).getWall().p0.getZ();
-                        reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
-                        reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
+                    MirrorReceiverResult firstPoint = rayPath.get(idPt);
+                    MirrorReceiverResult secondPoint = rayPath.get(idPt + 1);
+                    int previousPointSize = points.size();
+                    computeReflexionOverBuildings(firstPoint.getReceiverPos(), secondPoint.getReceiverPos(),
+                            points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
+                    if(points.size() == previousPointSize) { // no visibility between the two reflection coordinates
+                        // (maybe there is a blocking building, and we disabled diffraction)
+                        continue;
                     }
-                    reflPoint.altitude = data.profileBuilder.getZGround(reflPoint.coordinate);
-                    points.add(reflPoint);
-                    segments.add(new SegmentPath(1, new Vector3D(firstPt), refl.getReceiverPos()));
+                    points.remove(previousPointSize); // remove duplicate point
+                    reflIdx.add(points.size() - 1);
+                    // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
+                    // so we have to add the X value of the last path
+                    for(PointPath p : points.subList(previousPointSize, points.size())) {
+                        p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
+                    }
+                    PointPath lastReflexionPoint = points.get(points.size() - 1);
+                    lastReflexionPoint.setType(PointPath.POINT_TYPE.REFL);
+                    if(rayPath.get(0).getType().equals(BUILDING)) {
+                        lastReflexionPoint.setBuildingId(secondPoint.getBuildingId());
+                        lastReflexionPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
+                        lastReflexionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
+                    } else {
+                        lastReflexionPoint.buildingHeight = secondPoint.getWall().p0.getZ();
+                        lastReflexionPoint.setWallId(secondPoint.getWall().getProcessedWallIndex());
+                        lastReflexionPoint.setAlphaWall(secondPoint.getWall().getAlphas());
+                    }
+                    lastReflexionPoint.altitude = data.profileBuilder.getZGround(secondPoint.getReceiverPos());
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
-                List<PointPath> lastPts = new ArrayList<>();
-                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, lastPts, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
-                if (lastPts.isEmpty()) {
+                int previousPointSize = points.size();
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
+                if(points.size() == previousPointSize) { // no visibility between the last reflection coordinate and the receiver
+                    // (maybe there is a blocking building, and we disabled diffraction)
                     continue;
                 }
-                points.addAll(lastPts.subList(1, lastPts.size()));
-                double baseX = 0;
-                for(int i=0; i<points.size(); i++) {
-                    Coordinate c = points.get(i).coordinate;
-                    c.setX(c.getX()+baseX);
-                    if(points.get(i).type.equals(REFL)){
-                        baseX = points.get(i).coordinate.getX();
-                    }
+                points.remove(previousPointSize); // remove duplicate point (last reflexion coordinate)
+                // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
+                // so we have to add the X value of the last path
+                for(PointPath p : points.subList(previousPointSize, points.size())) {
+                    p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
                 }
                 for (int i = 1; i < points.size(); i++) {
-                    if (points.get(i).type == REFL) {
+                    final PointPath currentPoint = points.get(i);
+                    if (currentPoint.type == REFL) {
                         if (i < points.size() - 1) {
                             // A diffraction point may have offset in height the reflection coordinate
-                            points.get(i).coordinate.z = Vertex.interpolateZ(points.get(i).coordinate, points.get(i - 1).coordinate, points.get(i + 1).coordinate);
-                            //check if in building && if under floor
-                            Geometry geom;
-                            if(points.get(i).getBuildingId()!=-1) {
-                                geom = data.profileBuilder.getBuilding(points.get(i).getBuildingId()).getGeometry();
-                            }
-                            else {
-                                geom = data.profileBuilder.getWall(points.get(i).getWallId()).getLine();
-                            }
-                            if (points.get(i).coordinate.z > geom.getCoordinate().z
-                                    || points.get(i).coordinate.z <= data.profileBuilder.getZGround(points.get(i).coordinate)) {
+                            final Coordinate p0 = points.get(i - 1).coordinate;
+                            final Coordinate p1 = currentPoint.coordinate;
+                            final Coordinate p2 = points.get(i + 1).coordinate;
+                            // compute Y value (altitude) by interpolating the Y values of the two neighboring points
+                            currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x-p0.x)/(p2.x-p0.x)*(p2.y-p0.y)+p0.y);
+                            //check if new reflection point altitude is higher than the wall
+                            if (currentPoint.coordinate.y > currentPoint.altitude + currentPoint.buildingHeight) {
+                                // can't reflect higher than the wall
                                 points.clear();
                                 segments.clear();
+                                rayPath.clear();
                                 break;
                             }
                         } else {
@@ -1402,7 +1411,7 @@ public class ComputeCnossosRays {
                 }
 
 
-                if (rayPath.size() > 0) {
+                if (!rayPath.isEmpty()) {
                     List<Coordinate> pts = new ArrayList<>();
                     pts.add(srcCoord);
                     rayPath.forEach(mrr -> pts.add(mrr.getReceiverPos()));

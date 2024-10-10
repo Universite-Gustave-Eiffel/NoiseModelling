@@ -88,7 +88,6 @@ public class TestWallReflection {
 
     @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
-
         GeometryFactory factory = new GeometryFactory();
 
         //Create profile builder
@@ -124,6 +123,21 @@ public class TestWallReflection {
         MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
                 inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
 
+        // Keep only mirror receivers potentially visible from the source(and its parents)
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+                sourceGeometries.get(0).getCoordinate());
+        assertEquals(18, mirrorResults.size());
+
+        try {
+            try (FileWriter fileWriter = new FileWriter("target/testNReflexion_testVisibilityCone.csv")) {
+                StringBuilder sb = new StringBuilder();
+                receiverMirrorIndex.exportVisibility(sb, inputData.maxSrcDist, inputData.maxRefDist,
+                        0, mirrorResults, true);
+                fileWriter.write(sb.toString());
+            }
+        } catch (IOException ex) {
+            //ignore
+        }
 
         List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
@@ -131,49 +145,35 @@ public class TestWallReflection {
 
         // Only one second order reflexion propagation path must be found
         assertEquals(1, propagationPaths.size());
+        // Check expected values for the propagation path
+        PropagationPath firstPath = propagationPaths.get(0);
+        var it = firstPath.getPointList().iterator();
+        assertTrue(it.hasNext());
+        PointPath current = it.next();
+        assertEquals(PointPath.POINT_TYPE.SRCE ,current.type);
+        assertEquals(0.0, current.coordinate.x, 1e-12);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
+        assertEquals(38.68, current.coordinate.x, 0.01);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
+        assertEquals(53.28, current.coordinate.x, 0.01);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
+        assertEquals(61.14, current.coordinate.x, 0.01);
 
-
-//        int idPath = 1;
-//        for(PropagationPath path : propagationPaths) {
-//            try {
-//                try (FileWriter fileWriter = new FileWriter(String.format(Locale.ROOT, "target/testVisibilityPath_%03d.geojson", idPath))) {
-//                    fileWriter.write(path.asGeom()));
-//                }
-//            } catch (IOException ex) {
-//                //ignore
-//            }
-//            idPath++;
-//        }
-
-        // Keep only mirror receivers potentially visible from the source
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
-                sourceGeometries.get(0).getCoordinate());
-        assertEquals(18, mirrorResults.size());
-
-        // // Or Take all reflections
-        //        List<MirrorReceiverResult> mirrorResults = new ArrayList<>();
-        //        var lst = receiverMirrorIndex.mirrorReceiverTree.query(new Envelope(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
-        //                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
-        //        for(var item : lst) {
-        //            if(item instanceof MirrorReceiverResult) {
-        //                mirrorResults.add((MirrorReceiverResult) item);
-        //            }
-        //        }
-        //        try {
-        //            try (FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
-        //                StringBuilder sb = new StringBuilder();
-        //                receiverMirrorIndex.exportVisibility(sb, inputData.maxSrcDist, inputData.maxRefDist,
-        //                        0, mirrorResults, true);
-        //                fileWriter.write(sb.toString());
-        //            }
-        //        } catch (IOException ex) {
-        //            //ignore
-        //        }
-        //
-
-
+        int idPath = 1;
+        for(PropagationPath path : propagationPaths) {
+            try {
+                try (FileWriter fileWriter = new FileWriter(String.format(Locale.ROOT, "target/testNReflexion_testVisibilityPath_%03d.geojson", idPath))) {
+                    fileWriter.write(path.profileAsJSON(Integer.MAX_VALUE));
+                }
+            } catch (IOException ex) {
+                //ignore
+            }
+            idPath++;
+        }
 
 
     }
-
 }
