@@ -271,87 +271,13 @@ public class DiscreteDirectivitySphere implements DirectivitySphere {
         recordsPhi.sort(phiComparator);
     }
 
-    public static class ThetaComparator implements Comparator<DirectivityRecord>, Serializable {
 
-        @Override
-        public int compare(DirectivityRecord o1, DirectivityRecord o2) {
-            final int thetaCompare = Double.compare(o1.theta, o2.theta);
-            if (thetaCompare != 0) {
-                return thetaCompare;
-            }
-            return Double.compare(o1.phi, o2.phi);
-        }
-
-    }
-
-    public static class PhiComparator implements Comparator<DirectivityRecord>, Serializable {
-
-        @Override
-        public int compare(DirectivityRecord o1, DirectivityRecord o2) {
-            final int phiCompare = Double.compare(o1.phi, o2.phi);
-            if (phiCompare != 0) {
-                return phiCompare;
-            }
-            return Double.compare(o1.theta, o2.theta);
-        }
-
-    }
 
     /**
-     * directivity record is the attenuation value for a specific angle (theta, phi) - a point of the directivity sphere
+     * Check if this sphere is capable of producing an attenuation for this frequency
+     * @param frequency Frequency in Hertz
+     * @return a boolean
      */
-    public static class DirectivityRecord {
-        private double theta;
-        private double phi;
-        private double[] attenuation;
-
-        /**
-         * directivity record is the attenuation value for a specific angle (theta, phi) - a point of the directivity sphere
-         *
-         * @param theta (-π/2 π/2) 0 is horizontal; π is top
-         * @param phi (0 2π) 0 is front
-         * @param attenuation in dB
-         */
-        public DirectivityRecord(double theta, double phi, double[] attenuation) {
-            this.theta = theta;
-            this.phi = phi;
-            this.attenuation = attenuation;
-        }
-
-        public double getTheta() {
-            return theta;
-        }
-
-        public double getPhi() {
-            return phi;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DirectivityRecord record = (DirectivityRecord) o;
-            return Double.compare(record.theta, theta) == 0 &&
-                    Double.compare(record.phi, phi) == 0;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(theta, phi);
-        }
-
-        @Override
-        public String toString() {
-            return String.format(Locale.ROOT, "DirectivityRecord{theta=%.2f (%.2g°)" +
-                            ", phi=%.2f (%.2g°) , attenuation=%s}", theta, Math.toDegrees(theta), phi, Math.toDegrees(phi),
-                    Arrays.toString(attenuation));
-        }
-
-        public double[] getAttenuation() {
-            return attenuation;
-        }
-    }
-
     @Override
     public boolean coverFrequency(double frequency) {
         return Arrays.stream(frequencies).anyMatch(x -> x == frequency);
