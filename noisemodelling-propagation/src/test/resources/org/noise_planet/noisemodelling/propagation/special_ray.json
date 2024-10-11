@@ -71,7 +71,7 @@
       "pitch" : 1.2333295,
       "roll" : 0.0
     },
-    "buildingHeight" : 0.0,
+    "obstacleAltitude" : 0.0,
     "type" : "SRCE"
   }, {
     "coordinate" : {
@@ -85,7 +85,7 @@
     "wallId" : -1,
     "e" : 0.0,
     "orientation" : null,
-    "buildingHeight" : 0.0,
+    "obstacleAltitude" : 0.0,
     "type" : "DIFH"
   }, {
     "coordinate" : {
@@ -99,7 +99,7 @@
     "wallId" : -1,
     "e" : 0.0,
     "orientation" : null,
-    "buildingHeight" : 0.0,
+    "obstacleAltitude" : 0.0,
     "type" : "RECV"
   } ],
   "segmentList" : [ {
