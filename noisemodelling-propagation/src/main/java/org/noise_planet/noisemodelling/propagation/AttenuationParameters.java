@@ -30,17 +30,17 @@ public class AttenuationParameters {
     // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
-    private double temperature = 15;
-    private double celerity = 340;
+    public double temperature = 15;
+    public double celerity = 340;
     public double humidity = 70;
-    private double pressure = Pref;
-    private double[] alpha_atmo;
-    private double defaultOccurance = 0.5;
+    public double pressure = Pref;
+    public double[] alpha_atmo;
+    public double defaultOccurance = 0.5;
 
-    private boolean gDisc = true;     // choose between accept G discontinuity or not
-    private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
+    public boolean gDisc = true;     // choose between accept G discontinuity or not
+    public boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
     /** probability occurrence favourable condition */
-    private double[] windRose  = DEFAULT_WIND_ROSE;
+    public double[] windRose  = DEFAULT_WIND_ROSE;
 
     public AttenuationParameters() {
         this(false);
