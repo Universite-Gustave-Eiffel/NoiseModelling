@@ -24,7 +24,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface
+import org.noise_planet.noisemodelling.jdbc.BezierContouring
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -100,7 +100,7 @@ def exec(Connection connection, input) {
     logger.info("inputs {}", input) // log inputs of the run
 
 
-    List<Double> isoLevels = IsoSurface.NF31_133_ISO // default values
+    List<Double> isoLevels = BezierContouring.NF31_133_ISO // default values
 
     if (input.containsKey("isoClass")) {
         isoLevels = new ArrayList<>()
@@ -114,27 +114,27 @@ def exec(Connection connection, input) {
 
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(levelTable))
 
-    IsoSurface isoSurface = new IsoSurface(isoLevels, srid)
+    BezierContouring bezierContouring = new BezierContouring(isoLevels, srid)
 
-    isoSurface.setPointTable(levelTable)
+    bezierContouring.setPointTable(levelTable)
 
     if (input.containsKey("smoothCoefficient")) {
         double coefficient = input['smoothCoefficient'] as Double
         if (coefficient < 0.01) {
-            isoSurface.setSmooth(false)
+            bezierContouring.setSmooth(false)
         } else {
-            isoSurface.setSmooth(true)
-            isoSurface.setSmoothCoefficient(coefficient)
+            bezierContouring.setSmooth(true)
+            bezierContouring.setSmoothCoefficient(coefficient)
         }
     }
     else {
-        isoSurface.setSmooth(true)
-        isoSurface.setSmoothCoefficient(0.5)
+        bezierContouring.setSmooth(true)
+        bezierContouring.setSmoothCoefficient(0.5)
     }
 
-    isoSurface.createTable(connection)
+    bezierContouring.createTable(connection)
 
-    resultString = "Table " + isoSurface.getOutputTable() + " created"
+    resultString = "Table " + bezierContouring.getOutputTable() + " created"
 
     logger.info('End : Compute Isosurfaces')
     logger.info(resultString)
