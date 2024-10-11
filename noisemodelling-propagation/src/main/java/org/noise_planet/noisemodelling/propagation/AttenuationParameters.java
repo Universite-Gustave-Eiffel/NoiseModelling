@@ -15,14 +15,14 @@ public class AttenuationParameters {
 
     // Thermodynamic constants
 	public static final double K_0 = 273.15;	// Absolute zero in Celsius
-    static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
-    protected static final  double Kref = 293.15;	// Reference ambient atmospheric temperature (K)
-    static final  double FmolO = 0.209;	// Mole fraction of oxygen
-    static final  double FmolN = 0.781;	// Mole fraction of nitrogen
-    static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
-    static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
-    static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
-    static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
+    public static final  double Pref = 101325;	// Standard atmosphere atm (Pa)
+    public static final  double Kref = 293.15;	// Reference ambient atmospheric temperature (K)
+    public static final  double FmolO = 0.209;	// Mole fraction of oxygen
+    public static final  double FmolN = 0.781;	// Mole fraction of nitrogen
+    public static final  double KvibO = 2239.1;// Vibrational temperature of oxygen (K)
+    public static final  double KvibN = 3352.0;// Vibrational temperature of the nitrogen (K)
+    public static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
+    public static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
     /** Frequency bands values, by third octave */
     public List<Integer> freq_lvl;
     public List<Double> freq_lvl_exact;
