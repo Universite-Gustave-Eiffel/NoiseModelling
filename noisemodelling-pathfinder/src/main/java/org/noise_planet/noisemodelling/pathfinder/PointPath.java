@@ -21,11 +21,11 @@ public class PointPath {
     public double e=0;
     public Orientation orientation;
 
-    public void setBuildingHeight(double buildingHeight) {
-        this.buildingHeight = buildingHeight;
+    public void setObstacleAltitude(double obstacleAltitude) {
+        this.obstacleAltitude = obstacleAltitude;
     }
 
-    public double buildingHeight; // only if POINT_TYPE = REFL
+    public double obstacleAltitude; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
         SRCE,

@@ -850,11 +850,12 @@ public class ComputeCnossosRays {
                 pt.bodyBarrier = bodyBarrier;
                 if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-                    pt.setBuildingHeight(data.profileBuilder.getBuilding(pt.buildingId).getHeight());
+                    pt.setObstacleAltitude(data.profileBuilder.getBuilding(pt.buildingId).getZ());
                 }
                 else if(pt.wallId != -1) {
                     pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-                    pt.setBuildingHeight(data.profileBuilder.getWall(pt.wallId).getHeight());
+                    ProfileBuilder.Wall wall = data.profileBuilder.getWall(pt.wallId);
+                    pt.setObstacleAltitude(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
                 }
             }
         }
@@ -1216,6 +1217,21 @@ public class ComputeCnossosRays {
         return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
     }
 
+    private void updateReflectionPathAttributes(PointPath reflectionPoint, MirrorReceiverResult mirrorReceiverResult) {
+        reflectionPoint.setType(PointPath.POINT_TYPE.REFL);
+        if(mirrorReceiverResult.getType().equals(BUILDING)) {
+            reflectionPoint.setBuildingId(mirrorReceiverResult.getBuildingId());
+            reflectionPoint.obstacleAltitude = data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getZ();
+            reflectionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getAlphas());
+        } else {
+            ProfileBuilder.Wall wall = mirrorReceiverResult.getWall();
+            reflectionPoint.obstacleAltitude = Vertex.interpolateZ(reflectionPoint.coordinate, wall.p0, wall.p1);
+            reflectionPoint.setWallId(wall.getProcessedWallIndex());
+            reflectionPoint.setAlphaWall(wall.getAlphas());
+        }
+        reflectionPoint.altitude = data.profileBuilder.getZGround(mirrorReceiverResult.getReceiverPos());
+    }
+
     public List<PropagationPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord, boolean favorable,
                                                   Orientation orientation, MirrorReceiverResultIndex receiverMirrorIndex) {
 
@@ -1238,7 +1254,7 @@ public class ComputeCnossosRays {
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
-            while (linters.hasIntersection() /*&& MirrorReceiverIterator.wallPointTest(seg.getLine(), destinationPt)*/) {
+            while (linters.hasIntersection()) {
                 // There are a probable reflection point on the segment
                 Coordinate reflectionPt = new Coordinate(
                         linters.getIntersection(0));
@@ -1328,17 +1344,7 @@ public class ComputeCnossosRays {
                 }
                 PointPath reflPoint = points.get(points.size() - 1);
                 reflIdx.add(points.size() - 1);
-                reflPoint.setType(PointPath.POINT_TYPE.REFL);
-                if(rayPath.get(0).getType().equals(BUILDING)) {
-                    reflPoint.setBuildingId(rayPath.get(0).getBuildingId());
-                    reflPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
-                    reflPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
-                } else {
-                    reflPoint.buildingHeight = rayPath.get(0).getWall().p0.getZ();
-                    reflPoint.setWallId(rayPath.get(0).getWall().getProcessedWallIndex());
-                    reflPoint.setAlphaWall(rayPath.get(0).getWall().getAlphas());
-                }
-                reflPoint.altitude = data.profileBuilder.getZGround(rayPath.get(0).getReceiverPos());
+                updateReflectionPathAttributes(reflPoint, rayPath.get(0));
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     MirrorReceiverResult firstPoint = rayPath.get(idPt);
@@ -1358,17 +1364,7 @@ public class ComputeCnossosRays {
                         p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
                     }
                     PointPath lastReflexionPoint = points.get(points.size() - 1);
-                    lastReflexionPoint.setType(PointPath.POINT_TYPE.REFL);
-                    if(rayPath.get(0).getType().equals(BUILDING)) {
-                        lastReflexionPoint.setBuildingId(secondPoint.getBuildingId());
-                        lastReflexionPoint.buildingHeight = data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getHeight();
-                        lastReflexionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflPoint.getBuildingId()).getAlphas());
-                    } else {
-                        lastReflexionPoint.buildingHeight = secondPoint.getWall().p0.getZ();
-                        lastReflexionPoint.setWallId(secondPoint.getWall().getProcessedWallIndex());
-                        lastReflexionPoint.setAlphaWall(secondPoint.getWall().getAlphas());
-                    }
-                    lastReflexionPoint.altitude = data.profileBuilder.getZGround(secondPoint.getReceiverPos());
+                    updateReflectionPathAttributes(lastReflexionPoint, secondPoint);
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 int previousPointSize = points.size();
@@ -1394,7 +1390,7 @@ public class ComputeCnossosRays {
                             // compute Y value (altitude) by interpolating the Y values of the two neighboring points
                             currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x-p0.x)/(p2.x-p0.x)*(p2.y-p0.y)+p0.y);
                             //check if new reflection point altitude is higher than the wall
-                            if (currentPoint.coordinate.y > currentPoint.altitude + currentPoint.buildingHeight) {
+                            if (currentPoint.coordinate.y > currentPoint.obstacleAltitude - epsilon) {
                                 // can't reflect higher than the wall
                                 points.clear();
                                 segments.clear();

@@ -126,7 +126,6 @@ public class TestWallReflection {
         // Keep only mirror receivers potentially visible from the source(and its parents)
         List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
                 sourceGeometries.get(0).getCoordinate());
-        assertEquals(18, mirrorResults.size());
 
         try {
             try (FileWriter fileWriter = new FileWriter("target/testNReflexion_testVisibilityCone.csv")) {
@@ -138,6 +137,8 @@ public class TestWallReflection {
         } catch (IOException ex) {
             //ignore
         }
+
+        assertEquals(4, mirrorResults.size());
 
         List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,

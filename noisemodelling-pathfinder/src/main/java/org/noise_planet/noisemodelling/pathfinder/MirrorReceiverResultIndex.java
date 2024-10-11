@@ -158,6 +158,14 @@ public class MirrorReceiverResultIndex {
                         // wall is too far from the receiver image, there is no receiver image
                         continue;
                     }
+                    // Walls that belong to a building (polygon) does not create image receiver
+                    // from the two sides of the wall
+                    // Exterior polygons are CW we can check if the receiver is on the reflective side of the wall
+                    // (on the exterior side of the wall)
+                    if(wall.getType() == ProfileBuilder.IntersectionType.BUILDING &&
+                            !wallPointTest(wall.getLineSegment(), receiverImage)) {
+                        continue;
+                    }
                     // create the visibility cone of this receiver image
                     Polygon imageReceiverVisibilityCone = createWallReflectionVisibilityCone(rcvMirror,
                             wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
@@ -175,6 +183,18 @@ public class MirrorReceiverResultIndex {
             parentsToProcess = nextParentsToProcess;
         }
         mirrorReceiverTree.build();
+    }
+    /**
+     * Occlusion test between one wall and a viewer.
+     * Simple Feature Access (ISO 19125-1) say that:
+     * On polygon exterior ring are CCW, and interior rings are CW.
+     * @param wall1 Wall segment
+     * @param pt Observer
+     * @return True if the wall is oriented to the point, false if the wall Occlusion Culling (transparent)
+     */
+    public static boolean wallPointTest(LineSegment wall1, Coordinate pt) {
+        return org.locationtech.jts.algorithm.Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0),
+                wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
     }
 
     public int getMirrorReceiverCapacity() {
