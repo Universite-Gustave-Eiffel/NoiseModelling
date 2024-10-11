@@ -163,4 +163,79 @@ public class TestWallReflection {
         assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
         assertEquals(61.14, current.coordinate.x, 0.01);
     }
+    @Test
+    public void testNReflexionWithDem() throws ParseException, IOException, SQLException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.setzBuildings(false); // building Z is height not altitude
+        Csv csv = new Csv();
+        WKTReader wktReader = new WKTReader();
+        try(ResultSet rs = csv.read(new FileReader(
+                        TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
+                new String[]{"geom", "id"})) {
+            assertTrue(rs.next()); //skip column name
+            while(rs.next()) {
+                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+            }
+        }
+        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,500.00));
+        profileBuilder.finishFeeding();
+        assertEquals(5, profileBuilder.getBuildingCount());
+        CnossosPropagationData inputData = new CnossosPropagationData(profileBuilder);
+        inputData.addReceiver(new Coordinate(599093.85,646227.90, 504));
+        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 501)));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 80;
+        inputData.maxSrcDist = 180;
+        inputData.setReflexionOrder(2);
+        ComputeCnossosRays computeRays = new ComputeCnossosRays(inputData);
+        computeRays.setThreadCount(1);
+
+
+        Coordinate receiver = inputData.receivers.get(0);
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<ProfileBuilder.Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        // Keep only mirror receivers potentially visible from the source(and its parents)
+        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+                sourceGeometries.get(0).getCoordinate());
+
+        assertEquals(4, mirrorResults.size());
+
+        List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
+                inputData.sourceGeometries.get(0).getCoordinate(), false,
+                new Orientation(), receiverMirrorIndex);
+
+        // Only one second order reflexion propagation path must be found
+        assertEquals(1, propagationPaths.size());
+        // Check expected values for the propagation path
+        PropagationPath firstPath = propagationPaths.get(0);
+        var it = firstPath.getPointList().iterator();
+        assertTrue(it.hasNext());
+        PointPath current = it.next();
+        assertEquals(PointPath.POINT_TYPE.SRCE ,current.type);
+        assertEquals(0.0, current.coordinate.x, 1e-12);
+        assertEquals(501.0, current.coordinate.y, 1e-12);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
+        assertEquals(38.68, current.coordinate.x, 0.01);
+        assertEquals(502.9, current.coordinate.y, 0.01);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
+        assertEquals(53.28, current.coordinate.x, 0.01);
+        assertEquals(503.61, current.coordinate.y, 0.01);
+        current = it.next();
+        assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
+        assertEquals(61.14, current.coordinate.x, 0.01);
+        assertEquals(504, current.coordinate.y, 0.01);
+    }
 }
