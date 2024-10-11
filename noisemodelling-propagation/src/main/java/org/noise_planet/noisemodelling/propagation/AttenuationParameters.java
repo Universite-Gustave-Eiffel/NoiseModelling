@@ -32,7 +32,7 @@ public class AttenuationParameters {
     /** Temperature in celsius */
     private double temperature = 15;
     private double celerity = 340;
-    private double humidity = 70;
+    public double humidity = 70;
     private double pressure = Pref;
     private double[] alpha_atmo;
     private double defaultOccurance = 0.5;
