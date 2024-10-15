@@ -567,7 +567,7 @@ public class EvaluateAttenuationCnossos {
             //Get the reflexion point
             PointPath pp = reflect.getPointList().get(idx);
             //Get the point on the top of the obstacle
-            Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleAltitude);
+            Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleZ);
             //Compute de distance delta (2.5.36)
             double deltaPrime = -(s.distance(o) + o.distance(r) - reflect.getSRSegment().d);
             double ch = 1.;

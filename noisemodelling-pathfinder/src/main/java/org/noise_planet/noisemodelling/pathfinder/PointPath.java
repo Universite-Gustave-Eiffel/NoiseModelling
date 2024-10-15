@@ -20,12 +20,7 @@ public class PointPath {
     public int wallId = -1;
     public double e=0;
     public Orientation orientation;
-
-    public void setObstacleAltitude(double obstacleAltitude) {
-        this.obstacleAltitude = obstacleAltitude;
-    }
-
-    public double obstacleAltitude; // only if POINT_TYPE = REFL
+    public double obstacleZ; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
         SRCE,
@@ -41,8 +36,8 @@ public class PointPath {
      * parameters given by user
      * @param coordinate
      * @param altitude
-     * @param gs
      * @param alphaWall
+     * @param buildingId Building identifier -1 if there is no buildings
      * @param type
      */
     public PointPath(Coordinate coordinate, double altitude, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
@@ -51,6 +46,22 @@ public class PointPath {
         this.alphaWall = alphaWall;
         this.buildingId = buildingId;
         this.type = type;
+    }
+
+
+    /**
+     * Top obstacle altitude value in meters
+     * @param obstacleZ
+     */
+    public void setObstacleZ(double obstacleZ) {
+        this.obstacleZ = obstacleZ;
+    }
+
+    /**
+     * @return Top obstacle altitude value in meters
+     */
+    public double getObstacleZ() {
+        return obstacleZ;
     }
 
     /**

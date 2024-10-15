@@ -850,12 +850,12 @@ public class ComputeCnossosRays {
                 pt.bodyBarrier = bodyBarrier;
                 if(pt.buildingId != -1) {
                     pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-                    pt.setObstacleAltitude(data.profileBuilder.getBuilding(pt.buildingId).getZ());
+                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
                 }
                 else if(pt.wallId != -1) {
                     pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
                     ProfileBuilder.Wall wall = data.profileBuilder.getWall(pt.wallId);
-                    pt.setObstacleAltitude(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
+                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
                 }
             }
         }
@@ -1221,11 +1221,11 @@ public class ComputeCnossosRays {
         reflectionPoint.setType(PointPath.POINT_TYPE.REFL);
         if(mirrorReceiverResult.getType().equals(BUILDING)) {
             reflectionPoint.setBuildingId(mirrorReceiverResult.getBuildingId());
-            reflectionPoint.obstacleAltitude = data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getZ();
+            reflectionPoint.obstacleZ = data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getZ();
             reflectionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getAlphas());
         } else {
             ProfileBuilder.Wall wall = mirrorReceiverResult.getWall();
-            reflectionPoint.obstacleAltitude = Vertex.interpolateZ(reflectionPoint.coordinate, wall.p0, wall.p1);
+            reflectionPoint.obstacleZ = Vertex.interpolateZ(reflectionPoint.coordinate, wall.p0, wall.p1);
             reflectionPoint.setWallId(wall.getProcessedWallIndex());
             reflectionPoint.setAlphaWall(wall.getAlphas());
         }
@@ -1390,7 +1390,7 @@ public class ComputeCnossosRays {
                             // compute Y value (altitude) by interpolating the Y values of the two neighboring points
                             currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x-p0.x)/(p2.x-p0.x)*(p2.y-p0.y)+p0.y);
                             //check if new reflection point altitude is higher than the wall
-                            if (currentPoint.coordinate.y > currentPoint.obstacleAltitude - epsilon) {
+                            if (currentPoint.coordinate.y > currentPoint.obstacleZ - epsilon) {
                                 // can't reflect higher than the wall
                                 points.clear();
                                 segments.clear();
