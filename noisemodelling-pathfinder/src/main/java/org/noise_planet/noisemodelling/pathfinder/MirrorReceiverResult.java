@@ -34,6 +34,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Polygon;
 
 import java.util.Objects;
 
@@ -48,6 +49,10 @@ public class MirrorReceiverResult {
 	private final ProfileBuilder.Wall wall;
     private final int buildingId; // building that belongs to this wall
     private final ProfileBuilder.IntersectionType type;
+    /**
+     * This data is not stored in the RTREE as it is not used after the creation of the index
+     */
+    Polygon imageReceiverVisibilityCone;
 
     /**
      * @return coordinate of mirrored receiver
@@ -60,6 +65,10 @@ public class MirrorReceiverResult {
         this.receiverPos = receiverPos;
     }
 
+    public MirrorReceiverResult copyWithoutCone() {
+        return new MirrorReceiverResult(receiverPos, parentMirror == null ? null : parentMirror.copyWithoutCone(),
+                wall, buildingId, type);
+    }
     /**
      * @return Other MirrorReceiverResult index, -1 for the first reflexion
      */
@@ -93,6 +102,14 @@ public class MirrorReceiverResult {
         this.wall = wall;
         this.buildingId = buildingId;
         this.type = type;
+    }
+
+    public Polygon getImageReceiverVisibilityCone() {
+        return imageReceiverVisibilityCone;
+    }
+
+    public void setImageReceiverVisibilityCone(Polygon imageReceiverVisibilityCone) {
+        this.imageReceiverVisibilityCone = imageReceiverVisibilityCone;
     }
 
     /**

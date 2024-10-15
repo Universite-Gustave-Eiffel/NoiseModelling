@@ -43,7 +43,10 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 
 import java.util.ArrayList;
@@ -116,6 +119,7 @@ public class MirrorReceiverResultIndex {
     public MirrorReceiverResultIndex(List<ProfileBuilder.Wall> buildWalls, Coordinate receiverCoordinates,
                                      int reflectionOrder, double maximumPropagationDistance,
                                      double maximumDistanceFromWall) {
+        GeometryFactory gf = new GeometryFactory();
         this.receiverCoordinate = receiverCoordinates;
         this.buildWalls = buildWalls;
         this.maximumDistanceFromWall = maximumDistanceFromWall;
@@ -129,6 +133,13 @@ public class MirrorReceiverResultIndex {
             ArrayList<MirrorReceiverResult> nextParentsToProcess = new ArrayList<>();
             for(MirrorReceiverResult parent : parentsToProcess) {
                 for (ProfileBuilder.Wall wall : buildWalls) {
+                    if(parent != null) {
+                        // check if the wall is visible from the previous image receiver
+                        if(!parent.getImageReceiverVisibilityCone().intersects(
+                                wall.getLineSegment().toGeometry(new GeometryFactory()))) {
+                            continue; // this wall is out of the bound of the receiver visibility
+                        }
+                    }
                     Coordinate receiverImage;
                     if (parent != null) {
                         if(wall == parent.getWall()) {
@@ -147,13 +158,22 @@ public class MirrorReceiverResultIndex {
                         // wall is too far from the receiver image, there is no receiver image
                         continue;
                     }
-                    MirrorReceiverResult receiverResult = new MirrorReceiverResult(rcvMirror, parent, wall,
-                            wall.getOriginId(), wall.getType());
+                    // Walls that belong to a building (polygon) does not create image receiver
+                    // from the two sides of the wall
+                    // Exterior polygons are CW we can check if the receiver is on the reflective side of the wall
+                    // (on the exterior side of the wall)
+                    if(wall.getType() == ProfileBuilder.IntersectionType.BUILDING &&
+                            !wallPointTest(wall.getLineSegment(), receiverImage)) {
+                        continue;
+                    }
                     // create the visibility cone of this receiver image
                     Polygon imageReceiverVisibilityCone = createWallReflectionVisibilityCone(rcvMirror,
                             wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
-                    mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(), receiverResult);
-                    nextParentsToProcess.add(receiverResult);
+                    MirrorReceiverResult receiverResultNext = new MirrorReceiverResult(rcvMirror, parent, wall,
+                            wall.getOriginId(), wall.getType());
+                    receiverResultNext.setImageReceiverVisibilityCone(imageReceiverVisibilityCone);
+                    mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(),receiverResultNext.copyWithoutCone());
+                    nextParentsToProcess.add(receiverResultNext);
                     numberOfImageReceivers++;
                     if(numberOfImageReceivers >= mirrorReceiverCapacity) {
                         return;
@@ -164,6 +184,18 @@ public class MirrorReceiverResultIndex {
         }
         mirrorReceiverTree.build();
     }
+    /**
+     * Occlusion test between one wall and a viewer.
+     * Simple Feature Access (ISO 19125-1) say that:
+     * On polygon exterior ring are CCW, and interior rings are CW.
+     * @param wall1 Wall segment
+     * @param pt Observer
+     * @return True if the wall is oriented to the point, false if the wall Occlusion Culling (transparent)
+     */
+    public static boolean wallPointTest(LineSegment wall1, Coordinate pt) {
+        return org.locationtech.jts.algorithm.Orientation.isCCW(new Coordinate[]{wall1.getCoordinate(0),
+                wall1.getCoordinate(1), pt, wall1.getCoordinate(0)});
+    }
 
     public int getMirrorReceiverCapacity() {
         return mirrorReceiverCapacity;
@@ -171,6 +203,67 @@ public class MirrorReceiverResultIndex {
 
     public void setMirrorReceiverCapacity(int mirrorReceiverCapacity) {
         this.mirrorReceiverCapacity = mirrorReceiverCapacity;
+    }
+
+    public void exportVisibility(StringBuilder sb, double maxPropagationDistance,
+                                 double maxPropagationDistanceFromWall, int t, List<MirrorReceiverResult> mirrorReceiverResultList, boolean includeHeader) {
+        WKTWriter wktWriter = new WKTWriter();
+        GeometryFactory factory = new GeometryFactory();
+        if(includeHeader) {
+            sb.append("the_geom,type,ref_index,ref_order,wall_id,t\n");
+        }
+        int refIndex = 0;
+        for (MirrorReceiverResult res : mirrorReceiverResultList) {
+            Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+                    res.getReceiverPos(), res.getWall().getLineSegment(),
+                    maxPropagationDistance, maxPropagationDistanceFromWall);
+            if(!visibilityCone.isEmpty()) {
+                int refOrder=1;
+                MirrorReceiverResult parent = res.getParentMirror();
+                while (parent != null) {
+                    refOrder++;
+                    parent = parent.getParentMirror();
+                }
+
+                while(res != null) {
+                    sb.append("\"");
+                    sb.append(wktWriter.write(visibilityCone));
+                    sb.append("\",0");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    sb.append("\"");
+                    sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
+                            12, BufferParameters.CAP_ROUND)));
+                    sb.append("\",4");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    sb.append("\"");
+                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
+                            buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
+                    sb.append("\",1");
+                    sb.append(",").append(refIndex);
+                    sb.append(",").append(refOrder);
+                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(t).append("\n");
+                    res = res.getParentMirror();
+                    if(res != null) {
+                        visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(
+                                res.getReceiverPos(), res.getWall().getLineSegment(),
+                                maxPropagationDistance, maxPropagationDistanceFromWall);
+                    }
+                    refOrder-=1;
+                }
+                refIndex+=1;
+            }
+        }
+        sb.append("\"");
+        sb.append(wktWriter.write(factory.createPoint(receiverCoordinate).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
+        sb.append("\",2");
+        sb.append(",").append(t).append("\n");
     }
 
     public List<MirrorReceiverResult> findCloseMirrorReceivers(Coordinate sourcePosition) {
@@ -230,36 +323,9 @@ public class MirrorReceiverResultIndex {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
-                    } else {
+                    } else{
+                        // update reflection point for inferior reflection order
                         reflectionPoint = li.getIntersection(0);
-                        double wallReflectionPointZ = Vertex.interpolateZ(reflectionPoint, currentWallLineSegment.p0,
-                                currentWallLineSegment.p1);
-                        double propagationReflectionPointZ =  Vertex.interpolateZ(reflectionPoint, srcMirrRcvLine.p0,
-                                srcMirrRcvLine.p1);
-                        if(propagationReflectionPointZ > wallReflectionPointZ) {
-                            // The receiver image is not visible because the wall is not tall enough
-                            return;
-                        }
-                    }
-                    // Check if other surface of this wall obstruct the view
-                    //Check if another wall is masking the current
-                    for (ProfileBuilder.Wall otherWall : currentWall.getObstacle().getWalls()) {
-                        if(!otherWall.equals(currentWall)) {
-                            LineSegment otherWallSegment = otherWall.getLineSegment();
-                            li = new RobustLineIntersector();
-                            li.computeIntersection(otherWall.p0, otherWall.p1, reflectionPoint, source);
-                            if (li.hasIntersection()) {
-                                Coordinate otherReflectionPoint = li.getIntersection(0);
-                                double wallReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
-                                        otherWallSegment.p0, otherWallSegment.p1);
-                                double propagationReflectionPointZ = Vertex.interpolateZ(otherReflectionPoint,
-                                        srcMirrRcvLine.p0, srcMirrRcvLine.p1);
-                                if (propagationReflectionPointZ <= wallReflectionPointZ) {
-                                    // This wall is obstructing the view of the propagation line (other wall too tall)
-                                    return;
-                                }
-                            }
-                        }
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }
