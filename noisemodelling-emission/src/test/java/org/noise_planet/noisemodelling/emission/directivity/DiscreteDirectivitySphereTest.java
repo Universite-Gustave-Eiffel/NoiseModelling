@@ -6,12 +6,11 @@
  * Official webpage : http://noise-planet.org/noisemodelling.html
  * Contact: contact@noise-planet.org
  */
-
 package org.noise_planet.noisemodelling.emission.directivity;
 
 import org.junit.Test;
 import org.noise_planet.noisemodelling.emission.LineSource;
-import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
+import org.noise_planet.noisemodelling.emission.directivity.cnossos.RailwayCnossosDirectivitySphere;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -28,7 +27,7 @@ public class DiscreteDirectivitySphereTest {
     public void testInsert() {
         DiscreteDirectivitySphere d = new DiscreteDirectivitySphere(1, freqTest);
 
-        RailWayCnossosParameters.RailwayDirectivitySphere att = new RailWayCnossosParameters.RailwayDirectivitySphere(new LineSource("TRACTIONB"));
+        RailwayCnossosDirectivitySphere att = new RailwayCnossosDirectivitySphere(new LineSource("TRACTIONB"));
 
         for (int yaw = 0; yaw < 360; yaw += 5) {
             float phi = (float) Math.toRadians(yaw);
@@ -45,23 +44,23 @@ public class DiscreteDirectivitySphereTest {
 
         // test nearest neighbors
 
-        assertEquals(new DiscreteDirectivitySphere.DirectivityRecord((float) Math.toRadians(30),
+        assertEquals(new DirectivityRecord((float) Math.toRadians(30),
                         (float) Math.toRadians(25), null),
                 d.getRecord((float) Math.toRadians(31), (float) Math.toRadians(26), 0));
 
-        assertEquals(new DiscreteDirectivitySphere.DirectivityRecord((float) Math.toRadians(85),
+        assertEquals(new DirectivityRecord((float) Math.toRadians(85),
                         (float) Math.toRadians(0), null),
                 d.getRecord((float) Math.toRadians(88), (float) Math.toRadians(358), 0));
 
-        assertEquals(new DiscreteDirectivitySphere.DirectivityRecord((float) Math.toRadians(-85),
+        assertEquals(new DirectivityRecord((float) Math.toRadians(-85),
                         (float) Math.toRadians(0), null),
                 d.getRecord((float) Math.toRadians(-89), (float) Math.toRadians(2), 0));
 
 
         // Test bilinear interpolation
-        DiscreteDirectivitySphere.DirectivityRecord r = d.getRecord((float) Math.toRadians(26),
+        DirectivityRecord r = d.getRecord((float) Math.toRadians(26),
                 (float) Math.toRadians(31), 1);
-        assertEquals(new DiscreteDirectivitySphere.DirectivityRecord((float) Math.toRadians(26),
+        assertEquals(new DirectivityRecord((float) Math.toRadians(26),
                 (float) Math.toRadians(31), null), r);
         assertArrayEquals(new double[]{-5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63, -5.63}, r.getAttenuation(),
                 0.1);

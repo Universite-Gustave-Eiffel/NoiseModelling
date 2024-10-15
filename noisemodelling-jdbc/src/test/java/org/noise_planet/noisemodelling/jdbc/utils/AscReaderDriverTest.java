@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Envelope;
+import org.noise_planet.noisemodelling.jdbc.utils.AscReaderDriver;
 
 import java.io.File;
 import java.io.IOException;
