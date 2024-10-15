@@ -129,7 +129,11 @@ public class Building implements ProfileBuilder.Obstacle {
     }
 
     public double getZ() {
-        return zTopo + height;
+        if(Double.isNaN(zTopo) || Double.isNaN(height)) {
+            return poly.getCoordinate().z;
+        } else {
+            return zTopo + height;
+        }
     }
 
     /**

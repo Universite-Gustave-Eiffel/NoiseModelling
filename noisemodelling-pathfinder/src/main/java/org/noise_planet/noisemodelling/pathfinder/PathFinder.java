@@ -902,7 +902,6 @@ public class PathFinder {
         Coordinate src = null;
 
         for (int i = 1; i < pts.size(); i++) {
-            boolean isSource = false;
             int k =0;
             int i0 = pts2D.indexOf(pts.get(i-1));
             int i1 = pts2D.indexOf(pts.get(i));
