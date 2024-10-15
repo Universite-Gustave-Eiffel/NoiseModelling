@@ -570,7 +570,7 @@ public class AttenuationCnossos {
             //Get the reflexion point
             PointPath pp = reflect.getPointList().get(idx);
             //Get the point on the top of the obstacle
-            Coordinate o = new Coordinate(pp.coordinate.x, pp.buildingHeight);
+            Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleZ);
             double SO = s.distance(o);
             double OR = o.distance(r);
             double SR = reflect.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate (reflect.getCutPoints().get(reflect.getCutPoints().size()-1).getCoordinate().x,reflect.getCutPoints().get(reflect.getCutPoints().size()-1).getCoordinate().y,reflect.getPointList().get(reflect.getPointList().size()-1).coordinate.y));
@@ -637,7 +637,7 @@ public class AttenuationCnossos {
         double lambda = 340.0 / data.freq_lvl.get(i);
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && proPathParameters.difHPoints.size() <= 1) || (type.equals(DIFV) && proPathParameters.difVPoints.size() <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
-        
+
         double _delta = proPathParameters.isFavorable() && (type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT)) ? proPathParameters.deltaF : proPathParameters.deltaH;
         double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime+ proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1).dPrime- proPathParameters.getSRSegment().dPrime);
         double deltaDiffSR = 0;

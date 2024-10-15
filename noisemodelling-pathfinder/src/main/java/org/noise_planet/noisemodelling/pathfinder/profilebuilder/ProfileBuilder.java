@@ -390,11 +390,13 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(geom == null && !(geom instanceof Polygon)) {
+        if(!(geom instanceof Polygon)) {
             LOGGER.error("Building geometry should be Polygon");
             return null;
         }
         Polygon poly = (Polygon)geom;
+        // Fix clock wise orientation of the polygon and inner holes
+        poly.normalize();
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();

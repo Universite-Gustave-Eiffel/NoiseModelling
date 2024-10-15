@@ -43,6 +43,7 @@ public class ProfileBuilderTest {
 
     /**
      * Test the building adding to a {@link ProfileBuilder}.
+     * Polygons are normalized according to ISO, outer ring must be CCW and inner rings are CW
      * @throws ParseException JTS WKT parsing exception.
      */
     @Test
@@ -56,9 +57,9 @@ public class ProfileBuilderTest {
 
         List<Building> list = profileBuilder.getBuildings();
         assertEquals(3, list.size());
-        assertEquals("POLYGON ((1 1, 5 1, 5 5, 1 5, 1 1))", list.get(0).getGeometry().toText());
+        assertEquals("POLYGON ((1 1, 1 5, 5 5, 5 1, 1 1))", list.get(0).getGeometry().toText());
         assertEquals(10, list.get(0).getGeometry().getCoordinate().z, 0);
-        assertEquals("POLYGON ((10 10, 15 10, 15 15, 10 15, 10 10))", list.get(1).getGeometry().toText());
+        assertEquals("POLYGON ((10 10, 10 15, 15 15, 15 10, 10 10))", list.get(1).getGeometry().toText());
         assertEquals(23, list.get(1).getGeometry().getCoordinate().z, 0);
         assertEquals("POLYGON ((6 8, 8 10, 8 4, 6 8))", list.get(2).getGeometry().toText());
         assertEquals(56, list.get(2).getGeometry().getCoordinate().z, 0);
