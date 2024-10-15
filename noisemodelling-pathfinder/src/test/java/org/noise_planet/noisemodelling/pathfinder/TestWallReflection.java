@@ -10,37 +10,29 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2.tools.Csv;
 import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
+import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestWallReflection {
-
-    /*public static int pushBuildingToWalls(Building building, int index, List<Wall> wallList) {
-        ArrayList<Wall> wallsOfBuilding = new ArrayList<>();
-        Coordinate[] coords = building.getGeometry().getCoordinates();
-        for (int i = 0; i < coords.length - 1; i++) {
-            LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-            Wall w = new Wall(lineSegment, index, ProfileBuilder.IntersectionType.BUILDING);
-            w.setProcessedWallIndex(i);
-            wallsOfBuilding.add(w);
-        }
-        building.setWalls(wallsOfBuilding);
-        wallList.addAll(wallsOfBuilding);
-        return coords.length;
-    }*/
 
     @Test
     public void testWideWall() {
@@ -76,7 +68,7 @@ public class TestWallReflection {
         }
         profileBuilder.finishFeeding();
         assertEquals(5, profileBuilder.getBuildingCount());
-        CnossosPropagationData inputData = new CnossosPropagationData(profileBuilder);
+        Scene inputData = new Scene(profileBuilder);
         inputData.addReceiver(new Coordinate(599093.85,646227.90, 4));
         inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 1)));
         inputData.setComputeHorizontalDiffraction(false);
@@ -84,19 +76,19 @@ public class TestWallReflection {
         inputData.maxRefDist = 80;
         inputData.maxSrcDist = 180;
         inputData.setReflexionOrder(2);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays(inputData);
+        PathFinder computeRays = new PathFinder(inputData);
         computeRays.setThreadCount(1);
 
 
         Coordinate receiver = inputData.receivers.get(0);
         Envelope receiverPropagationEnvelope = new Envelope(receiver);
         receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
-        List<ProfileBuilder.Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
                 inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
 
         // Keep only mirror receivers potentially visible from the source(and its parents)
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
                 sourceGeometries.get(0).getCoordinate());
 
         try {
@@ -112,14 +104,14 @@ public class TestWallReflection {
 
         assertEquals(4, mirrorResults.size());
 
-        List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
+        List<CnossosPath> CnossosPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
                 new Orientation(), receiverMirrorIndex);
 
         // Only one second order reflexion propagation path must be found
-        assertEquals(1, propagationPaths.size());
+        assertEquals(1, CnossosPaths.size());
         // Check expected values for the propagation path
-        PropagationPath firstPath = propagationPaths.get(0);
+        CnossosPath firstPath = CnossosPaths.get(0);
         var it = firstPath.getPointList().iterator();
         assertTrue(it.hasNext());
         PointPath current = it.next();
@@ -158,7 +150,7 @@ public class TestWallReflection {
         profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,500.00));
         profileBuilder.finishFeeding();
         assertEquals(5, profileBuilder.getBuildingCount());
-        CnossosPropagationData inputData = new CnossosPropagationData(profileBuilder);
+        Scene inputData = new Scene(profileBuilder);
         inputData.addReceiver(new Coordinate(599093.85,646227.90, 504));
         inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 501)));
         inputData.setComputeHorizontalDiffraction(false);
@@ -166,31 +158,31 @@ public class TestWallReflection {
         inputData.maxRefDist = 80;
         inputData.maxSrcDist = 180;
         inputData.setReflexionOrder(2);
-        ComputeCnossosRays computeRays = new ComputeCnossosRays(inputData);
+        PathFinder computeRays = new PathFinder(inputData);
         computeRays.setThreadCount(1);
 
 
         Coordinate receiver = inputData.receivers.get(0);
         Envelope receiverPropagationEnvelope = new Envelope(receiver);
         receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
-        List<ProfileBuilder.Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-        MirrorReceiverResultIndex receiverMirrorIndex = new MirrorReceiverResultIndex(buildWalls, receiver,
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
                 inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
 
         // Keep only mirror receivers potentially visible from the source(and its parents)
-        List<MirrorReceiverResult> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
                 sourceGeometries.get(0).getCoordinate());
 
         assertEquals(4, mirrorResults.size());
 
-        List<PropagationPath> propagationPaths = computeRays.computeReflexion(receiver,
+        List<CnossosPath> CnossosPaths = computeRays.computeReflexion(receiver,
                 inputData.sourceGeometries.get(0).getCoordinate(), false,
                 new Orientation(), receiverMirrorIndex);
 
         // Only one second order reflexion propagation path must be found
-        assertEquals(1, propagationPaths.size());
+        assertEquals(1, CnossosPaths.size());
         // Check expected values for the propagation path
-        PropagationPath firstPath = propagationPaths.get(0);
+        CnossosPath firstPath = CnossosPaths.get(0);
         var it = firstPath.getPointList().iterator();
         assertTrue(it.hasNext());
         PointPath current = it.next();

@@ -45,8 +45,6 @@ public class Attenuation implements IComputePathsOut {
 
     public AttenuationCnossosParameters genericMeteoData;
     public Scene inputData;
-    //public CnossosPathParameters inputData;
-   // public org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPathParameters CnossosPathParameters;
 
     public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData, Scene inputData) {
         this.exportPaths = exportPaths;

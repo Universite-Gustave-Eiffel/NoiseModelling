@@ -969,7 +969,7 @@ public class PathFinder {
                 }
                 else if(pt.wallId != -1) {
                     pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-                    ProfileBuilder.Wall wall = data.profileBuilder.getWall(pt.wallId);
+                    Wall wall = data.profileBuilder.getWall(pt.wallId);
                     pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
                 }
             }
@@ -1234,19 +1234,19 @@ public class PathFinder {
         return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
     }
 
-    private void updateReflectionPathAttributes(PointPath reflectionPoint, MirrorReceiverResult mirrorReceiverResult) {
+    private void updateReflectionPathAttributes(PointPath reflectionPoint, MirrorReceiver MirrorReceiver) {
         reflectionPoint.setType(PointPath.POINT_TYPE.REFL);
-        if(mirrorReceiverResult.getType().equals(BUILDING)) {
-            reflectionPoint.setBuildingId(mirrorReceiverResult.getBuildingId());
+        if(MirrorReceiver.getType().equals(BUILDING)) {
+            reflectionPoint.setBuildingId(MirrorReceiver.getBuildingId());
             reflectionPoint.obstacleZ = data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getZ();
             reflectionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getAlphas());
         } else {
-            ProfileBuilder.Wall wall = mirrorReceiverResult.getWall();
+            Wall wall = MirrorReceiver.getWall();
             reflectionPoint.obstacleZ = Vertex.interpolateZ(reflectionPoint.coordinate, wall.p0, wall.p1);
             reflectionPoint.setWallId(wall.getProcessedWallIndex());
             reflectionPoint.setAlphaWall(wall.getAlphas());
         }
-        reflectionPoint.altitude = data.profileBuilder.getZGround(mirrorReceiverResult.getReceiverPos());
+        reflectionPoint.altitude = data.profileBuilder.getZGround(MirrorReceiver.getReceiverPos());
     }
 
 
@@ -1362,18 +1362,15 @@ public class PathFinder {
                 List<SegmentPath> segments = new ArrayList<>();
                 SegmentPath srPath = null;
                 List<Integer> reflIdx = new ArrayList<>();
-                //CnossosPathParameters proPathParameters = new CnossosPathParameters(favorable, points, segments, srPath, Angle.angle(rcvCoord, srcCoord));
                 CnossosPath pathParameters = new CnossosPath();
-                //(favorable=false, points, segments, srSeg, Angle.angle(rcvCut.getCoordinate(), srcCut.getCoordinate()));
                 pathParameters.setFavorable(favorable);
                 pathParameters.setPointList(points);
                 pathParameters.setSegmentList(segments);
-                pathParameters.setSRSegment(srPath); //null
-                // pathParameters.init(8);
+                pathParameters.setSRSegment(srPath);
                 pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
                 pathParameters.refPoints = reflIdx;
                 // Compute direct path between source and first reflection point, add profile to the data
-                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
+                computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReceiverPos(), points, segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints);
                 if (points.isEmpty()) { // no valid path between the two points
                     continue;
                 }
@@ -1382,11 +1379,11 @@ public class PathFinder {
                 updateReflectionPathAttributes(reflPoint, rayPath.get(0));
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
-                    MirrorReceiverResult firstPoint = rayPath.get(idPt);
-                    MirrorReceiverResult secondPoint = rayPath.get(idPt + 1);
+                    MirrorReceiver firstPoint = rayPath.get(idPt);
+                    MirrorReceiver secondPoint = rayPath.get(idPt + 1);
                     int previousPointSize = points.size();
                     computeReflexionOverBuildings(firstPoint.getReceiverPos(), secondPoint.getReceiverPos(),
-                            points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
+                            points, segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints);
                     if(points.size() == previousPointSize) { // no visibility between the two reflection coordinates
                         // (maybe there is a blocking building, and we disabled diffraction)
                         continue;
@@ -1403,7 +1400,8 @@ public class PathFinder {
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 int previousPointSize = points.size();
-                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, points, segments, data, orientation, proPath.difHPoints, proPath.difVPoints);
+                computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReceiverPos(), rcvCoord, points,
+                        segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints);
                 if(points.size() == previousPointSize) { // no visibility between the last reflection coordinate and the receiver
                     // (maybe there is a blocking building, and we disabled diffraction)
                     continue;
