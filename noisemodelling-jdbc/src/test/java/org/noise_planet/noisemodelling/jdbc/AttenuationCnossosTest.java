@@ -10,17 +10,16 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.junit.After;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.math.Vector3D;
-import org.noise_planet.noisemodelling.pathfinder.PathFinderVisitor;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.jdbc.*;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -34,12 +33,9 @@ import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.exc.StreamWriteException;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.math.BigDecimal;
+import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -3856,6 +3852,20 @@ public class AttenuationCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
+
+        JsonMapper.Builder builder = JsonMapper.builder();
+        JsonMapper mapper = builder.build();
+        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        try {
+            mapper.writeValue(new File("target/cnossosPath.json"), proPath);
+        } catch (StreamWriteException ex) {
+
+        }
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);

@@ -65,7 +65,7 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>test</scope>
-            <version>2.9.10.7</version>
+            <version>${jackson-xml-version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.9.6</version>
+            <version>${jackson-xml-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
