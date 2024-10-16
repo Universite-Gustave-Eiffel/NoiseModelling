@@ -215,13 +215,15 @@ def exec(Connection connection, input) {
 
     // Read the OSM file, depending on its extension
     def reader
-    if (pathFile.endsWith(".pbf")) {
+    if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".pbf")) {
         InputStream inputStream = new FileInputStream(pathFile);
         reader = new OsmosisReader(inputStream);
-    } else if (pathFile.endsWith(".osm")) {
+    } else if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".osm")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.None);
-    } else if (pathFile.endsWith(".osm.gz")) {
+    } else if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".osm.gz")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
+    } else {
+        throw new IllegalArgumentException("File extension not known.Should be pbf, osm or osm.gz but got " + pathFile)
     }
 
     OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
