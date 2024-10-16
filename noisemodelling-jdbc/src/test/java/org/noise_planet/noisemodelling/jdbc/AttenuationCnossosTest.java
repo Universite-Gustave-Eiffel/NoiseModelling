@@ -3521,6 +3521,20 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        JsonMapper.Builder builder = JsonMapper.builder();
+        JsonMapper mapper = builder.build();
+        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        try {
+            mapper.writeValue(new File("target/cnossosPath.json"), propDataOut.getPropagationPaths());
+        } catch (StreamWriteException ex) {
+
+        }
+
         //Expected values
         //Path0 : vertical plane
         double[] expectedDeltaDiffSRH = new double[]{11.92, 14.46, 17.23, 20.11, 23.06, 26.04, 29.03, 32.03};
@@ -3852,20 +3866,6 @@ public class AttenuationCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-
-        JsonMapper.Builder builder = JsonMapper.builder();
-        JsonMapper mapper = builder.build();
-        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        try {
-            mapper.writeValue(new File("target/cnossosPath.json"), proPath);
-        } catch (StreamWriteException ex) {
-
-        }
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
