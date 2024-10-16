@@ -224,82 +224,6 @@ public  class CutPoint implements Comparable<CutPoint> {
         return str;
     }
 
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox01y01(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox10y01(CutPoint cutPoint) {
-        if(this.coordinate.x > cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox01y10(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox10y10(CutPoint cutPoint) {
-        if(this.coordinate.x > cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
     /**
      *
      * @param cutPoint the object to be compared.
@@ -307,22 +231,10 @@ public  class CutPoint implements Comparable<CutPoint> {
      */
     @Override
     public int compareTo(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
+        return this.coordinate.compareTo(cutPoint.coordinate);
     }
 
     public boolean isCorner(){
         return corner;
     }
-
-
-
 }

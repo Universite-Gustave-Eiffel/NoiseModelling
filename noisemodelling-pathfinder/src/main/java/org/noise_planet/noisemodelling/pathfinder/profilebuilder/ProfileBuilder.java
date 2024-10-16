@@ -97,7 +97,8 @@ public class ProfileBuilder {
     private final STRtree buildingTree;
     /** Building RTree. */
     private STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
-    /** Global RTree. */
+    /** RTree with Buildings's walls linestrings, walls linestring, GroundEffect linestrings
+     * The object is an instance of Wall */
     private STRtree rtree;
     private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
 
@@ -185,7 +186,7 @@ public class ProfileBuilder {
         else{
             LOGGER.warn("Cannot add building, feeding is finished.");
         }
-        return null;
+        return this;
     }
 
     /**
@@ -395,26 +396,8 @@ public class ProfileBuilder {
             return null;
         }
         Polygon poly = (Polygon)geom;
-        // Fix clock wise orientation of the polygon and inner holes
-        poly.normalize();
-        if(!isFeedingFinished) {
-            if(envelope == null) {
-                envelope = geom.getEnvelopeInternal();
-            }
-            else {
-                envelope.expandToInclude(geom.getEnvelopeInternal());
-            }
-            Building building = new Building(poly, height, alphas, id, zBuildings);
-            buildings.add(building);
-            buildingTree.insert(building.poly.getEnvelopeInternal(), buildings.size());
-            //TODO : generalization of building coefficient
-            addGroundEffect(geom, 0);
-            return this;
-        }
-        else{
-            LOGGER.warn("Cannot add building, feeding is finished.");
-            return null;
-        }
+        addBuilding(new Building(poly, height, alphas, id, zBuildings));
+        return this;
     }
 
     /**
@@ -1027,111 +1010,61 @@ public class ProfileBuilder {
      * Retrieve the cutting profile following the line build from the given coordinates.
      * @param c0 Starting point.
      * @param c1 Ending point.
+     * @param gS Default ground effect value
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1, double gS) {
         CutProfile profile = new CutProfile();
-        //Topography
+
+        //Fetch topography evolution between c0 and c1
         if(topoTree != null) {
             addTopoCutPts(c0, c1, profile);
-            for (CutPoint cut : profile.getCutPoints()){
-                List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(cut.coordinate));
-                if (groundEffectsResult.size() >0) {
-                    cut.groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
-                }
-                else {
-                    cut.groundCoef = gS;
-                }
-            }
         }
+
         // Split line into segments for structures based on RTree in order to limit the number of queries
         // (for large area of the line segment envelope)
         LineSegment fullLine = new LineSegment(c0, c1);
         List<LineSegment> lines = splitSegment(c0, c1, maxLineLength);
 
-        //Buildings and Ground effect
+        //Add Buildings/Walls and Ground effect transition points
         if(rtree != null) {
             addGroundBuildingCutPts(lines, fullLine, profile);
         }
 
-        //Sort all the cut point in order to set the ground coefficients.
-        profile.sort(c0, c1);
-        //Add base cut for buildings
-        addBuildingBaseCutPts(profile, c0, c1);
-        /*profile.addSource(c0);
-        profile.addReceiver(c1);*/
-        List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(0).coordinate));
-        if (groundEffectsResult.size() >0) {
-            profile.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
-        }
-        else {
-            profile.pts.get(0).groundCoef = gS;
-        }
-        List<Integer> groundEffectsResults = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
-        if (groundEffectsResults.size() >0) {
-            profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResults.get(groundEffectsResults.size() - 1)).getCoefficient();
-        }
-        else {
-            profile.pts.get(profile.pts.size() - 1).groundCoef = gS;
-        }
-        //If ordering puts source at last position, reverse the list
-        if(profile.pts.get(0) != profile.source) {
-            if(profile.pts.get(profile.pts.size()-1) != profile.source && profile.pts.get(0) != profile.source) {
-                LOGGER.error("The source have to be first or last cut point");
-            }
-            if(profile.pts.get(profile.pts.size()-1) != profile.receiver && profile.pts.get(0) != profile.receiver) {
-                LOGGER.error("The receiver have to be first or last cut point");
-            }
-            profile.reverse();
-        }
-        // Remove all
-        int k = 0;
-        for (int i = 0; i<profile.pts.size()-2; i++) {
-            if (profile.pts.get(i).getType().equals(profile.pts.get(i + 1).getType()) && !profile.pts.get(i).getType().equals(BUILDING)  && profile.pts.get(i).coordinate.equals(profile.pts.get(i + 1).coordinate)) {
-                for (int j = i + 1; j < profile.pts.size() - 1; j++) {
-                    if (profile.pts.get(i).getType().equals(profile.pts.get(j).getType()) && profile.pts.get(i).coordinate.equals(profile.pts.get(j).coordinate) && profile.pts.get(i).groundCoef == profile.pts.get(j).getGroundCoef()) {
-                        profile.pts.remove(j);
-                        j--;
-                    }
-                }
-
-            }
-        }
-        for (int i = 0; i<profile.pts.size()-2; i++){
-            if(profile.pts.get(i).getType().equals(profile.pts.get(i+1).getType())  && !profile.pts.get(i).getType().equals(BUILDING) && profile.pts.get(i).coordinate.equals(profile.pts.get(i+1).coordinate) && profile.pts.get(i).groundCoef!= profile.pts.get(i+1).getGroundCoef()){
-                k++;
-                if (k%2 != 0.0 ){ // la division entière
-                    if (profile.pts.get(i).groundCoef == 0.0 ) {
-                        profile.pts.remove(i+1);
-                        i--;
-                    }
-                    else {
-                        profile.pts.remove(i);
-                    }
-                }
-                else {
-                    if (profile.pts.get(i).groundCoef == 0.0 ) {
-                        profile.pts.remove(i);
-                    }
-                    else {
-                        profile.pts.remove(i+1);
-                        i--;
-                    }
-                }
-
-            }
-        }
+        //Sort all the cut point from c0 to c1 positions
+        profile.sort(c0);
 
         return profile;
     }
 
     /**
-     *
+     * Fetch the first intersecting ground absorption object that intersects with the provided geometry
+     * @param query The geometry object to check for intersection
+     * @return The ground absorption object or null if nothing is found here
+     */
+    public GroundAbsorption getIntersectingGroundAbsorption(Geometry query) {
+        if(groundEffectsRtree != null) {
+            var res = groundEffectsRtree.query(query.getEnvelopeInternal());
+            for (Object groundEffectAreaIndex : res) {
+                if(groundEffectAreaIndex instanceof Integer) {
+                    GroundAbsorption groundAbsorption = groundAbsorptions.get((Integer) groundEffectAreaIndex);
+                    if(groundAbsorption.geom.intersects(query)) {
+                        return groundAbsorption;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    /**
+     * In the cut profile, when reaching buildings sides,
+     * add a point to reach the bottom of the wall before/after the building intersection
      * @param profile
      * @param c0
      * @param c1
+     * @param gS Default ground coefficient
      */
-    private void addBuildingBaseCutPts(CutProfile profile, Coordinate c0, Coordinate c1) {
+    private void addBuildingBaseCutPts(CutProfile profile, Coordinate c0, Coordinate c1, double gS) {
         ArrayList<CutPoint> pts = new ArrayList<>(profile.pts.size());
         int buildId = -1;
         CutPoint lastBuild = null;
@@ -1142,13 +1075,18 @@ public class ProfileBuilder {
                     buildId = cut.getId();
                     CutPoint grd = new CutPoint(cut);
                     grd.getCoordinate().z = getZGround(cut);
+                    // fetch ground coefficient before reaching the building
+                    GroundAbsorption groundAbsorption = getIntersectingGroundAbsorption(FACTORY.createPoint());
+                    if(groundAbsorption != null) {
+                        grd.setGroundCoef(groundAbsorption.getCoefficient());
+                    } else {
+                        grd.setGroundCoef(gS);
+                    }
                     pts.add(grd);
                     pts.add(cut);
-                }
-                else if(buildId == cut.getId()) {
+                } else if(buildId == cut.getId()) {
                     pts.add(cut);
-                }
-                else {
+                } else {
                     CutPoint grd0 = new CutPoint(lastBuild);
                     grd0.getCoordinate().z = getZGround(grd0);
                     pts.add(pts.indexOf(lastBuild)+1, grd0);
@@ -1186,13 +1124,12 @@ public class ProfileBuilder {
 
     /**
      *
-     * @param lines
-     * @param fullLine
-     * @param profile
+     * @param lines Segmented fullLine, this is the query for rTree indexes
+     * @param fullLine P0 to P1 query for the profile of buildings
+     * @param profile Object to feed the results (out)
      */
     private void addGroundBuildingCutPts(List<LineSegment> lines, LineSegment fullLine, CutProfile profile) {
         List<Integer> indexes = new ArrayList<>();
-        int k = 0;
         for (LineSegment line : lines) {
             indexes.addAll(rtree.query(new Envelope(line.p0, line.p1)));
         }
@@ -1219,60 +1156,17 @@ public class ProfileBuilder {
                 }
                 if(facetLine.type == IntersectionType.BUILDING) {
                     profile.addBuildingCutPt(intersection, facetLine.originId, i, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection));
-                    k=1;
-
-                }
-                else if(facetLine.type == IntersectionType.WALL) {
+                } else if(facetLine.type == IntersectionType.WALL) {
                     profile.addWallCutPt(intersection, facetLine.originId, facetLine.p0.equals(intersection)||facetLine.p1.equals(intersection), facetLine.alphas);
-                    List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size()-1).coordinate));
-                    if(groundEffectsResult.size()>0 && groundAbsorptions.size() > 0){
-                        profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
-                    }
-                    else if (groundEffectsResult.size()<=0 && groundAbsorptions.size() > 0){
-                        profile.pts.get(profile.pts.size()-1).groundCoef = groundAbsorptions.get(facetLine.originId).getCoefficient();
-                    }
-                }
-                else if(facetLine.type == GROUND_EFFECT) {
+                } else if(facetLine.type == GROUND_EFFECT) {
                     if(!intersection.equals(facetLine.p0) && !intersection.equals(facetLine.p1)) {
-                        processedGround.put(facetLine.originId, intersection);
-                        //Add cut point only if the same origin Id is for two different coordinate to avoid having
-                        // more than one cutPoint with the same id on the same coordinate
-                        if(processedGround.containsKey(facetLine.originId) ) {
-                            if (k > 0) {
-                                CutProfile cutpt = new CutProfile();
-                                cutpt.addGroundCutPt(intersection, facetLine.originId);
-                                cutpt.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
-                                cutpt.pts.sort(CutPoint::compareTox01y01);
-                                List<Integer> groundEffectsResult1 = (List<Integer>) groundEffectsRtree.query(new Envelope(cutpt.pts.get(0).coordinate));
-                                List<Integer> groundEffectsResult2 = (List<Integer>) groundEffectsRtree.query(new Envelope(cutpt.pts.get(1).coordinate));
-                                if (groundEffectsResult1.equals(groundEffectsResult2) && groundEffectsResult2.size() > 1){
-                                    if (groundEffectsResult1.get(0) < groundEffectsResult1.get(1)){
-                                        cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 2)).getCoefficient();
-                                        cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 1)).getCoefficient();
-                                    }
-                                    else {
-                                        cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 1)).getCoefficient();
-                                        cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 2)).getCoefficient();
-                                    }
-                                }
-                                else {
-                                    cutpt.pts.get(0).groundCoef = groundAbsorptions.get(groundEffectsResult1.get(groundEffectsResult1.size() - 1)).getCoefficient();
-                                    cutpt.pts.get(1).groundCoef = groundAbsorptions.get(groundEffectsResult2.get(groundEffectsResult2.size() - 1)).getCoefficient();
-                                }
-                                cutpt.pts.get(0).coordinate.z = 0.0;
-                                cutpt.pts.get(1).coordinate.z = 0.0;
-                                profile.addCutPt(cutpt.pts.get(0));
-                                profile.addCutPt(cutpt.pts.get(1));
-                                k--;
-                            } else {
-                                profile.addGroundCutPt(intersection, facetLine.originId);
-                                List<Integer> groundEffectsResult = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size() - 1).coordinate));
-                                profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResult.get(groundEffectsResult.size() - 1)).getCoefficient();
-                                profile.addGroundCutPt(processedGround.remove(facetLine.originId), facetLine.originId);
-                                List<Integer> groundEffectsResults = (List<Integer>) groundEffectsRtree.query(new Envelope(profile.pts.get(profile.pts.size() - 1).coordinate));
-                                profile.pts.get(profile.pts.size() - 1).groundCoef = groundAbsorptions.get(groundEffectsResults.get(groundEffectsResults.size() - 1)).getCoefficient();
-                            }
-                        }
+                        // we hit the border of a ground effect
+                        // we need to add a new point with the new value of the ground effect
+                        // we will query for the point that lie after the intersection with the ground effect border
+                        // in order to have the new value of the ground effect, if there is nothing at this location
+                        // we fall back to the default value of ground effect
+
+                        // TODO
                     }
                 }
             }

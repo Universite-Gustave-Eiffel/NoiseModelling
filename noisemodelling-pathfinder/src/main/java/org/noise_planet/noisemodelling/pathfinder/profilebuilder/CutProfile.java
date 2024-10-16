@@ -43,18 +43,20 @@ public class CutProfile {
      * Add the source point.
      * @param coord Coordinate of the source point.
      */
-    public void addSource(Coordinate coord) {
+    public CutPoint addSource(Coordinate coord) {
         source = new CutPoint(coord, SOURCE, -1);
-        pts.add(0, source);
+        pts.add(source);
+        return source;
     }
 
     /**
      * Add the receiver point.
      * @param coord Coordinate of the receiver point.
      */
-    public void addReceiver(Coordinate coord) {
+    public CutPoint addReceiver(Coordinate coord) {
         receiver = new CutPoint(coord, RECEIVER, -1);
         pts.add(receiver);
+        return receiver;
     }
 
     /**
@@ -62,12 +64,13 @@ public class CutProfile {
      * @param coord      Coordinate of the cutting point.
      * @param buildingId Id of the cut building.
      */
-    public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
+    public CutPoint addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
         CutPoint cut = new CutPoint(coord, ProfileBuilder.IntersectionType.BUILDING, buildingId, corner);
+        cut.buildingId = buildingId;
         cut.wallId = wallId;
         pts.add(cut);
-        pts.get(pts.size()-1).buildingId = buildingId;
         hasBuildingInter = true;
+        return cut;
     }
 
     /**
@@ -75,10 +78,12 @@ public class CutProfile {
      * @param coord Coordinate of the cutting point.
      * @param id    Id of the cut building.
      */
-    public void addWallCutPt(Coordinate coord, int id, boolean corner) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner));
-        pts.get(pts.size()-1).wallId = id;
+    public CutPoint addWallCutPt(Coordinate coord, int id, boolean corner) {
+        CutPoint wallPoint = new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner);
+        wallPoint.wallId = id;
+        pts.add(wallPoint);
         hasBuildingInter = true;
+        return wallPoint;
     }
 
     /**
@@ -154,25 +159,10 @@ public class CutProfile {
     }
 
     /**
-     * Sort the CutPoints by there coordinates
+     * Sort the CutPoints by distance with c0
      */
-    public void sort(Coordinate c0, Coordinate c1) {
-        if(c0.x<=c1.x){
-            if(c0.y<=c1.y){
-                pts.sort(CutPoint::compareTox01y01);
-            }
-            else {
-                pts.sort(CutPoint::compareTox01y10);
-            }
-        }
-        if(c0.x>c1.x){
-            if(c0.y<=c1.y){
-                pts.sort(CutPoint::compareTox10y01);
-            }
-            else {
-                pts.sort(CutPoint::compareTox10y10);
-            }
-        }
+    public void sort(Coordinate c0) {
+        pts.sort(new CutPointDistanceComparator(c0));
     }
 
     /**

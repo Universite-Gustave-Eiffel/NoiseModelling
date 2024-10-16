@@ -3507,6 +3507,7 @@ public class AttenuationCnossosTest {
                 .vEdgeDiff(true)
                 .setGs(0.5)
                 .build();
+        rayData.setReflexionOrder(0);
 
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();

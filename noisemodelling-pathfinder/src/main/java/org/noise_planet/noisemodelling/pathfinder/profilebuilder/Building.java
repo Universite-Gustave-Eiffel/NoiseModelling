@@ -75,6 +75,8 @@ public class Building implements ProfileBuilder.Obstacle {
      */
     public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
         this.poly = poly;
+        // Fix clock wise orientation of the polygon and inner holes
+        this.poly.normalize();
         this.height = height;
         this.alphas = new ArrayList<>();
         this.alphas.addAll(alphas);
