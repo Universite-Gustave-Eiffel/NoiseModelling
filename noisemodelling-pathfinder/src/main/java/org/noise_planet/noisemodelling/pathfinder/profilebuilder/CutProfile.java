@@ -235,39 +235,7 @@ public class CutProfile {
      * @return
      */
     public boolean isFreeField() {
-        if(isFreeField == null) {
-            isFreeField = true;
-            Coordinate s = getSource().getCoordinate();
-            Coordinate r = getReceiver().getCoordinate();
-            List<CutPoint> tmp = new ArrayList<>();
-            boolean allMatch = true;
-            for(CutPoint cut : pts) {
-                if(cut.getType() == BUILDING || cut.getType() == WALL) {
-                    tmp.add(cut);
-                }
-                else if(cut.getType() == TOPOGRAPHY) {
-                    tmp.add(cut);
-                }
-                if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
-                    allMatch = false;
-                }
-            }
-            if(allMatch) {
-                return true;
-            }
-            List<CutPoint> ptsWithouGroundEffect = pts.stream()
-                    .filter(cut -> !cut.getType().equals(GROUND_EFFECT))
-                    .collect(Collectors.toList());
-            for(CutPoint pt : ptsWithouGroundEffect) {
-                double[] distanceSRpt = distance3D(source.getCoordinate(), receiver.getCoordinate(), pt.getCoordinate());
-                if(distanceSRpt[0]>0 && distanceSRpt[1]>0) {
-                    isFreeField = false;
-                    distanceToSR = distanceSRpt[0];
-                    break;
-                }
-            }
-        }
-        return isFreeField;
+        return hasBuildingInter || hasTopographyInter;
     }
 
     /**

@@ -296,28 +296,24 @@ public class PathFinder {
                                         int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction,
                                         boolean bodyBarrier) {
         List<CnossosPath> pathsParameters = new ArrayList<>();
-        CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
+        CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS, !verticalDiffraction);
         cutProfile.setSrcOrientation(orientation);
-        //If the field is free, simplify the computation
-        if(cutProfile.isFreeField()) {
-            pathsParameters.add(computeFreeField(cutProfile, data, true));
-        }
-        else if(verticalDiffraction || horizontalDiffraction) {
-            if (verticalDiffraction) {
-                CnossosPath pathParameters = computeHEdgeDiffraction(cutProfile, bodyBarrier);
-                if(pathParameters != null) {
-                    pathsParameters.add(pathParameters);
-                }
+
+        if(verticalDiffraction || cutProfile.isFreeField()) {
+            CnossosPath hEdgePath = computeHEdgeDiffraction(cutProfile, bodyBarrier);
+            if (hEdgePath != null) {
+                pathsParameters.add(hEdgePath);
             }
-            if (horizontalDiffraction) {
-                CnossosPath pathParameters = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
-                if (pathParameters != null && pathParameters.getPointList() != null) {
-                    pathsParameters.add(pathParameters);
-                }
-                pathParameters = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT, orientation);
-                if (pathParameters != null && pathParameters.getPointList() != null) {
-                    pathsParameters.add(pathParameters);
-                }
+        }
+
+        if (horizontalDiffraction) {
+            CnossosPath vEdgePath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
+            if (vEdgePath != null && vEdgePath.getPointList() != null) {
+                pathsParameters.add(vEdgePath);
+            }
+            vEdgePath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT, orientation);
+            if (vEdgePath != null && vEdgePath.getPointList() != null) {
+                pathsParameters.add(vEdgePath);
             }
         }
 
@@ -677,7 +673,7 @@ public class PathFinder {
                 double d = 0;
                 List<CutPoint> allCutPoints = new ArrayList<>();
                 for(int i=0; i<coordinates.size()-1; i++) {
-                    CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS);
+                    CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS, false);
                     profile.setSrcOrientation(orientation);
                     double dist = coordinates.get(i).distance(coordinates.get(i+1));
                     g+=profile.getGPath()*dist;
@@ -1342,7 +1338,7 @@ public class PathFinder {
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     Coordinate firstPt = rayPath.get(idPt).getReceiverPos();
                     MirrorReceiver refl = rayPath.get(idPt + 1);
-                    CutProfile profile = data.profileBuilder.getProfile(firstPt, refl.getReceiverPos(), data.gS);
+                    CutProfile profile = data.profileBuilder.getProfile(firstPt, refl.getReceiverPos(), data.gS, true);
                     if (profile.intersectTopography() || profile.intersectBuilding() ) {
                         validReflection = false;
                         break;
@@ -1446,8 +1442,7 @@ public class PathFinder {
                     List<CutPoint> allCutPoints = new ArrayList<>();
                     List<Double> res = new ArrayList<>();
                     for(int i=0; i<pts.size()-1; i++) {
-                        CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS);
-                        if(i==0)profile.getSource().setGroundCoef(data.gS);
+                        CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS, false);
                         topoPts.addAll(profile.getCutPoints().stream()
                                 .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
                                 .map(CutPoint::getCoordinate)
@@ -1606,23 +1601,22 @@ public class PathFinder {
      * @param profileBuilder
      * @return computed lineString
      */
-    private static LineString splitLineString(LineString lineString, ProfileBuilder profileBuilder) {
+    private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder) {
         List<Coordinate> newGeomCoordinates = new ArrayList<>();
         Coordinate[] coordinates = lineString.getCoordinates();
         for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
             Coordinate p0 = coordinates[idPoint];
             Coordinate p1 = coordinates[idPoint + 1];
-            double p1p0Length = p1.distance(p0);
-            List<Coordinate> groundProfileCoordinates = profileBuilder.getTopographicProfile(p0, p1);
+            List<Coordinate> groundProfileCoordinates = new ArrayList<>();
+            profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
             // add first point of source
             newGeomCoordinates.add(p0);
             // add intermediate points located at the edges of MNT triangle mesh
             // but the Z value should be still relative to the ground
             // ,so we interpolate the Z (height) values of the source
             for(Coordinate intermediatePoint : groundProfileCoordinates) {
-                Vector2D v = new Vector2D(p0, intermediatePoint);
-                Coordinate relativePoint = new Coordinate(intermediatePoint.x, intermediatePoint.y,
-                        p0.z + ((v.length() / p1p0Length) * (p1.z - p0.z)));
+                Coordinate relativePoint = new Coordinate(intermediatePoint);
+                relativePoint.z = Vertex.interpolateZ(intermediatePoint, p0, p1);
                 newGeomCoordinates.add(relativePoint);
             }
         }
@@ -1640,11 +1634,11 @@ public class PathFinder {
 
             Geometry offsetGeometry = source.copy();
             if(source instanceof LineString) {
-                offsetGeometry = splitLineString((LineString) source, data.profileBuilder);
+                offsetGeometry = splitLineSource((LineString) source, data.profileBuilder);
             } else if(source instanceof MultiLineString) {
                 LineString[] newGeom = new LineString[source.getNumGeometries()];
                 for(int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
-                    newGeom[idGeom] = splitLineString((LineString) source.getGeometryN(idGeom),
+                    newGeom[idGeom] = splitLineSource((LineString) source.getGeometryN(idGeom),
                             data.profileBuilder);
                 }
                 offsetGeometry = GEOMETRY_FACTORY.createMultiLineString(newGeom);

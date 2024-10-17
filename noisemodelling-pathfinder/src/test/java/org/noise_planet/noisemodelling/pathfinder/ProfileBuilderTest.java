@@ -312,7 +312,7 @@ public class ProfileBuilderTest {
                 cutStart.setZ(profileBuilder.getZGround(new CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
                 Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
                 cutEnd.setZ(profileBuilder.getZGround(new CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                profileBuilder.getProfile(cutStart, cutEnd, 0);
+                profileBuilder.getProfile(cutStart, cutEnd, 0, false);
             }
         }
         logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / (loops - startLoop)));
@@ -354,7 +354,7 @@ public class ProfileBuilderTest {
 
         Coordinate receiver = new Coordinate(200, 50, 14);
         Coordinate source = new Coordinate(10, 10, 1);
-        CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0);
+        CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0, false);
         assertEquals(7, cutProfile.getCutPoints().size());
         assertEquals(0, cutProfile.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);

@@ -130,7 +130,7 @@ public class TestPathFinder {
     }
 
     @Test
-    public void TestSplitLineStringIntoPoints() {
+    public void TestSplitLineSourceIntoPoints() {
         GeometryFactory factory = new GeometryFactory();
         List<Coordinate> sourcePoints = new ArrayList<>();
         // source line is split in 3 parts of 2.5 meters

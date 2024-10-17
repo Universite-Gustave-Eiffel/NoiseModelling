@@ -562,6 +562,8 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        assertEquals(1, propDataOut.getPropagationPaths().size());
+
         //Expected values
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
         double[] expectedCfH = new double[]{194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16};

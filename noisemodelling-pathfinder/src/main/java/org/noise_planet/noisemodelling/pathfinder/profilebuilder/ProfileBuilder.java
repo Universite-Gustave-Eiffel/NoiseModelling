@@ -36,14 +36,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -946,7 +939,7 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate c0, Coordinate c1) {
-        return getProfile(c0, c1, 0.0);
+        return getProfile(c0, c1, 0.0, false);
     }
 
     /**
@@ -982,9 +975,11 @@ public class ProfileBuilder {
      * @param sourceCoordinate Starting point.
      * @param receiverCoordinate Ending point.
      * @param gS Default source absorption ground effect value if no ground absorption value is found
+     * @param stopAtObstacleOverSourceReceiver If an obstacle is found higher than then segment sourceCoordinate
+     *                                        receiverCoordinate, stop computing and a CutProfile with intersection information
      * @return Cutting profile.
      */
-    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double gS) {
+    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double gS, boolean stopAtObstacleOverSourceReceiver) {
         CutProfile profile = new CutProfile();
 
         // Add sourceCoordinate
@@ -998,13 +993,19 @@ public class ProfileBuilder {
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
         if(topoTree != null) {
-            addTopoCutPts(sourceCoordinate, receiverCoordinate, profile);
+            addTopoCutPts(sourceCoordinate, receiverCoordinate, profile, stopAtObstacleOverSourceReceiver);
+            if(stopAtObstacleOverSourceReceiver && profile.hasTopographyInter) {
+                return profile;
+            }
         }
 
         //Add Buildings/Walls and Ground effect transition points
         if(rtree != null) {
             LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
-            addGroundBuildingCutPts(fullLine, profile);
+            addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
+            if(stopAtObstacleOverSourceReceiver && profile.hasBuildingInter) {
+                return profile;
+            }
         }
 
         // Add receiver point
@@ -1051,70 +1052,74 @@ public class ProfileBuilder {
      * Fetch intersection of a line segment with Buildings lines/Walls lines/Ground Effect lines
      * @param fullLine P0 to P1 query for the profile of buildings
      * @param profile Object to feed the results (out)
+     * @param stopAtObstacleOverSourceReceiver If an obstacle is found higher than then segment sourceCoordinate
+     *                                        receiverCoordinate, stop computing and set #CutProfile.hasBuildingInter to buildings in profile data
      */
-    private void addGroundBuildingCutPts(LineSegment fullLine, CutProfile profile) {
-        Vector2D directionBefore = Vector2D.create(fullLine.p1, fullLine.p0).normalize().multiply(MILLIMETER);
+    private void addGroundBuildingCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
         Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
         // Collect all objects where envelope intersects all sub-segments of fullLine
-        Set<Integer> indexes = new HashSet<>();
+        Set<Integer> processed = new HashSet<>();
 
         // Segmented fullLine, this is the query for rTree indexes
         // Split line into segments for structures based on RTree in order to limit the number of queries
         // (for large area of the line segment envelope)
         List<LineSegment> lines = splitSegment(fullLine.p0, fullLine.p1, maxLineLength);
         for (LineSegment line : lines) {
-            indexes.addAll(rtree.query(new Envelope(line.p0, line.p1)));
-        }
-        for (int i : indexes) {
-            Wall facetLine = processedWalls.get(i);
-            Coordinate intersection = fullLine.intersection(facetLine.ls);
-            if (intersection != null) {
-                intersection = new Coordinate(intersection);
-                if(!isNaN(facetLine.p0.z) && !isNaN(facetLine.p1.z)) {
-                    // same z in the line, so useless to compute interpolation between points
-                    if(Double.compare(facetLine.p0.z, facetLine.p1.z) == 0) {
-                        intersection.z = facetLine.p0.z;
-                    } else {
-                        intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
-                    }
-                }
-                if(facetLine.type == IntersectionType.BUILDING) {
-                    CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i,false);
-                    pt.setGroundCoef(Scene.DEFAULT_G_BUILDING);
-                    pt.setWallAlpha(buildings.get(facetLine.getOriginId()).alphas);
-                    // add a point at the bottom of the building on the exterior side of the building
-                    Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
-                    // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
-                    // it works also with polygon holes as interiors are CCW
-                    Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
-                    Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
-                    CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i,false);
-                    if(topoTree == null) {
-                        exteriorPointCutPoint.coordinate.setZ(0.0);
-                    } else {
-                        exteriorPointCutPoint.coordinate.setZ(getZGround(exteriorPointCutPoint));
-                        pt.zGround = exteriorPointCutPoint.coordinate.z;
-                        exteriorPointCutPoint.zGround = exteriorPointCutPoint.coordinate.z;
-                    }
-                } else if(facetLine.type == IntersectionType.WALL) {
-                    profile.addWallCutPt(intersection, facetLine.originId, false, facetLine.alphas);
-                } else if(facetLine.type == GROUND_EFFECT) {
-                    // we hit the border of a ground effect
-                    // we need to add a new point with the new value of the ground effect
-                    // we will query for the point that lie after the intersection with the ground effect border
-                    // in order to have the new value of the ground effect, if there is nothing at this location
-                    // we fall back to the default value of ground effect
-                    // if this is another ground effect it will be processed in another loop (two intersections on the same coordinate)
-                    // retrieve the ground coefficient after the intersection in the direction of the profile
-                    // this method will solve the question if we enter a new ground absorption or we will leave one
-                    Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
-                    GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
-                    if(groundAbsorption.geom.intersects(afterIntersectionPoint)) {
-                        // we enter a new ground effect
-                        profile.addGroundCutPt(intersection, facetLine.getOriginId(), groundAbsorption.getCoefficient());
-                    } else {
-                        // no new ground effect, we fall back to default G
-                        profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
+            for (Object result : rtree.query(new Envelope(line.p0, line.p1))) {
+                if(result instanceof Integer && !processed.contains((Integer)result)) {
+                    processed.add((Integer) result);
+                    int i = (Integer) result;
+                    Wall facetLine = processedWalls.get(i);
+                    Coordinate intersection = fullLine.intersection(facetLine.ls);
+                    if (intersection != null) {
+                        intersection = new Coordinate(intersection);
+                        if (!isNaN(facetLine.p0.z) && !isNaN(facetLine.p1.z)) {
+                            // same z in the line, so useless to compute interpolation between points
+                            if (Double.compare(facetLine.p0.z, facetLine.p1.z) == 0) {
+                                intersection.z = facetLine.p0.z;
+                            } else {
+                                intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
+                            }
+                        }
+                        if (facetLine.type == IntersectionType.BUILDING) {
+                            CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i, false);
+                            pt.setGroundCoef(Scene.DEFAULT_G_BUILDING);
+                            pt.setWallAlpha(buildings.get(facetLine.getOriginId()).alphas);
+                            // add a point at the bottom of the building on the exterior side of the building
+                            Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
+                            // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
+                            // it works also with polygon holes as interiors are CCW
+                            Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
+                            Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
+                            CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i, false);
+                            if (topoTree == null) {
+                                exteriorPointCutPoint.coordinate.setZ(0.0);
+                            } else {
+                                exteriorPointCutPoint.coordinate.setZ(getZGround(exteriorPointCutPoint));
+                                pt.zGround = exteriorPointCutPoint.coordinate.z;
+                                exteriorPointCutPoint.zGround = exteriorPointCutPoint.coordinate.z;
+                            }
+                        } else if (facetLine.type == IntersectionType.WALL) {
+                            profile.addWallCutPt(intersection, facetLine.originId, false, facetLine.alphas);
+                        } else if (facetLine.type == GROUND_EFFECT) {
+                            // we hit the border of a ground effect
+                            // we need to add a new point with the new value of the ground effect
+                            // we will query for the point that lie after the intersection with the ground effect border
+                            // in order to have the new value of the ground effect, if there is nothing at this location
+                            // we fall back to the default value of ground effect
+                            // if this is another ground effect it will be processed in another loop (two intersections on the same coordinate)
+                            // retrieve the ground coefficient after the intersection in the direction of the profile
+                            // this method will solve the question if we enter a new ground absorption or we will leave one
+                            Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
+                            GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
+                            if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
+                                // we enter a new ground effect
+                                profile.addGroundCutPt(intersection, facetLine.getOriginId(), groundAbsorption.getCoefficient());
+                            } else {
+                                // no new ground effect, we fall back to default G
+                                profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
+                            }
+                        }
                     }
                 }
             }
@@ -1249,8 +1254,10 @@ public class ProfileBuilder {
      * @param p2
      * @param profile
      */
-    public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile) {
-        List<Coordinate> coordinates = getTopographicProfile(p1, p2);
+    public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
+        List<Coordinate> coordinates = new ArrayList<>();
+        boolean freeField = fetchTopographicProfile(coordinates, p1, p2, stopAtObstacleOverSourceReceiver);
+        profile.hasTopographyInter = !freeField;
         // Remove unnecessary points
         ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());
         for(int i =0; i < coordinates.size(); i++) {
@@ -1328,16 +1335,16 @@ public class ProfileBuilder {
     }
 
     /**
-     *
-     * @param p1
-     * @param p2
-     * @return
+     * Fetch all intersections with TIN
+     * @param p1 first point
+     * @param p2 second point
+     * @param stopAtObstacleOverSourceReceiver Stop fetching intersections if the segment p1-p2 is intersecting with TIN
+     * @return True if the segment p1-p2 is not intersecting with DEM
      */
-    public List<Coordinate> getTopographicProfile(Coordinate p1, Coordinate p2) {
+    public boolean fetchTopographicProfile(List<Coordinate> outputPoints,Coordinate p1, Coordinate p2, boolean stopAtObstacleOverSourceReceiver) {
         if(topoTree == null) {
-            return new ArrayList<>();
+            return true;
         }
-        List<Coordinate> outputPoints = new ArrayList<>();
         //get origin triangle id
         int curTriP1 = getTriangleIdByCoordinate(p1);
         LineSegment propaLine = new LineSegment(p1, p2);
@@ -1350,7 +1357,8 @@ public class ProfileBuilder {
                 outputPoints.add(intersectionPt);
                 curTriP1 = minDistanceTriangle.get();
             } else {
-                return outputPoints;
+                // out of DEM propagation area
+                return true;
             }
         }
         HashSet<Integer> navigationHistory = new HashSet<Integer>();
@@ -1363,10 +1371,17 @@ public class ProfileBuilder {
             // extract X,Y,Z values of intersection with triangle segment
             if(!Double.isNaN(intersectionPt.z)) {
                 outputPoints.add(intersectionPt);
+                if(stopAtObstacleOverSourceReceiver) {
+                    Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
+                    double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
+                    if(interpolatedZ < intersectionPt.z) {
+                        return false;
+                    }
+                }
             }
             navigationTri = propaTri;
         }
-        return outputPoints;
+        return true;
     }
 
     /**
