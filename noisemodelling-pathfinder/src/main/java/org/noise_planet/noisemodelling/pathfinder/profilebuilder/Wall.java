@@ -23,8 +23,6 @@ public class Wall implements ProfileBuilder.Obstacle {
     List<Double> alphas;
     /** Wall height, if -1, use z coordinate. */
     double height;
-    boolean hasP0Neighbour = false;
-    boolean hasP1Neighbour = false;
     public Coordinate p0;
     public Coordinate p1;
     LineSegment ls;
@@ -74,24 +72,6 @@ public class Wall implements ProfileBuilder.Obstacle {
         this.originId = originId;
         this.type = type;
         this.alphas = new ArrayList<>();
-    }
-
-    /**
-     * Constructor using start/end point and id.
-     * @param p0       Start point of the segment.
-     * @param p1       End point of the segment.
-     * @param originId Id or index of the source building or topographic triangle.
-     */
-    public Wall(Coordinate p0, Coordinate p1, int originId, ProfileBuilder.IntersectionType type, boolean hasP0Neighbour, boolean hasP1Neighbour) {
-        this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
-        this.p0 = p0;
-        this.p1 = p1;
-        this.ls = new LineSegment(p0, p1);
-        this.originId = originId;
-        this.type = type;
-        this.alphas = new ArrayList<>();
-        this.hasP0Neighbour = hasP0Neighbour;
-        this.hasP1Neighbour = hasP1Neighbour;
     }
 
     /**
@@ -168,14 +148,6 @@ public class Wall implements ProfileBuilder.Obstacle {
     public ProfileBuilder.IntersectionType getType() {
         return type;
     }
-
-    /*public boolean hasP0Neighbour() {
-        return hasP0Neighbour;
-    }
-
-    public boolean hasP1Neighbour() {
-        return hasP1Neighbour;
-    }*/
 
     public ProfileBuilder.Obstacle getObstacle() {
         return obstacle;

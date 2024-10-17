@@ -18,24 +18,24 @@ import java.util.List;
 
 public  class CutPoint implements Comparable<CutPoint> {
     /** {@link Coordinate} of the cut point. */
-    Coordinate coordinate;
+    Coordinate coordinate = new Coordinate();
     /** Intersection type. */
     ProfileBuilder.IntersectionType type;
     /** Identifier of the cut element. */
-    int id;
+    int id = -1;
     /** Identifier of the building containing the point. -1 if no building. */
-    int buildingId;
+    int buildingId = -1;
     /** Identifier of the wall containing the point. -1 if no wall. */
-    int wallId;
+    int wallId = -1;
     /** Height of the building containing the point. NaN of no building. */
-    double height;
+    double height = Double.NaN;
     /** Topographic height of the point. */
     double zGround = Double.NaN;
     /** Ground effect coefficient. 0 if there is no coefficient. */
-    double groundCoef;
+    double groundCoef = Double.NaN;
     /** Wall alpha. NaN if there is no coefficient. */
     List<Double> wallAlpha = Collections.emptyList();
-    boolean corner;
+    boolean corner = false; //todo with horizontal plane diffraction rework: remove, replace with intersection type-> DIFFRACTION_POINT
 
     /**
      * Constructor using a {@link Coordinate}.
@@ -44,14 +44,9 @@ public  class CutPoint implements Comparable<CutPoint> {
      * @param id    Identifier of the cut element.
      */
     public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id, boolean corner) {
-        this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
+        this.coordinate = new Coordinate(coord);
         this.type = type;
         this.id = id;
-        this.buildingId = -1;
-        this.wallId = -1;
-        this.groundCoef = 0;
-        this.wallAlpha = new ArrayList<>();
-        this.height = 0;
         this.corner = corner;
     }
     public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id) {
@@ -59,7 +54,6 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     public CutPoint() {
-        coordinate = new Coordinate();
     }
 
     /**

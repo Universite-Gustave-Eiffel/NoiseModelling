@@ -110,7 +110,7 @@ public class CutProfile {
 
     /**
      * In order to reduce the number of reallocation, reserve the provided points size
-     * @param numberOfPointsToBePushed
+     * @param numberOfPointsToBePushed Number of items to preallocate
      */
     public void reservePoints(int numberOfPointsToBePushed) {
         pts.ensureCapacity(pts.size() + numberOfPointsToBePushed);
@@ -118,12 +118,15 @@ public class CutProfile {
 
     /**
      * Add a ground effect cutting point.
-     * @param coord Coordinate of the cutting point.
+     * @param coordinate Coordinate of the cutting point.
      * @param id    Id of the cut topography.
      */
-    public void addGroundCutPt(Coordinate coord, int id) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.GROUND_EFFECT, id));
+    public CutPoint addGroundCutPt(Coordinate coordinate, int id, double groundCoefficient) {
+        CutPoint pt = new CutPoint(coordinate, ProfileBuilder.IntersectionType.GROUND_EFFECT, id);
+        pt.setGroundCoef(groundCoefficient);
+        pts.add(pt);
         hasGroundEffectInter = true;
+        return pt;
     }
 
     /**
