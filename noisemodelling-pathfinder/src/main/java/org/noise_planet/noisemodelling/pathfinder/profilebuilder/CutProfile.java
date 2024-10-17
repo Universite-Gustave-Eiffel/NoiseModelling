@@ -211,31 +211,19 @@ public class CutProfile {
      * @return the absorption coefficient of this path
      */
     public double getGPath(CutPoint p0, CutPoint p1) {
-        CutPoint current = p0;
-        double totLength = p0.getCoordinate().distance(p1.getCoordinate());
+        double totalLength = 0;
         double rsLength = 0.0;
 
-        List<CutPoint> pts = new ArrayList<>();
-        for(CutPoint cut : getCutPoints()) {
-            if(cut.getType() != TOPOGRAPHY && cut.getType() != BUILDING) {
-                pts.add(cut);
-            }
-        }
-        if(p0.compareTo(p1)<=0) {
-            pts.sort(CutPoint::compareTo);
-        } else {
-            pts.sort(Collections.reverseOrder());
-        }
+        // Extract part of the path from the specified argument
+        List<CutPoint> reduced = pts.subList(pts.indexOf(p0), pts.indexOf(p1) + 1);
 
-        int dir = -p0.compareTo(p1);
-        for(CutPoint cut : pts) {
-            if(dir*cut.compareTo(current)>=0 && dir*cut.compareTo(p1)<0) {
-                rsLength += current.getCoordinate().distance(cut.getCoordinate()) * current.getGroundCoef();
-                current = cut;
-            }
+        for(int index = 0; index < reduced.size() - 1; index++) {
+            CutPoint current = reduced.get(index);
+            double segmentLength = current.getCoordinate().distance(reduced.get(index+1).getCoordinate());
+            rsLength += segmentLength * current.getGroundCoef();
+            totalLength += segmentLength;
         }
-        rsLength += current.getCoordinate().distance(p1.getCoordinate()) * current.getGroundCoef();
-        return rsLength / totLength;
+        return rsLength / totalLength;
     }
 
     public double getGPath() {

@@ -2054,6 +2054,8 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        assertEquals(3, propDataOut.getPropagationPaths().size());
+
         //Expected values
         //Path0 : vertical plane
         double[] expectedDeltaDiffSRH = new double[]{6.02, 6.97, 8.42, 10.38, 12.75, 15.40, 18.21, 21.12};
@@ -3481,6 +3483,18 @@ public class AttenuationCnossosTest {
         assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_VERY_LOW);
     }
 
+    private static void exportRays(String path, List<CnossosPath> cnossosPaths) throws IOException {
+        JsonMapper.Builder builder = JsonMapper.builder();
+        JsonMapper mapper = builder.build();
+        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), cnossosPaths);
+    }
+
     /**
      * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at large height
      */
@@ -3522,19 +3536,7 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        JsonMapper.Builder builder = JsonMapper.builder();
-        JsonMapper mapper = builder.build();
-        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        try {
-            mapper.writeValue(new File("target/cnossosPath.json"), propDataOut.getPropagationPaths());
-        } catch (StreamWriteException ex) {
-
-        }
+        exportRays("src/test/resources/org/noise_planet/noisemodelling/jdbc/regression2/cnossosPath.json", propDataOut.getPropagationPaths());
 
         //Expected values
         //Path0 : vertical plane

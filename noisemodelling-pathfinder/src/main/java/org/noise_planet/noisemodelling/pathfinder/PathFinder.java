@@ -292,10 +292,11 @@ public class PathFinder {
      * @param rcvId    Receiver point identifier.
      * @return Calculated propagation paths.
      */
-    public List<CnossosPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord, int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction, boolean bodyBarrier) {
+    public List<CnossosPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord,
+                                        int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction,
+                                        boolean bodyBarrier) {
         List<CnossosPath> pathsParameters = new ArrayList<>();
         CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS);
-        cutProfile.getSource().setGroundCoef(data.gS);
         cutProfile.setSrcOrientation(orientation);
         //If the field is free, simplify the computation
         if(cutProfile.isFreeField()) {
@@ -849,8 +850,6 @@ public class PathFinder {
         pathParameters.init(data.freq_lvl.size());
         pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
         pathParameters.setCutPoints(cutPts);
-        LineSegment srcRcvLine = new LineSegment(firstPts2D, lastPts2D);
-        List<Coordinate> pts = new ArrayList<>();
 
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
@@ -896,7 +895,7 @@ public class PathFinder {
                 convexHullPoints.add(convexHullCoords[j]);
             }
         }
-        pts = convexHullPoints;
+        List<Coordinate> pts = convexHullPoints;
 
         double e = 0;
         Coordinate src = null;

@@ -23,7 +23,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
-import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
@@ -45,10 +44,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
@@ -69,7 +66,7 @@ import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileB
  */
 public class ProfileBuilder {
     public static final double epsilon = 1e-7;
-    public static final double CENTIMETER = 0.01;
+    public static final double MILLIMETER = 0.001;
     public static final double LEFT_SIDE = Math.PI / 2;
     /** Class {@link java.util.logging.Logger}. */
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfileBuilder.class);
@@ -1056,8 +1053,8 @@ public class ProfileBuilder {
      * @param profile Object to feed the results (out)
      */
     private void addGroundBuildingCutPts(LineSegment fullLine, CutProfile profile) {
-        Vector2D directionBefore = Vector2D.create(fullLine.p1, fullLine.p0).normalize().multiply(CENTIMETER);
-        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(CENTIMETER);
+        Vector2D directionBefore = Vector2D.create(fullLine.p1, fullLine.p0).normalize().multiply(MILLIMETER);
+        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
         // Collect all objects where envelope intersects all sub-segments of fullLine
         Set<Integer> indexes = new HashSet<>();
 
@@ -1089,7 +1086,7 @@ public class ProfileBuilder {
                     Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
                     // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
                     // it works also with polygon holes as interiors are CCW
-                    Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(CENTIMETER);
+                    Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
                     Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
                     CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i,false);
                     if(topoTree == null) {
