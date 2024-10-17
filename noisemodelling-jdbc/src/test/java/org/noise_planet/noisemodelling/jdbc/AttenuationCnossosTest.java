@@ -3536,8 +3536,6 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        exportRays("src/test/resources/org/noise_planet/noisemodelling/jdbc/regression2/cnossosPath.json", propDataOut.getPropagationPaths());
-
         //Expected values
         //Path0 : vertical plane
         double[] expectedDeltaDiffSRH = new double[]{11.92, 14.46, 17.23, 20.11, 23.06, 26.04, 29.03, 32.03};
@@ -3786,20 +3784,20 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
 
         //Assertions
-        assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
-        /*assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm - right lateral", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - right lateral", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ADiv - right lateral", expectedADiv, actualADiv, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("ADiv - right lateral", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundH - right lateral", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF - right lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_LOW);*/
+        assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
         /*try{
             writerTc01.write("Right Lateral\n\n");
@@ -3870,11 +3868,11 @@ public class AttenuationCnossosTest {
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
         //Assertions
-        assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
         /*try {

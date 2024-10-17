@@ -259,10 +259,8 @@ public class CutProfile {
                     .filter(cut -> !cut.getType().equals(GROUND_EFFECT))
                     .collect(Collectors.toList());
             for(CutPoint pt : ptsWithouGroundEffect) {
-                double frac = (pt.coordinate.x-s.x)/(r.x-s.x);
-                double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
                 double[] distanceSRpt = distance3D(source.getCoordinate(), receiver.getCoordinate(), pt.getCoordinate());
-                if(distanceSRpt[0]>0 && distanceSRpt[1]>0 && !pt.isCorner()) {
+                if(distanceSRpt[0]>0 && distanceSRpt[1]>0) {
                     isFreeField = false;
                     distanceToSR = distanceSRpt[0];
                     break;

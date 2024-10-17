@@ -679,10 +679,6 @@ public class PathFinder {
                 for(int i=0; i<coordinates.size()-1; i++) {
                     CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS);
                     profile.setSrcOrientation(orientation);
-                    if (!profile.isFreeField()){
-                        pathParameters = null;
-                        return null;
-                    }
                     double dist = coordinates.get(i).distance(coordinates.get(i+1));
                     g+=profile.getGPath()*dist;
                     d+=dist;
