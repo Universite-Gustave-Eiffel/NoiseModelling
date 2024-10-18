@@ -297,6 +297,12 @@ public class PathFinder {
                                         boolean bodyBarrier) {
         List<CnossosPath> pathsParameters = new ArrayList<>();
         CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS, !verticalDiffraction);
+        if(cutProfile.getSource() != null) {
+            cutProfile.getSource().setId(srcId);
+        }
+        if(cutProfile.getReceiver() != null) {
+            cutProfile.getReceiver().setId(rcvId);
+        }
         cutProfile.setSrcOrientation(orientation);
 
         if(verticalDiffraction || cutProfile.isFreeField()) {
@@ -730,7 +736,7 @@ public class PathFinder {
         List<Coordinate> pts = convexHullPoints;
 
         double e = 0;
-        Coordinate src = null;
+        Coordinate src = cutProfile.getSource().getCoordinate();
 
         for (int i = 1; i < pts.size(); i++) {
             int k =0;
