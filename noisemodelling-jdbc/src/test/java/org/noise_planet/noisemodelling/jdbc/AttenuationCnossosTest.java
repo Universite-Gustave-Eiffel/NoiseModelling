@@ -562,7 +562,7 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        exportRays("src/test/resources/org/noise_planet/noisemodelling/jdbc/rays.json", propDataOut.getPropagationPaths());
+        exportRays("src/test/resources/org/noise_planet/noisemodelling/jdbc/rays.json", propDataOut);
 
         assertEquals(1, propDataOut.getPropagationPaths().size());
 
@@ -3487,7 +3487,7 @@ public class AttenuationCnossosTest {
         assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_VERY_LOW);
     }
 
-    private static void exportRays(String path, List<CnossosPath> cnossosPaths) throws IOException {
+    private static void exportRays(String path, Attenuation attenuation) throws IOException {
         JsonMapper.Builder builder = JsonMapper.builder();
         JsonMapper mapper = builder.build();
         mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
@@ -3496,7 +3496,7 @@ public class AttenuationCnossosTest {
                 .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), cnossosPaths);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), attenuation);
     }
 
     /**
