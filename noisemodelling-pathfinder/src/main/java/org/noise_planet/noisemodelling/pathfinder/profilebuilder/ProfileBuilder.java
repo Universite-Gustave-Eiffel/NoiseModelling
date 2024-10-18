@@ -990,6 +990,8 @@ public class ProfileBuilder {
         } else {
             sourcePoint.setGroundCoef(gS);
         }
+        // Add receiver point
+        CutPoint receiverPoint = profile.addReceiver(receiverCoordinate);
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
         if(topoTree != null) {
@@ -997,6 +999,9 @@ public class ProfileBuilder {
             if(stopAtObstacleOverSourceReceiver && profile.hasTopographyInter) {
                 return profile;
             }
+        } else {
+            profile.getSource().zGround = 0.0;
+            profile.getReceiver().zGround = 0.0;
         }
 
         //Add Buildings/Walls and Ground effect transition points
@@ -1007,9 +1012,6 @@ public class ProfileBuilder {
                 return profile;
             }
         }
-
-        // Add receiver point
-        CutPoint receiverPoint = profile.addReceiver(receiverCoordinate);
 
         //Sort all the cut point from sourceCoordinate to receiverCoordinate positions
         profile.sort(sourceCoordinate);
@@ -1023,8 +1025,31 @@ public class ProfileBuilder {
                 currentCoefficient = cutPoint.getGroundCoef();
             }
         }
-
-
+        // Compute the interpolation of Z ground for intermediate points
+        CutPoint previousZGround = sourcePoint;
+        int nextPointIndex = 0;
+        for (int pointIndex = 1; pointIndex < profile.pts.size() - 1; pointIndex++) {
+            CutPoint cutPoint = profile.pts.get(pointIndex);
+            if(Double.isNaN(cutPoint.zGround)) {
+                if(nextPointIndex <= pointIndex) {
+                    // look for next reference Z ground point
+                    for (nextPointIndex = pointIndex + 1; nextPointIndex < profile.pts.size(); nextPointIndex++) {
+                        CutPoint nextPoint = profile.pts.get(nextPointIndex);
+                        if (!Double.isNaN(nextPoint.zGround)) {
+                            break;
+                        }
+                    }
+                }
+                CutPoint nextPoint = profile.pts.get(nextPointIndex);
+                cutPoint.zGround = Vertex.interpolateZ(cutPoint.coordinate,
+                        new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
+                                previousZGround.getzGround()),
+                        new Coordinate(nextPoint.coordinate.x, nextPoint.coordinate.y, nextPoint.getzGround()));
+            } else {
+                // we have an update on Z ground
+                previousZGround = cutPoint;
+            }
+        }
         return profile;
     }
 

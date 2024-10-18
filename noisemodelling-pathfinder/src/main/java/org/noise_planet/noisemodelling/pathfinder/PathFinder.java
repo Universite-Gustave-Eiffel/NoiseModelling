@@ -437,32 +437,9 @@ public class PathFinder {
     List<Coordinate> computePts2DGround(CutProfile cutProfile, Scene data) {
         List<Coordinate> pts2D= cutProfile.getCutPoints().stream()
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
-                .map(cut -> new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, data.profileBuilder.getZGround(cut)))
+                .map(cut -> new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()))
                 .collect(Collectors.toList());
-        List<Coordinate> pointts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        List<Coordinate> toRemove = new ArrayList<>();
-        for(int i=1; i<pointts2D.size(); i++) {
-            if(pointts2D.get(i).x == pointts2D.get(i-1).x) {
-                toRemove.add(pointts2D.get(i));
-            }
-        }
-        for(Coordinate c : toRemove) {
-            pointts2D.remove(c);
-        }
-
-        List<Coordinate> pts2DGround = new ArrayList<>();
-        for(int i=0; i<pointts2D.size(); i++) {
-            Coordinate c = new Coordinate(pointts2D.get(i));
-            if(i==0) {
-                c = new Coordinate(pointts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getSource()));
-            }
-            else if(i == pointts2D.size()-1) {
-                c = new Coordinate(pointts2D.get(i).x, data.profileBuilder.getZGround(cutProfile.getReceiver()));
-            }
-            pts2DGround.add(c);
-
-        }
-        return pts2DGround;
+        return JTSUtility.getNewCoordinateSystem(pts2D);
     }
 
 
@@ -676,7 +653,8 @@ public class PathFinder {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
 
-        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2D.toArray(new Coordinate[0]));
+        List<Coordinate> pts2DGround = computePts2DGround(cutProfile, data);
+        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.toArray(new Coordinate[0]));
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
@@ -778,7 +756,7 @@ public class PathFinder {
                 }
             }
             if(indexG>0)profileSeg.getCutPoints().get(indexG).setGroundCoef(profileSeg.getReceiver().getGroundCoef());
-            //subList = toDirectLine(subList);
+
             meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
             segments.add(path);
