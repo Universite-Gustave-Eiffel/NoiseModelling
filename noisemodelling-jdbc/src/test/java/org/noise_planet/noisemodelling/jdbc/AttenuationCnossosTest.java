@@ -421,6 +421,9 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
         SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
         SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
         assertEquals(s0.dp, s1.dp);
@@ -561,8 +564,6 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
-
-        exportRays("src/test/resources/org/noise_planet/noisemodelling/jdbc/rays.json", propDataOut);
 
         assertEquals(1, propDataOut.getPropagationPaths().size());
 

@@ -27,8 +27,6 @@ public  class CutPoint implements Comparable<CutPoint> {
     int buildingId = -1;
     /** Identifier of the wall containing the point. -1 if no wall. */
     int wallId = -1;
-    /** Height of the building containing the point. NaN of no building. */
-    double height = Double.NaN;
     /** Topographic height of the point. */
     double zGround = Double.NaN;
     /** Ground effect coefficient. 0 if there is no coefficient. */
@@ -68,7 +66,6 @@ public  class CutPoint implements Comparable<CutPoint> {
         this.wallId = cut.wallId;
         this.groundCoef = cut.groundCoef;
         this.wallAlpha = new ArrayList<>(cut.wallAlpha);
-        this.height = cut.height;
         this.zGround = cut.zGround;
         this.corner = cut.corner;
     }
@@ -112,20 +109,12 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Sets the building height.
-     * @param height The building height.
-     */
-    public void setHeight(double height) {
-        this.height = height;
-    }
-
-    /**
      * Sets the topographic height.
      * @param zGround The topographic height.
      */
-    /*public void setzGround(double zGround) {
+    public void setZGround(double zGround) {
         this.zGround = zGround;
-    }*/
+    }
 
     /**
      * Sets the wall alpha.
@@ -176,14 +165,6 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Retrieve the height of the building containing the point. If there is no building, returns NaN.
-     * @return The building height, or NaN if no building.
-     */
-    public double getHeight() {
-        return height;
-    }
-
-    /**
      * Retrieve the topographic height of the point.
      * @return The topographic height of the point.
      */
@@ -205,17 +186,17 @@ public  class CutPoint implements Comparable<CutPoint> {
 
     @Override
     public String toString() {
-        String str = "";
-        str += type.name();
-        str += " ";
-        str += "(" + coordinate.x +"," + coordinate.y +"," + coordinate.z + ") ; ";
-        str += "grd : " + groundCoef + " ; ";
-        str += "topoH : " + zGround + " ; ";
-        str += "buildH : " + height + " ; ";
-        str += "buildId : " + buildingId + " ; ";
-        str += "alpha : " + wallAlpha + " ; ";
-        str += "id : " + id + " ; ";
-        return str;
+        return "CutPoint{" +
+                "coordinate=" + coordinate +
+                ", type=" + type +
+                ", id=" + id +
+                ", buildingId=" + buildingId +
+                ", wallId=" + wallId +
+                ", zGround=" + zGround +
+                ", groundCoef=" + groundCoef +
+                ", wallAlpha=" + wallAlpha +
+                ", corner=" + corner +
+                '}';
     }
 
     /**

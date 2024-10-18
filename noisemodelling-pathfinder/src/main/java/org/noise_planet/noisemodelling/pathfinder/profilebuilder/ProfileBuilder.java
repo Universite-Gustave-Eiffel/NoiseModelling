@@ -1033,9 +1033,10 @@ public class ProfileBuilder {
             if(Double.isNaN(cutPoint.zGround)) {
                 if(nextPointIndex <= pointIndex) {
                     // look for next reference Z ground point
-                    for (nextPointIndex = pointIndex + 1; nextPointIndex < profile.pts.size(); nextPointIndex++) {
-                        CutPoint nextPoint = profile.pts.get(nextPointIndex);
+                    for (int i = pointIndex + 1; i < profile.pts.size(); i++) {
+                        CutPoint nextPoint = profile.pts.get(i);
                         if (!Double.isNaN(nextPoint.zGround)) {
+                            nextPointIndex = i;
                             break;
                         }
                     }
@@ -1140,7 +1141,7 @@ public class ProfileBuilder {
                             if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
                                 // we enter a new ground effect
                                 profile.addGroundCutPt(intersection, facetLine.getOriginId(), groundAbsorption.getCoefficient());
-                            } else {
+                            } else if(getIntersectingGroundAbsorption(afterIntersectionPoint) == -1){
                                 // no new ground effect, we fall back to default G
                                 profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
                             }

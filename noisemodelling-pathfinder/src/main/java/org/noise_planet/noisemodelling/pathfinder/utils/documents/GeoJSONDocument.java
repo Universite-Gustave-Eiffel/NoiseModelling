@@ -154,7 +154,6 @@ public class GeoJSONDocument {
         }
         if(cutPoint.getBuildingId() != - 1) {
             jsonGenerator.writeNumberField("building", cutPoint.getBuildingId());
-            jsonGenerator.writeNumberField("height", cutPoint.getHeight());
             jsonGenerator.writeStringField("alpha", cutPoint.getWallAlpha().stream().
                     map(aDouble -> String.format("%.2f", aDouble)).collect(Collectors.joining(",")));
         }

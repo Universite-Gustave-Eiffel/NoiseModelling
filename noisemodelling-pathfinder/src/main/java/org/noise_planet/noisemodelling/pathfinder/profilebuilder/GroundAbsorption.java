@@ -25,6 +25,7 @@ public class GroundAbsorption {
      */
     public GroundAbsorption(Geometry geom, double coef) {
         this.geom = geom;
+        this.geom.normalize();
         this.coef = coef;
     }
 
