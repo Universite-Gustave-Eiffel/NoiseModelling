@@ -996,7 +996,7 @@ public class ProfileBuilder {
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
         if(topoTree != null) {
             addTopoCutPts(sourceCoordinate, receiverCoordinate, profile, stopAtObstacleOverSourceReceiver);
-            if(stopAtObstacleOverSourceReceiver && profile.hasTopographyInter) {
+            if(stopAtObstacleOverSourceReceiver && profile.hasTopographyIntersection) {
                 return profile;
             }
         } else {
@@ -1008,7 +1008,7 @@ public class ProfileBuilder {
         if(rtree != null) {
             LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
             addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
-            if(stopAtObstacleOverSourceReceiver && profile.hasBuildingInter) {
+            if(stopAtObstacleOverSourceReceiver && profile.hasBuildingIntersection) {
                 return profile;
             }
         }
@@ -1046,6 +1046,11 @@ public class ProfileBuilder {
                         new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
                                 previousZGround.getzGround()),
                         new Coordinate(nextPoint.coordinate.x, nextPoint.coordinate.y, nextPoint.getzGround()));
+                if(Double.isNaN(cutPoint.coordinate.z)) {
+                    // Bottom of walls are set to NaN z because it can be computed here at low cost
+                    // (without fetch dem r-tree)
+                    cutPoint.coordinate.setZ(cutPoint.zGround);
+                }
             } else {
                 // we have an update on Z ground
                 previousZGround = cutPoint;
@@ -1083,6 +1088,7 @@ public class ProfileBuilder {
      */
     private void addGroundBuildingCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
         Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
+        Vector2D directionBefore = directionAfter.negate();
         // Collect all objects where envelope intersects all sub-segments of fullLine
         Set<Integer> processed = new HashSet<>();
 
@@ -1118,15 +1124,21 @@ public class ProfileBuilder {
                             Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
                             Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
                             CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i, false);
-                            if (topoTree == null) {
-                                exteriorPointCutPoint.coordinate.setZ(0.0);
-                            } else {
-                                exteriorPointCutPoint.coordinate.setZ(getZGround(exteriorPointCutPoint));
-                                pt.zGround = exteriorPointCutPoint.coordinate.z;
-                                exteriorPointCutPoint.zGround = exteriorPointCutPoint.coordinate.z;
+                            exteriorPointCutPoint.coordinate.setZ(NaN);
+                            double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
+                            if(zRayReceiverSource <= intersection.z) {
+                                profile.hasBuildingIntersection = true;
                             }
                         } else if (facetLine.type == IntersectionType.WALL) {
+                            profile.addWallCutPt(Vector2D.create(intersection).add(directionBefore).toCoordinate(),
+                                    facetLine.originId, false, facetLine.alphas);
                             profile.addWallCutPt(intersection, facetLine.originId, false, facetLine.alphas);
+                            profile.addWallCutPt(Vector2D.create(intersection).add(directionAfter).toCoordinate(),
+                                    facetLine.originId, false, facetLine.alphas);
+                            double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
+                            if(zRayReceiverSource <= intersection.z) {
+                                profile.hasBuildingIntersection = true;
+                            }
                         } else if (facetLine.type == GROUND_EFFECT) {
                             // we hit the border of a ground effect
                             // we need to add a new point with the new value of the ground effect
@@ -1283,7 +1295,7 @@ public class ProfileBuilder {
     public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
         List<Coordinate> coordinates = new ArrayList<>();
         boolean freeField = fetchTopographicProfile(coordinates, p1, p2, stopAtObstacleOverSourceReceiver);
-        profile.hasTopographyInter = !freeField;
+        profile.hasTopographyIntersection = !freeField;
         // Remove unnecessary points
         ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());
         for(int i =0; i < coordinates.size(); i++) {

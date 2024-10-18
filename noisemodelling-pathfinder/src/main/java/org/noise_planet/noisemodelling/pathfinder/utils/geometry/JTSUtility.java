@@ -34,6 +34,59 @@ public class JTSUtility {
      **/
     private JTSUtility() {}
 
+
+    /**
+     * Get distance between a segment (p1,p2) and a point (point) with point perpendicular to (p1,p2)
+     * @param p1 origin segment
+     * @param p2 destination segment
+     * @param point reference point
+     * @return DistanceInfo[0]=distance; DistanceInfo[1]=sign;
+     */
+    private static double[] distance3D(Coordinate p1, Coordinate p2, Coordinate point) {
+        double[] DistanceInfo = new double[2];
+        double x1 = p1.getX();
+        double y1 = p1.getY();
+        double z1 = p1.getZ();
+
+        double x2 = p2.getX();
+        double y2 = p2.getY();
+        double z2 = p2.getZ();
+
+        double x0 = point.getX();
+        double y0 = point.getY();
+        double z0 = point.getZ();
+
+        // Vector representing the LineSegment
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double dz = z2 - z1;
+
+        // Vector from the start point of the LineSegment to the Point
+        double px = x0 - x1;
+        double py = y0 - y1;
+        double pz = z0 - z1;
+
+        // Compute the dot product of the vectors
+        double dotProduct = dx * px + dy * py + dz * pz;
+
+        // Calculate the projection of the Point onto the LineSegment
+        double t = dotProduct / (dx * dx + dy * dy + dz * dz);
+
+        // Calculate the closest point on the LineSegment to the Point
+        double closestX = x1 + t * dx;
+        double closestY = y1 + t * dy;
+        double closestZ = z1 + t * dz;
+
+        // Calculate the distance between the closest point and the Point
+        double distance = Math.sqrt((x0 - closestX) * (x0 - closestX)
+                + (y0 - closestY) * (y0 - closestY)
+                + (z0 - closestZ) * (z0 - closestZ));
+        double sign = z0 - closestZ;
+        DistanceInfo[0]=distance;
+        DistanceInfo[1]=sign;
+        return DistanceInfo;
+    }
+
     /**
      * Compute a and b linear function of the line p1 p2
      * @param p1 p1

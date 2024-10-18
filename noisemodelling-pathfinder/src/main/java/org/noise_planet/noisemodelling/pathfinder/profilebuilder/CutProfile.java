@@ -15,7 +15,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 //import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
@@ -29,12 +28,10 @@ public class CutProfile {
     /** Receiver cut point. */
     CutPoint receiver;
     //TODO cache has intersection properties
-    /** True if contains a building cutting point. */
-    Boolean hasBuildingInter = false;
-    /** True if contains a topography cutting point. */
-    Boolean hasTopographyInter = false;
-    /** True if contains a ground effect cutting point. */
-    Boolean hasGroundEffectInter = false;
+    /** True if Source-Receiver linestring is below building intersection */
+    Boolean hasBuildingIntersection = false;
+    /** True if Source-Receiver linestring is below topography cutting point. */
+    Boolean hasTopographyIntersection = false;
     Boolean isFreeField;
     double distanceToSR = 0;
     Orientation srcOrientation;
@@ -69,7 +66,6 @@ public class CutProfile {
         cut.buildingId = buildingId;
         cut.wallId = wallId;
         pts.add(cut);
-        hasBuildingInter = true;
         return cut;
     }
 
@@ -82,7 +78,6 @@ public class CutProfile {
         CutPoint wallPoint = new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner);
         wallPoint.wallId = id;
         pts.add(wallPoint);
-        hasBuildingInter = true;
         return wallPoint;
     }
 
@@ -95,7 +90,6 @@ public class CutProfile {
         pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner));
         pts.get(pts.size()-1).wallId = id;
         pts.get(pts.size()-1).setWallAlpha(alphas);
-        hasBuildingInter = true;
     }
 
     /**
@@ -105,7 +99,6 @@ public class CutProfile {
      */
     public void addTopoCutPt(Coordinate coord, int id) {
         pts.add(new CutPoint(coord, TOPOGRAPHY, id));
-        hasTopographyInter = true;
     }
 
     /**
@@ -125,7 +118,6 @@ public class CutProfile {
         CutPoint pt = new CutPoint(coordinate, ProfileBuilder.IntersectionType.GROUND_EFFECT, id);
         pt.setGroundCoef(groundCoefficient);
         pts.add(pt);
-        hasGroundEffectInter = true;
         return pt;
     }
 
@@ -192,17 +184,12 @@ public class CutProfile {
     }
 
     public boolean intersectBuilding(){
-        return hasBuildingInter;
+        return hasBuildingIntersection;
     }
 
     public boolean intersectTopography(){
-        return hasTopographyInter;
+        return hasTopographyIntersection;
     }
-
-    public boolean intersectGroundEffect(){
-        return hasGroundEffectInter;
-    }
-
 
     /**
      * compute the path between two points
@@ -235,66 +222,21 @@ public class CutProfile {
      * @return
      */
     public boolean isFreeField() {
-        return !hasBuildingInter && !hasTopographyInter;
+        return !hasBuildingIntersection && !hasTopographyIntersection;
     }
 
-    /**
-     * Get distance between a segment (p1,p2) and a point (point) with point perpendicular to (p1,p2)
-     * @param p1
-     * @param p2
-     * @param point
-     * @return distance in meters
-     */
-    private static double[] distance3D(Coordinate p1, Coordinate p2, Coordinate point) {
-        double[] DistanceInfo = new double[2];
-        double x1 = p1.getX();
-        double y1 = p1.getY();
-        double z1 = p1.getZ();
-
-        double x2 = p2.getX();
-        double y2 = p2.getY();
-        double z2 = p2.getZ();
-
-        double x0 = point.getX();
-        double y0 = point.getY();
-        double z0 = point.getZ();
-
-        // Vector representing the LineSegment
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        double dz = z2 - z1;
-
-        // Vector from the start point of the LineSegment to the Point
-        double px = x0 - x1;
-        double py = y0 - y1;
-        double pz = z0 - z1;
-
-        // Compute the dot product of the vectors
-        double dotProduct = dx * px + dy * py + dz * pz;
-
-        // Calculate the projection of the Point onto the LineSegment
-        double t = dotProduct / (dx * dx + dy * dy + dz * dz);
-
-        // Calculate the closest point on the LineSegment to the Point
-        double closestX = x1 + t * dx;
-        double closestY = y1 + t * dy;
-        double closestZ = z1 + t * dz;
-
-        // Calculate the distance between the closest point and the Point
-        double distance = Math.sqrt((x0 - closestX) * (x0 - closestX)
-                + (y0 - closestY) * (y0 - closestY)
-                + (z0 - closestZ) * (z0 - closestZ));
-        double sign = z0 - closestZ;
-        DistanceInfo[0]=distance;
-        DistanceInfo[1]=sign;
-        return DistanceInfo;
-    }
 
     @Override
     public String toString() {
-        return "CutProfile{" + "pts=" + pts + ", source=" + source + ", receiver=" + receiver + ", " +
-                "hasBuildingInter=" + hasBuildingInter + ", hasTopographyInter=" + hasTopographyInter + ", " +
-                "hasGroundEffectInter=" + hasGroundEffectInter + ", isFreeField=" + isFreeField + ", " +
-                "srcOrientation=" + srcOrientation + '}';
+        return "CutProfile{" +
+                "pts=" + pts +
+                ", source=" + source +
+                ", receiver=" + receiver +
+                ", hasBuildingIntersection=" + hasBuildingIntersection +
+                ", hasTopographyIntersection=" + hasTopographyIntersection +
+                ", isFreeField=" + isFreeField +
+                ", distanceToSR=" + distanceToSR +
+                ", srcOrientation=" + srcOrientation +
+                '}';
     }
 }

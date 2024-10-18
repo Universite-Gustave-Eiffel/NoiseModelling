@@ -392,13 +392,13 @@ public class AttenuationCnossosTest {
                         new Coordinate(-5, 20),
                         new Coordinate(5, 20),
                         new Coordinate(5, 10)
-                }, 0.0)
+                }, 1.0)
                 .addBuilding(new Coordinate[]{
                         new Coordinate(-5, -10 ),
                         new Coordinate(-5, -20 ),
                         new Coordinate(5, -20),
                         new Coordinate(5, -10)
-                }, 0.0)
+                }, 1.0)
                 .finishFeeding();
 
         //Propagation data building
