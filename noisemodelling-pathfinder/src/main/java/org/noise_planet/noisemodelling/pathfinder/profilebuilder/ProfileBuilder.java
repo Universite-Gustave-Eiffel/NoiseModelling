@@ -1295,6 +1295,8 @@ public class ProfileBuilder {
     public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
         List<Coordinate> coordinates = new ArrayList<>();
         boolean freeField = fetchTopographicProfile(coordinates, p1, p2, stopAtObstacleOverSourceReceiver);
+        profile.getSource().zGround = coordinates.get(0).z;
+        profile.getReceiver().zGround = coordinates.get(coordinates.size() - 1).z;
         profile.hasTopographyIntersection = !freeField;
         // Remove unnecessary points
         ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());

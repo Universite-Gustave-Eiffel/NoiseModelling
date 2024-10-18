@@ -96,9 +96,13 @@ public class CutProfile {
      * Add a topographic cutting point.
      * @param coord Coordinate of the cutting point.
      * @param id    Id of the cut topography.
+     * @return Added cut point instance
      */
-    public void addTopoCutPt(Coordinate coord, int id) {
-        pts.add(new CutPoint(coord, TOPOGRAPHY, id));
+    public CutPoint addTopoCutPt(Coordinate coord, int id) {
+        CutPoint topoCutPoint = new CutPoint(coord, TOPOGRAPHY, id);
+        topoCutPoint.setZGround(coord.z);
+        pts.add(topoCutPoint);
+        return topoCutPoint;
     }
 
     /**

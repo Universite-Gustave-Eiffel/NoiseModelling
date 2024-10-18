@@ -76,13 +76,7 @@ public class AttenuationCnossosTest {
         assertEquals(valueName + ": Different array length;", expected.length, actual.length);
         for(int i=0; i< expected.length; i++) {
             if(!Double.isNaN(expected[i])){
-                double deltaOff = 1;
-                /*if(expected[i]!=0) {
-                    while (Math.abs(expected[i]/deltaOff) < 1) {
-                        deltaOff /= 10;
-                    }
-                }*/
-                assertEquals(valueName + ": Arrays first differed at element ["+i+"];", expected[i], actual[i], delta*deltaOff);
+                assertEquals(valueName + ": Arrays first differed at element ["+i+"];", expected[i], actual[i], delta);
             }
         }
     }
