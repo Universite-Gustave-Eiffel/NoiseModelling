@@ -235,7 +235,7 @@ public class CutProfile {
      * @return
      */
     public boolean isFreeField() {
-        return hasBuildingInter || hasTopographyInter;
+        return !hasBuildingInter && !hasTopographyInter;
     }
 
     /**
