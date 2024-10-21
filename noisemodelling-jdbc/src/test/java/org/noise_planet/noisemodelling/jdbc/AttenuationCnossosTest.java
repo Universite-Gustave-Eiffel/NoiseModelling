@@ -1556,10 +1556,30 @@ public class AttenuationCnossosTest {
         double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
-        assertEquals(0.31, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-5.65, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
-        assertEquals(194.16, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(8.50, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOWEST);
+
+        // Segment S-O
+        SegmentPath SO = proPath.getSegmentList().get(0);
+        assertEquals(0.05, SO.a, ERROR_EPSILON_LOWEST);
+        assertEquals(-2.33, SO.b, ERROR_EPSILON_LOWEST);
+        assertEquals(0.31, SO.sPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-5.65, SO.sPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(178.84, SO.r.x, ERROR_EPSILON_LOWEST);
+        assertEquals(10, SO.r.y, ERROR_EPSILON_LOWEST);
+
+        // Segment 0-R
+        SegmentPath OR = proPath.getSegmentList().get(1);
+        assertEquals(0.0, OR.a, ERROR_EPSILON_LOWEST);
+        assertEquals(10.00, OR.b, ERROR_EPSILON_LOWEST);
+        assertEquals(178.84, OR.s.x, ERROR_EPSILON_LOWEST);
+        assertEquals(10, OR.s.y, ERROR_EPSILON_LOWEST);
+        assertEquals(194.16, OR.rPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(8.50, OR.rPrime.y, ERROR_EPSILON_LOWEST);
+
+        // Segment S-R
+        SegmentPath SR = proPath.getSegmentList().get(2);
+        assertEquals(0.05, SR.a, ERROR_EPSILON_LOWEST);
+        assertEquals(-2.83, SR.b, ERROR_EPSILON_LOWEST);
+
 
         assertDoubleArrayEquals("DeltaDiffSR", expectedDeltaDiffSR, actualDeltaDiffSR, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSO", expectedAGroundSO, actualAGroundSO, ERROR_EPSILON_VERY_LOW);
