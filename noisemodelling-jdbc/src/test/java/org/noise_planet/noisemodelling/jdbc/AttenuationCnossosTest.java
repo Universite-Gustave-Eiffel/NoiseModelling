@@ -1557,6 +1557,8 @@ public class AttenuationCnossosTest {
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
         //Assertions
 
+        assertEquals(2, proPath.getSegmentList().size());
+
         // Segment S-O
         SegmentPath SO = proPath.getSegmentList().get(0);
         assertEquals(0.05, SO.a, ERROR_EPSILON_LOWEST);
@@ -1576,7 +1578,7 @@ public class AttenuationCnossosTest {
         assertEquals(8.50, OR.rPrime.y, ERROR_EPSILON_LOWEST);
 
         // Segment S-R
-        SegmentPath SR = proPath.getSegmentList().get(2);
+        SegmentPath SR = proPath.getSRSegment();
         assertEquals(0.05, SR.a, ERROR_EPSILON_LOWEST);
         assertEquals(-2.83, SR.b, ERROR_EPSILON_LOWEST);
 
