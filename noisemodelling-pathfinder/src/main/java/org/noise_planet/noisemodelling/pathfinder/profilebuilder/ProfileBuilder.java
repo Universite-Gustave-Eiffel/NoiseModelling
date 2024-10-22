@@ -130,6 +130,12 @@ public class ProfileBuilder {
     private boolean zBuildings = false;
 
 
+    /**
+     * @param zBuildings if true take into account z value on Buildings Polygons
+     *                   In this case, z represent the altitude (from the sea to the top of the wall). If false, Z is
+     *                   ignored and the height attribute of the Building/Wall is used to extrude the building from the DEM
+     * @return this
+     */
     public ProfileBuilder setzBuildings(boolean zBuildings) {
         this.zBuildings = zBuildings;
         return this;
@@ -1295,8 +1301,13 @@ public class ProfileBuilder {
     public void addTopoCutPts(Coordinate p1, Coordinate p2, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
         List<Coordinate> coordinates = new ArrayList<>();
         boolean freeField = fetchTopographicProfile(coordinates, p1, p2, stopAtObstacleOverSourceReceiver);
-        profile.getSource().zGround = coordinates.get(0).z;
-        profile.getReceiver().zGround = coordinates.get(coordinates.size() - 1).z;
+        if(coordinates.size() >= 2) {
+            profile.getSource().zGround = coordinates.get(0).z;
+            profile.getReceiver().zGround = coordinates.get(coordinates.size() - 1).z;
+        } else {
+            LOGGER.warn(String.format(Locale.ROOT, "Propagation out of the DEM area from %s to %s",
+                    p1.toString(), p2.toString()));
+        }
         profile.hasTopographyIntersection = !freeField;
         // Remove unnecessary points
         ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());

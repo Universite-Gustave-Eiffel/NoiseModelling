@@ -1268,23 +1268,12 @@ public class AttenuationCnossosTest {
     @Test
     public void TC05() throws IOException {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
 
-                .addTopographicLine(0, 80, 0, 255, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 74, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
-                .finishFeeding();
+       profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -1462,23 +1451,12 @@ public class AttenuationCnossosTest {
     @Test
     public void TC06() throws IOException {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
+        addGroundAttenuationTC5(profileBuilder);
+        addTopographicTC5Model(profileBuilder);
 
-                .addTopographicLine(0, 80, 0, 255, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 74, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
-                .finishFeeding();
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -2529,6 +2507,40 @@ public class AttenuationCnossosTest {
         assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_VERY_LOW);
     }
 
+    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
+        profileBuilder
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+    }
+
+    public static void addTopographicTC5Model(ProfileBuilder profileBuilder) {
+        profileBuilder
+                // top horizontal line
+                .addTopographicLine(0, 80, 0, 120, 80, 0)
+                .addTopographicLine(120, 80, 0, 225, 80, 0)
+                // bottom horizontal line
+                .addTopographicLine(225, -20, 0, 120, -20, 0)
+                .addTopographicLine(120, -20, 0, 0, -20, 0)
+                // right vertical line
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                // left vertical line
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                // center vertical line
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                // elevated rectangle
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10);
+
+                // ramp connection
+                profileBuilder.addTopographicLine(120, 80, 0, 185, 75, 10)
+                .addTopographicLine(120, -20, 0, 185, -5, 10)
+                .addTopographicLine(205, 75, 10, 225, 80, 0)
+                .addTopographicLine(205, -5, 10, 225, -20, 0);
+    }
+
     /**
      * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short barrier
      */
@@ -2536,26 +2548,13 @@ public class AttenuationCnossosTest {
     public void TC09() throws IOException {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
                 // Add building
                 .addWall(new Coordinate[]{
                                 new Coordinate(175, 50, 17),
                                 new Coordinate(190, 10, 14)},
                         1);
-
+        addGroundAttenuationTC5(profileBuilder);
+        addTopographicTC5Model(profileBuilder);
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
@@ -4402,16 +4401,8 @@ public class AttenuationCnossosTest {
                 })
                 .addGroundEffect(0, 50, -20, 80, 0.5)
                 .addGroundEffect(50, 150, -20, 80, 0.9)
-                .addGroundEffect(150, 225, -20, 80, 0.2)
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
+                .addGroundEffect(150, 225, -20, 80, 0.2);
+        addTopographicTC5Model(profileBuilder);
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
@@ -5784,26 +5775,14 @@ public class AttenuationCnossosTest {
     public void TC16() throws IOException {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
                 .addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
-                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
-                .finishFeeding();
+                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
+
+        addGroundAttenuationTC5(profileBuilder);
+        addTopographicTC5Model(profileBuilder);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -6119,28 +6098,17 @@ public class AttenuationCnossosTest {
     @Test
     public void TC17() throws IOException {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-                .addWall(new Coordinate[]{
+        profileBuilder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
-                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
-                //.setzBuildings(true)
-                .finishFeeding();
+                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
+
+        addGroundAttenuationTC5(profileBuilder);
+        addTopographicTC5Model(profileBuilder);
+
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -6540,32 +6508,19 @@ public class AttenuationCnossosTest {
     @Test
     public void TC18() throws IOException {
         //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
-                // Add building
+        ProfileBuilder builder = new ProfileBuilder()//Ground effects
                 .addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 1)
 
                 .addWall(new Coordinate[]{
                         new Coordinate(87, 50),
-                        new Coordinate(92, 32)}, 12, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 2)
+                        new Coordinate(92, 32)}, 12, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 2);
 
-                .finishFeeding();
+        addGroundAttenuationTC5(builder);
+        addTopographicTC5Model(builder);
+
+        builder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(builder)
@@ -6629,7 +6584,7 @@ public class AttenuationCnossosTest {
         double[] directLA = actualLA;
 
 
-        /*assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - reflexion", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH - reflexion", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WF - reflexion", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
@@ -6642,7 +6597,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
+        assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
@@ -6761,7 +6716,7 @@ public class AttenuationCnossosTest {
         double[] reflexionLA = actualLA;
 
 
-        /*assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("DeltaDiffSPrimeRH - vertical plane", expectedDeltaDiffSPrimeRH, actualDeltaDiffSPrimeRH, ERROR_EPSILON_LOW);
@@ -6785,7 +6740,7 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);*/
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         //assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         //assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
@@ -6898,10 +6853,8 @@ public class AttenuationCnossosTest {
             System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
         }*/
 
-        //double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
-        //assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_VERY_LOW);
-
-
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        assertArrayEquals(  new double[]{11.69,21.77,28.93,32.71,36.83,36.83,32.12,13.66},L, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
@@ -6938,22 +6891,10 @@ public class AttenuationCnossosTest {
                 .addWall(new Coordinate[]{
                         new Coordinate(175.00, 35.00, 14.5),
                         new Coordinate(188.00, 19.00, 14.5),
-                }, -1)
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .finishFeeding();
+                }, -1);
+
+        addTopographicTC5Model(profileBuilder);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -7418,22 +7359,11 @@ public class AttenuationCnossosTest {
     @Test
     public void TC20() throws IOException {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+
+        addTopographicTC5Model(profileBuilder);
+
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -7633,23 +7563,11 @@ public class AttenuationCnossosTest {
                         new Coordinate(151.0, 31.5, 11.5),
                         new Coordinate(155.5, 39.3, 11.5),
                         new Coordinate(164.2, 34.3, 11.5)
-                })
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .setzBuildings(true)
-                .finishFeeding();
+                });
+
+        addTopographicTC5Model(profileBuilder);
+        profileBuilder.setzBuildings(true)
+        .finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -8051,29 +7969,19 @@ public class AttenuationCnossosTest {
 
         // Add building
         builder.addBuilding(new Coordinate[]{
-                        new Coordinate(197, 36.0, 0),
-                        new Coordinate(179, 36, 0),
-                        new Coordinate(179, 15, 0),
-                        new Coordinate(197, 15, 0),
-                        new Coordinate(197, 21, 0),
-                        new Coordinate(187, 21, 0),
-                        new Coordinate(187, 30, 0),
-                        new Coordinate(197, 30, 0),
-                        new Coordinate(197, 36, 0)}, 20, -1)
+                new Coordinate(197, 36.0, 0),
+                new Coordinate(179, 36, 0),
+                new Coordinate(179, 15, 0),
+                new Coordinate(197, 15, 0),
+                new Coordinate(197, 21, 0),
+                new Coordinate(187, 21, 0),
+                new Coordinate(187, 30, 0),
+                new Coordinate(197, 30, 0),
+                new Coordinate(197, 36, 0)}, 20, -1);
+        addGroundAttenuationTC5(builder);
+        addTopographicTC5Model(builder);
 
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-
-                .addTopographicLine(0, 80, 0, 255, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 74, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
+        builder
                 .setzBuildings(true)
                 .finishFeeding();
 

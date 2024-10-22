@@ -766,11 +766,7 @@ public class PathFinder {
         LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
         computeDiff(pts2DGround, firstPts2D, lastPts2D, cutProfile.getSource(), cutProfile.getReceiver(), srPath,
                 cutProfile, pathParameters, dSR, cuts, segments, points);
-        if(segments.isEmpty()) {
-            // No diffraction SO OR over topographic point
-            // Add SR as valid segment
-            segments.add(srPath);
-        }
+
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
         Coordinate lastPt = pts2D.get(pts2D.size() - 1);
@@ -895,6 +891,11 @@ public class PathFinder {
                 }
             }
         } else {
+            if(segments.isEmpty()) {
+                // No diffraction SO OR over topographic point or building horizontal edge
+                // Add SR as valid segment
+                segments.add(srPath);
+            }
             PointPath rcvPP = new PointPath(lastPts2D, cutProfile.getReceiver().getzGround(),
                     cutProfile.getReceiver().getWallAlpha(), RECV);
             rcvPP.buildingId = cutProfile.getReceiver().getBuildingId();
