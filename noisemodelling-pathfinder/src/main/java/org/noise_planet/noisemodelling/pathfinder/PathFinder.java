@@ -816,91 +816,91 @@ public class PathFinder {
         double e = 0;
         Coordinate src = cutProfile.getSource().getCoordinate();
 
-        if(pts.size() > 2) {
-            // If we have at least one diffraction point
-            for (int i = 1; i < pts.size(); i++) {
-                int k = 0;
-                int i0 = pts2D.indexOf(pts.get(i - 1));
-                int i1 = pts2D.indexOf(pts.get(i));
-                CutPoint cutPt0 = cutPts.get(i0);
-                CutPoint cutPt1 = cutPts.get(i1);
+        // If we have at least one diffraction point
+        for (int i = 1; i < pts.size(); i++) {
+            int k = 0;
+            int i0 = pts2D.indexOf(pts.get(i - 1));
+            int i1 = pts2D.indexOf(pts.get(i));
+            CutPoint cutPt0 = cutPts.get(i0);
+            CutPoint cutPt1 = cutPts.get(i1);
 
 
-                CutProfile profileSeg = new CutProfile();
-                profileSeg.addSource(cutPt0.getCoordinate());
-                profileSeg.getSource().setGroundCoef(cutPt0.getGroundCoef());
-                for (CutPoint cpt : cutProfile.getCutPoints()) {
-                    k++;
-                    if (cpt.equals(cutPt0)) {
-                        for (int n = k; n < cutProfile.getCutPoints().size() - 1; n++) {
-                            profileSeg.addCutPt(cutProfile.getCutPoints().get(n));
-                            if (cutProfile.getCutPoints().get(n).equals(cutPt1)) {
-                                break;
-                            }
+            CutProfile profileSeg = new CutProfile();
+            profileSeg.addSource(cutPt0.getCoordinate());
+            profileSeg.getSource().setGroundCoef(cutPt0.getGroundCoef());
+            for (CutPoint cpt : cutProfile.getCutPoints()) {
+                k++;
+                if (cpt.equals(cutPt0)) {
+                    for (int n = k; n < cutProfile.getCutPoints().size() - 1; n++) {
+                        profileSeg.addCutPt(cutProfile.getCutPoints().get(n));
+                        if (cutProfile.getCutPoints().get(n).equals(cutPt1)) {
+                            break;
                         }
                     }
                 }
-                int indexG = 0;
-                profileSeg.addReceiver(cutPt1.getCoordinate());
-                profileSeg.getReceiver().setGroundCoef(cutPt1.getGroundCoef());
-                if (profileSeg.getReceiver().getCoordinate().equals(cutProfile.getReceiver().getCoordinate())) {
-                    for (int j = 0; j < profileSeg.getCutPoints().size() - 1; j++) {
-                        if (profileSeg.getCutPoints().get(j).getType().equals(GROUND_EFFECT)) {
-                            indexG = j;
-                        }
+            }
+            int indexG = 0;
+            profileSeg.addReceiver(cutPt1.getCoordinate());
+            profileSeg.getReceiver().setGroundCoef(cutPt1.getGroundCoef());
+            if (profileSeg.getReceiver().getCoordinate().equals(cutProfile.getReceiver().getCoordinate())) {
+                for (int j = 0; j < profileSeg.getCutPoints().size() - 1; j++) {
+                    if (profileSeg.getCutPoints().get(j).getType().equals(GROUND_EFFECT)) {
+                        indexG = j;
                     }
                 }
-                //profile.sou
-                List<Coordinate> subList = pts2D.subList(i0, i1 + 1).stream().map(Coordinate::new).collect(Collectors.toList());
-                for (int j = 0; j <= i1 - i0; j++) {
-                    if (!cutPts.get(j + i0).getType().equals(BUILDING) && !cutPts.get(j + i0).getType().equals(TOPOGRAPHY)) {
-                        subList.get(j).y = data.profileBuilder.getZGround(cutPts.get(j + i0));
-                    }
-                }
-                if (indexG > 0)
-                    profileSeg.getCutPoints().get(indexG).setGroundCoef(profileSeg.getReceiver().getGroundCoef());
+            }
 
-                meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
-                SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
-                segments.add(path);
-                if (points.isEmpty()) {
-                    //todo check this getBuildingId when DIFH is on floor or line wall
-                    points.add(new PointPath(path.s, data.profileBuilder.getZGround(cutPt0), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
-                    points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
-                    pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
-                    src = path.s;
+            List<Coordinate> subList = pts2D.subList(i0, i1 + 1).stream().map(Coordinate::new).collect(Collectors.toList());
+            for (int j = 0; j <= i1 - i0; j++) {
+                if (!cutPts.get(j + i0).getType().equals(BUILDING) && !cutPts.get(j + i0).getType().equals(TOPOGRAPHY)) {
+                    subList.get(j).y = data.profileBuilder.getZGround(cutPts.get(j + i0));
                 }
+            }
+            if (indexG > 0)
+                profileSeg.getCutPoints().get(indexG).setGroundCoef(profileSeg.getReceiver().getGroundCoef());
+
+            if (points.isEmpty()) {
                 //todo check this getBuildingId when DIFH is on floor or line wall
-                points.add(new PointPath(path.r, data.profileBuilder.getZGround(cutPt1), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
-                if (i != pts.size() - 1) {
-                    if (i != 1) {
-                        e += path.d;
-                    }
-                    pathParameters.difHPoints.add(i);
-                    PointPath pt = points.get(points.size() - 1);
-                    pt.type = DIFH;
-                    pt.bodyBarrier = bodyBarrier;
-                    if (pt.buildingId != -1) {
-                        pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-                        pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
-                    } else if (pt.wallId != -1) {
-                        pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-                        Wall wall = data.profileBuilder.getWall(pt.wallId);
-                        pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
-                    }
+                points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
+                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
+                pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
+                src = pts2D.get(i0);
+            }
+            //todo check this getBuildingId when DIFH is on floor or line wall
+            points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
+            if(pts.size() == 2) {
+                // no diffraction over buildings
+                // it is useless to recompute sr segment
+                if(segments.isEmpty()) {
+                    // We don't have a Rayleigh diffraction over DEM. Only direct SR path
+                    segments.add(pathParameters.getSRSegment());
+                }
+                break;
+            } else if(i==1 && !segments.isEmpty()) {
+                // we got diffraction over buildings, but we already got Rayleigh diffraction over DEM
+                // we remove the rayleigh segments
+                segments.clear();
+            }
+            meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
+            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
+            segments.add(path);
+            if (i != pts.size() - 1) {
+                if (i != 1) {
+                    e += path.d;
+                }
+                pathParameters.difHPoints.add(i);
+                PointPath pt = points.get(points.size() - 1);
+                pt.type = DIFH;
+                pt.bodyBarrier = bodyBarrier;
+                if (pt.buildingId != -1) {
+                    pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
+                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
+                } else if (pt.wallId != -1) {
+                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
+                    Wall wall = data.profileBuilder.getWall(pt.wallId);
+                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
                 }
             }
-        } else {
-            if(segments.isEmpty()) {
-                // No diffraction SO OR over topographic point or building horizontal edge
-                // Add SR as valid segment
-                segments.add(srPath);
-            }
-            PointPath rcvPP = new PointPath(lastPts2D, cutProfile.getReceiver().getzGround(),
-                    cutProfile.getReceiver().getWallAlpha(), RECV);
-            rcvPP.buildingId = cutProfile.getReceiver().getBuildingId();
-            rcvPP.wallId = cutProfile.getReceiver().getWallId();
-            points.add(rcvPP);
         }
         pathParameters.e = e;
 
