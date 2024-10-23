@@ -205,28 +205,51 @@ public class PathFinderTest {
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
     }
 
+
+    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
+        profileBuilder
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+    }
+
+    public static void addTopographicTC5Model(ProfileBuilder profileBuilder) {
+        profileBuilder
+                // top horizontal line
+                .addTopographicLine(0, 80, 0, 120, 80, 0)
+                .addTopographicLine(120, 80, 0, 225, 80, 0)
+                // bottom horizontal line
+                .addTopographicLine(225, -20, 0, 120, -20, 0)
+                .addTopographicLine(120, -20, 0, 0, -20, 0)
+                // right vertical line
+                .addTopographicLine(225, 80, 0, 225, -20, 0)
+                // left vertical line
+                .addTopographicLine(0, -20, 0, 0, 80, 0)
+                // center vertical line
+                .addTopographicLine(120, -20, 0, 120, 80, 0)
+                // elevated rectangle
+                .addTopographicLine(185, -5, 10, 205, -5, 10)
+                .addTopographicLine(205, -5, 10, 205, 75, 10)
+                .addTopographicLine(205, 75, 10, 185, 75, 10)
+                .addTopographicLine(185, 75, 10, 185, -5, 10);
+
+        // ramp connection
+        profileBuilder.addTopographicLine(120, 80, 0, 185, 75, 10)
+                .addTopographicLine(120, -20, 0, 185, -5, 10)
+                .addTopographicLine(205, 75, 10, 225, 80, 0)
+                .addTopographicLine(205, -5, 10, 225, -20, 0);
+    }
+
     /**
      * Test TC05 -- Ground with spatially varying heights and acoustic properties
      */
     @Test
     public void TC05() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -269,22 +292,10 @@ public class PathFinderTest {
     @Test
     public void TC06() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-                .finishFeeding();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+        profileBuilder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -544,21 +555,9 @@ public class PathFinderTest {
     public void TC09() {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
         // add wall
-        //Ground effects
-        profileBuilder.addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
-        //Topography
-        profileBuilder.addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
         profileBuilder.addWall(new Coordinate[]{
                                 new Coordinate(175, 50, 17),
                                 new Coordinate(190, 10, 14)},
@@ -882,19 +881,11 @@ public class PathFinderTest {
                         new Coordinate(187.5, 48.5, 30),
                         new Coordinate(180.0, 51.6, 30),
                         new Coordinate(172.5, 48.5, 30),
-                })
-                .addGroundEffect(0, 50, -20, 80, 0.5)
+                });
+        profileBuilder.addGroundEffect(0, 50, -20, 80, 0.5)
                 .addGroundEffect(50, 150, -20, 80, 0.9)
-                .addGroundEffect(150, 225, -20, 80, 0.2)
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
+                .addGroundEffect(150, 225, -20, 80, 0.2);
+        addTopographicTC5Model(profileBuilder);
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
@@ -1001,6 +992,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(5.39, 0.00));
+        expectedZ_profile.add(new Coordinate(5.39, 10.00));
+        expectedZ_profile.add(new Coordinate(11.49, 10.0));
         expectedZ_profile.add(new Coordinate(11.49, 0.0));
         expectedZ_profile.add(new Coordinate(19.72, 0));
 
@@ -1023,9 +1016,9 @@ public class PathFinderTest {
         //Assertion
         // Wrong value of z1 in Cnossos document for the 3 paths
         assertZProfil(expectedZ_profile,result);
-        //assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        //assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        //assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
     }
 
     /**
@@ -1128,27 +1121,14 @@ public class PathFinderTest {
     @Test
     public void TC16() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
 
-                .addWall(new Coordinate[]{
+        profileBuilder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
                 }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
-        //profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
         //Propagation data building
@@ -1157,7 +1137,6 @@ public class PathFinderTest {
                 .addReceiver(200, 50, 14)
                 .setGs(0.9)
                 .build();
-        //rayData.reflexionOrder=1;
 
         //Out and computation settings
         PathFinderVisitor propDataOut = new PathFinderVisitor(true);
@@ -1220,23 +1199,12 @@ public class PathFinderTest {
     @Test
     public void TC17() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
+        ProfileBuilder profileBuilder = new ProfileBuilder();
 
-                .addWall(new Coordinate[]{
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+
+        profileBuilder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
                 }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
@@ -1325,24 +1293,11 @@ public class PathFinderTest {
     @Test
     public void TC18() {
         //Profile building
-        ProfileBuilder builder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
+        ProfileBuilder builder = new ProfileBuilder();
+        addGroundAttenuationTC5(builder);
+        addTopographicTC5Model(builder);
                 // Add building
-                .addWall(new Coordinate[]{
+        builder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 1)
 
@@ -1417,24 +1372,11 @@ public class PathFinderTest {
     @Test
     public void TC19() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
 
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10)
-
-                .addBuilding(new Coordinate[]{
+        profileBuilder.addBuilding(new Coordinate[]{
                         new Coordinate(100, 24, 12),
                         new Coordinate(118, 24, 12),
                         new Coordinate(118, 30, 12),
