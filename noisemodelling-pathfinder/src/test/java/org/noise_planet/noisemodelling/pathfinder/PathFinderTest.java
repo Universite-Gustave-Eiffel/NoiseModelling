@@ -1001,15 +1001,15 @@ public class PathFinderTest {
         double [][] segmentsMeanPlanes0 = new double[][]{
                 //  a       b    zs     zr    dp    Gp   Gp'
                 {0.00,   0.00, 1.00, 10.00, 5.39, 0.20, 0.20},
-                {-1.02, 17.11, 0.00, 18.23, 0.72, 0.11,  NaN}
+                {-1.02, 17.11, 1.08, 18.23, 0.72, 0.11,  NaN} // Fix Cnossos document Zs is 1.08 not 0
         };
         double [][] segmentsMeanPlanes1 = new double[][]{
                 //  a      b    zs     zr     dp    Gp    Gp'
-                {-0.02, 1.13, 0.00, 22.32, 19.57, 0.18, 0.20}
+                {-0.02, 1.13, 0.10, 22.32, 19.57, 0.18, 0.20} // Fix Cnossos document Zs is 0.1 not 0
         };
         double [][] segmentsMeanPlanes2 = new double[][]{
                 //  a     b    zs     zr      dp    Gp    Gp'
-                {0.00, 1.35, 0.00, 21.69, 22.08, 0.17, 0.20}
+                {0.00, 1.35, 0.32, 21.69, 22.08, 0.17, 0.20} // Fix Cnossos document Zs is 0.32 not 0
         };
 
 
