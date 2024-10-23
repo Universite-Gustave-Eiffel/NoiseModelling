@@ -439,7 +439,10 @@ public class PathFinder {
     List<Coordinate> computePts2DGround(CutProfile cutProfile, Scene data) {
         List<Coordinate> pts2D= cutProfile.getCutPoints().stream()
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
-                .map(cut -> new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()))
+                .map(cut -> BUILDING.equals(cut.getType()) || WALL.equals(cut.getType()) ?
+                        new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z)
+                        : new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround())
+                        )
                 .collect(Collectors.toList());
         return JTSUtility.getNewCoordinateSystem(pts2D);
     }

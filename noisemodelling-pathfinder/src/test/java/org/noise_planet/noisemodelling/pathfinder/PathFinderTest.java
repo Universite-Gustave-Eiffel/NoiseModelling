@@ -413,6 +413,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(170.23, 0.00));
+        expectedZ_profile.add(new Coordinate(170.23, 6.00));
+        expectedZ_profile.add(new Coordinate(170.23, 0.00));
         expectedZ_profile.add(new Coordinate(194.16, 0.00));
 
         /* Table 34 */
