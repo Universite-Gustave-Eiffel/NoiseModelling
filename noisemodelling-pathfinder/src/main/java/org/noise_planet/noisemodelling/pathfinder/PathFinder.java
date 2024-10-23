@@ -38,6 +38,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
@@ -312,7 +314,12 @@ public class PathFinder {
             }
         }
 
-        if (horizontalDiffraction) {
+        // do not do horizontal plane diffraction if there is no obstacles between source and receiver
+        // ISO/TR 17534-4:2020
+        // "As a general principle, lateral diffraction is considered only if the direct line of sight
+        // between source and receiver is blocked and does not penetrate the terrain profile.
+        // In addition, the source must not be a mirror source due to reflection"
+        if (horizontalDiffraction && !cutProfile.isFreeField()) {
             CnossosPath vEdgePath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
             if (vEdgePath != null && vEdgePath.getPointList() != null) {
                 pathsParameters.add(vEdgePath);
@@ -789,8 +796,11 @@ public class PathFinder {
                 .filter(cut -> cut.getType() != GROUND_EFFECT)
                 .collect(Collectors.toList());
         LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+
+        List<SegmentPath> rayleighSegments = new ArrayList<>();
+        List<PointPath> rayleighPoints = new ArrayList<>();
         computeDiff(pts2DGround, firstPts2D, lastPts2D, cutProfile.getSource(), cutProfile.getReceiver(), srPath,
-                cutProfile, pathParameters, dSR, cuts, segments, points);
+                cutProfile, pathParameters, dSR, cuts, rayleighSegments, rayleighPoints);
 
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
@@ -896,15 +906,16 @@ public class PathFinder {
             if(pts.size() == 2) {
                 // no diffraction over buildings
                 // it is useless to recompute sr segment
-                if(segments.isEmpty()) {
+                if(rayleighSegments.isEmpty()) {
                     // We don't have a Rayleigh diffraction over DEM. Only direct SR path
                     segments.add(pathParameters.getSRSegment());
+                } else {
+                    // We have a Rayleigh diffraction over DEM
+                    // push Rayleigh data
+                    segments.addAll(rayleighSegments);
+                    points.addAll(1, rayleighPoints);
                 }
                 break;
-            } else if(i==1 && !segments.isEmpty()) {
-                // we got diffraction over buildings, but we already got Rayleigh diffraction over DEM
-                // we remove the rayleigh segments
-                segments.clear();
             }
             meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
@@ -1392,61 +1403,7 @@ public class PathFinder {
                         }
                     }
                 }
-
-
-                if (!rayPath.isEmpty()) {
-                    List<Coordinate> pts = new ArrayList<>();
-                    pts.add(srcCoord);
-                    rayPath.forEach(mrr -> pts.add(mrr.getReceiverPos()));
-                    pts.add(rcvCoord);
-                    List<Coordinate> topoPts = new ArrayList<>();
-                    topoPts.add(new Coordinate(srcCoord));
-                    double g = 0;
-                    double d = 0;
-                    List<CutPoint> allCutPoints = new ArrayList<>();
-                    List<Double> res = new ArrayList<>();
-                    for(int i=0; i<pts.size()-1; i++) {
-                        CutProfile profile = data.profileBuilder.getProfile(pts.get(i), pts.get(i+1), data.gS, false);
-                        topoPts.addAll(profile.getCutPoints().stream()
-                                .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
-                                .map(CutPoint::getCoordinate)
-                                .collect(Collectors.toList()));
-                        allCutPoints.addAll(profile.getCutPoints());
-                        if(i<pts.size()-2){
-                            topoPts.add(topoPts.get(topoPts.size()-1));
-                            topoPts.add(topoPts.get(topoPts.size()-1));
-                        }
-                        double dist =pts.get(i).distance(pts.get(i+1));
-
-                        res.add(profile.getGPath());
-                        g+=res.get(res.size()-1)*dist;
-                        d+=dist;
-                    }
-                    g/=d;
-                    for (final Coordinate pt : topoPts) {
-                        pt.z = data.profileBuilder.getZGround(pt);
-                    }
-
-                    /*for(int i=0;i< pathParameters.getSegmentList().size()-1;i++){
-                        pathParameters.getSegmentList().get(i).gPath = res.get(i);
-                    }*/
-                    pathParameters.setCutPoints(allCutPoints);
-                    topoPts = toDirectLine(topoPts);
-                    double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(topoPts.toArray(new Coordinate[0]));
-                    pathParameters.setSRSegment(computeSegment(topoPts.get(0), srcCoord.z, topoPts.get(topoPts.size()-1), rcvCoord.z, meanPlan, g, data.gS));
-                    reflexionPathParameters.add(pathParameters);
-
-                    //Restore the diffraction points
-                    for (int i = 0; i < points.size(); i++) {
-                        PointPath pp = points.get(i);
-                        if (pp.type == DIFH) {
-                            pathParameters.difHPoints.add(i);
-                        }
-                        else if (pp.type == DIFV) {
-                            pathParameters.difVPoints.add(i);
-                        }
-                    }
-                }
+                reflexionPathParameters.add(pathParameters);
             }
         }
         return reflexionPathParameters;
@@ -1469,12 +1426,15 @@ public class PathFinder {
                                               Orientation orientation, List<Integer> diffHPts, List<Integer> diffVPts) {
         List<CnossosPath> pathsParameters = directPath(p0, -1, orientation, p1, -1,
                 data.isComputeHEdgeDiffraction(), false, false);
-        if (!pathsParameters.isEmpty()) {
-            CnossosPath pathParameters = pathsParameters.get(0);
+
+        for (CnossosPath pathParameters : pathsParameters) {
+            // fix index
+            diffVPts.addAll(pathParameters.difVPoints.stream().mapToInt(Integer::intValue)
+                    .mapToObj(i -> points.size() + i).collect(Collectors.toList()));
+            diffHPts.addAll(pathParameters.difHPoints.stream().mapToInt(Integer::intValue)
+                    .mapToObj(i -> points.size() + i).collect(Collectors.toList()));
             points.addAll(pathParameters.getPointList());
             segments.addAll(pathParameters.getSegmentList());
-            diffVPts.addAll(pathParameters.difVPoints);
-            diffHPts.addAll(pathParameters.difHPoints);
         }
     }
     /**

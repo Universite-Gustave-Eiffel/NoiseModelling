@@ -1397,9 +1397,11 @@ public class PathFinderTest {
         };
 
 
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZ_profile, result);
+        // S-R (not the rayleigh segments SO OR)
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
-        //assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList()); //Error On -> R
+        // Check reflexion mean planes
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList());
         try {
             exportScene("target/T18.kml", builder, propDataOut);
         } catch (IOException e) {
@@ -1490,10 +1492,16 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(100.55, 0.00));
+        expectedZ_profile.add(new Coordinate(100.55, 7.00));
+        expectedZ_profile.add(new Coordinate(108.60, 7.00));
         expectedZ_profile.add(new Coordinate(108.60, 0.0));
         expectedZ_profile.add(new Coordinate(110.61, 0.0));
         expectedZ_profile.add(new Coordinate(145.34, 5.31));
+        expectedZ_profile.add(new Coordinate(145.34, 14.00));
+        expectedZ_profile.add(new Coordinate(145.34, 5.31));
         expectedZ_profile.add(new Coordinate(171.65, 9.34));
+        expectedZ_profile.add(new Coordinate(171.66, 14.50));
+        expectedZ_profile.add(new Coordinate(171.66, 9.34));
         expectedZ_profile.add(new Coordinate(175.97, 10));
         expectedZ_profile.add(new Coordinate(191.05, 10));
 
@@ -1517,7 +1525,7 @@ public class PathFinderTest {
         assertZProfil(expectedZ_profile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        //assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
     }
 
     /**
