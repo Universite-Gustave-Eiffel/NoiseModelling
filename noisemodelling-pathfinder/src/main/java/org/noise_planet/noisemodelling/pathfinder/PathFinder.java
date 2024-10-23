@@ -437,13 +437,35 @@ public class PathFinder {
      * @return the computed coordinate list
      */
     List<Coordinate> computePts2DGround(CutProfile cutProfile, Scene data) {
-        List<Coordinate> pts2D= cutProfile.getCutPoints().stream()
-                .filter(cut -> cut.getType() != GROUND_EFFECT)
-                .map(cut -> BUILDING.equals(cut.getType()) || WALL.equals(cut.getType()) ?
-                        new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z)
-                        : new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround())
-                        )
-                .collect(Collectors.toList());
+        List<Coordinate> pts2D = new ArrayList<>(cutProfile.getCutPoints().size());
+        if(cutProfile.getCutPoints().isEmpty()) {
+            return pts2D;
+        }
+        // keep track of the obstacle under our current position. If -1 there is only ground below
+        int overObstacleIndex = cutProfile.getCutPoints().get(0).getBuildingId();
+        for (CutPoint cut : cutProfile.getCutPoints()) {
+            if (cut.getType() != GROUND_EFFECT) {
+                Coordinate coordinate;
+                if (BUILDING.equals(cut.getType()) || WALL.equals(cut.getType())) {
+                    if(Double.compare(cut.getCoordinate().z, cut.getzGround()) == 0) {
+                        // current position is at the ground level in front of or behind the first/last wall
+                        if(overObstacleIndex == -1) {
+                            overObstacleIndex = cut.getId();
+                        } else {
+                            overObstacleIndex = -1;
+                        }
+                    }
+                    // Take the obstacle altitude instead of the ground level
+                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z);
+                } else {
+                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround());
+                }
+                // we will ignore topographic point if we are over a building
+                if(!(overObstacleIndex >= 0 && TOPOGRAPHY.equals(cut.getType()))) {
+                    pts2D.add(coordinate);
+                }
+            }
+        }
         return JTSUtility.getNewCoordinateSystem(pts2D);
     }
 

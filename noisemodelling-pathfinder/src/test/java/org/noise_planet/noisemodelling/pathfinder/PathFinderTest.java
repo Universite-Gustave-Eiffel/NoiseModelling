@@ -498,6 +498,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(170.49, 0.00));
+        expectedZ_profile.add(new Coordinate(170.49, 6.00));
+        expectedZ_profile.add(new Coordinate(170.49, 0.00));
         expectedZ_profile.add(new Coordinate(194.16, 0.00));
 
         /* Table 42 */
@@ -592,6 +594,8 @@ public class PathFinderTest {
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(112.41, 0.00));
         expectedZ_profile.add(new Coordinate(170.49, 8.74));
+        expectedZ_profile.add(new Coordinate(170.49, 16.63));
+        expectedZ_profile.add(new Coordinate(170.49, 8.74));
         expectedZ_profile.add(new Coordinate(178.84, 10.00));
         expectedZ_profile.add(new Coordinate(194.16, 10.00));
 
@@ -675,6 +679,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(5, 0.00));
+        expectedZ_profile.add(new Coordinate(5, 10.00));
+        expectedZ_profile.add(new Coordinate(15, 10));
         expectedZ_profile.add(new Coordinate(15, 0));
         expectedZ_profile.add(new Coordinate(20, 0));
 
@@ -754,6 +760,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(5, 0.00));
+        expectedZ_profile.add(new Coordinate(5, 10.00));
+        expectedZ_profile.add(new Coordinate(15, 10.00));
         expectedZ_profile.add(new Coordinate(15, 0));
         expectedZ_profile.add(new Coordinate(20, 0));
 
@@ -831,6 +839,8 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(12.26, 0.00));
+        expectedZ_profile.add(new Coordinate(12.26, 10.00));
+        expectedZ_profile.add(new Coordinate(18.82, 10));
         expectedZ_profile.add(new Coordinate(18.82, 0));
         expectedZ_profile.add(new Coordinate(31.62, 0));
 
@@ -915,7 +925,8 @@ public class PathFinderTest {
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(112.41, 0.00));
         expectedZ_profile.add(new Coordinate(164.07, 7.8));
-        expectedZ_profile.add(new Coordinate(178.83, 10));
+        expectedZ_profile.add(new Coordinate(164.07, 30.00));
+        expectedZ_profile.add(new Coordinate(181.83, 30));
         expectedZ_profile.add(new Coordinate(181.83, 10));
         expectedZ_profile.add(new Coordinate(194.16, 10));
 
