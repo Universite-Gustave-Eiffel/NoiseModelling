@@ -1170,6 +1170,10 @@ public class ProfileBuilder {
         }
     }
 
+    Coordinate[] getTriangleVertices(int triIndex) {
+        final Triangle tri = topoTriangles.get(triIndex);
+        return new Coordinate[] {this.vertices.get(tri.getA()), this.vertices.get(tri.getB()), this.vertices.get(tri.getC())};
+    }
     /**
      * Compute the next triangle index.Find the shortest intersection point of
      * triIndex segments to the p1 coordinate
@@ -1414,19 +1418,28 @@ public class ProfileBuilder {
         }
         HashSet<Integer> navigationHistory = new HashSet<Integer>();
         int navigationTri = curTriP1;
+        // Add p1 coordinate
+        Coordinate[] vertices = getTriangleVertices(curTriP1);
+        outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, vertices[0], vertices[1], vertices[2])));
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
             Coordinate intersectionPt = new Coordinate();
             int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
-            // Found next triangle (if propaTri >= 0)
-            // extract X,Y,Z values of intersection with triangle segment
-            if(!Double.isNaN(intersectionPt.z)) {
-                outputPoints.add(intersectionPt);
-                if(stopAtObstacleOverSourceReceiver) {
-                    Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
-                    double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
-                    if(interpolatedZ < intersectionPt.z) {
-                        return false;
+            if(propaTri == -1) {
+                // Add p2 coordinate
+                vertices = getTriangleVertices(navigationTri);
+                outputPoints.add(new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, vertices[0], vertices[1], vertices[2])));
+            } else {
+                // Found next triangle (if propaTri >= 0)
+                // extract X,Y,Z values of intersection with triangle segment
+                if(!Double.isNaN(intersectionPt.z)) {
+                    outputPoints.add(intersectionPt);
+                    if(stopAtObstacleOverSourceReceiver) {
+                        Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
+                        double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
+                        if(interpolatedZ < intersectionPt.z) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -1486,7 +1499,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER;
+    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION;
 
         public PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
             if(this.equals(SOURCE)){

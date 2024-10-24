@@ -447,15 +447,7 @@ public class KMLDocument {
                 xmlOut.writeCharacters("#" + formatColorEntry(colorEntry.getKey()));
                 xmlOut.writeEndElement(); //styleurl
             }
-            Coordinate[] coordinates = new Coordinate[line.getPointList().size()];
-            int i=0;
-
-            for(Coordinate coordinate : line.asGeom().getCoordinates()) {
-
-                coordinates[i++] = copyCoord(coordinate);
-            }
-            //LineString lineString = line.asGeom();
-            LineString lineString = geometryFactory.createLineString(coordinates);
+            LineString lineString = (LineString) line.asGeom().copy();
             // Apply CRS transform
             doTransform(lineString);
             //Write geometry

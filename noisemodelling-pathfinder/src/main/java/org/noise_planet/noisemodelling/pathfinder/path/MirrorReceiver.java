@@ -24,6 +24,7 @@ public class MirrorReceiver {
 
 
     private Coordinate receiverPos;
+    private Coordinate reflectionPosition = new Coordinate(Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE);
     private final MirrorReceiver parentMirror;
     private final Wall wall;
     /**
@@ -40,6 +41,20 @@ public class MirrorReceiver {
 
     public void setReceiverPos(Coordinate receiverPos) {
         this.receiverPos = receiverPos;
+    }
+
+    /**
+     * @return The coordinate of the reflexion of the ray on the mirror receiver. To be known the source point must have been defined
+     */
+    public Coordinate getReflectionPosition() {
+        return reflectionPosition;
+    }
+
+    /**
+     * @param reflectionPosition The coordinate of the reflexion of the ray on the mirror receiver. To be known the source point must have been defined
+     */
+    public void setReflectionPosition(Coordinate reflectionPosition) {
+        this.reflectionPosition = reflectionPosition;
     }
 
     public MirrorReceiver copyWithoutCone() {
