@@ -14,6 +14,7 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnSegment;
 
@@ -38,6 +40,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.Geometry
 
 public class Path {
     public static final int FOOTER_RESERVED_SIZE = 120; // reserved size for geojson footer
+    CutProfile cutProfile; // vertical plane between source and receiver used to compute the propagation ray path attributes
     private List<CutPoint> cutPoints = new ArrayList<>();
     // given by user
     private SegmentPath srSegment; // list of source-receiver path (including prime path)
@@ -68,6 +71,20 @@ public class Path {
 
     public void setCutPoints(List<CutPoint> cutPoints) {
         this.cutPoints = cutPoints;
+    }
+
+    /**
+     * @return Get vertical plane between source and receiver used to compute the propagation ray path attributes
+     */
+    public CutProfile getCutProfile() {
+        return cutProfile;
+    }
+
+    /**
+     * @param cutProfile vertical plane between source and receiver used to compute the propagation ray path attributes
+     */
+    public void setCutProfile(CutProfile cutProfile) {
+        this.cutProfile = cutProfile;
     }
 
     /**
@@ -106,6 +123,7 @@ public class Path {
         this.reflectionAbsorption = other.reflectionAbsorption;
         this.cutPoints = new ArrayList<>(other.cutPoints);
         this.timePeriod = other.timePeriod;
+        this.cutProfile = other.cutProfile;
     }
 
     public Path() {

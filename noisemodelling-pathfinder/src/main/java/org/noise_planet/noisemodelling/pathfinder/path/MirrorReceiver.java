@@ -26,8 +26,6 @@ public class MirrorReceiver {
     private Coordinate receiverPos;
     private final MirrorReceiver parentMirror;
     private final Wall wall;
-    private final int buildingId; // building that belongs to this wall
-    private final ProfileBuilder.IntersectionType type;
     /**
      * This data is not stored in the RTREE as it is not used after the creation of the index
      */
@@ -46,7 +44,7 @@ public class MirrorReceiver {
 
     public MirrorReceiver copyWithoutCone() {
         return new MirrorReceiver(receiverPos, parentMirror == null ? null : parentMirror.copyWithoutCone(),
-                wall, buildingId, type);
+                wall);
     }
     /**
      * @return Other MirrorReceiver index, -1 for the first reflexion
@@ -63,25 +61,15 @@ public class MirrorReceiver {
     }
 
     /**
-     * @return building that belongs to this wall
-     */
-    public int getBuildingId() {
-        return buildingId;
-    }
-
-    /**
      * @param receiverPos coordinate of mirrored receiver
-     * @param mirrorResultId Other MirrorReceiver index, -1 for the first reflexion
+     * @param parentMirror Parent receiver, null for the first reflexion
      * @param wallId Wall index of the last mirrored processed
      * @param buildingId building that belongs to this wall
      */
-    public MirrorReceiver(Coordinate receiverPos, MirrorReceiver parentMirror, Wall wall, int buildingId,
-                          ProfileBuilder.IntersectionType type) {
+    public MirrorReceiver(Coordinate receiverPos, MirrorReceiver parentMirror, Wall wall) {
         this.receiverPos = receiverPos;
         this.parentMirror = parentMirror;
         this.wall = wall;
-        this.buildingId = buildingId;
-        this.type = type;
     }
 
     public Polygon getImageReceiverVisibilityCone() {
@@ -100,8 +88,6 @@ public class MirrorReceiver {
         this.receiverPos = new Coordinate(cpy.receiverPos);
         this.parentMirror = cpy.parentMirror;
         this.wall = cpy.wall;
-        this.buildingId = cpy.buildingId;
-        this.type = cpy.type;
     }
 
     @Override
@@ -109,15 +95,17 @@ public class MirrorReceiver {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MirrorReceiver that = (MirrorReceiver) o;
-        return wall == that.wall && buildingId == that.buildingId && receiverPos.equals(that.receiverPos) && Objects.equals(parentMirror, that.parentMirror);
+        return Objects.equals(receiverPos, that.receiverPos) && Objects.equals(parentMirror, that.parentMirror)
+                && Objects.equals(wall, that.wall) &&
+                Objects.equals(imageReceiverVisibilityCone, that.imageReceiverVisibilityCone);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(receiverPos, parentMirror, wall, buildingId);
+        return Objects.hash(receiverPos, parentMirror, wall, imageReceiverVisibilityCone);
     }
 
     public ProfileBuilder.IntersectionType getType() {
-        return type;
+        return wall.getType();
     }
 }

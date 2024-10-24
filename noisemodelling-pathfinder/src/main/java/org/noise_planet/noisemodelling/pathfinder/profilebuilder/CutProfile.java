@@ -10,9 +10,11 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +34,6 @@ public class CutProfile {
     Boolean hasBuildingIntersection = false;
     /** True if Source-Receiver linestring is below topography cutting point. */
     Boolean hasTopographyIntersection = false;
-    Boolean isFreeField;
     double distanceToSR = 0;
     Orientation srcOrientation;
 
@@ -54,6 +55,14 @@ public class CutProfile {
         receiver = new CutPoint(coord, RECEIVER, -1);
         pts.add(receiver);
         return receiver;
+    }
+
+    public void setReceiver(CutPoint receiver) {
+        this.receiver = receiver;
+    }
+
+    public void setSource(CutPoint source) {
+        this.source = source;
     }
 
     /**
@@ -173,6 +182,14 @@ public class CutProfile {
     }
 
     /**
+     * Add an existing CutPoint.
+     * @param cutPoints Points to add.
+     */
+    public void addCutPoints(Collection<CutPoint> cutPoints) {
+        pts.addAll(cutPoints);
+    }
+
+    /**
      * Reverse the order of the CutPoints.
      */
     public void reverse() {
@@ -218,7 +235,11 @@ public class CutProfile {
     }
 
     public double getGPath() {
-        return getGPath(getSource(), getReceiver());
+        if(!pts.isEmpty()) {
+            return getGPath(pts.get(0), pts.get(pts.size() - 1));
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -238,9 +259,47 @@ public class CutProfile {
                 ", receiver=" + receiver +
                 ", hasBuildingIntersection=" + hasBuildingIntersection +
                 ", hasTopographyIntersection=" + hasTopographyIntersection +
-                ", isFreeField=" + isFreeField +
                 ", distanceToSR=" + distanceToSR +
                 ", srcOrientation=" + srcOrientation +
                 '}';
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround() {
+        List<Coordinate> pts2D = new ArrayList<>(getCutPoints().size());
+        if(getCutPoints().isEmpty()) {
+            return pts2D;
+        }
+        // keep track of the obstacle under our current position. If -1 there is only ground below
+        int overObstacleIndex = getCutPoints().get(0).getBuildingId();
+        for (CutPoint cut : getCutPoints()) {
+            if (cut.getType() != GROUND_EFFECT) {
+                Coordinate coordinate;
+                if (BUILDING.equals(cut.getType()) || WALL.equals(cut.getType())) {
+                    if(Double.compare(cut.getCoordinate().z, cut.getzGround()) == 0) {
+                        // current position is at the ground level in front of or behind the first/last wall
+                        if(overObstacleIndex == -1) {
+                            overObstacleIndex = cut.getId();
+                        } else {
+                            overObstacleIndex = -1;
+                        }
+                    }
+                    // Take the obstacle altitude instead of the ground level
+                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z);
+                } else {
+                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround());
+                }
+                // we will ignore topographic point if we are over a building
+                if(!(overObstacleIndex >= 0 && TOPOGRAPHY.equals(cut.getType()))) {
+                    pts2D.add(coordinate);
+                }
+            }
+        }
+        return JTSUtility.getNewCoordinateSystem(pts2D);
     }
 }

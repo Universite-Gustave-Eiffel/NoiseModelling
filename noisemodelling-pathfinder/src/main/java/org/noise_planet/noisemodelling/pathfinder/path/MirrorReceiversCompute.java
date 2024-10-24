@@ -145,8 +145,7 @@ public class MirrorReceiversCompute {
                     // create the visibility cone of this receiver image
                     Polygon imageReceiverVisibilityCone = createWallReflectionVisibilityCone(rcvMirror,
                             wall.getLineSegment(), maximumPropagationDistance, maximumDistanceFromWall);
-                    MirrorReceiver receiverResultNext = new MirrorReceiver(rcvMirror, parent, wall,
-                            wall.getOriginId(), wall.getType());
+                    MirrorReceiver receiverResultNext = new MirrorReceiver(rcvMirror, parent, wall);
                     receiverResultNext.setImageReceiverVisibilityCone(imageReceiverVisibilityCone);
                     mirrorReceiverTree.insert(imageReceiverVisibilityCone.getEnvelopeInternal(),receiverResultNext.copyWithoutCone());
                     nextParentsToProcess.add(receiverResultNext);

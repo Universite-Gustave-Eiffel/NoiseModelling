@@ -12,7 +12,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -30,13 +29,9 @@ import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import javax.xml.stream.XMLStreamException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.Double.NaN;
-import static org.cts.util.Complex.i;
 import static org.junit.Assert.assertEquals;
 
 public class PathFinderTest {
@@ -315,7 +310,7 @@ public class PathFinderTest {
 
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
         // Test R-CRIT table 27
         Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
@@ -415,7 +410,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -501,7 +496,7 @@ public class PathFinderTest {
 
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
         //Expected values
 
@@ -584,7 +579,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
         //Expected values
 
@@ -669,7 +664,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -750,7 +745,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -829,7 +824,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -907,7 +902,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
         //Expected values
 
@@ -983,7 +978,7 @@ public class PathFinderTest {
 
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -1069,7 +1064,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -1078,10 +1073,16 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.00, 0.00));
         expectedZ_profile.add(new Coordinate(5.02, 0.00));
+        expectedZ_profile.add(new Coordinate(5.02, 8.00));
+        expectedZ_profile.add(new Coordinate(15.07, 8.0));
         expectedZ_profile.add(new Coordinate(15.08, 0.0));
         expectedZ_profile.add(new Coordinate(24.81, 0.0));
+        expectedZ_profile.add(new Coordinate(24.81, 12.0));
+        expectedZ_profile.add(new Coordinate(30.15, 12.00));
         expectedZ_profile.add(new Coordinate(30.15, 0.00));
         expectedZ_profile.add(new Coordinate(37.19, 0.0));
+        expectedZ_profile.add(new Coordinate(37.19, 10.0));
+        expectedZ_profile.add(new Coordinate(41.52, 10.0));
         expectedZ_profile.add(new Coordinate(41.52, 0.0));
         expectedZ_profile.add(new Coordinate(50.25, 0.0));
 
@@ -1147,7 +1148,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -1180,6 +1181,9 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZ_profile,result);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
 
@@ -1228,7 +1232,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -1326,7 +1330,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -1425,7 +1429,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -1512,7 +1516,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         //Expected values
@@ -1589,7 +1593,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Test R-CRIT table 235
@@ -1701,7 +1705,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -1800,7 +1804,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Value
@@ -1910,7 +1914,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -1990,7 +1994,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -2108,7 +2112,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Test R-CRIT table 333 diffraction
@@ -2257,7 +2261,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = computeRays.computePts2DGround(cutProfile, rayData);
+        List<Coordinate> result = cutProfile.computePts2DGround();
 
 
         // Expected Values
@@ -2381,13 +2385,8 @@ public class PathFinderTest {
             assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZ_profile.size(), actualZ_profile.size());
         }
         for (int i = 0; i < actualZ_profile.size(); i++) {
-            assertEquals("Coord X", expectedZ_profile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
-            assertEquals("Coord Y", expectedZ_profile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
-            /*or (int j = 0; j < expectedPts[i].length; j++) {
-                PointPath point = pathParameters.getPointList().get(j);
-                assertEquals("Path " + i + " point " + j + " coord X", expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS);
-                assertEquals("Path " + i + " point " + j + " coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
-            }*/
+            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZ_profile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
+            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZ_profile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
         }
     }
 

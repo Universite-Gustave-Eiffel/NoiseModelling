@@ -41,7 +41,6 @@ public class CnossosPath extends Path {
     public double e=0;
     public double deltaRetroH= Double.MAX_VALUE;
     public double deltaRetroF= Double.MAX_VALUE;
-    //private boolean favorable;
 
     public void init(int size) {
         this.aAtm = new double[size];
@@ -73,7 +72,6 @@ public class CnossosPath extends Path {
         this.aDifF = aDifF.clone();
         this.aGlobal = aGlobal.clone();
         this.aSource = aSource.clone();
-        //this.favorable = favorable;
         this.deltaRetroH = other.deltaRetroH;
         this.deltaRetroF = other.deltaRetroF;
         this.groundAttenuation = new GroundAttenuation(other.groundAttenuation);
