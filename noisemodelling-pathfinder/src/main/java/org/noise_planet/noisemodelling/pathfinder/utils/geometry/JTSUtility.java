@@ -17,9 +17,11 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.math.Vector3D;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -186,6 +188,14 @@ public class JTSUtility {
         return dotInTri(p, a, b, c, null);
     }
 
+    public static Vector3D getTriangleNormal(Coordinate p1, Coordinate p2, Coordinate p3) {
+        Vector3D a = new Vector3D(p1, p2);
+        Vector3D b = new Vector3D(p1, p3);
+        return new Vector3D(a.getY() * b.getZ() - a.getZ() * b.getY(),
+                a.getZ() * b.getX() - a.getX() * b.getZ(),
+                a.getX()*b.getY() - a.getY() * b.getX()).normalize();
+    }
+
     /**
      * Fast dot in triangle test
      * http://www.blackpawn.com/texts/pointinpoly/default.html
@@ -235,6 +245,17 @@ public class JTSUtility {
      * @return X Z projected points
      */
     public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
+        return getNewCoordinateSystem(listPoints, 0);
+    }
+    /**
+     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D
+     * with new x' computed by algorithm and y' is original height of point.
+     * @param  listPoints X Y Z points, all should be on the same plane as first and last points.
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @return X Z projected points
+     */
+    public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints, double tolerance) {
         if(listPoints.isEmpty()) {
             return new ArrayList<>();
         }
@@ -244,6 +265,20 @@ public class JTSUtility {
             final Coordinate pt = listPoints.get(idPoint);
             // Get 2D distance
             newCoord.add(new Coordinate(newCoord.get(idPoint - 1).x + pt.distance(listPoints.get(idPoint - 1)), pt.z));
+        }
+        if(tolerance > 0) {
+            // remove collinear points using tolerance
+            for (int idPoint = 1; idPoint < newCoord.size() - 1;) {
+                final Coordinate previous = newCoord.get(idPoint - 1);
+                final Coordinate current = newCoord.get(idPoint);
+                final Coordinate next = newCoord.get(idPoint+1);
+                final LineSegment lineSegment = new LineSegment(previous, next);
+                if(lineSegment.distance(current) < tolerance) {
+                    newCoord.remove(idPoint);
+                } else {
+                    idPoint++;
+                }
+            }
         }
         return newCoord;
     }

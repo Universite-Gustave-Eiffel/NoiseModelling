@@ -23,6 +23,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
@@ -1311,34 +1312,20 @@ public class ProfileBuilder {
         } else {
             LOGGER.warn(String.format(Locale.ROOT, "Propagation out of the DEM area from %s to %s",
                     p1.toString(), p2.toString()));
+            return;
         }
         profile.hasTopographyIntersection = !freeField;
-        // Remove unnecessary points
-        ArrayList<Coordinate> retainedCoordinates = new ArrayList<>(coordinates.size());
-        for(int i =0; i < coordinates.size(); i++) {
-            // Always add first and last points
-            Coordinate previous;
-            Coordinate current = coordinates.get(i);
-            Coordinate next;
-            if(retainedCoordinates.isEmpty()) {
-                previous = new Coordinate(p1.x, p1.y, getZGround(p1));
-            } else {
-                previous = retainedCoordinates.get(retainedCoordinates.size() - 1);
-            }
-            if(i == coordinates.size() - 1) {
-                next = new Coordinate(p2.x, p2.y, getZGround(p2));
-            } else {
-                next = coordinates.get(i + 1);
-            }
+        // avoid resizing of array by reserving memory
+        profile.reservePoints(coordinates.size());
+        for(int idPoint = 1; idPoint < coordinates.size() - 1; idPoint++) {
+            final Coordinate previous = coordinates.get(idPoint - 1);
+            final Coordinate current = coordinates.get(idPoint);
+            final Coordinate next = coordinates.get(idPoint+1);
             // Do not add topographic points which are simply the linear interpolation between two points
+            // triangulation add a lot of interpolated lines from line segment DEM
             if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= DELTA) {
-                retainedCoordinates.add(coordinates.get(i));
+                profile.addTopoCutPt(current, idPoint);
             }
-        }
-        // Feed profile
-        profile.reservePoints(retainedCoordinates.size());
-        for(int i =0; i < retainedCoordinates.size(); i++) {
-            profile.addTopoCutPt(retainedCoordinates.get(i), i);
         }
     }
 
@@ -1390,7 +1377,7 @@ public class ProfileBuilder {
     }
 
     /**
-     * Fetch all intersections with TIN
+     * Fetch all intersections with TIN. For simplification only plane change are pushed.
      * @param p1 first point
      * @param p2 second point
      * @param stopAtObstacleOverSourceReceiver Stop fetching intersections if the segment p1-p2 is intersecting with TIN
@@ -1421,6 +1408,8 @@ public class ProfileBuilder {
         // Add p1 coordinate
         Coordinate[] vertices = getTriangleVertices(curTriP1);
         outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, vertices[0], vertices[1], vertices[2])));
+        Vector3D previousTriangleNormal = null;
+        boolean freeField = true;
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
             Coordinate intersectionPt = new Coordinate();
@@ -1433,11 +1422,18 @@ public class ProfileBuilder {
                 // Found next triangle (if propaTri >= 0)
                 // extract X,Y,Z values of intersection with triangle segment
                 if(!Double.isNaN(intersectionPt.z)) {
-                    outputPoints.add(intersectionPt);
-                    if(stopAtObstacleOverSourceReceiver) {
-                        Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
-                        double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
-                        if(interpolatedZ < intersectionPt.z) {
+                    Coordinate[] trianglePoints =  getTriangle(propaTri);
+                    final Vector3D triangleNormal = JTSUtility.getTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
+                    // We do not push coplanar intersection points
+                    if(previousTriangleNormal == null || Math.abs(computeNormalsAngle(triangleNormal, previousTriangleNormal)) > epsilon) {
+                        outputPoints.add(intersectionPt);
+                        previousTriangleNormal = triangleNormal;
+                    }
+                    Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
+                    double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
+                    if(interpolatedZ < intersectionPt.z) {
+                        freeField = false;
+                        if(stopAtObstacleOverSourceReceiver) {
                             return false;
                         }
                     }
@@ -1445,7 +1441,16 @@ public class ProfileBuilder {
             }
             navigationTri = propaTri;
         }
-        return true;
+        return freeField;
+    }
+
+    /**
+     * @param normal1 Normalized vector 1
+     * @param normal2 Normalized vector 2
+     * @return The angle between the two normals
+     */
+    private double computeNormalsAngle(Vector3D normal1, Vector3D normal2) {
+        return Math.acos(normal1.dot(normal2));
     }
 
     /**

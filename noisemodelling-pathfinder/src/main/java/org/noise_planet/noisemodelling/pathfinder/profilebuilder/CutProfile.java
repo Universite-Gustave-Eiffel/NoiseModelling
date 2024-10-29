@@ -277,7 +277,8 @@ public class CutProfile {
         }
         // keep track of the obstacle under our current position. If -1 there is only ground below
         int overObstacleIndex = getCutPoints().get(0).getBuildingId();
-        for (CutPoint cut : getCutPoints()) {
+        for (int i=0; i < pts.size(); i++) {
+            CutPoint cut = pts.get(i);
             if (cut.getType() != GROUND_EFFECT) {
                 Coordinate coordinate;
                 if (BUILDING.equals(cut.getType()) || WALL.equals(cut.getType())) {

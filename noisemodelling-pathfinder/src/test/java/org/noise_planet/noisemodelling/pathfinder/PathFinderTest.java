@@ -16,6 +16,10 @@ import org.junit.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.math.Plane3D;
+import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.operation.distance3d.PlanarPolygon3D;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 //import org.noise_planet.noisemodelling.pathfinder.path.CnossosPathParameters;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -233,6 +237,46 @@ public class PathFinderTest {
                 .addTopographicLine(120, -20, 0, 185, -5, 10)
                 .addTopographicLine(205, 75, 10, 225, 80, 0)
                 .addTopographicLine(205, -5, 10, 225, -20, 0);
+    }
+
+
+    public static void addTopographicTC23Model(ProfileBuilder profileBuilder) {
+        // Create parallel lines for the slope edge because unit test table values are rounded and
+        // the rounding make the lines non-parallel
+
+        // base line left
+        Vector3D v1 = new Vector3D(new Coordinate(46.27, 36.28, 0),
+                new Coordinate(59.6, -9.87, 0));
+
+        // original top segment (left side)
+        Vector3D v2 = new Vector3D(new Coordinate(54.68, 37.59, 5),
+                new Coordinate(67.35, -6.83, 5));
+
+
+        // base line right
+        Vector3D v3 = new Vector3D(new Coordinate(63.71, 41.16, 0),
+                new Coordinate(76.84, -5.28, 0));
+
+        Vector3D parallelPoint1 = new Vector3D(new Coordinate(54.68, 37.59, 5)).add(v1.normalize().divide(1/v2.length()));
+        Vector3D parallelPoint2 = new Vector3D(new Coordinate(55.93, 37.93, 5)).add(v3.normalize().divide(1/v2.length()));
+
+
+        profileBuilder.addTopographicLine(30, -14, 0, 122, -14, 0)// 1
+                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
+                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
+                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
+                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
+                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
+                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
+                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
+                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
+                .addTopographicLine(54.68, 37.59, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 10
+                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
+                .addTopographicLine(59.6, -9.87, 0, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 12
+                .addTopographicLine(parallelPoint1.getX(), parallelPoint1.getY(), 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 13
+                .addTopographicLine(parallelPoint2.getX(), parallelPoint2.getY(), 5, 76.84, -5.28, 0)// 14
+                .addTopographicLine(54.68, 37.59, 5, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 15
+                .addTopographicLine(55.93, 37.93, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5); // 16
     }
 
     /**
@@ -1329,18 +1373,19 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         // Expected Values
 
-        /* Table 193 */
+        /* Table 193  Z Profile SR */
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.0, 0.0));
         expectedZ_profile.add(new Coordinate(112.41, 0.0));
         expectedZ_profile.add(new Coordinate(178.84, 10));
         expectedZ_profile.add(new Coordinate(194.16, 10));
+
+        CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        List<Coordinate> result = cutProfile.computePts2DGround();
+        assertZProfil(expectedZ_profile, result);
+
 
         /* Table 194 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1356,7 +1401,8 @@ public class PathFinderTest {
         };
 
 
-        assertZProfil(expectedZ_profile, result);
+
+
         // S-R (not the rayleigh segments SO OR)
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
         // Check reflexion mean planes
@@ -1751,23 +1797,6 @@ public class PathFinderTest {
                         new Coordinate(118, 10, 8),
                         new Coordinate(83, 10, 8)},buildingsAbs)
                 // Ground Surface
-
-                .addTopographicLine(30, -14, 0, 122, -14, 0)// 1
-                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
-                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
-                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
-                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
-                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
-                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
-                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
-                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
-                .addTopographicLine(54.68, 37.59, 5, 55.93, 37.93, 5)// 10
-                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
-                .addTopographicLine(59.6, -9.87, 0, 67.35, -6.83, 5)// 12
-                .addTopographicLine(67.35, -6.83, 5, 68.68, -6.49, 5)// 13
-                .addTopographicLine(68.68, -6.49, 5, 76.84, -5.28, 0)// 14
-                .addTopographicLine(54.68, 37.59, 5, 67.35, -6.83, 5)// 15
-                .addTopographicLine(55.93, 37.93, 5, 68.68, -6.49, 5)// 16
                 .addGroundEffect(factory.createPolygon(new Coordinate[]{
                         new Coordinate(59.6, -9.87, 0), // 5
                         new Coordinate(76.84, -5.28, 0), // 5-6
@@ -1782,8 +1811,8 @@ public class PathFinderTest {
                         new Coordinate(30, 45, 0), // 7-8
                         new Coordinate(30, -14, 0)
                 }), 0.);
+        addTopographicTC23Model(builder);
         builder.finishFeeding();
-        //.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(builder)
@@ -1848,6 +1877,8 @@ public class PathFinderTest {
         //Create obstruction test object
         ProfileBuilder builder = new ProfileBuilder();
 
+
+
         builder.addBuilding(new Coordinate[]{
                         new Coordinate(75, 34, 9),
                         new Coordinate(110, 34, 9),
@@ -1859,23 +1890,6 @@ public class PathFinderTest {
                         new Coordinate(118, 10, 6),
                         new Coordinate(83, 10, 6)},buildingsAbs)
                 // Ground Surface
-
-                .addTopographicLine(30, -14, 0, 122, -14, 0)// 1
-                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
-                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
-                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
-                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
-                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
-                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
-                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
-                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
-                .addTopographicLine(54.68, 37.59, 5, 55.93, 37.93, 5)// 10
-                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
-                .addTopographicLine(59.6, -9.87, 0, 67.35, -6.83, 5)// 12
-                .addTopographicLine(67.35, -6.83, 5, 68.68, -6.49, 5)// 13
-                .addTopographicLine(68.68, -6.49, 5, 76.84, -5.28, 0)// 14
-                .addTopographicLine(54.68, 37.59, 5, 67.35, -6.83, 5)// 15
-                .addTopographicLine(55.93, 37.93, 5, 68.68, -6.49, 5)// 16
                 .addGroundEffect(factory.createPolygon(new Coordinate[]{
                         new Coordinate(59.6, -9.87, 0), // 5
                         new Coordinate(76.84, -5.28, 0), // 5-6
@@ -1891,8 +1905,8 @@ public class PathFinderTest {
                         new Coordinate(30, -14, 0)
                 }), 0.);
         builder.setzBuildings(true);
+        addTopographicTC23Model(builder);
         builder.finishFeeding();
-        //.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(builder)
@@ -1911,26 +1925,25 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        computeRays.run(propDataOut);
-
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         // Expected Values
 
         /* Table 279 */
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.0, 0.0));
         expectedZ_profile.add(new Coordinate(14.46, 0.0));
-        expectedZ_profile.add(new Coordinate(19.03, 2.64));
         expectedZ_profile.add(new Coordinate(23.03, 5.0));
         expectedZ_profile.add(new Coordinate(24.39, 5.0));
-        expectedZ_profile.add(new Coordinate(28.40, 2.65));
         expectedZ_profile.add(new Coordinate(32.85, 0.0));
         expectedZ_profile.add(new Coordinate(45.10, 0.0));
+        expectedZ_profile.add(new Coordinate(45.10, 6.0));
+        expectedZ_profile.add(new Coordinate(60.58, 6.0));
         expectedZ_profile.add(new Coordinate(60.58, 0.0));
         expectedZ_profile.add(new Coordinate(68.15, 0.0));
+
+
+
+        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
+        assertZProfil(expectedZ_profile,result);
 
         /* Table 280 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1939,7 +1952,7 @@ public class PathFinderTest {
                 {0.0, 0.0, 6.0, 4.0, 7.57, 0.00, NaN}
         };
         assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertZProfil(expectedZ_profile,result);
+
 
 
     }
