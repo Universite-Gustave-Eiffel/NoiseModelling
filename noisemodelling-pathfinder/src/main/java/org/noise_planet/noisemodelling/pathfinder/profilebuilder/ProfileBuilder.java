@@ -1408,7 +1408,6 @@ public class ProfileBuilder {
         // Add p1 coordinate
         Coordinate[] vertices = getTriangleVertices(curTriP1);
         outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, vertices[0], vertices[1], vertices[2])));
-        Vector3D previousTriangleNormal = null;
         boolean freeField = true;
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
@@ -1422,13 +1421,7 @@ public class ProfileBuilder {
                 // Found next triangle (if propaTri >= 0)
                 // extract X,Y,Z values of intersection with triangle segment
                 if(!Double.isNaN(intersectionPt.z)) {
-                    Coordinate[] trianglePoints =  getTriangle(propaTri);
-                    final Vector3D triangleNormal = JTSUtility.getTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-                    // We do not push coplanar intersection points
-                    if(previousTriangleNormal == null || Math.abs(computeNormalsAngle(triangleNormal, previousTriangleNormal)) > epsilon) {
-                        outputPoints.add(intersectionPt);
-                        previousTriangleNormal = triangleNormal;
-                    }
+                    outputPoints.add(intersectionPt);
                     Coordinate closestPointOnPropagationLine = propaLine.closestPoint(intersectionPt);
                     double interpolatedZ = Vertex.interpolateZ(closestPointOnPropagationLine, propaLine.p0, propaLine.p1);
                     if(interpolatedZ < intersectionPt.z) {
