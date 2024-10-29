@@ -1916,7 +1916,9 @@ public class PathFinderTest {
                 .vEdgeDiff(true)
                 .setGs(0.)
                 .build();
-        rayData.reflexionOrder=0;
+        rayData.reflexionOrder=1;
+        rayData.computeHorizontalDiffraction=false;
+        rayData.computeVerticalDiffraction=true;
 
         PathFinderVisitor propDataOut = new PathFinderVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
@@ -1924,6 +1926,8 @@ public class PathFinderTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
 
         // Expected Values
 
@@ -1941,6 +1945,18 @@ public class PathFinderTest {
         expectedZ_profile.add(new Coordinate(68.15, 0.0));
 
 
+        /* Table 287 Z-Profile SO */
+        List<Coordinate> expectedZ_profileSO = new ArrayList<>();
+        expectedZ_profileSO.add(new Coordinate(0.0, 0.0));
+        expectedZ_profileSO.add(new Coordinate(14.13, 0.0));
+        expectedZ_profileSO.add(new Coordinate(22.51, 5.0));
+
+        List<Coordinate> expectedZ_profileOR = new ArrayList<>();
+        expectedZ_profileOR.add(new Coordinate(22.51, 5.0));
+        expectedZ_profileOR.add(new Coordinate(23.84, 5.0));
+        expectedZ_profileOR.add(new Coordinate(32.13, 0.0));
+        expectedZ_profileOR.add(new Coordinate(43.53, 0.0));
+        expectedZ_profileOR.add(new Coordinate(70.74, 0.0));
 
         List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
         assertZProfil(expectedZ_profile,result);

@@ -721,21 +721,6 @@ public class PathFinder {
         if(pts2D.size() != cutPts.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
-        //Remove aligned cut points thanks to jts DouglasPeuckerSimplifier algo
-        List<CutPoint> newCutPts = new ArrayList<>(cutPts.size());
-        Geometry lineString = new GeometryFactory().createLineString(pts2D.toArray(new Coordinate[0]));
-        List<Coordinate> newPts2D = List.of(DouglasPeuckerSimplifier.simplify(lineString, 0.5*cutProfile.getDistanceToSR()).getCoordinates());
-
-        for (int i = 0; i < newPts2D.size(); i++) {
-            newCutPts.add(cutPts.get(pts2D.indexOf(newPts2D.get(i))));
-        }
-
-
-        pts2D = newPts2D;
-        cutPts = newCutPts;
-        if(pts2D.size() != cutPts.size()) {
-            throw new IllegalArgumentException("The two arrays size should be the same");
-        }
 
         List<Coordinate> pts2DGround = cutProfile.computePts2DGround();
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.toArray(new Coordinate[0]));
