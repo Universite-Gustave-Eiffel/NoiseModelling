@@ -998,7 +998,7 @@ public class ProfileBuilder {
             sourcePoint.setGroundCoef(gS);
         }
         // Add receiver point
-        CutPoint receiverPoint = profile.addReceiver(receiverCoordinate);
+        profile.addReceiver(receiverCoordinate);
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
         if(topoTree != null) {
@@ -1152,7 +1152,8 @@ public class ProfileBuilder {
                             // we will query for the point that lie after the intersection with the ground effect border
                             // in order to have the new value of the ground effect, if there is nothing at this location
                             // we fall back to the default value of ground effect
-                            // if this is another ground effect it will be processed in another loop (two intersections on the same coordinate)
+                            // if this is another ground effect we will add it here because we may have overlapping ground effect.
+                            // if it is overlapped then we will have two points with the same G at almost the same location. (it's ok)
                             // retrieve the ground coefficient after the intersection in the direction of the profile
                             // this method will solve the question if we enter a new ground absorption or we will leave one
                             Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
@@ -1160,9 +1161,20 @@ public class ProfileBuilder {
                             if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
                                 // we enter a new ground effect
                                 profile.addGroundCutPt(intersection, facetLine.getOriginId(), groundAbsorption.getCoefficient());
-                            } else if(getIntersectingGroundAbsorption(afterIntersectionPoint) == -1){
-                                // no new ground effect, we fall back to default G
-                                profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
+                            } else {
+                                // we exit a ground surface, we have to check if there is
+                                // another ground surface at this point, could be none or could be
+                                // an overlapping/touching ground surface
+                                int groundSurfaceIndex = getIntersectingGroundAbsorption(afterIntersectionPoint);
+                                if(groundSurfaceIndex == -1) {
+                                    // no new ground effect, we fall back to default G
+                                    profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
+                                } else {
+                                    // add another ground surface, could be duplicate points if
+                                    // the two ground surfaces is touching
+                                    GroundAbsorption nextGroundAbsorption = groundAbsorptions.get(groundSurfaceIndex);
+                                    profile.addGroundCutPt(intersection, facetLine.getOriginId(), nextGroundAbsorption.getCoefficient());
+                                }
                             }
                         }
                     }
