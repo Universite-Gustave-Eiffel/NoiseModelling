@@ -1191,9 +1191,6 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
 
         //Expected values
 
@@ -1203,6 +1200,16 @@ public class PathFinderTest {
         expectedZ_profile.add(new Coordinate(112.41, 0.0));
         expectedZ_profile.add(new Coordinate(178.84, 10));
         expectedZ_profile.add(new Coordinate(194.16, 10));
+
+        /* Table 169 */
+        List<Coordinate> expectedZProfileReflection = new ArrayList<>();
+        expectedZProfileReflection.add(new Coordinate(0.0, 0.0));
+        expectedZProfileReflection.add(new Coordinate(117.12, 0.0));
+        expectedZProfileReflection.add(new Coordinate(129.75, 1.82));
+        expectedZProfileReflection.add(new Coordinate(129.75, 1.82));
+        expectedZProfileReflection.add(new Coordinate(129.75, 1.82));
+        expectedZProfileReflection.add(new Coordinate(183.01, 10));
+        expectedZProfileReflection.add(new Coordinate(198.04, 10));
 
         /* Table 166 */
         Coordinate expectedSPrime =new Coordinate(0.42,-6.64);
@@ -1224,11 +1231,16 @@ public class PathFinderTest {
         };
 
         //Assertion
+
+        // Check SR direct line
+        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
         assertZProfil(expectedZ_profile,result);
-
         assertEquals(2, propDataOut.getPropagationPaths().size());
-
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+
+        // Check reflection path
+        result = propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround();
+        assertZProfil(expectedZProfileReflection, result);
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
 
         try {

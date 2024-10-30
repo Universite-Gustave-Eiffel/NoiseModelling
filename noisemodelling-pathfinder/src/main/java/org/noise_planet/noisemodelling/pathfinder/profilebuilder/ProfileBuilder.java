@@ -1173,7 +1173,11 @@ public class ProfileBuilder {
                                     // add another ground surface, could be duplicate points if
                                     // the two ground surfaces is touching
                                     GroundAbsorption nextGroundAbsorption = groundAbsorptions.get(groundSurfaceIndex);
-                                    profile.addGroundCutPt(intersection, facetLine.getOriginId(), nextGroundAbsorption.getCoefficient());
+                                    // if the interior of the two ground surfaces overlaps we add the ground point
+                                    // (as we will not encounter the side of this other ground surface)
+                                    if(!nextGroundAbsorption.geom.touches(groundAbsorption.geom)) {
+                                        profile.addGroundCutPt(intersection, groundSurfaceIndex, nextGroundAbsorption.getCoefficient());
+                                    }
                                 }
                             }
                         }

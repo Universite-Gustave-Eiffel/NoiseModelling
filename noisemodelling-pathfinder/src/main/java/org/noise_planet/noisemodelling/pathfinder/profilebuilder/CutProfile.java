@@ -141,8 +141,8 @@ public class CutProfile {
     public List<CutPoint> getCutPoints() {
         return pts;
     }
-    public void setCutPoints ( ArrayList<CutPoint> ge){
-        pts = ge;
+    public void setCutPoints ( List<CutPoint> ge){
+        pts = new ArrayList<>(ge);
     }
 
     /**

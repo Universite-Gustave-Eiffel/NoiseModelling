@@ -798,7 +798,7 @@ public class PathFinder {
         double e = 0;
         Coordinate src = cutProfile.getSource().getCoordinate();
 
-        // If we have at least one diffraction point
+        // Create segments from each diffraction point to the receiver
         for (int i = 1; i < pts.size(); i++) {
             int k = 0;
             int i0 = pts2D.indexOf(pts.get(i - 1));
@@ -1154,22 +1154,15 @@ public class PathFinder {
      */
     private void pushReflectionCutPointSequence(CutProfile mainProfile, CutPoint reflectionCutPoint, MirrorReceiver receiverImage) {
         // The reflection point is added 3 times, first at the base of the wall, second at the reflection coordinates, third when changing direction
-        // Coordinates must not be exactly the same as points may be ordered from the distance of the first point
         reflectionCutPoint.setType(REFLECTION);
         // Compute the coordinate just before the reflection
         int indexReflectionPoint = mainProfile.getCutPoints().indexOf(reflectionCutPoint);
         if(indexReflectionPoint > 0) {
-            Vector3D displacementBeforeReflection = Vector3D.create(receiverImage.getReceiverPos());
-            Vector3D reflectionVector = Vector3D.create(receiverImage.getReflectionPosition());
-            displacementBeforeReflection = displacementBeforeReflection.subtract(reflectionVector);
-            displacementBeforeReflection = displacementBeforeReflection.normalize();
-            displacementBeforeReflection = displacementBeforeReflection.divide(1/NAVIGATION_POINT_DISTANCE_FROM_WALLS);
-            CutPoint reflectionBeforeCutPoint = new CutPoint(reflectionCutPoint);
-            reflectionBeforeCutPoint.setCoordinate(new Coordinate(reflectionVector.getX()+displacementBeforeReflection.getX(),
-                    reflectionVector.getY()+displacementBeforeReflection.getY(),
-                    reflectionVector.getZ()+displacementBeforeReflection.getZ()));
-            mainProfile.getCutPoints().add(indexReflectionPoint, reflectionBeforeCutPoint);
-
+            CutPoint reflectionPointGround = new CutPoint(reflectionCutPoint);
+            reflectionPointGround.setCoordinate(new Coordinate(reflectionPointGround.getCoordinate().x,
+                    reflectionPointGround.getCoordinate().y, reflectionPointGround.getzGround()));
+            mainProfile.getCutPoints().add(indexReflectionPoint, reflectionPointGround);
+            mainProfile.getCutPoints().add(indexReflectionPoint+2, new CutPoint(reflectionPointGround));
         }
     }
 
@@ -1293,13 +1286,13 @@ public class PathFinder {
                 pathParameters.setFavorable(favorable);
                 pathParameters.setPointList(points);
                 pathParameters.setSegmentList(segments);
-                pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
+                pathParameters.angle = Angle.angle(rcvCoord, srcCoord);
                 pathParameters.refPoints = reflIdx;
                 CutProfile mainProfile = new CutProfile();
                 // Compute direct path between source and first reflection point, add profile to the data
                 computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReflectionPosition(), points, segments, data,
                         orientation, pathParameters.difHPoints, pathParameters.difVPoints, mainProfile);
-                if(points.isEmpty()) {
+                if (points.isEmpty()) {
                     // (maybe there is a blocking building, and we disabled diffraction)
                     continue;
                 }
@@ -1309,7 +1302,7 @@ public class PathFinder {
                 PointPath reflPoint = points.get(points.size() - 1);
                 reflIdx.add(points.size() - 1);
                 updateReflectionPathAttributes(reflPoint, rayPath.get(0),
-                        mainProfile.getCutPoints().get(mainProfile.getCutPoints().size()-1));
+                        mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
                 // Add intermediate reflections
                 for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                     MirrorReceiver firstPoint = rayPath.get(idPt);
@@ -1319,7 +1312,7 @@ public class PathFinder {
                     computeReflexionOverBuildings(firstPoint.getReflectionPosition(), secondPoint.getReflectionPosition(),
                             points, segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints,
                             mainProfile);
-                    if(points.size() == previousPointSize) { // no visibility between the two reflection coordinates
+                    if (points.size() == previousPointSize) { // no visibility between the two reflection coordinates
                         // (maybe there is a blocking building, and we disabled diffraction)
                         continue;
                     }
@@ -1328,18 +1321,18 @@ public class PathFinder {
                     reflIdx.add(points.size() - 1);
                     // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
                     // so we have to add the X value of the last path
-                    for(PointPath p : points.subList(previousPointSize, points.size())) {
+                    for (PointPath p : points.subList(previousPointSize, points.size())) {
                         p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
                     }
                     PointPath lastReflexionPoint = points.get(points.size() - 1);
-                    updateReflectionPathAttributes(lastReflexionPoint, secondPoint,  mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
+                    updateReflectionPathAttributes(lastReflexionPoint, secondPoint, mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
                 }
                 // Compute direct path between receiver and last reflection point, add profile to the data
                 int previousPointSize = points.size();
                 int previousCutPointsSize = mainProfile.getCutPoints().size();
                 computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReflectionPosition(), rcvCoord, points,
                         segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints, mainProfile);
-                if(points.size() == previousPointSize) { // no visibility between the last reflection coordinate and the receiver
+                if (points.size() == previousPointSize) { // no visibility between the last reflection coordinate and the receiver
                     // (maybe there is a blocking building, and we disabled diffraction)
                     continue;
                 }
@@ -1349,7 +1342,7 @@ public class PathFinder {
                 points.remove(previousPointSize); // remove duplicate point (last reflexion coordinate)
                 // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
                 // so we have to add the X value of the last path
-                for(PointPath p : points.subList(previousPointSize, points.size())) {
+                for (PointPath p : points.subList(previousPointSize, points.size())) {
                     p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
                 }
                 for (int i = 1; i < points.size(); i++) {
@@ -1361,7 +1354,7 @@ public class PathFinder {
                             final Coordinate p1 = currentPoint.coordinate;
                             final Coordinate p2 = points.get(i + 1).coordinate;
                             // compute Y value (altitude) by interpolating the Y values of the two neighboring points
-                            currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x-p0.x)/(p2.x-p0.x)*(p2.y-p0.y)+p0.y);
+                            currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x - p0.x) / (p2.x - p0.x) * (p2.y - p0.y) + p0.y);
                             //check if new reflection point altitude is higher than the wall
                             if (currentPoint.coordinate.y > currentPoint.obstacleZ - epsilon) {
                                 // can't reflect higher than the wall
@@ -1378,7 +1371,7 @@ public class PathFinder {
                         }
                     }
                 }
-                // Extract
+
                 double gPath = mainProfile.getGPath();
                 pathParameters.setCutProfile(mainProfile);
                 List<Coordinate> groundPts = mainProfile.computePts2DGround();
@@ -1386,6 +1379,35 @@ public class PathFinder {
                 SegmentPath srSegment = computeSegment(groundPts.get(0), srcCoord.z, groundPts.get(groundPts.size() - 1), rcvCoord.z,
                         meanPlan, gPath, data.gS);
                 pathParameters.setSRSegment(srSegment);
+                if (!pathParameters.difHPoints.isEmpty()) {
+                    // Use source to first diffraction as segment 1 (SO¹)
+                    // then last diffraction to receiver (OⁿR)
+                    List<SegmentPath> reflectionSegments = new ArrayList<>();
+                    CutProfile soProfile = new CutProfile();
+                    soProfile.setCutPoints(mainProfile.getCutPoints().subList(0, pathParameters.difHPoints.get(0)+1));
+                    soProfile.setSource(soProfile.getCutPoints().get(0));
+                    soProfile.setReceiver(soProfile.getCutPoints().get(soProfile.getCutPoints().size() - 1));
+                    groundPts = soProfile.computePts2DGround();
+                    meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
+                    SegmentPath soSegment = computeSegment(groundPts.get(0), srcCoord.z,
+                            groundPts.get(groundPts.size() - 1), soProfile.getReceiver().getCoordinate().z,
+                            meanPlan, soProfile.getGPath(), data.gS);
+                    reflectionSegments.add(soSegment);
+                    // compute OR profile
+                    CutProfile orProfile = new CutProfile();
+                    int indexLastDiffraction = pathParameters.difHPoints.get(pathParameters.difHPoints.size() - 1);
+                    orProfile.setCutPoints(mainProfile.getCutPoints().subList(indexLastDiffraction,
+                            mainProfile.getCutPoints().size()));
+                    orProfile.setSource(orProfile.getCutPoints().get(0));
+                    orProfile.setReceiver(orProfile.getCutPoints().get(orProfile.getCutPoints().size() - 1));
+                    groundPts = orProfile.computePts2DGround();
+                    meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
+                    SegmentPath orSegment = computeSegment(groundPts.get(0), orProfile.getSource().getCoordinate().z,
+                            groundPts.get(groundPts.size() - 1), orProfile.getReceiver().getCoordinate().z,
+                            meanPlan, orProfile.getGPath(), orProfile.getSource().getGroundCoef());
+                    reflectionSegments.add(orSegment);
+                    pathParameters.setSegmentList(reflectionSegments);
+                }
                 reflexionPathParameters.add(pathParameters);
             }
         }
