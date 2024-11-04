@@ -70,14 +70,14 @@ public class PostgisTest {
 
             // Init custom input in order to compute more than just attenuation
             // LW_ROADS contain Day Evening Night emission spectrum
-            LDENConfig ldenConfig = new LDENConfig(LDENConfig.INPUT_MODE.INPUT_MODE_LW_DEN);
+            NoiseMapParameters ldenConfig = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
             ldenConfig.setComputeLDay(true);
             ldenConfig.setComputeLEvening(true);
             ldenConfig.setComputeLNight(true);
             ldenConfig.setComputeLDEN(true);
 
-            LDENPointNoiseMapFactory tableWriter = new LDENPointNoiseMapFactory(connection, ldenConfig);
+            NoiseMapMaker tableWriter = new NoiseMapMaker(connection, ldenConfig);
 
             tableWriter.setKeepRays(true);
 

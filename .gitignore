@@ -5,6 +5,7 @@ nbactions.xml
 *.versionsBackup
 .attach*
 Docs/build
+Docs/.build
 Docs/venv
 profile_*.csv
 venv/
