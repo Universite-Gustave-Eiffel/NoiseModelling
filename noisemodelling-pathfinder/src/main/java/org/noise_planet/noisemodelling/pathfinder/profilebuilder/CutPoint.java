@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +34,9 @@ public  class CutPoint implements Comparable<CutPoint> {
     double groundCoef = Double.NaN;
     /** Wall alpha. NaN if there is no coefficient. */
     List<Double> wallAlpha = Collections.emptyList();
-    boolean corner = false; //todo with horizontal plane diffraction rework: remove, replace with intersection type-> DIFFRACTION_POINT
+
+    /** On reflection intersection type this object contain the associated reflection data */
+    private MirrorReceiver mirrorReceiver;
 
     /**
      * Constructor using a {@link Coordinate}.
@@ -41,14 +44,10 @@ public  class CutPoint implements Comparable<CutPoint> {
      * @param type  Intersection type.
      * @param id    Identifier of the cut element.
      */
-    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id, boolean corner) {
+    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id) {
         this.coordinate = new Coordinate(coord);
         this.type = type;
         this.id = id;
-        this.corner = corner;
-    }
-    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id) {
-        this(coord, type, id, false);
     }
 
     public CutPoint() {
@@ -67,7 +66,20 @@ public  class CutPoint implements Comparable<CutPoint> {
         this.groundCoef = cut.groundCoef;
         this.wallAlpha = new ArrayList<>(cut.wallAlpha);
         this.zGround = cut.zGround;
-        this.corner = cut.corner;
+    }
+
+    /**
+     * @return  On reflection intersection type this object contain the associated reflection data
+     */
+    public MirrorReceiver getMirrorReceiver() {
+        return mirrorReceiver;
+    }
+
+    /**
+     * @param mirrorReceiver On reflection intersection type this object contain the associated reflection data
+     */
+    public void setMirrorReceiver(MirrorReceiver mirrorReceiver) {
+        this.mirrorReceiver = mirrorReceiver;
     }
 
     public void setType(ProfileBuilder.IntersectionType type) {
@@ -195,7 +207,6 @@ public  class CutPoint implements Comparable<CutPoint> {
                 ", zGround=" + zGround +
                 ", groundCoef=" + groundCoef +
                 ", wallAlpha=" + wallAlpha +
-                ", corner=" + corner +
                 '}';
     }
 
@@ -209,7 +220,4 @@ public  class CutPoint implements Comparable<CutPoint> {
         return this.coordinate.compareTo(cutPoint.coordinate);
     }
 
-    public boolean isCorner(){
-        return corner;
-    }
 }

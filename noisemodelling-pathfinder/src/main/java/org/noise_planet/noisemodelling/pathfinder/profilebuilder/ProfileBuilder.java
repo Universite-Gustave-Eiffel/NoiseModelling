@@ -1121,7 +1121,7 @@ public class ProfileBuilder {
                             }
                         }
                         if (facetLine.type == IntersectionType.BUILDING) {
-                            CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i, false);
+                            CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i);
                             pt.setGroundCoef(Scene.DEFAULT_G_BUILDING);
                             pt.setWallAlpha(buildings.get(facetLine.getOriginId()).alphas);
                             // add a point at the bottom of the building on the exterior side of the building
@@ -1130,7 +1130,7 @@ public class ProfileBuilder {
                             // it works also with polygon holes as interiors are CCW
                             Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
                             Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
-                            CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i, false);
+                            CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i);
                             exteriorPointCutPoint.coordinate.setZ(NaN);
                             double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
                             if(zRayReceiverSource <= intersection.z) {
@@ -1138,10 +1138,10 @@ public class ProfileBuilder {
                             }
                         } else if (facetLine.type == IntersectionType.WALL) {
                             profile.addWallCutPt(Vector2D.create(intersection).add(directionBefore).toCoordinate(),
-                                    facetLine.originId, false, facetLine.alphas);
-                            profile.addWallCutPt(intersection, facetLine.originId, false, facetLine.alphas);
+                                    facetLine.originId, facetLine.alphas);
+                            profile.addWallCutPt(intersection, facetLine.originId, facetLine.alphas);
                             profile.addWallCutPt(Vector2D.create(intersection).add(directionAfter).toCoordinate(),
-                                    facetLine.originId, false, facetLine.alphas);
+                                    facetLine.originId, facetLine.alphas);
                             double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
                             if(zRayReceiverSource <= intersection.z) {
                                 profile.hasBuildingIntersection = true;

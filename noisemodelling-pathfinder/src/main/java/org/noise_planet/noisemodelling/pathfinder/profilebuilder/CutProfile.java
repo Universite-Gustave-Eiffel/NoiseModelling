@@ -70,8 +70,8 @@ public class CutProfile {
      * @param coord      Coordinate of the cutting point.
      * @param buildingId Id of the cut building.
      */
-    public CutPoint addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
-        CutPoint cut = new CutPoint(coord, ProfileBuilder.IntersectionType.BUILDING, buildingId, corner);
+    public CutPoint addBuildingCutPt(Coordinate coord, int buildingId, int wallId) {
+        CutPoint cut = new CutPoint(coord, ProfileBuilder.IntersectionType.BUILDING, buildingId);
         cut.buildingId = buildingId;
         cut.wallId = wallId;
         pts.add(cut);
@@ -83,8 +83,8 @@ public class CutProfile {
      * @param coord Coordinate of the cutting point.
      * @param id    Id of the cut building.
      */
-    public CutPoint addWallCutPt(Coordinate coord, int id, boolean corner) {
-        CutPoint wallPoint = new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner);
+    public CutPoint addWallCutPt(Coordinate coord, int id) {
+        CutPoint wallPoint = new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id);
         wallPoint.wallId = id;
         pts.add(wallPoint);
         return wallPoint;
@@ -95,8 +95,8 @@ public class CutProfile {
      * @param coord Coordinate of the cutting point.
      * @param id    Id of the cut building.
      */
-    public void addWallCutPt(Coordinate coord, int id, boolean corner, List<Double> alphas) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner));
+    public void addWallCutPt(Coordinate coord, int id, List<Double> alphas) {
+        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id));
         pts.get(pts.size()-1).wallId = id;
         pts.get(pts.size()-1).setWallAlpha(alphas);
     }
