@@ -71,8 +71,8 @@ public class RoadVehicleCnossosvar {
 
 
         // Rolling noise acceleration correction
-        // double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
-        //RoadLvl = RoadLvl + getCr(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
+        double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
+        RoadLvl = RoadLvl + getCr(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
 
 
         //Studied tyres
@@ -102,9 +102,9 @@ public class RoadVehicleCnossosvar {
         double aMax;
         switch (acc_type) {
             case 1:
-                //if (veh_type.equals("1") || veh_type.equals("2") || veh_type.equals("3")) {
-                 //   MotorLvl = MotorLvl + getCp(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
-                //}
+                if (veh_type.equals("1") || veh_type.equals("2") || veh_type.equals("3")) {
+                   MotorLvl = MotorLvl + getCp(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
+                }
                 break;
             case 2:
                 switch (veh_type) {

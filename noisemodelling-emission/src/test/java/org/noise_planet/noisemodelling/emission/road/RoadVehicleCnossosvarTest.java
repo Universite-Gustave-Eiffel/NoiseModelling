@@ -70,6 +70,7 @@ public class RoadVehicleCnossosvarTest {
         rsParameters_dyn.setFrequency(FreqParam);
         rsParameters_dyn.setTemperature(Temperature);
         rsParameters_dyn.setRoadSurface(RoadSurface);
+        rsParameters_dyn.setJunc_dist(250);
         double res = RoadVehicleCnossosvar.evaluate(rsParameters_dyn);
         double res2 = RoadCnossos.evaluate(rsParameters_stat);
         assertEquals(res2, res, EPSILON_TEST1);
