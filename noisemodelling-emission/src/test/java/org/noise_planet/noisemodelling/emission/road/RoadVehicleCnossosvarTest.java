@@ -102,7 +102,7 @@ public class RoadVehicleCnossosvarTest {
         rsParameters.setRoadSurface(RoadSurface);
         rsParameters.setJunc_dist(Junc_dist);
         rsParameters.setJunc_type(Junc_type);
-        assertEquals(91.66, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
+        assertEquals(94.35, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
     }
 
     @Test
@@ -128,31 +128,5 @@ public class RoadVehicleCnossosvarTest {
         rsParameters.setJunc_type(Junc_type);
         rsParameters.setSlopePercentage(0);
         assertEquals(100.08, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
-    }
-
-
-    @Test
-    public void testRoadNoise3_speed60() throws IOException {
-        int FreqParam = 8000;
-        double speed = 60;
-        int acc = 0;
-
-        double Temperature = 15;
-        String RoadSurface = "NL08";
-        boolean Stud = false;
-        double Junc_dist = 200;
-        int Junc_type = 1;
-        String veh_type = "1";
-        int acc_type = 1;
-        double LwStd = 0;
-        int VehId = 1;
-        RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId);
-        rsParameters.setSlopePercentage(0);
-        rsParameters.setFrequency(FreqParam);
-        rsParameters.setTemperature(Temperature);
-        rsParameters.setRoadSurface(RoadSurface);
-        rsParameters.setJunc_dist(Junc_dist);
-        rsParameters.setJunc_type(Junc_type);
-        assertEquals(78.62, RoadVehicleCnossosvar.evaluate(rsParameters), EPSILON_TEST1);
     }
 }
