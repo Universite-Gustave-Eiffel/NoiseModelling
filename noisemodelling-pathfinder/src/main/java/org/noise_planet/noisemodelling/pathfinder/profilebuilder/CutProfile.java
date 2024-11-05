@@ -29,12 +29,10 @@ public class CutProfile {
     CutPoint source;
     /** Receiver cut point. */
     CutPoint receiver;
-    //TODO cache has intersection properties
     /** True if Source-Receiver linestring is below building intersection */
     Boolean hasBuildingIntersection = false;
     /** True if Source-Receiver linestring is below topography cutting point. */
     Boolean hasTopographyIntersection = false;
-    double distanceToSR = 0;
     Orientation srcOrientation;
 
     /**
@@ -154,11 +152,6 @@ public class CutProfile {
     }
 
     /**
-     * get Distance of the not free field point to the Source-Receiver Segement
-     * @return
-     */
-    public double getDistanceToSR(){return distanceToSR;}
-    /**
      * Retrieve the profile receiver.
      * @return The profile receiver.
      */
@@ -259,7 +252,6 @@ public class CutProfile {
                 ", receiver=" + receiver +
                 ", hasBuildingIntersection=" + hasBuildingIntersection +
                 ", hasTopographyIntersection=" + hasTopographyIntersection +
-                ", distanceToSR=" + distanceToSR +
                 ", srcOrientation=" + srcOrientation +
                 '}';
     }

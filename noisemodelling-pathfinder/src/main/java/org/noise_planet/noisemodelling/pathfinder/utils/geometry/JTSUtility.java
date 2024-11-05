@@ -18,6 +18,7 @@ import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -346,7 +347,7 @@ public class JTSUtility {
             Coordinate p1 = profile[i];
             Coordinate p2 = profile[i+1];
             double dx = p2.x - p1.x ;
-            if (dx != 0)
+            if (dx > ProfileBuilder.MILLIMETER + ProfileBuilder.epsilon)
             {
                 double ai = (p2.y - p1.y) / dx;
                 double bi = p1.y - ai * p1.x;

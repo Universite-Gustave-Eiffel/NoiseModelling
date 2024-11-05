@@ -435,19 +435,6 @@ public class PathFinder {
         return pts2D;
     }
 
-
-    /**
-     *
-     * @param sourceOrientation
-     * @param src
-     * @param next
-     * @return the computed orientation
-     */
-    private static Orientation computeOrientation(Orientation sourceOrientation, CutPoint src, CutPoint next){
-        return computeOrientation(sourceOrientation, src.getCoordinate(), next.getCoordinate());
-    }
-
-
     /**
      *
      * @param sourceOrientation
@@ -527,6 +514,7 @@ public class PathFinder {
                     topoPts.remove(i);
                 }
                 //Set z value
+                // TODO do not call getZGround, we have it with getProfile
                 for (final Coordinate pt : topoPts) {
                     coordinates.forEach(c -> {
                         if (c.equals(pt) && c.z == pt.z) {
@@ -713,12 +701,10 @@ public class PathFinder {
     public CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
-        List<CutPoint> cutPts = cutProfile.getCutPoints().stream()
-                .filter(cutPoint -> cutPoint.getType() != GROUND_EFFECT)
-                .collect(Collectors.toList());
+        final List<CutPoint> cutProfilePoints = cutProfile.getCutPoints();
 
-        List<Coordinate> pts2D = computePts2D(cutPts);
-        if(pts2D.size() != cutPts.size()) {
+        List<Coordinate> pts2D = computePts2D(cutProfilePoints);
+        if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
 
@@ -735,12 +721,12 @@ public class PathFinder {
         pathParameters.setSRSegment(srPath);
         pathParameters.init(data.freq_lvl.size());
         pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
-        pathParameters.setCutPoints(cutPts);
+        pathParameters.setCutPoints(cutProfilePoints);
 
         //Check for Rayleigh criterion for segments computation
         // Compute mean ground plan
-        List<CutPoint> cuts = cutProfile.getCutPoints().stream()
-                .filter(cut -> cut.getType() != GROUND_EFFECT)
+        List<CutPoint> cuts = cutProfilePoints.stream()
+                .filter(cut -> cut.getType() != GROUND_EFFECT || cut.getType() != REFLECTION)
                 .collect(Collectors.toList());
         LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
 
@@ -753,45 +739,62 @@ public class PathFinder {
         Coordinate firstPt = pts2D.get(0);
         Coordinate lastPt = pts2D.get(pts2D.size() - 1);
 
-        // Compute the slope and y-intercept of the line segment
-        double slope = (lastPt.y - firstPt.y) / (lastPt.x - firstPt.x);
-        double yIntercept = firstPt.y - slope * firstPt.x;
-
         // Filter out points that are below the line segment
-        List<Coordinate> filteredCoordinates = new ArrayList<>();
-        for (Coordinate coord : pts2D) {
-            double lineY = slope * coord.x + yIntercept;
-            if (coord.y >= lineY-0.000001) { // espilon to avoir float issues
-                filteredCoordinates.add(coord);
+        List<Coordinate> convexHullInput = new ArrayList<>();
+        // Add source position
+        convexHullInput.add(pts2D.get(0));
+        // Add valid diffraction point, building/walls/dem
+        for (int idPoint=1; idPoint < cutProfilePoints.size() - 1; idPoint++) {
+            boolean validIntersection = false;
+            switch (cutProfilePoints.get(idPoint).getType()) {
+                case BUILDING:
+                case WALL:
+                case TOPOGRAPHY:
+                    validIntersection = true;
+                    break;
+                default:
+            }
+            if(validIntersection) {
+                convexHullInput.add(pts2D.get(idPoint));
+//                final Coordinate pointCoordinate = pts2D.get(idPoint);
+//                double lineY = dSR.closestPoint(pointCoordinate).y;
+//                // keep only points above the source->receiver line
+//                if (pointCoordinate.y - lineY > epsilon) {
+//                    convexHullInput.add(pointCoordinate);
+//                }
             }
         }
+        // Add receiver position
+        convexHullInput.add(pts2D.get(pts2D.size() - 1));
 
         // Compute the convex hull using JTS
-        GeometryFactory geomFactory = new GeometryFactory();
-        Coordinate[] coordsArray = filteredCoordinates.toArray(new Coordinate[0]);
-        ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
-        Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-        int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
-        int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
-        convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast+1);
-
-        CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
-        Geometry geom = geomFactory.createLineString(coordSequence);
-        Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
-        convexHullCoords = uniqueGeom.getCoordinates();
-
-        // Convert the result back to your format (List<Point2D> pts)
         List<Coordinate> convexHullPoints = new ArrayList<>();
-        if (convexHullCoords.length ==3){
-            convexHullPoints = Arrays.asList(convexHullCoords);
-        }else {
-            for (int j = 0; j < convexHullCoords.length; j++) {
-                // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
-                if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
-                    continue; // Skip this point as it's not part of the hull
+        if(convexHullInput.size() > 2) {
+            GeometryFactory geomFactory = new GeometryFactory();
+            Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
+            ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
+            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
+            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
+            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
+            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
+            CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
+            Geometry geom = geomFactory.createLineString(coordSequence);
+            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
+            convexHullCoords = uniqueGeom.getCoordinates();
+            // Convert the result back to your format (List<Point2D> pts)
+            if (convexHullCoords.length == 3) {
+                convexHullPoints = Arrays.asList(convexHullCoords);
+            } else {
+                for (int j = 0; j < convexHullCoords.length; j++) {
+                    // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
+                    if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
+                        continue; // Skip this point as it's not part of the hull
+                    }
+                    convexHullPoints.add(convexHullCoords[j]);
                 }
-                convexHullPoints.add(convexHullCoords[j]);
             }
+        } else {
+            convexHullPoints = convexHullInput;
         }
         List<Coordinate> pts = convexHullPoints;
 
@@ -800,55 +803,35 @@ public class PathFinder {
 
         // Create segments from each diffraction point to the receiver
         for (int i = 1; i < pts.size(); i++) {
-            int k = 0;
             int i0 = pts2D.indexOf(pts.get(i - 1));
             int i1 = pts2D.indexOf(pts.get(i));
-            CutPoint cutPt0 = cutPts.get(i0);
-            CutPoint cutPt1 = cutPts.get(i1);
-
-
+            final CutPoint cutPt0 = cutProfilePoints.get(i0);
+            final CutPoint cutPt1 = cutProfilePoints.get(i1);
+            // Create a profile for the segment i0->i1
             CutProfile profileSeg = new CutProfile();
-            profileSeg.addSource(cutPt0.getCoordinate());
-            profileSeg.getSource().setGroundCoef(cutPt0.getGroundCoef());
-            for (CutPoint cpt : cutProfile.getCutPoints()) {
-                k++;
-                if (cpt.equals(cutPt0)) {
-                    for (int n = k; n < cutProfile.getCutPoints().size() - 1; n++) {
-                        profileSeg.addCutPt(cutProfile.getCutPoints().get(n));
-                        if (cutProfile.getCutPoints().get(n).equals(cutPt1)) {
-                            break;
-                        }
-                    }
-                }
-            }
-            int indexG = 0;
-            profileSeg.addReceiver(cutPt1.getCoordinate());
-            profileSeg.getReceiver().setGroundCoef(cutPt1.getGroundCoef());
-            if (profileSeg.getReceiver().getCoordinate().equals(cutProfile.getReceiver().getCoordinate())) {
-                for (int j = 0; j < profileSeg.getCutPoints().size() - 1; j++) {
-                    if (profileSeg.getCutPoints().get(j).getType().equals(GROUND_EFFECT)) {
-                        indexG = j;
-                    }
-                }
-            }
+            profileSeg.addCutPoints(cutProfilePoints.subList(i0, i1 + 1));
+            profileSeg.setSource(cutPt0);
+            profileSeg.setReceiver(cutPt1);
 
-            List<Coordinate> subList = pts2D.subList(i0, i1 + 1).stream().map(Coordinate::new).collect(Collectors.toList());
-            for (int j = 0; j <= i1 - i0; j++) {
-                if (!cutPts.get(j + i0).getType().equals(BUILDING) && !cutPts.get(j + i0).getType().equals(TOPOGRAPHY)) {
-                    subList.get(j).y = data.profileBuilder.getZGround(cutPts.get(j + i0));
-                }
-            }
-            if (indexG > 0)
-                profileSeg.getCutPoints().get(indexG).setGroundCoef(profileSeg.getReceiver().getGroundCoef());
 
             if (points.isEmpty()) {
-                //todo check this getBuildingId when DIFH is on floor or line wall
+                // First segment, add the source point in the array
                 points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
-                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(), cutPts.get(0), cutPts.get(1));
+                // look for reflection, the source orientation is to the first reflection point
+                Coordinate targetPosition = cutProfilePoints.get(1).getCoordinate();
+                for(int pointIndex = i0 + 1; pointIndex < i1; pointIndex ++) {
+                    final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
+                    if(currentPoint.getType().equals(REFLECTION)) {
+                        // The first reflection from the source coordinate is the direction of the propagation
+                        targetPosition = currentPoint.getCoordinate();
+                        break;
+                    }
+                }
+                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(),
+                        cutProfilePoints.get(0).getCoordinate(), targetPosition);
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = pts2D.get(i0);
             }
-            //todo check this getBuildingId when DIFH is on floor or line wall
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
             if(pts.size() == 2) {
                 // no diffraction over buildings
@@ -864,8 +847,9 @@ public class PathFinder {
                 }
                 break;
             }
-            meanPlane = JTSUtility.getMeanPlaneCoefficients(subList.toArray(new Coordinate[0]));
-            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(), profileSeg.getSource().getGroundCoef());
+            meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.subList(i0,i1 + 1).toArray(new Coordinate[0]));
+            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
+                    profileSeg.getSource().getGroundCoef());
             segments.add(path);
             if (i != pts.size() - 1) {
                 if (i != 1) {
@@ -1261,15 +1245,6 @@ public class PathFinder {
                 }
             }
             // A valid propagation path as been found (without looking at occlusion)
-            List<PointPath> points = new ArrayList<>();
-            List<SegmentPath> segments = new ArrayList<>();
-            List<Integer> reflIdx = new ArrayList<>();
-            CnossosPath pathParameters = new CnossosPath();
-            pathParameters.setFavorable(favorable);
-            pathParameters.setPointList(points);
-            pathParameters.setSegmentList(segments);
-            pathParameters.angle = Angle.angle(rayPath.get(0).getReflectionPosition(), srcCoord);
-            pathParameters.refPoints = reflIdx;
             CutProfile mainProfile = new CutProfile();
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rayPath.get(0).getReflectionPosition(),
@@ -1280,21 +1255,7 @@ public class PathFinder {
             }
             // Add points to the main profile, remove the last point, or it will be duplicated later
             mainProfile.addCutPoints(cutProfile.getCutPoints().subList(0, cutProfile.getCutPoints().size() - 1));
-            /**
-            computeReflexionOverBuildings(srcCoord, rayPath.get(0).getReflectionPosition(), points, segments, data,
-                    orientation, pathParameters.difHPoints, pathParameters.difVPoints, mainProfile);
-            if (points.isEmpty()) {
-                // (maybe there is a blocking building, and we disabled diffraction)
-                continue;
-            }
-            mainProfile.setSource(mainProfile.getCutPoints().get(0));
-            CutPoint reflectionCutPoint = mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1);
-            pushReflectionCutPointSequence(mainProfile, reflectionCutPoint, rayPath.get(0));
-            PointPath reflPoint = points.get(points.size() - 1);
-            reflIdx.add(points.size() - 1);
-            updateReflectionPathAttributes(reflPoint, rayPath.get(0),
-                    mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
-            **/
+
             // Add intermediate reflections
             boolean validReflection = true;
             for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
@@ -1311,27 +1272,6 @@ public class PathFinder {
                 }
                 // Add points to the main profile, remove the last point, or it will be duplicated later
                 mainProfile.addCutPoints(cutProfile.getCutPoints().subList(0, cutProfile.getCutPoints().size() - 1));
-                /*
-                int previousPointSize = points.size();
-                int previousCutPointsSize = mainProfile.getCutPoints().size();
-                computeReflexionOverBuildings(firstPoint.getReflectionPosition(), secondPoint.getReflectionPosition(),
-                        points, segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints,
-                        mainProfile);
-                if (points.size() == previousPointSize) { // no visibility between the two reflection coordinates
-                    // (maybe there is a blocking building, and we disabled diffraction)
-                    continue;
-                }
-                mainProfile.getCutPoints().remove(previousCutPointsSize);
-                points.remove(previousPointSize); // remove duplicate point
-                reflIdx.add(points.size() - 1);
-                // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
-                // so we have to add the X value of the last path
-                for (PointPath p : points.subList(previousPointSize, points.size())) {
-                    p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
-                }
-                PointPath lastReflexionPoint = points.get(points.size() - 1);
-                updateReflectionPathAttributes(lastReflexionPoint, secondPoint, mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
-                **/
             }
             if(!validReflection) {
                 continue;
@@ -1352,44 +1292,19 @@ public class PathFinder {
 
             // Compute Ray path from vertical cut
             CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
-            /*
-            int previousPointSize = points.size();
-            int previousCutPointsSize = mainProfile.getCutPoints().size();
-            computeReflexionOverBuildings(rayPath.get(rayPath.size() - 1).getReflectionPosition(), rcvCoord, points,
-                    segments, data, orientation, pathParameters.difHPoints, pathParameters.difVPoints, mainProfile);
-            if (points.size() == previousPointSize) { // no visibility between the last reflection coordinate and the receiver
-                // (maybe there is a blocking building, and we disabled diffraction)
-                continue;
-            }
-            // remove last duplicate reflexion coordinate
-            mainProfile.getCutPoints().remove(previousCutPointsSize);
-            mainProfile.setReceiver(mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
-            points.remove(previousPointSize); // remove duplicate point (last reflexion coordinate)
-            // computeReflexionOverBuildings is making X relative to the "receiver" coordinate
-            // so we have to add the X value of the last path
-            for (PointPath p : points.subList(previousPointSize, points.size())) {
-                p.coordinate.x += points.get(previousPointSize - 1).coordinate.x;
-            }
 
-             */
-            for (int i = 1; i < points.size(); i++) {
-                final PointPath currentPoint = points.get(i);
+            for (int i = 1; i < cnossosPath.getPointList().size() - 1; i++) {
+                final PointPath currentPoint = cnossosPath.getPointList().get(i);
                 if (currentPoint.type == REFL) {
-                    if (i < points.size() - 1) {
-                        // A diffraction point may have offset in height the reflection coordinate
-                        final Coordinate p0 = points.get(i - 1).coordinate;
-                        final Coordinate p1 = currentPoint.coordinate;
-                        final Coordinate p2 = points.get(i + 1).coordinate;
-                        // compute Y value (altitude) by interpolating the Y values of the two neighboring points
-                        currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x - p0.x) / (p2.x - p0.x) * (p2.y - p0.y) + p0.y);
-                        //check if new reflection point altitude is higher than the wall
-                        if (currentPoint.coordinate.y > currentPoint.obstacleZ - epsilon) {
-                            // can't reflect higher than the wall
-                            validReflection = false;
-                            break;
-                        }
-                    } else {
-                        LOGGER.warn("Invalid state, reflexion point on last point");
+                    // A diffraction point may have offset in height the reflection coordinate
+                    final Coordinate p0 = cnossosPath.getPointList().get(i - 1).coordinate;
+                    final Coordinate p1 = currentPoint.coordinate;
+                    final Coordinate p2 = cnossosPath.getPointList().get(i + 1).coordinate;
+                    // compute Y value (altitude) by interpolating the Y values of the two neighboring points
+                    currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x - p0.x) / (p2.x - p0.x) * (p2.y - p0.y) + p0.y);
+                    //check if new reflection point altitude is higher than the wall
+                    if (currentPoint.coordinate.y > currentPoint.obstacleZ - epsilon) {
+                        // can't reflect higher than the wall
                         validReflection = false;
                         break;
                     }
@@ -1398,42 +1313,7 @@ public class PathFinder {
             if(!validReflection) {
                 continue;
             }
-            double gPath = mainProfile.getGPath();
-            pathParameters.setCutProfile(mainProfile);
-            List<Coordinate> groundPts = mainProfile.computePts2DGround();
-            double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
-            SegmentPath srSegment = computeSegment(groundPts.get(0), srcCoord.z, groundPts.get(groundPts.size() - 1), rcvCoord.z,
-                    meanPlan, gPath, data.gS);
-            pathParameters.setSRSegment(srSegment);
-            if (!pathParameters.difHPoints.isEmpty()) {
-                // Use source to first diffraction as segment 1 (SO¹)
-                // then last diffraction to receiver (OⁿR)
-                List<SegmentPath> reflectionSegments = new ArrayList<>();
-                CutProfile soProfile = new CutProfile();
-                soProfile.setCutPoints(mainProfile.getCutPoints().subList(0, pathParameters.difHPoints.get(0)+1));
-                soProfile.setSource(soProfile.getCutPoints().get(0));
-                soProfile.setReceiver(soProfile.getCutPoints().get(soProfile.getCutPoints().size() - 1));
-                groundPts = soProfile.computePts2DGround();
-                meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
-                SegmentPath soSegment = computeSegment(groundPts.get(0), srcCoord.z,
-                        groundPts.get(groundPts.size() - 1), soProfile.getReceiver().getCoordinate().z,
-                        meanPlan, soProfile.getGPath(), data.gS);
-                reflectionSegments.add(soSegment);
-                // compute OR profile
-                CutProfile orProfile = new CutProfile();
-                int indexLastDiffraction = pathParameters.difHPoints.get(pathParameters.difHPoints.size() - 1);
-                orProfile.setCutPoints(mainProfile.getCutPoints().subList(indexLastDiffraction,
-                        mainProfile.getCutPoints().size()));
-                orProfile.setSource(orProfile.getCutPoints().get(0));
-                orProfile.setReceiver(orProfile.getCutPoints().get(orProfile.getCutPoints().size() - 1));
-                groundPts = orProfile.computePts2DGround();
-                meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
-                SegmentPath orSegment = computeSegment(groundPts.get(0), orProfile.getSource().getCoordinate().z,
-                        groundPts.get(groundPts.size() - 1), orProfile.getReceiver().getCoordinate().z,
-                        meanPlan, orProfile.getGPath(), orProfile.getSource().getGroundCoef());
-                reflectionSegments.add(orSegment);
-                pathParameters.setSegmentList(reflectionSegments);
-            }
+            reflexionPathParameters.add(cnossosPath);
         }
         return reflexionPathParameters;
     }

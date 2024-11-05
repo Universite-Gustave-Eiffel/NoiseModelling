@@ -207,6 +207,7 @@ public  class CutPoint implements Comparable<CutPoint> {
                 ", zGround=" + zGround +
                 ", groundCoef=" + groundCoef +
                 ", wallAlpha=" + wallAlpha +
+                (mirrorReceiver == null ? "" : ", mirrorReceiver=" + mirrorReceiver) +
                 '}';
     }
 
