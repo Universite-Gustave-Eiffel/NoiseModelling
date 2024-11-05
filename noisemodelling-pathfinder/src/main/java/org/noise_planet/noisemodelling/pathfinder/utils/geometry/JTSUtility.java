@@ -347,7 +347,7 @@ public class JTSUtility {
             Coordinate p1 = profile[i];
             Coordinate p2 = profile[i+1];
             double dx = p2.x - p1.x ;
-            if (dx > ProfileBuilder.MILLIMETER + ProfileBuilder.epsilon)
+            if (dx > 0)
             {
                 double ai = (p2.y - p1.y) / dx;
                 double bi = p1.y - ai * p1.x;
@@ -363,8 +363,7 @@ public class JTSUtility {
         double valB = valB1 + 2 * valB2;
         double dist3 = Math.pow (profile[n].x - profile[0].x, 3) ;
         double dist4 = Math.pow (profile[n].x - profile[0].x, 4) ;
-        //assert (dist3 > 0) ;
-        //assert (dist4 > 0) ;
+
         /*
          * equation VI-4
          */

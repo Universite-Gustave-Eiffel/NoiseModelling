@@ -756,12 +756,6 @@ public class PathFinder {
             }
             if(validIntersection) {
                 convexHullInput.add(pts2D.get(idPoint));
-//                final Coordinate pointCoordinate = pts2D.get(idPoint);
-//                double lineY = dSR.closestPoint(pointCoordinate).y;
-//                // keep only points above the source->receiver line
-//                if (pointCoordinate.y - lineY > epsilon) {
-//                    convexHullInput.add(pointCoordinate);
-//                }
             }
         }
         // Add receiver position
