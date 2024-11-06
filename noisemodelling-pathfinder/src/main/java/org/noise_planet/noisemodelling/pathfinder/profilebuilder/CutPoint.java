@@ -66,6 +66,7 @@ public  class CutPoint implements Comparable<CutPoint> {
         this.groundCoef = cut.groundCoef;
         this.wallAlpha = new ArrayList<>(cut.wallAlpha);
         this.zGround = cut.zGround;
+        this.mirrorReceiver = cut.mirrorReceiver;
     }
 
     /**

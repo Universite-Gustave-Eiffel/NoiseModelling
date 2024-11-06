@@ -549,7 +549,6 @@ public class PathFinder {
                 PointPath previous = src;
                 List<SegmentPath> segs = new ArrayList<>();
                 pathParameters = new CnossosPath();
-                pathParameters.setCutProfile(mainProfile);
                 pathParameters.setFavorable(false);
                 pathParameters.setPointList(pps);
                 pathParameters.setSegmentList(segs);
@@ -1161,6 +1160,23 @@ public class PathFinder {
         reflectionPoint.altitude = cutPoint.getzGround();
     }
 
+    /**
+     * Add points to the main profile, the last point is before the reflection on the wall
+     * The profile of reflection is receiver -> on the ground before reflection -> reflection position -> on the ground after reflection
+     * @param reflectionPoint The point to use and recognised as a reflection point (currently is categorized as source or receiver)
+     * @param cutProfile The profile where we can found the point on the first argument
+     * @param mirrorReceiver Associated mirror receiver
+     */
+    private void updateReflectionPointAttributes(CutPoint reflectionPoint, CutProfile cutProfile, MirrorReceiver mirrorReceiver) {
+        reflectionPoint.setType(REFLECTION);
+        reflectionPoint.setMirrorReceiver(mirrorReceiver);
+        CutPoint reflectionPointBeforeAndAfter = new CutPoint(reflectionPoint);
+        reflectionPointBeforeAndAfter.getCoordinate().setZ(reflectionPoint.getzGround());
+        // insert ground reflection point
+        cutProfile.getCutPoints().add(cutProfile.getCutPoints().indexOf(reflectionPoint), new CutPoint(reflectionPointBeforeAndAfter));
+        cutProfile.getCutPoints().add(cutProfile.getCutPoints().indexOf(reflectionPoint)+1, new CutPoint(reflectionPointBeforeAndAfter));
+    }
+
 
     /**
      *
@@ -1257,8 +1273,7 @@ public class PathFinder {
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
                 cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
                         secondPoint.getReflectionPosition(), data.gS, true);
-                cutProfile.getCutPoints().get(0).setType(REFLECTION);
-                cutProfile.getCutPoints().get(0).setMirrorReceiver(firstPoint);
+                updateReflectionPointAttributes(cutProfile.getCutPoints().get(0), cutProfile, firstPoint);
                 if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     validReflection = false;
@@ -1277,8 +1292,7 @@ public class PathFinder {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
             }
-            cutProfile.getCutPoints().get(0).setType(REFLECTION);
-            cutProfile.getCutPoints().get(0).setMirrorReceiver(rayPath.get(rayPath.size() - 1));
+            updateReflectionPointAttributes(cutProfile.getCutPoints().get(0), cutProfile, rayPath.get(rayPath.size() - 1));
             // Add points to the main profile, remove the last point, or it will be duplicated later
             mainProfile.addCutPoints(cutProfile.getCutPoints());
             mainProfile.setSource(mainProfile.getCutPoints().get(0));
