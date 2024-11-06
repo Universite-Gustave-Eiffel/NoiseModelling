@@ -555,7 +555,7 @@ public class PathFinder {
                 pathParameters.setSRSegment(srSeg);
                 pathParameters.init(data.freq_lvl.size());
                 pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
-                pathParameters.setCutPoints(allCutPoints);
+                pathParameters.setCutProfile(mainProfile);
                 pathParameters.raySourceReceiverDirectivity = src.orientation;
                 double e = 0;
                 for(int i=1; i<coordinates.size()-1; i++) {
@@ -725,8 +725,6 @@ public class PathFinder {
         pathParameters.setSRSegment(srPath);
         pathParameters.init(data.freq_lvl.size());
         pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
-        pathParameters.setCutPoints(cutProfilePoints);
-
 
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
