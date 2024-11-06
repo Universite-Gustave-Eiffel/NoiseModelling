@@ -1354,7 +1354,6 @@ public class PathFinderTest {
     /**
      * TC18 - Screening and reflecting barrier on ground with spatially varying heights and
      * acoustic properties
-     * Error: Strange rays On -> R
      */
 
     @Test
@@ -1426,13 +1425,79 @@ public class PathFinderTest {
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
         // Check reflexion mean planes
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList());
-        try {
-            exportScene("target/T18.kml", builder, propDataOut);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
     }
 
+    /**
+     * TC18 - Screening and reflecting barrier on ground with spatially varying heights and
+     * acoustic properties. This scenario is modified with the reflexion screen too low on one corner to have a valid
+     * reflexion caused by height modification from the diffraction on the first wall
+     */
+
+    @Test
+    public void TC18Altered() {
+        //Profile building
+        ProfileBuilder builder = new ProfileBuilder();
+        addGroundAttenuationTC5(builder);
+        addTopographicTC5Model(builder);
+        // Add building
+        builder.addWall(new Coordinate[]{
+                        new Coordinate(114, 52, 9),
+                        new Coordinate(170, 60, 15)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 1)
+
+                .addWall(new Coordinate[]{
+                        new Coordinate(87, 50,12),
+                        new Coordinate(92, 32,12)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), 2)
+                //.setzBuildings(true)
+                .finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(builder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 12)
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.9)
+                .build();
+        rayData.reflexionOrder=1;
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertEquals(1, propDataOut.getPropagationPaths().size());
+
+        // Expected Values
+
+        /* Table 193  Z Profile SR */
+        List<Coordinate> expectedZ_profile = new ArrayList<>();
+        expectedZ_profile.add(new Coordinate(0.0, 0.0));
+        expectedZ_profile.add(new Coordinate(112.41, 0.0));
+        expectedZ_profile.add(new Coordinate(178.84, 10));
+        expectedZ_profile.add(new Coordinate(194.16, 10));
+
+        CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        List<Coordinate> result = cutProfile.computePts2DGround();
+        assertZProfil(expectedZ_profile, result);
+
+
+        /* Table 194 */
+        double [][] segmentsMeanPlanes0 = new double[][]{
+                //  a      b    zs    zr      dp    Gp    Gp'
+                {0.05, -2.83, 3.83, 4.16, 194.48, 0.51, 0.58}
+        };
+
+
+
+
+        // S-R (not the rayleigh segments SO OR)
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+
+    }
     /**
      * TC19 - Complex object and 2 barriers on ground with spatially varying heights and
      * acoustic properties:

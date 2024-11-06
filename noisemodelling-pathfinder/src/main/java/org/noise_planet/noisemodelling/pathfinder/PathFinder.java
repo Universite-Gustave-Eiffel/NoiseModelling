@@ -737,9 +737,13 @@ public class PathFinder {
         // Add valid diffraction point, building/walls/dem
         for (int idPoint=1; idPoint < cutProfilePoints.size() - 1; idPoint++) {
             boolean validIntersection = false;
-            switch (cutProfilePoints.get(idPoint).getType()) {
+            CutPoint currentPoint = cutProfilePoints.get(idPoint);
+            switch (currentPoint.getType()) {
                 case BUILDING:
                 case WALL:
+                    // We only add the point at the top of the wall, not the point at the bottom of the wall
+                    validIntersection = Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0;
+                    break;
                 case TOPOGRAPHY:
                     validIntersection = true;
                     break;
@@ -786,6 +790,34 @@ public class PathFinder {
         double e = 0;
         Coordinate src = cutProfile.getSource().getCoordinate();
 
+        // Move then check reflection height if there is diffraction on the path
+        if(pts.size() > 2) {
+            for (int i = 1; i < pts.size(); i++) {
+                int i0 = pts2D.indexOf(pts.get(i - 1));
+                int i1 = pts2D.indexOf(pts.get(i));
+                LineSegment segmentHull = new LineSegment(pts.get(i - 1), pts.get(i));
+                for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
+                    final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
+                    // If the current point is the reflection point (not on the ground level)
+                    if (currentPoint.getType().equals(REFLECTION) &&
+                            Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
+                        MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
+                        Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
+                        // Check if the new elevation of the reflection point is not higher than the wall
+                        double wallHeightAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
+                                mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
+                        if(wallHeightAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
+                            // update the reflection position
+                            currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
+                        } else {
+                            // Reflection is not valid, so the whole path is not valid
+                            return null;
+                        }
+                    }
+                }
+            }
+        }
+
         // Create segments from each diffraction point to the receiver
         for (int i = 1; i < pts.size(); i++) {
             int i0 = pts2D.indexOf(pts.get(i - 1));
@@ -804,12 +836,14 @@ public class PathFinder {
             if (points.isEmpty()) {
                 // First segment, add the source point in the array
                 points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
-                // look for reflection, the source orientation is to the first reflection point
-                Coordinate targetPosition = cutProfilePoints.get(1).getCoordinate();
-                for(int pointIndex = i0 + 1; pointIndex < i1; pointIndex ++) {
+                // look for the first reflection before the first diffraction, the source orientation is to the first reflection point
+                Coordinate targetPosition = cutProfilePoints.get(i1).getCoordinate();
+                for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                     final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                    if(currentPoint.getType().equals(REFLECTION)) {
-                        // The first reflection from the source coordinate is the direction of the propagation
+                    if (currentPoint.getType().equals(REFLECTION) &&
+                            Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
+                        // The first reflection (the one not at ground level)
+                        // from the source coordinate is the direction of the propagation
                         targetPosition = currentPoint.getCoordinate();
                         break;
                     }
@@ -1294,10 +1328,16 @@ public class PathFinder {
             // Add points to the main profile, remove the last point, or it will be duplicated later
             mainProfile.addCutPoints(cutProfile.getCutPoints());
             mainProfile.setSource(mainProfile.getCutPoints().get(0));
+            mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
 
             // Compute Ray path from vertical cut
             CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
+
+            if(cnossosPath == null) {
+                // path not valid (ex: reflexion over the wall)
+                continue;
+            }
 
             for (int i = 1; i < cnossosPath.getPointList().size() - 1; i++) {
                 final PointPath currentPoint = cnossosPath.getPointList().get(i);
