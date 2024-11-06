@@ -263,7 +263,18 @@ public class CutProfile {
      * @return the computed 2D coordinate list of DEM
      */
     public List<Coordinate> computePts2DGround() {
-        return computePts2DGround(0);
+        return computePts2DGround(0, null);
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround(List<Integer> index) {
+        return computePts2DGround(0, index);
     }
 
     /**
@@ -272,9 +283,10 @@ public class CutProfile {
      * a 2d coordinate system. The first point is always x=0.
      * @param tolerance Simplify the point list by not adding points where the distance from the line segments
      *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @param index Corresponding index from parameter to return list items
      * @return the computed 2D coordinate list of DEM
      */
-    public List<Coordinate> computePts2DGround(double tolerance) {
+    public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
         List<Coordinate> pts2D = new ArrayList<>(getCutPoints().size());
         if(getCutPoints().isEmpty()) {
             return pts2D;
@@ -303,6 +315,9 @@ public class CutProfile {
                 if(!(overObstacleIndex >= 0 && TOPOGRAPHY.equals(cut.getType()))) {
                     pts2D.add(coordinate);
                 }
+            }
+            if(index != null) {
+                index.add(pts2D.size() - 1);
             }
         }
         return JTSUtility.getNewCoordinateSystem(pts2D, tolerance);

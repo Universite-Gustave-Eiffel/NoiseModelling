@@ -17,7 +17,6 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
-import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -604,13 +603,18 @@ public class PathFinder {
 
 
 
-    private void computeDiff(List<Coordinate> pts2DGround, Coordinate src, Coordinate rcv,
-                             CutPoint srcCut, CutPoint rcvCut,
-                             SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
-                             LineSegment dSR, List<CutPoint> cuts, List<SegmentPath> segments, List<PointPath> points) {
-
-        for (int iO = 1; iO < pts2DGround.size() - 1; iO++) {
-            Coordinate o = pts2DGround.get(iO);
+    private void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
+                                     LineSegment dSR, List<SegmentPath> segments, List<PointPath> points) {
+        final List<CutPoint> cuts = cutProfile.getCutPoints();
+        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.getCutPoints().size());
+        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
+        Coordinate src = pts2DGround[0];
+        Coordinate rcv = pts2DGround[pts2DGround.length - 1];
+        CutPoint srcCut = cutProfile.getSource();
+        CutPoint rcvCut = cutProfile.getReceiver();
+        for (int iO = 1; iO < pts2DGround.length - 1; iO++) {
+            int i0Cut = cut2DGroundIndex.indexOf(iO);
+            Coordinate o = pts2DGround[iO];
 
             double dSO = src.distance(o);
             double dOR = o.distance(rcv);
@@ -628,12 +632,12 @@ public class PathFinder {
                 //Add point path
 
                 //Plane S->O
-                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), 0, iO + 1);
+                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround, 0, iO + 1);
                 double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
                 SegmentPath seg1 = computeSegment(src, o, abs);
 
                 //Plane O->R
-                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround.toArray(new Coordinate[0]), iO, pts2DGround.size());
+                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround, iO, pts2DGround.length);
                 double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
                 SegmentPath seg2 = computeSegment(o, rcv, abr);
 
@@ -653,8 +657,8 @@ public class PathFinder {
                     }
                 }
                 if (rcrit) {
-                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(iO)), srcCut.getGroundCoef());
-                    seg2.setGpath(cutProfile.getGPath(cuts.get(iO), rcvCut), srcCut.getGroundCoef());
+                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoef());
+                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoef());
 
                     if(dSR.orientationIndex(o) == 1) {
                         pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
@@ -724,16 +728,10 @@ public class PathFinder {
         pathParameters.setCutPoints(cutProfilePoints);
 
         //Check for Rayleigh criterion for segments computation
-        // Compute mean ground plan
-        List<CutPoint> cuts = cutProfilePoints.stream()
-                .filter(cut -> cut.getType() != GROUND_EFFECT || cut.getType() != REFLECTION)
-                .collect(Collectors.toList());
         LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
-
         List<SegmentPath> rayleighSegments = new ArrayList<>();
         List<PointPath> rayleighPoints = new ArrayList<>();
-        computeDiff(pts2DGround, firstPts2D, lastPts2D, cutProfile.getSource(), cutProfile.getReceiver(), srPath,
-                cutProfile, pathParameters, dSR, cuts, rayleighSegments, rayleighPoints);
+        computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints);
 
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
