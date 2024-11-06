@@ -896,10 +896,19 @@ public class PathFinderTest {
         };
 
         //Assertion
+        assertEquals(3, propDataOut.getPropagationPaths().size());
+
         assertZProfil(expectedZ_profile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+
+        assertEquals(3, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
+        Coordinate sPrime = propDataOut.pathParameters.get(0).getSegmentList().get(0).sPrime;
+        Coordinate rPrime = propDataOut.pathParameters.get(0).getSegmentList().get(2).rPrime;
+
+        assertCoordinateEquals("TC12 Table 102 S' S->O", new Coordinate(0, -1), sPrime, DELTA_COORDS);
+        assertCoordinateEquals("TC12 Table 102 R' O->R", new Coordinate(31.62, -6), rPrime, DELTA_COORDS);
     }
 
     /**
