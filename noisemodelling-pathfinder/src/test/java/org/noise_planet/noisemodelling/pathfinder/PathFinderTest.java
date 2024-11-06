@@ -351,10 +351,8 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-
-
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
+        assertEquals(1, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
 
         // Test R-CRIT table 27
         Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
@@ -408,7 +406,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
         assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }

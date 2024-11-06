@@ -604,12 +604,12 @@ public class PathFinder {
 
 
     private void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
-                                     LineSegment dSR, List<SegmentPath> segments, List<PointPath> points) {
+                                     LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
+                                     List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex) {
         final List<CutPoint> cuts = cutProfile.getCutPoints();
-        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.getCutPoints().size());
-        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
-        Coordinate src = pts2DGround[0];
-        Coordinate rcv = pts2DGround[pts2DGround.length - 1];
+
+        Coordinate src = pts2D.get(0);
+        Coordinate rcv = pts2D.get(pts2D.size() - 1);
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
         for (int iO = 1; iO < pts2DGround.length - 1; iO++) {
@@ -712,8 +712,9 @@ public class PathFinder {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
 
-        List<Coordinate> pts2DGround = cutProfile.computePts2DGround();
-        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.toArray(new Coordinate[0]));
+        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.getCutPoints().size());
+        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
+        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
@@ -727,11 +728,6 @@ public class PathFinder {
         pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
         pathParameters.setCutPoints(cutProfilePoints);
 
-        //Check for Rayleigh criterion for segments computation
-        LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
-        List<SegmentPath> rayleighSegments = new ArrayList<>();
-        List<PointPath> rayleighPoints = new ArrayList<>();
-        computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints);
 
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
@@ -826,20 +822,10 @@ public class PathFinder {
             }
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
             if(pts.size() == 2) {
-                // no diffraction over buildings
-                // it is useless to recompute sr segment
-                if(rayleighSegments.isEmpty()) {
-                    // We don't have a Rayleigh diffraction over DEM. Only direct SR path
-                    segments.add(pathParameters.getSRSegment());
-                } else {
-                    // We have a Rayleigh diffraction over DEM
-                    // push Rayleigh data
-                    segments.addAll(rayleighSegments);
-                    points.addAll(1, rayleighPoints);
-                }
+                // no diffraction over buildings/dem, we already computed SR segment
                 break;
             }
-            meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround.subList(i0,i1 + 1).toArray(new Coordinate[0]));
+            meanPlane = JTSUtility.getMeanPlaneCoefficients(Arrays.copyOfRange(pts2DGround, i0,i1 + 1));
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
                     profileSeg.getSource().getGroundCoef());
             segments.add(path);
@@ -870,7 +856,21 @@ public class PathFinder {
         Coordinate rcv = points.get(points.size()-1).coordinate;
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){
-            // Direct propagation
+            // Direct propagation (no diffraction over obstructing edges)
+            // Check for Rayleigh criterion for segments computation
+            LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+            List<SegmentPath> rayleighSegments = new ArrayList<>();
+            List<PointPath> rayleighPoints = new ArrayList<>();
+            // Look for diffraction over edge on freefield (frequency dependent)
+            computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
+                    pts2DGround, cut2DGroundIndex);
+            if(rayleighSegments.isEmpty()) {
+                // We don't have a Rayleigh diffraction over DEM. Only direct SR path
+                segments.add(pathParameters.getSRSegment());
+            } else {
+                segments.addAll(rayleighSegments);
+                points.addAll(1, rayleighPoints);
+            }
             return pathParameters;
         }
         Coordinate c0 = p0.coordinate;
