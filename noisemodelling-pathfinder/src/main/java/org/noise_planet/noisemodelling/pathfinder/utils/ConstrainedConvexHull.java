@@ -29,6 +29,7 @@ import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.algorithm.PointLocation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.util.Assert;
+import org.locationtech.jts.util.UniqueCoordinateArrayFilter;
 
 import java.util.*;
 
@@ -38,16 +39,11 @@ import java.util.*;
  * points in the input Geometry.
  * <p>
  * Uses the Graham Scan algorithm.
- * <p>
- * Incorporates heuristics to optimize checking for degenerate results,
- * and to reduce the number of points processed for large inputs.
  *
  *@version 1.7
  */
 public class ConstrainedConvexHull
 {
-    private static final int TUNING_REDUCE_SIZE = 50;
-
     private GeometryFactory geomFactory;
     private Coordinate[] inputPts;
 
@@ -56,18 +52,23 @@ public class ConstrainedConvexHull
      */
     public ConstrainedConvexHull(Geometry geometry)
     {
-        this(geometry.getCoordinates(), geometry.getFactory());
+        this(extractCoordinates(geometry), geometry.getFactory());
     }
     /**
      * Create a new convex hull construction for the input {@link Coordinate} array.
      */
     public ConstrainedConvexHull(Coordinate[] pts, GeometryFactory geomFactory)
     {
-        //-- suboptimal early uniquing - for performance testing only
-        //inputPts = UniqueCoordinateArrayFilter.filterCoordinates(pts);
-
-        inputPts = pts;
+        inputPts = UniqueCoordinateArrayFilter.filterCoordinates(pts);
+        //inputPts = pts;
         this.geomFactory = geomFactory;
+    }
+
+    private static Coordinate[] extractCoordinates(Geometry geom)
+    {
+        UniqueCoordinateArrayFilter filter = new UniqueCoordinateArrayFilter();
+        geom.apply(filter);
+        return filter.getCoordinates();
     }
 
     /**
@@ -81,6 +82,146 @@ public class ConstrainedConvexHull
      * 2 points, a {@link LineString};
      * 1 point, a {@link Point};
      * 0 points, an empty {@link GeometryCollection}.
+     */
+    public Geometry getConvexHull(Coordinate p1, Coordinate p2) {
+
+        if (inputPts.length == 0) {
+            return geomFactory.createGeometryCollection();
+        }
+        if (inputPts.length == 1) {
+            return geomFactory.createPoint(inputPts[0]);
+        }
+        if (inputPts.length == 2) {
+            return geomFactory.createLineString(inputPts);
+        }
+
+        Coordinate[] reducedPts = inputPts;
+        // use heuristic to reduce points, if large
+        if (inputPts.length > 50) {
+            reducedPts = reduce(inputPts);
+        }
+        // sort points for Graham scan.
+        Coordinate[] sortedPts = preSort(reducedPts);
+
+        // Use Graham scan to find convex hull.
+        Stack cHS = grahamScan(sortedPts, p1, p2);
+
+        // Convert stack to an array.
+        Coordinate[] cH = toCoordinateArray(cHS);
+
+        // Convert array to appropriate output geometry.
+        return lineOrPolygon(cH);
+    }
+
+    /**
+     * An alternative to Stack.toArray, which is not present in earlier versions
+     * of Java.
+     */
+    protected Coordinate[] toCoordinateArray(Stack stack) {
+        Coordinate[] coordinates = new Coordinate[stack.size()];
+        for (int i = 0; i < stack.size(); i++) {
+            Coordinate coordinate = (Coordinate) stack.get(i);
+            coordinates[i] = coordinate;
+        }
+        return coordinates;
+    }
+
+    /**
+     * Uses a heuristic to reduce the number of points scanned
+     * to compute the hull.
+     * The heuristic is to find a polygon guaranteed to
+     * be in (or on) the hull, and eliminate all points inside it.
+     * A quadrilateral defined by the extremal points
+     * in the four orthogonal directions
+     * can be used, but even more inclusive is
+     * to use an octilateral defined by the points in the 8 cardinal directions.
+     * <p>
+     * Note that even if the method used to determine the polygon vertices
+     * is not 100% robust, this does not affect the robustness of the convex hull.
+     * <p>
+     * To satisfy the requirements of the Graham Scan algorithm,
+     * the returned array has at least 3 entries.
+     *
+     * @param inputPts the points to reduce
+     * @return the reduced list of points (at least 3)
+     */
+    private Coordinate[] reduce(Coordinate[] inputPts)
+    {
+        //Coordinate[] polyPts = computeQuad(inputPts);
+        Coordinate[] polyPts = computeOctRing(inputPts);
+        //Coordinate[] polyPts = null;
+
+        // unable to compute interior polygon for some reason
+        if (polyPts == null)
+            return inputPts;
+
+//    LinearRing ring = geomFactory.createLinearRing(polyPts);
+//    System.out.println(ring);
+
+        // add points defining polygon
+        TreeSet reducedSet = new TreeSet();
+        for (int i = 0; i < polyPts.length; i++) {
+            reducedSet.add(polyPts[i]);
+        }
+        /**
+         * Add all unique points not in the interior poly.
+         * CGAlgorithms.isPointInRing is not defined for points actually on the ring,
+         * but this doesn't matter since the points of the interior polygon
+         * are forced to be in the reduced set.
+         */
+        for (int i = 0; i < inputPts.length; i++) {
+            if (! PointLocation.isInRing(inputPts[i], polyPts)) {
+                reducedSet.add(inputPts[i]);
+            }
+        }
+        Coordinate[] reducedPts = CoordinateArrays.toCoordinateArray(reducedSet);
+
+        // ensure that computed array has at least 3 points (not necessarily unique)
+        if (reducedPts.length < 3)
+            return padArray3(reducedPts);
+        return reducedPts;
+    }
+
+    private Coordinate[] padArray3(Coordinate[] pts)
+    {
+        Coordinate[] pad = new Coordinate[3];
+        for (int i = 0; i < pad.length; i++) {
+            if (i < pts.length) {
+                pad[i] = pts[i];
+            }
+            else
+                pad[i] = pts[0];
+        }
+        return pad;
+    }
+
+    private Coordinate[] preSort(Coordinate[] pts) {
+        Coordinate t;
+
+        // find the lowest point in the set. If two or more points have
+        // the same minimum y coordinate choose the one with the minimu x.
+        // This focal point is put in array location pts[0].
+        for (int i = 1; i < pts.length; i++) {
+            if ((pts[i].y < pts[0].y) || ((pts[i].y == pts[0].y) && (pts[i].x < pts[0].x))) {
+                t = pts[0];
+                pts[0] = pts[i];
+                pts[i] = t;
+            }
+        }
+
+        // sort the points radially around the focal point.
+        Arrays.sort(pts, 1, pts.length, new RadialComparator(pts[0]));
+
+        //radialSort(pts);
+        return pts;
+    }
+
+    /**
+     * Uses the Graham Scan algorithm to compute the convex hull vertices.
+     *
+     * @param c a list of points, with at least 3 entries
+     * @param p1, p2 two points where the convexhull have to pass
+     * @return a Stack containing the ordered points of the convex hull ring
      */
     private Stack<Coordinate> grahamScan(Coordinate[] c, Coordinate p1, Coordinate p2) {
         Stack<Coordinate> ps = new Stack<>();
@@ -123,201 +264,6 @@ public class ConstrainedConvexHull
 
 
     /**
-     * Checks if there are <= 2 unique points,
-     * which produce an obviously degenerate result.
-     * If there are more points, returns null to indicate this.
-     *
-     * This is a fast check for an obviously degenerate result.
-     * If the result is not obviously degenerate (at least 3 unique points found)
-     * the full uniquing of the entire point set is
-     * done only once during the reduce phase.
-     *
-     * @return a degenerate hull geometry, or null if the number of input points is large
-     */
-    private Geometry createFewPointsResult() {
-        Coordinate[] uniquePts = extractUnique(inputPts, 2);
-        if (uniquePts == null) {
-            return null;
-        }
-        else if (uniquePts.length == 0) {
-            return geomFactory.createGeometryCollection();
-        }
-        else if (uniquePts.length == 1) {
-            return geomFactory.createPoint(uniquePts[0]);
-        }
-        else {
-            return geomFactory.createLineString(uniquePts);
-        }
-    }
-
-    private static Coordinate[] extractUnique(Coordinate[] pts) {
-        return extractUnique(pts, -1);
-    }
-
-    /**
-     * Extracts unique coordinates from an array of coordinates,
-     * up to an (optional) maximum count of values.
-     * If more than the given maximum of unique values are found,
-     * this is reported by returning <code>null</code>.
-     * This avoids scanning all input points if not needed.
-     * If the maximum points is not specified, all unique points are extracted.
-     *
-     * @param pts an array of Coordinates
-     * @param maxPts the maximum number of unique points to scan, or -1
-     * @return an array of unique values, or null
-     */
-    private static Coordinate[] extractUnique(Coordinate[] pts, int maxPts) {
-        Set<Coordinate> uniquePts = new HashSet<Coordinate>();
-        for (Coordinate pt : pts) {
-            uniquePts.add(pt);
-            //-- if maxPts is provided, exit if more unique pts found
-            if (maxPts >= 0 && uniquePts.size() > maxPts) return null;
-        }
-        return CoordinateArrays.toCoordinateArray(uniquePts);
-    }
-
-    /**
-     * An alternative to Stack.toArray, which is not present in earlier versions
-     * of Java.
-     */
-    protected Coordinate[] toCoordinateArray(Stack<Coordinate> stack) {
-        Coordinate[] coordinates = new Coordinate[stack.size()];
-        for (int i = 0; i < stack.size(); i++) {
-            Coordinate coordinate = (Coordinate) stack.get(i);
-            coordinates[i] = coordinate;
-        }
-        return coordinates;
-    }
-
-    /**
-     * Uses a heuristic to reduce the number of points scanned
-     * to compute the hull.
-     * The heuristic is to find a polygon guaranteed to
-     * be in (or on) the hull, and eliminate all points inside it.
-     * A quadrilateral defined by the extremal points
-     * in the four orthogonal directions
-     * can be used, but even more inclusive is
-     * to use an octilateral defined by the points in the 8 cardinal directions.
-     * <p>
-     * Note that even if the method used to determine the polygon vertices
-     * is not 100% robust, this does not affect the robustness of the convex hull.
-     * <p>
-     * To satisfy the requirements of the Graham Scan algorithm,
-     * the returned array has at least 3 entries.
-     * <p>
-     * This has the side effect of making the reduced points unique,
-     * as required by the convex hull algorithm used.
-     *
-     * @param inputPts the points to reduce
-     * @return the reduced list of points (at least 3)
-     */
-    private Coordinate[] reduce(Coordinate[] inputPts)
-    {
-        //Coordinate[] polyPts = computeQuad(inputPts);
-        Coordinate[] innerPolyPts = computeInnerOctolateralRing(inputPts);
-
-        // unable to compute interior polygon for some reason
-        // Copy the input array, since it will be sorted later
-        if (innerPolyPts == null)
-            return inputPts.clone();
-
-//    LinearRing ring = geomFactory.createLinearRing(polyPts);
-//    System.out.println(ring);
-
-        // add points defining polygon
-        Set<Coordinate> reducedSet = new HashSet();
-        for (int i = 0; i < innerPolyPts.length; i++) {
-            reducedSet.add(innerPolyPts[i]);
-        }
-        /**
-         * Add all unique points not in the interior poly.
-         * CGAlgorithms.isPointInRing is not defined for points exactly on the ring,
-         * but this doesn't matter since the points of the interior polygon
-         * are forced to be in the reduced set.
-         */
-        for (int i = 0; i < inputPts.length; i++) {
-            if (! PointLocation.isInRing(inputPts[i], innerPolyPts)) {
-                reducedSet.add(inputPts[i]);
-            }
-        }
-        Coordinate[] reducedPts = CoordinateArrays.toCoordinateArray(reducedSet);
-
-        // ensure that computed array has at least 3 points (not necessarily unique)
-        if (reducedPts.length < 3)
-            return padArray3(reducedPts);
-        return reducedPts;
-    }
-
-    private Coordinate[] padArray3(Coordinate[] pts)
-    {
-        Coordinate[] pad = new Coordinate[3];
-        for (int i = 0; i < pad.length; i++) {
-            if (i < pts.length) {
-                pad[i] = pts[i];
-            }
-            else
-                pad[i] = pts[0];
-        }
-        return pad;
-    }
-
-    /**
-     * Sorts the points radially CW around the point with minimum Y and then X.
-     *
-     * @param pts the points to sort
-     * @return the sorted points
-     */
-    private Coordinate[] preSort(Coordinate[] pts) {
-        Coordinate t;
-
-        /**
-         * find the lowest point in the set. If two or more points have
-         * the same minimum Y coordinate choose the one with the minimum X.
-         * This focal point is put in array location pts[0].
-         */
-        for (int i = 1; i < pts.length; i++) {
-            if ((pts[i].y < pts[0].y) || ((pts[i].y == pts[0].y) && (pts[i].x < pts[0].x))) {
-                t = pts[0];
-                pts[0] = pts[i];
-                pts[i] = t;
-            }
-        }
-
-        // sort the points radially around the focal point.
-        Arrays.sort(pts, 1, pts.length, new RadialComparator(pts[0]));
-
-        return pts;
-    }
-
-    /**
-     * Uses the Graham Scan algorithm to compute the convex hull vertices.
-     *
-     * @param c a list of points, with at least 3 entries
-     * @return a Stack containing the ordered points of the convex hull ring
-     */
-    private Stack<Coordinate> grahamScan(Coordinate[] c) {
-        Coordinate p;
-        Stack<Coordinate> ps = new Stack<Coordinate>();
-        ps.push(c[0]);
-        ps.push(c[1]);
-        ps.push(c[2]);
-        for (int i = 3; i < c.length; i++) {
-            Coordinate cp = c[i];
-            p = (Coordinate) ps.pop();
-            // check for empty stack to guard against robustness problems
-            while (
-                    ! ps.empty() &&
-                            Orientation.index((Coordinate) ps.peek(), p, cp) > 0) {
-                p = (Coordinate) ps.pop();
-            }
-            ps.push(p);
-            ps.push(cp);
-        }
-        ps.push(c[0]);
-        return ps;
-    }
-
-    /**
      *@return    whether the three coordinates are collinear and c2 lies between
      *      c1 and c3 inclusive
      */
@@ -344,8 +290,8 @@ public class ConstrainedConvexHull
         return false;
     }
 
-    private Coordinate[] computeInnerOctolateralRing(Coordinate[] inputPts) {
-        Coordinate[] octPts = computeInnerOctolateralPts(inputPts);
+    private Coordinate[] computeOctRing(Coordinate[] inputPts) {
+        Coordinate[] octPts = computeOctPts(inputPts);
         CoordinateList coordList = new CoordinateList();
         coordList.add(octPts, false);
 
@@ -357,14 +303,7 @@ public class ConstrainedConvexHull
         return coordList.toCoordinateArray();
     }
 
-    /**
-     * Computes the extremal points of an inner octolateral.
-     * Some points may be duplicates - these are collapsed later.
-     *
-     * @param inputPts the points to compute the octolateral for
-     * @return the extremal points of the octolateral
-     */
-    private Coordinate[] computeInnerOctolateralPts(Coordinate[] inputPts)
+    private Coordinate[] computeOctPts(Coordinate[] inputPts)
     {
         Coordinate[] pts = new Coordinate[8];
         for (int j = 0; j < pts.length; j++) {
@@ -400,6 +339,66 @@ public class ConstrainedConvexHull
 
     }
 
+/*
+  // MD - no longer used, but keep for reference purposes
+  private Coordinate[] computeQuad(Coordinate[] inputPts) {
+    BigQuad bigQuad = bigQuad(inputPts);
+
+    // Build a linear ring defining a big poly.
+    ArrayList bigPoly = new ArrayList();
+    bigPoly.add(bigQuad.westmost);
+    if (! bigPoly.contains(bigQuad.northmost)) {
+      bigPoly.add(bigQuad.northmost);
+    }
+    if (! bigPoly.contains(bigQuad.eastmost)) {
+      bigPoly.add(bigQuad.eastmost);
+    }
+    if (! bigPoly.contains(bigQuad.southmost)) {
+      bigPoly.add(bigQuad.southmost);
+    }
+    // points must all lie in a line
+    if (bigPoly.size() < 3) {
+      return null;
+    }
+    // closing point
+    bigPoly.add(bigQuad.westmost);
+
+    Coordinate[] bigPolyArray = CoordinateArrays.toCoordinateArray(bigPoly);
+
+    return bigPolyArray;
+  }
+
+  private BigQuad bigQuad(Coordinate[] pts) {
+    BigQuad bigQuad = new BigQuad();
+    bigQuad.northmost = pts[0];
+    bigQuad.southmost = pts[0];
+    bigQuad.westmost = pts[0];
+    bigQuad.eastmost = pts[0];
+    for (int i = 1; i < pts.length; i++) {
+      if (pts[i].x < bigQuad.westmost.x) {
+        bigQuad.westmost = pts[i];
+      }
+      if (pts[i].x > bigQuad.eastmost.x) {
+        bigQuad.eastmost = pts[i];
+      }
+      if (pts[i].y < bigQuad.southmost.y) {
+        bigQuad.southmost = pts[i];
+      }
+      if (pts[i].y > bigQuad.northmost.y) {
+        bigQuad.northmost = pts[i];
+      }
+    }
+    return bigQuad;
+  }
+
+  private static class BigQuad {
+    public Coordinate northmost;
+    public Coordinate southmost;
+    public Coordinate westmost;
+    public Coordinate eastmost;
+  }
+  */
+
     /**
      *@param  coordinates  the vertices of a linear ring, which may or may not be
      *      flattened (i.e. vertices collinear)
@@ -412,21 +411,22 @@ public class ConstrainedConvexHull
         coordinates = cleanRing(coordinates);
         if (coordinates.length == 3) {
             return geomFactory.createLineString(new Coordinate[]{coordinates[0], coordinates[1]});
+//      return new LineString(new Coordinate[]{coordinates[0], coordinates[1]},
+//          geometry.getPrecisionModel(), geometry.getSRID());
         }
         LinearRing linearRing = geomFactory.createLinearRing(coordinates);
         return geomFactory.createPolygon(linearRing);
     }
 
     /**
-     * Cleans a list of points by removing interior collinear vertices.
-     *
-     * @param  original  the vertices of a linear ring, which may or may not be
+     *@param  original  the vertices of a linear ring, which may or may not be
      *      flattened (i.e. vertices collinear)
-     * @return the coordinates with unnecessary (collinear) vertices removed
+     *@return           the coordinates with unnecessary (collinear) vertices
+     *      removed
      */
     private Coordinate[] cleanRing(Coordinate[] original) {
         Assert.equals(original[0], original[original.length - 1]);
-        List<Coordinate> cleanedRing = new ArrayList<Coordinate>();
+        ArrayList cleanedRing = new ArrayList();
         Coordinate previousDistinctCoordinate = null;
         for (int i = 0; i <= original.length - 2; i++) {
             Coordinate currentCoordinate = original[i];
@@ -450,42 +450,30 @@ public class ConstrainedConvexHull
     /**
      * Compares {@link Coordinate}s for their angle and distance
      * relative to an origin.
-     * The origin is assumed to be lower in Y and then X than
-     * all other point inputs.
-     * The points are ordered CCW around the origin.
      *
      * @author Martin Davis
      * @version 1.7
      */
     private static class RadialComparator
-            implements Comparator<Coordinate>
+            implements Comparator
     {
         private Coordinate origin;
 
-        /**
-         * Creates a new comparator using a given origin.
-         * The origin must be lower in Y and then X to all
-         * compared points.
-         *
-         * @param origin the origin of the radial comparison
-         */
         public RadialComparator(Coordinate origin)
         {
             this.origin = origin;
         }
-
-        @Override
-        public int compare(Coordinate p1, Coordinate p2)
+        public int compare(Object o1, Object o2)
         {
-            int comp = polarCompare(origin, p1, p2);
-            return comp;
+            Coordinate p1 = (Coordinate) o1;
+            Coordinate p2 = (Coordinate) o2;
+            return polarCompare(origin, p1, p2);
         }
 
         /**
          * Given two points p and q compare them with respect to their radial
          * ordering about point o.  First checks radial ordering.
-         * using a CCW orientation.
-         * If the points are collinear, the comparison is based
+         * If points are collinear, the comparison is based
          * on their distance to the origin.
          * <p>
          * p < q iff
@@ -502,32 +490,41 @@ public class ConstrainedConvexHull
          */
         private static int polarCompare(Coordinate o, Coordinate p, Coordinate q)
         {
+            double dxp = p.x - o.x;
+            double dyp = p.y - o.y;
+            double dxq = q.x - o.x;
+            double dyq = q.y - o.y;
+
+/*
+      // MD - non-robust
+      int result = 0;
+      double alph = Math.atan2(dxp, dyp);
+      double beta = Math.atan2(dxq, dyq);
+      if (alph < beta) {
+        result = -1;
+      }
+      if (alph > beta) {
+        result = 1;
+      }
+      if (result !=  0) return result;
+      //*/
+
             int orient = Orientation.index(o, p, q);
+
             if (orient == Orientation.COUNTERCLOCKWISE) return 1;
             if (orient == Orientation.CLOCKWISE) return -1;
 
-            /**
-             * The points are collinear,
-             * so compare based on distance from the origin.
-             * The points p and q are >= to the origin,
-             * so they lie in the closed half-plane above the origin.
-             * If they are not in a horizontal line,
-             * the Y ordinate can be tested to determine distance.
-             * This is more robust than computing the distance explicitly.
-             */
-            if (p.y > q.y) return 1;
-            if (p.y < q.y) return -1;
-
-            /**
-             * The points lie in a horizontal line, which should also contain the origin
-             * (since they are collinear).
-             * Also, they must be above the origin.
-             * Use the X ordinate to determine distance.
-             */
-            if (p.x > q.x) return 1;
-            if (p.x < q.x) return -1;
-            // Assert: p = q
+            // points are collinear - check distance
+            double op = dxp * dxp + dyp * dyp;
+            double oq = dxq * dxq + dyq * dyq;
+            if (op < oq) {
+                return -1;
+            }
+            if (op > oq) {
+                return 1;
+            }
             return 0;
         }
+
     }
 }
