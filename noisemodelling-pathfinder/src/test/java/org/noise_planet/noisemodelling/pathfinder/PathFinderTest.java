@@ -1391,6 +1391,8 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
         // Expected Values
 
         /* Table 193  Z Profile SR */

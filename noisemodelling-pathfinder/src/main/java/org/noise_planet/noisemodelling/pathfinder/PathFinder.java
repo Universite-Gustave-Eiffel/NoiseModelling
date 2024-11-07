@@ -853,6 +853,15 @@ public class PathFinder {
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = pts2D.get(i0);
             }
+            // Add reflection points between i0 i1
+            for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
+                final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
+                if (currentPoint.getType().equals(REFLECTION) &&
+                        Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
+                    points.add(new PointPath(currentPoint, REFL, currentPoint.getzGround()));
+                }
+            }
+
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
             if(pts.size() == 2) {
                 // no diffraction over buildings/dem, we already computed SR segment
@@ -1201,6 +1210,7 @@ public class PathFinder {
      */
     private void updateReflectionPointAttributes(CutPoint reflectionPoint, CutProfile cutProfile, MirrorReceiver mirrorReceiver) {
         reflectionPoint.setType(REFLECTION);
+        reflectionPoint.setWallAlpha(mirrorReceiver.getWall().getAlphas());
         reflectionPoint.setMirrorReceiver(mirrorReceiver);
         CutPoint reflectionPointBeforeAndAfter = new CutPoint(reflectionPoint);
         reflectionPointBeforeAndAfter.getCoordinate().setZ(reflectionPoint.getzGround());
@@ -1331,7 +1341,7 @@ public class PathFinder {
             mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
 
-            // Compute Ray path from vertical cut
+            // Compute Ray path from vertical cuts (like a folding screen)
             CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
 
             if(cnossosPath == null) {
@@ -1339,26 +1349,6 @@ public class PathFinder {
                 continue;
             }
 
-            for (int i = 1; i < cnossosPath.getPointList().size() - 1; i++) {
-                final PointPath currentPoint = cnossosPath.getPointList().get(i);
-                if (currentPoint.type == REFL) {
-                    // A diffraction point may have offset in height the reflection coordinate
-                    final Coordinate p0 = cnossosPath.getPointList().get(i - 1).coordinate;
-                    final Coordinate p1 = currentPoint.coordinate;
-                    final Coordinate p2 = cnossosPath.getPointList().get(i + 1).coordinate;
-                    // compute Y value (altitude) by interpolating the Y values of the two neighboring points
-                    currentPoint.coordinate = new CoordinateXY(p1.x, (p1.x - p0.x) / (p2.x - p0.x) * (p2.y - p0.y) + p0.y);
-                    //check if new reflection point altitude is higher than the wall
-                    if (currentPoint.coordinate.y > currentPoint.obstacleZ - epsilon) {
-                        // can't reflect higher than the wall
-                        validReflection = false;
-                        break;
-                    }
-                }
-            }
-            if(!validReflection) {
-                continue;
-            }
             reflexionPathParameters.add(cnossosPath);
         }
         return reflexionPathParameters;
