@@ -17,18 +17,13 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
-import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.path.*;
-import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
-import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
-import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.pathfinder.utils.ConstrainedConvexHull;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 import org.slf4j.Logger;
@@ -45,9 +40,9 @@ import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationS
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
 import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
 
 /**
  * @author Nicolas Fortin
@@ -1002,8 +997,8 @@ public class PathFinder {
 
         int k;
         while (convexHullIntersects) {
-            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
-            Geometry convexhull = convexHull.getConvexHull();
+            ConstrainedConvexHull convexHull = new ConstrainedConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
+            Geometry convexhull = convexHull.getConvexHull(p1,p2);
 
             if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
                 return new ArrayList<>();
