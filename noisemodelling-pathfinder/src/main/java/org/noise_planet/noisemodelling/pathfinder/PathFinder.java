@@ -804,9 +804,9 @@ public class PathFinder {
                         MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
                         Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
                         // Check if the new elevation of the reflection point is not higher than the wall
-                        double wallHeightAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
+                        double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
                                 mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                        if(wallHeightAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
+                        if(wallAltitudeAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
                             // update the reflection position
                             currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
                         } else {
@@ -858,7 +858,12 @@ public class PathFinder {
                 final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
                 if (currentPoint.getType().equals(REFLECTION) &&
                         Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
-                    points.add(new PointPath(currentPoint, REFL, currentPoint.getzGround()));
+                    MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
+                    double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
+                            mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
+                    PointPath reflectionPoint = new PointPath(currentPoint, REFL, currentPoint.getzGround());
+                    reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
+                    points.add(reflectionPoint);
                 }
             }
 

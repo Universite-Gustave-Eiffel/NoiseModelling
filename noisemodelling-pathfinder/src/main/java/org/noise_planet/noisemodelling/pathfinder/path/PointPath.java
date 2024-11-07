@@ -102,6 +102,8 @@ public class PointPath {
         this.altitude = altitude;
         this.alphaWall = cutPoint.getWallAlpha();
         this.type = cutPoint.getType().toPointType(defaultType);
+        this.wallId = cutPoint.getWallId();
+        this.buildingId = cutPoint.getBuildingId();
     }
 
     /**

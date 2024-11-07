@@ -13,6 +13,7 @@ import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.After;
 import org.junit.Test;
+import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -1425,9 +1426,17 @@ public class PathFinderTest {
 
         // S-R (not the rayleigh segments SO OR)
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
-        // Check reflexion mean planes
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSegmentList());
 
+        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+        // Check reflexion mean planes
+        assertPlanes(segmentsMeanPlanes1, reflectionPath.getSegmentList());
+
+        assertEquals(4,  reflectionPath.getPointList().size());
+
+        PointPath reflectionPoint = reflectionPath.getPointList().get(2);
+        assertEquals(PointPath.POINT_TYPE.REFL, reflectionPoint.type);
+        assert3DCoordinateEquals("Reflection position TC18 ",
+                new Coordinate(131.86,54.55,12.0), reflectionPoint.coordinate, DELTA_COORDS);
     }
 
     /**
@@ -2515,8 +2524,17 @@ public class PathFinderTest {
         double diffY = Math.abs(expected.getY() - actual.getY());
 
         if (diffX > toleranceX || diffY > toleranceX) {
-            String result = String.format("Expected coordinate: (%.3f, %.3f), Actual coordinate: (%.3f, %.3f)",
+            String result = String.format(Locale.ROOT, "Expected coordinate: (%.3f, %.3f), Actual coordinate: (%.3f, %.3f)",
                     expected.getX(), expected.getY(), actual.getX(), actual.getY());
+            throw new AssertionError(message+result);
+        }
+    }
+
+    private static void assert3DCoordinateEquals(String message,Coordinate expected, Coordinate actual, double tolerance) {
+
+        if (CGAlgorithms3D.distance(expected, actual) > tolerance) {
+            String result = String.format(Locale.ROOT, "Expected coordinate: %s, Actual coordinate: %s",
+                    expected, actual);
             throw new AssertionError(message+result);
         }
     }
