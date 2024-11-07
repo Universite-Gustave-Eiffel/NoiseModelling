@@ -85,14 +85,14 @@ public class ConstrainedConvexHull
     private Stack<Coordinate> grahamScan(Coordinate[] c, Coordinate p1, Coordinate p2) {
         Stack<Coordinate> ps = new Stack<>();
 
-        // Initialize the stack with the first point, ensuring it is A.
+        // Initialize the stack with the first point, ensuring it is p1.
         ps.push(p1);
 
         // Start scanning from the second point.
         for (int i = 1; i < c.length; i++) {
             Coordinate current = c[i];
 
-            // If the current point is B, add it directly and move to the next point.
+            // If the current point is p2, add it directly and move to the next point.
             if (current.equals(p2)) {
                 ps.push(p2);
                 continue;
@@ -104,7 +104,7 @@ public class ConstrainedConvexHull
                  !ps.empty() && Orientation.index(ps.peek(), p, current) > 0;
                  p = ps.pop()) {
 
-                // If p is B, push it back immediately to avoid discarding it.
+                // If p is p2, push it back immediately to avoid discarding it.
                 if (p.equals(p2)) {
                     ps.push(p);
                     break;
@@ -115,7 +115,7 @@ public class ConstrainedConvexHull
             ps.push(current);
         }
 
-        // Add the starting point A to close the convex hull.
+        // Add the starting point p1 to close the convex hull.
         ps.push(p1);
 
         return ps;
