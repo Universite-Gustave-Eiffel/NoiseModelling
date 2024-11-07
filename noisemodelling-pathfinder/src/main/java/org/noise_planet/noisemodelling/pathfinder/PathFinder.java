@@ -318,11 +318,11 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
-            CnossosPath vEdgePath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, LEFT, orientation);
+            CnossosPath vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, LEFT, orientation);
             if (vEdgePath != null && vEdgePath.getPointList() != null) {
                 pathsParameters.add(vEdgePath);
             }
-            vEdgePath = computeVEdgeDiffraction(srcCoord, rcvCoord, data, RIGHT, orientation);
+            vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, RIGHT, orientation);
             if (vEdgePath != null && vEdgePath.getPointList() != null) {
                 pathsParameters.add(vEdgePath);
             }
@@ -463,7 +463,7 @@ public class PathFinder {
                                                Scene data, ComputationSide side, Orientation orientation) {
 
         CnossosPath pathParameters = null;
-        List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(rcvCoord), new Coordinate(srcCoord), data.profileBuilder);
+        List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(srcCoord), new Coordinate(rcvCoord), data.profileBuilder);
         List<Coordinate> coords = toDirectLine(coordinates);
 
         if (!coordinates.isEmpty()) {
@@ -696,10 +696,11 @@ public class PathFinder {
     }
 
     /**
-     *
-     * @param cutProfile
+     * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the ray path
+     * following Cnossos specification, or null if there is no valid path.
+     * @param cutProfile Vertical cut of a domain
      * @param bodyBarrier
-     * @return
+     * @return The cnossos path or null
      */
     public CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier) {
         List<SegmentPath> segments = new ArrayList<>();

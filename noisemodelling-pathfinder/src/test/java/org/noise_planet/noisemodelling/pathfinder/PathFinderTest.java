@@ -1569,10 +1569,6 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         //Expected values
 
         /* Table 208 */
@@ -1609,7 +1605,7 @@ public class PathFinderTest {
 
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
