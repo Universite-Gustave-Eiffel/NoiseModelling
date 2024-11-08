@@ -9,17 +9,16 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import org.apache.commons.math3.geometry.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.locationtech.jts.algorithm.RectangleLineIntersector;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedLineString;
 import org.locationtech.jts.index.ItemVisitor;
+import org.locationtech.jts.math.Vector2D;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.cutRoofPointsWithPlane;
 
@@ -75,7 +74,16 @@ public final class WallIntersectionPathVisitor implements ItemVisitor {
         if (wallsInIntersection.contains(id)) {
             return;
         }
-        List<Coordinate> roofPoints = Arrays.asList(profileBuilder.getWall(id-1).getLine().getCoordinates());
+        final LineSegment originalWall = profileBuilder.getWall(id-1).getLineSegment();
+        // Create the diffraction point outside of the wall segment
+        // Diffraction point must not intersect with wall
+        Vector2D translationVector = new Vector2D(originalWall.p0, originalWall.p1).normalize()
+                .multiply(ProfileBuilder.wideAngleTranslationEpsilon);
+        Coordinate extendedP0 = new Coordinate(originalWall.p0.x - translationVector.getX(),
+                originalWall.p0.y - translationVector.getY(), originalWall.p0.z);
+        Coordinate extendedP1 = new Coordinate(originalWall.p1.x + translationVector.getX(),
+                originalWall.p1.y + translationVector.getY(), originalWall.p1.z);
+        List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
         // Create a cut of the building volume
         roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
         if (!roofPoints.isEmpty()) {

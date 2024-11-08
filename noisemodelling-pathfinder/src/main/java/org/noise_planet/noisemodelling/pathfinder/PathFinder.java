@@ -453,19 +453,54 @@ public class PathFinder {
 
     /**
      * Compute horizontal diffraction (diffraction of vertical edge.)
-     * @param rcvCoord Receiver coordinates.
-     * @param srcCoord Source coordinates.
+     * @param receiverCoordinates Receiver coordinates.
+     * @param sourceCoordinates Source coordinates.
      * @param data     Propagation data.
      * @param side     Side to compute.
      * @return The propagation path of the horizontal diffraction.
      */
-    public CnossosPath computeVEdgeDiffraction(Coordinate rcvCoord, Coordinate srcCoord,
+    public CnossosPath computeVEdgeDiffraction(Coordinate receiverCoordinates, Coordinate sourceCoordinates,
                                                Scene data, ComputationSide side, Orientation orientation) {
 
-        CnossosPath pathParameters = null;
-        List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(srcCoord), new Coordinate(rcvCoord), data.profileBuilder);
-        List<Coordinate> coords = toDirectLine(coordinates);
+        List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(sourceCoordinates), new Coordinate(receiverCoordinates), data.profileBuilder);
 
+        List<CutPoint> cutPoints = new ArrayList<>();
+
+        if(coordinates.size() > 2) {
+            // Fetch vertical profile between each point of the diffraction path
+            for(int i=0; i<coordinates.size()-1; i++) {
+                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS, false);
+                // Push new plane (except duplicate points for intermediate segments)
+                if( i > 0 ) {
+                    // update first point when it is not source but diffraction point
+                    CutPoint vDiffPoint = profile.getCutPoints().get(0);
+                    vDiffPoint.setType(ProfileBuilder.IntersectionType.V_EDGE_DIFFRACTION);
+                }
+                if(i+1 == coordinates.size() - 1) {
+                    // we keep the last point as it is really the receiver
+                    cutPoints.addAll(profile.getCutPoints());
+                } else {
+                    cutPoints.addAll(profile.getCutPoints().subList(0, profile.getCutPoints().size() - 1));
+                }
+            }
+        }
+        CutProfile mainProfile = new CutProfile();
+        mainProfile.addCutPoints(cutPoints);
+        mainProfile.setSource(cutPoints.get(0));
+        mainProfile.setReceiver(cutPoints.get(cutPoints.size() -  1));
+        // Compute Ray path from vertical cuts (like a folding screen)
+        CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
+
+        if(cnossosPath == null) {
+            // path not valid (ex: intersection with ground)
+            return null;
+        }
+
+        cnossosPath.setSourceOrientation(orientation);
+
+        return cnossosPath;
+        /**
+        List<Coordinate> coords = toDirectLine(coordinates);
         if (!coordinates.isEmpty()) {
             if (coordinates.size() > 2) {
                 List<Coordinate> topoPts = new ArrayList<>();
@@ -542,7 +577,7 @@ public class PathFinder {
                 PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
                 double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
                 SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, res, data.gS);
-                srSeg.dc = sqrt(pow(rcvCoord.x-srcCoord.x, 2) + pow(rcvCoord.y-srcCoord.y, 2) + pow(rcvCoord.z-srcCoord.z, 2));
+                srSeg.dc = sqrt(pow(receiverCoordinates.x-sourceCoordinates.x, 2) + pow(receiverCoordinates.y-sourceCoordinates.y, 2) + pow(receiverCoordinates.z-sourceCoordinates.z, 2));
 
                 List<PointPath> pps = new ArrayList<>();
                 pps.add(src);
@@ -554,7 +589,7 @@ public class PathFinder {
                 pathParameters.setSegmentList(segs);
                 pathParameters.setSRSegment(srSeg);
                 pathParameters.init(data.freq_lvl.size());
-                pathParameters.angle=Angle.angle(rcvCoord, srcCoord);
+                pathParameters.angle=Angle.angle(receiverCoordinates, sourceCoordinates);
                 pathParameters.setCutProfile(mainProfile);
                 pathParameters.raySourceReceiverDirectivity = src.orientation;
                 double e = 0;
@@ -576,7 +611,7 @@ public class PathFinder {
                 pathParameters.difVPoints.add(1);
             }
         }
-        return pathParameters;
+         **/
     }
 
 
@@ -841,7 +876,7 @@ public class PathFinder {
                 Coordinate targetPosition = cutProfilePoints.get(i1).getCoordinate();
                 for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                     final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                    if (currentPoint.getType().equals(REFLECTION) &&
+                    if ((currentPoint.getType().equals(REFLECTION) || currentPoint.getType().equals(V_EDGE_DIFFRACTION)) &&
                             Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
                         // The first reflection (the one not at ground level)
                         // from the source coordinate is the direction of the propagation
@@ -854,7 +889,7 @@ public class PathFinder {
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = pts2D.get(i0);
             }
-            // Add reflection points between i0 i1
+            // Add reflection/vertical edge diffraction points between i0 i1
             for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                 final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
                 if (currentPoint.getType().equals(REFLECTION) &&
@@ -864,6 +899,9 @@ public class PathFinder {
                             mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
                     PointPath reflectionPoint = new PointPath(currentPoint, REFL, currentPoint.getzGround());
                     reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
+                    points.add(reflectionPoint);
+                } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
+                    PointPath reflectionPoint = new PointPath(currentPoint, DIFV, currentPoint.getzGround());
                     points.add(reflectionPoint);
                 }
             }
@@ -1638,7 +1676,7 @@ public class PathFinder {
         return totalPowerRemaining;
     }
 
-    enum ComputationSide {LEFT, RIGHT}
+    public enum ComputationSide {LEFT, RIGHT}
 
 
 }

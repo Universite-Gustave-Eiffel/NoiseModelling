@@ -1513,7 +1513,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION;
+    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION, V_EDGE_DIFFRACTION;
 
         public PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
             if(this.equals(SOURCE)){
@@ -1542,15 +1542,6 @@ public class ProfileBuilder {
         Collection<? extends Wall> getWalls();
     }
 
-
-
-    /**
-     * Ground effect.
-     */
-
-
-
-    //TODO methods to check
     public static final double wideAngleTranslationEpsilon = 0.01;
 
     /**
@@ -1632,9 +1623,12 @@ public class ProfileBuilder {
      * @param visitor
      */
     public void getWallsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        Envelope pathEnv = new Envelope(p1, p2);
         try {
-            wallTree.query(pathEnv, visitor);
+            List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
+            for(LineSegment segment : lines) {
+                Envelope pathEnv = new Envelope(segment.p0, segment.p1);
+                wallTree.query(pathEnv, visitor);
+            }
         } catch (IllegalStateException ex) {
             //Ignore
         }
