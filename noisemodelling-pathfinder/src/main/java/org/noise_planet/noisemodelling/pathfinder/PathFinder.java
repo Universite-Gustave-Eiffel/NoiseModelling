@@ -483,22 +483,24 @@ public class PathFinder {
                     cutPoints.addAll(profile.getCutPoints().subList(0, profile.getCutPoints().size() - 1));
                 }
             }
+            CutProfile mainProfile = new CutProfile();
+            mainProfile.addCutPoints(cutPoints);
+            mainProfile.setSource(cutPoints.get(0));
+            mainProfile.setReceiver(cutPoints.get(cutPoints.size() -  1));
+            // Compute Ray path from vertical cuts (like a folding screen)
+            CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
+
+            if(cnossosPath == null) {
+                // path not valid (ex: intersection with ground)
+                return null;
+            }
+
+            cnossosPath.setSourceOrientation(orientation);
+
+            return cnossosPath;
         }
-        CutProfile mainProfile = new CutProfile();
-        mainProfile.addCutPoints(cutPoints);
-        mainProfile.setSource(cutPoints.get(0));
-        mainProfile.setReceiver(cutPoints.get(cutPoints.size() -  1));
-        // Compute Ray path from vertical cuts (like a folding screen)
-        CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
+        return null;
 
-        if(cnossosPath == null) {
-            // path not valid (ex: intersection with ground)
-            return null;
-        }
-
-        cnossosPath.setSourceOrientation(orientation);
-
-        return cnossosPath;
         /**
         List<Coordinate> coords = toDirectLine(coordinates);
         if (!coordinates.isEmpty()) {
