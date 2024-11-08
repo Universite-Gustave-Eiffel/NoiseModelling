@@ -1754,7 +1754,7 @@ public class PathFinderTest {
                         new Coordinate(167.2, 39.5, 11.5),
                         new Coordinate(151.6, 48.5, 11.5),
                         new Coordinate(141.1, 30.3, 11.5),
-                        new Coordinate(156.7, 21.3, 11.5),
+                        new Coordinate(156.7, 21.33, 11.5), // the rounding of the unit test input data lead to errors. We had to add 0.03 m to y value
                         new Coordinate(159.7, 26.5, 11.5),
                         new Coordinate(151.0, 31.5, 11.5),
                         new Coordinate(155.5, 39.3, 11.5),
@@ -1795,10 +1795,6 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         // Test R-CRIT table 235
         Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
         Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
@@ -1820,13 +1816,27 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 228 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(110.34, 0.0));
-        expectedZ_profile.add(new Coordinate(146.75, 5.58));
-        expectedZ_profile.add(new Coordinate(147.26, 5.66));
-        expectedZ_profile.add(new Coordinate(175.54, 10));
-        expectedZ_profile.add(new Coordinate(190.59, 10));
+        List<Coordinate> expectedZProfileSR = Arrays.asList(
+            new Coordinate(0.0, 0.0),
+            new Coordinate(110.34, 0.0),
+            new Coordinate(146.75, 5.58),
+            new Coordinate(146.75, 11.50),
+            new Coordinate(147.26, 11.50),
+            new Coordinate(147.26, 5.66),
+            new Coordinate(175.54, 10),
+            new Coordinate(190.59, 10));
+
+        List<Coordinate> expectedZProfileSO = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(110.34, 0.0),
+                new Coordinate(146.75, 5.58));
+
+        List<Coordinate> expectedZProfileOR = Arrays.asList(
+                new Coordinate(146.75, 11.50),
+                new Coordinate(147.26, 11.50),
+                new Coordinate(147.26, 5.66),
+                new Coordinate(175.54, 10),
+                new Coordinate(190.59, 10));
 
         /* Table 229 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1848,9 +1858,15 @@ public class PathFinderTest {
 
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        //assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        CutProfile SRProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        List<Integer> cutToGroundIndex = new ArrayList<>();
+        List<Coordinate> points2D = SRProfile.computePts2DGround(cutToGroundIndex);
+        assertZProfil(expectedZProfileSR, points2D);
+        int diffraction2DIndex = cutToGroundIndex.get(propDataOut.getPropagationPaths().get(0).difHPoints.get(0));
+        assertZProfil(expectedZProfileSO, points2D.subList(0, diffraction2DIndex));
+        assertZProfil(expectedZProfileOR, points2D.subList(diffraction2DIndex, points2D.size()));
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
 

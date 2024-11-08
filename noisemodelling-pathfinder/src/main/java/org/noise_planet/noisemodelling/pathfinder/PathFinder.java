@@ -902,6 +902,7 @@ public class PathFinder {
                     points.add(reflectionPoint);
                 } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
                     PointPath reflectionPoint = new PointPath(currentPoint, DIFV, currentPoint.getzGround());
+                    pathParameters.difVPoints.add(pointIndex);
                     points.add(reflectionPoint);
                 }
             }
@@ -919,7 +920,9 @@ public class PathFinder {
                 if (i != 1) {
                     e += path.d;
                 }
-                pathParameters.difHPoints.add(i);
+                if(i < pts.size() - 1) {
+                    pathParameters.difHPoints.add(i1);
+                }
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
@@ -1398,35 +1401,6 @@ public class PathFinder {
         return reflexionPathParameters;
     }
 
-
-    /**
-     *
-     * @param p0
-     * @param p1
-     * @param points
-     * @param segments
-     * @param data
-     * @param orientation
-     * @param diffHPts
-     * @param diffVPts
-     */
-    public void computeReflexionOverBuildings(Coordinate p0, Coordinate p1, List<PointPath> points,
-                                              List<SegmentPath> segments, Scene data,
-                                              Orientation orientation, List<Integer> diffHPts, List<Integer> diffVPts, CutProfile mainProfile) {
-        List<CnossosPath> pathsParameters = directPath(p0, -1, orientation, p1, -1,
-                data.isComputeHEdgeDiffraction(), false, false);
-
-        for (CnossosPath pathParameters : pathsParameters) {
-            // fix index
-            diffVPts.addAll(pathParameters.difVPoints.stream().mapToInt(Integer::intValue)
-                    .mapToObj(i -> points.size() + i).collect(Collectors.toList()));
-            diffHPts.addAll(pathParameters.difHPoints.stream().mapToInt(Integer::intValue)
-                    .mapToObj(i -> points.size() + i).collect(Collectors.toList()));
-            points.addAll(pathParameters.getPointList());
-            segments.addAll(pathParameters.getSegmentList());
-            mainProfile.addCutPoints(pathParameters.getCutProfile().getCutPoints());
-        }
-    }
     /**
      * @param geom Geometry
      * @param segmentSizeConstraint Maximal distance between points

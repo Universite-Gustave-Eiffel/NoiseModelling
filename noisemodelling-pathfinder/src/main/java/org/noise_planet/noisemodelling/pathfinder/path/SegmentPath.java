@@ -74,13 +74,8 @@ public class SegmentPath {
         this.pInit = pInit;
     }
 
-    /*public double getSegmentLength() {
-        return d;
-    }*/
-
     public SegmentPath() {
     }
-
 
     /**
      * Writes the content of this object into <code>out</code>.

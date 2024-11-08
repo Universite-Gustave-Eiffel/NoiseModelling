@@ -279,20 +279,19 @@ public class CutProfile {
 
     /**
      * From the vertical plane cut, extract only the top elevation points
-     * (buildings/walls top or ground if no buildings) then re-project it into
-     * a 2d coordinate system. The first point is always x=0.
-     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
-     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * (buildings/walls top or ground if no buildings)
+     * @param pts Cut points
      * @param index Corresponding index from parameter to return list items
-     * @return the computed 2D coordinate list of DEM
+     * @return the computed coordinate list of the vertical cut
      */
-    public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
-        List<Coordinate> pts2D = new ArrayList<>(getCutPoints().size());
-        if(getCutPoints().isEmpty()) {
+    public static List<Coordinate> computePtsGround(List<CutPoint> pts, List<Integer> index) {
+
+        List<Coordinate> pts2D = new ArrayList<>(pts.size());
+        if(pts.isEmpty()) {
             return pts2D;
         }
         // keep track of the obstacle under our current position. If -1 there is only ground below
-        int overObstacleIndex = getCutPoints().get(0).getBuildingId();
+        int overObstacleIndex = pts.get(0).getBuildingId();
         for (int i=0; i < pts.size(); i++) {
             CutPoint cut = pts.get(i);
             if (cut.getType() != GROUND_EFFECT) {
@@ -320,6 +319,33 @@ public class CutProfile {
                 index.add(pts2D.size() - 1);
             }
         }
-        return JTSUtility.getNewCoordinateSystem(pts2D, tolerance);
+        return pts2D;
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param pts Cut points
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
+     */
+    public static List<Coordinate> computePts2DGround(List<CutPoint> pts, double tolerance, List<Integer> index) {
+        return JTSUtility.getNewCoordinateSystem(computePtsGround(pts, index), tolerance);
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
+        return computePts2DGround(this.pts, tolerance, index);
     }
 }

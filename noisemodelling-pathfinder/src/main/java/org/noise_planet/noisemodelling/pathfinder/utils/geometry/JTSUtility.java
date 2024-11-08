@@ -248,6 +248,7 @@ public class JTSUtility {
     public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
         return getNewCoordinateSystem(listPoints, 0);
     }
+
     /**
      * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D
      * with new x' computed by algorithm and y' is original height of point.
