@@ -2071,6 +2071,8 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        assertEquals(1, propDataOut.getPropagationPaths().size());
+
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
         List<Coordinate> result = cutProfile.computePts2DGround();
 
@@ -2081,11 +2083,9 @@ public class PathFinderTest {
         List<Coordinate> expectedZ_profile = new ArrayList<>();
         expectedZ_profile.add(new Coordinate(0.0, 0.0));
         expectedZ_profile.add(new Coordinate(14.21, 0.0));
-        expectedZ_profile.add(new Coordinate(19.06, 2.85));
         expectedZ_profile.add(new Coordinate(22.64, 5.0));
         expectedZ_profile.add(new Coordinate(23.98, 5.0));
-        expectedZ_profile.add(new Coordinate(28.45, 2.34));
-        expectedZ_profile.add(new Coordinate(32.30, -0.0));
+        expectedZ_profile.add(new Coordinate(32.30, 0.0));
         expectedZ_profile.add(new Coordinate(70.03, 0.0));
 
         /* Table 268 */
@@ -2214,8 +2214,6 @@ public class PathFinderTest {
 
     @Test
     public void TC25(){
-        ///AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
-        GeometryFactory factory = new GeometryFactory();
 
         // Add building 20% abs
         List<Double> buildingsAbs = Collections.nCopies(8, 0.2);
@@ -2249,7 +2247,7 @@ public class PathFinderTest {
                 .vEdgeDiff(true)
                 .setGs(0.)
                 .build();
-        rayData.reflexionOrder=0;
+        rayData.reflexionOrder=1;
 
 
         PathFinderVisitor propDataOut = new PathFinderVisitor(true);
@@ -2259,21 +2257,43 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        computeRays.run(propDataOut);
-
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
+        // Should find Direct,Left/Right diffraction and one reflection
+        assertEquals(4, propDataOut.getPropagationPaths().size());
 
         // Expected Values
 
+        /* Table 300 */
+        List<Coordinate> expectedZ_profileSO = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(23.77, 0.0));
+
+        List<Coordinate> expectedZ_profileONR = Arrays.asList(
+                new Coordinate(60.58, 0.0),
+                new Coordinate(68.15, 0.0));
+
+        List<Coordinate> expectedZ_profileRight = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(27.10, 0.0),
+                new Coordinate(81.02, 0.0),
+                new Coordinate(89.03, 0.0),
+                new Coordinate(101.05, 0.0));
+
+        List<Coordinate> expectedZ_profileLeft = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(23.64, 0.0),
+                new Coordinate(70.83, 0.0));
+
         /* Table 301 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(23.77, 0.0));
-        expectedZ_profile.add(new Coordinate(45.10, 0.0));
-        expectedZ_profile.add(new Coordinate(60.58, 0.0));
-        expectedZ_profile.add(new Coordinate(68.15, 0.0));
+        List<Coordinate> expectedZ_profile = Arrays.asList(
+            new Coordinate(0.0, 0.0),
+            new Coordinate(23.77, 0.0),
+            new Coordinate(23.77, 5),
+            new Coordinate(23.77, 0.0),
+            new Coordinate(45.10, 0.0),
+            new Coordinate(45.10, 6.0),
+            new Coordinate(60.58, 6.0),
+            new Coordinate(60.58, 0.0),
+            new Coordinate(68.15, 0.0));
 
         /* Table 302 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
@@ -2289,8 +2309,31 @@ public class PathFinderTest {
                 {0.0, 0.0, 1.0, 5.0, 23.77, 0.0, 0.0},
                 {0.0, 0.0, 6.0, 4.0, 7.57, 0.0, NaN}
         };
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertZProfil(expectedZ_profile,result);
+
+        /* Table 311 */
+        double [][] segmentsMeanPlanesReflection = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.0, 0.0, 1.0, 5.0, 23.24, 0.0, 0.0},
+                {0.0, 0.0, 5.0, 4.0, 47.49, 0.0, NaN}
+        };
+
+        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        assertZProfil(expectedZ_profile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZ_profileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZ_profileONR, Arrays.asList(directPath.getSegmentList().get(
+                directPath.getSegmentList().size() - 1).getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanes0, directPath.getSegmentList());
+
+        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
+        assertZProfil(expectedZ_profileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()));
+
+
+        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
+        assertZProfil(expectedZ_profileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()));
+
+
+        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(3);
+        assertPlanes(segmentsMeanPlanesReflection, reflectionPath.getSegmentList());
     }
 
     /**

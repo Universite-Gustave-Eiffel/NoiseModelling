@@ -121,7 +121,7 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                     processedWall.p1.y + translationVector.getY(), processedWall.p1.z);
             List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
             // Create a cut of the building volume
-            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
+            roofPoints = filterPointsBySide(p1Top2, left, cutRoofPointsWithPlane(cutPlane, roofPoints));
             if (!roofPoints.isEmpty()) {
                 pushedWallsPoints.add(processedWall.originId);
                 input.addAll(roofPoints);
