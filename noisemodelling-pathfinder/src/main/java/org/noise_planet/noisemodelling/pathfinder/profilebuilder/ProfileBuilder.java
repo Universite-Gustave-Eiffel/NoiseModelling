@@ -123,8 +123,6 @@ public class ProfileBuilder {
 
     /** Global envelope of the builder. */
     private Envelope envelope;
-    /** Maximum area of triangles. */
-    private double maxArea;
 
     /** if true take into account z value on Buildings Polygons
      * In this case, z represent the altitude (from the sea to the top of the wall) */
@@ -734,12 +732,6 @@ public class ProfileBuilder {
             //Feed the Delaunay layer
             LayerDelaunay layerDelaunay = new LayerTinfour();
             layerDelaunay.setRetrieveNeighbors(true);
-            try {
-                layerDelaunay.setMaxArea(maxArea);
-            } catch (LayerDelaunayError e) {
-                LOGGER.error("Unable to set the Delaunay triangle maximum area.", e);
-                return null;
-            }
             try {
                 for (Coordinate topoPoint : topoPoints) {
                     layerDelaunay.addVertex(topoPoint);
@@ -1598,36 +1590,19 @@ public class ProfileBuilder {
     }
 
     /**
-     * Find all buildings (polygons) that 2D cross the line p1 to p2
-     * @param p1 first point of line
-     * @param p2 second point of line
-     * @param visitor Iterate over found buildings
-     */
-    public void getBuildingsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
-        try {
-            List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
-            for(LineSegment segment : lines) {
-                Envelope pathEnv = new Envelope(segment.p0, segment.p1);
-                buildingTree.query(pathEnv, visitor);
-            }
-        } catch (IllegalStateException ex) {
-            //Ignore
-        }
-    }
-
-
-    /**
      *
      * @param p1
      * @param p2
      * @param visitor
      */
-    public void getWallsOnPath(Coordinate p1, Coordinate p2, ItemVisitor visitor) {
+    public void getWallsOnPath(Coordinate p1, Coordinate p2, BuildingIntersectionPathVisitor visitor) {
+        // Update intersection line test in the rtree visitor
         try {
             List<LineSegment> lines = splitSegment(p1, p2, maxLineLength);
             for(LineSegment segment : lines) {
+                visitor.setIntersectionLine(segment);
                 Envelope pathEnv = new Envelope(segment.p0, segment.p1);
-                wallTree.query(pathEnv, visitor);
+                rtree.query(pathEnv, visitor);
             }
         } catch (IllegalStateException ex) {
             //Ignore

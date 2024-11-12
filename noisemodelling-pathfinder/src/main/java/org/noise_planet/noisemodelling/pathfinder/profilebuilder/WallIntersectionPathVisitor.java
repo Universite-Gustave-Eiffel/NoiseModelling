@@ -28,24 +28,24 @@ public final class WallIntersectionPathVisitor implements ItemVisitor {
     List<Wall> walls;
     Coordinate p1;
     Coordinate p2;
+    boolean left;
+    LineSegment p1Top2;
     PreparedLineString seg;
-    Set<Integer> wallsInIntersection;
+    Set<Integer> wallsInIntersection = new HashSet<>();
     ProfileBuilder profileBuilder;
     Plane cutPlane;
     List<Coordinate> input;
-    boolean foundIntersection = false;
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
-    public WallIntersectionPathVisitor(List<Wall> walls, Coordinate p1,
-                                       Coordinate p2, ProfileBuilder profileBuilder, List<Coordinate> input,
-                                       Set<Integer> wallsInIntersection, Plane cutPlane) {
+    public WallIntersectionPathVisitor(Coordinate p1, Coordinate p2,boolean left, ProfileBuilder profileBuilder,
+                                       List<Coordinate> input, Plane cutPlane) {
         this.profileBuilder = profileBuilder;
         this.input = input;
-        this.wallsInIntersection = wallsInIntersection;
         this.cutPlane = cutPlane;
-        this.walls = walls;
+        this.walls = profileBuilder.getWalls();
         this.p1 = p1;
         this.p2 = p2;
+        this.left = left;
         seg = new PreparedLineString(GEOMETRY_FACTORY.createLineString(new Coordinate[]{p1, p2}));
     }
 
@@ -89,17 +89,9 @@ public final class WallIntersectionPathVisitor implements ItemVisitor {
         if (!roofPoints.isEmpty()) {
             input.addAll(roofPoints);
             wallsInIntersection.add(id);
-            foundIntersection = true;
             // Stop iterating bounding boxes
             throw new IllegalStateException();
         }
     }
 
-    /**
-     *
-     * @return
-     */
-    public boolean doContinue() {
-        return !foundIntersection;
-    }
 }

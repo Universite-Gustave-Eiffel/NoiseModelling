@@ -462,7 +462,7 @@ public class PathFinder {
     public CnossosPath computeVEdgeDiffraction(Coordinate receiverCoordinates, Coordinate sourceCoordinates,
                                                Scene data, ComputationSide side, Orientation orientation) {
 
-        List<Coordinate> coordinates = computeSideHull(side != LEFT, new Coordinate(sourceCoordinates), new Coordinate(receiverCoordinates), data.profileBuilder);
+        List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(sourceCoordinates), new Coordinate(receiverCoordinates), data.profileBuilder);
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -1047,7 +1047,7 @@ public class PathFinder {
      * with the points of buildings in intersection. While there is an intersection add more points to the convex hull.
      * The side diffraction path is found when there is no more intersection.
      *
-     * @param left If true return path between p1 and p2; else p2 to p1
+     * @param left If true return the path on the left side between p1 and p2; else on the right side
      * @param p1   First point
      * @param p2   Second point
      * @return
@@ -1071,20 +1071,12 @@ public class PathFinder {
         input.add(p1);
         input.add(p2);
 
-        Set<Integer> buildingInHull = new HashSet<>();
-        Set<Integer> wallInHull = new HashSet<>();
-
         Plane cutPlane = computeZeroRadPlane(p1, p2);
 
-        BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(
-                profileBuilder.getBuildings(), p1, p2, profileBuilder, input, buildingInHull, cutPlane);
+        BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
+                profileBuilder, input, cutPlane);
 
-        data.profileBuilder.getBuildingsOnPath(p1, p2, buildingIntersectionPathVisitor);
-
-        WallIntersectionPathVisitor wallIntersectionPathVisitor = new WallIntersectionPathVisitor(
-                profileBuilder.getWalls(), p1, p2, profileBuilder, input, wallInHull, cutPlane);
-
-        data.profileBuilder.getWallsOnPath(p1, p2, wallIntersectionPathVisitor);
+        data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
         int k;
         while (convexHullIntersects) {
@@ -1137,22 +1129,20 @@ public class PathFinder {
             }
             for (k = 0; k < coordinates.length - 1; k++) {
                 LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
+
                 // Ignore intersection if iterating over other side (not parts of what is returned)
                 if (left && k < indexp2 || !left && k >= indexp2) {
                     if (!freeFieldSegments.contains(freeFieldTestSegment)) {
-                        // Check if we still are in the propagation domain
-                        buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(profileBuilder.getBuildings(),
-                                coordinates[k], coordinates[k + 1], profileBuilder, input, buildingInHull, cutPlane);
-                        profileBuilder.getBuildingsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
-                        wallIntersectionPathVisitor = new WallIntersectionPathVisitor(profileBuilder.getWalls(),
-                                coordinates[k], coordinates[k + 1], profileBuilder, input, wallInHull, cutPlane);
-                        profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], wallIntersectionPathVisitor);
-                        if (!buildingIntersectionPathVisitor.doContinue() || !wallIntersectionPathVisitor.doContinue()) {
-                            convexHullIntersects = true;
-                        }
-                        if (!convexHullIntersects) {
+
+                        int inputPointsBefore = input.size();
+
+                        // Visit buildings that are between the provided hull points
+                        profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
+
+                        if (inputPointsBefore == input.size()) {
                             freeFieldSegments.add(freeFieldTestSegment);
                         } else {
+                            convexHullIntersects = true;
                             break;
                         }
                     }
@@ -1195,12 +1185,31 @@ public class PathFinder {
         return p;
     }
 
+    /**
+     * Remove points that are left or right of the provided segment
+     * @param sr Source receiver segment
+     * @param left Side to keep
+     * @param segmentsCoordinates Roof points
+     * @return Only points of the requested side
+     */
+    public static List<Coordinate> filterPointsBySide(LineSegment sr, boolean left,
+                                                      List<Coordinate> segmentsCoordinates) {
+        List<Coordinate> keptSegments = new ArrayList<>(segmentsCoordinates.size());
+        for(Coordinate vertex : segmentsCoordinates) {
+            int orientationIndex = sr.orientationIndex(vertex);
+            if((orientationIndex == 1 && left) || (orientationIndex == -1 && !left)) {
+                keptSegments.add(vertex);
+            }
+        }
+        return keptSegments;
+    }
 
     /**
      *
-     * @param plane
-     * @param roofPts
-     * @return
+     * @param plane 3D plane with position and normal vector
+     * @param roofPts Top altitude coordinates that create segments of verticals walls, these walls will be cut by
+     *               the plane.
+     * @return Remaining segments coordinates after the plane cutting
      */
     public static List<Coordinate> cutRoofPointsWithPlane(Plane plane, List<Coordinate> roofPts) {
         List<Coordinate> polyCut = new ArrayList<>(roofPts.size());
