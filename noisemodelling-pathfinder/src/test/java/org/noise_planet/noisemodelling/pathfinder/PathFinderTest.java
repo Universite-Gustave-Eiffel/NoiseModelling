@@ -1951,22 +1951,24 @@ public class PathFinderTest {
                 {0.0, 10, 10, 4.00, 0.05, 0.20, NaN}
         };
 
-        CutProfile SRProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
-        List<Integer> cutToGroundIndex = new ArrayList<>();
-        List<Coordinate> points2D = SRProfile.computePts2DGround(cutToGroundIndex);
+        CnossosPath directPropagationPath = propDataOut.getPropagationPaths().get(0);
+        SegmentPath SRSegment = directPropagationPath.getSRSegment();
+        CutProfile SRProfile = directPropagationPath.getCutProfile();
 
         // Asserts
         // SR
-        assertZProfil(expectedZ_profile, points2D);
+        assertZProfil(expectedZ_profile, Arrays.asList(SRSegment.getPoints2DGround()));
 
         // SO1
-        int diffraction2DIndexO1 = cutToGroundIndex.get(propDataOut.getPropagationPaths().get(0).difHPoints.get(0));
-        assertZProfil(expectedZProfileSO1, points2D.subList(0, diffraction2DIndexO1));
+        assertZProfil(expectedZProfileSO1,
+                Arrays.asList(directPropagationPath.getSegmentList().get(0).getPoints2DGround()));
 
         // OnR
-        int diffraction2DIndexON = cutToGroundIndex.get(propDataOut.getPropagationPaths().get(0).difHPoints.get(1));
-        assertZProfil(expectedZProfileOnR, points2D.subList(diffraction2DIndexON, points2D.size()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertZProfil(expectedZProfileOnR,
+                Arrays.asList(directPropagationPath.getSegmentList().get(
+                        directPropagationPath.getSegmentList().size() - 1).getPoints2DGround()));
+
+        assertPlanes(segmentsMeanPlanes0, directPropagationPath.getSegmentList());
     }
 
     @Test

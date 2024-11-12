@@ -755,6 +755,7 @@ public class PathFinder {
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
+        srPath.setPoints2DGround(pts2DGround);
         CnossosPath pathParameters = new CnossosPath();
         pathParameters.setCutProfile(cutProfile);
         pathParameters.setFavorable(true);
@@ -864,6 +865,22 @@ public class PathFinder {
             int i1Ground = cut2DGroundIndex.get(i1);
             final CutPoint cutPt0 = cutProfilePoints.get(i0);
             final CutPoint cutPt1 = cutProfilePoints.get(i1);
+            // ground index may be near the diffraction point
+            // mean ground plane is computed using from the bottom of the walls
+            if (i0Ground < i1Ground - 1) {
+                CutPoint nextPoint = cutProfilePoints.get(i0 + 1);
+                if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + epsilon
+                        && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0) {
+                    i0Ground += 1;
+                }
+            }
+            if (i1Ground - 1 > i0Ground) {
+                CutPoint previousPoint = cutProfilePoints.get(i1 - 1);
+                if (cutPt1.getCoordinate().distance(previousPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER +
+                        epsilon && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0) {
+                    i1Ground -= 1;
+                }
+            }
             // Create a profile for the segment i0->i1
             CutProfile profileSeg = new CutProfile();
             profileSeg.addCutPoints(cutProfilePoints.subList(i0, i1 + 1));
@@ -914,9 +931,11 @@ public class PathFinder {
                 // no diffraction over buildings/dem, we already computed SR segment
                 break;
             }
-            meanPlane = JTSUtility.getMeanPlaneCoefficients(Arrays.copyOfRange(pts2DGround, i0Ground,i1Ground + 1));
+            Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,i1Ground + 1);
+            meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
                     profileSeg.getSource().getGroundCoef());
+            path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
             if (i != pts.size() - 1) {
                 if (i != 1) {

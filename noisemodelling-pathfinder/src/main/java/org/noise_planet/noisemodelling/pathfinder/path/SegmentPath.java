@@ -15,8 +15,15 @@ import org.locationtech.jts.math.Vector3D;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SegmentPath {
+    // debug/unit test purpose data
+    /**
+     * Ground points used to compute mean ground plane
+     */
+    private transient Coordinate[] points2DGround = new Coordinate[0];
 
     //  given by user
     public double gPath;          // G coefficient for the considered path segment
@@ -56,6 +63,19 @@ public class SegmentPath {
     public double dPrime;
     public double deltaPrime;
 
+    /**`
+     * @return Ground points used to compute mean ground plane
+     */
+    public Coordinate[] getPoints2DGround() {
+        return points2DGround;
+    }
+
+    /**
+     * @param points2DGround Ground points used to compute mean ground plane
+     */
+    public void setPoints2DGround(Coordinate[] points2DGround) {
+        this.points2DGround = points2DGround;
+    }
 
     public void setDelta(Double delta) {
         this.delta = delta;
