@@ -202,16 +202,7 @@ public class ProfileBuilder {
      * @param coords Building footprint coordinates.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), -1);
+        return addBuilding(coords, -1);
     }
 
     /**
@@ -229,16 +220,7 @@ public class ProfileBuilder {
      * @param height Building height.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, double height) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), height, new ArrayList<>());
+        return addBuilding(coords, height, -1);
     }
 
     /**
@@ -256,16 +238,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, int id) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), id);
+        return addBuilding(coords, NaN, id);
     }
 
     /**
@@ -285,16 +258,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, double height, int id) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), height, new ArrayList<>(), id);
+        return addBuilding(coords, height, new ArrayList<>(), id);
     }
 
     /**
@@ -314,16 +278,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), height, alphas, -1);
+        return addBuilding(coords, height, alphas, -1);
     }
 
     /**
@@ -341,16 +296,7 @@ public class ProfileBuilder {
      * @param alphas Absorption coefficients.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), NaN, alphas, -1);
+        return addBuilding(coords, NaN, alphas, -1);
     }
 
     /**
@@ -370,16 +316,7 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(coords[0] != coords[l-1]) {
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), NaN, alphas, id);
+        return addBuilding(coords, NaN, alphas, id);
     }
 
     /**
@@ -409,9 +346,10 @@ public class ProfileBuilder {
     public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas, int id) {
         Coordinate[] polyCoords;
         int l = coords.length;
-        if(coords[0] != coords[l-1]) {
+        if(!coords[0].equals2D(coords[l-1])) {
+            // Not closed linestring
             polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l-1] = new Coordinate(coords[0]);
+            polyCoords[l] = new Coordinate(coords[0]);
         }
         else {
             polyCoords = coords;

@@ -77,22 +77,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             if(processedWall.getLineSegment().distance(intersectionLine) < ProfileBuilder.epsilon) {
                 addItem(id);
             }
-
-
-//            if(processedWall.type == ProfileBuilder.IntersectionType.BUILDING) {
-//                final Building b = buildings.get(id - 1);
-//                RectangleLineIntersector rect = new RectangleLineIntersector(b.getGeometry().getEnvelopeInternal());
-//                if (rect.intersects(p1, p2) && seg.intersects(b.getGeometry())) {
-//                    addItem(id);
-//                }
-//            } else if(processedWall.type == ProfileBuilder.IntersectionType.WALL) {
-//
-//                final Wall w = walls.get(id-1);
-//                RectangleLineIntersector rect = new RectangleLineIntersector(w.getLine().getEnvelopeInternal());
-//                if (rect.intersects(p1, p2) && seg.intersects(w.getLine())) {
-//                    addItem(id);
-//                }
-//            }
         }
     }
 

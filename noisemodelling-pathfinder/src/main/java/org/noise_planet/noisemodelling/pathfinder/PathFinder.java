@@ -318,11 +318,11 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
-            CnossosPath vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, LEFT, orientation);
+            CnossosPath vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, RIGHT, orientation);
             if (vEdgePath != null && vEdgePath.getPointList() != null) {
                 pathsParameters.add(vEdgePath);
             }
-            vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, RIGHT, orientation);
+            vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, LEFT, orientation);
             if (vEdgePath != null && vEdgePath.getPointList() != null) {
                 pathsParameters.add(vEdgePath);
             }
@@ -456,7 +456,7 @@ public class PathFinder {
      * @param receiverCoordinates Receiver coordinates.
      * @param sourceCoordinates Source coordinates.
      * @param data     Propagation data.
-     * @param side     Side to compute.
+     * @param side     Side to compute. From Source to receiver coordinates
      * @return The propagation path of the horizontal diffraction.
      */
     public CnossosPath computeVEdgeDiffraction(Coordinate receiverCoordinates, Coordinate sourceCoordinates,

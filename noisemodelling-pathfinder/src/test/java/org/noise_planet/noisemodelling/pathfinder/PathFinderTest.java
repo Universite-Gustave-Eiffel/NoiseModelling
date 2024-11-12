@@ -551,6 +551,10 @@ public class PathFinderTest {
         /* Table 42 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
+
+        assertEquals(3, propDataOut.getPropagationPaths().size());
+
+
         if(!profileBuilder.getWalls().isEmpty()){
             assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
         }
@@ -1869,8 +1873,6 @@ public class PathFinderTest {
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
-
-    // TODO rayons manquants left and right
     @Test
     public void TC22(){
 
@@ -1968,6 +1970,14 @@ public class PathFinderTest {
                 {0.04, -2.06, 3.06, 14.75, 170.26, 0.54, 0.79},
                 {0.0, 10, 10, 4.00, 0.05, 0.20, NaN}
         };
+        double [][] SRRightMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.06, -3.05, 4.04, 4.93, 204.22, 0.48, 0.58}
+        };
+        double [][] SRLeftMeanPlanes0 = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.06, -3.05, 4.04, 4.93, 206.55, 0.48, 0.58}
+        };
 
         // Must have direct path + diffraction left + diffraction right
         assertEquals(3, propDataOut.getPropagationPaths().size());
@@ -1991,13 +2001,15 @@ public class PathFinderTest {
         assertPlanes(segmentsMeanPlanes0, directPropagationPath.getSegmentList());
 
         // Check diffraction on horizontal plane
-        CnossosPath leftPropagationPath = propDataOut.getPropagationPaths().get(1);
-        assertZProfil(expectedZProfileLeft,
-                Arrays.asList(leftPropagationPath.getSRSegment().getPoints2DGround()));
-
-        CnossosPath rightPropagationPath = propDataOut.getPropagationPaths().get(2);
+        CnossosPath rightPropagationPath = propDataOut.getPropagationPaths().get(1);
         assertZProfil(expectedZProfileRight,
                 Arrays.asList(rightPropagationPath.getSRSegment().getPoints2DGround()));
+        assertPlanes(SRRightMeanPlanes0, rightPropagationPath.getSRSegment());
+
+        CnossosPath leftPropagationPath = propDataOut.getPropagationPaths().get(2);
+        assertZProfil(expectedZProfileLeft,
+                Arrays.asList(leftPropagationPath.getSRSegment().getPoints2DGround()));
+        assertPlanes(SRLeftMeanPlanes0, leftPropagationPath.getSRSegment());
 
 
     }
