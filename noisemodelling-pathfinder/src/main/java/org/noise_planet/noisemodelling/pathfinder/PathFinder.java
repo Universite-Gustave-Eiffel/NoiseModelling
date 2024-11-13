@@ -848,6 +848,7 @@ public class PathFinder {
                         if(wallAltitudeAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
                             // update the reflection position
                             currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
+                            pts2D.get(pointIndex).setY(interpolatedReflectionPoint.y);
                         } else {
                             // Reflection is not valid, so the whole path is not valid
                             return null;
@@ -916,12 +917,14 @@ public class PathFinder {
                     MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
                     double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
                             mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                    PointPath reflectionPoint = new PointPath(currentPoint, REFL, currentPoint.getzGround());
+                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), currentPoint.getWallAlpha(), REFL);
                     reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
+                    reflectionPoint.setWallId(currentPoint.getWallId());
                     points.add(reflectionPoint);
                 } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
-                    PointPath reflectionPoint = new PointPath(currentPoint, DIFV, currentPoint.getzGround());
+                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
                     pathParameters.difVPoints.add(pointIndex);
+                    reflectionPoint.setWallId(currentPoint.getWallId());
                     points.add(reflectionPoint);
                 }
             }

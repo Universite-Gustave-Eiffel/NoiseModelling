@@ -37,11 +37,29 @@ public class PointPath {
     public double obstacleZ; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
+        /**
+         * Source point
+         */
         SRCE,
+        /**
+         * Reflection on > 15° obstacle
+         */
         REFL,
+        /**
+         * Diffraction on vertical edge diffraction (horizontal plane)
+         */
         DIFV,
+        /**
+         * Diffraction on horizontal edges (vertical plane)
+         */
         DIFH,
+        /**
+         * Receiver point
+         */
         RECV,
+        /**
+         * Diffraction on vertical edge due to rayleigh Criterion
+         */
         DIFH_RCRIT;
     }
     public boolean bodyBarrier = false;
@@ -90,20 +108,6 @@ public class PointPath {
         this.altitude = altitude;
         this.alphaWall = alphaWall;
         this.type = type;
-    }
-
-    /**
-     * parameters given by user
-     * @param cutPoint CutPoint to use to generate the PointPath
-     * @param defaultType Default point type to use if the cut point is nor a source, nor a receiver.
-     */
-    public PointPath(CutPoint cutPoint, POINT_TYPE defaultType, double altitude) {
-        this.coordinate = cutPoint.getCoordinate();
-        this.altitude = altitude;
-        this.alphaWall = cutPoint.getWallAlpha();
-        this.type = cutPoint.getType().toPointType(defaultType);
-        this.wallId = cutPoint.getWallId();
-        this.buildingId = cutPoint.getBuildingId();
     }
 
     /**

@@ -1457,8 +1457,9 @@ public class PathFinderTest {
 
         PointPath reflectionPoint = reflectionPath.getPointList().get(2);
         assertEquals(PointPath.POINT_TYPE.REFL, reflectionPoint.type);
+
         assert3DCoordinateEquals("Reflection position TC18 ",
-                new Coordinate(131.86,54.55,12.0), reflectionPoint.coordinate, DELTA_COORDS);
+                new Coordinate(129.75,12), reflectionPoint.coordinate, DELTA_COORDS);
     }
 
     /**

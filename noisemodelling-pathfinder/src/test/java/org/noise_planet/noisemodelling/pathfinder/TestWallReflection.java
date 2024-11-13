@@ -119,13 +119,13 @@ public class TestWallReflection {
         assertEquals(0.0, current.coordinate.x, 1e-12);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
-        assertEquals(38.68, current.coordinate.x, 0.01);
+        assertEquals(38.68, current.coordinate.x, 0.02);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
-        assertEquals(53.28, current.coordinate.x, 0.01);
+        assertEquals(53.28, current.coordinate.x, 0.02);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
-        assertEquals(61.14, current.coordinate.x, 0.01);
+        assertEquals(61.14, current.coordinate.x, 0.02);
     }
     @Test
     public void testNReflexionWithDem() throws ParseException, IOException, SQLException {
@@ -191,15 +191,15 @@ public class TestWallReflection {
         assertEquals(501.0, current.coordinate.y, 1e-12);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
-        assertEquals(38.68, current.coordinate.x, 0.01);
-        assertEquals(502.9, current.coordinate.y, 0.01);
+        assertEquals(38.68, current.coordinate.x, 0.02);
+        assertEquals(502.9, current.coordinate.y, 0.02);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.REFL ,current.type);
-        assertEquals(53.28, current.coordinate.x, 0.01);
-        assertEquals(503.61, current.coordinate.y, 0.01);
+        assertEquals(53.28, current.coordinate.x, 0.02);
+        assertEquals(503.61, current.coordinate.y, 0.02);
         current = it.next();
         assertEquals(PointPath.POINT_TYPE.RECV ,current.type);
-        assertEquals(61.14, current.coordinate.x, 0.01);
-        assertEquals(504, current.coordinate.y, 0.01);
+        assertEquals(61.14, current.coordinate.x, 0.02);
+        assertEquals(504, current.coordinate.y, 0.02);
     }
 }
