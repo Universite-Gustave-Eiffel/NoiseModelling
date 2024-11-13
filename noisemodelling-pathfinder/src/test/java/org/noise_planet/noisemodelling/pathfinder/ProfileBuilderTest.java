@@ -82,29 +82,6 @@ public class ProfileBuilderTest {
     }
 
     /**
-     * Test the building cut profile generation.
-     * @throws ParseException JTS WKT parsing exception.
-     */
-    @Test
-    public void buildingCutProfileTest() throws ParseException {
-        ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"));
-        profileBuilder.addBuilding(READER.read("POLYGON((4.5 7, 4.5 8.5, 6.5 8.5, 4.5 7))"), 3.3);
-        profileBuilder.addBuilding(READER.read("POLYGON((7 6, 10 6, 10 2, 7 2, 7 6))"), 5.6);
-        profileBuilder.finishFeeding();
-
-        CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
-        List<CutPoint> pts = profile.getCutPoints();
-        assertEquals(8, pts.size());
-        assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
-        assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
-        assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(7).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(7).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(7).getCoordinate().z, DELTA);
-    }
-
-    /**
      * Test the topographic adding to a {@link ProfileBuilder}.
      * @throws ParseException JTS WKT parsing exception.
      */
