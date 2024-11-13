@@ -871,14 +871,16 @@ public class PathFinder {
             if (i0Ground < i1Ground - 1) {
                 CutPoint nextPoint = cutProfilePoints.get(i0 + 1);
                 if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + epsilon
-                        && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0) {
+                        && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0
+                && (nextPoint.getType().equals(WALL) || nextPoint.getType().equals(BUILDING))) {
                     i0Ground += 1;
                 }
             }
             if (i1Ground - 1 > i0Ground) {
                 CutPoint previousPoint = cutProfilePoints.get(i1 - 1);
                 if (cutPt1.getCoordinate().distance(previousPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER +
-                        epsilon && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0) {
+                        epsilon && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0
+                        && (previousPoint.getType().equals(WALL) || previousPoint.getType().equals(BUILDING))) {
                     i1Ground -= 1;
                 }
             }

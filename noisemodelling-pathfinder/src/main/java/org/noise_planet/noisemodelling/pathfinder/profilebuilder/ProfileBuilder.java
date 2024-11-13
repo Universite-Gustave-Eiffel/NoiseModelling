@@ -983,9 +983,10 @@ public class ProfileBuilder {
                         new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
                                 previousZGround.getzGround()),
                         new Coordinate(nextPoint.coordinate.x, nextPoint.coordinate.y, nextPoint.getzGround()));
-                if(Double.isNaN(cutPoint.coordinate.z)) {
+                if(Double.isNaN(cutPoint.coordinate.z) || cutPoint.getType().equals(GROUND_EFFECT)) {
                     // Bottom of walls are set to NaN z because it can be computed here at low cost
                     // (without fetch dem r-tree)
+                    // ground effect change points is taking the Z of ground in coordinate too
                     cutPoint.coordinate.setZ(cutPoint.zGround);
                 }
             } else {

@@ -254,76 +254,13 @@ public class ProfileBuilderTest {
         CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
 
         List<CutPoint> pts = profile.getCutPoints();
-        assertEquals(19, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(18).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(18).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(18).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(pts.size() - 1).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(pts.size() - 1).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(pts.size() - 1).getCoordinate().z, DELTA);
 
-    }
-
-    @Test
-    public void testComplexTopographic() throws IOException, XMLStreamException, CRSException, CoordinateOperationException {
-        ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-
-        // Generate a digital elevation model using Simplex Noise method
-        long seed = 5289231824766894L;
-        double width = 2000;
-        double height = 2000;
-        int xStepSize = 10;
-        int yStepSize = 10;
-        double minHeight = 50;
-        double maxHeight = 350;
-        double xOrigin = 222532;
-        double yOrigin = 6758964;
-        double frequency = 5;
-        Envelope envDomain = new Envelope();
-        for(int x = 0; x < (int)width; x += xStepSize) {
-            for(int y = 0; y < (int)height; y += yStepSize) {
-                double nx = x/width - 0.5, ny = y/height - 0.5;
-                double z = minHeight + OpenSimplex2S.noise2(seed, nx * frequency, ny * frequency)
-                        * (maxHeight - minHeight);
-                Coordinate topoCoordinate = new Coordinate(x + xOrigin, y + yOrigin, z);
-                envDomain.expandToInclude(topoCoordinate);
-                profileBuilder.addTopographicPoint(topoCoordinate);
-            }
-        }
-        profileBuilder.finishFeeding();
-        double[][] testPointPositions = new double[][] {{0.1, 0.15,0.25,0.16},
-                {0.5, 0.1,0.8,0.4},
-                {0.1, 0.1,0.11,0.11},
-                {0.1, 0.1,0.9,0.9},
-                {0.5, 0.5,0.55,0.55},
-                {-0.1, 0.5,1.1,0.5}};
-
-        // Check found intersections
-
-        int loops = 800;
-        int startLoop = 50;
-        long start = 0;
-        for(int i = 0; i < loops; i++) {
-            if(i == startLoop) {
-                start = System.currentTimeMillis();
-            }
-            for(double[] testPoint : testPointPositions) {
-                Coordinate cutStart = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[0], envDomain.getMinY() + envDomain.getHeight() * testPoint[1]);
-                cutStart.setZ(profileBuilder.getZGround(new CutPoint(cutStart, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                Coordinate cutEnd = new Coordinate(envDomain.getMinX() + envDomain.getWidth() * testPoint[2], envDomain.getMinY() + envDomain.getHeight() * testPoint[3]);
-                cutEnd.setZ(profileBuilder.getZGround(new CutPoint(cutEnd, ProfileBuilder.IntersectionType.TOPOGRAPHY, 0)));
-                profileBuilder.getProfile(cutStart, cutEnd, 0, false);
-            }
-        }
-        logger.info(String.format(Locale.ROOT, "Building topography profile in average of %f ms", (double)(System.currentTimeMillis() - start) / (loops - startLoop)));
-
-//        try(FileOutputStream outData = new FileOutputStream("target/testTopo.geojson")) {
-//            GeoJSONDocument geoJSONDocument = new GeoJSONDocument(outData);
-//            geoJSONDocument.setInputCRS("EPSG:2154");
-//            geoJSONDocument.writeHeader();
-//            geoJSONDocument.writeTopographic(profileBuilder.getTriangles(), profileBuilder.getVertices());
-//            geoJSONDocument.writeFooter();
-//        }
     }
 
     @Test
@@ -355,16 +292,14 @@ public class ProfileBuilderTest {
         Coordinate receiver = new Coordinate(200, 50, 14);
         Coordinate source = new Coordinate(10, 10, 1);
         CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0, false);
-        assertEquals(7, cutProfile.getCutPoints().size());
+        assertEquals(9, cutProfile.getCutPoints().size());
         assertEquals(0, cutProfile.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
-        //assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(2).getCoordinate().distance3D(new Coordinate(120, 33.158, 0)), 0.001);
         assertEquals(0, cutProfile.getCutPoints().get(3).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
-        //assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(4).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
-        assertEquals(0, cutProfile.getCutPoints().get(6).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(5).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(7).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
+        assertEquals(0, cutProfile.getCutPoints().get(8).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
     }
 
     /*

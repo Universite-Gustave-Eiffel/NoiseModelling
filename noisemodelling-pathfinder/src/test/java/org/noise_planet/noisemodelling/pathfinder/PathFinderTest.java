@@ -381,11 +381,11 @@ public class PathFinderTest {
         };
 
         /* Table 23 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(112.41, 0.00));
-        expectedZ_profile.add(new Coordinate(178.84, 10.00));
-        expectedZ_profile.add(new Coordinate(194.16, 10.00));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(112.41, 0.00));
+        expectedZProfile.add(new Coordinate(178.84, 10.00));
+        expectedZProfile.add(new Coordinate(194.16, 10.00));
 
         /* Table 25 */
         Coordinate expectedSPrime =new Coordinate(0.31,-5.65);
@@ -408,7 +408,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
         assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
@@ -460,12 +460,12 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 33 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(170.23, 0.00));
-        expectedZ_profile.add(new Coordinate(170.23, 6.00));
-        expectedZ_profile.add(new Coordinate(170.23, 0.00));
-        expectedZ_profile.add(new Coordinate(194.16, 0.00));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(170.23, 0.00));
+        expectedZProfile.add(new Coordinate(170.23, 6.00));
+        expectedZProfile.add(new Coordinate(170.23, 0.00));
+        expectedZProfile.add(new Coordinate(194.16, 0.00));
 
         /* Table 34 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
@@ -488,7 +488,7 @@ public class PathFinderTest {
 
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
         try {
             exportScene("target/T07.kml", profileBuilder, propDataOut);
@@ -541,12 +541,12 @@ public class PathFinderTest {
         //Expected values
 
         /*Table 41 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(170.49, 0.00));
-        expectedZ_profile.add(new Coordinate(170.49, 6.00));
-        expectedZ_profile.add(new Coordinate(170.49, 0.00));
-        expectedZ_profile.add(new Coordinate(194.16, 0.00));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(170.49, 0.00));
+        expectedZProfile.add(new Coordinate(170.49, 6.00));
+        expectedZProfile.add(new Coordinate(170.49, 0.00));
+        expectedZProfile.add(new Coordinate(194.16, 0.00));
 
         /* Table 42 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
@@ -576,7 +576,7 @@ public class PathFinderTest {
 
         //Assertion
 
-        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
@@ -628,14 +628,14 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 59 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(112.41, 0.00));
-        expectedZ_profile.add(new Coordinate(170.49, 8.74));
-        expectedZ_profile.add(new Coordinate(170.49, 16.63));
-        expectedZ_profile.add(new Coordinate(170.49, 8.74));
-        expectedZ_profile.add(new Coordinate(178.84, 10.00));
-        expectedZ_profile.add(new Coordinate(194.16, 10.00));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(112.41, 0.00));
+        expectedZProfile.add(new Coordinate(170.49, 8.74));
+        expectedZProfile.add(new Coordinate(170.49, 16.63));
+        expectedZProfile.add(new Coordinate(170.49, 8.74));
+        expectedZProfile.add(new Coordinate(178.84, 10.00));
+        expectedZProfile.add(new Coordinate(194.16, 10.00));
 
         /* Table 61 */
         Coordinate expectedSPrime =new Coordinate(0.24,-4.92);
@@ -660,7 +660,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
@@ -714,13 +714,13 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 74 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(5, 0.00));
-        expectedZ_profile.add(new Coordinate(5, 10.00));
-        expectedZ_profile.add(new Coordinate(15, 10));
-        expectedZ_profile.add(new Coordinate(15, 0));
-        expectedZ_profile.add(new Coordinate(20, 0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(5, 0.00));
+        expectedZProfile.add(new Coordinate(5, 10.00));
+        expectedZProfile.add(new Coordinate(15, 10));
+        expectedZProfile.add(new Coordinate(15, 0));
+        expectedZProfile.add(new Coordinate(20, 0));
 
         /* Table 75 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -741,7 +741,7 @@ public class PathFinderTest {
 
         //Assertion
 
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
@@ -791,13 +791,13 @@ public class PathFinderTest {
         // Expected values
 
         /* Table 85 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(5, 0.00));
-        expectedZ_profile.add(new Coordinate(5, 10.00));
-        expectedZ_profile.add(new Coordinate(15, 10.00));
-        expectedZ_profile.add(new Coordinate(15, 0));
-        expectedZ_profile.add(new Coordinate(20, 0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(5, 0.00));
+        expectedZProfile.add(new Coordinate(5, 10.00));
+        expectedZProfile.add(new Coordinate(15, 10.00));
+        expectedZProfile.add(new Coordinate(15, 0));
+        expectedZProfile.add(new Coordinate(20, 0));
 
         List<Coordinate> expectedZProfileRight = Arrays.asList(
                 new Coordinate(0,0),
@@ -837,7 +837,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
 
         assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
@@ -888,20 +888,24 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         //Expected values
 
         /* Table 100 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(12.26, 0.00));
-        expectedZ_profile.add(new Coordinate(12.26, 10.00));
-        expectedZ_profile.add(new Coordinate(18.82, 10));
-        expectedZ_profile.add(new Coordinate(18.82, 0));
-        expectedZ_profile.add(new Coordinate(31.62, 0));
+        List<Coordinate> expectedZProfile = Arrays.asList(
+                    new Coordinate(0.00, 0.00),
+                    new Coordinate(12.26, 0.00),
+                    new Coordinate(12.26, 10.00),
+                    new Coordinate(18.82, 10),
+                    new Coordinate(18.82, 0),
+                    new Coordinate(31.62, 0));
+
+        List<Coordinate> expectedZProfileSO = Arrays.asList(
+                    new Coordinate(0.00, 0.00),
+                    new Coordinate(12.26, 0.00));
+
+        List<Coordinate> expectedZProfileOnR = Arrays.asList(
+                new Coordinate(18.82, 0),
+                new Coordinate(31.62, 0));
 
         /* Table 101 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -921,8 +925,14 @@ public class PathFinderTest {
         //Assertion
         assertEquals(3, propDataOut.getPropagationPaths().size());
 
-        assertZProfil(expectedZ_profile,result);
+        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileOnR, Arrays.asList(directPath.getSegmentList().
+                get(directPath.getSegmentList().size() - 1).getPoints2DGround()));
+
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
 
@@ -981,14 +991,14 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 117 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(112.41, 0.00));
-        expectedZ_profile.add(new Coordinate(164.07, 7.8));
-        expectedZ_profile.add(new Coordinate(164.07, 30.00));
-        expectedZ_profile.add(new Coordinate(181.83, 30));
-        expectedZ_profile.add(new Coordinate(181.83, 10));
-        expectedZ_profile.add(new Coordinate(194.16, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(112.41, 0.00));
+        expectedZProfile.add(new Coordinate(164.07, 7.8));
+        expectedZProfile.add(new Coordinate(164.07, 30.00));
+        expectedZProfile.add(new Coordinate(181.83, 30));
+        expectedZProfile.add(new Coordinate(181.83, 10));
+        expectedZProfile.add(new Coordinate(194.16, 10));
 
         /* Table 118 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1006,7 +1016,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
@@ -1058,13 +1068,13 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 132 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(5.39, 0.00));
-        expectedZ_profile.add(new Coordinate(5.39, 10.00));
-        expectedZ_profile.add(new Coordinate(11.49, 10.0));
-        expectedZ_profile.add(new Coordinate(11.49, 0.0));
-        expectedZ_profile.add(new Coordinate(19.72, 0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(5.39, 0.00));
+        expectedZProfile.add(new Coordinate(5.39, 10.00));
+        expectedZProfile.add(new Coordinate(11.49, 10.0));
+        expectedZProfile.add(new Coordinate(11.49, 0.0));
+        expectedZProfile.add(new Coordinate(19.72, 0));
 
         /* Table 133 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1084,7 +1094,7 @@ public class PathFinderTest {
 
         //Assertion
         // Wrong value of z1 in Cnossos document for the 3 paths
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
@@ -1144,21 +1154,21 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 148 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.00, 0.00));
-        expectedZ_profile.add(new Coordinate(5.02, 0.00));
-        expectedZ_profile.add(new Coordinate(5.02, 8.00));
-        expectedZ_profile.add(new Coordinate(15.07, 8.0));
-        expectedZ_profile.add(new Coordinate(15.08, 0.0));
-        expectedZ_profile.add(new Coordinate(24.81, 0.0));
-        expectedZ_profile.add(new Coordinate(24.81, 12.0));
-        expectedZ_profile.add(new Coordinate(30.15, 12.00));
-        expectedZ_profile.add(new Coordinate(30.15, 0.00));
-        expectedZ_profile.add(new Coordinate(37.19, 0.0));
-        expectedZ_profile.add(new Coordinate(37.19, 10.0));
-        expectedZ_profile.add(new Coordinate(41.52, 10.0));
-        expectedZ_profile.add(new Coordinate(41.52, 0.0));
-        expectedZ_profile.add(new Coordinate(50.25, 0.0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(5.02, 0.00));
+        expectedZProfile.add(new Coordinate(5.02, 8.00));
+        expectedZProfile.add(new Coordinate(15.07, 8.0));
+        expectedZProfile.add(new Coordinate(15.08, 0.0));
+        expectedZProfile.add(new Coordinate(24.81, 0.0));
+        expectedZProfile.add(new Coordinate(24.81, 12.0));
+        expectedZProfile.add(new Coordinate(30.15, 12.00));
+        expectedZProfile.add(new Coordinate(30.15, 0.00));
+        expectedZProfile.add(new Coordinate(37.19, 0.0));
+        expectedZProfile.add(new Coordinate(37.19, 10.0));
+        expectedZProfile.add(new Coordinate(41.52, 10.0));
+        expectedZProfile.add(new Coordinate(41.52, 0.0));
+        expectedZProfile.add(new Coordinate(50.25, 0.0));
 
         /* Table 149 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1177,7 +1187,7 @@ public class PathFinderTest {
 
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
         assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment()); // left
         //assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment()); // right : error in value of b cnossos
@@ -1225,11 +1235,11 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 163 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(112.41, 0.0));
-        expectedZ_profile.add(new Coordinate(178.84, 10));
-        expectedZ_profile.add(new Coordinate(194.16, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(112.41, 0.0));
+        expectedZProfile.add(new Coordinate(178.84, 10));
+        expectedZProfile.add(new Coordinate(194.16, 10));
 
         /* Table 169 */
         List<Coordinate> expectedZProfileReflection = new ArrayList<>();
@@ -1264,7 +1274,7 @@ public class PathFinderTest {
 
         // Check SR direct line
         List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertEquals(2, propDataOut.getPropagationPaths().size());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
 
@@ -1324,14 +1334,14 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 178 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(112.41, 0.0));
-        expectedZ_profile.add(new Coordinate(178.84, 10));
-        expectedZ_profile.add(new Coordinate(194.16, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(112.41, 0.0));
+        expectedZProfile.add(new Coordinate(178.84, 10));
+        expectedZProfile.add(new Coordinate(194.16, 10));
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
 
         // Test R-CRIT table 179
         Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
@@ -1419,15 +1429,15 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 193  Z Profile SR */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(112.41, 0.0));
-        expectedZ_profile.add(new Coordinate(178.84, 10));
-        expectedZ_profile.add(new Coordinate(194.16, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(112.41, 0.0));
+        expectedZProfile.add(new Coordinate(178.84, 10));
+        expectedZProfile.add(new Coordinate(194.16, 10));
 
         CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
         List<Coordinate> result = cutProfile.computePts2DGround();
-        assertZProfil(expectedZ_profile, result);
+        assertZProfil(expectedZProfile, result);
 
 
         /* Table 194 */
@@ -1508,15 +1518,15 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 193  Z Profile SR */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(112.41, 0.0));
-        expectedZ_profile.add(new Coordinate(178.84, 10));
-        expectedZ_profile.add(new Coordinate(194.16, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(112.41, 0.0));
+        expectedZProfile.add(new Coordinate(178.84, 10));
+        expectedZProfile.add(new Coordinate(194.16, 10));
 
         CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
         List<Coordinate> result = cutProfile.computePts2DGround();
-        assertZProfil(expectedZ_profile, result);
+        assertZProfil(expectedZProfile, result);
 
 
         /* Table 194 */
@@ -1595,7 +1605,7 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 208 */
-        List<Coordinate> expectedZ_profile = Arrays.asList(
+        List<Coordinate> expectedZProfile = Arrays.asList(
                 new Coordinate(0.00, 0.00),
                 new Coordinate(100.55, 0.00),
                 new Coordinate(100.55, 7.00),
@@ -1665,7 +1675,7 @@ public class PathFinderTest {
         assertEquals(3, propDataOut.getPropagationPaths().size());
 
         //Assertion
-        assertZProfil(expectedZ_profile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
         assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
         // Error in ISO
         // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
@@ -1730,11 +1740,11 @@ public class PathFinderTest {
         //Expected values
 
         /* Table 221 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(110.34, 0.0));
-        expectedZ_profile.add(new Coordinate(175.54, 10));
-        expectedZ_profile.add(new Coordinate(190.59, 10));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(110.34, 0.0));
+        expectedZProfile.add(new Coordinate(175.54, 10));
+        expectedZProfile.add(new Coordinate(190.59, 10));
 
         /* Table 230 S -> R TC21 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1743,7 +1753,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }
 
@@ -1928,7 +1938,7 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 248 */
-        List<Coordinate> expectedZ_profile = Arrays.asList(
+        List<Coordinate> expectedZProfile = Arrays.asList(
             new Coordinate(0.0, 0.0),
             new Coordinate(110.39, 0.0),
             new Coordinate(169.60, 9.08),
@@ -1988,7 +1998,7 @@ public class PathFinderTest {
 
         // Asserts
         // SR
-        assertZProfil(expectedZ_profile, Arrays.asList(SRSegment.getPoints2DGround()));
+        assertZProfil(expectedZProfile, Arrays.asList(SRSegment.getPoints2DGround()));
 
         // SO1
         assertZProfil(expectedZProfileSO1,
@@ -2081,13 +2091,13 @@ public class PathFinderTest {
         // Expected Value
 
         /* Table 264 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(14.21, 0.0));
-        expectedZ_profile.add(new Coordinate(22.64, 5.0));
-        expectedZ_profile.add(new Coordinate(23.98, 5.0));
-        expectedZ_profile.add(new Coordinate(32.30, 0.0));
-        expectedZ_profile.add(new Coordinate(70.03, 0.0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(14.21, 0.0));
+        expectedZProfile.add(new Coordinate(22.64, 5.0));
+        expectedZProfile.add(new Coordinate(23.98, 5.0));
+        expectedZProfile.add(new Coordinate(32.30, 0.0));
+        expectedZProfile.add(new Coordinate(70.03, 0.0));
 
         /* Table 268 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -2101,7 +2111,7 @@ public class PathFinderTest {
             throw new RuntimeException(e);
         }
         assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
 
 
     }
@@ -2172,34 +2182,34 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 279 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(14.46, 0.0));
-        expectedZ_profile.add(new Coordinate(23.03, 5.0));
-        expectedZ_profile.add(new Coordinate(24.39, 5.0));
-        expectedZ_profile.add(new Coordinate(32.85, 0.0));
-        expectedZ_profile.add(new Coordinate(45.10, 0.0));
-        expectedZ_profile.add(new Coordinate(45.10, 6.0));
-        expectedZ_profile.add(new Coordinate(60.58, 6.0));
-        expectedZ_profile.add(new Coordinate(60.58, 0.0));
-        expectedZ_profile.add(new Coordinate(68.15, 0.0));
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.0, 0.0));
+        expectedZProfile.add(new Coordinate(14.46, 0.0));
+        expectedZProfile.add(new Coordinate(23.03, 5.0));
+        expectedZProfile.add(new Coordinate(24.39, 5.0));
+        expectedZProfile.add(new Coordinate(32.85, 0.0));
+        expectedZProfile.add(new Coordinate(45.10, 0.0));
+        expectedZProfile.add(new Coordinate(45.10, 6.0));
+        expectedZProfile.add(new Coordinate(60.58, 6.0));
+        expectedZProfile.add(new Coordinate(60.58, 0.0));
+        expectedZProfile.add(new Coordinate(68.15, 0.0));
 
 
         /* Table 287 Z-Profile SO */
-        List<Coordinate> expectedZ_profileSO = new ArrayList<>();
-        expectedZ_profileSO.add(new Coordinate(0.0, 0.0));
-        expectedZ_profileSO.add(new Coordinate(14.13, 0.0));
-        expectedZ_profileSO.add(new Coordinate(22.51, 5.0));
+        List<Coordinate> expectedZProfileSO = new ArrayList<>();
+        expectedZProfileSO.add(new Coordinate(0.0, 0.0));
+        expectedZProfileSO.add(new Coordinate(14.13, 0.0));
+        expectedZProfileSO.add(new Coordinate(22.51, 5.0));
 
-        List<Coordinate> expectedZ_profileOR = new ArrayList<>();
-        expectedZ_profileOR.add(new Coordinate(22.51, 5.0));
-        expectedZ_profileOR.add(new Coordinate(23.84, 5.0));
-        expectedZ_profileOR.add(new Coordinate(32.13, 0.0));
-        expectedZ_profileOR.add(new Coordinate(43.53, 0.0));
-        expectedZ_profileOR.add(new Coordinate(70.74, 0.0));
+        List<Coordinate> expectedZProfileOR = new ArrayList<>();
+        expectedZProfileOR.add(new Coordinate(22.51, 5.0));
+        expectedZProfileOR.add(new Coordinate(23.84, 5.0));
+        expectedZProfileOR.add(new Coordinate(32.13, 0.0));
+        expectedZProfileOR.add(new Coordinate(43.53, 0.0));
+        expectedZProfileOR.add(new Coordinate(70.74, 0.0));
 
         List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
-        assertZProfil(expectedZ_profile,result);
+        assertZProfil(expectedZProfile,result);
 
         /* Table 280 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -2264,28 +2274,28 @@ public class PathFinderTest {
         // Expected Values
 
         /* Table 300 */
-        List<Coordinate> expectedZ_profileSO = Arrays.asList(
+        List<Coordinate> expectedZProfileSO = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(23.77, 0.0));
 
-        List<Coordinate> expectedZ_profileONR = Arrays.asList(
+        List<Coordinate> expectedZProfileONR = Arrays.asList(
                 new Coordinate(60.58, 0.0),
                 new Coordinate(68.15, 0.0));
 
-        List<Coordinate> expectedZ_profileRight = Arrays.asList(
+        List<Coordinate> expectedZProfileRight = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(27.10, 0.0),
                 new Coordinate(81.02, 0.0),
                 new Coordinate(89.03, 0.0),
                 new Coordinate(101.05, 0.0));
 
-        List<Coordinate> expectedZ_profileLeft = Arrays.asList(
+        List<Coordinate> expectedZProfileLeft = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(23.64, 0.0),
                 new Coordinate(70.83, 0.0));
 
         /* Table 301 */
-        List<Coordinate> expectedZ_profile = Arrays.asList(
+        List<Coordinate> expectedZProfile = Arrays.asList(
             new Coordinate(0.0, 0.0),
             new Coordinate(23.77, 0.0),
             new Coordinate(23.77, 5),
@@ -2319,18 +2329,18 @@ public class PathFinderTest {
         };
 
         CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertZProfil(expectedZ_profile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
-        assertZProfil(expectedZ_profileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
-        assertZProfil(expectedZ_profileONR, Arrays.asList(directPath.getSegmentList().get(
+        assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileONR, Arrays.asList(directPath.getSegmentList().get(
                 directPath.getSegmentList().size() - 1).getPoints2DGround()));
         assertPlanes(segmentsMeanPlanes0, directPath.getSegmentList());
 
         CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
-        assertZProfil(expectedZ_profileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()));
 
 
         CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
-        assertZProfil(expectedZ_profileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()));
 
 
         CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(3);
@@ -2577,7 +2587,7 @@ public class PathFinderTest {
         assertEquals(3, propDataOut.getPropagationPaths().size());
 
         /* Table 346 */
-        List<Coordinate> expectedZ_profile = Arrays.asList(
+        List<Coordinate> expectedZProfile = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(92.46, 0.0),
                 new Coordinate(92.46, 6.0),
@@ -2664,7 +2674,7 @@ public class PathFinderTest {
 
         CnossosPath SR = propDataOut.getPropagationPaths().get(0);
 
-        assertZProfil(expectedZ_profile, Arrays.asList(SR.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfile, Arrays.asList(SR.getSRSegment().getPoints2DGround()));
         assertZProfil(expectedZProfileSO, Arrays.asList(SR.getSegmentList().get(0).getPoints2DGround()));
         assertZProfil(expectedZProfileOR, Arrays.asList(
                 SR.getSegmentList().get(SR.getSegmentList().size() - 1).getPoints2DGround()));
@@ -2757,13 +2767,13 @@ public class PathFinderTest {
         }
     }
 
-    private static void assertZProfil(List<Coordinate> expectedZ_profile, List<Coordinate> actualZ_profile) {
-        if (expectedZ_profile.size() != actualZ_profile.size()){
-            assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZ_profile.size(), actualZ_profile.size());
+    private static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
+        if (expectedZProfile.size() != actualZ_profile.size()){
+            assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZProfile.size(), actualZ_profile.size());
         }
         for (int i = 0; i < actualZ_profile.size(); i++) {
-            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZ_profile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
-            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZ_profile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
+            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZProfile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
+            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZProfile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
         }
     }
 
