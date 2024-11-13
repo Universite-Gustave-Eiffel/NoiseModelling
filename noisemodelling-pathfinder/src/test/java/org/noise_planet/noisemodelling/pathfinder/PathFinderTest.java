@@ -2571,31 +2571,78 @@ public class PathFinderTest {
 
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
         // Expected Values
 
+        assertEquals(3, propDataOut.getPropagationPaths().size());
 
         /* Table 346 */
-        List<Coordinate> expectedZ_profile = new ArrayList<>();
-        expectedZ_profile.add(new Coordinate(0.0, 0.0));
-        expectedZ_profile.add(new Coordinate(92.45, 0.0));
-        expectedZ_profile.add(new Coordinate(108.87, 0.0));
-        expectedZ_profile.add(new Coordinate(169.34, 0.0));
-        expectedZ_profile.add(new Coordinate(189.71, 0.0));
-        expectedZ_profile.add(new Coordinate(338.36, 0.0));
-        expectedZ_profile.add(new Coordinate(353.88, 0.0));
-        expectedZ_profile.add(new Coordinate(400.5, 0.0));
-        expectedZ_profile.add(new Coordinate(415.52, 0.0));
-        expectedZ_profile.add(new Coordinate(442.3, 0.0));
-        expectedZ_profile.add(new Coordinate(457.25, 0.0));
-        expectedZ_profile.add(new Coordinate(730.93, 0.0));
-        expectedZ_profile.add(new Coordinate(748.07, 0.0));
-        expectedZ_profile.add(new Coordinate(976.22, 0.0));
-        expectedZ_profile.add(new Coordinate(990.91, 0.0));
-        expectedZ_profile.add(new Coordinate(1001.25, 0.0));
+        List<Coordinate> expectedZ_profile = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(92.46, 0.0),
+                new Coordinate(92.46, 6.0),
+                new Coordinate(108.88, 6.0),
+                new Coordinate(108.88, 0.0),
+                new Coordinate(169.35, 0.0),
+                new Coordinate(169.35, 10.0),
+                new Coordinate(189.72, 10.0),
+                new Coordinate(189.72, 0),
+                new Coordinate(338.36, 0.0),
+                new Coordinate(338.36, 10.0),
+                new Coordinate(353.88, 10.0),
+                new Coordinate(353.88, 0.0),
+                new Coordinate(400.5, 0.0),
+                new Coordinate(400.5, 9.0),
+                new Coordinate(415.52, 9.0),
+                new Coordinate(415.52, 0.0),
+                new Coordinate(442.3, 0.0),
+                new Coordinate(442.3, 12.0),
+                new Coordinate(457.25, 12.0),
+                new Coordinate(457.25, 0.0),
+                new Coordinate(730.93, 0.0),
+                new Coordinate(730.93, 14.0),
+                new Coordinate(748.07, 14.0),
+                new Coordinate(748.07, 0.0),
+                new Coordinate(976.22, 0.0),
+                new Coordinate(976.22, 8.0),
+                new Coordinate(990.91, 8.0),
+                new Coordinate(990.91, 0.0),
+                new Coordinate(1001.25, 0.0));
+
+        /* Table 347 */
+        List<Coordinate> expectedZProfileSO = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(92.46, 0.0),
+                new Coordinate(92.46, 6.0),
+                new Coordinate(108.88, 6.0),
+                new Coordinate(108.88, 0.0),
+                new Coordinate(169.35, 0.0));
+
+        List<Coordinate> expectedZProfileOR = Arrays.asList(
+                new Coordinate(990.91, 0.0),
+                new Coordinate(1001.25, 0.0));
+
+        List<Coordinate> expectedZProfileRight = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(119.89, 0.0),
+                new Coordinate(406.93, 0.0),
+                new Coordinate(421.93, 0.0),
+                new Coordinate(780.00, 0.0),
+                new Coordinate(1003.29, 0.0),
+                new Coordinate(1028.57, 0.0));
+
+        List<Coordinate> expectedZProfileLeft = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(168.36, 0.0),
+                new Coordinate(256.17, 0.0),
+                new Coordinate(256.17, 14.0),
+                new Coordinate(276.59, 14.0),
+                new Coordinate(276.59, 0.0),
+                new Coordinate(356.24, 0.0),
+                new Coordinate(444.81, 0.0),
+                new Coordinate(525.11, 0.0),
+                new Coordinate(988.63, 0.0),
+                new Coordinate(1002.95, 0.0),
+                new Coordinate(1022.31, 0.0));
 
         /* Table 348 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -2613,9 +2660,27 @@ public class PathFinderTest {
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.68, 3.32, 1.12, 1022.31, 0.49, 0.49}
         };
-        assertZProfil(expectedZ_profile,result);
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1,propDataOut.getPropagationPaths().get(1).getSRSegment());
+
+        CnossosPath SR = propDataOut.getPropagationPaths().get(0);
+
+        assertZProfil(expectedZ_profile, Arrays.asList(SR.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(SR.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileOR, Arrays.asList(
+                SR.getSegmentList().get(SR.getSegmentList().size() - 1).getPoints2DGround()));
+
+
+
+        assertPlanes(segmentsMeanPlanes0,SR.getSegmentList());
+
+        CnossosPath pathRight = propDataOut.getPropagationPaths().get(1);
+        assertZProfil(expectedZProfileRight, Arrays.asList(pathRight.getSRSegment().getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanes1, pathRight.getSRSegment());
+
+
+        CnossosPath pathLeft = propDataOut.getPropagationPaths().get(2);
+        // Error in CNOSSOS unit test, left diffraction is going over a building but not in their 3D view !
+        // Why the weird left path in homogeneous ? it is not explained.
+        // assertZProfil(expectedZProfileLeft, Arrays.asList(pathLeft.getSRSegment().getPoints2DGround()));
         //assertPlanes(segmentsMeanPlanes2,propDataOut.getPropagationPaths().get(2).getSRSegment()); // if b = 0.68: -> z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
 
     }
