@@ -2767,7 +2767,7 @@ public class PathFinderTest {
         }
     }
 
-    private static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
+    public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
         if (expectedZProfile.size() != actualZ_profile.size()){
             assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZProfile.size(), actualZ_profile.size());
         }
@@ -2777,12 +2777,12 @@ public class PathFinderTest {
         }
     }
 
-    private static void assertMirrorPoint(Coordinate expectedSprime, Coordinate expectedRprime,Coordinate actualSprime, Coordinate actualRprime) {
+    public static void assertMirrorPoint(Coordinate expectedSprime, Coordinate expectedRprime,Coordinate actualSprime, Coordinate actualRprime) {
         assertCoordinateEquals("Sprime ",expectedSprime, actualSprime, DELTA_COORDS);
         assertCoordinateEquals("Rprime ",expectedRprime, actualRprime, DELTA_COORDS);;
     }
 
-    private static void assertCoordinateEquals(String message,Coordinate expected, Coordinate actual, double toleranceX) {
+    public static void assertCoordinateEquals(String message,Coordinate expected, Coordinate actual, double toleranceX) {
         double diffX = Math.abs(expected.getX() - actual.getX());
         double diffY = Math.abs(expected.getY() - actual.getY());
 
@@ -2793,7 +2793,7 @@ public class PathFinderTest {
         }
     }
 
-    private static void assert3DCoordinateEquals(String message,Coordinate expected, Coordinate actual, double tolerance) {
+    public static void assert3DCoordinateEquals(String message,Coordinate expected, Coordinate actual, double tolerance) {
 
         if (CGAlgorithms3D.distance(expected, actual) > tolerance) {
             String result = String.format(Locale.ROOT, "Expected coordinate: %s, Actual coordinate: %s",

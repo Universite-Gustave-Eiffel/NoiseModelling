@@ -724,13 +724,6 @@ public class ProfileBuilder {
                 topoTree.insert(env, i);
             }
             topoTree.build();
-            //TODO : Seems to be useless, to check
-            /*for (IntegerTuple wallId : wallIndex) {
-                Coordinate vA = vertices.get(wallId.nodeIndexA);
-                Coordinate vB = vertices.get(wallId.nodeIndexB);
-                Wall wall = new Wall(vA, vB, wallId.triangleIdentifier, TOPOGRAPHY);
-                processedWalls.add(wall);
-            }*/
         }
         //Update building z
         if(topoTree != null) {
@@ -748,8 +741,7 @@ public class ProfileBuilder {
                     w.p1.z = w.height + getZGround(w.p1);
                 }
             }
-        }
-        else {
+        } else {
             for (Building b : buildings) {
                 if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
                         isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
@@ -1394,51 +1386,57 @@ public class ProfileBuilder {
     }
 
     /**
-     * Get the topographic height of a point.
-     * @param c Coordinate of the point.
-     * @return Topographic height of the point.
-     */
-    @Deprecated
-    public double getZGround(Coordinate c) {
-        return getZGround(new CutPoint(c, TOPOGRAPHY, -1));
-    }
-
-    /**
      * @return True if digital elevation model has been added
      */
     public boolean hasDem() {
-        return topoTree != null && topoTree.size() > 0;
+        return topoTree != null && !topoTree.isEmpty();
     }
 
 
     /**
-     *
-     * @param cut
-     * @return
+     * @return Altitude in meters from sea level
      */
-    public double getZGround(CutPoint cut) {
-        if(!Double.isNaN(cut.zGround)) {
-            return cut.zGround;
-        }
+    public double getZGround(Coordinate coordinate) {
+        return getZGround(coordinate, new AtomicInteger(-1));
+    }
+
+    /**
+     * Fetch Altitude in meters from sea level at a location. You can use the triangle hint if you request a lot of
+     * positions in the same location
+     * @param coordinate X,Y coordinate to fetch
+     * @param triangleHint Triangle index hint (if >= 0 will be checked, and will be updated with the triangle is found)
+     * @return Altitude in meters from sea level
+     */
+    public double getZGround(Coordinate coordinate, AtomicInteger triangleHint) {
         if(topoTree == null) {
-            cut.zGround = NaN;
             return 0.0;
         }
-        Envelope env = new Envelope(cut.coordinate);
-        List<Integer> list = (List<Integer>)topoTree.query(env);
-        for (int i : list) {
+        int i = triangleHint.get();
+        if(i >= 0 && i < topoTriangles.size()) {
             final Triangle tri = topoTriangles.get(i);
             final Coordinate p1 = vertices.get(tri.getA());
             final Coordinate p2 = vertices.get(tri.getB());
             final Coordinate p3 = vertices.get(tri.getC());
-            if(JTSUtility.dotInTri(cut.coordinate, p1, p2, p3)) {
-                double z = Vertex.interpolateZ(cut.coordinate, p1, p2, p3);
-                cut.zGround = z;
-                return z;
+            if(!JTSUtility.dotInTri(coordinate, p1, p2, p3)) {
+                i = -1;
             }
         }
-        cut.zGround = NaN;
-        return 0.0;
+        if(i < 0) {
+            i = getTriangleIdByCoordinate(coordinate);
+            if(i == -1) {
+                return 0.0;
+            }
+        }
+        final Triangle tri = topoTriangles.get(i);
+        final Coordinate p1 = vertices.get(tri.getA());
+        final Coordinate p2 = vertices.get(tri.getB());
+        final Coordinate p3 = vertices.get(tri.getC());
+        if(JTSUtility.dotInTri(coordinate, p1, p2, p3)) {
+            triangleHint.set(i);
+            return Vertex.interpolateZ(coordinate, p1, p2, p3);
+        } else {
+            return 0.0;
+        }
     }
 
     /**

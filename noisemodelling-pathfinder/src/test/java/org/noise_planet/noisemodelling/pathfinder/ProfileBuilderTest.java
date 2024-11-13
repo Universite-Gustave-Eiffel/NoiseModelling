@@ -164,13 +164,12 @@ public class ProfileBuilderTest {
 
         CutProfile profile = profileBuilder.getProfile(new Coordinate(0, 1, 0.1), new Coordinate(8, 10, 0.3));
         List<CutPoint> pts = profile.getCutPoints();
-        assertEquals(10, pts.size());
         assertEquals(0.0, pts.get(0).getCoordinate().x, DELTA);
         assertEquals(1.0, pts.get(0).getCoordinate().y, DELTA);
         assertEquals(0.1, pts.get(0).getCoordinate().z, DELTA);
-        assertEquals(8.0, pts.get(9).getCoordinate().x, DELTA);
-        assertEquals(10.0, pts.get(9).getCoordinate().y, DELTA);
-        assertEquals(0.3, pts.get(9).getCoordinate().z, DELTA);
+        assertEquals(8.0, pts.get(pts.size() - 1).getCoordinate().x, DELTA);
+        assertEquals(10.0, pts.get(pts.size() - 1).getCoordinate().y, DELTA);
+        assertEquals(0.3, pts.get(pts.size() - 1).getCoordinate().z, DELTA);
     }
 
     /**
@@ -302,51 +301,25 @@ public class ProfileBuilderTest {
         assertEquals(0, cutProfile.getCutPoints().get(8).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
     }
 
-    /*
-     * CutProfile{pts=[
-     * SOURCE (10.0,10.0,1.0) ; grd : 0.9 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * GROUND_EFFECT (50.0,18.421052631578945,0.0) ; grd : 0.5 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * TOPOGRAPHY (120.0,33.1578947368421,0.0) ; grd : 0.5 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * GROUND_EFFECT (150.0,39.473684210526315,4.615384615384616) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * WALL (176.82926829268294,45.1219512195122,16.634146341463413) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * TOPOGRAPHY (185.0,46.84210526315789,10.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ,
-     * RECEIVER (200.0,50.0,14.0) ; grd : 0.2 ; topoH : null ; buildH : 0.0 ; buildId : -1 ; alpha : [] ; ]
-     */
-
-
     @Test
     public void testRelativeSourceLineProjection() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        // left upper hill
-        profileBuilder.addTopographicLine(7.78, 112.97, 0.3, 7.78, -1.0, 0.3);
-        profileBuilder.addTopographicLine(9.78, 112.97, 1.5, 9.78, -1.0, 1.5);
-        profileBuilder.addTopographicLine(11.84, 112.97, 2.7, 11.84, -1.0, 2.7);
-        profileBuilder.addTopographicLine(13.78, 112.97, 3, 13.78, -1.0, 3);
-
-        // right downward hill
-        profileBuilder.addTopographicLine(23.94, 112.97, 3, 23.94, -1.0, 3);
-        profileBuilder.addTopographicLine(24.82, 112.97, 2.7, 24.82, -1.0, 2.7);
-        profileBuilder.addTopographicLine(26.88, 112.97, 1.5, 26.88, -1.0, 1.5);
-        profileBuilder.addTopographicLine(28.84, 112.97, 0.3, 28.84, -1.0, 0.3);
-
-        // flat zone
-        profileBuilder.addTopographicLine(29.85, 112.97, 0.0, 29.85, -1.0, 0.0);
-        profileBuilder.addTopographicLine(137.79, 112.97, 0.0, 137.79, -1.0, 0.0);
+        PathFinderTest.addTopographicTC5Model(profileBuilder);
         profileBuilder.finishFeeding();
         Scene scene = new Scene(profileBuilder);
         WKTReader wktReader = new WKTReader();
-        Geometry geometry = wktReader.read("MultiLineStringZ ((18.27972380180239753 -1.52672398417648481 0.05, 18.27972380180239753 113.47327601582351519 0.05))");
+        Geometry geometry = wktReader.read("MultiLineStringZ ((10 10 1, 200 50 1))");
         scene.addSource(1L, geometry);
         PathFinder pathFinder = new PathFinder(scene);
         assertEquals(2, scene.sourceGeometries.get(0).getNumPoints());
         pathFinder.makeSourceRelativeZToAbsolute();
         // The source line should now be made of 4 points (2 points being created by the elevated DEM)
         assertEquals(4, scene.sourceGeometries.get(0).getNumPoints());
-        double minZ = Arrays.stream(scene.sourceGeometries.get(0).getCoordinates())
-                .map(coordinate -> coordinate.z).min(Double::compareTo).get();
-        assertEquals(0.05, minZ, 1e-6);
-        double maxZ = Arrays.stream(scene.sourceGeometries.get(0).getCoordinates())
-                .map(coordinate -> coordinate.z).max(Double::compareTo).get();
-        assertEquals(3.05, maxZ, 1e-6);
+        List<Coordinate> expectedProfile = Arrays.asList(
+                new Coordinate(10.0, 10.0, 1.0),
+                new Coordinate(120.0, 33.16, 1.0),
+                new Coordinate(185.0, 46.84, 11.0),
+                new Coordinate(200.0, 50.0, 11.0));
+        PathFinderTest.assertZProfil(expectedProfile, Arrays.asList(scene.sourceGeometries.get(0).getCoordinates()));
     }
 }

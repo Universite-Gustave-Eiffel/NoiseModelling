@@ -1519,31 +1519,40 @@ public class PathFinder {
 
 
     /**
-     *
+     * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
      * @param lineString
      * @param profileBuilder
+     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
      * @return computed lineString
      */
-    private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder) {
-        List<Coordinate> newGeomCoordinates = new ArrayList<>();
+    private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder, double epsilon) {
+        ArrayList<Coordinate> newGeomCoordinates = new ArrayList<>();
         Coordinate[] coordinates = lineString.getCoordinates();
         for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
             Coordinate p0 = coordinates[idPoint];
             Coordinate p1 = coordinates[idPoint + 1];
             List<Coordinate> groundProfileCoordinates = new ArrayList<>();
             profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
-            // add first point of source
-            newGeomCoordinates.add(p0);
-            // add intermediate points located at the edges of MNT triangle mesh
-            // but the Z value should be still relative to the ground
-            // ,so we interpolate the Z (height) values of the source
-            for(Coordinate intermediatePoint : groundProfileCoordinates) {
-                Coordinate relativePoint = new Coordinate(intermediatePoint);
-                relativePoint.z = Vertex.interpolateZ(intermediatePoint, p0, p1);
-                newGeomCoordinates.add(relativePoint);
+            newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
+            if(idPoint == 0) {
+                newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
             }
+            Coordinate previous = groundProfileCoordinates.get(0);
+            for(int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
+                final Coordinate current = groundProfileCoordinates.get(groundPoint);
+                final Coordinate next = groundProfileCoordinates.get(groundPoint+1);
+                // Do not add topographic points which are simply the linear interpolation between two points
+                // triangulation add a lot of interpolated lines from line segment DEM
+                if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
+                    // interpolate the Z (height) values of the source then add the altitude
+                    previous = current;
+                    newGeomCoordinates.add(
+                            new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
+                }
+            }
+            newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
+                    groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
         }
-        newGeomCoordinates.add(coordinates[coordinates.length - 1]);
         return GEOMETRY_FACTORY.createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
     }
 
@@ -1551,24 +1560,20 @@ public class PathFinder {
      * Update ground Z coordinates of sound sources absolute to sea levels
      */
     public void makeSourceRelativeZToAbsolute() {
-        ElevationFilter filter = new ElevationFilter(data.profileBuilder, true);
         List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
         for (Geometry source : data.sourceGeometries) {
-
             Geometry offsetGeometry = source.copy();
             if(source instanceof LineString) {
-                offsetGeometry = splitLineSource((LineString) source, data.profileBuilder);
+                offsetGeometry = splitLineSource((LineString) source, data.profileBuilder, ProfileBuilder.MILLIMETER);
             } else if(source instanceof MultiLineString) {
                 LineString[] newGeom = new LineString[source.getNumGeometries()];
                 for(int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
                     newGeom[idGeom] = splitLineSource((LineString) source.getGeometryN(idGeom),
-                            data.profileBuilder);
+                            data.profileBuilder, ProfileBuilder.MILLIMETER);
                 }
                 offsetGeometry = GEOMETRY_FACTORY.createMultiLineString(newGeom);
             }
             // Offset the geometry with value of elevation for each coordinate
-            filter.reset();
-            offsetGeometry.apply(filter);
             sourceCopy.add(offsetGeometry);
         }
         data.sourceGeometries = sourceCopy;
@@ -1586,12 +1591,9 @@ public class PathFinder {
      * Update ground Z coordinates of receivers absolute to sea levels
      */
     public void makeReceiverRelativeZToAbsolute() {
-        ElevationFilter filter = new ElevationFilter(data.profileBuilder, true);
-        CoordinateSequence sequence = new CoordinateArraySequence(data.receivers.toArray(new Coordinate[data.receivers.size()]));
-        for (int i = 0; i < sequence.size(); i++) {
-            filter.filter(sequence, i);
+        for(Coordinate receiver : data.receivers) {
+            receiver.setZ(receiver.getZ() + data.profileBuilder.getZGround(receiver));
         }
-        data.receivers = Arrays.asList(sequence.toCoordinateArray());
     }
 
 
