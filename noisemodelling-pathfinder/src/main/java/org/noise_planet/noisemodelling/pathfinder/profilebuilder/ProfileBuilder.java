@@ -945,6 +945,17 @@ public class ProfileBuilder {
         //Sort all the cut point from sourceCoordinate to receiverCoordinate positions
         profile.sort(sourceCoordinate);
 
+        // Remove all points before source and after receiver
+        // because objects may be at the exact location of receiver or source
+        while(!profile.getCutPoints().isEmpty() &&
+                !profile.getCutPoints().get(0).type.equals(SOURCE)) {
+            profile.getCutPoints().remove(0);
+        }
+        while(!profile.getCutPoints().isEmpty() &&
+                !profile.getCutPoints().get(profile.getCutPoints().size() - 1).type.equals(RECEIVER)) {
+            profile.getCutPoints().remove(profile.getCutPoints().size() - 1);
+        }
+
         // Propagate ground coefficient for unknown coefficients
         double currentCoefficient = sourcePoint.groundCoef;
         for (CutPoint cutPoint : profile.pts) {

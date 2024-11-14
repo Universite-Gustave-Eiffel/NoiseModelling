@@ -469,7 +469,8 @@ public class PathFinder {
         if(coordinates.size() > 2) {
             // Fetch vertical profile between each point of the diffraction path
             for(int i=0; i<coordinates.size()-1; i++) {
-                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS, false);
+                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS,
+                        false);
                 // Push new plane (except duplicate points for intermediate segments)
                 if( i > 0 ) {
                     // update first point when it is not source but diffraction point
@@ -653,11 +654,11 @@ public class PathFinder {
 
             double dSO = src.distance(o);
             double dOR = o.distance(rcv);
-            pathParameters.deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
+            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
             List<Integer> freqs = data.freq_lvl;
             boolean rcrit = false;
             for(int f : freqs) {
-                if(pathParameters.deltaH > -(340./f) / 20) {
+                if(deltaH > -(340./f) / 20) {
                     rcrit = true;
                     break;
                 }
@@ -684,14 +685,16 @@ public class PathFinder {
                 seg1.dPrime = srcPrime.distance(o);
                 seg2.dPrime = o.distance(rcvPrime);
 
-                pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
+                double deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
                 for(int f : freqs) {
-                    if(pathParameters.deltaH > (340./f) / 4 - pathParameters.deltaPrimeH) {
+                    if(deltaH > (340./f) / 4 - deltaPrimeH) {
                         rcrit = true;
                         break;
                     }
                 }
                 if (rcrit) {
+                    pathParameters.deltaH = deltaH;
+                    pathParameters.deltaPrimeH = deltaPrimeH;
                     seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoef());
                     seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoef());
 
@@ -910,11 +913,13 @@ public class PathFinder {
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = pts2D.get(i0);
             }
-            // Add reflection/vertical edge diffraction points between i0 i1
+            // Add reflection/vertical edge diffraction points/segments between i0 i1
+            int previousPivotPoint = i0;
             for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                 final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
                 if (currentPoint.getType().equals(REFLECTION) &&
                         Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
+                    // If the current point is a reflection and not before/after the reflection
                     MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
                     double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
                             mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
@@ -923,13 +928,33 @@ public class PathFinder {
                     reflectionPoint.setWallId(currentPoint.getWallId());
                     points.add(reflectionPoint);
                 } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
-                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
-                    reflectionPoint.setWallId(currentPoint.getWallId());
-                    points.add(reflectionPoint);
+                    // current point is a vertical edge diffraction (there is no additional points unlike reflection)
+                    PointPath diffractionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
+                    diffractionPoint.setWallId(currentPoint.getWallId());
+                    points.add(diffractionPoint);
+                    // Compute additional segment
+                    Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,cut2DGroundIndex.get(pointIndex) + 1);
+                    meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
+                    SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pointIndex),
+                            meanPlane, profileSeg.getGPath(cutPt0, cutProfilePoints.get(pointIndex)), data.gS);
+                    seg.setPoints2DGround(segmentGroundPoints);
+                    previousPivotPoint = pointIndex;
+                    segments.add(seg);
                 }
             }
-
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
+            if(previousPivotPoint != i0 && i == pts.size() - 1) {
+                // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
+                // diffraction point and we must add the remaining segment between the last horizontal diffraction point
+                // and the last point
+                Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i1Ground, pts2DGround.length);
+                meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
+                SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
+                        meanPlane, profileSeg.getGPath(cutPt1, cutProfilePoints.get(cutProfilePoints.size() - 1)),
+                        data.gS);
+                seg.setPoints2DGround(segmentGroundPoints);
+                segments.add(seg);
+            }
             if(pts.size() == 2) {
                 // no diffraction over buildings/dem, we already computed SR segment
                 break;
@@ -976,7 +1001,10 @@ public class PathFinder {
                     pts2DGround, cut2DGroundIndex);
             if(rayleighSegments.isEmpty()) {
                 // We don't have a Rayleigh diffraction over DEM. Only direct SR path
-                segments.add(pathParameters.getSRSegment());
+                if(segments.isEmpty()) {
+                    segments.add(pathParameters.getSRSegment());
+                }
+                pathParameters.deltaH = segments.get(0).d + e + segments.get(segments.size()-1).d - srPath.dc;
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
@@ -1021,8 +1049,7 @@ public class PathFinder {
         pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
         if(sr.orientationIndex(c0) == 1) {
             pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(e, srPath.d)  + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
-        }
-        else {
+        } else {
             Coordinate pA = sr.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
             pathParameters.deltaF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
         }
