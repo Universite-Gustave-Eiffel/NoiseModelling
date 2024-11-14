@@ -486,6 +486,7 @@ public class PathFinder {
             CutProfile mainProfile = new CutProfile();
             mainProfile.addCutPoints(cutPoints);
             mainProfile.setSource(cutPoints.get(0));
+            mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(cutPoints.get(cutPoints.size() -  1));
             // Compute Ray path from vertical cuts (like a folding screen)
             CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
@@ -494,8 +495,6 @@ public class PathFinder {
                 // path not valid (ex: intersection with ground)
                 return null;
             }
-
-            cnossosPath.setSourceOrientation(orientation);
 
             return cnossosPath;
         }
@@ -755,6 +754,8 @@ public class PathFinder {
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
         srPath.setPoints2DGround(pts2DGround);
+        srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
+                cutProfile.getSource().getCoordinate());
         CnossosPath pathParameters = new CnossosPath();
         pathParameters.setCutProfile(cutProfile);
         pathParameters.setFavorable(true);
@@ -763,7 +764,6 @@ public class PathFinder {
         pathParameters.setSRSegment(srPath);
         pathParameters.init(data.freq_lvl.size());
         pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
-
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
         Coordinate lastPt = pts2D.get(pts2D.size() - 1);
