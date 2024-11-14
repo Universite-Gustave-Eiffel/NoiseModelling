@@ -726,7 +726,6 @@ public class PathFinder {
                     segments.add(seg2);
 
                     points.add(new PointPath(o, o.z, new ArrayList<>(), DIFH_RCRIT));
-                    pathParameters.difHPoints.add(points.size() - 1);
                 }
             }
         }
@@ -925,7 +924,6 @@ public class PathFinder {
                     points.add(reflectionPoint);
                 } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
                     PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
-                    pathParameters.difVPoints.add(pointIndex);
                     reflectionPoint.setWallId(currentPoint.getWallId());
                     points.add(reflectionPoint);
                 }
@@ -945,9 +943,6 @@ public class PathFinder {
             if (i != pts.size() - 1) {
                 if (i != 1) {
                     e += path.d;
-                }
-                if(i < pts.size() - 1) {
-                    pathParameters.difHPoints.add(i1);
                 }
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;

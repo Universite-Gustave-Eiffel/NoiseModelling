@@ -54,9 +54,6 @@ public class Path {
     public double angle;
     double gs;
     // computed in Augmented Path
-    public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
-    public List<Integer> difVPoints = new ArrayList<Integer>(); // diffraction points indices on vertical edges
-    public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points indices
     public boolean keepAbsorption = false;
     public ReflectionAbsorption reflectionAbsorption = new ReflectionAbsorption();
 
@@ -111,9 +108,6 @@ public class Path {
         this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
         this.angle = other.angle;
         this.gs = other.gs;
-        this.difHPoints = other.difHPoints;
-        this.difVPoints = other.difVPoints;
-        this.refPoints = other.refPoints;
         this.keepAbsorption = other.keepAbsorption;
         this.reflectionAbsorption = other.reflectionAbsorption;
         this.timePeriod = other.timePeriod;

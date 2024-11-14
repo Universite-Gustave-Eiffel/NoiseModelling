@@ -36,6 +36,7 @@ import javax.xml.stream.XMLStreamException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
 import static org.junit.Assert.assertEquals;
@@ -1873,13 +1874,11 @@ public class PathFinderTest {
 
 
         //Assertion
-        CutProfile SRProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
-        List<Integer> cutToGroundIndex = new ArrayList<>();
-        List<Coordinate> points2D = SRProfile.computePts2DGround(cutToGroundIndex);
-        assertZProfil(expectedZProfileSR, points2D);
-        int diffraction2DIndex = cutToGroundIndex.get(propDataOut.getPropagationPaths().get(0).difHPoints.get(0));
-        assertZProfil(expectedZProfileSO, points2D.subList(0, diffraction2DIndex));
-        assertZProfil(expectedZProfileOR, points2D.subList(diffraction2DIndex, points2D.size()));
+        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        assertZProfil(expectedZProfileSR, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileOR, Arrays.asList(
+                directPath.getSegmentList().get(directPath.getSegmentList().size() - 1).getPoints2DGround()));
         assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(0).getSRSegment());
         assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
     }

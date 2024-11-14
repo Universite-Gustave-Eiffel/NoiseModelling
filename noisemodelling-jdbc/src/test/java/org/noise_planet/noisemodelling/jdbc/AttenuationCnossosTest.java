@@ -529,7 +529,7 @@ public class AttenuationCnossosTest {
             assertTrue(v > 0.);
         }
     }
-    long startTime = System.currentTimeMillis();
+
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
@@ -10837,8 +10837,6 @@ public class AttenuationCnossosTest {
 
         assertEquals(14.6, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 0.1);
     }
-    long endTime = System.currentTimeMillis();
-    long executionTime = endTime - startTime;
 
     private static double getMaxError(double[] ref, double[] result) {
         assertEquals(ref.length, result.length);
