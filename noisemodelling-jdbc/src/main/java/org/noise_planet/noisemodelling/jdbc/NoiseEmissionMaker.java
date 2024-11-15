@@ -462,6 +462,13 @@ public class NoiseEmissionMaker extends Scene {
                     ln[idfreq] = dbaToW(rs.getDouble(noiseMapParameters.lwFrequencyPrepend + "N" + noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
                 }
             }
+        } else if (noiseMapParameters.input_mode == NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_HZ) {
+            // Read average 24h traffic
+
+            for (int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+                ld[idfreq] = dbaToW(rs.getDouble( "HZ" + noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
+            }
+
         } else if(noiseMapParameters.input_mode == NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
             // Extract road slope
             double slope = 0;

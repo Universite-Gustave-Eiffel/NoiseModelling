@@ -18,9 +18,14 @@ import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
+import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Point_Source_0dB_From_Network
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Ind_Vehicles_2_Noisy_Vehicles
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -109,6 +114,87 @@ class TestNoiseModelling extends JdbcTestCase {
 
         //assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,4)
     }*/
+
+    @Test
+    void testDynamicRoadEmissionPropagationVehicles() {
+
+        //   SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+
+        new Import_File().exec(connection,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/buildings_nm_ready_pop_heights.shp").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "buildings"])
+
+
+        new Import_File().exec(connection,
+                ["pathFile" :TestDatabaseManager.getResource("Dynamic/network_tartu_32635_.geojson").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "network_tartu"])
+
+        new Add_Primary_Key().exec(connection,
+                ["pkName" :"PK",
+                 "tableName": "network_tartu"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/receivers_python_method0_50m_pop.shp").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "receivers"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/SUMO.geojson").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "vehicle"])
+
+
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1.5
+                ])
+
+        // create a function to define a network
+        String res = new Point_Source_0dB_From_Network().exec(connection,
+                ["tableRoads": "network_tartu",
+                 "gridStep" : 10
+                ])
+
+        // create a function to get LW values from Vehicles
+        res = new Ind_Vehicles_2_Noisy_Vehicles().exec(connection,
+                ["tableVehicles": "vehicle",
+                "distance2snap" : 30,
+                "fileFormat" : "SUMO"])
+
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "SOURCES_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "maxError" : 0.0,
+                 "confMaxSrcDist" : 150,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLday":true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_VAL.", res)
+    }
+
+
 
     @Test
     void testLdayFromTraffic() {
