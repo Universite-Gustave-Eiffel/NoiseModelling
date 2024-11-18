@@ -1,6 +1,7 @@
 name: Draft JOSS PDF
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - paper/**
