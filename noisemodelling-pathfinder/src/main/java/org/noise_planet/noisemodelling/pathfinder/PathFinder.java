@@ -992,13 +992,20 @@ public class PathFinder {
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){
             // Direct propagation (no diffraction over obstructing objects)
-            // Check for Rayleigh criterion for segments computation
-            LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+            boolean horizontalPlaneDiffractionOrReflection = cutProfile.getCutPoints().stream()
+                    .anyMatch(
+                            cutPoint -> cutPoint.getType().equals(V_EDGE_DIFFRACTION) ||
+                                    cutPoint.getType().equals(REFLECTION));
             List<SegmentPath> rayleighSegments = new ArrayList<>();
             List<PointPath> rayleighPoints = new ArrayList<>();
-            // Look for diffraction over edge on freefield (frequency dependent)
-            computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
-                    pts2DGround, cut2DGroundIndex);
+            // do not check for rayleigh if the path is not direct between R and S
+            if(!horizontalPlaneDiffractionOrReflection) {
+                // Check for Rayleigh criterion for segments computation
+                LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
+                // Look for diffraction over edge on free field (frequency dependent)
+                computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
+                        pts2DGround, cut2DGroundIndex);
+            }
             if(rayleighSegments.isEmpty()) {
                 // We don't have a Rayleigh diffraction over DEM. Only direct SR path
                 if(segments.isEmpty()) {
@@ -1047,11 +1054,11 @@ public class PathFinder {
 
 
         pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
-        if(sr.orientationIndex(c0) == 1) {
-            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(e, srPath.d)  + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
+        if (sr.orientationIndex(c0) == 1) {
+            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
         } else {
-            Coordinate pA = sr.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            pathParameters.deltaF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            Coordinate pA = sr.pointAlong((c0.x - srcPrime.x) / (rcvPrime.x - srcPrime.x));
+            pathParameters.deltaF = 2 * toCurve(srcPrime.distance(pA), srPath.dPrime) + 2 * toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
         pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
