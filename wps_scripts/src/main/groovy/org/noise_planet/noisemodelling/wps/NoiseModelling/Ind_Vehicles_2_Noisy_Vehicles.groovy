@@ -634,14 +634,14 @@ class VehicleEmissionProcessData {
                 }
         } else if (fileFormat.equals("SYMUVIA")){
             // Remplissage des variables avec le contenu du fichier SUMO
-            sql.eachRow('SELECT PK,THE_GEOM, SPEED, ACC, "TYPE", ID_VEH, TIME FROM ' + tablename + ';') { row ->
+            sql.eachRow('SELECT ID_VEH,THE_GEOM, "TYPE", SPEED, ACC,  TIME,PK FROM ' + tablename + ';') { row ->
 
                 Geometry the_geom = (Geometry) row[1]
                 double speed = (double) row[3]
                 double acc = (double) row[4]
-                String typeVeh = (double) row[5]
-                String id_veh = (String) row[6]
-                int timestep = (int) row[7]
+                String typeVeh = (String) row[2]
+                int id_veh = (int) row[0]
+                int timestep = (int) row[5]
 
                 double[] carLevel = getCarsLevel(speed*3.6, id_veh, acc, typeVeh)
                 sql.withBatch(100, qry) { ps ->
@@ -661,28 +661,49 @@ class VehicleEmissionProcessData {
 
     }
 
-    double[] getCarsLevel(speed, id_veh, double acc, String typeVeh) throws SQLException {
+    double[] getCarsLevel(double speed, int id_veh, double acc, String typeVeh) throws SQLException {
 
         double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        double[] res_HV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 
         int kk = 0
+        def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+
         for (f in list) {
             String RoadSurface = "FR_R2"
             boolean Stud = false
             String veh_type = "1"
-            if (typeVeh == "BUS") veh_type = "3"
-            int acc_type = 1
-            double LwStd = 1
-            int VehId = 10
+            switch(typeVeh) {
+                case 'VL':
+                    veh_type = '1'
+                    break
+                case 'PL':
+                    veh_type = '3'
+                    break
+                case 'TypeTrolley':
+                    veh_type = '3'
+                    break
+                case 'BUS':
+                    veh_type = '3'
+                    break
+            }
 
-            RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
-            rsParameters.setRoadSurface(RoadSurface)
+            int acc_type= 2
+            double LwStd= 0
+
+
+            RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed,  acc,  veh_type, acc_type, Stud,LwStd,id_veh)
+            //System.println(rsParameters)
             rsParameters.setSlopePercentage(0)
+            rsParameters.setRoadSurface(RoadSurface)
+            rsParameters.setFileVersion(1)
+            rsParameters.setTemperature(20)
+            rsParameters.setFrequency(f)
             res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
             kk++
         }
+
+
+
 
         return res_LV
     }

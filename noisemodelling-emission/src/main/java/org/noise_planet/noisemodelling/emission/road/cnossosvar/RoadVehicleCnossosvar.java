@@ -86,6 +86,7 @@ public class RoadVehicleCnossosvar {
         //Road surface correction on rolling noise
         RoadLvl = RoadLvl + getNoiseLvl(getA_RoadSurfaceCoeff(freqParam, veh_type, roadSurface, coeffVer), getB_RoadSurfaceCoeff(veh_type, roadSurface, coeffVer), speed, 70.);
         //RoadLvl = (speed <= 20) ? 0 : RoadLvl;
+        RoadLvl = (speed <= 0) ? -99 : RoadLvl;
 
         // ///////////////////////
         // Noise motor
