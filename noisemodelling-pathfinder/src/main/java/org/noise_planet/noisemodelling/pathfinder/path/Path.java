@@ -62,7 +62,11 @@ public class Path {
      * @return
      */
     public List<CutPoint> getCutPoints() {
-        return cutProfile.getCutPoints();
+        if(cutProfile == null) {
+            return new ArrayList<>();
+        } else {
+            return cutProfile.getCutPoints();
+        }
     }
 
     /**
@@ -166,7 +170,7 @@ public class Path {
     public LineString asGeom() {
         // try to compute 3d ray geometry using two different list of points (one in 2D and the ground cut points in 3d)
         GeometryFactory geometryFactory = new GeometryFactory();
-        Coordinate[] coordinates = new Coordinate[pointList.size()];
+        Coordinate[] coordinates = new Coordinate[pointList == null ? 0  : pointList.size()];
         int i=0;
         double cutPointDistance = 0;
         int cutPointCursor = 0;
