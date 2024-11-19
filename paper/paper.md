@@ -37,7 +37,7 @@ date: 11 October 2024
 bibliography: paper.bib
 ---
 
-![NoiseModelling Header](https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png "NoiseModelling Header")
+![NoiseModelling Header](assets/header.png "NoiseModelling Header")
 
 # Summary
 
@@ -76,7 +76,7 @@ To date, NoiseModelling has been applied in a variety of research projects and p
 
 The overall architecture is illustrated on \autoref{fig:nm_architecture} and is described bellow.
 
-![The NoiseModelling Architecture. \label{fig:nm_architecture}](https://hackmd.io/_uploads/SyE5MDRgkx.png "The NoiseModelling Architecture")
+![The NoiseModelling Architecture. \label{fig:nm_architecture}](assets/nm_architecture.png "The NoiseModelling Architecture")
 
 NoiseModelling is made of four JAVA main librairies:
 
@@ -105,7 +105,7 @@ The code architecture permits other sound source types and/or other emission mod
 
 ## Path-finding method
 
-![Diffractions paths on horizontal et vertical planes. \label{fig:path}](https://noisemodelling.readthedocs.io/en/latest/_images/ray_tracing.png "Diffractions paths on horizontal et vertical planes")
+![Diffractions paths on horizontal et vertical planes. \label{fig:path}](assets/ray_tracing.png "Diffractions paths on horizontal et vertical planes")
 
 
 The calculation of acoustic propagation between a sound source and a receiver is based on the determination of the paths travelled by the sound wave, in particular:
@@ -123,9 +123,9 @@ All objects in the simulation, such as building polygons, isolated walls and ele
 When calculating specular reflections using the image-source method, the number of image sources increases rapidly with depth. This exponential growth is one of the main limitations of the image-source method for complex geometries or high-order reflections. Instead of generating image sources for each new source-receiver pair, NoiseModelling generates for each point receiver the image receiver's field of view for the walls within its range. When looking for potential walls for reflection, it is now limited to do the  intersection the position of the source point with receiver view cones. This method is illustrated in figures \autoref{fig:view_cones_all} and \autoref{fig:view_cones_valid}.
 Those precomputed view cones eliminate a lot of non-valid series of specular reflections.
 
-![All receiver view cones that intersects the source point and its parent order view cone \label{fig:view_cones_all}](https://hackmd.io/_uploads/S1cBG7rgyg.png)
+![All receiver view cones that intersects the source point and its parent order view cone. \label{fig:view_cones_all}](assets/view_cones_all.png)
 
-![The only valid reflection is second order. Bounce first on blue then on the yellow receiver view cone \label{fig:view_cones_valid}](https://hackmd.io/_uploads/ByUc9cvlkx.png)
+![The only valid reflection is second order. Bounce first on blue then on the yellow receiver view cone. \label{fig:view_cones_valid}](assets/view_cones_valid.png)
 
 The output of the path-finding algorithm contains a list of vertical cut profiles between sources and receivers, covering obstacles information such as buildings and terrain.
 
