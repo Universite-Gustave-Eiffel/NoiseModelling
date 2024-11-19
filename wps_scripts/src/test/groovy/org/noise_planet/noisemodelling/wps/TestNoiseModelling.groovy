@@ -24,6 +24,8 @@ import org.noise_planet.noisemodelling.wps.Geometric_Tools.Point_Source_0dB_From
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Symuvia
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Ind_Vehicles_2_Noisy_Vehicles
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
@@ -196,6 +198,79 @@ class TestNoiseModelling extends JdbcTestCase {
 
         assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_PROBA.", res)
     }
+
+
+    @Test
+    /**
+     * as
+     */
+    void Michele() {
+
+        //   SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+
+        new Import_OSM().exec(connection, [
+                "pathFile"      : "/home/gao/IdeaProjects/NoiseModelling/wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/SymuviaTest/L63V.osm.pbf",
+                "targetSRID"    : 2154
+        ])
+
+        new Import_File().exec(connection, [
+                pathFile : "/home/gao/Downloads/Noise/Noise_Data/Michele/School/Receiver/Random_receiver_40_new.shp",
+                inputSRID : 2154,
+                tableName : "RECEIVERS"])
+
+        new Import_Symuvia().exec(connection, [
+                pathFile : "/home/gao/jnotebook/Noise Data/Michele_Symuvia/Divided/Lim_school_5400_end.xml",
+                inputSRID : 2154,
+                tableName : 'SYMUVIA'
+        ])
+
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1,
+                ])
+
+        // create a function to define a network
+        String res = new Point_Source_0dB_From_Network().exec(connection,
+                ["tableRoads": "ROADS",
+                 "gridStep" : 10
+                ])
+
+        // create a function to get LW values from Vehicles
+        res = new Ind_Vehicles_2_Noisy_Vehicles().exec(connection,
+                ["tableVehicles": "SYMUVIA_TRAJ",
+                 "distance2snap" : 20,
+                 "fileFormat" : "SYMUVIA"])
+
+
+        res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "SOURCES_0DB",
+                 "tableReceivers": "RECEIVERS",
+                 "maxError" : 0.0,
+                 "confMaxSrcDist" : 150,
+                 "confDiffHorizontal" : false,
+                 "confExportSourceId": true,
+                 "confSkipLday":true,
+                 "confSkipLevening":true,
+                 "confSkipLnight":true,
+                 "confSkipLden":true
+                ])
+
+        res = new Noise_From_Attenuation_Matrix().exec(connection,
+                ["lwTable"   : "LW_DYNAMIC_GEOM",
+                 "attenuationTable"   : "LDAY_GEOM",
+                 "outputTable"   : "LT_GEOM_PROBA"
+                ])
+
+
+        res = new DynamicIndicators().exec(connection,
+                ["tableName"   : "LT_GEOM_PROBA",
+                 "columnName"   : "LEQA"
+                ])
+
+        assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_PROBA.", res)
+    }
+
 
     @Test
     /**
