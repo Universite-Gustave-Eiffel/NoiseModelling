@@ -615,6 +615,24 @@ class VehicleEmissionProcessData {
         def qry = 'INSERT INTO LW_VEHICLE(IT , THE_GEOM,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         if (fileFormat.equals("SUMO")){
+                // Remplissage des variables avec le contenu du fichier SUMO
+                sql.eachRow('SELECT THE_GEOM, SPEED, ID, TIMESTEP FROM ' + tablename + ';') { row ->
+
+                    Geometry the_geom = (Geometry) row[0]
+                    double speed = (double) row[1]
+                    String id_veh = (String) row[2]
+                    int timestep = (int) row[3]
+
+                    double[] carLevel = getCarsLevel(speed*3.6, id_veh)
+                    sql.withBatch(100, qry) { ps ->
+                        ps.addBatch(timestep as Integer, the_geom as Geometry,
+                                carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
+                                carLevel[3] as Double, carLevel[4] as Double, carLevel[5] as Double,
+                                carLevel[6] as Double, carLevel[7] as Double)
+                    }
+
+                }
+        } else if (fileFormat.equals("SYMUVIA")){
             // Remplissage des variables avec le contenu du fichier SUMO
             sql.eachRow('SELECT THE_GEOM, SPEED, ID, TIMESTEP FROM ' + tablename + ';') { row ->
 
@@ -632,26 +650,10 @@ class VehicleEmissionProcessData {
                 }
 
             }
-            } else{
-            // Remplissage des variables avec le contenu du fichier plan d'exp
-            sql.eachRow('SELECT THE_GEOM,  SPEED, ID, TIMESTEP FROM ' + tablename + ';') { row ->
 
-                Geometry the_geom = (Geometry) row[0]
-                double speed =  (double) row[1]
-                String id_veh = (String) row[2]
-                int timestep = (int) row[3]
+        }  else    {
+            System.out.println("Unknown File Format")
 
-
-               double[] carLevel = getCarsLevel(speed*3.6, id_veh)
-
-                sql.withBatch(100, qry) { ps ->
-                        ps.addBatch(timestep as Integer, the_geom as Geometry,
-                                carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
-                                carLevel[3] as Double, carLevel[4] as Double, carLevel[5] as Double,
-                                carLevel[6] as Double, carLevel[7] as Double)
-                }
-
-            }
         }
 
 
