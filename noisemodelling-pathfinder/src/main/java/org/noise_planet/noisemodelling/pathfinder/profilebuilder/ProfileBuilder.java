@@ -1482,7 +1482,7 @@ public class ProfileBuilder {
         Collection<? extends Wall> getWalls();
     }
 
-    public static final double wideAngleTranslationEpsilon = 0.01;
+    public static final double wideAngleTranslationEpsilon = MILLIMETER;
 
     /**
      * @param build 1-n based building identifier

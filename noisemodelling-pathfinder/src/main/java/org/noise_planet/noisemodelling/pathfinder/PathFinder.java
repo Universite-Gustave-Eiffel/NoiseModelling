@@ -828,7 +828,6 @@ public class PathFinder {
         }
         List<Coordinate> pts = convexHullPoints;
 
-        double e = 0;
         Coordinate src = cutProfile.getSource().getCoordinate();
 
         // Move then check reflection height if there is diffraction on the path
@@ -966,9 +965,6 @@ public class PathFinder {
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
             if (i != pts.size() - 1) {
-                if (i != 1) {
-                    e += path.d;
-                }
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
@@ -982,7 +978,6 @@ public class PathFinder {
                 }
             }
         }
-        pathParameters.e = e;
 
         if(points.isEmpty()) {
             return null;
@@ -1011,7 +1006,12 @@ public class PathFinder {
                 if(segments.isEmpty()) {
                     segments.add(pathParameters.getSRSegment());
                 }
-                pathParameters.deltaH = segments.get(0).d + e + segments.get(segments.size()-1).d - srPath.dc;
+                // Compute cumulated distance between the first diffraction and the last diffraction point
+                pathParameters.e = 0;
+                for(int idPoint = 1; idPoint < points.size() - 2; idPoint++) {
+                    pathParameters.e += points.get(idPoint).coordinate.distance(points.get(idPoint+1).coordinate);
+                }
+                pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - srPath.dc;
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
@@ -1028,21 +1028,26 @@ public class PathFinder {
         SegmentPath seg1 = segments.get(0);
         SegmentPath seg2 = segments.get(segments.size()-1);
 
-        double dSO0 = src.distance(c0);
-        double dOnR = cn.distance(rcv);
+        double dSO0 = seg1.d;
+        double dOnR = seg2.d;
         LineSegment sr = new LineSegment(src, rcv);
 
         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
         double dSPrimeR = seg1.sPrime.distance(rcv);
         double dSPrimeO = seg1.sPrime.distance(c0);
-        pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + e + dOnR - dSPrimeR);
-        pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
+        // Compute cumulated distance between the first diffraction and the last diffraction point
+        pathParameters.e = 0;
+        for(int idPoint = 1; idPoint < points.size() - 2; idPoint++) {
+            pathParameters.e += points.get(idPoint).coordinate.distance(points.get(idPoint+1).coordinate);
+        }
+        pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + pathParameters.e + dOnR - dSPrimeR);
+        pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
 
         LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
         double dSRPrime = src.distance(seg2.rPrime);
         double dORPrime = cn.distance(seg2.rPrime);
-        pathParameters.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + e + dORPrime - dSRPrime);
-        pathParameters.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
+        pathParameters.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + pathParameters.e + dORPrime - dSRPrime);
+        pathParameters.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
 
         Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
         Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
@@ -1053,15 +1058,15 @@ public class PathFinder {
         seg2.dPrime = cn.distance(rcvPrime);
 
 
-        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + e + dOnR - srPath.d);
+        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - srPath.dc);
         if (sr.orientationIndex(c0) == 1) {
-            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
+            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
         } else {
             Coordinate pA = sr.pointAlong((c0.x - srcPrime.x) / (rcvPrime.x - srcPrime.x));
             pathParameters.deltaF = 2 * toCurve(srcPrime.distance(pA), srPath.dPrime) + 2 * toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
         }
 
-        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + e + seg2.dPrime - srPath.dPrime);
+        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + pathParameters.e + seg2.dPrime - srPath.dPrime);
 
         pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + seg2.dPrime - srPath.dPrime);
         if(dSPrimeRPrime.orientationIndex(c0) == 1) {
@@ -1273,43 +1278,6 @@ public class PathFinder {
      */
     public static org.apache.commons.math3.geometry.euclidean.threed.Vector3D coordinateToVector(Coordinate p) {
         return new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p.x, p.y, p.z);
-    }
-
-    /**
-     *
-     * @param mainProfile
-     * @param reflectionCutPoint
-     * @param receiverImage
-     */
-    private void pushReflectionCutPointSequence(CutProfile mainProfile, CutPoint reflectionCutPoint, MirrorReceiver receiverImage) {
-        // The reflection point is added 3 times, first at the base of the wall, second at the reflection coordinates, third when changing direction
-        reflectionCutPoint.setType(REFLECTION);
-        // Compute the coordinate just before the reflection
-        int indexReflectionPoint = mainProfile.getCutPoints().indexOf(reflectionCutPoint);
-        if(indexReflectionPoint > 0) {
-            CutPoint reflectionPointGround = new CutPoint(reflectionCutPoint);
-            reflectionPointGround.setCoordinate(new Coordinate(reflectionPointGround.getCoordinate().x,
-                    reflectionPointGround.getCoordinate().y, reflectionPointGround.getzGround()));
-            mainProfile.getCutPoints().add(indexReflectionPoint, reflectionPointGround);
-            mainProfile.getCutPoints().add(indexReflectionPoint+2, new CutPoint(reflectionPointGround));
-        }
-    }
-
-    private void updateReflectionPathAttributes(PointPath reflectionPoint, MirrorReceiver mirrorReceiver, CutPoint cutPoint) {
-        reflectionPoint.setType(PointPath.POINT_TYPE.REFL);
-        if(mirrorReceiver.getType().equals(BUILDING)) {
-            reflectionPoint.setBuildingId(mirrorReceiver.getWall().getOriginId());
-            reflectionPoint.obstacleZ = data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getZ();
-            reflectionPoint.setAlphaWall(data.profileBuilder.getBuilding(reflectionPoint.getBuildingId()).getAlphas());
-            cutPoint.setBuildingId(mirrorReceiver.getWall().getOriginId());
-        } else {
-            Wall wall = mirrorReceiver.getWall();
-            reflectionPoint.obstacleZ = Vertex.interpolateZ(reflectionPoint.coordinate, wall.p0, wall.p1);
-            reflectionPoint.setWallId(wall.getProcessedWallIndex());
-            reflectionPoint.setAlphaWall(wall.getAlphas());
-            cutPoint.setWallId(wall.getOriginId());
-        }
-        reflectionPoint.altitude = cutPoint.getzGround();
     }
 
     /**
