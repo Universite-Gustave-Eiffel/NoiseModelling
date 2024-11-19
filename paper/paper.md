@@ -45,7 +45,7 @@ NoiseModelling is a library capable of producing noise maps at a variety of scal
 
 The tool integrates the CNOSSOS-EU road and rail traffic noise emission and CNOSSOS-EU propagation models [@noauthor_commission_2015]. 
 
-It is closely associated with the H2GIS [@bocher_h2gis_2015] and PostGIS [@strobl_postgis_2008] spatial databases in order to handle spatial features and to facilitate cross-analysis with other spatial data.
+It is closely associated with the H2GIS [@bocher_h2gis_2015] and PostGIS [@mckenna_postgis_2022] spatial databases in order to handle spatial features and to facilitate cross-analysis with other spatial data.
 
 The NoiseModelling java library can be used independently or controlled through a graphical user interface.
 
