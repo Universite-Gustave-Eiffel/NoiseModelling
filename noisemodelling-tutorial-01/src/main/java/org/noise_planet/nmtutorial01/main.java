@@ -35,6 +35,7 @@ import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -47,31 +48,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 class Main {
     public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
-    public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
+    public static void mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
         // Init output logger
         Logger logger = LoggerFactory.getLogger(Main.class);
 
-        // Read working directory argument
-        String workingDir = "target/";
-        if (args.length > 0) {
-            workingDir = args[0];
-        }
-        File workingDirPath = new File(workingDir).getAbsoluteFile();
-        if(!workingDirPath.exists()) {
-            if(!workingDirPath.mkdirs()) {
-                logger.error(String.format("Cannot create working directory %s", workingDir));
-                return;
-            }
-        }
-
-        logger.info(String.format("Working directory is %s", workingDirPath.getAbsolutePath()));
-
-        // Create spatial database named to current time
-        DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.getDefault());
-
-        // Open connection to database
-        String dbName = new File(workingDir + "db_" + df.format(new Date())).toURI().toString();
-        Connection connection = JDBCUtilities.wrapConnection(DbUtilities.createSpatialDataBase(dbName, true));
         Statement sql = connection.createStatement();
 
         // Import BUILDINGS
@@ -158,8 +138,8 @@ class Main {
         noiseMapByReceiverMaker.setGridDim(1);
 
         LocalDateTime now = LocalDateTime.now();
-        ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
-                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())));
+        ProfilerThread profilerThread = new ProfilerThread(Paths.get(workingDir, String.format("profile_%d_%d_%d_%dh%d.csv",
+                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())).toFile());
         profilerThread.addMetric(tableWriter);
         profilerThread.addMetric(new ProgressMetric(progressLogger));
         profilerThread.addMetric(new JVMMemoryMetric());
@@ -186,7 +166,9 @@ class Main {
                 // Export as a Google Earth 3d scene
                 if (out instanceof Attenuation) {
                     Attenuation cellStorage = (Attenuation) out;
-                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                    exportScene(Paths.get(workingDir, String.format(Locale.ROOT,"scene_%d_%d.kml",
+                            cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex())).toString(),
+                            cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }
         } finally {
@@ -194,7 +176,8 @@ class Main {
             tableWriter.stop();
         }
         long computationTime = System.currentTimeMillis() - start;
-        logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver", computationTime,computationTime / (double)receivers.size()));
+        logger.info(String.format(Locale.ROOT, "Computed in %d ms, %.2f ms per receiver",
+                computationTime,computationTime / (double)receivers.size()));
 
 
         logger.info("Create iso contours");
@@ -210,10 +193,41 @@ class Main {
         isoSurface.setPointTable(noiseMapParameters.getlDenTable());
         isoSurface.createTable(connection);
         logger.info("Export iso contours");
-        SHPWrite.exportTable(connection, "target/"+ isoSurface.getOutputTable()+".shp", isoSurface.getOutputTable(), ValueBoolean.TRUE);
+        SHPWrite.exportTable(connection, Paths.get(workingDir, isoSurface.getOutputTable()+".shp").toString(),
+                isoSurface.getOutputTable(), ValueBoolean.TRUE);
         if(JDBCUtilities.tableExists(connection,  noiseMapParameters.getRaysTable())) {
-            SHPWrite.exportTable(connection, "target/" + noiseMapParameters.getRaysTable() + ".shp", noiseMapParameters.getRaysTable(), ValueBoolean.TRUE);
+            SHPWrite.exportTable(connection,
+                    Paths.get(workingDir, noiseMapParameters.getRaysTable() + ".shp").toString(),
+                    noiseMapParameters.getRaysTable(), ValueBoolean.TRUE);
         }
+    }
+
+    public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {
+        // Init output logger
+        Logger logger = LoggerFactory.getLogger(Main.class);
+
+        // Read working directory argument
+        String workingDir = "target";
+        if (args.length > 0) {
+            workingDir = args[0];
+        }
+        File workingDirPath = new File(workingDir).getAbsoluteFile();
+        if(!workingDirPath.exists()) {
+            if(!workingDirPath.mkdirs()) {
+                logger.error("Cannot create working directory {}", workingDir);
+                return;
+            }
+        }
+
+        logger.info("Working directory is {}", workingDirPath.getAbsolutePath());
+
+        // Create spatial database named to current time
+        DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.getDefault());
+
+        // Open connection to database
+        String dbName = Paths.get(workingDir,  "db_" + df.format(new Date())).toFile().toURI().toString();
+        Connection connection = JDBCUtilities.wrapConnection(DbUtilities.createSpatialDataBase(dbName, true));
+        mainWithConnection(connection, workingDir);
     }
 
     public static void exportScene(String name, ProfileBuilder builder, Attenuation result) throws IOException {
