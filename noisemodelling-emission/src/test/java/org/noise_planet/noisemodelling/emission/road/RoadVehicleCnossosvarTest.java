@@ -107,7 +107,7 @@ public class RoadVehicleCnossosvarTest {
 
     @Test
     public void testRoadNoise2_speed0() throws IOException {
-        double speed = 0;
+        double speed = 10;
         int acc = 1;
         int FreqParam = 500;
         double Temperature = 0;

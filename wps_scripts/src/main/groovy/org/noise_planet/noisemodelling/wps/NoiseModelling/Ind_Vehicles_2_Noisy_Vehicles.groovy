@@ -623,7 +623,7 @@ class VehicleEmissionProcessData {
                     String id_veh = (String) row[2]
                     int timestep = (int) row[3]
 
-                    double[] carLevel = getCarsLevel(speed*3.6, id_veh)
+                    double[] carLevel = getCarsLevel(speed*3.6, id_veh,0,"VL")
                     sql.withBatch(100, qry) { ps ->
                         ps.addBatch(timestep as Integer, the_geom as Geometry,
                                 carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
@@ -634,14 +634,16 @@ class VehicleEmissionProcessData {
                 }
         } else if (fileFormat.equals("SYMUVIA")){
             // Remplissage des variables avec le contenu du fichier SUMO
-            sql.eachRow('SELECT THE_GEOM, SPEED, ID, TIMESTEP FROM ' + tablename + ';') { row ->
+            sql.eachRow('SELECT PK,THE_GEOM, SPEED, ACC, "TYPE", ID_VEH, TIME FROM ' + tablename + ';') { row ->
 
-                Geometry the_geom = (Geometry) row[0]
-                double speed = (double) row[1]
-                String id_veh = (String) row[2]
-                int timestep = (int) row[3]
+                Geometry the_geom = (Geometry) row[1]
+                double speed = (double) row[3]
+                double acc = (double) row[4]
+                String typeVeh = (double) row[5]
+                String id_veh = (String) row[6]
+                int timestep = (int) row[7]
 
-                double[] carLevel = getCarsLevel(speed*3.6, id_veh)
+                double[] carLevel = getCarsLevel(speed*3.6, id_veh, acc, typeVeh)
                 sql.withBatch(100, qry) { ps ->
                     ps.addBatch(timestep as Integer, the_geom as Geometry,
                             carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
@@ -659,18 +661,18 @@ class VehicleEmissionProcessData {
 
     }
 
-    double[] getCarsLevel(speed, id_veh) throws SQLException {
-        double[] res_d = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    double[] getCarsLevel(speed, id_veh, double acc, String typeVeh) throws SQLException {
+
         double[] res_LV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         double[] res_HV = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         def list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 
         int kk = 0
         for (f in list) {
-            int acc = 0
-            String RoadSurface = "DEF"
+            String RoadSurface = "FR_R2"
             boolean Stud = false
             String veh_type = "1"
+            if (typeVeh == "BUS") veh_type = "3"
             int acc_type = 1
             double LwStd = 1
             int VehId = 10

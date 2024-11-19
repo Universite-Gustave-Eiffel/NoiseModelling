@@ -200,11 +200,12 @@ class TestNoiseModelling extends JdbcTestCase {
     }
 
 
+\
     @Test
     /**
      * as
      */
-    void Michele() {
+    void testMichele() {
 
         //   SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
 
@@ -219,7 +220,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 tableName : "RECEIVERS"])
 
         new Import_Symuvia().exec(connection, [
-                pathFile : "/home/gao/jnotebook/Noise Data/Michele_Symuvia/Divided/Lim_school_5400_end.xml",
+                pathFile : "/home/gao/jnotebook/Noise Data/Michele_Symuvia/Divided/Remove_5800_5900.xml",
                 inputSRID : 2154,
                 tableName : 'SYMUVIA'
         ])
@@ -269,6 +270,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ])
 
         assertEquals("The columns LEQA and LEQ have been added to the table: LT_GEOM_PROBA.", res)
+
     }
 
 

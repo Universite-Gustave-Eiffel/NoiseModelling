@@ -60,8 +60,6 @@ public class RoadVehicleCnossosvar {
                 RoadLvl = RoadLvl + 0.08 * (20 - Temperature); // K = 0.08  p. 36
                 break;
             case "2":
-                RoadLvl = RoadLvl + 0.04 * (20 - Temperature); // K = 0.04 p. 36
-                break;
             case "3":
                 RoadLvl = RoadLvl + 0.04 * (20 - Temperature); // K = 0.04 p. 36
                 break;
@@ -71,8 +69,8 @@ public class RoadVehicleCnossosvar {
 
 
         // Rolling noise acceleration correction
-        double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
-        RoadLvl = RoadLvl + getCr(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
+        //   double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
+        //   RoadLvl = RoadLvl + getCr(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
 
 
         //Studied tyres
@@ -87,14 +85,14 @@ public class RoadVehicleCnossosvar {
 
         //Road surface correction on rolling noise
         RoadLvl = RoadLvl + getNoiseLvl(getA_RoadSurfaceCoeff(freqParam, veh_type, roadSurface, coeffVer), getB_RoadSurfaceCoeff(veh_type, roadSurface, coeffVer), speed, 70.);
-
+        //RoadLvl = (speed <= 20) ? 0 : RoadLvl;
 
         // ///////////////////////
         // Noise motor
         // Calculate the emission powers of motors lights vehicles and heavies goods vehicles.
         double MotorLvl;
-        RoadLvl = (speed <= 20) ? 0 : RoadLvl;
-        speed = (speed <= 20) ? 20 : speed; // Because when vehicles are stopped they still emit motor sounds.
+
+        //speed = (speed <= 20) ? 20 : speed; // Because when vehicles are stopped they still emit motor sounds.
         // default or steady speed.
         MotorLvl = getCoeff("ap", freqParam, veh_type, coeffVer) + getCoeff("bp", freqParam, veh_type, coeffVer) * (speed - 70) / 70;
 
@@ -103,7 +101,7 @@ public class RoadVehicleCnossosvar {
         switch (acc_type) {
             case 1:
                 if (veh_type.equals("1") || veh_type.equals("2") || veh_type.equals("3")) {
-                   MotorLvl = MotorLvl + getCp(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
+                    // MotorLvl = MotorLvl + getCp(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
                 }
                 break;
             case 2:
