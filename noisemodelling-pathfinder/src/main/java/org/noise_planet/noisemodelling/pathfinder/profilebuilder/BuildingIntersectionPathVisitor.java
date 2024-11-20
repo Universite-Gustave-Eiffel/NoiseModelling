@@ -111,7 +111,7 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                 // This wall has already been pushed to input hull
                 return;
             }
-            // Create the diffraction point outside of the wall segment
+            // Create the diffraction point outside the wall segment
             // Diffraction point must not intersect with wall
             Vector2D translationVector = new Vector2D(processedWall.p0, processedWall.p1).normalize()
                     .multiply(ProfileBuilder.wideAngleTranslationEpsilon);

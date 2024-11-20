@@ -500,120 +500,6 @@ public class PathFinder {
             return cnossosPath;
         }
         return null;
-
-        /**
-        List<Coordinate> coords = toDirectLine(coordinates);
-        if (!coordinates.isEmpty()) {
-            if (coordinates.size() > 2) {
-                List<Coordinate> topoPts = new ArrayList<>();
-                topoPts.add(coordinates.get(0));
-                double g = 0;
-                double d = 0;
-                List<CutPoint> allCutPoints = new ArrayList<>();
-                CutProfile mainProfile = new CutProfile();
-                for(int i=0; i<coordinates.size()-1; i++) {
-                    CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS, false);
-                    mainProfile.addCutPoints(profile.getCutPoints().subList(1, profile.getCutPoints().size()));
-                    profile.setSrcOrientation(orientation);
-                    double dist = coordinates.get(i).distance(coordinates.get(i+1));
-                    g+=profile.getGPath()*dist;
-                    d+=dist;
-                    topoPts.addAll(profile.getCutPoints().stream()
-                            .filter(cut -> cut.getType().equals(BUILDING) || cut.getType().equals(TOPOGRAPHY) || cut.getType().equals(RECEIVER))
-                            .map(CutPoint::getCoordinate)
-                            .collect(Collectors.toList()));
-                    allCutPoints.addAll(profile.getCutPoints());
-
-                }
-                double res = g/d;
-                List<Integer> toRemove = new ArrayList<>();
-                for(int i=0; i<coordinates.size()-1; i++) {
-                    Coordinate c0 = coordinates.get(i);
-                    Coordinate c1 = coordinates.get(i+1);
-                    boolean between = false;
-                    for(int j=0; j<topoPts.size(); j++) {
-                        Coordinate p = topoPts.get(j);
-                        if(p.equals(c1)) {
-                            break;
-                        }
-                        if(p.equals(c0)) {
-                            between = true;
-                        }
-                        if(between && p.z > c1.z) {
-                            toRemove.add(j);
-                        }
-                    }
-                }
-                Collections.sort(toRemove);
-                Collections.reverse(toRemove);
-                for(int i : toRemove) {
-                    topoPts.remove(i);
-                }
-                //Set z value
-                // TODO do not call getZGround, we have it with getProfile
-                for (final Coordinate pt : topoPts) {
-                    coordinates.forEach(c -> {
-                        if (c.equals(pt) && c.z == pt.z) {
-                            pt.z = data.profileBuilder.getZGround(pt);
-                        }
-                    });
-                }
-                //Filter same pts
-                toRemove = new ArrayList<>();
-                for(int i=0; i<topoPts.size()-1; i++) {
-                    Coordinate pi0 = topoPts.get(i);
-                    Coordinate pi1 = topoPts.get(i+1);
-                    if(pi0.equals(pi1) && pi0.z == pi1.z) {
-                        toRemove.add(i);
-                    }
-                }
-                Collections.sort(toRemove);
-                Collections.reverse(toRemove);
-                for(int i : toRemove) {
-                    topoPts.remove(i);
-                }
-
-                List<Coordinate> groundPts = toDirectLine(topoPts);
-                PointPath src = new PointPath(coords.get(0), data.profileBuilder.getZ(coordinates.get(0)), new ArrayList<>(), SRCE);
-                src.orientation = computeOrientation(orientation, coords.get(0), coords.get(1));
-                PointPath rcv = new PointPath(coords.get(coords.size()-1), data.profileBuilder.getZ(coordinates.get(coordinates.size()-1)), new ArrayList<>(), RECV);
-                double[] meanPlan = JTSUtility.getMeanPlaneCoefficients(groundPts.toArray(new Coordinate[0]));
-                SegmentPath srSeg = computeSegment(src.coordinate, rcv.coordinate, meanPlan, res, data.gS);
-                srSeg.dc = sqrt(pow(receiverCoordinates.x-sourceCoordinates.x, 2) + pow(receiverCoordinates.y-sourceCoordinates.y, 2) + pow(receiverCoordinates.z-sourceCoordinates.z, 2));
-
-                List<PointPath> pps = new ArrayList<>();
-                pps.add(src);
-                PointPath previous = src;
-                List<SegmentPath> segs = new ArrayList<>();
-                pathParameters = new CnossosPath();
-                pathParameters.setFavorable(false);
-                pathParameters.setPointList(pps);
-                pathParameters.setSegmentList(segs);
-                pathParameters.setSRSegment(srSeg);
-                pathParameters.init(data.freq_lvl.size());
-                pathParameters.angle=Angle.angle(receiverCoordinates, sourceCoordinates);
-                pathParameters.setCutProfile(mainProfile);
-                pathParameters.raySourceReceiverDirectivity = src.orientation;
-                double e = 0;
-                for(int i=1; i<coordinates.size()-1; i++) {
-                    PointPath diff = new PointPath(coords.get(i), data.profileBuilder.getZ(coordinates.get(i)), new ArrayList<>(), DIFV);
-                    pps.add(diff);
-                    pathParameters.difVPoints.add(i);
-                    SegmentPath seg = computeSegment(previous.coordinate, diff.coordinate, meanPlan, res, data.gS);
-                    segs.add(seg);
-                    if(i>1) {
-                        e += seg.d;
-                    }
-                    previous = diff;
-                }
-                segs.add(computeSegment(previous.coordinate, coords.get(coords.size()-1), meanPlan, res, data.gS));
-                pps.add(rcv);
-                pathParameters.deltaH = segs.get(0).d + e + segs.get(segs.size()-1).d - srSeg.dc;
-                pathParameters.e = e;
-                pathParameters.difVPoints.add(1);
-            }
-        }
-         **/
     }
 
 
@@ -1008,10 +894,12 @@ public class PathFinder {
                 }
                 // Compute cumulated distance between the first diffraction and the last diffraction point
                 pathParameters.e = 0;
+                LineSegment sr = new LineSegment(pts2D.get(0), pts2D.get(pts2D.size() - 1));
                 for(int idPoint = 1; idPoint < points.size() - 2; idPoint++) {
                     pathParameters.e += points.get(idPoint).coordinate.distance(points.get(idPoint+1).coordinate);
                 }
                 pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - srPath.dc;
+                pathParameters.deltaF = pathParameters.deltaH;
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
@@ -1195,13 +1083,22 @@ public class PathFinder {
             }
         }
 
+        List<Coordinate> sideHullPath;
         if (left) {
-            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
+            sideHullPath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
         } else {
             List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length));
             Collections.reverse(inversePath);
-            return inversePath;
+            sideHullPath = inversePath;
         }
+        // Fix interpolation of height from p1 to p n-1
+        List<Coordinate> hull2dPoints = JTSUtility.getNewCoordinateSystem(sideHullPath);
+        LineSegment sr = new LineSegment(hull2dPoints.get(0), hull2dPoints.get(hull2dPoints.size()-1));
+        for(int pointId = 1; pointId < hull2dPoints.size() - 1; pointId++) {
+            Coordinate point2dOnLine = sr.closestPoint(hull2dPoints.get(pointId));
+            sideHullPath.get(pointId).z = point2dOnLine.y;
+        }
+        return  sideHullPath;
     }
 
     /**
