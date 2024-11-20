@@ -16,6 +16,5 @@ formats:
 python:
    install:
    - requirements: Docs/requirements.txt
-   - method: pip
-     path: .
+
      
