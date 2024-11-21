@@ -1091,13 +1091,6 @@ public class PathFinder {
             Collections.reverse(inversePath);
             sideHullPath = inversePath;
         }
-        // Fix interpolation of height from p1 to p n-1
-        List<Coordinate> hull2dPoints = JTSUtility.getNewCoordinateSystem(sideHullPath);
-        LineSegment sr = new LineSegment(hull2dPoints.get(0), hull2dPoints.get(hull2dPoints.size()-1));
-        for(int pointId = 1; pointId < hull2dPoints.size() - 1; pointId++) {
-            Coordinate point2dOnLine = sr.closestPoint(hull2dPoints.get(pointId));
-            sideHullPath.get(pointId).z = point2dOnLine.y;
-        }
         return  sideHullPath;
     }
 

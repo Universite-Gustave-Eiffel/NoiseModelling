@@ -1482,7 +1482,8 @@ public class ProfileBuilder {
         Collection<? extends Wall> getWalls();
     }
 
-    public static final double wideAngleTranslationEpsilon = MILLIMETER;
+    // Buffer around obstacles when computing diffraction (ISO / TR 17534-4 look like using this value)
+    public static final double wideAngleTranslationEpsilon = 0.015;
 
     /**
      * @param build 1-n based building identifier
