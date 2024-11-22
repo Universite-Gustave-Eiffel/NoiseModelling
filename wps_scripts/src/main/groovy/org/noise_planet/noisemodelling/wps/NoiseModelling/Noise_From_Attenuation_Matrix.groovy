@@ -184,7 +184,8 @@ def exec(Connection connection, input) {
         sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(PK)");
     }
 
-    String query2 = '''CREATE TABLE step1 AS SELECT lg.IDRECEIVER,
+    String query2 = '''drop TABLE if exists step1;
+            CREATE TABLE step1 AS SELECT lg.IDRECEIVER,
             10 * LOG10( SUM(POWER(10,(mr.HZ63 + lg.HZ63) / 10))) AS HZ63,
             10 * LOG10( SUM(POWER(10,(mr.HZ125 + lg.HZ125) / 10))) AS HZ125,
             10 * LOG10( SUM(POWER(10,(mr.HZ250 + lg.HZ250) / 10))) AS HZ250,
@@ -197,7 +198,7 @@ def exec(Connection connection, input) {
         FROM ''' + attenuationTable + '''  lg , ''' + lwTable + ''' mr WHERE lg.IDSOURCE = mr.PK 
         GROUP BY lg.IDRECEIVER, mr.T;
 
-
+drop TABLE if exists ''' + outputTable + ''';
 CREATE TABLE ''' + outputTable + ''' AS SELECT 
     a.IDRECEIVER, r.the_geom,
     a.HZ63, a.HZ125, a.HZ250, a.HZ500, a.HZ1000, a.HZ2000, a.HZ4000, a.HZ8000,
