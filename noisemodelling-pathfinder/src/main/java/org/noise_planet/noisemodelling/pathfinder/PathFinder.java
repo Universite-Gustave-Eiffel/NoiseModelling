@@ -894,9 +894,9 @@ public class PathFinder {
                 }
                 // Compute cumulated distance between the first diffraction and the last diffraction point
                 pathParameters.e = 0;
-                LineSegment sr = new LineSegment(pts2D.get(0), pts2D.get(pts2D.size() - 1));
-                for(int idPoint = 1; idPoint < points.size() - 2; idPoint++) {
-                    pathParameters.e += points.get(idPoint).coordinate.distance(points.get(idPoint+1).coordinate);
+                List<PointPath> diffPoints = points.stream().filter(pointPath -> pointPath.type != REFL).collect(Collectors.toList());
+                for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
+                    pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
                 }
                 pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - srPath.dc;
                 pathParameters.deltaF = pathParameters.deltaH;
@@ -925,8 +925,9 @@ public class PathFinder {
         double dSPrimeO = seg1.sPrime.distance(c0);
         // Compute cumulated distance between the first diffraction and the last diffraction point
         pathParameters.e = 0;
-        for(int idPoint = 1; idPoint < points.size() - 2; idPoint++) {
-            pathParameters.e += points.get(idPoint).coordinate.distance(points.get(idPoint+1).coordinate);
+        List<PointPath> diffPoints = points.stream().filter(pointPath -> pointPath.type != REFL).collect(Collectors.toList());
+        for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
+            pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
         }
         pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + pathParameters.e + dOnR - dSPrimeR);
         pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
@@ -946,7 +947,7 @@ public class PathFinder {
         seg2.dPrime = cn.distance(rcvPrime);
 
 
-        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - srPath.dc);
+        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - srPath.d);
         if (sr.orientationIndex(c0) == 1) {
             pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
         } else {
