@@ -259,7 +259,7 @@ public class PathFinder {
                     data.computeVerticalDiffraction, data.computeHorizontalDiffraction, data.isBodyBarrier()));
             // Process reflection
             if (data.reflexionOrder > 0) {
-                pathParameters.addAll(computeReflexion(rcv.getCoord(), src.getCoord(), false,
+                pathParameters.addAll(computeReflexion(rcv.getCoord(), src.getCoord(),
                         src.getOrientation(), receiverMirrorIndex));
             }
             if (!pathParameters.isEmpty()) {
@@ -1198,7 +1198,7 @@ public class PathFinder {
      * @param receiverMirrorIndex
      * @return propagation path list
      */
-    public List<CnossosPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord, boolean favorable,
+    public List<CnossosPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord,
                                               Orientation orientation, MirrorReceiversCompute receiverMirrorIndex) {
 
         // Compute receiver mirror

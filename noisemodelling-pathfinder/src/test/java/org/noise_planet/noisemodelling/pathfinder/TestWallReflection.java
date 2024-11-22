@@ -105,7 +105,7 @@ public class TestWallReflection {
         assertEquals(4, mirrorResults.size());
 
         List<CnossosPath> CnossosPaths = computeRays.computeReflexion(receiver,
-                inputData.sourceGeometries.get(0).getCoordinate(), false,
+                inputData.sourceGeometries.get(0).getCoordinate(),
                 new Orientation(), receiverMirrorIndex);
 
         // Only one second order reflexion propagation path must be found
@@ -176,7 +176,7 @@ public class TestWallReflection {
         assertEquals(4, mirrorResults.size());
 
         List<CnossosPath> CnossosPaths = computeRays.computeReflexion(receiver,
-                inputData.sourceGeometries.get(0).getCoordinate(), false,
+                inputData.sourceGeometries.get(0).getCoordinate(),
                 new Orientation(), receiverMirrorIndex);
 
         // Only one second order reflexion propagation path must be found
