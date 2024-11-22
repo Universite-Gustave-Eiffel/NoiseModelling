@@ -349,21 +349,6 @@ public class PathFinder {
         return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
     }
 
-
-    /**
-     *
-     * @param src
-     * @param rcv
-     * @param meanPlane
-     * @param gPath
-     * @param gS
-     * @return
-     */
-    private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane, double gPath, double gS) {
-        return computeSegment(src, src.y, rcv, rcv.y, meanPlane, gPath, gS);
-    }
-
-
     /**
      * Compute the segment path
      * @param src
@@ -372,31 +357,27 @@ public class PathFinder {
      * @return the calculated segment
      */
     private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane) {
-        return computeSegment(src, src.y, rcv, rcv.y, meanPlane, 0, 0);
+        return computeSegment(src, rcv, meanPlane, 0, 0);
     }
 
     /**
      * Compute the segment path with more attribute
      * @param src
-     * @param sz
      * @param rcv
-     * @param rz
      * @param meanPlane
      * @param gPath
      * @param gS
      * @return the computed segment path
      */
 
-    private static SegmentPath computeSegment(Coordinate src, double sz, Coordinate rcv, double rz, double[] meanPlane, double gPath, double gS) {
+    private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane, double gPath, double gS) {
         SegmentPath seg = new SegmentPath();
-        Coordinate srcZ = new Coordinate(src.x, sz);
-        Coordinate rcvZ = new Coordinate(rcv.x, rz);
-        Coordinate sourcePointOnMeanPlane = projectPointOnLine(srcZ, meanPlane[0], meanPlane[1]);
-        Coordinate receiverPointOnMeanPlane = projectPointOnLine(rcvZ, meanPlane[0], meanPlane[1]);
-        Vector2D sourceToProjectedPoint = Vector2D.create(srcZ, sourcePointOnMeanPlane);
-        Vector2D receiverToProjectedPoint = Vector2D.create(rcvZ, receiverPointOnMeanPlane);
-        seg.s = srcZ;
-        seg.r = rcvZ;
+        Coordinate sourcePointOnMeanPlane = projectPointOnLine(src, meanPlane[0], meanPlane[1]);
+        Coordinate receiverPointOnMeanPlane = projectPointOnLine(rcv, meanPlane[0], meanPlane[1]);
+        Vector2D sourceToProjectedPoint = Vector2D.create(src, sourcePointOnMeanPlane);
+        Vector2D receiverToProjectedPoint = Vector2D.create(rcv, receiverPointOnMeanPlane);
+        seg.s = src;
+        seg.r = rcv;
         seg.sMeanPlane = sourcePointOnMeanPlane;
         seg.rMeanPlane = receiverPointOnMeanPlane;
         seg.sPrime = Vector2D.create(sourcePointOnMeanPlane).add(sourceToProjectedPoint).toCoordinate();
@@ -404,8 +385,8 @@ public class PathFinder {
 
         seg.d = src.distance(rcv);
         seg.dp =sourcePointOnMeanPlane.distance(receiverPointOnMeanPlane);
-        seg.zsH = srcZ.distance(sourcePointOnMeanPlane);
-        seg.zrH = rcvZ.distance(receiverPointOnMeanPlane);
+        seg.zsH = src.distance(sourcePointOnMeanPlane);
+        seg.zrH = rcv.distance(receiverPointOnMeanPlane);
         seg.a = meanPlane[0];
         seg.b = meanPlane[1];
         seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
@@ -501,29 +482,6 @@ public class PathFinder {
         }
         return null;
     }
-
-
-    /**
-     * convertit une série de points 3D en une série de points 2D
-     * @param coordinates
-     * @return
-     */
-    private List<Coordinate> toDirectLine(List<Coordinate> coordinates) {
-        List<Coordinate> coords = new ArrayList<>();
-        if(coordinates.isEmpty()) {
-            return coords;
-        }
-        Coordinate prev = coordinates.get(0);
-        double d = 0;
-        for(Coordinate c : coordinates) {
-            d+=prev.distance(c);
-            prev = c;
-            coords.add(new Coordinate(d, c.z));
-        }
-        return coords;
-    }
-
-
 
     private void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
                                      LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
@@ -848,6 +806,7 @@ public class PathFinder {
             meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
                     profileSeg.getSource().getGroundCoef());
+            path.dc = cutPt0.getCoordinate().distance3D(cutPt1.getCoordinate());
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
             if (i != pts.size() - 1) {
@@ -898,7 +857,10 @@ public class PathFinder {
                 for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
                     pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
                 }
-                pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - srPath.dc;
+                long difVPointCount = pathParameters.getPointList().stream().
+                        filter(pointPath -> pointPath.type.equals(DIFV)).count();
+                double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
+                pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - distance;
                 pathParameters.deltaF = pathParameters.deltaH;
             } else {
                 segments.addAll(rayleighSegments);
@@ -947,7 +909,10 @@ public class PathFinder {
         seg2.dPrime = cn.distance(rcvPrime);
 
 
-        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - srPath.d);
+        long difVPointCount = pathParameters.getPointList().stream().
+                filter(pointPath -> pointPath.type.equals(DIFV)).count();
+        double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
+        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - distance);
         if (sr.orientationIndex(c0) == 1) {
             pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
         } else {
