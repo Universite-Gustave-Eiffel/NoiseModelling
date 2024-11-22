@@ -49,7 +49,15 @@ inputs = [
         distance2snap : [name : 'distance2snap',
                   title : "distance2snap",
                   description : "distance2snap",
+                         min        : 0,
+                         max        : 1,
                   type: Double.class],
+        snapOption : [name : 'snapOption',
+                  title : "snapOption",
+                  description : "snapOption",
+                      min        : 0,
+                      max        : 1,
+                  type: String.class],
         fileFormat : [name : 'fileFormat',
                   title : "fileFormat",
                   description : "fileFormat",
@@ -114,7 +122,7 @@ def exec(Connection connection, input) {
     String vehicles_table_name = input['tableVehicles']
 
     String fileFormat = input['fileFormat']
-
+    String snapOption = input['snapOption']
     double distance2snap = input['distance2snap']
 
     // do it case-insensitive
@@ -622,7 +630,7 @@ class VehicleEmissionProcessData {
                     double speed = (double) row[1]
                     String id_veh = (String) row[2]
                     int timestep = (int) row[3]
-
+                    // in SUMO, the speed is in m.s-1, we need to convert it in km.h-1
                     double[] carLevel = getCarsLevel(speed*3.6, id_veh)
                     sql.withBatch(100, qry) { ps ->
                         ps.addBatch(timestep as Integer, the_geom as Geometry,
@@ -641,7 +649,8 @@ class VehicleEmissionProcessData {
                 String id_veh = (String) row[2]
                 int timestep = (int) row[3]
 
-                double[] carLevel = getCarsLevel(speed*3.6, id_veh)
+                // in SYMUVIA, the speed is in km.h-1
+                double[] carLevel = getCarsLevel(speed, id_veh)
                 sql.withBatch(100, qry) { ps ->
                     ps.addBatch(timestep as Integer, the_geom as Geometry,
                             carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,

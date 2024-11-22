@@ -374,7 +374,7 @@ def run(input) {
     }
 }
 
-static void exportScene(String name, ProfileBuilder builder, AttenuationCnossosParameters result, int crs) throws IOException {
+static void exportScene(String name, ProfileBuilder builder, NoiseMap result, int crs) throws IOException {
     try {
         FileOutputStream outData = new FileOutputStream(name);
         KMLDocument kmlDocument = new KMLDocument(outData);
@@ -651,7 +651,7 @@ def exec(Connection connection, input) {
             ldenConfig.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE)
             ldenConfig.setRaysTable(input['confRaysName'] as String)
         }
-        ldenConfig.setKeepAbsorption(true);
+        //ldenConfig.setKeepAbsorption(true);
         ldenConfig.setMaximumRaysOutputCount(maximumRaysToExport);
     }
 
@@ -776,8 +776,8 @@ def exec(Connection connection, input) {
             // Run ray propagation
             IComputePathsOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
             // Export as a Google Earth 3d scene
-            if (out instanceof AttenuationCnossosParameters && folderExportKML != null) {
-                AttenuationCnossosParameters cellStorage = (AttenuationCnossosParameters) out;
+            if (out instanceof NoiseMap && folderExportKML != null) {
+                NoiseMap cellStorage = (NoiseMap) out;
                 exportScene(new File(folderExportKML.getPath(),
                         String.format(Locale.ROOT, kmlFileNamePrepend + "_%d_%d.kml", cellIndex.getLatitudeIndex(),
                                 cellIndex.getLongitudeIndex())).getPath(),
