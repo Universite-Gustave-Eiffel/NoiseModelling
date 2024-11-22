@@ -643,7 +643,7 @@ class VehicleEmissionProcessData {
                 int id_veh = (int) row[0]
                 int timestep = (int) row[5]
 
-                double[] carLevel = getCarsLevel(speed*3.6, id_veh, acc, typeVeh)
+                double[] carLevel = getCarsLevel(speed, id_veh, acc, typeVeh)
                 sql.withBatch(100, qry) { ps ->
                     ps.addBatch(timestep as Integer, the_geom as Geometry,
                             carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
