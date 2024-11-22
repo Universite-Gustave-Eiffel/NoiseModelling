@@ -611,6 +611,7 @@ class VehicleEmissionProcessData {
         //////////////////////
 
         sql.execute("drop table if exists LW_DYNAMIC;")
+        sql.execute("drop table if exists LW_VEHICLE;")
         sql.execute("create table LW_VEHICLE(IT integer, THE_GEOM geometry, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
         def qry = 'INSERT INTO LW_VEHICLE(IT , THE_GEOM,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
