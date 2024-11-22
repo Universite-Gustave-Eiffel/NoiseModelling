@@ -44,9 +44,6 @@ import static org.junit.Assert.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
 
-// TODO reduce error epsilon
-// TODO reduce error epsilon
-
 /**
  * Test class evaluation and testing attenuation values.
  */
@@ -354,6 +351,8 @@ public class AttenuationCnossosTest {
                 .setGs(0.0)
                 .build();
 
+        rayData.reflexionOrder = 0;
+
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
@@ -402,6 +401,8 @@ public class AttenuationCnossosTest {
                 .addReceiver(0, -30, 2)
                 .setGs(0.0)
                 .build();
+
+        rayData.reflexionOrder = 0;
 
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
@@ -5670,9 +5671,9 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - lateral left", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGHEST);
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_LOW);
-        //assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        //assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(  new double[]{6.72, 14.66, 19.34, 21.58, 21.84, 19.00, 11.42, -9.38},LA, ERROR_EPSILON_VERY_LOW);
 
     }
 
