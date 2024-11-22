@@ -143,7 +143,7 @@ def exec(Connection connection, input) {
     sql.execute("CREATE SPATIAL INDEX ON LW_DYNAMIC_GEOM(the_geom);")
 
    // sql.execute("DROP TABLE IF EXISTS ROAD_POINTS")
-    sql.execute("DROP TABLE IF EXISTS LW_VEHICLE")
+   // sql.execute("DROP TABLE IF EXISTS LW_VEHICLE")
     sql.execute("drop table LW_DYNAMIC if exists;")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
