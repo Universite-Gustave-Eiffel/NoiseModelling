@@ -416,7 +416,7 @@ public class ProfileBuilder {
                 wall.setHeight(height);
                 wall.setAlpha(alphas);
                 walls.add(wall);
-                wallTree.insert(wall.line.getEnvelopeInternal(), walls.size());
+                wallTree.insert(new Envelope(wall.p0, wall.p1), walls.size());
             }
             return this;
         }
@@ -1476,11 +1476,6 @@ public class ProfileBuilder {
     /**
      * Profile cutting point.
      */
-
-
-    public interface Obstacle{
-        Collection<? extends Wall> getWalls();
-    }
 
     // Buffer around obstacles when computing diffraction (ISO / TR 17534-4 look like using this value)
     public static final double wideAngleTranslationEpsilon = 0.015;

@@ -5023,6 +5023,8 @@ public class AttenuationCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        exportRays("target/tc18.json", propDataOut);
+
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.58, 2.94, 13.68};
         double[] expectedCfH = new double[]{201.47,218.76,217.74,102.89,14.04,1.71,0.34,0.07};
         double[] expectedAGroundH = new double[]{-1.26,-1.26,-1.26,2.12,-1.26,-1.26,-1.26,-1.26};

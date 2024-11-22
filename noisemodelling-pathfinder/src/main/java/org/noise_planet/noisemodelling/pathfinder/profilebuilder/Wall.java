@@ -12,9 +12,7 @@ import java.util.List;
 
 
 
-public class Wall implements ProfileBuilder.Obstacle {
-    /** Segment of the wall. */
-    final LineString line;
+public class Wall {
     /** Type of the wall */
     final ProfileBuilder.IntersectionType type;
     /** Id or index of the source building or topographic triangle. */
@@ -26,9 +24,8 @@ public class Wall implements ProfileBuilder.Obstacle {
     public Coordinate p0;
     public Coordinate p1;
     LineSegment ls;
-    ProfileBuilder.Obstacle obstacle = this;
     int processedWallIndex;
-    static final GeometryFactory FACTORY = new GeometryFactory();
+
     /**
      * Constructor using segment and id.
      * @param line     Segment of the wall.
@@ -37,22 +34,7 @@ public class Wall implements ProfileBuilder.Obstacle {
     public Wall(LineSegment line, int originId, ProfileBuilder.IntersectionType type) {
         this.p0 = line.p0;
         this.p1 = line.p1;
-        this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
         this.ls = line;
-        this.originId = originId;
-        this.type = type;
-        this.alphas = new ArrayList<>();
-    }
-    /**
-     * Constructor using segment and id.
-     * @param line     Segment of the wall.
-     * @param originId Id or index of the source building or topographic triangle.
-     */
-    public Wall(LineString line, int originId, ProfileBuilder.IntersectionType type) {
-        this.line = line;
-        this.p0 = line.getCoordinateN(0);
-        this.p1 = line.getCoordinateN(line.getNumPoints()-1);
-        this.ls = new LineSegment(p0, p1);
         this.originId = originId;
         this.type = type;
         this.alphas = new ArrayList<>();
@@ -65,7 +47,6 @@ public class Wall implements ProfileBuilder.Obstacle {
      * @param originId Id or index of the source building or topographic triangle.
      */
     public Wall(Coordinate p0, Coordinate p1, int originId, ProfileBuilder.IntersectionType type) {
-        this.line = FACTORY.createLineString(new Coordinate[]{p0, p1});
         this.p0 = p0;
         this.p1 = p1;
         this.ls = new LineSegment(p0, p1);
@@ -105,18 +86,6 @@ public class Wall implements ProfileBuilder.Obstacle {
         this.height = height;
     }
 
-    public void setObstacle(ProfileBuilder.Obstacle obstacle) {
-        this.obstacle = obstacle;
-    }
-
-    /**
-     * Retrieve the segment.
-     * @return Segment of the wall.
-     */
-    public LineString getLine() {
-        return line;
-    }
-
     public LineSegment getLineSegment() {
         return ls;
     }
@@ -147,14 +116,5 @@ public class Wall implements ProfileBuilder.Obstacle {
 
     public ProfileBuilder.IntersectionType getType() {
         return type;
-    }
-
-    public ProfileBuilder.Obstacle getObstacle() {
-        return obstacle;
-    }
-
-    @Override
-    public Collection<? extends Wall> getWalls() {
-        return Collections.singleton(this);
     }
 }

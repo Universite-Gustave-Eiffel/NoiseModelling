@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class Building implements ProfileBuilder.Obstacle {
+public class Building {
     /** Building footprint. */
     Polygon poly;
     /** Height of the building. */
@@ -150,10 +150,8 @@ public class Building implements ProfileBuilder.Obstacle {
      */
     public void setWalls(List<Wall> walls) {
         this.walls = walls;
-        walls.forEach(w -> w.setObstacle(this));
     }
 
-    @Override
     public Collection<? extends Wall> getWalls() {
         return walls;
     }
