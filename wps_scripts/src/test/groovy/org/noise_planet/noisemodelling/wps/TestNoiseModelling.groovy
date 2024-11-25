@@ -17,16 +17,16 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Point_Source_0dB_From_Network
+import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_0dB_From_Network
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Ind_Vehicles_2_Noisy_Vehicles
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_From_Attenuation_Matrix
+import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles
+import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Flow_2_Noisy_Vehicles
+import org.noise_planet.noisemodelling.wps.Dynamic.Flow_2_Noisy_Vehicles
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -117,7 +117,7 @@ class TestNoiseModelling extends JdbcTestCase {
     /**
      * as SUMO or SYMUVIA or Drone input
      */
-    void testDynamicIndividualVehicles() {
+    void testDynamicIndividualVehiclesTutorial() {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
@@ -157,7 +157,7 @@ class TestNoiseModelling extends JdbcTestCase {
         // Create point sources from the network every 10 meters. This point source will be used to compute the noise attenuation level from them to each receiver.
         // The created table will be named SOURCES_0DB
         new Point_Source_0dB_From_Network().exec(connection,
-                ["tableRoads": "network_tartu",
+                ["tableNetwork": "network_tartu",
                  "gridStep" : 10
                 ])
 
@@ -180,7 +180,7 @@ class TestNoiseModelling extends JdbcTestCase {
         new Ind_Vehicles_2_Noisy_Vehicles().exec(connection,
                 ["tableVehicles": "vehicle",
                  "distance2snap" : 30,
-                 "fileFormat" : "SUMO"])
+                 "tableFormat" : "SUMO"])
 
         // Compute the noise level from the moving vehicles to the receivers
         // the output table is called here LT_GEOM and contains the time series of the noise level at each receiver
@@ -203,7 +203,7 @@ class TestNoiseModelling extends JdbcTestCase {
     /**
      * as OSM input
      */
-    void testDynamicFlow() {
+    void testDynamicFlowTutorial() {
 
         // Import the road network (with predicted traffic flows) and buildings from an OSM file
         new Import_OSM().exec(connection, [
@@ -281,7 +281,7 @@ class TestNoiseModelling extends JdbcTestCase {
     /**
      * as MATSIM input
      */
-    void testDynamicFluctuatingFlow() {
+    void testDynamicFluctuatingFlowTutorial() {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,

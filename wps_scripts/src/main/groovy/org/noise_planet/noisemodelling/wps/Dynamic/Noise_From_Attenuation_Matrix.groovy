@@ -14,7 +14,7 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store

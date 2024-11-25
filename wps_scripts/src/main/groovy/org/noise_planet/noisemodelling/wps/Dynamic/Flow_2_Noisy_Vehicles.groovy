@@ -15,7 +15,7 @@
  * @Author Valetin Le Bescond, Université Gustave Eiffel, Ghent University
  */
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
