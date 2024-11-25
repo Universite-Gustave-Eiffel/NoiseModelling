@@ -571,7 +571,7 @@ public class AttenuationCnossos {
                     Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleZ);
                     double SO = s.distance(o);
                     double OR = o.distance(r);
-                    double SR = reflect.getCutPoints().get(0).getCoordinate().distance3D(new Coordinate(reflect.getCutPoints().get(reflect.getCutPoints().size() - 1).getCoordinate().x, reflect.getCutPoints().get(reflect.getCutPoints().size() - 1).getCoordinate().y, reflect.getPointList().get(reflect.getPointList().size() - 1).coordinate.y));
+                    double SR = reflect.getPointList().get(reflect.getPointList().size() - 1).coordinate.x;
                     double ch = 1.;
                     if (reflect.isFavorable()) {
                         double gamma = 2 * max(1000, 8 * SR);
