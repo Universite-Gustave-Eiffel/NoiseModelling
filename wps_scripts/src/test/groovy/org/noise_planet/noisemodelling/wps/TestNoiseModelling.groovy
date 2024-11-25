@@ -310,7 +310,7 @@ class TestNoiseModelling extends JdbcTestCase {
         // This method place randomly the vehicles on the network according to the traffic flow
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS",
-                "Mode" : "dynamic"])
+                "mode" : "dynamic"])
 
 
         // Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers

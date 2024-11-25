@@ -157,7 +157,7 @@ def exec(Connection connection, input) {
     }
     int pkIndex = 0
     //Get the primary key field of the source table
-    if (mode != ""){
+    if (mode == ""){
         pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse( sources_table_name))
         if (pkIndex < 1) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
@@ -173,7 +173,7 @@ def exec(Connection connection, input) {
     Sql sql = new Sql(connection)
     String qry = ""
 
-    if (mode != ""){
+    if (mode.equals("")){
     // drop table LW_ROADS if exists and the create and prepare the table
     sql.execute("drop table if exists LW_ROADS;")
     sql.execute("create table LW_ROADS (pk integer, the_geom Geometry, " +
@@ -227,7 +227,7 @@ def exec(Connection connection, input) {
             //logger.info(rs)
             Geometry geo = rs.getGeometry()
 
-            if (mode != "") {
+            if (mode == "") {
                 // Compute emission sound level for each road segment
                 def results = noiseEmissionMaker.computeLw(rs)
                 def lday = Utils.wToDba(results[0])
@@ -265,7 +265,7 @@ def exec(Connection connection, input) {
 
 
     // Add primary key to the road table
-    if (mode != "") {
+    if (mode == "") {
         sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
     } else {
