@@ -1,16 +1,16 @@
-Welcome to the World of Dynamics!
-=================================
+Dynamic Maps - groovy scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Many publications have emerged showcasing the use of **NoiseModelling** to create dynamic maps. `scientific production`_
+Many publications have emerged showcasing the use of **NoiseModelling** to create dynamic maps (see `scientific production`_).
 
 .. _scientific production : https://noisemodelling.readthedocs.io/en/latest/Scientific_production.html
 
-If you'd like to achieve similar results but feel a bit lost, this tutorial is here to help you navigate through the process.
+If you'd like to achieve similar results but you feel a bit lost, this tutorial is here to help you navigate through the process.
 
-There are three main approaches to creating dynamic maps in NoiseModelling:
+There are three main approaches to creating dynamic maps using NoiseModelling:
 
 1. **A road network with a single traffic flow**  
-   You have a road network and a single traffic flow associated with a specific time period (e.g., 24h). You want to compute dynamic indicators such as **L10**, **L90**, or the **number of events exceeding a certain threshold** for the entire time period.
+   You have a road network and a single traffic flow associated with a specific time period (e.g., 24h). You want to compute dynamic indicators such as **L10**, **L90**, or the **number of events exceeding a threshold** or to get time series for the same time period.
 
 2. **A road network with traffic flows at regular intervals**  
    You have a road network and traffic flow data available at regular intervals (e.g., hourly or every 15 minutes), and you want to generate a dynamic noise map every 15 min.
@@ -29,19 +29,13 @@ Dynamic mapping has its subtleties, and it's important to be aware of them to av
 - Gozalo, G. R., Aumond, P., & Can, A. (2020). Variability in sound power levels: Implications for static and dynamic traffic models. Transportation Research Part D: Transport and Environment, 84, 102339.
 - Le Bescond, V., Can, A., Aumond, P., & Gastineau, P. (2021). Open-source modeling chain for the dynamic assessment of road traffic noise exposure. Transportation Research Part D: Transport and Environment, 94, 102793.
 
+This is an **advanced tutorial**, so you may need to open the Groovy scripts to see what’s under the hood. Assumptions are freely made, specific formats are expected, and so on. To understand the required data formats and check the expected structure of the input tables, please refer also to the example input tables and spatial layers!
 
-A Word of Caution
------------------
-
-Format, de nombreux format sont contraints, pour regarder les formats attendus des tables d'entrée, merci de les ouvrir !
-
-Cases in Detail
+Study Cases
 ---------------
 
 Case 1: A Road Network with a Single Traffic Flow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You have a road network and a single traffic flow associated with a specific time period (e.g., 24h). The goal is to compute dynamic indicators such as **L10**, **L90**, or the **number of events exceeding a certain threshold** for the entire time period.
 
 .. code-block:: groovy
 
@@ -118,8 +112,7 @@ You have a road network and a single traffic flow associated with a specific tim
 Case 2: A Road Network with Traffic Flows at Regular Intervals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You have a road network and traffic flow data available at regular intervals (e.g., hourly or every 15 minutes). The goal is to generate a map for these intervals.  
-This case is similar to the **MATSim** use case (a tutorial for MATSim is available `here <#>`_), but this tutorial will generalize the approach to fit other datasets.
+This case is similar to the **MATSim** use case (`here <Matsim_Tutorial.rst>`_), but this tutorial generalizes the approach to fit other datasets.
 
 .. code-block:: groovy
 
@@ -177,14 +170,10 @@ This case is similar to the **MATSim** use case (a tutorial for MATSim is availa
                  "outputTable"   : "LT_GEOM"
                 ])
 
-The toy dataset used in this example is available `here <#>`_. and was kindly provide by Valentin Lebescond from Université Gustave Eiffel.
+The toy dataset used in this example was kindly provide by Valentin Lebescond from Université Gustave Eiffel.
 
 Case 3: Spatio-Temporal Data of Moving Sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You have spatio-temporal information about vehicles moving around a network (e.g., from traffic simulations such as Simuvya or SUMO; or from trajectories of drones). The goal is to compute **time-series data at each receiver** corresponding to the passage of these sources.
-
-Here the steps you have to follow to achieve this goal:
 
 .. code-block:: groovy
 
@@ -265,9 +254,4 @@ Here the steps you have to follow to achieve this goal:
                  "columnName"   : "LEQA"
                 ])
 
-The toy dataset used in this example is available `here <#>`_. and was kindly provide by Sacha Baclet from KTH (0000-0003-2114-8680).
-
-Next Steps
-----------
-
-Now that the introduction and overview are complete, let’s dive deeper into **Case 1**!
+The toy dataset was kindly provide by Sacha Baclet from KTH (0000-0003-2114-8680).
