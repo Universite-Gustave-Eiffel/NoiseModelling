@@ -204,7 +204,7 @@ public class AttenuationCnossos {
                 for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
                     List<Double> alpha = pointPath.alphaWall;
                     if (alpha != null && !alpha.isEmpty()) {
-                        aRef[idf] += -10 * log10(1 - alpha.get(idf));
+                        aRef[idf] += 10 * log10(1 - alpha.get(idf));
                     }
                 }
             }

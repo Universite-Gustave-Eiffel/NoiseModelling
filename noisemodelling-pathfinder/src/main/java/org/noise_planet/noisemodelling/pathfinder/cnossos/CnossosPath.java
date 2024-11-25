@@ -21,6 +21,8 @@ public class CnossosPath extends Path {
     public  double[] aRef = new double[0];
     public  double[] double_aBoundaryH = new double[0];
     public  double[] double_aBoundaryF = new double[0];
+    public  double[] aRetroDiffH = new double[0]; // Alpha Retro Diffraction homogenous
+    public  double[] aRetroDiffF = new double[0]; // Alpha Retro Diffraction favorable
     public  double[] aGlobalH = new double[0];
     public double[] aGlobalF = new double[0];
     public double[] aDifH = new double[0];
@@ -54,7 +56,8 @@ public class CnossosPath extends Path {
         this.aDifF = new double[size];
         this.aGlobal = new double[size];
         this.aSource = new double[size];
-
+        this.aRetroDiffH = new double[size];
+        this.aRetroDiffF = new double[size];
     }
 
     public CnossosPath() {
@@ -86,6 +89,8 @@ public class CnossosPath extends Path {
         this.deltaSPrimeRF = other.deltaSPrimeRF;
         this.deltaSRPrimeF = other.deltaSRPrimeF;
         this.e = other.e;
+        this.aRetroDiffF = other.aRetroDiffF.clone();
+        this.aRetroDiffH = other.aRetroDiffH.clone();
     }
     public static class ABoundary {
         public double[] deltaDiffSR;

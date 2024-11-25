@@ -142,7 +142,6 @@ public class Attenuation implements IComputePathsOut {
         for (CnossosPath proPathParameters : pathParameters) {
             if(exportAttenuationMatrix) {
                 proPathParameters.keepAbsorption = true;
-                //CnossosPathsParameters.keepAbsorption = true;
                 proPathParameters.groundAttenuation.init(data.freq_lvl.size());
                 proPathParameters.init(data.freq_lvl.size());
             }
@@ -153,6 +152,10 @@ public class Attenuation implements IComputePathsOut {
             double[] aAtm = AttenuationCnossos.aAtm(data, proPathParameters.getSRSegment().d);
             //Reflexion computation
             double[] aRef = AttenuationCnossos.evaluateAref(proPathParameters, data);
+            //For testing purpose
+            if(exportAttenuationMatrix) {
+                proPathParameters.aRef = aRef.clone();
+            }
             double[] aRetroDiff;
             //ABoundary computation
             double[] aBoundary;
@@ -278,7 +281,7 @@ public class Attenuation implements IComputePathsOut {
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(exportAttenuationMatrix) {
@@ -292,11 +295,12 @@ public class Attenuation implements IComputePathsOut {
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(exportAttenuationMatrix) {
                     proPathParameters.double_aBoundaryF = aBoundary.clone();
+                    proPathParameters.aRetroDiffF = aRetroDiff.clone();
                     proPathParameters.aGlobalF = aGlobalMeteoFav.clone();
                 }
             }
