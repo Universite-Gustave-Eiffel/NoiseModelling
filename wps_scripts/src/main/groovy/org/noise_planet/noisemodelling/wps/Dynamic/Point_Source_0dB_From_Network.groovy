@@ -29,8 +29,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-// The created table will be named SOURCES_0DB
-
 
 
 title = 'Create Point Source From a network'
