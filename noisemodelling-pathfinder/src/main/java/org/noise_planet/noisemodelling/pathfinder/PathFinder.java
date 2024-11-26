@@ -832,14 +832,13 @@ public class PathFinder {
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){
             // Direct propagation (no diffraction over obstructing objects)
-            boolean horizontalPlaneDiffractionOrReflection = cutProfile.getCutPoints().stream()
+            boolean horizontalPlaneDiffraction = cutProfile.getCutPoints().stream()
                     .anyMatch(
-                            cutPoint -> cutPoint.getType().equals(V_EDGE_DIFFRACTION) ||
-                                    cutPoint.getType().equals(REFLECTION));
+                            cutPoint -> cutPoint.getType().equals(V_EDGE_DIFFRACTION));
             List<SegmentPath> rayleighSegments = new ArrayList<>();
             List<PointPath> rayleighPoints = new ArrayList<>();
             // do not check for rayleigh if the path is not direct between R and S
-            if(!horizontalPlaneDiffractionOrReflection) {
+            if(!horizontalPlaneDiffraction) {
                 // Check for Rayleigh criterion for segments computation
                 LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
                 // Look for diffraction over edge on free field (frequency dependent)
