@@ -510,10 +510,10 @@ public class AttenuationCnossos {
         // Without diff
         for(int i=0; i<data.freq_lvl.size(); i++) {
             int finalI = i;
+            boolean isValidRCriterion = isValidRcrit(path, data.freq_lvl.get(finalI), path.isFavorable());
             PointPath first = diffPts.stream()
                     .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
-                            (pp.type.equals(DIFH_RCRIT) &&
-                                    isValidRcrit(path, data.freq_lvl.get(finalI), path.isFavorable())))
+                            (pp.type.equals(DIFH_RCRIT) && isValidRCriterion ))
                     .findFirst()
                     .orElse(null);
             aGround[i] = path.isFavorable() ?
@@ -528,12 +528,10 @@ public class AttenuationCnossos {
             }
             if (first != null) {
                 aDif[i] = aDif(path, data, i, first.type);
-                if(!first.type.equals(DIFV)) {
+                if(!first.type.equals(DIFV) && isValidRCriterion) {
                     aGround[i] = 0.;
                 }
-            }
-            // With refl
-            else {
+            } else {
                 aDif[i] = 0.;
             }
 
@@ -565,49 +563,63 @@ public class AttenuationCnossos {
         Arrays.fill(retroDiff, 0.);
         Coordinate s = reflect.getSRSegment().s;
         Coordinate r = reflect.getSRSegment().r;
-        double SR = s.distance(r);
-        reflect.getPointList().stream().filter(pointPath -> pointPath.type.equals(REFL))
-                .forEach(pp -> {
-                    //Get the point on the top of the obstacle
-                    Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleZ);
-                    double SO = s.distance(o);
-                    double OR = o.distance(r);
-                    double ch = 1.;
-                    if (reflect.isFavorable()) {
-                        double gamma = 2 * max(1000, 8 * SR);
-                        double e = reflect.e;
-                        double SpO = gamma * asin(SO / gamma);
-                        double OpR = gamma * asin(OR / gamma);
-                        double SpR = gamma * asin(s.distance(r) / gamma);
-                        double deltaPrime = -(SpO + OpR - SpR);
-                        if (e < 0.3) {
-                            for (int i = 0; i < data.freq_lvl.size(); i++) {
-                                double lambda = 340.0 / data.freq_lvl.get(i);
-                                double testForm = 40.0 / lambda * deltaPrime;
-                                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
-                                retroDiff[i] = dLRetro;
-                            }
-                        } else {
-
-                            for (int i = 0; i < data.freq_lvl.size(); i++) {
-                                double lambda = 340.0 / data.freq_lvl.get(i);
-                                double Csecond = 1 + (5 * lambda / e * 5 * lambda / e) / 1 / 3 + (5 * lambda / e * 5 * lambda / e);
-                                double testForm = 40.0 / lambda * Csecond * deltaPrime;
-                                double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
-                                retroDiff[i] = dLRetro;
-                            }
-
-                        }
-                    } else {
-                        double deltaPrime = -((s.distance(o) + o.distance(r)) - s.distance(r)); //2.5.36
+        List<PointPath> pointList = reflect.getPointList();
+        for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
+            PointPath pointPath = pointList.get(idPoint);
+            if (pointPath.type.equals(DIFH)) {
+                s = pointPath.coordinate;
+            } else if (pointPath.type.equals(REFL)) {
+                // Look for the next DIFH of the receiver
+                for(int idPointNext=0; idPointNext<pointList.size(); idPointNext++) {
+                    PointPath pointPathNext = pointList.get(idPoint);
+                    if (pointPathNext.type.equals(DIFH)) {
+                        r = pointPathNext.coordinate;
+                        break;
+                    }
+                }
+                // If there is a diffraction on horizontal edge the diffraction point is the new
+                double SR = s.distance(r);
+                //Get the point on the top of the obstacle
+                Coordinate o = new Coordinate(pointPath.coordinate.x, pointPath.obstacleZ);
+                double SO = s.distance(o);
+                double OR = o.distance(r);
+                double ch = 1.;
+                if (reflect.isFavorable()) {
+                    double gamma = 2 * max(1000, 8 * SR);
+                    double e = reflect.e;
+                    double SpO = gamma * asin(SO / gamma);
+                    double OpR = gamma * asin(OR / gamma);
+                    double SpR = gamma * asin(s.distance(r) / gamma);
+                    double deltaPrime = -(SpO + OpR - SpR);
+                    if (e < 0.3) {
                         for (int i = 0; i < data.freq_lvl.size(); i++) {
                             double lambda = 340.0 / data.freq_lvl.get(i);
                             double testForm = 40.0 / lambda * deltaPrime;
                             double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
                             retroDiff[i] = dLRetro;
                         }
+                    } else {
+
+                        for (int i = 0; i < data.freq_lvl.size(); i++) {
+                            double lambda = 340.0 / data.freq_lvl.get(i);
+                            double Csecond = 1 + (5 * lambda / e * 5 * lambda / e) / 1 / 3 + (5 * lambda / e * 5 * lambda / e);
+                            double testForm = 40.0 / lambda * Csecond * deltaPrime;
+                            double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                            retroDiff[i] = dLRetro;
+                        }
+
                     }
-                });
+                } else {
+                    double deltaPrime = -((s.distance(o) + o.distance(r)) - s.distance(r)); //2.5.36
+                    for (int i = 0; i < data.freq_lvl.size(); i++) {
+                        double lambda = 340.0 / data.freq_lvl.get(i);
+                        double testForm = 40.0 / lambda * deltaPrime;
+                        double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
+                        retroDiff[i] = dLRetro;
+                    }
+                }
+            }
+        }
         return retroDiff;
     }
 
@@ -637,6 +649,8 @@ public class AttenuationCnossos {
 
         if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
             deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
+        } else if(type.equals(DIFH)) {
+            return 0;
         }
 
         if(type.equals(DIFV)) {

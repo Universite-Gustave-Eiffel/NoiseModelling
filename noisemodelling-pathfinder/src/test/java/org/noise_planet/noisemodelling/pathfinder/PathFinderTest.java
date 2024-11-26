@@ -1699,21 +1699,9 @@ public class PathFinderTest {
     @Test
     public void TC20() {
         //Profile building
-        ProfileBuilder profileBuilder = new ProfileBuilder()
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
@@ -1775,21 +1763,11 @@ public class PathFinderTest {
                         new Coordinate(151.0, 31.5, 11.5),
                         new Coordinate(155.5, 39.3, 11.5),
                         new Coordinate(164.2, 34.3, 11.5)
-                })
-                //Ground effects
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2)
-                //Topography
-                .addTopographicLine(0, 80, 0, 225, 80, 0)
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                .addTopographicLine(225, -20, 0, 0, -20, 0)
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
+                });
+
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
