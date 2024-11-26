@@ -24,7 +24,7 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
@@ -488,47 +488,6 @@ public class AttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().value, propDataOut.receiversAttenuationLevels.pop().value, Double.MIN_VALUE);
-    }
-
-    @Test
-    public void retroDiff() {
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder()
-
-                // Add building
-                .addWall(new Coordinate[]{
-                        new Coordinate(10, 50, 15),
-                        new Coordinate(20, 50, 15)}, Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5), 1)
-
-                .finishFeeding();
-
-        //Propagation data building
-        Scene rayData = new ProfileBuilderDecorator(builder)
-                .addSource(0, 0, 14.8)
-                .addReceiver(30, 0, 14.8)
-                .hEdgeDiff(true)
-                .vEdgeDiff(true)
-                .setGs(1)
-                .build();
-        rayData.reflexionOrder=1;
-
-        //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
-        attData.setHumidity(HUMIDITY);
-        attData.setTemperature(TEMPERATURE);
-
-        //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
-        PathFinder computeRays = new PathFinder(rayData);
-        computeRays.setThreadCount(1);
-
-        //Run computation
-        computeRays.run(propDataOut);
-
-        double[] retro = propDataOut.getPropagationPaths().get(1).reflectionAbsorption.dLRetro;
-        for (double v : retro) {
-            assertTrue(v > 0.);
-        }
     }
 
     /**
@@ -8393,7 +8352,7 @@ public class AttenuationCnossosTest {
                 Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
         List<Double> alphaWall = new ArrayList<>(alphaWallFrequencies.size());
         for(int frequency : alphaWallFrequencies) {
-            alphaWall.add(ReflectionAbsorption.WallAbsorption.getWallAlpha(100000, frequency));
+            alphaWall.add(WallAbsorption.getWallAlpha(100000, frequency));
         }
 
         ProfileBuilder profileBuilder = new ProfileBuilder()

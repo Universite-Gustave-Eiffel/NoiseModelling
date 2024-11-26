@@ -15,7 +15,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import java.io.ByteArrayOutputStream;
@@ -55,7 +54,6 @@ public class Path {
     double gs;
     // computed in Augmented Path
     public boolean keepAbsorption = false;
-    public ReflectionAbsorption reflectionAbsorption = new ReflectionAbsorption();
 
     /**
      * 3D intersections points of the ray
@@ -113,7 +111,6 @@ public class Path {
         this.angle = other.angle;
         this.gs = other.gs;
         this.keepAbsorption = other.keepAbsorption;
-        this.reflectionAbsorption = other.reflectionAbsorption;
         this.timePeriod = other.timePeriod;
         this.cutProfile = other.cutProfile;
     }

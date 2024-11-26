@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivityS
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +35,6 @@ import java.util.*;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption.WallAbsorption.getWallAlpha;
-
 /**
  * Common attributes for propagation of sound sources.
  * @author Nicolas Fortin
@@ -428,7 +427,7 @@ public abstract class NoiseMapLoader {
                 double oldAlpha = wallAbsorption;
                 List<Double> alphaList = new ArrayList<>(attenuationCnossosParametersDay.freq_lvl.size());
                 for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
                 }
                 while (rs.next()) {
                     //if we don't have height of building
@@ -447,7 +446,7 @@ public abstract class NoiseMapLoader {
                                 alphaList.clear();
                                 oldAlpha = rs.getDouble(alphaFieldName);
                                 for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
                                 }
                             }
 

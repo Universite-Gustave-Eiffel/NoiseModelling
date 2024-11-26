@@ -555,7 +555,7 @@ public class AttenuationCnossos {
 
     /**
      * Compute deltaRetrodif
-     *
+     * Figure 2.5.36
      * @param reflect
      * @param data
      * @return list double with the values of deltaRetrodif
@@ -565,22 +565,21 @@ public class AttenuationCnossos {
         Arrays.fill(retroDiff, 0.);
         Coordinate s = reflect.getSRSegment().s;
         Coordinate r = reflect.getSRSegment().r;
+        double SR = s.distance(r);
         reflect.getPointList().stream().filter(pointPath -> pointPath.type.equals(REFL))
                 .forEach(pp -> {
                     //Get the point on the top of the obstacle
                     Coordinate o = new Coordinate(pp.coordinate.x, pp.obstacleZ);
                     double SO = s.distance(o);
                     double OR = o.distance(r);
-                    double SR = reflect.getPointList().get(reflect.getPointList().size() - 1).coordinate.x;
                     double ch = 1.;
                     if (reflect.isFavorable()) {
                         double gamma = 2 * max(1000, 8 * SR);
                         double e = reflect.e;
-                        double deltaPrime = 0.0;
                         double SpO = gamma * asin(SO / gamma);
                         double OpR = gamma * asin(OR / gamma);
                         double SpR = gamma * asin(s.distance(r) / gamma);
-                        deltaPrime = -(SpO + OpR - SpR);
+                        double deltaPrime = -(SpO + OpR - SpR);
                         if (e < 0.3) {
                             for (int i = 0; i < data.freq_lvl.size(); i++) {
                                 double lambda = 340.0 / data.freq_lvl.get(i);
@@ -609,12 +608,6 @@ public class AttenuationCnossos {
                         }
                     }
                 });
-        if (reflect.keepAbsorption) {
-            if (reflect.reflectionAbsorption.dLRetro == null) {
-                reflect.reflectionAbsorption.init(data.freq_lvl.size());
-            }
-            reflect.reflectionAbsorption.dLRetro = retroDiff;
-        }
         return retroDiff;
     }
 
