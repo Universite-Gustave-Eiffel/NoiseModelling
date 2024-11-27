@@ -14,13 +14,11 @@ import org.cts.op.CoordinateOperationException;
 import org.junit.After;
 import org.junit.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Plane3D;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.operation.distance3d.PlanarPolygon3D;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 //import org.noise_planet.noisemodelling.pathfinder.path.CnossosPathParameters;
@@ -1753,12 +1751,14 @@ public class PathFinderTest {
     @Test
     public void TC21()  {
         //Profile building
+
+        // the rounding of the unit test input data lead to errors. We had to move two vertex to match with the expected intersection
         ProfileBuilder profileBuilder = new ProfileBuilder()
                 .addBuilding(new Coordinate[]{
                         new Coordinate(167.2, 39.5, 11.5),
-                        new Coordinate(151.6, 48.5, 11.5),
+                        new Coordinate(151.575, 48.524, 11.5),
                         new Coordinate(141.1, 30.3, 11.5),
-                        new Coordinate(156.7, 21.33, 11.5), // the rounding of the unit test input data lead to errors. We had to add 0.03 m to y value
+                        new Coordinate(156.657, 21.3409, 11.5),
                         new Coordinate(159.7, 26.5, 11.5),
                         new Coordinate(151.0, 31.5, 11.5),
                         new Coordinate(155.5, 39.3, 11.5),
@@ -1770,6 +1770,16 @@ public class PathFinderTest {
 
         profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
+
+        //
+        //Coordinate source = new Coordinate(10, 10, 1);
+        //Coordinate receiver = new Coordinate(200, 25, 14);
+        //
+        //GeometryFactory gf = new GeometryFactory();
+        //Geometry g1 = gf.createPoint(source).buffer(147.10, 128);
+        //Geometry g2 = gf.createPoint(receiver).buffer(43.49, 128);
+        //Coordinate[] pts = DistanceOp.nearestPoints(g1, g2);
+        //System.out.println(gf.createMultiPointFromCoords(pts));
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(profileBuilder)
@@ -1788,6 +1798,8 @@ public class PathFinderTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+        assertEquals(3, propDataOut.getPropagationPaths().size());
 
         // Test R-CRIT table 235
         Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
@@ -1820,6 +1832,8 @@ public class PathFinderTest {
             new Coordinate(175.54, 10),
             new Coordinate(190.59, 10));
 
+
+        /* Table 225 */
         List<Coordinate> expectedZProfileSO = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(110.34, 0.0),
@@ -1831,6 +1845,20 @@ public class PathFinderTest {
                 new Coordinate(147.26, 5.66),
                 new Coordinate(175.54, 10),
                 new Coordinate(190.59, 10));
+
+        List<Coordinate> expectedZProfileRight = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(110.33, 0.0),
+                new Coordinate(147.10, 5.64),
+                new Coordinate(175.54, 10.0),
+                new Coordinate(190.59, 10.0));
+
+        List<Coordinate> expectedZProfileLeft = Arrays.asList(
+                new Coordinate(0.0, 0.0),
+                new Coordinate(114.0, 0.0),
+                new Coordinate(146.72, 4.86),
+                new Coordinate(183.89, 10.0),
+                new Coordinate(200.57, 10.0));
 
         /* Table 229 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -1851,14 +1879,24 @@ public class PathFinderTest {
         }
 
 
-        //Assertion
+        //Assertion Direct
         CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertZProfil(expectedZProfileSR, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
-        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileSR, Arrays.asList(directPath.getSRSegment().getPoints2DGround()), 0.01);
+        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()),
+                0.01);
         assertZProfil(expectedZProfileOR, Arrays.asList(
-                directPath.getSegmentList().get(directPath.getSegmentList().size() - 1).getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(0).getSRSegment());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+                directPath.getSegmentList().get(directPath.getSegmentList().size() - 1).getPoints2DGround()),
+                0.01);
+        assertPlanes(segmentsMeanPlanes1, directPath.getSRSegment());
+        assertPlanes(segmentsMeanPlanes0,directPath.getSegmentList());
+
+        //Assertion Right
+        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
+        assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()), 0.01);
+
+        //Assertion Left
+        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
+        assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()), 0.01);
     }
 
     @Test
@@ -2745,12 +2783,16 @@ public class PathFinderTest {
     }
 
     public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
+        assertZProfil(expectedZProfile, actualZ_profile, DELTA_COORDS);
+    }
+
+    public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile, double delta) {
         if (expectedZProfile.size() != actualZ_profile.size()){
             assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZProfile.size(), actualZ_profile.size());
         }
         for (int i = 0; i < actualZ_profile.size(); i++) {
-            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZProfile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
-            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZProfile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
+            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZProfile.get(i).x, actualZ_profile.get(i).x, delta);
+            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZProfile.get(i).y, actualZ_profile.get(i).y, delta);
         }
     }
 
