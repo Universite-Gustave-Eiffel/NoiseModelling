@@ -2448,28 +2448,7 @@ public class PathFinderTest {
 
         computeRays.run(propDataOut);
 
-        CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
-        List<Coordinate> result = cutProfile.computePts2DGround();
-
-
-        // Test R-CRIT table 333 diffraction
-        /*Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
-
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + D.distance(propDataOut.getPropagationPaths().get(0).getPointList().get(2).coordinate) - propDataOut.getPropagationPaths().get(0).getSRSegment().d;
-        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
-        List<Integer> res1 = new ArrayList<>(3) ;
-        List<Integer> res2 = new ArrayList<>(3);
-
-        for(int f : computeRays.getData().freq_lvl) {
-            if(deltaD > -(340./f) / 20) {
-                res1.add(1);
-            }
-            if (!(deltaD > (((340./f) / 4) - deltaDE))){
-                res2.add(0);
-            }
-        }*/
+        assertEquals(2, propDataOut.getPropagationPaths().size());
 
         // Test R-CRIT table 338 reflexion: Error: no data for "Rayleigh-Criterion" (favourable) we just have (homogeneous) data
         Coordinate D = propDataOut.getPropagationPaths().get(1).getSegmentList().get(1).r;
@@ -2504,14 +2483,18 @@ public class PathFinderTest {
                 {0.0, 0.0, 0.0, 4.0, 90.10, 1.0, 1.0}
         };
 
-        try {
-            exportScene("target/T27.kml", builder, propDataOut);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        assertPlanes(segmentsMeanPlanesH,propDataOut.getPropagationPaths().get(0).getSegmentList());
+        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        assertPlanes(segmentsMeanPlanesH, directPath.getSegmentList());
 
 
+        segmentsMeanPlanesH = new double[][]{
+                //  a     b     zs    zr      dp    Gp   Gp'
+                {0.03, -0.57, 0.12, 0.35, 6.65, 0.14, 0.08},
+                {0, 0, 0, 4, 94.01, 1, NaN}
+        };
+
+        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+        assertPlanes(segmentsMeanPlanesH, reflectionPath.getSegmentList());
     }
 
     /**
