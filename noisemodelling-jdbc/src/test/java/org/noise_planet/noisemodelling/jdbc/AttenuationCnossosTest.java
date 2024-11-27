@@ -6957,6 +6957,7 @@ public class AttenuationCnossosTest {
 
     /**
      * TC26 – Road source with influence of retrodiffraction
+     * Issue we compute and add favorable contribution, on reflexion path but not in test case reference
      * */
     @Test
     public void TC26() throws IOException {
@@ -6970,10 +6971,8 @@ public class AttenuationCnossosTest {
                         new Coordinate(74.0, 52.0, 6),
                         new Coordinate(130.0, 60.0, 8)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
 
-               // .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0)
-                .addGroundEffect(0.0, 50.0, -10.0, 100.0, 0.0)
-                .addGroundEffect(50.0, 150.0, -10.0, 100.0, 0.5)
-               // .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5)
+                .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0)
+                .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5)
                 .setzBuildings(true)
                 .finishFeeding();
 
@@ -6998,6 +6997,8 @@ public class AttenuationCnossosTest {
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
 
         //Expected values
         //Path0 : vertical plane
@@ -7044,12 +7045,12 @@ public class AttenuationCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF - lateral left", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF - lateral left", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("AGroundF - lateral left", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfH - vertical plane", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundH - vertical plane", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WF - vertical plane", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF - vertical plane", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundF - vertical plane", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
@@ -7060,99 +7061,10 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        /*try{
-            System.out.println("ici");
-            writer.write("   * - TC26\n");
-            if (valL[0] < 0.1) {
-                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
-                //System.out.println("ici");
-            } else {
-                writer.write("     - No\n");
-            }
-
-            if (valLA[0] < 0.1) {
-                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
-            } else {
-                writer.write("     - No\n");
-            }
-            double v = valLA[1];
-            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
-            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
-            writer.write("     - `Details <./.build/TC26_D.html>`_\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }*/
-
-
-       /* FileWriter writerTc01 = new FileWriter("/home/maguettte/IdeaProjects/NoiseModelling/source/TC26_D.rst");
-
-        try{
-            writerTc01.write("TC26\n\n");
-            writerTc01.write("Vertical Plane \n\n");
-            writerTc01.write("================\n\n");
-            writerTc01.write(".. list-table::\n");
-            writerTc01.write("   :widths: 25 25 25\n\n");
-            writerTc01.write("   * - Parameters\n");
-            writerTc01.write("     - Maximum Difference\n");
-            writerTc01.write("     - Frequency\n");
-            writerTc01.write("   * - WH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[1]]+"\n");
-            writerTc01.write("   * - CfH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedCfH, actualCfH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedCfH, actualCfH))[1]]+"\n");
-            writerTc01.write("   * - AGroundH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundH, actualAGroundH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundH, actualAGroundH))[1]]+"\n");
-            writerTc01.write("   * - WF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedWF, actualWF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedWF, actualWF))[1]]+"\n");
-            writerTc01.write("   * - CfF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedCfF, actualCfF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedCfF, actualCfF))[1]]+"\n");
-            writerTc01.write("   * - AGroundF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundF, actualAGroundF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundF, actualAGroundF))[1]]+"\n");
-            writerTc01.write("   * - AlphaAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[1]]+"\n");
-            writerTc01.write("   * - AAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[1]]+"\n");
-            writerTc01.write("   * - ADiv\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[1]]+"\n\n");
-            writerTc01.write("   * - LH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[1]]+"\n");
-            writerTc01.write("   * - LF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[1]]+"\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
-        finally {
-            try {
-                if (writerTc01 != null) {
-                    System.out.println("post");
-                    writerTc01.close();
-                    System.out.println("fin");
-                }
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
-            }
-        }*/
-
         //Path1 : reflexion
-
+        // Table 323
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.13, 0.69};
-        expectedCfH = new double[]{121.79, 122.30, 124.78, 133.86, 141.12, 86.68, 14.13, 1.46};
+        expectedCfH = new double[]{121.79, 122.30, 124.78, 133.86, 141.12, 82.68, 14.13, 1.46};
         expectedAGroundH = new double[]{-2.53, -2.53, -2.53, -2.53, -2.53, -2.53, -2.53, -2.53};
         expectedAlphaAtm = new double[]{0.1, 0.4, 1., 1.9, 3.7, 9.7, 32.8, 116.9};
         expectedAAtm = new double[]{0.01, 0.05, 0.13, 0.24, 0.45, 1.18, 4.00, 14.25};
@@ -7162,8 +7074,10 @@ public class AttenuationCnossosTest {
         expectedL = new double[]{34.59, 34.09, 33.53, 32.94, 32.33, 31.56, 30.33, 22.54};
         expectedLA = new double[]{8.39, 17.99, 24.93, 29.74, 32.33, 32.76, 31.33, 21.44};
 
-        //proPath = propDataOut.getPropagationPaths().get(1);
+        proPath = propDataOut.getPropagationPaths().get(1);
 
+        actualWH = proPath.groundAttenuation.wH;
+        actualCfH = proPath.groundAttenuation.cfH;
         actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
@@ -7172,100 +7086,20 @@ public class AttenuationCnossosTest {
         actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
-        double[] diffReflexionL = diffArray(expectedL,actualL);
-        /*assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
-
-
-        /*try{
-            writerTc01.write("Reflexion \n\n");
-            writerTc01.write("================\n\n");
-            writerTc01.write(".. list-table::\n");
-            writerTc01.write("   :widths: 25 25 25\n\n");
-            writerTc01.write("   * - Parameters\n");
-            writerTc01.write("     - Maximum Difference\n");
-            writerTc01.write("     - Frequency\n");
-            writerTc01.write("   * - AlphaAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[1]]+"\n");
-            writerTc01.write("   * - AAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[1]]+"\n");
-            writerTc01.write("   * - ADiv\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[1]]+"\n\n");
-            writerTc01.write("   * - LH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[1]]+"\n");
-            writerTc01.write("   * - LF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[1]]+"\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
-        finally {
-            try {
-                if (writerTc01 != null) {
-                    System.out.println("post");
-                    writerTc01.close();
-                    System.out.println("fin");
-                }
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
-            }
-        }*/
-
-        /*double[] LA = sumDbArray(directLA,actualLA);
-        double[] diffLa = diffArray(new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15}, LA);
-        double[] valLV = getMaxValeurAbsolue(diffVerticalL);
-        double[] valLR = getMaxValeurAbsolue(diffReflexionL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
-        try{
-            System.out.println("tc26");
-            writer.write("   * - TC25\n");
-            if (valLV[0] < 0.1 && valLR[0] < 0.1) {
-                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
-                System.out.println("ici");
-            } else {
-                writer.write("     - No\n");
-            }
-
-            if (valLA[0] < 0.1) {
-                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
-            } else {
-                writer.write("     - No\n");
-            }
-            double v = valLA[1];
-            double vLA = Math.round(valLA[0] * 10000.0) / 10000.0;
-            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
-            }
-        }*/
-
+        assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfH - reflexion", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundH - reflexion", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AlphaAtm - reflexion", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AAtm - reflexion", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiv - reflexion", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_HIGH);
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
-       // assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_HIGH);
+        assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_LOW);
     }
 
 
