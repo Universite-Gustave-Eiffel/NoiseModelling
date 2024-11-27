@@ -561,12 +561,16 @@ public class AttenuationCnossos {
     public static double[] deltaRetrodif(CnossosPath reflect, AttenuationCnossosParameters data) {
         double[] retroDiff = new double[data.freq_lvl.size()];
         Arrays.fill(retroDiff, 0.);
-        Coordinate s = reflect.getSRSegment().s;
-        Coordinate r = reflect.getSRSegment().r;
+        final Coordinate originalS = reflect.getSRSegment().s;
+        final Coordinate originalR = reflect.getSRSegment().r;
+        final double SR = originalS.distance(originalR);
+        Coordinate s = originalS;
+        Coordinate r = originalR;
         List<PointPath> pointList = reflect.getPointList();
         for (int idPoint = 0; idPoint < pointList.size(); idPoint++) {
             PointPath pointPath = pointList.get(idPoint);
             if (pointPath.type.equals(DIFH)) {
+                // update the diffraction edge on the source side
                 s = pointPath.coordinate;
             } else if (pointPath.type.equals(REFL)) {
                 // Look for the next DIFH of the receiver
@@ -577,18 +581,16 @@ public class AttenuationCnossos {
                         break;
                     }
                 }
-                // If there is a diffraction on horizontal edge the diffraction point is the new
-                double SR = s.distance(r);
                 //Get the point on the top of the obstacle
-                Coordinate o = new Coordinate(pointPath.coordinate.x, pointPath.obstacleZ);
-                double SO = s.distance(o);
-                double OR = o.distance(r);
+                Coordinate p = new Coordinate(pointPath.coordinate.x, pointPath.obstacleZ);
                 double ch = 1.;
                 if (reflect.isFavorable()) {
+                    double SP = s.distance(p);
+                    double PR = p.distance(r);
                     double gamma = 2 * max(1000, 8 * SR);
                     double e = reflect.e;
-                    double SpO = gamma * asin(SO / gamma);
-                    double OpR = gamma * asin(OR / gamma);
+                    double SpO = gamma * asin(SP / gamma);
+                    double OpR = gamma * asin(PR / gamma);
                     double SpR = gamma * asin(s.distance(r) / gamma);
                     double deltaPrime = -(SpO + OpR - SpR);
                     if (e < 0.3) {
@@ -599,7 +601,6 @@ public class AttenuationCnossos {
                             retroDiff[i] = dLRetro;
                         }
                     } else {
-
                         for (int i = 0; i < data.freq_lvl.size(); i++) {
                             double lambda = 340.0 / data.freq_lvl.get(i);
                             double Csecond = 1 + (5 * lambda / e * 5 * lambda / e) / 1 / 3 + (5 * lambda / e * 5 * lambda / e);
@@ -610,7 +611,8 @@ public class AttenuationCnossos {
 
                     }
                 } else {
-                    double deltaPrime = -((s.distance(o) + o.distance(r)) - s.distance(r)); //2.5.36
+                    //2.5.36 altered with ISO/TR 17534-4:2020-11 Chapter  5.15
+                    double deltaPrime = s.distance(r) - s.distance(p) - p.distance(r);
                     for (int i = 0; i < data.freq_lvl.size(); i++) {
                         double lambda = 340.0 / data.freq_lvl.get(i);
                         double testForm = 40.0 / lambda * deltaPrime;

@@ -285,6 +285,7 @@ public class Attenuation implements IComputePathsOut {
                 }
                 //For testing purpose
                 if(exportAttenuationMatrix) {
+                    proPathParameters.aRetroDiffH = aRetroDiff.clone();
                     proPathParameters.double_aBoundaryH = aBoundary.clone();
                     proPathParameters.aGlobalH = aGlobalMeteoHom.clone();
                 }

@@ -4769,6 +4769,8 @@ public class AttenuationCnossosTest {
         expectedLF = new double[]{27.71,28.30,25.5,22.19,18.34,13.33,4.57,-12.86};
         expectedL = new double[]{27.6,27.97,25.09,21.74,17.86,12.83,4.07,-13.00};
         expectedLA = new double[]{1.40,11.87,16.49,18.54,17.86,14.03,5.07,-14.10};
+        double[] expectedRetroDiffH = new double[]{2.47, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
+        double[] expectedRetroDiffF = new double[]{2.77, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
 
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
@@ -4783,7 +4785,8 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("ADiv - reflexion", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("dLretrodif H - reflexion", expectedRetroDiffH, proPath.aRetroDiffH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("dLretrodif F - reflexion", expectedRetroDiffF, proPath.aRetroDiffF, ERROR_EPSILON_LOWEST);        assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
@@ -8184,8 +8187,8 @@ public class AttenuationCnossosTest {
                 .vEdgeDiff(true)
                 .setGs(0.5)
                 .build();
-        rayData.maxSrcDist = 60000000;
-        rayData.maxRefDist = 60000000;
+        rayData.maxSrcDist = 100*800;
+        rayData.maxRefDist = 100*800;
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
