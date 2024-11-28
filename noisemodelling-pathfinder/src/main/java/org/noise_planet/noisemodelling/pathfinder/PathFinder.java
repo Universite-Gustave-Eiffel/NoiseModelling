@@ -1385,24 +1385,29 @@ public class PathFinder {
             List<Coordinate> groundProfileCoordinates = new ArrayList<>();
             profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
             newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
-            if(idPoint == 0) {
-                newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
-            }
-            Coordinate previous = groundProfileCoordinates.get(0);
-            for(int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
-                final Coordinate current = groundProfileCoordinates.get(groundPoint);
-                final Coordinate next = groundProfileCoordinates.get(groundPoint+1);
-                // Do not add topographic points which are simply the linear interpolation between two points
-                // triangulation add a lot of interpolated lines from line segment DEM
-                if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
-                    // interpolate the Z (height) values of the source then add the altitude
-                    previous = current;
-                    newGeomCoordinates.add(
-                            new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
+            if(groundProfileCoordinates.size() < 2) {
+                newGeomCoordinates.add(p0);
+                newGeomCoordinates.add(p1);
+            } else {
+                if (idPoint == 0) {
+                    newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
                 }
+                Coordinate previous = groundProfileCoordinates.get(0);
+                for (int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
+                    final Coordinate current = groundProfileCoordinates.get(groundPoint);
+                    final Coordinate next = groundProfileCoordinates.get(groundPoint + 1);
+                    // Do not add topographic points which are simply the linear interpolation between two points
+                    // triangulation add a lot of interpolated lines from line segment DEM
+                    if (CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
+                        // interpolate the Z (height) values of the source then add the altitude
+                        previous = current;
+                        newGeomCoordinates.add(
+                                new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
+                    }
+                }
+                newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
+                        groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
             }
-            newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
-                    groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
         }
         return GEOMETRY_FACTORY.createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
     }
