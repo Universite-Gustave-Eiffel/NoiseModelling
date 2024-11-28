@@ -104,6 +104,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public Scene prepareCell(Connection connection, int cellI, int cellJ,
                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
+        DBTypes dbType = DBUtils.getDBType(connection);
         ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
@@ -155,7 +156,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
         String receiverGeomName = GeometryTableUtilities.getGeometryColumnNames(connection,
                 TableLocation.parse(receiverTableName)).get(0);
-        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(receiverTableName));
+        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), new TableLocation(receiverTableName, dbType));
         String pkSelect = "";
         if(intPk >= 1) {
             pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), DBUtils.getDBType(connection));

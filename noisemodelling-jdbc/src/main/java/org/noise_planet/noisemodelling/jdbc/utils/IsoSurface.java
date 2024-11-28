@@ -499,7 +499,7 @@ public class IsoSurface {
      */
     public void createTable(Connection connection) throws SQLException {
         List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable).toString());
-        int pk = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(pointTable));
+        int pk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(pointTable));
         if(pk == 0) {
             throw new SQLException(pointTable+" does not contain a primary key");
         }

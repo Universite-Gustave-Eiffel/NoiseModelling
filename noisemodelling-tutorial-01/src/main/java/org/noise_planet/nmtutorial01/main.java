@@ -12,6 +12,7 @@ import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters;
@@ -49,6 +50,10 @@ class Main {
     public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
     public static void mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+
+        TableLocation lwRoads = TableLocation.parse("LW_ROADS", dbType);
+
         // Init output logger
         Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -68,7 +73,7 @@ class Main {
         GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS",
                 ValueBoolean.TRUE);
         // Set primary key
-        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER SET NOT NULL");
+        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK SET NOT NULL");
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
         sql.execute("DELETE FROM LW_ROADS WHERE PK != 102");
 
@@ -84,6 +89,8 @@ class Main {
         noiseMap.setMaximumArea(0);
         noiseMap.setIsoSurfaceInBuildings(false);
 
+        sql.execute("DROP TABLE IF EXISTS RECEIVERS;");
+        sql.execute("DROP TABLE IF EXISTS TRIANGLES;");
         for (int i = 0; i < noiseMap.getGridDim(); i++) {
             for (int j = 0; j < noiseMap.getGridDim(); j++) {
                 logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim());
@@ -98,7 +105,8 @@ class Main {
                 ValueBoolean.TRUE);
 
         // Init NoiseModelling
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS", "RECEIVERS");
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_ROADS", "RECEIVERS");
 
         noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
@@ -183,14 +191,13 @@ class Main {
         logger.info("Create iso contours");
         int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("LW_ROADS", DBTypes.H2GIS));
         List<Double> isoLevels = IsoSurface.NF31_133_ISO; // default values
-        GeometryMetaData m = GeometryTableUtilities.getMetaData(connection, "RECEIVERS", "THE_GEOM");
         sql.execute("ALTER TABLE " + noiseMapParameters.getlDenTable() +
-                " ADD COLUMN THE_GEOM "+m.getSQL());
+                " ADD COLUMN THE_GEOM GEOMETRY");
         sql.execute(" UPDATE "+ noiseMapParameters.getlDenTable()+" SET THE_GEOM = (SELECT THE_GEOM FROM RECEIVERS R " +
                 "WHERE R.PK = " + noiseMapParameters.getlDenTable() + ".IDRECEIVER)");
         IsoSurface isoSurface = new IsoSurface(isoLevels, srid);
         isoSurface.setSmoothCoefficient(0.5);
-        isoSurface.setPointTable(noiseMapParameters.getlDenTable());
+        isoSurface.setPointTable(TableLocation.parse(noiseMapParameters.getlDenTable(), dbType).toString());
         isoSurface.createTable(connection);
         logger.info("Export iso contours");
         SHPWrite.exportTable(connection, Paths.get(workingDir, isoSurface.getOutputTable()+".shp").toString(),
