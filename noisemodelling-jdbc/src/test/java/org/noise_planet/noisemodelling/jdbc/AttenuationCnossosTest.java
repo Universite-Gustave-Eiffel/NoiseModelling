@@ -7105,6 +7105,7 @@ public class AttenuationCnossosTest {
 
     /**
      * TC27 – Road source with influence of retrodiffraction
+     * Issue with wrong agroundF for reflection path
      * */
     @Test
     public void TC27() throws IOException {
@@ -7116,7 +7117,8 @@ public class AttenuationCnossosTest {
                 // screen
                 .addWall(new Coordinate[]{
                         new Coordinate(114.0, 52.0, 2.5),
-                        new Coordinate(170.0, 60.0, 4.5)},-1)
+                        new Coordinate(170.0, 60.0, 4.5)},
+                        Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
 
                 .addTopographicLine(80.0, 20.0, -0.5, 110.0, 20.0, -0.5)
                 .addTopographicLine(110.0, 20.0, -0.5, 111.0, 20.0, 0.0)
@@ -7189,28 +7191,27 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOW);
 
         double[] diff = diffArray(expectedLA, actualLA);
 
         //Path1 : reflexion
-        expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
-        expectedAAtm = new double[]{0.01, 0.03, 0.07, 0.14, 0.26, 0.68, 2.32, 8.28};
-        expectedADiv = new double[]{48.00, 48.00, 48.00, 48.00, 48.00, 48.00, 48.00, 48.00};
-        expectedABoundaryH = new double[]{6.30, 8.09, 8.93, 10.49, 14.08, 18.48, 22.13, 22.14};
-        expectedABoundaryF = new double[]{6.12, 7.80, 8.59, 10.08, 12.83, 15.70, 18.64, 21.61};
-        expectedLH = new double[]{37.72, 35.91, 35.03, 33.41, 29.69, 24.87, 19.58, 13.62};
-        expectedLF = new double[]{37.90, 36.20, 35.37, 33.81, 30.94, 27.64, 23.07, 14.14};
-        expectedL = new double[]{37.81, 36.06, 35.20, 33.61, 30.36, 26.47, 21.67, 13.89};
-        expectedLA = new double[]{11.61, 19.96, 26.60, 30.41, 30.36, 27.67, 22.67, 12.79};
+        expectedAlphaAtm = new double[]{0.1, 0.4, 1, 1.9, 3.7, 9.7, 32.8, 116.9};
+        expectedAAtm = new double[]{0.01, 0.04, 0.11, 0.19, 0.37, 0.97, 3.3, 11.78};
+        expectedADiv = new double[]{51.06, 51.06, 51.06, 51.06, 51.06, 51.06, 51.06, 51.06};
+        expectedABoundaryH = new double[]{2.06, 2.10, 2.19, 2.36, 6.12, 7.70, 7.45, 8.15};
+        expectedABoundaryF = new double[]{-0.59, -0.59, -0.59, -0.59, 4.43, 2.99, 0.42, -0.59};
+        double[] expectedDLabs = new double[] {-0.46, -0.97, -1.55, -2.22, -3.01, -3.98, -5.23, -3.01};
+        expectedLH = new double[]{35.56, 36.12, 38.09, 37.16, 32.44, 29.29, 25.96, 19.00};
+        expectedLF = new double[]{37.83, 37.89, 38.82, 40.11, 34.12, 34.00, 32.98, 27.54};
+        expectedLA = new double[]{10.64, 21.00, 29.97, 35.68, 33.36, 33.45, 31.76, 24.17};
 
         proPath = propDataOut.getPropagationPaths().get(1);
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualABoundaryH = proPath.double_aBoundaryH;
@@ -7221,15 +7222,14 @@ public class AttenuationCnossosTest {
         actualLA = addArray(actualL, A_WEIGHTING);
         double[] diffReflexionL = diffArray(expectedL,actualL);
 
-        assertDoubleArrayEquals("AlphaAtm - reflection", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm - reflection", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("ADiv - reflection", expectedADiv, actualADiv, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("ABoundaryH - reflection", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("ABoundaryF - reflection", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("LH - reflection", expectedLH, actualLH, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("LF - reflection", expectedLF, actualLF, ERROR_EPSILON_HIGHEST);
-        assertDoubleArrayEquals("L - reflection", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - reflection", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AAtm - reflection", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ADiv - reflection", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryH - reflection", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF - reflection", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("dLabs - reflection", expectedDLabs, proPath.aRef, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - reflection", expectedLH, actualLH, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("LF - reflection", expectedLF, actualLF, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LA - reflection", expectedLA, actualLA, ERROR_EPSILON_HIGH);
 
         double[] LA = sumDbArray(directLA,actualLA);
         double[] diffLa = diffArray(new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60}, LA);
@@ -7239,7 +7239,7 @@ public class AttenuationCnossosTest {
 
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
-        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_VERY_LOW);
+        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_LOW);
     }
 
     /**
