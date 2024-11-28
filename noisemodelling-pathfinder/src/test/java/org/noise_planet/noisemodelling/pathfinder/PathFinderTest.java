@@ -2403,7 +2403,7 @@ public class PathFinderTest {
     }
 
     /**
-     * erreur de chemin:  Segment list
+     *
      */
     @Test
     public void TC27(){
@@ -2439,7 +2439,7 @@ public class PathFinderTest {
                 .vEdgeDiff(true)
                 .setGs(0.)
                 .build();
-        //rayData.reflexionOrder=1;
+        rayData.reflexionOrder=1;
 
         //Out and computation settings
         PathFinderVisitor propDataOut = new PathFinderVisitor(true);
@@ -2473,9 +2473,6 @@ public class PathFinderTest {
         Coordinate expectedSPrime =new Coordinate(0.01,-0.69);
         Coordinate expectedRPrime =new Coordinate(96.18,-4.0);
 
-        if(!builder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
-        }
         /* Table 329 */
         double [][] segmentsMeanPlanesH = new double[][]{
                 //  a     b     zs    zr      dp    Gp   Gp'
@@ -2484,17 +2481,35 @@ public class PathFinderTest {
         };
 
         CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertPlanes(segmentsMeanPlanesH, directPath.getSegmentList());
 
+        assertPlanes(segmentsMeanPlanesH, directPath.getSegmentList());
+        assertMirrorPoint(expectedSPrime,expectedRPrime,directPath.getSegmentList().get(0).sPrime,
+                directPath.getSegmentList().get(directPath.getSegmentList().size()-1).rPrime);
 
         segmentsMeanPlanesH = new double[][]{
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.03, -0.57, 0.12, 0.35, 6.65, 0.14, 0.08},
                 {0, 0, 0, 4, 94.01, 1, NaN}
         };
+        Coordinate expectedSPrimeSR =new Coordinate(0,0.22);
+        Coordinate expectedRPrimeSR =new Coordinate(100.66,-3.89);
+        Coordinate expectedSPrimeSO =new Coordinate(0.01,-0.69);
+        Coordinate expectedRPrimeOR =new Coordinate(100.65,-4.0);
 
         CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+
         assertPlanes(segmentsMeanPlanesH, reflectionPath.getSegmentList());
+
+        SegmentPath sr = reflectionPath.getSRSegment();
+        assertMirrorPoint(expectedSPrimeSR,expectedRPrimeSR,sr.sPrime,
+                sr.rPrime);
+        assertEquals(2, reflectionPath.getSegmentList().size());
+
+        SegmentPath so = reflectionPath.getSegmentList().get(0);
+        SegmentPath or = reflectionPath.getSegmentList().get(reflectionPath.getSegmentList().size() - 1);
+
+        assertMirrorPoint(expectedSPrimeSO,expectedRPrimeOR,so.sPrime,
+                or.rPrime);
     }
 
     /**
@@ -2781,7 +2796,7 @@ public class PathFinderTest {
 
     public static void assertMirrorPoint(Coordinate expectedSprime, Coordinate expectedRprime,Coordinate actualSprime, Coordinate actualRprime) {
         assertCoordinateEquals("Sprime ",expectedSprime, actualSprime, DELTA_COORDS);
-        assertCoordinateEquals("Rprime ",expectedRprime, actualRprime, DELTA_COORDS);;
+        assertCoordinateEquals("Rprime ",expectedRprime, actualRprime, DELTA_COORDS);
     }
 
     public static void assertCoordinateEquals(String message,Coordinate expected, Coordinate actual, double toleranceX) {
