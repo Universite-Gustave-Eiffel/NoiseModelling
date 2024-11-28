@@ -68,7 +68,7 @@ class Main {
         GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS",
                 ValueBoolean.TRUE);
         // Set primary key
-        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER NOT NULL");
+        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INTEGER SET NOT NULL");
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
         sql.execute("DELETE FROM LW_ROADS WHERE PK != 102");
 
