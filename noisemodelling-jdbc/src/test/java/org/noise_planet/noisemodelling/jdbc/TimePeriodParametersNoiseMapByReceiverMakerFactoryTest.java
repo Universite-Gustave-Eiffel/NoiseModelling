@@ -28,6 +28,8 @@ import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.utils.Utils;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
@@ -398,13 +400,13 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(INPUT_MODE.INPUT_MODE_LW_DEN);
 
         NoiseMapParameters.setComputeLDay(true);
         NoiseMapParameters.setComputeLEvening(false);
         NoiseMapParameters.setComputeLNight(false);
         NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setExportRaysMethod(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+        NoiseMapParameters.setExportRaysMethod(ExportRaysMethods.TO_MEMORY);
 
         NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
 
@@ -423,6 +425,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        noiseMapByReceiverMaker.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
