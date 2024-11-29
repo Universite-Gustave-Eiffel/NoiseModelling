@@ -34,6 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -118,6 +121,7 @@ public class PathFinder {
         int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
         int endReceiverRange = 0;
         //Launch execution of computation by batch
+        List<Future<Boolean>> tasks = new ArrayList<>();
         while (endReceiverRange < data.receivers.size()) {
             //Break if the progress visitor is cancelled
             if (visitor != null && visitor.isCanceled()) {
@@ -127,9 +131,13 @@ public class PathFinder {
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
                     this, visitor, computeRaysOut, data);
             if (threadCount != 1) {
-                threadManager.executeBlocking(batchThread);
+                tasks.add(threadManager.submitBlocking(batchThread));
             } else {
-                batchThread.run();
+                try {
+                    batchThread.call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
             endReceiverRange = newEndReceiver;
         }
@@ -142,6 +150,15 @@ public class PathFinder {
         } catch (InterruptedException ex) {
             LOGGER.error(ex.getLocalizedMessage(), ex);
         }
+        // Must raise an exception if one the thread raised an exception
+        for (Future<Boolean> task : tasks) {
+            try {
+                task.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     /**
