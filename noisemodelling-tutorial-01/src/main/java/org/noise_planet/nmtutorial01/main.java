@@ -52,7 +52,10 @@ class Main {
     public static void mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
 
-        TableLocation lwRoads = TableLocation.parse("LW_ROADS", dbType);
+        TableLocation tableLwRoads = TableLocation.parse("LW_ROADS", dbType);
+        TableLocation tableBuildings = TableLocation.parse("BUILDINGS", dbType);
+        TableLocation tableDemLorient = TableLocation.parse("DEM", dbType);
+        String heightField = dbType.equals(DBTypes.POSTGIS) ? "height"  : "HEIGHT";
 
         // Init output logger
         Logger logger = LoggerFactory.getLogger(Main.class);
@@ -63,31 +66,33 @@ class Main {
 
         logger.info("Import buildings");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("buildings.geojson").getFile(), "BUILDINGS",
+        GeoJsonRead.importTable(connection, Main.class.getResource("buildings.geojson").getFile(), tableBuildings.toString(),
                 ValueBoolean.TRUE);
 
         // Import noise source
 
         logger.info("Import noise source");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), "LW_ROADS",
+        GeoJsonRead.importTable(connection, Main.class.getResource("lw_roads.geojson").getFile(), tableLwRoads.toString(),
                 ValueBoolean.TRUE);
         // Set primary key
-        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK SET NOT NULL");
-        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK)");
-        sql.execute("DELETE FROM LW_ROADS WHERE PK != 102");
+        sql.execute("ALTER TABLE "+tableLwRoads+" ALTER COLUMN PK SET NOT NULL");
+        sql.execute("ALTER TABLE "+tableLwRoads+" ADD PRIMARY KEY (PK)");
+        sql.execute("DELETE FROM "+tableLwRoads+" WHERE PK != 102");
 
         // Import BUILDINGS
 
         logger.info("Generate receivers grid for noise map rendering");
 
-        DelaunayReceiversMaker noiseMap = new DelaunayReceiversMaker("BUILDINGS", "LW_ROADS");
+        DelaunayReceiversMaker noiseMap = new DelaunayReceiversMaker(tableBuildings.toString(),
+                tableLwRoads.toString());
 
         AtomicInteger pk = new AtomicInteger(0);
         noiseMap.initialize(connection, new EmptyProgressVisitor());
         noiseMap.setGridDim(1);
         noiseMap.setMaximumArea(0);
         noiseMap.setIsoSurfaceInBuildings(false);
+        noiseMap.setHeightField(heightField);
 
         sql.execute("DROP TABLE IF EXISTS RECEIVERS;");
         sql.execute("DROP TABLE IF EXISTS TRIANGLES;");
@@ -101,12 +106,13 @@ class Main {
 
         logger.info("Import digital elevation model");
 
-        GeoJsonRead.importTable(connection, Main.class.getResource("dem_lorient.geojson").getFile(), "DEM",
+        GeoJsonRead.importTable(connection, Main.class.getResource("dem_lorient.geojson").getFile(),
+                tableDemLorient.toString(),
                 ValueBoolean.TRUE);
 
         // Init NoiseModelling
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
-                "LW_ROADS", "RECEIVERS");
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker(tableBuildings.toString(),
+                tableLwRoads.toString(), "RECEIVERS");
 
         noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
@@ -114,9 +120,9 @@ class Main {
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
         // Building height field name
-        noiseMapByReceiverMaker.setHeightField("HEIGHT");
+        noiseMapByReceiverMaker.setHeightField(heightField);
         // Point cloud height above sea level POINT(X Y Z)
-        noiseMapByReceiverMaker.setDemTable("DEM");
+        noiseMapByReceiverMaker.setDemTable(tableDemLorient.toString());
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum

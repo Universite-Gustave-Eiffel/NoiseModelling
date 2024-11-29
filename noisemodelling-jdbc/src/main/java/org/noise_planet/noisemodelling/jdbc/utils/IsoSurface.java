@@ -18,6 +18,8 @@ import org.h2gis.utilities.GeometryMetaData;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.h2gis.utilities.jts_utils.Contouring;
 import org.h2gis.utilities.jts_utils.TriMarkers;
 import org.locationtech.jts.geom.*;
@@ -498,8 +500,9 @@ public class IsoSurface {
      * @throws SQLException
      */
     public void createTable(Connection connection) throws SQLException {
-        List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable).toString());
-        int pk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(pointTable));
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable, dbType));
+        int pk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(pointTable, dbType));
         if(pk == 0) {
             throw new SQLException(pointTable+" does not contain a primary key");
         }
@@ -515,8 +518,8 @@ public class IsoSurface {
                 geometryType = "GEOMETRY(POLYGON,"+srid+")";
                 exportDimension = 2;
             }
-            st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable));
-            st.execute("CREATE TABLE " + TableLocation.parse(outputTable) +
+            st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable, dbType));
+            st.execute("CREATE TABLE " + TableLocation.parse(outputTable, dbType) +
                     "(PK SERIAL, CELL_ID INTEGER, THE_GEOM "+geometryType+", ISOLVL INTEGER, ISOLABEL VARCHAR);");
             String query = "SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za," +
                     "ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb, ST_Z(p2.the_geom) zb," +
@@ -608,7 +611,9 @@ public class IsoSurface {
                 processCell(connection, lastCellId, polyMap);
             }
         }
-        connection.commit();
+        if(!connection.getAutoCommit()) {
+            connection.commit();
+        }
     }
 
 }

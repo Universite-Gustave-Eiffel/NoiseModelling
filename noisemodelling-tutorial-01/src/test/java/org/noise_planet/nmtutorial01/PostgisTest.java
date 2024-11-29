@@ -20,9 +20,9 @@ public class PostgisTest {
         Properties p = new Properties();
         p.setProperty("serverName", "localhost");
         p.setProperty("portNumber", "5432");
-        p.setProperty("databaseName", "orbisgis_db");
-        p.setProperty("user", "orbisgis");
-        p.setProperty("password", "orbisgis");
+        p.setProperty("databaseName", "noisemodelling_db");
+        p.setProperty("user", "noisemodelling");
+        p.setProperty("password", "noisemodelling");
         try(Connection connection = JDBCUtilities.wrapConnection(dataSourceFactory.createDataSource(p).getConnection())) {
             Main.mainWithConnection(connection, "target");
         } catch (PSQLException psqlException) {

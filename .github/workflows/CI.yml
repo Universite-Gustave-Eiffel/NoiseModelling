@@ -10,9 +10,9 @@ jobs:
         image: postgis/postgis:16-3.4
         env:
           # must specify password for PG Docker container image, see: https://registry.hub.docker.com/_/postgres?tab=description&page=1&name=10
-          POSTGRES_USER: orbisgis
-          POSTGRES_PASSWORD: orbisgis
-          POSTGRES_DB: orbisgis_db
+          POSTGRES_USER: noisemodelling
+          POSTGRES_PASSWORD: noisemodelling
+          POSTGRES_DB: noisemodelling_db
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
