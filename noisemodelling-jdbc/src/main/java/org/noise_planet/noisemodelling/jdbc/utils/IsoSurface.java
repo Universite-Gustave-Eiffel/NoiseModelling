@@ -9,13 +9,8 @@
 
 package org.noise_planet.noisemodelling.jdbc.utils;
 
-import org.h2.util.geometry.JTSUtils;
-import org.h2.value.ValueGeometry;
 import org.h2gis.functions.spatial.convert.ST_Force2D;
 import org.h2gis.functions.spatial.convert.ST_Force3D;
-import org.h2gis.functions.spatial.edit.ST_UpdateZ;
-import org.h2gis.utilities.GeometryMetaData;
-import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;

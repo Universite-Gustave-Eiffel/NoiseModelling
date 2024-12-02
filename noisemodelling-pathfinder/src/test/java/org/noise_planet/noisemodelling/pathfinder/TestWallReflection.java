@@ -9,12 +9,10 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2.tools.Csv;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.io.WKTWriter;
-import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
@@ -29,18 +27,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWallReflection {
 
     @Test
     public void testWideWall() {
-
-        List<Wall> buildWalls = new ArrayList<>();
         Coordinate cA = new Coordinate(50, 100, 5);
         Coordinate cB = new Coordinate(150, 100, 5);
-        buildWalls.add(new Wall(cA, cB, 0, ProfileBuilder.IntersectionType.WALL));
 
         Polygon polygon = MirrorReceiversCompute.createWallReflectionVisibilityCone(
                 new Coordinate(100, 50, 0.1),

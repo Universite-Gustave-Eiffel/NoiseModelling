@@ -10,8 +10,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -25,8 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.splitLineStringIntoPoints;
 
 
@@ -419,13 +417,13 @@ public class TestPathFinder {
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
         List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2, profileBuilder);
-        Assert.assertTrue(ray.isEmpty());
+        assertTrue(ray.isEmpty());
         ray = computeRays.computeSideHull(false, p1, p2, profileBuilder);
-        Assert.assertTrue(ray.isEmpty());
+        assertTrue(ray.isEmpty());
         ray = computeRays.computeSideHull(false, p2, p1, profileBuilder);
-        Assert.assertTrue(ray.isEmpty());
+        assertTrue(ray.isEmpty());
         ray = computeRays.computeSideHull(true, p2, p1, profileBuilder);
-        Assert.assertTrue(ray.isEmpty());
+        assertTrue(ray.isEmpty());
     }
 
     /**
@@ -2054,7 +2052,7 @@ public class TestPathFinder {
         PathFinder computeRays = new PathFinder(processData);
 
         List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source, profileBuilder);
-        Assert.assertTrue(ray.isEmpty());
+        assertTrue(ray.isEmpty());
 
     }
 }

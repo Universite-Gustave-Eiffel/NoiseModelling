@@ -12,9 +12,9 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -40,19 +40,19 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
 
 public class NoiseMapByReceiverMakerTest {
 
     private Connection connection;
 
-    @Before
+    @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(NoiseMapByReceiverMakerTest.class.getSimpleName(), true, ""));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();
@@ -174,33 +174,6 @@ public class NoiseMapByReceiverMakerTest {
             assertNotSame(0, pk.get());
         }
     }
-
-    //    @Test
-    //    public void testNoiseMapBuilding2() throws Exception {
-    //        try(Statement st = connection.createStatement()) {
-    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile(), "ROADS_GEOM");
-    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
-    //            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
-    //            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-    //            noisemap.setSourceHasAbsoluteZCoordinates(false);
-    //            noisemap.setHeightField("HEIGHT");
-    //            noisemap.setMaximumArea(300);
-    //            noisemap.setBuildingBuffer(0);
-    //            noisemap.setMaximumPropagationDistance(800);
-    //
-    //
-    //
-    //            noisemap.initialize(connection, new EmptyProgressVisitor());
-    //            AtomicInteger pk = new AtomicInteger(0);
-    //            for(int i=0; i < noisemap.getGridDim(); i++) {
-    //                for(int j=0; j < noisemap.getGridDim(); j++) {
-    //                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
-    //                }
-    //            }
-    //            assertNotSame(0, pk.get());
-    //            SHPWrite.exportTable(connection, "target/triangle.shp", "TRIANGLES");
-    //        }
-    //    }
 
     private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");

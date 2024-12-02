@@ -9,9 +9,7 @@
 
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.cts.crs.CRSException;
-import org.cts.op.CoordinateOperationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -22,13 +20,12 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.xml.stream.XMLStreamException;
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test class dedicated to {@link ProfileBuilder}.

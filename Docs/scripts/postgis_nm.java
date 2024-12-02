@@ -6,7 +6,7 @@ import org.h2gis.functions.io.csv.CSVDriverFunction;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.postgis_jts_osgi.DataSourceFactoryImpl;
 import org.h2gis.utilities.SFSUtilities;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters
 import org.noise_planet.noisemodelling.jdbc.NoiseMapMaker;
 import org.noise_planet.noisemodelling.propagation.ComputeRaysOut;
@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class Main {

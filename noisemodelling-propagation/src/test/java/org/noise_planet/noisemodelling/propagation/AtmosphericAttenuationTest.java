@@ -8,14 +8,14 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /**

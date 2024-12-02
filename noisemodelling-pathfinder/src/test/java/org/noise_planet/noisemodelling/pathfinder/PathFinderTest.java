@@ -11,8 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Plane3D;
@@ -21,7 +20,6 @@ import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.distance.DistanceOp;
 import org.locationtech.jts.operation.distance3d.PlanarPolygon3D;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
-//import org.noise_planet.noisemodelling.pathfinder.path.CnossosPathParameters;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
@@ -37,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PathFinderTest {
 
@@ -55,8 +53,6 @@ public class PathFinderTest {
      *  Error for G path value
      */
     private static final double DELTA_G_PATH = 0.02;
-
-    @After
 
     /**
      * Test TC01 -- Reflecting ground (G = 0)
@@ -2718,17 +2714,16 @@ public class PathFinderTest {
      * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
      */
     private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<CnossosPath> actualPathParameters) {
-        assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPathParameters.size());
+        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
         for(int i=0; i<expectedPts.length; i++) {
             CnossosPath pathParameters = actualPathParameters.get(i);
             for(int j=0; j<expectedPts[i].length; j++){
                 PointPath point = pathParameters.getPointList().get(j);
-                assertEquals("Path "+i+" point "+j+" coord X", expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS);
-                assertEquals("Path "+i+" point "+j+" coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
-            }
-            assertEquals("Expected path["+i+"] segments count is different than actual path segment count.", expectedGPaths[i].length, pathParameters.getSegmentList().size());
+                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
+                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");            }
+            assertEquals(expectedGPaths[i].length, pathParameters.getSegmentList().size(), "Expected path["+i+"] segments count is different than actual path segment count.");
             for(int j=0; j<expectedGPaths[i].length; j++) {
-                assertEquals("Path " + i + " g path " + j, expectedGPaths[i][j], pathParameters.getSegmentList().get(j).gPath, DELTA_G_PATH);
+                assertEquals(expectedGPaths[i][j], pathParameters.getSegmentList().get(j).gPath, DELTA_G_PATH, "Path " + i + " g path " + j);
             }
         }
     }
@@ -2741,42 +2736,36 @@ public class PathFinderTest {
      * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
      */
     private static void assertPaths(double[][][] expectedPts, List<CnossosPath> actualPathParameters) {
-        assertEquals("Expected path count is different than actual path count.", expectedPts.length, actualPathParameters.size());
+        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
         for(int i=0; i<expectedPts.length; i++) {
             CnossosPath pathParameters = actualPathParameters.get(i);
             for(int j=0; j<expectedPts[i].length; j++){
                 PointPath point = pathParameters.getPointList().get(j);
-                assertEquals("Path "+i+" point "+j+" coord X", expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS);
-                assertEquals("Path "+i+" point "+j+" coord Y", expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS);
+                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
+                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");
             }
         }
     }
     private static void assertPlanes(double[][] expectedPlanes, List<SegmentPath> segments) {
         assertPlanes(expectedPlanes, segments.toArray(new SegmentPath[0]));
     }
-    private static void assertPlanes(double[][] expectedPlanes, SegmentPath... segments) {
-        SegmentPath segment = segments[0];
-        assertEquals("a", expectedPlanes[0][0], segment.a, DELTA_PLANES);
-        assertEquals("b", expectedPlanes[0][1], segment.b, DELTA_PLANES);
-        assertEquals("zs", expectedPlanes[0][2], segment.zsH, DELTA_PLANES);
-        assertEquals("zr", expectedPlanes[0][3], segment.zrH, DELTA_PLANES);
-        assertEquals("dp", expectedPlanes[0][4], segment.dp, DELTA_PLANES);
-        assertEquals("gPath", expectedPlanes[0][5], segment.gPath, DELTA_PLANES);
-        if(!Double.isNaN(expectedPlanes[0][6])) {
-            assertEquals("gPrimePath", expectedPlanes[0][6], segment.gPathPrime, DELTA_PLANES);
-        }
 
+    private static void assertPlane(double[] expectedPlane, SegmentPath segment) {
+        assertEquals(expectedPlane[0], segment.a, DELTA_PLANES, "a");
+        assertEquals(expectedPlane[1], segment.b, DELTA_PLANES, "b");
+        assertEquals(expectedPlane[2], segment.zsH, DELTA_PLANES, "zs");
+        assertEquals(expectedPlane[3], segment.zrH, DELTA_PLANES, "zr");
+        assertEquals(expectedPlane[4], segment.dp, DELTA_PLANES, "dp");
+        assertEquals(expectedPlane[5], segment.gPath, DELTA_PLANES, "gPath");
+        if(!Double.isNaN(expectedPlane[6])) {
+            assertEquals(expectedPlane[6], segment.gPathPrime, DELTA_PLANES, "gPrimePath");
+        }
+    }
+
+    private static void assertPlanes(double[][] expectedPlanes, SegmentPath... segments) {
+        assertPlane(expectedPlanes[0], segments[0]);
         if(segments.length>1) {
-            segment = segments[segments.length - 1];
-            assertEquals("a", expectedPlanes[1][0], segment.a, DELTA_PLANES);
-            assertEquals("b", expectedPlanes[1][1], segment.b, DELTA_PLANES);
-            assertEquals("zs", expectedPlanes[1][2], segment.zsH, DELTA_PLANES);
-            assertEquals("zr", expectedPlanes[1][3], segment.zrH, DELTA_PLANES);
-            assertEquals("dp", expectedPlanes[1][4], segment.dp, DELTA_PLANES);
-            assertEquals("gPath", expectedPlanes[1][5], segment.gPath, DELTA_PLANES);
-            if (!Double.isNaN(expectedPlanes[1][6])) {
-                assertEquals("gPrimePath", expectedPlanes[1][6], segment.gPathPrime, DELTA_PLANES);
-            }
+            assertPlane(expectedPlanes[1], segments[segments.length - 1]);
         }
     }
 
@@ -2786,11 +2775,11 @@ public class PathFinderTest {
 
     public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile, double delta) {
         if (expectedZProfile.size() != actualZ_profile.size()){
-            assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZProfile.size(), actualZ_profile.size());
+            assertEquals(expectedZProfile.size(), actualZ_profile.size(), "Expected zprofil count is different than actual zprofil count.");
         }
         for (int i = 0; i < actualZ_profile.size(); i++) {
-            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZProfile.get(i).x, actualZ_profile.get(i).x, delta);
-            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZProfile.get(i).y, actualZ_profile.get(i).y, delta);
+            assertEquals(expectedZProfile.get(i).x, actualZ_profile.get(i).x, delta, String.format(Locale.ROOT, "Coord X point %d", i));
+            assertEquals(expectedZProfile.get(i).y, actualZ_profile.get(i).y, delta, String.format(Locale.ROOT, "Coord Y point %d", i));
         }
     }
 

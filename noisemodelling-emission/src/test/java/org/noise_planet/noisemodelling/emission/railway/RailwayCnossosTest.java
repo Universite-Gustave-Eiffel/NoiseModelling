@@ -9,7 +9,7 @@
 
 package org.noise_planet.noisemodelling.emission.railway;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters;
@@ -17,8 +17,8 @@ import org.noise_planet.noisemodelling.emission.utils.Utils;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * Test the Railway model CNOSSOS as implemented in RailwayCnossos.java
@@ -30,7 +30,7 @@ public class RailwayCnossosTest {
     private static final double EPSILON_TEST1 = 0.0001;
     RailwayCnossos railwayCnossos = new RailwayCnossos();
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testUnknownVehicle() throws IOException {
 
         railwayCnossos.setVehicleDataFile("RailwayVehiclesNMPB.json");
@@ -61,7 +61,9 @@ public class RailwayCnossosTest {
         vehicleParameters.setFileVersion("EU");
         RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, vehicleCommercial, isTunnel, nTracks);
-        railwayCnossos.evaluate(vehicleParameters, trackParameters);
+        var t = assertThrows(IllegalArgumentException.class, () -> railwayCnossos.evaluate(vehicleParameters, trackParameters));
+
+        assertTrue(t.getMessage().contains("not found must be one of"));
     }
 
     @Test

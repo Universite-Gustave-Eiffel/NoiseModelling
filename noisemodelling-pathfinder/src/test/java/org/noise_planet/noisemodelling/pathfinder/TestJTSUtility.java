@@ -1,6 +1,6 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestJTSUtility {
 
@@ -54,11 +54,11 @@ public class TestJTSUtility {
 
     private static void assertZProfil(List<Coordinate> expectedZ_profile, List<Coordinate> actualZ_profile) {
         if (expectedZ_profile.size() != actualZ_profile.size()){
-            assertEquals("Expected zprofil count is different than actual zprofil count.", expectedZ_profile.size(), actualZ_profile.size());
+            assertEquals(expectedZ_profile.size(), actualZ_profile.size(), "Expected zprofil count is different than actual zprofil count.");
         }
         for (int i = 0; i < actualZ_profile.size(); i++) {
-            assertEquals(String.format(Locale.ROOT, "Coord X point %d", i), expectedZ_profile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS);
-            assertEquals(String.format(Locale.ROOT, "Coord Y point %d", i), expectedZ_profile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS);
+            assertEquals(expectedZ_profile.get(i).x, actualZ_profile.get(i).x, DELTA_COORDS, String.format(Locale.ROOT, "Coord X point %d", i));
+            assertEquals(expectedZ_profile.get(i).y, actualZ_profile.get(i).y, DELTA_COORDS, String.format(Locale.ROOT, "Coord Y point %d", i));
         }
     }
 }

@@ -12,7 +12,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
 
@@ -70,10 +70,10 @@ public class AttenuationCnossosTest {
 
 
     private static void assertDoubleArrayEquals(String valueName, double[] expected, double [] actual, double delta) {
-        assertEquals(valueName + ": Different array length;", expected.length, actual.length);
+        assertEquals(expected.length, actual.length, valueName + ": Different array length;");
         for(int i=0; i< expected.length; i++) {
             if(!Double.isNaN(expected[i])){
-                assertEquals(valueName + ": Arrays first differed at element ["+i+"];", expected[i], actual[i], delta);
+                assertEquals(expected[i], actual[i], delta, valueName + ": Arrays first differed at element ["+i+"];");
             }
         }
     }
@@ -7843,8 +7843,7 @@ public class AttenuationCnossosTest {
         AttenuationCnossos.evaluate(propPath, pathData);
         double[] aGlobalMeteoHom = AttenuationCnossos.getaGlobal();
         for (int i = 0; i < aGlobalMeteoHom.length; i++) {
-            assertFalse(String.format("freq %d Hz with nan value", pathData.freq_lvl.get(i)),
-                    Double.isNaN(aGlobalMeteoHom[i]));
+            assertFalse(Double.isNaN(aGlobalMeteoHom[i]), String.format("freq %d Hz with nan value", pathData.freq_lvl.get(i)));
         }
 
     }
