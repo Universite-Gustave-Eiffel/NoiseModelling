@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.checkerframework.checker.units.qual.A;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -90,6 +91,7 @@ public class RegressionTest {
             Set<Long> receivers = new HashSet<>();
 
             // Iterate over computation areas
+            List<IComputePathsOut> paths = new ArrayList<>();
             try {
                 tableWriter.start();
                 // Fetch cell identifiers with receivers
@@ -97,13 +99,13 @@ public class RegressionTest {
                 ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
                 for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                     // Run ray propagation
-                    noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(),
-                            cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                    paths.add(noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(),
+                            cellIndex.getLongitudeIndex(), progressVisitor, receivers));
                 }
             } finally {
                 tableWriter.stop();
             }
-
+            assertEquals(1, paths.size());
         }
     }
 

@@ -926,7 +926,7 @@ public class ProfileBuilder {
         if(topoTree != null) {
             addTopoCutPts(sourceCoordinate, receiverCoordinate, profile, stopAtObstacleOverSourceReceiver);
             if(stopAtObstacleOverSourceReceiver && profile.hasTopographyIntersection) {
-                return profile;
+                return new CutProfile();
             }
         } else {
             profile.getSource().zGround = 0.0;
@@ -938,7 +938,7 @@ public class ProfileBuilder {
             LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
             addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
             if(stopAtObstacleOverSourceReceiver && profile.hasBuildingIntersection) {
-                return profile;
+                return new CutProfile();
             }
         }
 

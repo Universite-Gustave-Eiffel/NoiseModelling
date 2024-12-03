@@ -1282,7 +1282,7 @@ public class PathFinder {
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
             cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
-                    rcvCoord, data.gS, true);
+                    rcvCoord, data.gS, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
@@ -1293,6 +1293,9 @@ public class PathFinder {
             mainProfile.setSource(mainProfile.getCutPoints().get(0));
             mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
+
+            assert mainProfile.getSource().getType() == SOURCE;
+            assert mainProfile.getReceiver().getType() == RECEIVER;
 
             // Compute Ray path from vertical cuts (like a folding screen)
             CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
