@@ -667,6 +667,9 @@ public class PathFinder {
             Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
             int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
             int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
+            if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
+                throw new IllegalArgumentException("Wrong input data " + cutProfile.toString());
+            }
             convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
             CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
             Geometry geom = geomFactory.createLineString(coordSequence);
