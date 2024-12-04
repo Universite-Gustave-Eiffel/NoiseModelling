@@ -11,7 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.utils;
 import java.util.Arrays;
 import java.util.Locale;
 
-public class Utils {
+public class AcousticIndicatorsFunctions {
 
     /**
      * Convert Decbiel to Watt

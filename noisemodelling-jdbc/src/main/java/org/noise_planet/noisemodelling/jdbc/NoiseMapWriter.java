@@ -26,8 +26,8 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.WRITER_CACHE;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
 
 public class NoiseMapWriter implements Runnable {

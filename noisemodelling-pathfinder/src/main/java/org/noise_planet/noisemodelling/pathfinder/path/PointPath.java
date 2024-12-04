@@ -10,7 +10,6 @@
 package org.noise_planet.noisemodelling.pathfinder.path;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.DataInputStream;
@@ -22,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.lang.Double.isNaN;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 
 public class PointPath {
 

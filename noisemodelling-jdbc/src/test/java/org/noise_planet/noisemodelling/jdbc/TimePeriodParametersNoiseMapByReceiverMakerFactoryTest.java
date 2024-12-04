@@ -51,8 +51,8 @@ import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumDbArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
 public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 

@@ -29,9 +29,8 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -393,7 +392,7 @@ public class KMLDocument {
         double maxDb = -Double.MAX_VALUE;
         for(CnossosPath line : rays) {
             if(line.aGlobal != null && line.aGlobal.length > 0) {
-                double attenuationLevel = Utils.sumDbArray(line.aGlobal);
+                double attenuationLevel = AcousticIndicatorsFunctions.sumDbArray(line.aGlobal);
                 minDb = Math.min(minDb, attenuationLevel);
                 maxDb = Math.max(maxDb, attenuationLevel);
             }
@@ -430,7 +429,7 @@ public class KMLDocument {
                 }
             }
             if(line.aGlobal != null && line.aGlobal.length > 0) {
-                attenuationLevel = Utils.sumDbArray(line.aGlobal);
+                attenuationLevel = AcousticIndicatorsFunctions.sumDbArray(line.aGlobal);
                 xmlOut.writeCharacters(String.format("%.1f dB R:%d S:%d",
                         attenuationLevel,line.getIdReceiver(), line.getIdSource()));
             } else {

@@ -85,9 +85,9 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         this.propagationProcessDataFactory = propagationProcessDataFactory;
     }
 
-    /*public int getThreadCount() {
+    public int getThreadCount() {
         return threadCount;
-    }*/
+    }
 
     public void setThreadCount(int threadCount) {
         this.threadCount = threadCount;
@@ -322,7 +322,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     }
 
     /**
-     * A factory interface for creating propagation process data for noise map computation.v
+     * A factory interface for creating propagation process data for noise map computation.
      */
     public interface PropagationProcessDataFactory {
 

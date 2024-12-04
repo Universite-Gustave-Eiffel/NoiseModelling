@@ -89,6 +89,9 @@ public abstract class NoiseMapLoader {
     protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
     // Initialised attributes
+    /**
+     *  Side computation cell count (same on X and Y)
+     */
     protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
 

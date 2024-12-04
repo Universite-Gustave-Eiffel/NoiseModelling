@@ -14,7 +14,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -49,7 +47,7 @@ import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TY
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * @author Nicolas Fortin
@@ -1177,7 +1175,6 @@ public class PathFinder {
      *
      * @param rcvCoord
      * @param srcCoord
-     * @param favorable
      * @param orientation
      * @param receiverMirrorIndex
      * @return propagation path list
@@ -1267,7 +1264,11 @@ public class PathFinder {
                 MirrorReceiver firstPoint = rayPath.get(idPt);
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
                 cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
-                        secondPoint.getReflectionPosition(), data.gS, true);
+                        secondPoint.getReflectionPosition(), data.gS, !data.computeVerticalDiffraction);
+                if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+                    // (maybe there is a blocking building/dem, and we disabled diffraction)
+                    continue;
+                }
                 updateReflectionPointAttributes(cutProfile.getCutPoints().get(0), cutProfile, firstPoint);
                 if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)

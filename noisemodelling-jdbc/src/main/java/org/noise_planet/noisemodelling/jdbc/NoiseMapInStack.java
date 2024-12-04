@@ -11,15 +11,15 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.wToDba;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDba;
 
 
 public class NoiseMapInStack implements IComputePathsOut {
@@ -107,7 +107,7 @@ public class NoiseMapInStack implements IComputePathsOut {
                     globalLevel = lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
                             receiverId, Collections.singletonList(pathParameters));
                 } else {
-                    globalLevel = Utils.sumDbArray(globalLevel, lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
+                    globalLevel = AcousticIndicatorsFunctions.sumDbArray(globalLevel, lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
                             receiverId, Collections.singletonList(pathParameters)));
                 }
                 pathParameters.setTimePeriod(timePeriod.name());

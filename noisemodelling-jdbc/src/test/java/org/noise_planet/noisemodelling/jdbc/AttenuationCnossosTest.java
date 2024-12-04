@@ -25,7 +25,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
-import org.noise_planet.noisemodelling.pathfinder.utils.Utils;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -33,7 +33,6 @@ import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.exc.StreamWriteException;
 
 import java.io.*;
 import java.util.*;
@@ -42,7 +41,7 @@ import java.util.stream.IntStream;
 import static java.lang.Double.NaN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * Test class evaluation and testing attenuation values.
@@ -50,14 +49,13 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
 public class AttenuationCnossosTest {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossosTest.class);
-    private static final int [] frequencies = new int[]{63,125,250,500,1000,2000,4000,8000};
-    private static final double ERROR_EPSILON_HIGHEST = 1e5;
-    private static final double ERROR_EPSILON_VERY_HIGH = 15;
-    private static final double ERROR_EPSILON_HIGH = 3;
-    private static final double ERROR_EPSILON_MEDIUM = 1;
-    private static final double ERROR_EPSILON_LOW = 0.5;
-    private static final double ERROR_EPSILON_VERY_LOW = 0.1;
-    private static final double ERROR_EPSILON_LOWEST = 0.02;
+    public static final double ERROR_EPSILON_HIGHEST = 1e5;
+    public static final double ERROR_EPSILON_VERY_HIGH = 15;
+    public static final double ERROR_EPSILON_HIGH = 3;
+    public static final double ERROR_EPSILON_MEDIUM = 1;
+    public static final double ERROR_EPSILON_LOW = 0.5;
+    public static final double ERROR_EPSILON_VERY_LOW = 0.1;
+    public static final double ERROR_EPSILON_LOWEST = 0.02;
 
     private static final double[] HOM_WIND_ROSE = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     private static final double[] FAV_WIND_ROSE = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
@@ -7449,7 +7447,7 @@ public class AttenuationCnossosTest {
             int maxPowerReceiverIndex = -1;
             double maxGlobalValue = Double.NEGATIVE_INFINITY;
             for (Attenuation.SourceReceiverAttenuation v : propDataOut.getVerticesSoundLevel()) {
-                double globalValue = Utils.sumDbArray(v.value);
+                double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
                     maxPowerReceiverIndex = (int) v.receiverId;
@@ -7689,10 +7687,10 @@ public class AttenuationCnossosTest {
             Arrays.fill(sourcePower, 70.0);
             for(CnossosPath proPath : propDataOut.getPropagationPaths()) {
                 double[] attenuationGlobal = proPath.aGlobal;
-                double[] contributionPower = Utils.sumArray(attenuationGlobal, sourcePower);
-                receiverPower = Utils.sumDbArray(receiverPower, contributionPower);
+                double[] contributionPower = AcousticIndicatorsFunctions.sumArray(attenuationGlobal, sourcePower);
+                receiverPower = AcousticIndicatorsFunctions.sumDbArray(receiverPower, contributionPower);
             }
-            double globalPowerAtReceiver = Utils.wToDba(Utils.sumArray(Utils.dbaToW(receiverPower)));
+            double globalPowerAtReceiver = AcousticIndicatorsFunctions.wToDba(AcousticIndicatorsFunctions.sumArray(AcousticIndicatorsFunctions.dbaToW(receiverPower)));
             if(i == 0) {
                 firstPowerAtReceiver = globalPowerAtReceiver;
             } else {

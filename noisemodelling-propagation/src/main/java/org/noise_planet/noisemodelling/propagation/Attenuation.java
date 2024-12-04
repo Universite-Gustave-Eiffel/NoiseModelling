@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.*;
 import static java.lang.Math.log10;
 //import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.DIFH;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * Way to store data computed by threads.
@@ -423,8 +423,15 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
+        /**
+         * Source identifier. -1 if it is the receiver values merged from multiple sources. In this case the value is
+         * not attenuation but spl at receiver position
+         */
         public final long sourceId;
         public final long receiverId;
+        /**
+         * Attenuation in dB or Spl in dB or dB(A)
+         */
         public final double[] value;
         public final Coordinate receiverPosition;
 

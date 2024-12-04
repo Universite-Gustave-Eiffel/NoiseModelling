@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumDbArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
 /**
  * ToDo descripion
