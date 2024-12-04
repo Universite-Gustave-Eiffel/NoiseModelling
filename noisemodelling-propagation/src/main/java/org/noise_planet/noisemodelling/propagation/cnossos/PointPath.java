@@ -7,9 +7,10 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.path;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.DataInputStream;
@@ -193,72 +194,14 @@ public class PointPath {
         this.coordinate =  coordinate;
     }
 
-    public static final class ReceiverPointInfo {
-        int sourcePrimaryKey;
-        public Coordinate position;
-
-        public ReceiverPointInfo(int sourcePrimaryKey, Coordinate position) {
-            this.sourcePrimaryKey = sourcePrimaryKey;
-            this.position = position;
+    public PointPath.POINT_TYPE toPointType(ProfileBuilder.IntersectionType intersectionType, PointPath.POINT_TYPE defaultPointType) {
+        if(intersectionType.equals(ProfileBuilder.IntersectionType.SOURCE)){
+            return PointPath.POINT_TYPE.SRCE;
         }
-
-        public Coordinate getCoord() {
-            return position;
-        }
-
-        public int getId() {
-            return sourcePrimaryKey;
-        }
-    }
-
-    public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
-        public final double li;
-        final int sourcePrimaryKey;
-        Coordinate position;
-        public final double globalWj;
-        Orientation orientation;
-
-        /**
-         * @param wj               Maximum received power from this source
-         * @param sourcePrimaryKey
-         * @param position
-         */
-        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
-            this.sourcePrimaryKey = sourcePrimaryKey;
-            this.position = position;
-            if (isNaN(position.z)) {
-                this.position = new Coordinate(position.x, position.y, 0);
-            }
-            this.globalWj = sumArray(wj.length, wj);
-            this.li = li;
-            this.orientation = orientation;
-        }
-
-        public Orientation getOrientation() {
-            return orientation;
-        }
-
-        public Coordinate getCoord() {
-            return position;
-        }
-
-        public int getId() {
-            return sourcePrimaryKey;
-        }
-
-        /**
-         *
-         * @param sourcePointInfo the object to be compared.
-         * @return 1, 0 or -1
-         */
-        @Override
-        public int compareTo(SourcePointInfo sourcePointInfo) {
-            int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
-            if (cmp == 0) {
-                return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
-            } else {
-                return cmp;
-            }
+        else if(intersectionType.equals(ProfileBuilder.IntersectionType.RECEIVER)){
+            return PointPath.POINT_TYPE.RECV;
+        } else {
+            return defaultPointType;
         }
     }
 }

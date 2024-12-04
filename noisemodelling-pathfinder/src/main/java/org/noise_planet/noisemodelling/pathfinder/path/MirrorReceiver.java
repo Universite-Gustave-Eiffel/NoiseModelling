@@ -23,10 +23,10 @@ import java.util.Objects;
 public class MirrorReceiver {
 
 
-    private Coordinate receiverPos;
-    private Coordinate reflectionPosition = new Coordinate(Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE);
-    private final MirrorReceiver parentMirror;
-    private final Wall wall;
+    public Coordinate receiverPos;
+    public Coordinate reflectionPosition = new Coordinate(Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE, Coordinate.NULL_ORDINATE);
+    public final MirrorReceiver parentMirror;
+    public final Wall wall;
     /**
      * This data is not stored in the RTREE as it is not used after the creation of the index
      */

@@ -10,7 +10,7 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.util.ArrayList;

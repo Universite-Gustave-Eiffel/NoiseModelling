@@ -7,7 +7,7 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.path;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
@@ -15,8 +15,6 @@ import org.locationtech.jts.math.Vector3D;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SegmentPath {
     // debug/unit test purpose data

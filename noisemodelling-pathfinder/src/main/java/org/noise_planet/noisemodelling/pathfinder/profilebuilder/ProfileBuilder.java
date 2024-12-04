@@ -20,7 +20,6 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
@@ -30,7 +29,6 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.IntegerTuple;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -1455,20 +1453,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION, V_EDGE_DIFFRACTION;
-
-        public PointPath.POINT_TYPE toPointType(PointPath.POINT_TYPE dflt) {
-            if(this.equals(SOURCE)){
-                return PointPath.POINT_TYPE.SRCE;
-            }
-            else if(this.equals(RECEIVER)){
-                return PointPath.POINT_TYPE.RECV;
-            }
-            else {
-                return dflt;
-            }
-        }
-    }
+    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION, V_EDGE_DIFFRACTION}
 
     /**
      * Cutting profile containing all th cut points with there x,y,z position.

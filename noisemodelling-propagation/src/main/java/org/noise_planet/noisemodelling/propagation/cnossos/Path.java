@@ -7,7 +7,7 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.path;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnSegment;
 

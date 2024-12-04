@@ -10,7 +10,6 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 
@@ -63,7 +62,7 @@ public final class ThreadPathFinder implements Callable<Boolean> {
                         break;
                     }
                 }
-                PointPath.ReceiverPointInfo rcv = new PointPath.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
+                PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
 
                 long start = 0;
                 if(propagationProcess.getProfilerThread() != null) {

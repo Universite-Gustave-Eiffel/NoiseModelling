@@ -14,15 +14,11 @@ import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.path.*;
-import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
@@ -43,10 +39,8 @@ import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
-import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
-import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
@@ -55,7 +49,6 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * @author Sylvain Palominos
  */
 public class PathFinder {
-    private static final double ALPHA0 = 2e-4;
     // distance from wall for reflection points and diffraction points
     private static final double NAVIGATION_POINT_DISTANCE_FROM_WALLS = ProfileBuilder.MILLIMETER;
     private static final double epsilon = 1e-7;
@@ -165,11 +158,11 @@ public class PathFinder {
      * @param dataOut Computation output.
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
-    public void computeRaysAtPosition(PointPath.ReceiverPointInfo rcv, IComputePathsOut dataOut, ProgressVisitor visitor) {
+    public void computeRaysAtPosition(ReceiverPointInfo rcv, IComputePathsOut dataOut, ProgressVisitor visitor) {
         MirrorReceiversCompute receiverMirrorIndex = null;
 
         if(data.reflexionOrder > 0) {
-            Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoord());
+            Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoordinates());
             receiverPropagationEnvelope.expandBy(data.maxSrcDist);
             List<Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
             receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, rcv.position, data.reflexionOrder,
@@ -179,13 +172,13 @@ public class PathFinder {
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(
-                rcv.getCoord().x - searchSourceDistance,
-                rcv.getCoord().x + searchSourceDistance,
-                rcv.getCoord().y - searchSourceDistance,
-                rcv.getCoord().y + searchSourceDistance
+                rcv.getCoordinates().x - searchSourceDistance,
+                rcv.getCoordinates().x + searchSourceDistance,
+                rcv.getCoordinates().y - searchSourceDistance,
+                rcv.getCoordinates().y + searchSourceDistance
         );
         Iterator<Integer> regionSourcesLst = data.sourcesIndex.query(receiverSourceRegion);
-        List<PointPath.SourcePointInfo> sourceList = new ArrayList<>();
+        List<SourcePointInfo> sourceList = new ArrayList<>();
         //Already processed Raw source (line and/or points)
         HashSet<Integer> processedLineSources = new HashSet<>();
         // Sum of all sources power using only geometric dispersion with direct field
@@ -198,7 +191,7 @@ public class PathFinder {
                 double[] wj = data.getMaximalSourcePower(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    if (ptpos.distance(rcv.getCoord()) < data.maxSrcDist) {
+                    if (ptpos.distance(rcv.getCoordinates()) < data.maxSrcDist) {
                         Orientation orientation = null;
                         if(data.sourcesPk.size() > srcIndex) {
                             orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
@@ -206,15 +199,15 @@ public class PathFinder {
                         if(orientation == null) {
                             orientation = new Orientation(0,0, 0);
                         }
-                        totalPowerRemaining += insertPtSource((Point) source, rcv.getCoord(), srcIndex, sourceList, wj, 1., orientation);
+                        totalPowerRemaining += insertPtSource((Point) source, rcv.getCoordinates(), srcIndex, sourceList, wj, 1., orientation);
                     }
                 } else if (source instanceof LineString) {
-                    totalPowerRemaining += addLineSource((LineString) source, rcv.getCoord(), srcIndex, sourceList, wj);
+                    totalPowerRemaining += addLineSource((LineString) source, rcv.getCoordinates(), srcIndex, sourceList, wj);
                 } else if (source instanceof MultiLineString) {
                     for (int id = 0; id < source.getNumGeometries(); id++) {
                         Geometry subGeom = source.getGeometryN(id);
                         if (subGeom instanceof LineString) {
-                            totalPowerRemaining += addLineSource((LineString) subGeom, rcv.getCoord(), srcIndex, sourceList, wj);
+                            totalPowerRemaining += addLineSource((LineString) subGeom, rcv.getCoordinates(), srcIndex, sourceList, wj);
                         }
                     }
                 } else {
@@ -225,22 +218,14 @@ public class PathFinder {
         }
         // Sort sources by power contribution descending
         Collections.sort(sourceList);
-        double powerAtSource = 0;
+
         // For each Pt Source - Pt Receiver
         AtomicInteger raysCount = new AtomicInteger(0);
-        for (PointPath.SourcePointInfo src : sourceList) {
-            double[] power = rcvSrcPropagation(src, src.li, rcv, dataOut, raysCount, receiverMirrorIndex);
-            double global = sumArray(power.length, dbaToW(power));
-            totalPowerRemaining -= src.globalWj;
-            if (power.length > 0) {
-                powerAtSource += global;
-            } else {
-                powerAtSource += src.globalWj;
-            }
+        for (SourcePointInfo src : sourceList) {
+            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(src, rcv, dataOut, raysCount, receiverMirrorIndex);
             totalPowerRemaining = max(0, totalPowerRemaining);
             // If the delta between already received power and maximal potential power received is inferior than than data.maximumError
-            if ((visitor != null && visitor.isCanceled()) || (data.maximumError > 0 &&
-                    wToDba(powerAtSource + totalPowerRemaining) - wToDba(powerAtSource) < data.maximumError)) {
+            if ((visitor != null && visitor.isCanceled()) ||  !strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
                 break; //Stop looking for more rays
             }
         }
@@ -258,45 +243,32 @@ public class PathFinder {
      * Calculation of the propagation between the given source and receiver. The result is registered in the given
      * output.
      * @param src     Source point.
-     * @param srcLi   Source power per meter coefficient.
      * @param rcv     Receiver point.
      * @param dataOut Output.
-     * @return
+     * @return Continue or not looking for propagation paths
      */
-    private double[] rcvSrcPropagation(PointPath.SourcePointInfo src, double srcLi, PointPath.ReceiverPointInfo rcv,
-                                       IComputePathsOut dataOut, AtomicInteger raysCount,
-                                       MirrorReceiversCompute receiverMirrorIndex) {
-
-        double propaDistance = src.getCoord().distance(rcv.getCoord());
+    private IComputePathsOut.PathSearchStrategy rcvSrcPropagation(SourcePointInfo src,
+                                                                  ReceiverPointInfo rcv,
+                                                                  IComputePathsOut dataOut, AtomicInteger raysCount,
+                                                                  MirrorReceiversCompute receiverMirrorIndex) {
+        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
+        double propaDistance = src.getCoord().distance(rcv.getCoordinates());
         if (propaDistance < data.maxSrcDist) {
             // Process direct : horizontal and vertical diff
-            List<CnossosPath> pathParameters = new ArrayList<>(directPath(src, rcv,
-                    data.computeVerticalDiffraction, data.computeHorizontalDiffraction, data.isBodyBarrier()));
+            strategy = directPath(src, rcv, data.computeVerticalDiffraction,
+                    data.computeHorizontalDiffraction, dataOut);
+            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                return strategy;
+            }
             // Process reflection
             if (data.reflexionOrder > 0) {
-                pathParameters.addAll(computeReflexion(rcv.getCoord(), src.getCoord(),
-                        src.getOrientation(), receiverMirrorIndex));
-            }
-            if (!pathParameters.isEmpty()) {
-                if(raysCount != null) {
-                    raysCount.addAndGet(pathParameters.size());
+                strategy = computeReflexion(rcv, src, receiverMirrorIndex, dataOut);
+                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                    return strategy;
                 }
-                return dataOut.addPropagationPaths(src.getId(), srcLi, rcv.getId(), pathParameters);
             }
         }
-        return new double[0];
-    }
-
-    /**
-     * Direct Path computation.
-     * @param src Source point.
-     * @param rcv Receiver point.
-     * @return Calculated propagation paths.
-     */
-    public List<CnossosPath> directPath(PointPath.SourcePointInfo src,
-                                        PointPath.ReceiverPointInfo rcv, boolean verticalDiffraction, boolean horizontalDiffraction, boolean bodyBarrier) {
-        return directPath(src.getCoord(), src.getId(), src.getOrientation(), rcv.getCoord(), rcv.getId(),
-                verticalDiffraction, horizontalDiffraction, bodyBarrier);
+        return strategy;
     }
 
     /**
@@ -307,23 +279,31 @@ public class PathFinder {
      * @param rcvId    Receiver point identifier.
      * @return Calculated propagation paths.
      */
-    public List<CnossosPath> directPath(Coordinate srcCoord, int srcId, Orientation orientation, Coordinate rcvCoord,
-                                        int rcvId, boolean verticalDiffraction, boolean horizontalDiffraction,
-                                        boolean bodyBarrier) {
-        List<CnossosPath> pathsParameters = new ArrayList<>();
-        CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rcvCoord, data.gS, !verticalDiffraction);
+    public IComputePathsOut.PathSearchStrategy directPath(SourcePointInfo src, ReceiverPointInfo rcv,
+                                                          boolean verticalDiffraction, boolean horizontalDiffraction,
+                                                          IComputePathsOut dataOut) {
+
+        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
+
+        CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.gS, !verticalDiffraction);
         if(cutProfile.getSource() != null) {
-            cutProfile.getSource().setId(srcId);
+            cutProfile.getSource().setId(src.getId());
+            cutProfile.getSource().li = src.li;
+            cutProfile.getSource().orientation = src.getOrientation();
         }
         if(cutProfile.getReceiver() != null) {
-            cutProfile.getReceiver().setId(rcvId);
+            cutProfile.getReceiver().setId(rcv.getId());
         }
-        cutProfile.setSrcOrientation(orientation);
+
 
         if(verticalDiffraction || cutProfile.isFreeField()) {
-            CnossosPath hEdgePath = computeHEdgeDiffraction(cutProfile, bodyBarrier);
-            if (hEdgePath != null) {
-                pathsParameters.add(hEdgePath);
+            assert cutProfile.getSource().getType() == SOURCE;
+            assert cutProfile.getReceiver().getType() == RECEIVER;
+            cutProfile.getReceiver().primaryKey = data.receiversPk.get(rcv.receiverIndex);
+            cutProfile.getSource().primaryKey = data.sourcesPk.get(src.sourceIndex);
+            strategy = dataOut.onNewCutPlane(cutProfile);
+            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                return strategy;
             }
         }
 
@@ -333,87 +313,23 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
-            CnossosPath vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, RIGHT, orientation);
-            if (vEdgePath != null && vEdgePath.getPointList() != null) {
-                pathsParameters.add(vEdgePath);
+            CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
+            if (cutProfileRight != null) {
+                strategy = dataOut.onNewCutPlane(cutProfileRight);
+                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                    return strategy;
+                }
             }
-            vEdgePath = computeVEdgeDiffraction(rcvCoord, srcCoord, data, LEFT, orientation);
-            if (vEdgePath != null && vEdgePath.getPointList() != null) {
-                pathsParameters.add(vEdgePath);
+            CutProfile cutProfileLeft = computeVEdgeDiffraction(rcv, src, data, LEFT);
+            if (cutProfileLeft != null) {
+                strategy = dataOut.onNewCutPlane(cutProfileLeft);
+                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                    return strategy;
+                }
             }
         }
 
-        for(CnossosPath pathParameters : pathsParameters) {
-            pathParameters.idSource = srcId;
-            pathParameters.idReceiver = rcvId;
-            pathParameters.setSourceOrientation(orientation);
-        }
-
-        return pathsParameters;
-    }
-
-
-    /**
-     * Eq.2.5.24 and Eq. 2.5.25
-     * @param mn
-     * @param d
-     * @return
-     */
-
-    private static double toCurve(double mn, double d){
-        return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
-    }
-
-    /**
-     * Compute the segment path
-     * @param src
-     * @param rcv
-     * @param meanPlane
-     * @return the calculated segment
-     */
-    private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane) {
-        return computeSegment(src, rcv, meanPlane, 0, 0);
-    }
-
-    /**
-     * Compute the segment path with more attribute
-     * @param src
-     * @param rcv
-     * @param meanPlane
-     * @param gPath
-     * @param gS
-     * @return the computed segment path
-     */
-
-    private static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane, double gPath, double gS) {
-        SegmentPath seg = new SegmentPath();
-        Coordinate sourcePointOnMeanPlane = projectPointOnLine(src, meanPlane[0], meanPlane[1]);
-        Coordinate receiverPointOnMeanPlane = projectPointOnLine(rcv, meanPlane[0], meanPlane[1]);
-        Vector2D sourceToProjectedPoint = Vector2D.create(src, sourcePointOnMeanPlane);
-        Vector2D receiverToProjectedPoint = Vector2D.create(rcv, receiverPointOnMeanPlane);
-        seg.s = src;
-        seg.r = rcv;
-        seg.sMeanPlane = sourcePointOnMeanPlane;
-        seg.rMeanPlane = receiverPointOnMeanPlane;
-        seg.sPrime = Vector2D.create(sourcePointOnMeanPlane).add(sourceToProjectedPoint).toCoordinate();
-        seg.rPrime = Vector2D.create(receiverPointOnMeanPlane).add(receiverToProjectedPoint).toCoordinate();
-
-        seg.d = src.distance(rcv);
-        seg.dp =sourcePointOnMeanPlane.distance(receiverPointOnMeanPlane);
-        seg.zsH = src.distance(sourcePointOnMeanPlane);
-        seg.zrH = rcv.distance(receiverPointOnMeanPlane);
-        seg.a = meanPlane[0];
-        seg.b = meanPlane[1];
-        seg.testFormH = seg.dp/(30*(seg.zsH +seg.zrH));
-        seg.gPath = gPath;
-        seg.gPathPrime = seg.testFormH <= 1 ? seg.gPath*(seg.testFormH) + gS*(1-seg.testFormH) : seg.gPath; // 2.5.14
-        double deltaZT = 6e-3 * seg.dp / (seg.zsH + seg.zrH);
-        double deltaZS = ALPHA0 * pow((seg.zsH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2); //2.5.19
-        seg.zsF = seg.zsH + deltaZS + deltaZT;
-        double deltaZR = ALPHA0 * pow((seg.zrH / (seg.zsH + seg.zrH)), 2) * (seg.dp*seg.dp / 2);
-        seg.zrF = seg.zrH + deltaZR + deltaZT;
-        seg.testFormF = seg.dp/(30*(seg.zsF +seg.zrF));
-        return seg;
+        return strategy;
     }
 
 
@@ -455,10 +371,11 @@ public class PathFinder {
      * @param side     Side to compute. From Source to receiver coordinates
      * @return The propagation path of the horizontal diffraction.
      */
-    public CnossosPath computeVEdgeDiffraction(Coordinate receiverCoordinates, Coordinate sourceCoordinates,
-                                               Scene data, ComputationSide side, Orientation orientation) {
+    public CutProfile computeVEdgeDiffraction(ReceiverPointInfo rcv, SourcePointInfo src,
+                                               Scene data, ComputationSide side) {
 
-        List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(sourceCoordinates), new Coordinate(receiverCoordinates), data.profileBuilder);
+        List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(src.position),
+                new Coordinate(rcv.position), data.profileBuilder);
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -483,472 +400,21 @@ public class PathFinder {
             CutProfile mainProfile = new CutProfile();
             mainProfile.addCutPoints(cutPoints);
             mainProfile.setSource(cutPoints.get(0));
-            mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(cutPoints.get(cutPoints.size() -  1));
-            // Compute Ray path from vertical cuts (like a folding screen)
-            CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
 
-            if(cnossosPath == null) {
-                // path not valid (ex: intersection with ground)
-                return null;
-            }
+            assert mainProfile.getSource().getType() == SOURCE;
+            assert mainProfile.getReceiver().getType() == RECEIVER;
 
-            return cnossosPath;
+            mainProfile.getReceiver().primaryKey = data.receiversPk.get(rcv.receiverIndex);
+            mainProfile.getSource().primaryKey = data.sourcesPk.get(src.sourceIndex);
+            mainProfile.getSource().orientation = src.orientation;
+            mainProfile.getSource().li = src.li;
+
+            return mainProfile;
         }
         return null;
     }
 
-    private void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
-                                     LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
-                                     List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex) {
-        final List<CutPoint> cuts = cutProfile.getCutPoints();
-
-        Coordinate src = pts2D.get(0);
-        Coordinate rcv = pts2D.get(pts2D.size() - 1);
-        CutPoint srcCut = cutProfile.getSource();
-        CutPoint rcvCut = cutProfile.getReceiver();
-        for (int iO = 1; iO < pts2DGround.length - 1; iO++) {
-            int i0Cut = cut2DGroundIndex.indexOf(iO);
-            Coordinate o = pts2DGround[iO];
-
-            double dSO = src.distance(o);
-            double dOR = o.distance(rcv);
-            double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
-            List<Integer> freqs = data.freq_lvl;
-            boolean rcrit = false;
-            for(int f : freqs) {
-                if(deltaH > -(340./f) / 20) {
-                    rcrit = true;
-                    break;
-                }
-            }
-            if (rcrit) {
-                rcrit = false;
-                //Add point path
-
-                //Plane S->O
-                Coordinate[] soCoords = Arrays.copyOfRange(pts2DGround, 0, iO + 1);
-                double[] abs = JTSUtility.getMeanPlaneCoefficients(soCoords);
-                SegmentPath seg1 = computeSegment(src, o, abs);
-
-                //Plane O->R
-                Coordinate[] orCoords = Arrays.copyOfRange(pts2DGround, iO, pts2DGround.length);
-                double[] abr = JTSUtility.getMeanPlaneCoefficients(orCoords);
-                SegmentPath seg2 = computeSegment(o, rcv, abr);
-
-                Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
-                Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
-
-                LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-                srSeg.dPrime = srcPrime.distance(rcvPrime);
-                seg1.dPrime = srcPrime.distance(o);
-                seg2.dPrime = o.distance(rcvPrime);
-
-                double deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
-                for(int f : freqs) {
-                    if(deltaH > (340./f) / 4 - deltaPrimeH) {
-                        rcrit = true;
-                        break;
-                    }
-                }
-                if (rcrit) {
-                    pathParameters.deltaH = deltaH;
-                    pathParameters.deltaPrimeH = deltaPrimeH;
-                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoef());
-                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoef());
-
-                    if(dSR.orientationIndex(o) == 1) {
-                        pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-                    else {
-                        Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                        pathParameters.deltaF =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-
-                    LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                    double dSPrimeO = seg1.sPrime.distance(o);
-                    double dSPrimeR = seg1.sPrime.distance(rcv);
-                    pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
-
-                    LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                    double dORPrime = o.distance(seg2.rPrime);
-                    double dSRPrime = src.distance(seg2.rPrime);
-                    pathParameters.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
-
-                    if(dSPrimeRPrime.orientationIndex(o) == 1) {
-                        pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-                    else {
-                        Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-
-                    segments.add(seg1);
-                    segments.add(seg2);
-
-                    points.add(new PointPath(o, o.z, new ArrayList<>(), DIFH_RCRIT));
-                }
-            }
-        }
-    }
-
-    /**
-     * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the ray path
-     * following Cnossos specification, or null if there is no valid path.
-     * @param cutProfile Vertical cut of a domain
-     * @param bodyBarrier
-     * @return The cnossos path or null
-     */
-    public CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier) {
-        List<SegmentPath> segments = new ArrayList<>();
-        List<PointPath> points = new ArrayList<>();
-        final List<CutPoint> cutProfilePoints = cutProfile.getCutPoints();
-
-        List<Coordinate> pts2D = computePts2D(cutProfilePoints);
-        if(pts2D.size() != cutProfilePoints.size()) {
-            throw new IllegalArgumentException("The two arrays size should be the same");
-        }
-
-        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.getCutPoints().size());
-        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
-        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
-        Coordinate firstPts2D = pts2D.get(0);
-        Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
-        SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
-        srPath.setPoints2DGround(pts2DGround);
-        srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
-                cutProfile.getSource().getCoordinate());
-        CnossosPath pathParameters = new CnossosPath();
-        pathParameters.setCutProfile(cutProfile);
-        pathParameters.setFavorable(true);
-        pathParameters.setPointList(points);
-        pathParameters.setSegmentList(segments);
-        pathParameters.setSRSegment(srPath);
-        pathParameters.init(data.freq_lvl.size());
-        pathParameters.angle=Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
-        // Extract the first and last points to define the line segment
-        Coordinate firstPt = pts2D.get(0);
-        Coordinate lastPt = pts2D.get(pts2D.size() - 1);
-
-        // Filter out points that are below the line segment
-        List<Coordinate> convexHullInput = new ArrayList<>();
-        // Add source position
-        convexHullInput.add(pts2D.get(0));
-        // Add valid diffraction point, building/walls/dem
-        for (int idPoint=1; idPoint < cutProfilePoints.size() - 1; idPoint++) {
-            boolean validIntersection = false;
-            CutPoint currentPoint = cutProfilePoints.get(idPoint);
-            switch (currentPoint.getType()) {
-                case BUILDING:
-                case WALL:
-                    // We only add the point at the top of the wall, not the point at the bottom of the wall
-                    validIntersection = Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0;
-                    break;
-                case TOPOGRAPHY:
-                    validIntersection = true;
-                    break;
-                default:
-            }
-            if(validIntersection) {
-                convexHullInput.add(pts2D.get(idPoint));
-            }
-        }
-        // Add receiver position
-        convexHullInput.add(pts2D.get(pts2D.size() - 1));
-
-        // Compute the convex hull using JTS
-        List<Coordinate> convexHullPoints = new ArrayList<>();
-        if(convexHullInput.size() > 2) {
-            GeometryFactory geomFactory = new GeometryFactory();
-            Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
-            ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
-            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
-            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
-            if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
-                throw new IllegalArgumentException("Wrong input data " + cutProfile.toString());
-            }
-            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
-            CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
-            Geometry geom = geomFactory.createLineString(coordSequence);
-            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
-            convexHullCoords = uniqueGeom.getCoordinates();
-            // Convert the result back to your format (List<Point2D> pts)
-            if (convexHullCoords.length == 3) {
-                convexHullPoints = Arrays.asList(convexHullCoords);
-            } else {
-                for (int j = 0; j < convexHullCoords.length; j++) {
-                    // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
-                    if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
-                        continue; // Skip this point as it's not part of the hull
-                    }
-                    convexHullPoints.add(convexHullCoords[j]);
-                }
-            }
-        } else {
-            convexHullPoints = convexHullInput;
-        }
-        List<Coordinate> pts = convexHullPoints;
-
-        Coordinate src = cutProfile.getSource().getCoordinate();
-
-        // Move then check reflection height if there is diffraction on the path
-        if(pts.size() > 2) {
-            for (int i = 1; i < pts.size(); i++) {
-                int i0 = pts2D.indexOf(pts.get(i - 1));
-                int i1 = pts2D.indexOf(pts.get(i));
-                LineSegment segmentHull = new LineSegment(pts.get(i - 1), pts.get(i));
-                for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
-                    final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                    // If the current point is the reflection point (not on the ground level)
-                    if (currentPoint.getType().equals(REFLECTION) &&
-                            Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
-                        MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
-                        Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
-                        // Check if the new elevation of the reflection point is not higher than the wall
-                        double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
-                                mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                        if(wallAltitudeAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
-                            // update the reflection position
-                            currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
-                            pts2D.get(pointIndex).setY(interpolatedReflectionPoint.y);
-                        } else {
-                            // Reflection is not valid, so the whole path is not valid
-                            return null;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Create segments from each diffraction point to the receiver
-        for (int i = 1; i < pts.size(); i++) {
-            int i0 = pts2D.indexOf(pts.get(i - 1));
-            int i1 = pts2D.indexOf(pts.get(i));
-            int i0Ground = cut2DGroundIndex.get(i0);
-            int i1Ground = cut2DGroundIndex.get(i1);
-            final CutPoint cutPt0 = cutProfilePoints.get(i0);
-            final CutPoint cutPt1 = cutProfilePoints.get(i1);
-            // ground index may be near the diffraction point
-            // mean ground plane is computed using from the bottom of the walls
-            if (i0Ground < i1Ground - 1) {
-                CutPoint nextPoint = cutProfilePoints.get(i0 + 1);
-                if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + epsilon
-                        && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0
-                && (nextPoint.getType().equals(WALL) || nextPoint.getType().equals(BUILDING))) {
-                    i0Ground += 1;
-                }
-            }
-            if (i1Ground - 1 > i0Ground) {
-                CutPoint previousPoint = cutProfilePoints.get(i1 - 1);
-                if (cutPt1.getCoordinate().distance(previousPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER +
-                        epsilon && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0
-                        && (previousPoint.getType().equals(WALL) || previousPoint.getType().equals(BUILDING))) {
-                    i1Ground -= 1;
-                }
-            }
-            // Create a profile for the segment i0->i1
-            CutProfile profileSeg = new CutProfile();
-            profileSeg.addCutPoints(cutProfilePoints.subList(i0, i1 + 1));
-            profileSeg.setSource(cutPt0);
-            profileSeg.setReceiver(cutPt1);
-
-
-            if (points.isEmpty()) {
-                // First segment, add the source point in the array
-                points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
-                // look for the first reflection before the first diffraction, the source orientation is to the first reflection point
-                Coordinate targetPosition = cutProfilePoints.get(i1).getCoordinate();
-                for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
-                    final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                    if ((currentPoint.getType().equals(REFLECTION) || currentPoint.getType().equals(V_EDGE_DIFFRACTION)) &&
-                            Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
-                        // The first reflection (the one not at ground level)
-                        // from the source coordinate is the direction of the propagation
-                        targetPosition = currentPoint.getCoordinate();
-                        break;
-                    }
-                }
-                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(),
-                        cutProfilePoints.get(0).getCoordinate(), targetPosition);
-                pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
-                src = pts2D.get(i0);
-            }
-            // Add reflection/vertical edge diffraction points/segments between i0 i1
-            int previousPivotPoint = i0;
-            for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
-                final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                if (currentPoint.getType().equals(REFLECTION) &&
-                        Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
-                    // If the current point is a reflection and not before/after the reflection
-                    MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
-                    double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
-                            mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), currentPoint.getWallAlpha(), REFL);
-                    reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
-                    reflectionPoint.setWallId(currentPoint.getWallId());
-                    points.add(reflectionPoint);
-                } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
-                    // current point is a vertical edge diffraction (there is no additional points unlike reflection)
-                    PointPath diffractionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
-                    diffractionPoint.setWallId(currentPoint.getWallId());
-                    points.add(diffractionPoint);
-                    // Compute additional segment
-                    Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,cut2DGroundIndex.get(pointIndex) + 1);
-                    meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
-                    SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pointIndex),
-                            meanPlane, profileSeg.getGPath(cutPt0, cutProfilePoints.get(pointIndex)), data.gS);
-                    seg.setPoints2DGround(segmentGroundPoints);
-                    previousPivotPoint = pointIndex;
-                    segments.add(seg);
-                }
-            }
-            points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
-            if(previousPivotPoint != i0 && i == pts.size() - 1) {
-                // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
-                // diffraction point and we must add the remaining segment between the last horizontal diffraction point
-                // and the last point
-                Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i1Ground, pts2DGround.length);
-                meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
-                SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
-                        meanPlane, profileSeg.getGPath(cutPt1, cutProfilePoints.get(cutProfilePoints.size() - 1)),
-                        data.gS);
-                seg.setPoints2DGround(segmentGroundPoints);
-                segments.add(seg);
-            }
-            if(pts.size() == 2) {
-                // no diffraction over buildings/dem, we already computed SR segment
-                break;
-            }
-            Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,i1Ground + 1);
-            meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
-            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
-                    profileSeg.getSource().getGroundCoef());
-            path.dc = cutPt0.getCoordinate().distance3D(cutPt1.getCoordinate());
-            path.setPoints2DGround(segmentGroundPoints);
-            segments.add(path);
-            if (i != pts.size() - 1) {
-                PointPath pt = points.get(points.size() - 1);
-                pt.type = DIFH;
-                pt.bodyBarrier = bodyBarrier;
-                if (pt.buildingId != -1) {
-                    pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
-                } else if (pt.wallId != -1) {
-                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-                    Wall wall = data.profileBuilder.getWall(pt.wallId);
-                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
-                }
-            }
-        }
-
-        if(points.isEmpty()) {
-            return null;
-        }
-
-        Coordinate rcv = points.get(points.size()-1).coordinate;
-        PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
-        if(p0==null){
-            // Direct propagation (no diffraction over obstructing objects)
-            boolean horizontalPlaneDiffraction = cutProfile.getCutPoints().stream()
-                    .anyMatch(
-                            cutPoint -> cutPoint.getType().equals(V_EDGE_DIFFRACTION));
-            List<SegmentPath> rayleighSegments = new ArrayList<>();
-            List<PointPath> rayleighPoints = new ArrayList<>();
-            // do not check for rayleigh if the path is not direct between R and S
-            if(!horizontalPlaneDiffraction) {
-                // Check for Rayleigh criterion for segments computation
-                LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
-                // Look for diffraction over edge on free field (frequency dependent)
-                computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
-                        pts2DGround, cut2DGroundIndex);
-            }
-            if(rayleighSegments.isEmpty()) {
-                // We don't have a Rayleigh diffraction over DEM. Only direct SR path
-                if(segments.isEmpty()) {
-                    segments.add(pathParameters.getSRSegment());
-                }
-                // Compute cumulated distance between the first diffraction and the last diffraction point
-                pathParameters.e = 0;
-                List<PointPath> diffPoints = points.stream().filter(pointPath -> pointPath.type != REFL).collect(Collectors.toList());
-                for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
-                    pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
-                }
-                long difVPointCount = pathParameters.getPointList().stream().
-                        filter(pointPath -> pointPath.type.equals(DIFV)).count();
-                double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
-                pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - distance;
-                pathParameters.deltaF = pathParameters.deltaH;
-            } else {
-                segments.addAll(rayleighSegments);
-                points.addAll(1, rayleighPoints);
-            }
-            return pathParameters;
-        }
-        Coordinate c0 = p0.coordinate;
-        PointPath pn = points.stream().filter(p -> p.type.equals(DIFH)).reduce((first, second) -> second).orElse(null);
-        if(pn==null){
-            return null;
-        }
-        Coordinate cn = pn.coordinate;
-
-        SegmentPath seg1 = segments.get(0);
-        SegmentPath seg2 = segments.get(segments.size()-1);
-
-        double dSO0 = seg1.d;
-        double dOnR = seg2.d;
-        LineSegment sr = new LineSegment(src, rcv);
-
-        LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-        double dSPrimeR = seg1.sPrime.distance(rcv);
-        double dSPrimeO = seg1.sPrime.distance(c0);
-        // Compute cumulated distance between the first diffraction and the last diffraction point
-        pathParameters.e = 0;
-        List<PointPath> diffPoints = points.stream().filter(pointPath -> pointPath.type != REFL).collect(Collectors.toList());
-        for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
-            pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
-        }
-        pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + pathParameters.e + dOnR - dSPrimeR);
-        pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
-
-        LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-        double dSRPrime = src.distance(seg2.rPrime);
-        double dORPrime = cn.distance(seg2.rPrime);
-        pathParameters.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + pathParameters.e + dORPrime - dSRPrime);
-        pathParameters.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
-
-        Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
-        Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
-
-        LineSegment dSPrimeRPrime = new LineSegment(srcPrime, rcvPrime);
-        srPath.dPrime = srcPrime.distance(rcvPrime);
-        seg1.dPrime = srcPrime.distance(c0);
-        seg2.dPrime = cn.distance(rcvPrime);
-
-
-        long difVPointCount = pathParameters.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(DIFV)).count();
-        double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
-        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - distance);
-        if (sr.orientationIndex(c0) == 1) {
-            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
-        } else {
-            Coordinate pA = sr.pointAlong((c0.x - srcPrime.x) / (rcvPrime.x - srcPrime.x));
-            pathParameters.deltaF = 2 * toCurve(srcPrime.distance(pA), srPath.dPrime) + 2 * toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
-        }
-
-        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + pathParameters.e + seg2.dPrime - srPath.dPrime);
-
-        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + seg2.dPrime - srPath.dPrime);
-        if(dSPrimeRPrime.orientationIndex(c0) == 1) {
-            pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srPath.dPrime) + toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
-        } else {
-            Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
-        }
-
-        return pathParameters;
-    }
 
     /**
      * Compute Side Hull
@@ -1177,17 +643,17 @@ public class PathFinder {
      * @param srcCoord
      * @param orientation
      * @param receiverMirrorIndex
-     * @return propagation path list
+     * @return Skip or continue looking for vertical cut
      */
-    public List<CnossosPath> computeReflexion(Coordinate rcvCoord, Coordinate srcCoord,
-                                              Orientation orientation, MirrorReceiversCompute receiverMirrorIndex) {
+    public IComputePathsOut.PathSearchStrategy computeReflexion(ReceiverPointInfo rcv,
+                                                                SourcePointInfo src,
+                                                                MirrorReceiversCompute receiverMirrorIndex,
+                                                                IComputePathsOut dataOut) {
 
         // Compute receiver mirror
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
-        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(srcCoord);
-
-        List<CnossosPath> reflexionPathParameters = new ArrayList<>();
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(src.position);
 
         for (MirrorReceiver receiverReflection : mirrorResults) {
             Wall seg = receiverReflection.getWall();
@@ -1195,7 +661,7 @@ public class PathFinder {
             MirrorReceiver receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
-            Coordinate destinationPt = new Coordinate(srcCoord);
+            Coordinate destinationPt = new Coordinate(src.position);
 
             linters.computeIntersection(seg.p0, seg.p1,
                     receiverReflection.getReceiverPos(),
@@ -1249,7 +715,7 @@ public class PathFinder {
             // A valid propagation path as been found (without looking at occlusion)
             CutProfile mainProfile = new CutProfile();
             // Compute direct path between source and first reflection point, add profile to the data
-            CutProfile cutProfile = data.profileBuilder.getProfile(srcCoord, rayPath.get(0).getReflectionPosition(),
+            CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
                     data.gS, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
@@ -1283,7 +749,7 @@ public class PathFinder {
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
             cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
-                    rcvCoord, data.gS, !data.computeVerticalDiffraction);
+                    rcv.position, data.gS, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
@@ -1292,23 +758,22 @@ public class PathFinder {
             // Add points to the main profile, remove the last point, or it will be duplicated later
             mainProfile.addCutPoints(cutProfile.getCutPoints());
             mainProfile.setSource(mainProfile.getCutPoints().get(0));
-            mainProfile.setSrcOrientation(orientation);
             mainProfile.setReceiver(mainProfile.getCutPoints().get(mainProfile.getCutPoints().size() - 1));
 
             assert mainProfile.getSource().getType() == SOURCE;
             assert mainProfile.getReceiver().getType() == RECEIVER;
 
-            // Compute Ray path from vertical cuts (like a folding screen)
-            CnossosPath cnossosPath = computeHEdgeDiffraction(mainProfile, data.isBodyBarrier());
+            mainProfile.getReceiver().primaryKey = data.receiversPk.get(rcv.receiverIndex);
+            mainProfile.getSource().primaryKey = data.sourcesPk.get(src.sourceIndex);
+            mainProfile.getSource().orientation = src.orientation;
+            mainProfile.getSource().li = src.li;
 
-            if(cnossosPath == null) {
-                // path not valid (ex: reflexion over the wall)
-                continue;
+            IComputePathsOut.PathSearchStrategy strategy = dataOut.onNewCutPlane(mainProfile);
+            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                return strategy;
             }
-
-            reflexionPathParameters.add(cnossosPath);
         }
-        return reflexionPathParameters;
+        return IComputePathsOut.PathSearchStrategy.CONTINUE;
     }
 
     /**
@@ -1489,13 +954,13 @@ public class PathFinder {
      * @return
      */
     private static double insertPtSource(Coordinate source, Coordinate receiverPos, Integer sourceId,
-                                         List<PointPath.SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
+                                         List<SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        sourceList.add(new PointPath.SourcePointInfo(srcWJ, sourceId, source, li, orientation));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source, li, orientation));
         return sumArray(srcWJ.length, srcWJ);
     }
 
@@ -1512,14 +977,14 @@ public class PathFinder {
      * @return
      */
     private static double insertPtSource(Point source, Coordinate receiverPos, Integer sourceId,
-                                         List<PointPath.SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
+                                         List<SourcePointInfo> sourceList, double[] wj, double li, Orientation orientation) {
         // Compute maximal power at freefield at the receiver position with reflective ground
         double aDiv = -getADiv(CGAlgorithms3D.distance(receiverPos, source.getCoordinate()));
         double[] srcWJ = new double[wj.length];
         for (int idFreq = 0; idFreq < srcWJ.length; idFreq++) {
             srcWJ[idFreq] = wj[idFreq] * li * dbaToW(aDiv) * dbaToW(3);
         }
-        sourceList.add(new PointPath.SourcePointInfo(srcWJ, sourceId, source.getCoordinate(), li, orientation));
+        sourceList.add(new SourcePointInfo(srcWJ, sourceId, source.getCoordinate(), li, orientation));
         return sumArray(srcWJ.length, srcWJ);
     }
 
@@ -1532,7 +997,7 @@ public class PathFinder {
      * @param wj
      * @return
      */
-    private double addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<PointPath.SourcePointInfo> sourceList, double[] wj) {
+    private double addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<SourcePointInfo> sourceList, double[] wj) {
         double totalPowerRemaining = 0;
         ArrayList<Coordinate> pts = new ArrayList<>();
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
@@ -1570,4 +1035,78 @@ public class PathFinder {
     public enum ComputationSide {LEFT, RIGHT}
 
 
+    /**
+     * Attribute of the receiver point
+     */
+    public static final class ReceiverPointInfo {
+        public int receiverIndex;
+        public Coordinate position;
+
+        public ReceiverPointInfo(int sourcePrimaryKey, Coordinate position) {
+            this.receiverIndex = sourcePrimaryKey;
+            this.position = position;
+        }
+
+        public Coordinate getCoordinates() {
+            return position;
+        }
+
+        public int getId() {
+            return receiverIndex;
+        }
+    }
+
+    /**
+     * Attributes of the source point
+     */
+    public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
+        public final double li;
+        public int sourceIndex;
+        Coordinate position;
+        public final double globalWj;
+        Orientation orientation;
+
+        /**
+         * @param wj               Maximum received power from this source
+         * @param sourcePrimaryKey
+         * @param position
+         */
+        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
+            this.sourceIndex = sourcePrimaryKey;
+            this.position = position;
+            if (isNaN(position.z)) {
+                this.position = new Coordinate(position.x, position.y, 0);
+            }
+            this.globalWj = sumArray(wj.length, wj);
+            this.li = li;
+            this.orientation = orientation;
+        }
+
+        public Orientation getOrientation() {
+            return orientation;
+        }
+
+        public Coordinate getCoord() {
+            return position;
+        }
+
+        public int getId() {
+            return sourceIndex;
+        }
+
+        /**
+         *
+         * @param sourcePointInfo the object to be compared.
+         * @return 1, 0 or -1
+         */
+        @Override
+        public int compareTo(SourcePointInfo sourcePointInfo) {
+            int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
+            if (cmp == 0) {
+                return Integer.compare(sourceIndex, sourcePointInfo.sourceIndex);
+            } else {
+                return cmp;
+            }
+        }
+    }
 }

@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,24 +20,35 @@ import java.util.List;
 
 public  class CutPoint implements Comparable<CutPoint> {
     /** {@link Coordinate} of the cut point. */
-    Coordinate coordinate = new Coordinate();
+    public Coordinate coordinate = new Coordinate();
     /** Intersection type. */
-    ProfileBuilder.IntersectionType type;
+    public ProfileBuilder.IntersectionType type;
     /** Identifier of the cut element. */
-    int id = -1;
+    public int id = -1;
     /** Identifier of the building containing the point. -1 if no building. */
-    int buildingId = -1;
+    public int buildingId = -1;
     /** Identifier of the wall containing the point. -1 if no wall. */
-    int wallId = -1;
+    public int wallId = -1;
     /** Topographic height of the point. */
-    double zGround = Double.NaN;
+    public double zGround = Double.NaN;
     /** Ground effect coefficient. 0 if there is no coefficient. */
-    double groundCoef = Double.NaN;
+    public double groundCoef = Double.NaN;
     /** Wall alpha. NaN if there is no coefficient. */
-    List<Double> wallAlpha = Collections.emptyList();
+    public List<Double> wallAlpha = Collections.emptyList();
+    /** Source line subdivision length (1.0 means a point is representing 1 meter of line sound source) */
+    public double li = 1.0;
+    /**
+     * Index of the object that reference the external data (not a temporary index in a subdomain)
+     */
+    public long primaryKey;
+    /**
+     * Orientation of the point (should be about the source or receiver point)
+     * The orientation is related to the directivity associated to the object
+     */
+    public Orientation orientation = new Orientation();
 
     /** On reflection intersection type this object contain the associated reflection data */
-    private MirrorReceiver mirrorReceiver;
+    public MirrorReceiver mirrorReceiver = null;
 
     /**
      * Constructor using a {@link Coordinate}.
@@ -48,6 +60,7 @@ public  class CutPoint implements Comparable<CutPoint> {
         this.coordinate = new Coordinate(coord);
         this.type = type;
         this.id = id;
+        this.primaryKey = id;
     }
 
     public CutPoint() {
@@ -208,6 +221,9 @@ public  class CutPoint implements Comparable<CutPoint> {
                 ", zGround=" + zGround +
                 ", groundCoef=" + groundCoef +
                 ", wallAlpha=" + wallAlpha +
+                ", li=" + li +
+                ", primaryKey=" + primaryKey +
+                ", orientation=" + orientation +
                 (mirrorReceiver == null ? "" : ", mirrorReceiver=" + mirrorReceiver) +
                 '}';
     }

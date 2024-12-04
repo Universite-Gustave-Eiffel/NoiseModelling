@@ -7,10 +7,8 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.cnossos;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 
-
-import org.noise_planet.noisemodelling.pathfinder.path.Path;
 
 /**
  * All the datas Path of Cnossos

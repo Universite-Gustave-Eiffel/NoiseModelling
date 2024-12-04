@@ -14,11 +14,7 @@ import org.cts.op.CoordinateOperationException;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.math.Plane3D;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
-import org.locationtech.jts.operation.distance.DistanceOp;
-import org.locationtech.jts.operation.distance3d.PlanarPolygon3D;
 import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
@@ -32,7 +28,6 @@ import javax.xml.stream.XMLStreamException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.lang.Double.NaN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,7 +81,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
     }
 
     /**
@@ -121,7 +116,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
     }
 
     /**
@@ -156,7 +151,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
     }
 
     /**
@@ -198,7 +193,7 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
     }
 
 
@@ -317,9 +312,9 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths()); // table17
-        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment()); // table 18
-        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList()); // table 18
+        assertPaths(pts, gPaths, propDataOut.getCutPlanes()); // table17
+        assertPlanes(meanPlanes, propDataOut.getCutPlanes().get(0).getSRSegment()); // table 18
+        assertPlanes(meanPlanes, propDataOut.getCutPlanes().get(0).getSegmentList()); // table 18
     }
 
     /**
@@ -348,15 +343,15 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(1, propDataOut.getPropagationPaths().size());
-        assertEquals(2, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
+        assertEquals(1, propDataOut.getCutPlanes().size());
+        assertEquals(2, propDataOut.getCutPlanes().get(0).getSegmentList().size());
 
         // Test R-CRIT table 27
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
+        Coordinate D = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).r;
+        Coordinate Sp = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime;
+        Coordinate Rp = propDataOut.getCutPlanes().get(0).getSegmentList().get(1).rPrime ;
 
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d - propDataOut.getPropagationPaths().get(0).getSRSegment().d;
+        double deltaD = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).d + propDataOut.getCutPlanes().get(0).getSegmentList().get(1).d - propDataOut.getCutPlanes().get(0).getSRSegment().d;
         double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
@@ -387,7 +382,7 @@ public class PathFinderTest {
         Coordinate expectedRPrime =new Coordinate(194.16,8.5);
 
         if(!profileBuilder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().sPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSRSegment().sPrime,propDataOut.getCutPlanes().get(0).getSRSegment().rPrime);
         }
 
 
@@ -403,9 +398,9 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
-        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertZProfil(expectedZProfile, propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround());
+        assertPlanes(srMeanPlanes, propDataOut.getCutPlanes().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes, propDataOut.getCutPlanes().get(0).getSegmentList());
     }
 
     /**
@@ -466,7 +461,7 @@ public class PathFinderTest {
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
         if(!profileBuilder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(propDataOut.getCutPlanes().get(0).getSegmentList().size()-1).rPrime);
         }
 
 
@@ -484,7 +479,7 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes, propDataOut.getCutPlanes().get(0).getSegmentList());
         try {
             exportScene("target/T07.kml", profileBuilder, propDataOut);
         } catch (IOException e) {
@@ -547,11 +542,11 @@ public class PathFinderTest {
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
 
         if(!profileBuilder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(propDataOut.getCutPlanes().get(0).getSegmentList().size()-1).rPrime);
         }
 
         /* Table 43 */
@@ -571,10 +566,10 @@ public class PathFinderTest {
 
         //Assertion
 
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertZProfil(expectedZProfile, propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
         try {
             exportScene("target/T08.kml", profileBuilder, propDataOut);
         } catch (IOException e) {
@@ -636,7 +631,7 @@ public class PathFinderTest {
         Coordinate expectedSPrime =new Coordinate(0.24,-4.92);
         Coordinate expectedRPrime =new Coordinate(194.48,6.59);
         if(!profileBuilder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(propDataOut.getCutPlanes().get(0).getSegmentList().size()-1).rPrime);
         }
 
         /* Table 60 */
@@ -656,9 +651,9 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
         try {
             exportScene("target/T09.kml", profileBuilder, propDataOut);
         } catch (IOException e) {
@@ -737,9 +732,9 @@ public class PathFinderTest {
         //Assertion
 
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
         try {
             exportScene("target/T10.kml", profileBuilder, propDataOut);
         } catch (IOException e) {
@@ -832,14 +827,14 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertZProfil(expectedZProfile, propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
 
-        assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertZProfil(expectedZProfileRight, propDataOut.getCutPlanes().get(1).getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
 
-        assertZProfil(expectedZProfileLeft, propDataOut.getPropagationPaths().get(2).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertZProfil(expectedZProfileLeft, propDataOut.getCutPlanes().get(2).getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
     }
 
     /**
@@ -918,22 +913,22 @@ public class PathFinderTest {
         };
 
         //Assertion
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPath = propDataOut.getCutPlanes().get(0);
         assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
         assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
         assertZProfil(expectedZProfileOnR, Arrays.asList(directPath.getSegmentList().
                 get(directPath.getSegmentList().size() - 1).getPoints2DGround()));
 
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
 
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
 
-        assertEquals(3, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
-        Coordinate sPrime = propDataOut.pathParameters.get(0).getSegmentList().get(0).sPrime;
-        Coordinate rPrime = propDataOut.pathParameters.get(0).getSegmentList().get(2).rPrime;
+        assertEquals(3, propDataOut.getCutPlanes().get(0).getSegmentList().size());
+        Coordinate sPrime = propDataOut.cutProfiles.get(0).getSegmentList().get(0).sPrime;
+        Coordinate rPrime = propDataOut.cutProfiles.get(0).getSegmentList().get(2).rPrime;
 
         assertCoordinateEquals("TC12 Table 102 S' S->O", new Coordinate(0, -1), sPrime, DELTA_COORDS);
         assertCoordinateEquals("TC12 Table 102 R' O->R", new Coordinate(31.62, -6), rPrime, DELTA_COORDS);
@@ -1012,9 +1007,9 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
     }
 
     /**
@@ -1090,9 +1085,9 @@ public class PathFinderTest {
         //Assertion
         // Wrong value of z1 in Cnossos document for the 3 paths
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment());
     }
 
     /**
@@ -1183,8 +1178,8 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment()); // left
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes2, propDataOut.getCutPlanes().get(2).getSRSegment()); // left
         //assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment()); // right : error in value of b cnossos
 
         //exportRays("target/T06.geojson", propDataOut);
@@ -1250,7 +1245,7 @@ public class PathFinderTest {
         Coordinate expectedSPrime =new Coordinate(0.42,-6.64);
         Coordinate expectedRPrime =new Coordinate(194.84,1.70);
         if(!profileBuilder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().sPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSRSegment().sPrime,propDataOut.getCutPlanes().get(0).getSRSegment().rPrime);
         }
 
         /* Table 165 */
@@ -1268,15 +1263,15 @@ public class PathFinderTest {
         //Assertion
 
         // Check SR direct line
-        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
+        List<Coordinate> result = propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfile,result);
-        assertEquals(2, propDataOut.getPropagationPaths().size());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertEquals(2, propDataOut.getCutPlanes().size());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSRSegment());
 
         // Check reflection path
-        result = propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround();
+        result = propDataOut.getCutPlanes().get(1).getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfileReflection, result);
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
 
         try {
             exportScene("target/T16.kml", profileBuilder, propDataOut);
@@ -1339,11 +1334,11 @@ public class PathFinderTest {
         assertZProfil(expectedZProfile,result);
 
         // Test R-CRIT table 179
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
+        Coordinate D = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).r;
+        Coordinate Sp = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime;
+        Coordinate Rp = propDataOut.getCutPlanes().get(0).getSegmentList().get(1).rPrime ;
 
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d - propDataOut.getPropagationPaths().get(0).getSRSegment().d;
+        double deltaD = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).d + propDataOut.getCutPlanes().get(0).getSegmentList().get(1).d - propDataOut.getCutPlanes().get(0).getSRSegment().d;
         double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
@@ -1419,7 +1414,7 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getCutPlanes().size());
 
         // Expected Values
 
@@ -1430,7 +1425,7 @@ public class PathFinderTest {
         expectedZProfile.add(new Coordinate(178.84, 10));
         expectedZProfile.add(new Coordinate(194.16, 10));
 
-        CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        CutProfile cutProfile = propDataOut.getCutPlanes().get(0).getCutProfile();
         List<Coordinate> result = cutProfile.computePts2DGround();
         assertZProfil(expectedZProfile, result);
 
@@ -1452,9 +1447,9 @@ public class PathFinderTest {
 
 
         // S-R (not the rayleigh segments SO OR)
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSRSegment());
 
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+        CnossosPath reflectionPath = propDataOut.getCutPlanes().get(1);
         // Check reflexion mean planes
         assertPlanes(segmentsMeanPlanes1, reflectionPath.getSegmentList());
 
@@ -1508,7 +1503,7 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(1, propDataOut.getPropagationPaths().size());
+        assertEquals(1, propDataOut.getCutPlanes().size());
 
         // Expected Values
 
@@ -1519,7 +1514,7 @@ public class PathFinderTest {
         expectedZProfile.add(new Coordinate(178.84, 10));
         expectedZProfile.add(new Coordinate(194.16, 10));
 
-        CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        CutProfile cutProfile = propDataOut.getCutPlanes().get(0).getCutProfile();
         List<Coordinate> result = cutProfile.computePts2DGround();
         assertZProfil(expectedZProfile, result);
 
@@ -1534,7 +1529,7 @@ public class PathFinderTest {
 
 
         // S-R (not the rayleigh segments SO OR)
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSRSegment());
 
     }
     /**
@@ -1667,18 +1662,18 @@ public class PathFinderTest {
                 {0.06, -2.01, 3.00, 5.00, 192.81, 0.46, 0.55}
         };
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfileRight, propDataOut.getCutPlanes().get(1).getCutProfile().computePts2DGround());
         // Error in ISO
         // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
         // the last wall. The hull is ignoring the 12 meters building on the left side.
         // assertZProfil(expectedZProfileLeft, propDataOut.getPropagationPaths().get(2).getCutProfile().computePts2DGround());
 
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, propDataOut.getCutPlanes().get(1).getSRSegment());
 
         // Error in ISO
         // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
@@ -1737,7 +1732,7 @@ public class PathFinderTest {
 
         //Assertion
         assertZProfil(expectedZProfile,result);
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0, propDataOut.getCutPlanes().get(0).getSegmentList());
     }
 
     /**
@@ -1795,14 +1790,14 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
         // Test R-CRIT table 235
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
+        Coordinate D = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).r;
+        Coordinate Sp = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime;
+        Coordinate Rp = propDataOut.getCutPlanes().get(0).getSegmentList().get(1).rPrime ;
 
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + D.distance(propDataOut.getPropagationPaths().get(0).getPointList().get(2).coordinate) - propDataOut.getPropagationPaths().get(0).getSRSegment().d;
+        double deltaD = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).d + D.distance(propDataOut.getCutPlanes().get(0).getPointList().get(2).coordinate) - propDataOut.getCutPlanes().get(0).getSRSegment().d;
         double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
@@ -1876,7 +1871,7 @@ public class PathFinderTest {
 
 
         //Assertion Direct
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPath = propDataOut.getCutPlanes().get(0);
         assertZProfil(expectedZProfileSR, Arrays.asList(directPath.getSRSegment().getPoints2DGround()), 0.01);
         assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()),
                 0.01);
@@ -1887,11 +1882,11 @@ public class PathFinderTest {
         assertPlanes(segmentsMeanPlanes0,directPath.getSegmentList());
 
         //Assertion Right
-        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
+        CnossosPath rightPath = propDataOut.getCutPlanes().get(1);
         assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()), 0.01);
 
         //Assertion Left
-        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
+        CnossosPath leftPath = propDataOut.getCutPlanes().get(2);
         assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()), 0.01);
     }
 
@@ -2002,9 +1997,9 @@ public class PathFinderTest {
         };
 
         // Must have direct path + diffraction left + diffraction right
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
-        CnossosPath directPropagationPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPropagationPath = propDataOut.getCutPlanes().get(0);
         SegmentPath SRSegment = directPropagationPath.getSRSegment();
 
         // Asserts
@@ -2023,12 +2018,12 @@ public class PathFinderTest {
         assertPlanes(segmentsMeanPlanes0, directPropagationPath.getSegmentList());
 
         // Check diffraction on horizontal plane
-        CnossosPath rightPropagationPath = propDataOut.getPropagationPaths().get(1);
+        CnossosPath rightPropagationPath = propDataOut.getCutPlanes().get(1);
         assertZProfil(expectedZProfileRight,
                 Arrays.asList(rightPropagationPath.getSRSegment().getPoints2DGround()));
         assertPlanes(SRRightMeanPlanes0, rightPropagationPath.getSRSegment());
 
-        CnossosPath leftPropagationPath = propDataOut.getPropagationPaths().get(2);
+        CnossosPath leftPropagationPath = propDataOut.getCutPlanes().get(2);
         assertZProfil(expectedZProfileLeft,
                 Arrays.asList(leftPropagationPath.getSRSegment().getPoints2DGround()));
         assertPlanes(SRLeftMeanPlanes0, leftPropagationPath.getSRSegment());
@@ -2093,7 +2088,7 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(1, propDataOut.getPropagationPaths().size());
+        assertEquals(1, propDataOut.getCutPlanes().size());
 
         CutProfile cutProfile = computeRays.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS, false);
         List<Coordinate> result = cutProfile.computePts2DGround();
@@ -2121,7 +2116,7 @@ public class PathFinderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0,propDataOut.getCutPlanes().get(0).getSegmentList());
         assertZProfil(expectedZProfile,result);
 
 
@@ -2188,7 +2183,7 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getCutPlanes().size());
 
         // Expected Values
 
@@ -2219,7 +2214,7 @@ public class PathFinderTest {
         expectedZProfileOR.add(new Coordinate(43.53, 0.0));
         expectedZProfileOR.add(new Coordinate(70.74, 0.0));
 
-        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
+        List<Coordinate> result = propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfile,result);
 
         /* Table 280 */
@@ -2228,7 +2223,7 @@ public class PathFinderTest {
                 {0.18, -1.17, 2.13, 1.94, 23.37, 0.37, 0.07},
                 {0.0, 0.0, 6.0, 4.0, 7.57, 0.00, NaN}
         };
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0,propDataOut.getCutPlanes().get(0).getSegmentList());
 
 
 
@@ -2280,7 +2275,7 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         // Should find Direct,Left/Right diffraction and one reflection
-        assertEquals(4, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getCutPlanes().size());
 
         // Expected Values
 
@@ -2322,7 +2317,7 @@ public class PathFinderTest {
         Coordinate expectedRPrime =new Coordinate(68.15,-4.0);
 
         if(!builder.getWalls().isEmpty()){
-            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime,propDataOut.getCutPlanes().get(0).getSegmentList().get(propDataOut.getCutPlanes().get(0).getSegmentList().size()-1).rPrime);
         }
 
         /* Table 303 */
@@ -2339,22 +2334,22 @@ public class PathFinderTest {
                 {0.0, 0.0, 5.0, 4.0, 47.49, 0.0, NaN}
         };
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPath = propDataOut.getCutPlanes().get(0);
         assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
         assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
         assertZProfil(expectedZProfileONR, Arrays.asList(directPath.getSegmentList().get(
                 directPath.getSegmentList().size() - 1).getPoints2DGround()));
         assertPlanes(segmentsMeanPlanes0, directPath.getSegmentList());
 
-        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
+        CnossosPath rightPath = propDataOut.getCutPlanes().get(1);
         assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()));
 
 
-        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
+        CnossosPath leftPath = propDataOut.getCutPlanes().get(2);
         assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()));
 
 
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(3);
+        CnossosPath reflectionPath = propDataOut.getCutPlanes().get(3);
         assertPlanes(segmentsMeanPlanesReflection, reflectionPath.getSegmentList());
     }
 
@@ -2444,14 +2439,14 @@ public class PathFinderTest {
 
         computeRays.run(propDataOut);
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getCutPlanes().size());
 
         // Test R-CRIT table 338 reflexion: Error: no data for "Rayleigh-Criterion" (favourable) we just have (homogeneous) data
-        Coordinate D = propDataOut.getPropagationPaths().get(1).getSegmentList().get(1).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(1).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(1).getSRSegment().rPrime ;
+        Coordinate D = propDataOut.getCutPlanes().get(1).getSegmentList().get(1).r;
+        Coordinate Sp = propDataOut.getCutPlanes().get(1).getSegmentList().get(0).sPrime;
+        Coordinate Rp = propDataOut.getCutPlanes().get(1).getSRSegment().rPrime ;
 
-        double deltaD = propDataOut.getPropagationPaths().get(1).getSegmentList().get(0).s.distance(D) + D.distance(propDataOut.getPropagationPaths().get(1).getPointList().get(3).coordinate) - propDataOut.getPropagationPaths().get(1).getSRSegment().d;
+        double deltaD = propDataOut.getCutPlanes().get(1).getSegmentList().get(0).s.distance(D) + D.distance(propDataOut.getCutPlanes().get(1).getPointList().get(3).coordinate) - propDataOut.getCutPlanes().get(1).getSRSegment().d;
         double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
@@ -2476,7 +2471,7 @@ public class PathFinderTest {
                 {0.0, 0.0, 0.0, 4.0, 90.10, 1.0, 1.0}
         };
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPath = propDataOut.getCutPlanes().get(0);
 
         assertPlanes(segmentsMeanPlanesH, directPath.getSegmentList());
         assertMirrorPoint(expectedSPrime,expectedRPrime,directPath.getSegmentList().get(0).sPrime,
@@ -2492,7 +2487,7 @@ public class PathFinderTest {
         Coordinate expectedSPrimeSO =new Coordinate(0.01,-0.69);
         Coordinate expectedRPrimeOR =new Coordinate(100.65,-4.0);
 
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+        CnossosPath reflectionPath = propDataOut.getCutPlanes().get(1);
 
         assertPlanes(segmentsMeanPlanesH, reflectionPath.getSegmentList());
 
@@ -2593,7 +2588,7 @@ public class PathFinderTest {
 
         // Expected Values
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(3, propDataOut.getCutPlanes().size());
 
         /* Table 346 */
         List<Coordinate> expectedZProfile = Arrays.asList(
@@ -2681,7 +2676,7 @@ public class PathFinderTest {
                 {0.0, 0.68, 3.32, 1.12, 1022.31, 0.49, 0.49}
         };
 
-        CnossosPath SR = propDataOut.getPropagationPaths().get(0);
+        CnossosPath SR = propDataOut.getCutPlanes().get(0);
 
         assertZProfil(expectedZProfile, Arrays.asList(SR.getSRSegment().getPoints2DGround()));
         assertZProfil(expectedZProfileSO, Arrays.asList(SR.getSegmentList().get(0).getPoints2DGround()));
@@ -2692,12 +2687,12 @@ public class PathFinderTest {
 
         assertPlanes(segmentsMeanPlanes0,SR.getSegmentList());
 
-        CnossosPath pathRight = propDataOut.getPropagationPaths().get(1);
+        CnossosPath pathRight = propDataOut.getCutPlanes().get(1);
         assertZProfil(expectedZProfileRight, Arrays.asList(pathRight.getSRSegment().getPoints2DGround()));
         assertPlanes(segmentsMeanPlanes1, pathRight.getSRSegment());
 
 
-        CnossosPath pathLeft = propDataOut.getPropagationPaths().get(2);
+        CnossosPath pathLeft = propDataOut.getCutPlanes().get(2);
         // Error in CNOSSOS unit test, left diffraction is going over a building but not in their 3D view !
         // Why the weird left path in homogeneous ? it is not explained.
         // assertZProfil(expectedZProfileLeft, Arrays.asList(pathLeft.getSRSegment().getPoints2DGround()));
@@ -2826,7 +2821,7 @@ public class PathFinderTest {
                 //kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
             }
             if(result != null) {
-                kmlDocument.writeRays(result.getPropagationPaths());
+                kmlDocument.writeRays(result.getCutPlanes());
             }
             kmlDocument.writeFooter();
         } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {

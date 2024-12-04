@@ -18,9 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
-
 
 public class CutProfile {
     /** List of cut points. */
@@ -33,7 +31,6 @@ public class CutProfile {
     Boolean hasBuildingIntersection = false;
     /** True if Source-Receiver linestring is below topography cutting point. */
     Boolean hasTopographyIntersection = false;
-    Orientation srcOrientation;
 
     /**
      * Add the source point.
@@ -189,14 +186,6 @@ public class CutProfile {
         Collections.reverse(pts);
     }
 
-    public void setSrcOrientation(Orientation srcOrientation){
-        this.srcOrientation = srcOrientation;
-    }
-
-    public Orientation getSrcOrientation(){
-        return srcOrientation;
-    }
-
     public boolean intersectBuilding(){
         return hasBuildingIntersection;
     }
@@ -252,7 +241,6 @@ public class CutProfile {
                 ", receiver=" + receiver +
                 ", hasBuildingIntersection=" + hasBuildingIntersection +
                 ", hasTopographyIntersection=" + hasTopographyIntersection +
-                ", srcOrientation=" + srcOrientation +
                 '}';
     }
 

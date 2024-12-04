@@ -10,7 +10,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;

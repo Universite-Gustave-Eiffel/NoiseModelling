@@ -10,9 +10,6 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
-import org.noise_planet.noisemodelling.pathfinder.path.SegmentPath;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
-import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.*;
+import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POINT_TYPE.*;
 
 
 /**

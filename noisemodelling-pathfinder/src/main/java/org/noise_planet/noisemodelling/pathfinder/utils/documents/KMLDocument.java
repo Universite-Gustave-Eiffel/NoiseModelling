@@ -27,10 +27,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.kml.KMLWriter;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -40,7 +38,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -378,85 +375,6 @@ public class KMLDocument {
 
     private String formatColorEntry(double key) {
         return String.format(Locale.ROOT, "scale%g", key);
-    }
-
-
-    /**
-     *
-     * @param rays
-     * @return
-     * @throws XMLStreamException
-     */
-    public KMLDocument writeRays(Collection<CnossosPath> rays) throws XMLStreamException {
-        double minDb = Double.MAX_VALUE;
-        double maxDb = -Double.MAX_VALUE;
-        for(CnossosPath line : rays) {
-            if(line.aGlobal != null && line.aGlobal.length > 0) {
-                double attenuationLevel = AcousticIndicatorsFunctions.sumDbArray(line.aGlobal);
-                minDb = Math.min(minDb, attenuationLevel);
-                maxDb = Math.max(maxDb, attenuationLevel);
-            }
-        }
-        for (Map.Entry<Double, Color> colorEntry : colorScale.entrySet()) {
-            xmlOut.writeStartElement("Style");
-            xmlOut.writeAttribute("id", formatColorEntry(colorEntry.getKey()));
-            xmlOut.writeStartElement("LineStyle");
-            xmlOut.writeStartElement("color");
-            Color color = colorEntry.getValue();
-            xmlOut.writeCharacters(String.format("#FF%02x%02x%02x", color.getBlue(), color.getGreen(), color.getRed()));
-            xmlOut.writeEndElement(); // /color
-            xmlOut.writeEndElement(); // /LineStyle
-            xmlOut.writeEndElement(); // / Style
-        }
-
-        xmlOut.writeStartElement("Schema");
-        xmlOut.writeAttribute("name", "rays");
-        xmlOut.writeAttribute("id", "rays");
-        xmlOut.writeEndElement();//Write schema
-        xmlOut.writeStartElement("Folder");
-        xmlOut.writeStartElement("name");
-        xmlOut.writeCharacters("rays");
-        xmlOut.writeEndElement();//Name
-        for(CnossosPath line : rays) {
-            double attenuationLevel = 0;
-            xmlOut.writeStartElement("Placemark");
-            xmlOut.writeStartElement("name");
-            boolean hasGroundElevation = false;
-            for(CutPoint cutPoint : line.getCutPoints()) {
-                if(!Double.isNaN(cutPoint.getzGround())) {
-                    hasGroundElevation = true;
-                    break;
-                }
-            }
-            if(line.aGlobal != null && line.aGlobal.length > 0) {
-                attenuationLevel = AcousticIndicatorsFunctions.sumDbArray(line.aGlobal);
-                xmlOut.writeCharacters(String.format("%.1f dB R:%d S:%d",
-                        attenuationLevel,line.getIdReceiver(), line.getIdSource()));
-            } else {
-                xmlOut.writeCharacters(String.format("R:%d S:%d", line.getIdReceiver(), line.getIdSource()));
-            }
-            xmlOut.writeEndElement();//Name
-            if(line.aGlobal != null && line.aGlobal.length > 0) {
-                Map.Entry<Double, Color> colorEntry =
-                        colorScale.floorEntry((attenuationLevel - minDb) / (maxDb - minDb));
-                if(colorEntry == null) {
-                    colorEntry = colorScale.firstEntry();
-                }
-                xmlOut.writeStartElement("styleUrl");
-                xmlOut.writeCharacters("#" + formatColorEntry(colorEntry.getKey()));
-                xmlOut.writeEndElement(); //styleurl
-            }
-            LineString lineString = (LineString) line.asGeom().copy();
-            // Apply CRS transform
-            doTransform(lineString);
-            //Write geometry
-            writeRawXml(KMLWriter.writeGeometry(lineString, Double.NaN,
-                    wgs84Precision, false,
-                    hasGroundElevation ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND));
-            xmlOut.writeEndElement();//Write Placemark
-        }
-        xmlOut.writeEndElement();//Folder
-        return this;
     }
 
     /**

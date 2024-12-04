@@ -14,17 +14,17 @@ import java.util.List;
 
 public class Wall {
     /** Type of the wall */
-    final ProfileBuilder.IntersectionType type;
+    public final ProfileBuilder.IntersectionType type;
     /** Id or index of the source building or topographic triangle. */
-    final int originId;
+    public final int originId;
     /** Wall alpha value. */
-    List<Double> alphas;
+    public List<Double> alphas;
     /** Wall height, if -1, use z coordinate. */
-    double height;
+    public double height;
     public Coordinate p0;
     public Coordinate p1;
-    LineSegment ls;
-    int processedWallIndex;
+    public LineSegment ls;
+    public int processedWallIndex;
 
     /**
      * Constructor using segment and id.

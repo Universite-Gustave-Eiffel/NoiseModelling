@@ -23,7 +23,7 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;

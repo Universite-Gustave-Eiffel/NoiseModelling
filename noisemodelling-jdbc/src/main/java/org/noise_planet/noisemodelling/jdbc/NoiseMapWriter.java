@@ -11,7 +11,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
