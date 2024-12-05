@@ -9,129 +9,56 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-
-public  class CutPoint implements Comparable<CutPoint> {
+/**
+ * On the vertical cut profile, this is one of the point
+ * This abstract class is implemented with specific attributes depending on the intersection object
+ */
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = CutPointSource.class, name = "Source"),
+        @JsonSubTypes.Type(value = CutPointReceiver.class, name = "Receiver"),
+        @JsonSubTypes.Type(value = CutPointWall.class, name = "Wall"),
+        @JsonSubTypes.Type(value = CutPointReflection.class, name = "Reflection"),
+        @JsonSubTypes.Type(value = CutPointGroundEffect.class, name = "GroundEffect"),
+        @JsonSubTypes.Type(value = CutPointTopography.class, name = "Topography"),
+        @JsonSubTypes.Type(value = CutPointVEdgeDiffraction.class, name = "VEdgeDiffraction")
+})
+public abstract class CutPoint implements Comparable<CutPoint> {
     /** {@link Coordinate} of the cut point. */
     public Coordinate coordinate = new Coordinate();
-    /** Intersection type. */
-    public ProfileBuilder.IntersectionType type;
-    /** Identifier of the cut element. */
-    public int id = -1;
-    /** Identifier of the building containing the point. -1 if no building. */
-    public int buildingId = -1;
-    /** Identifier of the wall containing the point. -1 if no wall. */
-    public int wallId = -1;
+
     /** Topographic height of the point. */
     public double zGround = Double.NaN;
-    /** Ground effect coefficient. 0 if there is no coefficient. */
-    public double groundCoef = Double.NaN;
-    /** Wall alpha. NaN if there is no coefficient. */
-    public List<Double> wallAlpha = Collections.emptyList();
-    /** Source line subdivision length (1.0 means a point is representing 1 meter of line sound source) */
-    public double li = 1.0;
-    /**
-     * Index of the object that reference the external data (not a temporary index in a subdomain)
-     */
-    public long primaryKey;
-    /**
-     * Orientation of the point (should be about the source or receiver point)
-     * The orientation is related to the directivity associated to the object
-     */
-    public Orientation orientation = new Orientation();
-
-    /** On reflection intersection type this object contain the associated reflection data */
-    public MirrorReceiver mirrorReceiver = null;
 
     /**
-     * Constructor using a {@link Coordinate}.
-     * @param coord Coordinate to copy.
-     * @param type  Intersection type.
-     * @param id    Identifier of the cut element.
-     */
-    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id) {
-        this.coordinate = new Coordinate(coord);
-        this.type = type;
-        this.id = id;
-        this.primaryKey = id;
-    }
-
-    public CutPoint() {
-    }
-
-    /**
-     * Copy constructor
-     * @param cut
-     */
-    public CutPoint(CutPoint cut) {
-        this.coordinate = new Coordinate(cut.getCoordinate());
-        this.type = cut.type;
-        this.id = cut.id;
-        this.buildingId = cut.buildingId;
-        this.wallId = cut.wallId;
-        this.groundCoef = cut.groundCoef;
-        this.wallAlpha = new ArrayList<>(cut.wallAlpha);
-        this.zGround = cut.zGround;
-        this.mirrorReceiver = cut.mirrorReceiver;
-    }
-
-    /**
-     * @return  On reflection intersection type this object contain the associated reflection data
-     */
-    public MirrorReceiver getMirrorReceiver() {
-        return mirrorReceiver;
-    }
-
-    /**
-     * @param mirrorReceiver On reflection intersection type this object contain the associated reflection data
-     */
-    public void setMirrorReceiver(MirrorReceiver mirrorReceiver) {
-        this.mirrorReceiver = mirrorReceiver;
-    }
-
-    public void setType(ProfileBuilder.IntersectionType type) {
-        this.type = type;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
+     * Ground effect coefficient.
+     * G=1.0 Soft, uncompacted ground (pasture, loose soil); snow etc
+     * G=0.7 Compacted soft ground (lawns, park areas):
+     * G=0.3 Compacted dense ground (gravel road, compacted soil):
+     * G=0.0 Hard surfaces (asphalt, concrete, top of buildings):
+     **/
+    public double groundCoefficient = Double.NaN;
 
     public void setCoordinate(Coordinate coordinate) {
         this.coordinate = coordinate;
     }
 
     /**
-     * Sets the id of the building containing the point.
-     * @param buildingId Id of the building containing the point.
-     */
-    public void setBuildingId(int buildingId) {
-        this.buildingId = buildingId;
-        this.wallId = -1;
-    }
-
-    /**
-     * Sets the id of the wall containing the point.
-     * @param wallId Id of the wall containing the point.
-     */
-    public void setWallId(int wallId) {
-        this.wallId = wallId;
-        this.buildingId = -1;
-    }
-
-    /**
      * Sets the ground coefficient of this point.
-     * @param groundCoef The ground coefficient of this point.
+     * @param groundCoefficient The ground coefficient of this point.
      */
-    public void setGroundCoef(double groundCoef) {
-        this.groundCoef = groundCoef;
+    public void setGroundCoefficient(double groundCoefficient) {
+        this.groundCoefficient = groundCoefficient;
     }
 
     /**
@@ -142,13 +69,6 @@ public  class CutPoint implements Comparable<CutPoint> {
         this.zGround = zGround;
     }
 
-    /**
-     * Sets the wall alpha.
-     * @param wallAlpha The wall alpha.
-     */
-    public void setWallAlpha(List<Double> wallAlpha) {
-        this.wallAlpha = wallAlpha;
-    }
 
     /**
      * Retrieve the coordinate of the point.
@@ -159,35 +79,11 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Retrieve the identifier of the cut element.
-     * @return Identifier of the cut element.
-     */
-    public int getId() {
-        return id;
-    }
-
-    /**
-     * Retrieve the identifier of the building containing the point. If no building, returns -1.
-     * @return Building identifier or -1
-     */
-    public int getBuildingId() {
-        return buildingId;
-    }
-
-    /**
-     * Retrieve the identifier of the wall containing the point. If no wall, returns -1.
-     * @return Wall identifier or -1
-     */
-    public int getWallId() {
-        return wallId;
-    }
-
-    /**
      * Retrieve the ground effect coefficient of the point. If there is no coefficient, returns 0.
      * @return Ground effect coefficient or NaN.
      */
-    public double getGroundCoef() {
-        return groundCoef;
+    public double getGroundCoefficient() {
+        return groundCoefficient;
     }
 
     /**
@@ -196,36 +92,6 @@ public  class CutPoint implements Comparable<CutPoint> {
      */
     public Double getzGround() {
         return zGround;
-    }
-
-    /**
-     * Return the wall alpha value.
-     * @return The wall alpha value.
-     */
-    public List<Double> getWallAlpha() {
-        return wallAlpha;
-    }
-
-    public ProfileBuilder.IntersectionType getType() {
-        return type;
-    }
-
-    @Override
-    public String toString() {
-        return "CutPoint{" +
-                "coordinate=" + coordinate +
-                ", type=" + type +
-                ", id=" + id +
-                ", buildingId=" + buildingId +
-                ", wallId=" + wallId +
-                ", zGround=" + zGround +
-                ", groundCoef=" + groundCoef +
-                ", wallAlpha=" + wallAlpha +
-                ", li=" + li +
-                ", primaryKey=" + primaryKey +
-                ", orientation=" + orientation +
-                (mirrorReceiver == null ? "" : ", mirrorReceiver=" + mirrorReceiver) +
-                '}';
     }
 
     /**
@@ -238,4 +104,12 @@ public  class CutPoint implements Comparable<CutPoint> {
         return this.coordinate.compareTo(cutPoint.coordinate);
     }
 
+    @Override
+    public String toString() {
+        return "CutPoint{" +
+                "coordinate=" + coordinate +
+                ", zGround=" + zGround +
+                ", groundCoefficient=" + groundCoefficient +
+                '}';
+    }
 }

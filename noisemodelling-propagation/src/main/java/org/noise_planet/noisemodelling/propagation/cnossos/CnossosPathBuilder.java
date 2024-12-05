@@ -5,13 +5,16 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,8 +90,8 @@ public class CnossosPathBuilder {
                 if (rcrit) {
                     pathParameters.deltaH = deltaH;
                     pathParameters.deltaPrimeH = deltaPrimeH;
-                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoef());
-                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoef());
+                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoefficient());
+                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoefficient());
 
                     if(dSR.orientationIndex(o) == 1) {
                         pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
@@ -195,12 +198,12 @@ public class CnossosPathBuilder {
      * @param bodyBarrier
      * @return The cnossos path or null
      */
-    public static CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier) {
+    public static CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         final List<CutPoint> cutProfilePoints = cutProfile.getCutPoints();
 
-        List<Coordinate> pts2D = computePts2D(cutProfilePoints);
+        List<Coordinate> pts2D = PathFinder.computePts2D(cutProfilePoints);
         if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
@@ -220,7 +223,7 @@ public class CnossosPathBuilder {
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
         pathParameters.setSRSegment(srPath);
-        pathParameters.init(data.freq_lvl.size());
+        pathParameters.init(frequencyTable.size());
         pathParameters.angle= Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
@@ -365,7 +368,7 @@ public class CnossosPathBuilder {
                         break;
                     }
                 }
-                points.get(0).orientation = computeOrientation(cutProfile.getSrcOrientation(),
+                points.get(0).orientation = computeOrientation(cutProfile.getSource().orientation,
                         cutProfilePoints.get(0).getCoordinate(), targetPosition);
                 pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
                 src = pts2D.get(i0);
@@ -457,7 +460,7 @@ public class CnossosPathBuilder {
                 LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
                 // Look for diffraction over edge on free field (frequency dependent)
                 computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
-                        pts2DGround, cut2DGroundIndex);
+                        pts2DGround, cut2DGroundIndex, frequencyTable);
             }
             if(rayleighSegments.isEmpty()) {
                 // We don't have a Rayleigh diffraction over DEM. Only direct SR path
@@ -544,5 +547,23 @@ public class CnossosPathBuilder {
         }
 
         return pathParameters;
+    }
+
+
+    /**
+     *
+     * @param sourceOrientation
+     * @param src
+     * @param next
+     * @return
+     */
+    private static Orientation computeOrientation(Orientation sourceOrientation, Coordinate src, Coordinate next){
+        if(sourceOrientation == null) {
+            return null;
+        }
+        Vector3D outgoingRay = new Vector3D(new Coordinate(next.x - src.x,
+                next.y - src.y,
+                next.z - src.z)).normalize();
+        return Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
     }
 }

@@ -6,23 +6,19 @@
  * Official webpage : http://noise-planet.org/noisemodelling.html
  * Contact: contact@noise-planet.org
  */
-
-
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
-import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
-import java.util.Comparator;
+public class CutPointSource  extends CutPoint {
 
-public class CutPointDistanceComparator implements Comparator<CutPoint> {
-    private final Coordinate reference;
 
-    public CutPointDistanceComparator(Coordinate reference) {
-        this.reference = reference;
-    }
+    /** Source line subdivision length (1.0 means a point is representing 1 meter of line sound source) */
+    public double li = 1.0;
 
-    @Override
-    public int compare(CutPoint o1, CutPoint o2) {
-        return Double.compare(o1.coordinate.distance(reference), o2.coordinate.distance(reference));
-    }
+    /**
+     * Orientation of the point (should be about the source or receiver point)
+     * The orientation is related to the directivity associated to the object
+     */
+    public Orientation orientation = new Orientation();
 }

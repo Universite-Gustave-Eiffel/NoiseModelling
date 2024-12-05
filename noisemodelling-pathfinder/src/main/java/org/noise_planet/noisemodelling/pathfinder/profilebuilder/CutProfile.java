@@ -11,188 +11,20 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 public class CutProfile {
     /** List of cut points. */
-    ArrayList<CutPoint> pts = new ArrayList<>();
-    /** Source cut point. */
-    CutPoint source;
-    /** Receiver cut point. */
-    CutPoint receiver;
+    public ArrayList<CutPoint> cutPoints = new ArrayList<>();
+
     /** True if Source-Receiver linestring is below building intersection */
-    Boolean hasBuildingIntersection = false;
+    public boolean hasBuildingIntersection = false;
     /** True if Source-Receiver linestring is below topography cutting point. */
-    Boolean hasTopographyIntersection = false;
-
-    /**
-     * Add the source point.
-     * @param coord Coordinate of the source point.
-     */
-    public CutPoint addSource(Coordinate coord) {
-        source = new CutPoint(coord, SOURCE, -1);
-        pts.add(source);
-        return source;
-    }
-
-    /**
-     * Add the receiver point.
-     * @param coord Coordinate of the receiver point.
-     */
-    public CutPoint addReceiver(Coordinate coord) {
-        receiver = new CutPoint(coord, RECEIVER, -1);
-        pts.add(receiver);
-        return receiver;
-    }
-
-    public void setReceiver(CutPoint receiver) {
-        this.receiver = receiver;
-    }
-
-    public void setSource(CutPoint source) {
-        this.source = source;
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord      Coordinate of the cutting point.
-     * @param buildingId Id of the cut building.
-     */
-    public CutPoint addBuildingCutPt(Coordinate coord, int buildingId, int wallId) {
-        CutPoint cut = new CutPoint(coord, ProfileBuilder.IntersectionType.BUILDING, buildingId);
-        cut.buildingId = buildingId;
-        cut.wallId = wallId;
-        pts.add(cut);
-        return cut;
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut building.
-     */
-    public CutPoint addWallCutPt(Coordinate coord, int id) {
-        CutPoint wallPoint = new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id);
-        wallPoint.wallId = id;
-        pts.add(wallPoint);
-        return wallPoint;
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut building.
-     */
-    public void addWallCutPt(Coordinate coord, int id, List<Double> alphas) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id));
-        pts.get(pts.size()-1).wallId = id;
-        pts.get(pts.size()-1).setWallAlpha(alphas);
-    }
-
-    /**
-     * Add a topographic cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut topography.
-     * @return Added cut point instance
-     */
-    public CutPoint addTopoCutPt(Coordinate coord, int id) {
-        CutPoint topoCutPoint = new CutPoint(coord, TOPOGRAPHY, id);
-        topoCutPoint.setZGround(coord.z);
-        pts.add(topoCutPoint);
-        return topoCutPoint;
-    }
-
-    /**
-     * In order to reduce the number of reallocation, reserve the provided points size
-     * @param numberOfPointsToBePushed Number of items to preallocate
-     */
-    public void reservePoints(int numberOfPointsToBePushed) {
-        pts.ensureCapacity(pts.size() + numberOfPointsToBePushed);
-    }
-
-    /**
-     * Add a ground effect cutting point.
-     * @param coordinate Coordinate of the cutting point.
-     * @param id    Id of the cut topography.
-     */
-    public CutPoint addGroundCutPt(Coordinate coordinate, int id, double groundCoefficient) {
-        CutPoint pt = new CutPoint(coordinate, ProfileBuilder.IntersectionType.GROUND_EFFECT, id);
-        pt.setGroundCoef(groundCoefficient);
-        pts.add(pt);
-        return pt;
-    }
-
-    /**
-     * Retrieve the cutting points.
-     * @return The cutting points.
-     */
-    public List<CutPoint> getCutPoints() {
-        return pts;
-    }
-    public void setCutPoints ( List<CutPoint> ge){
-        pts = new ArrayList<>(ge);
-    }
-
-    /**
-     * Retrieve the profile source.
-     * @return The profile source.
-     */
-    public CutPoint getSource() {
-        return source;
-    }
-
-    /**
-     * Retrieve the profile receiver.
-     * @return The profile receiver.
-     */
-    public CutPoint getReceiver() {
-        return receiver;
-    }
-
-    /**
-     * Sort the CutPoints by distance with c0
-     */
-    public void sort(Coordinate c0) {
-        pts.sort(new CutPointDistanceComparator(c0));
-    }
-
-    /**
-     * Add an existing CutPoint.
-     * @param cutPoint CutPoint to add.
-     */
-    public void addCutPt(CutPoint cutPoint) {
-        pts.add(cutPoint);
-    }
-
-    /**
-     * Add an existing CutPoint.
-     * @param cutPoints Points to add.
-     */
-    public void addCutPoints(Collection<CutPoint> cutPoints) {
-        pts.addAll(cutPoints);
-    }
-
-    /**
-     * Reverse the order of the CutPoints.
-     */
-    public void reverse() {
-        Collections.reverse(pts);
-    }
-
-    public boolean intersectBuilding(){
-        return hasBuildingIntersection;
-    }
-
-    public boolean intersectTopography(){
-        return hasTopographyIntersection;
-    }
+    public boolean hasTopographyIntersection = false;
 
     /**
      * compute the path between two points
@@ -205,20 +37,20 @@ public class CutProfile {
         double rsLength = 0.0;
 
         // Extract part of the path from the specified argument
-        List<CutPoint> reduced = pts.subList(pts.indexOf(p0), pts.indexOf(p1) + 1);
+        List<CutPoint> reduced = cutPoints.subList(cutPoints.indexOf(p0), cutPoints.indexOf(p1) + 1);
 
         for(int index = 0; index < reduced.size() - 1; index++) {
             CutPoint current = reduced.get(index);
             double segmentLength = current.getCoordinate().distance(reduced.get(index+1).getCoordinate());
-            rsLength += segmentLength * current.getGroundCoef();
+            rsLength += segmentLength * current.getGroundCoefficient();
             totalLength += segmentLength;
         }
         return rsLength / totalLength;
     }
 
     public double getGPath() {
-        if(!pts.isEmpty()) {
-            return getGPath(pts.get(0), pts.get(pts.size() - 1));
+        if(!cutPoints.isEmpty()) {
+            return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1));
         } else {
             return 0;
         }
@@ -236,9 +68,7 @@ public class CutProfile {
     @Override
     public String toString() {
         return "CutProfile{" +
-                "pts=" + pts +
-                ", source=" + source +
-                ", receiver=" + receiver +
+                "pts=" + cutPoints +
                 ", hasBuildingIntersection=" + hasBuildingIntersection +
                 ", hasTopographyIntersection=" + hasTopographyIntersection +
                 '}';
@@ -334,6 +164,6 @@ public class CutProfile {
      * @return the computed 2D coordinate list of DEM
      */
     public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
-        return computePts2DGround(this.pts, tolerance, index);
+        return computePts2DGround(this.cutPoints, tolerance, index);
     }
 }

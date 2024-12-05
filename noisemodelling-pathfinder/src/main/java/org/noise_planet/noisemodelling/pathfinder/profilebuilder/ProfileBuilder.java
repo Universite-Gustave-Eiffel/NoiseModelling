@@ -93,7 +93,7 @@ public class ProfileBuilder {
     private STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** RTree with Buildings's walls linestrings, walls linestring, GroundEffect linestrings
      * The object is an integer. It's an index of the array {@link #processedWalls} */
-    private STRtree rtree;
+    public STRtree rtree;
     private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
 
 
@@ -117,7 +117,7 @@ public class ProfileBuilder {
     private final List<Coordinate> receivers = new ArrayList<>();
 
     /** List of processed walls. */
-    private final List<Wall> processedWalls = new ArrayList<>();
+    public final List<Wall> processedWalls = new ArrayList<>();
 
     /** Global envelope of the builder. */
     private Envelope envelope;
@@ -913,9 +913,9 @@ public class ProfileBuilder {
         CutPoint sourcePoint = profile.addSource(sourceCoordinate);
         int groundAbsorptionIndex = getIntersectingGroundAbsorption(FACTORY.createPoint(sourceCoordinate));
         if(groundAbsorptionIndex >= 0) {
-            sourcePoint.setGroundCoef(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
+            sourcePoint.setGroundCoefficient(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
         } else {
-            sourcePoint.setGroundCoef(gS);
+            sourcePoint.setGroundCoefficient(gS);
         }
         // Add receiver point
         profile.addReceiver(receiverCoordinate);
@@ -957,31 +957,31 @@ public class ProfileBuilder {
         }
 
         // Propagate ground coefficient for unknown coefficients
-        double currentCoefficient = sourcePoint.groundCoef;
-        for (CutPoint cutPoint : profile.pts) {
-            if(Double.isNaN(cutPoint.groundCoef)) {
-                cutPoint.setGroundCoef(currentCoefficient);
+        double currentCoefficient = sourcePoint.groundCoefficient;
+        for (CutPoint cutPoint : profile.cutPoints) {
+            if(Double.isNaN(cutPoint.groundCoefficient)) {
+                cutPoint.setGroundCoefficient(currentCoefficient);
             } else if (cutPoint.getType().equals(GROUND_EFFECT)) {
-                currentCoefficient = cutPoint.getGroundCoef();
+                currentCoefficient = cutPoint.getGroundCoefficient();
             }
         }
         // Compute the interpolation of Z ground for intermediate points
         CutPoint previousZGround = sourcePoint;
         int nextPointIndex = 0;
-        for (int pointIndex = 1; pointIndex < profile.pts.size() - 1; pointIndex++) {
-            CutPoint cutPoint = profile.pts.get(pointIndex);
+        for (int pointIndex = 1; pointIndex < profile.cutPoints.size() - 1; pointIndex++) {
+            CutPoint cutPoint = profile.cutPoints.get(pointIndex);
             if(Double.isNaN(cutPoint.zGround)) {
                 if(nextPointIndex <= pointIndex) {
                     // look for next reference Z ground point
-                    for (int i = pointIndex + 1; i < profile.pts.size(); i++) {
-                        CutPoint nextPoint = profile.pts.get(i);
+                    for (int i = pointIndex + 1; i < profile.cutPoints.size(); i++) {
+                        CutPoint nextPoint = profile.cutPoints.get(i);
                         if (!Double.isNaN(nextPoint.zGround)) {
                             nextPointIndex = i;
                             break;
                         }
                     }
                 }
-                CutPoint nextPoint = profile.pts.get(nextPointIndex);
+                CutPoint nextPoint = profile.cutPoints.get(nextPointIndex);
                 cutPoint.zGround = Vertex.interpolateZ(cutPoint.coordinate,
                         new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
                                 previousZGround.getzGround()),
@@ -1056,7 +1056,7 @@ public class ProfileBuilder {
                         }
                         if (facetLine.type == IntersectionType.BUILDING) {
                             CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i);
-                            pt.setGroundCoef(Scene.DEFAULT_G_BUILDING);
+                            pt.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
                             pt.setWallAlpha(buildings.get(facetLine.getOriginId()).alphas);
                             // add a point at the bottom of the building on the exterior side of the building
                             Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
@@ -1069,6 +1069,9 @@ public class ProfileBuilder {
                             double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
                             if(zRayReceiverSource <= intersection.z) {
                                 profile.hasBuildingIntersection = true;
+                                if(stopAtObstacleOverSourceReceiver) {
+                                    return;
+                                }
                             }
                         } else if (facetLine.type == IntersectionType.WALL) {
                             profile.addWallCutPt(Vector2D.create(intersection).add(directionBefore).toCoordinate(),
@@ -1079,6 +1082,9 @@ public class ProfileBuilder {
                             double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
                             if(zRayReceiverSource <= intersection.z) {
                                 profile.hasBuildingIntersection = true;
+                                if(stopAtObstacleOverSourceReceiver) {
+                                    return;
+                                }
                             }
                         } else if (facetLine.type == GROUND_EFFECT) {
                             // we hit the border of a ground effect

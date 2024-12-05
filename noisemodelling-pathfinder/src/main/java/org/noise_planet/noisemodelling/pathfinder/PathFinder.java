@@ -346,22 +346,6 @@ public class PathFinder {
         return pts2D;
     }
 
-    /**
-     *
-     * @param sourceOrientation
-     * @param src
-     * @param next
-     * @return
-     */
-    private static Orientation computeOrientation(Orientation sourceOrientation, Coordinate src, Coordinate next){
-        if(sourceOrientation == null) {
-            return null;
-        }
-        Vector3D outgoingRay = new Vector3D(new Coordinate(next.x - src.x,
-                next.y - src.y,
-                next.z - src.z)).normalize();
-        return Orientation.fromVector(Orientation.rotate(sourceOrientation, outgoingRay, true), 0);
-    }
 
     /**
      * Compute horizontal diffraction (diffraction of vertical edge.)
