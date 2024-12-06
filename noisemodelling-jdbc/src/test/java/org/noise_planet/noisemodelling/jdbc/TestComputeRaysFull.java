@@ -10,7 +10,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.noise_planet.noisemodelling.jdbc.Utils.addArray;
 
 

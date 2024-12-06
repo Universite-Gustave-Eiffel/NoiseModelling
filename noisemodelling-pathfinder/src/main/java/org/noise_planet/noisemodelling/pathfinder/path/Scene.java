@@ -38,6 +38,7 @@ public class Scene {
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
     public static final double DEFAULT_G = 0.0;
+    public static final double DEFAULT_G_BUILDING = 0.0;
     public static final String YAW_DATABASE_FIELD = "YAW";
     public static final String PITCH_DATABASE_FIELD = "PITCH";
     public static final String ROLL_DATABASE_FIELD = "ROLL";

@@ -14,6 +14,7 @@ import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.CoordinateSequenceFilter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Double.isNaN;
 
@@ -22,6 +23,10 @@ public final class ElevationFilter implements CoordinateSequenceFilter {
     AtomicBoolean geometryChanged = new AtomicBoolean(false);
     ProfileBuilder profileBuilder;
     boolean resetZ;
+    /**
+     * Keep track of DEM triangle index to fetch less often the rtree
+     */
+    AtomicInteger triangleHint = new AtomicInteger(-1);
 
     /**
      * Constructor
@@ -47,7 +52,7 @@ public final class ElevationFilter implements CoordinateSequenceFilter {
     @Override
     public void filter(CoordinateSequence coordinateSequence, int i) {
         Coordinate pt = coordinateSequence.getCoordinate(i);
-        double zGround = profileBuilder.getZGround(pt);
+        double zGround = profileBuilder.getZGround(pt, triangleHint);
         if (!isNaN(zGround) && (resetZ || isNaN(pt.getOrdinate(2)) || 0 ==  pt.getOrdinate(2))) {
             pt.setOrdinate(2, zGround + (isNaN(pt.getOrdinate(2)) ? 0 : pt.getOrdinate(2)));
             geometryChanged.set(true);

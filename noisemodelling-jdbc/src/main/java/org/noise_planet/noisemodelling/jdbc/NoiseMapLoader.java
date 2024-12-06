@@ -16,6 +16,7 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
+import org.h2gis.utilities.wrapper.ConnectionWrapper;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
@@ -24,6 +25,7 @@ import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivityS
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +36,6 @@ import java.util.*;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption.WallAbsorption.getWallAlpha;
-
 /**
  * Common attributes for propagation of sound sources.
  * @author Nicolas Fortin
@@ -89,6 +89,9 @@ public abstract class NoiseMapLoader {
     protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
     // Initialised attributes
+    /**
+     *  Side computation cell count (same on X and Y)
+     */
     protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
 
@@ -288,16 +291,17 @@ public abstract class NoiseMapLoader {
      */
     protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder mesh) throws SQLException {
         if(!demTable.isEmpty()) {
+            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
             List<String> geomFields = getGeometryColumnNames(connection,
-                    TableLocation.parse(demTable));
+                    TableLocation.parse(demTable, dbType));
             if(geomFields.isEmpty()) {
                 throw new SQLException("Digital elevation model table \""+demTable+"\" must exist and contain a POINT field");
             }
             String topoGeomName = geomFields.get(0);
             try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName) + " FROM " +
+                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
                             demTable + " WHERE " +
-                            TableLocation.quoteIdentifier(topoGeomName) + " && ?::geometry")) {
+                            TableLocation.quoteIdentifier(topoGeomName, dbType) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -321,14 +325,15 @@ public abstract class NoiseMapLoader {
     protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
             throws SQLException {
         if(!soilTableName.isEmpty()){
+            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
             double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
             double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
             String soilGeomName = getGeometryColumnNames(connection,
-                    TableLocation.parse(soilTableName)).get(0);
+                    TableLocation.parse(soilTableName, dbType)).get(0);
             try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName) + ", G FROM " +
+                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
                             soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName) + " && ?::geometry")) {
+                            TableLocation.quoteIdentifier(soilGeomName, dbType) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                     while (rs.next()) {
@@ -401,24 +406,25 @@ public abstract class NoiseMapLoader {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
         String additionalQuery = "";
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         if(!heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(heightField);
+            additionalQuery += ", " + TableLocation.quoteIdentifier(heightField, dbType);
         }
         if(fetchAlpha) {
             additionalQuery += ", " + alphaFieldName;
         }
         String pkBuilding = "";
-        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(buildingsTableName));
+        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), new TableLocation(buildingsTableName, dbType));
         if(indexPk > 0) {
             pkBuilding = JDBCUtilities.getColumnName(connection, buildingsTableName, indexPk);
             additionalQuery += ", " + pkBuilding;
         }
         String buildingGeomName = getGeometryColumnNames(connection,
-                TableLocation.parse(buildingsTableName)).get(0);
+                TableLocation.parse(buildingsTableName, dbType)).get(0);
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
                         buildingsTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(buildingGeomName) + " && ?::geometry")) {
+                        TableLocation.quoteIdentifier(buildingGeomName, dbType) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 int columnIndex = 0;
@@ -428,7 +434,7 @@ public abstract class NoiseMapLoader {
                 double oldAlpha = wallAbsorption;
                 List<Double> alphaList = new ArrayList<>(attenuationCnossosParametersDay.freq_lvl.size());
                 for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
                 }
                 while (rs.next()) {
                     //if we don't have height of building
@@ -447,7 +453,7 @@ public abstract class NoiseMapLoader {
                                 alphaList.clear();
                                 oldAlpha = rs.getDouble(alphaFieldName);
                                 for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                                    alphaList.add(getWallAlpha(oldAlpha, freq));
+                                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
                                 }
                             }
 
@@ -481,14 +487,15 @@ public abstract class NoiseMapLoader {
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, Scene propagationProcessData, boolean doIntersection)
             throws SQLException, IOException {
-        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName);
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
         List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
         if(geomFields.isEmpty()) {
             throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
         }
         String sourceGeomName =  geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(sourcesTableName));
+        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
         if(pkIndex < 1) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
@@ -558,7 +565,7 @@ public abstract class NoiseMapLoader {
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
         int srid = 0;
-        DBTypes dbTypes = DBUtils.getDBType(connection);
+        DBTypes dbTypes = DBUtils.getDBType(connection.unwrap(Connection.class));
         if(!sourcesTableName.isEmpty()) {
             srid = getSRID(connection, TableLocation.parse(sourcesTableName, dbTypes));
         }

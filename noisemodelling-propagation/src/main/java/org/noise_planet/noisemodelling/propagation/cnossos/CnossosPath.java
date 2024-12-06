@@ -7,10 +7,8 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.cnossos;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 
-
-import org.noise_planet.noisemodelling.pathfinder.path.Path;
 
 /**
  * All the datas Path of Cnossos
@@ -21,6 +19,8 @@ public class CnossosPath extends Path {
     public  double[] aRef = new double[0];
     public  double[] double_aBoundaryH = new double[0];
     public  double[] double_aBoundaryF = new double[0];
+    public  double[] aRetroDiffH = new double[0]; // Alpha Retro Diffraction homogenous
+    public  double[] aRetroDiffF = new double[0]; // Alpha Retro Diffraction favorable
     public  double[] aGlobalH = new double[0];
     public double[] aGlobalF = new double[0];
     public double[] aDifH = new double[0];
@@ -41,7 +41,6 @@ public class CnossosPath extends Path {
     public double e=0;
     public double deltaRetroH= Double.MAX_VALUE;
     public double deltaRetroF= Double.MAX_VALUE;
-    //private boolean favorable;
 
     public void init(int size) {
         this.aAtm = new double[size];
@@ -55,7 +54,8 @@ public class CnossosPath extends Path {
         this.aDifF = new double[size];
         this.aGlobal = new double[size];
         this.aSource = new double[size];
-
+        this.aRetroDiffH = new double[size];
+        this.aRetroDiffF = new double[size];
     }
 
     public CnossosPath() {
@@ -73,7 +73,6 @@ public class CnossosPath extends Path {
         this.aDifF = aDifF.clone();
         this.aGlobal = aGlobal.clone();
         this.aSource = aSource.clone();
-        //this.favorable = favorable;
         this.deltaRetroH = other.deltaRetroH;
         this.deltaRetroF = other.deltaRetroF;
         this.groundAttenuation = new GroundAttenuation(other.groundAttenuation);
@@ -88,6 +87,8 @@ public class CnossosPath extends Path {
         this.deltaSPrimeRF = other.deltaSPrimeRF;
         this.deltaSRPrimeF = other.deltaSRPrimeF;
         this.e = other.e;
+        this.aRetroDiffF = other.aRetroDiffF.clone();
+        this.aRetroDiffH = other.aRetroDiffH.clone();
     }
     public static class ABoundary {
         public double[] deltaDiffSR;

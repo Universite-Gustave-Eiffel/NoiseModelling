@@ -14,14 +14,19 @@ import org.locationtech.jts.geom.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class Building implements ProfileBuilder.Obstacle {
+public class Building {
     /** Building footprint. */
     Polygon poly;
     /** Height of the building. */
     final double height;
-    double zTopo = 0.0; // minimum Z ground under building
+    /**
+     * Minimum Z ground under building contour
+     */
+    double minimumZDEM = Double.NaN;
+
     /** Absorption coefficients. */
     final List<Double> alphas;
 
@@ -75,6 +80,8 @@ public class Building implements ProfileBuilder.Obstacle {
      */
     public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
         this.poly = poly;
+        // Fix clock wise orientation of the polygon and inner holes
+        this.poly.normalize();
         this.height = height;
         this.alphas = new ArrayList<>();
         this.alphas.addAll(alphas);
@@ -119,17 +126,22 @@ public class Building implements ProfileBuilder.Obstacle {
      * @return
      */
     public double updateZTopo(ProfileBuilder profileBuilder) {
-        Coordinate[] coordinates = poly.getCoordinates();
+        Coordinate[] coordinates = poly.getBoundary().getCoordinates();
         double minZ = Double.MAX_VALUE;
+        AtomicInteger triangleHint = new AtomicInteger(-1);
         for (int i = 0; i < coordinates.length-1; i++) {
-            minZ = Math.min(minZ, profileBuilder.getZGround(coordinates[i]));
+            minZ = Math.min(minZ, profileBuilder.getZGround(coordinates[i], triangleHint));
         }
-        zTopo = minZ;
-        return zTopo;
+        minimumZDEM = minZ;
+        return minimumZDEM;
     }
 
     public double getZ() {
-        return zTopo + height;
+        if(Double.isNaN(minimumZDEM) || Double.isNaN(height)) {
+            return poly.getCoordinate().z;
+        } else {
+            return minimumZDEM + height;
+        }
     }
 
     /**
@@ -138,10 +150,8 @@ public class Building implements ProfileBuilder.Obstacle {
      */
     public void setWalls(List<Wall> walls) {
         this.walls = walls;
-        walls.forEach(w -> w.setObstacle(this));
     }
 
-    @Override
     public Collection<? extends Wall> getWalls() {
         return walls;
     }

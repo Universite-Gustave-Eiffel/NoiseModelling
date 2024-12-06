@@ -17,9 +17,12 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector2D;
+import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -33,6 +36,59 @@ public class JTSUtility {
      * Utility class
      **/
     private JTSUtility() {}
+
+
+    /**
+     * Get distance between a segment (p1,p2) and a point (point) with point perpendicular to (p1,p2)
+     * @param p1 origin segment
+     * @param p2 destination segment
+     * @param point reference point
+     * @return DistanceInfo[0]=distance; DistanceInfo[1]=sign;
+     */
+    private static double[] distance3D(Coordinate p1, Coordinate p2, Coordinate point) {
+        double[] DistanceInfo = new double[2];
+        double x1 = p1.getX();
+        double y1 = p1.getY();
+        double z1 = p1.getZ();
+
+        double x2 = p2.getX();
+        double y2 = p2.getY();
+        double z2 = p2.getZ();
+
+        double x0 = point.getX();
+        double y0 = point.getY();
+        double z0 = point.getZ();
+
+        // Vector representing the LineSegment
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double dz = z2 - z1;
+
+        // Vector from the start point of the LineSegment to the Point
+        double px = x0 - x1;
+        double py = y0 - y1;
+        double pz = z0 - z1;
+
+        // Compute the dot product of the vectors
+        double dotProduct = dx * px + dy * py + dz * pz;
+
+        // Calculate the projection of the Point onto the LineSegment
+        double t = dotProduct / (dx * dx + dy * dy + dz * dz);
+
+        // Calculate the closest point on the LineSegment to the Point
+        double closestX = x1 + t * dx;
+        double closestY = y1 + t * dy;
+        double closestZ = z1 + t * dz;
+
+        // Calculate the distance between the closest point and the Point
+        double distance = Math.sqrt((x0 - closestX) * (x0 - closestX)
+                + (y0 - closestY) * (y0 - closestY)
+                + (z0 - closestZ) * (z0 - closestZ));
+        double sign = z0 - closestZ;
+        DistanceInfo[0]=distance;
+        DistanceInfo[1]=sign;
+        return DistanceInfo;
+    }
 
     /**
      * Compute a and b linear function of the line p1 p2
@@ -133,6 +189,14 @@ public class JTSUtility {
         return dotInTri(p, a, b, c, null);
     }
 
+    public static Vector3D getTriangleNormal(Coordinate p1, Coordinate p2, Coordinate p3) {
+        Vector3D a = new Vector3D(p1, p2);
+        Vector3D b = new Vector3D(p1, p3);
+        return new Vector3D(a.getY() * b.getZ() - a.getZ() * b.getY(),
+                a.getZ() * b.getX() - a.getX() * b.getZ(),
+                a.getX()*b.getY() - a.getY() * b.getX()).normalize();
+    }
+
     /**
      * Fast dot in triangle test
      * http://www.blackpawn.com/texts/pointinpoly/default.html
@@ -182,6 +246,18 @@ public class JTSUtility {
      * @return X Z projected points
      */
     public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints) {
+        return getNewCoordinateSystem(listPoints, 0);
+    }
+
+    /**
+     * ChangeCoordinateSystem, use original coordinate in 3D to change into a new markland in 2D
+     * with new x' computed by algorithm and y' is original height of point.
+     * @param  listPoints X Y Z points, all should be on the same plane as first and last points.
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @return X Z projected points
+     */
+    public static List<Coordinate> getNewCoordinateSystem(List<Coordinate> listPoints, double tolerance) {
         if(listPoints.isEmpty()) {
             return new ArrayList<>();
         }
@@ -191,6 +267,20 @@ public class JTSUtility {
             final Coordinate pt = listPoints.get(idPoint);
             // Get 2D distance
             newCoord.add(new Coordinate(newCoord.get(idPoint - 1).x + pt.distance(listPoints.get(idPoint - 1)), pt.z));
+        }
+        if(tolerance > 0) {
+            // remove collinear points using tolerance
+            for (int idPoint = 1; idPoint < newCoord.size() - 1;) {
+                final Coordinate previous = newCoord.get(idPoint - 1);
+                final Coordinate current = newCoord.get(idPoint);
+                final Coordinate next = newCoord.get(idPoint+1);
+                final LineSegment lineSegment = new LineSegment(previous, next);
+                if(lineSegment.distance(current) < tolerance) {
+                    newCoord.remove(idPoint);
+                } else {
+                    idPoint++;
+                }
+            }
         }
         return newCoord;
     }
@@ -258,7 +348,7 @@ public class JTSUtility {
             Coordinate p1 = profile[i];
             Coordinate p2 = profile[i+1];
             double dx = p2.x - p1.x ;
-            if (dx != 0)
+            if (dx > 0)
             {
                 double ai = (p2.y - p1.y) / dx;
                 double bi = p1.y - ai * p1.x;
@@ -274,8 +364,7 @@ public class JTSUtility {
         double valB = valB1 + 2 * valB2;
         double dist3 = Math.pow (profile[n].x - profile[0].x, 3) ;
         double dist4 = Math.pow (profile[n].x - profile[0].x, 4) ;
-        //assert (dist3 > 0) ;
-        //assert (dist4 > 0) ;
+
         /*
          * equation VI-4
          */

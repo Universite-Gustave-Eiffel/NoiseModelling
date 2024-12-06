@@ -9,7 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;

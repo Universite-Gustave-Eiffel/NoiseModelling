@@ -11,7 +11,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters;
