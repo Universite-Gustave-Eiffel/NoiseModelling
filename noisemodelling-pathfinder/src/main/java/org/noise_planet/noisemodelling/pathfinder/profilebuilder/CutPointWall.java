@@ -9,7 +9,11 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
+
+import java.util.Collections;
+import java.util.List;
 
 public class CutPointWall  extends CutPoint {
     /**
@@ -18,16 +22,31 @@ public class CutPointWall  extends CutPoint {
      */
     public LineSegment wall;
 
-    /**
-     * Unique external identifier of the wall. Could be the primary key of the related building in the database
-     */
-    public long wallPrimaryKey;
+    /** Wall absorption coefficient per frequency band.*/
+    public List<Double> wallAlpha = Collections.emptyList();
 
     /**
      * Obstacle index in the subdomain
      * @see ProfileBuilder#processedWalls
      */
     @JsonIgnore
-    public int obstacleIndex = -1;
+    public int processedWallIndex = -1;
 
+    public CutPointWall(int processedWallIndex, Coordinate intersection, LineSegment wallSegment, List<Double> wallAlpha) {
+        this.wall = wallSegment;
+        this.coordinate = intersection;
+        this.processedWallIndex = processedWallIndex;
+        this.wallAlpha = wallAlpha;
+    }
+
+    /**
+     * Copy constructor
+     * @param other Other instance
+     */
+    public CutPointWall(CutPointWall other) {
+        super(other);
+        this.wall = other.wall;
+        this.wallAlpha = other.wallAlpha;
+        this.processedWallIndex = other.processedWallIndex;
+    }
 }

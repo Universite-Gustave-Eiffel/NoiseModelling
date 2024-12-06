@@ -8,10 +8,23 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 public class CutPointSource  extends CutPoint {
 
+    /**
+     * External identifier of the source (from table primary key)
+     */
+    public long sourcePk = -1;
+
+    public CutPointSource() {
+    }
+
+    public CutPointSource(Coordinate location) {
+        this.coordinate = location;
+    }
 
     /** Source line subdivision length (1.0 means a point is representing 1 meter of line sound source) */
     public double li = 1.0;
@@ -21,4 +34,10 @@ public class CutPointSource  extends CutPoint {
      * The orientation is related to the directivity associated to the object
      */
     public Orientation orientation = new Orientation();
+
+    /**
+     * Index in the subdomain
+     */
+    @JsonIgnore
+    public int id = -1;
 }

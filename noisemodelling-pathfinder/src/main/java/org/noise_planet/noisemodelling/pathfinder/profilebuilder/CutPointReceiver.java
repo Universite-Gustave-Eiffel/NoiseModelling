@@ -8,5 +8,27 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.geom.Coordinate;
+
 public class CutPointReceiver  extends CutPoint {
+
+    /**
+     * External identifier of the receiver (from table)
+     */
+    public long receiverPk = -1;
+
+    public CutPointReceiver() {
+
+    }
+
+    public CutPointReceiver(Coordinate location) {
+        this.coordinate = location;
+    }
+
+    /**
+     * Index in the subdomain
+     */
+    @JsonIgnore
+    public int id = -1;
 }

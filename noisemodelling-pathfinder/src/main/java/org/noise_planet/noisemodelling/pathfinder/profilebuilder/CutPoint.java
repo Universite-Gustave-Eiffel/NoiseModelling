@@ -49,6 +49,24 @@ public abstract class CutPoint implements Comparable<CutPoint> {
      **/
     public double groundCoefficient = Double.NaN;
 
+    public CutPoint() {
+    }
+
+    public CutPoint(Coordinate coordinate) {
+        this.coordinate = coordinate;
+    }
+
+    /**
+     * Copy constructor
+     * @param other Other instance to copy
+     */
+    @SuppressWarnings("IncompleteCopyConstructor")
+    public CutPoint(CutPoint other) {
+        this.coordinate = other.coordinate.copy();
+        this.zGround = other.zGround;
+        this.groundCoefficient = other.groundCoefficient;
+    }
+
     public void setCoordinate(Coordinate coordinate) {
         this.coordinate = coordinate;
     }

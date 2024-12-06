@@ -287,12 +287,19 @@ public class PathFinder {
 
         CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.gS, !verticalDiffraction);
         if(cutProfile.getSource() != null) {
-            cutProfile.getSource().setId(src.getId());
+            cutProfile.getSource().id = src.getId();
             cutProfile.getSource().li = src.li;
             cutProfile.getSource().orientation = src.getOrientation();
+            if(data.sourcesPk.size() < src.getId()) {
+                cutProfile.getSource().sourcePk = data.sourcesPk.get(src.getId());
+            }
         }
+
         if(cutProfile.getReceiver() != null) {
-            cutProfile.getReceiver().setId(rcv.getId());
+            cutProfile.getReceiver().id = rcv.getId();
+            if(data.receiversPk.size() < rcv.getId()) {
+                cutProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.getId());
+            }
         }
 
 

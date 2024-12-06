@@ -8,9 +8,14 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import org.locationtech.jts.geom.Coordinate;
+
 /**
  * A rupture in the topographic profile
  */
 public class CutPointTopography extends CutPoint {
 
+    public CutPointTopography(Coordinate coordinate) {
+        this.coordinate = coordinate;
+    }
 }

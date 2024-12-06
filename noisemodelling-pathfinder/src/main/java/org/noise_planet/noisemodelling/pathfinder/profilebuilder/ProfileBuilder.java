@@ -907,24 +907,23 @@ public class ProfileBuilder {
      * @return Cutting profile.
      */
     public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double gS, boolean stopAtObstacleOverSourceReceiver) {
-        CutProfile profile = new CutProfile();
+        CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
+        CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
+
+        CutProfile profile = new CutProfile(sourcePoint, receiverPoint);
 
         // Add sourceCoordinate
-        CutPoint sourcePoint = profile.addSource(sourceCoordinate);
         int groundAbsorptionIndex = getIntersectingGroundAbsorption(FACTORY.createPoint(sourceCoordinate));
         if(groundAbsorptionIndex >= 0) {
             sourcePoint.setGroundCoefficient(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
         } else {
             sourcePoint.setGroundCoefficient(gS);
         }
-        // Add receiver point
-        profile.addReceiver(receiverCoordinate);
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
         if(topoTree != null) {
             addTopoCutPts(sourceCoordinate, receiverCoordinate, profile, stopAtObstacleOverSourceReceiver);
             if(stopAtObstacleOverSourceReceiver && profile.hasTopographyIntersection) {
-                profile.setCutPoints(Arrays.asList(profile.getSource(), profile.getReceiver()));
                 return profile;
             }
         } else {
@@ -937,23 +936,8 @@ public class ProfileBuilder {
             LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
             addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
             if(stopAtObstacleOverSourceReceiver && profile.hasBuildingIntersection) {
-                profile.setCutPoints(Arrays.asList(profile.getSource(), profile.getReceiver()));
                 return profile;
             }
-        }
-
-        //Sort all the cut point from sourceCoordinate to receiverCoordinate positions
-        profile.sort(sourceCoordinate);
-
-        // Remove all points before source and after receiver
-        // because objects may be at the exact location of receiver or source
-        while(!profile.getCutPoints().isEmpty() &&
-                !profile.getCutPoints().get(0).type.equals(SOURCE)) {
-            profile.getCutPoints().remove(0);
-        }
-        while(!profile.getCutPoints().isEmpty() &&
-                !profile.getCutPoints().get(profile.getCutPoints().size() - 1).type.equals(RECEIVER)) {
-            profile.getCutPoints().remove(profile.getCutPoints().size() - 1);
         }
 
         // Propagate ground coefficient for unknown coefficients
@@ -961,10 +945,11 @@ public class ProfileBuilder {
         for (CutPoint cutPoint : profile.cutPoints) {
             if(Double.isNaN(cutPoint.groundCoefficient)) {
                 cutPoint.setGroundCoefficient(currentCoefficient);
-            } else if (cutPoint.getType().equals(GROUND_EFFECT)) {
+            } else if (cutPoint instanceof CutPointGroundEffect) {
                 currentCoefficient = cutPoint.getGroundCoefficient();
             }
         }
+
         // Compute the interpolation of Z ground for intermediate points
         CutPoint previousZGround = sourcePoint;
         int nextPointIndex = 0;
@@ -1037,9 +1022,12 @@ public class ProfileBuilder {
         // Split line into segments for structures based on RTree in order to limit the number of queries
         // (for large area of the line segment envelope)
         List<LineSegment> lines = splitSegment(fullLine.p0, fullLine.p1, maxLineLength);
-        for (LineSegment line : lines) {
+        List<CutPoint> newCutPoints = new LinkedList<>();
+        for (int j = 0; j < lines.size()
+                && !(profile.hasBuildingIntersection && stopAtObstacleOverSourceReceiver); j++) {
+            LineSegment line = lines.get(j);
             for (Object result : rtree.query(new Envelope(line.p0, line.p1))) {
-                if(result instanceof Integer && !processed.contains((Integer)result)) {
+                if (result instanceof Integer && !processed.contains((Integer) result)) {
                     processed.add((Integer) result);
                     int i = (Integer) result;
                     Wall facetLine = processedWalls.get(i);
@@ -1055,35 +1043,43 @@ public class ProfileBuilder {
                             }
                         }
                         if (facetLine.type == IntersectionType.BUILDING) {
-                            CutPoint pt = profile.addBuildingCutPt(intersection, facetLine.originId, i);
-                            pt.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
-                            pt.setWallAlpha(buildings.get(facetLine.getOriginId()).alphas);
+                            CutPointWall wallCutPoint = new CutPointWall(i, intersection, facetLine.getLineSegment(),
+                                    buildings.get(facetLine.getOriginId()).alphas);
+                            newCutPoints.add(wallCutPoint);
+                            wallCutPoint.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
+                            wallCutPoint.wallAlpha = ;
+                            double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
                             // add a point at the bottom of the building on the exterior side of the building
                             Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
                             // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
                             // it works also with polygon holes as interiors are CCW
                             Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
                             Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
-                            CutPoint exteriorPointCutPoint = profile.addBuildingCutPt(exteriorPoint, facetLine.originId, i);
-                            exteriorPointCutPoint.coordinate.setZ(NaN);
-                            double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
-                            if(zRayReceiverSource <= intersection.z) {
+                            CutPointWall exteriorPointCutPoint = new CutPointWall(wallCutPoint);
+                            exteriorPointCutPoint.coordinate = exteriorPoint;
+                            newCutPoints.add(exteriorPointCutPoint);
+
+                            if (zRayReceiverSource <= intersection.z) {
                                 profile.hasBuildingIntersection = true;
-                                if(stopAtObstacleOverSourceReceiver) {
-                                    return;
+                                if (stopAtObstacleOverSourceReceiver) {
+                                    break;
                                 }
                             }
                         } else if (facetLine.type == IntersectionType.WALL) {
-                            profile.addWallCutPt(Vector2D.create(intersection).add(directionBefore).toCoordinate(),
-                                    facetLine.originId, facetLine.alphas);
-                            profile.addWallCutPt(intersection, facetLine.originId, facetLine.alphas);
-                            profile.addWallCutPt(Vector2D.create(intersection).add(directionAfter).toCoordinate(),
-                                    facetLine.originId, facetLine.alphas);
-                            double zRayReceiverSource = Vertex.interpolateZ(intersection,fullLine.p0, fullLine.p1);
-                            if(zRayReceiverSource <= intersection.z) {
+                            newCutPoints.add(new CutPointWall(i,
+                                    Vector2D.create(intersection).add(directionBefore).toCoordinate(),
+                                    facetLine.getLineSegment(), facetLine.alphas));
+                            newCutPoints.add(new CutPointWall(i,
+                                    intersection, facetLine.getLineSegment(), facetLine.alphas));
+                            newCutPoints.add(new CutPointWall(i,
+                                    Vector2D.create(intersection).add(directionAfter).toCoordinate(),
+                                    facetLine.getLineSegment(), facetLine.alphas));
+
+                            double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
+                            if (zRayReceiverSource <= intersection.z) {
                                 profile.hasBuildingIntersection = true;
-                                if(stopAtObstacleOverSourceReceiver) {
-                                    return;
+                                if (stopAtObstacleOverSourceReceiver) {
+                                    break;
                                 }
                             }
                         } else if (facetLine.type == GROUND_EFFECT) {
@@ -1100,23 +1096,25 @@ public class ProfileBuilder {
                             GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
                             if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
                                 // we enter a new ground effect
-                                profile.addGroundCutPt(intersection, facetLine.getOriginId(), groundAbsorption.getCoefficient());
+                                newCutPoints.add(new CutPointGroundEffect(i, intersection, groundAbsorption.getCoefficient()));
                             } else {
                                 // we exit a ground surface, we have to check if there is
                                 // another ground surface at this point, could be none or could be
                                 // an overlapping/touching ground surface
                                 int groundSurfaceIndex = getIntersectingGroundAbsorption(afterIntersectionPoint);
-                                if(groundSurfaceIndex == -1) {
+                                if (groundSurfaceIndex == -1) {
                                     // no new ground effect, we fall back to default G
-                                    profile.addGroundCutPt(intersection, facetLine.getOriginId(), Scene.DEFAULT_G);
+                                    newCutPoints.add(new CutPointGroundEffect(-1, intersection, Scene.DEFAULT_G));
                                 } else {
                                     // add another ground surface, could be duplicate points if
                                     // the two ground surfaces is touching
                                     GroundAbsorption nextGroundAbsorption = groundAbsorptions.get(groundSurfaceIndex);
                                     // if the interior of the two ground surfaces overlaps we add the ground point
                                     // (as we will not encounter the side of this other ground surface)
-                                    if(!nextGroundAbsorption.geom.touches(groundAbsorption.geom)) {
-                                        profile.addGroundCutPt(intersection, groundSurfaceIndex, nextGroundAbsorption.getCoefficient());
+                                    if (!nextGroundAbsorption.geom.touches(groundAbsorption.geom)) {
+                                        newCutPoints.add(new CutPointGroundEffect(groundSurfaceIndex,
+                                                afterIntersectionPoint.getCoordinate(),
+                                                nextGroundAbsorption.getCoefficient()));
                                     }
                                 }
                             }
@@ -1271,8 +1269,8 @@ public class ProfileBuilder {
             return;
         }
         profile.hasTopographyIntersection = !freeField;
-        // avoid resizing of array by reserving memory
-        profile.reservePoints(coordinates.size());
+
+        List<CutPointTopography> topographyList = new ArrayList<>(coordinates.size());
         for(int idPoint = 1; idPoint < coordinates.size() - 1; idPoint++) {
             final Coordinate previous = coordinates.get(idPoint - 1);
             final Coordinate current = coordinates.get(idPoint);
@@ -1280,9 +1278,10 @@ public class ProfileBuilder {
             // Do not add topographic points which are simply the linear interpolation between two points
             // triangulation add a lot of interpolated lines from line segment DEM
             if(CGAlgorithms3D.distancePointSegment(current, previous, next) >= DELTA) {
-                profile.addTopoCutPt(current, idPoint);
+                topographyList.add(new CutPointTopography(current));
             }
         }
+        profile.insertCutPoint(true, topographyList.toArray(CutPoint[]::new));
     }
 
     /**

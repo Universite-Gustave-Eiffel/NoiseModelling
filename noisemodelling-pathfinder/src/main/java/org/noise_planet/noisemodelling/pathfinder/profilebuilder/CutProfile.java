@@ -13,18 +13,59 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 public class CutProfile {
-    /** List of cut points. */
+    /** List of cut points.
+     * First point is source, last point is receiver */
     public ArrayList<CutPoint> cutPoints = new ArrayList<>();
 
     /** True if Source-Receiver linestring is below building intersection */
     public boolean hasBuildingIntersection = false;
     /** True if Source-Receiver linestring is below topography cutting point. */
     public boolean hasTopographyIntersection = false;
+
+
+    public CutProfile(CutPointSource source, CutPointReceiver receiver) {
+        cutPoints.add(source);
+        cutPoints.add(receiver);
+    }
+
+    /**
+     * Insert and sort cut points,
+     * @param sortBySourcePosition After inserting points, sort the by the distance from the source
+     * @param cutPointsToInsert
+     */
+    public void insertCutPoint(boolean sortBySourcePosition, CutPoint... cutPointsToInsert) {
+        CutPointSource sourcePoint = getSource();
+        CutPointReceiver receiverPoint = getReceiver();
+        cutPoints.addAll(1, Arrays.asList(cutPointsToInsert));
+        if(sortBySourcePosition) {
+            sort(sourcePoint.coordinate);
+            // move source as the first point
+            int sourceIndex = cutPoints.indexOf(sourcePoint);
+            if (sourceIndex != 0) {
+                cutPoints.remove(sourceIndex);
+                cutPoints.add(0, sourcePoint);
+            }
+            // move receiver as the last point
+            int receiverIndex = cutPoints.indexOf(receiverPoint);
+            if (receiverIndex != cutPoints.size() - 1) {
+                cutPoints.remove(receiverIndex);
+                cutPoints.add(cutPoints.size(), receiverPoint);
+            }
+        }
+    }
+
+    /**
+     * Sort the CutPoints by distance with c0
+     */
+    public void sort(Coordinate c0) {
+        cutPoints.sort(new CutPointDistanceComparator(c0));
+    }
 
     /**
      * compute the path between two points
@@ -165,5 +206,15 @@ public class CutProfile {
      */
     public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
         return computePts2DGround(this.cutPoints, tolerance, index);
+    }
+
+    public CutPointSource getSource() {
+        return !cutPoints.isEmpty() && cutPoints.get(0) instanceof CutPointSource ?
+                (CutPointSource) cutPoints.get(0) : null;
+    }
+
+    public CutPointReceiver getReceiver() {
+        return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
+                (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;
     }
 }

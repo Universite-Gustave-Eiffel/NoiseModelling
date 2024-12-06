@@ -8,10 +8,21 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
-public class CutPointGroundEffect extends CutPoint {
-    /**
-     * Index of the object that reference the external data (not a temporary index in a subdomain)
-     */
-    public long groundPolygonIndex = -1;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.geom.Coordinate;
 
+public class CutPointGroundEffect extends CutPoint {
+
+    /**
+     * Obstacle index in the subdomain
+     * @see ProfileBuilder#processedWalls
+     */
+    @JsonIgnore
+    public int processedWallIndex = -1;
+
+    public CutPointGroundEffect(int processedWallIndex, Coordinate intersectionCoordinate, double groundAbsorptionCoefficient) {
+        super(intersectionCoordinate);
+        this.groundCoefficient = groundAbsorptionCoefficient;
+        this.processedWallIndex = processedWallIndex;
+    }
 }
