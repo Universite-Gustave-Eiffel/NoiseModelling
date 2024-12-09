@@ -7,10 +7,10 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.path;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.io.DataInputStream;
@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.lang.Double.isNaN;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 
 public class PointPath {
 
@@ -34,19 +34,32 @@ public class PointPath {
     public int wallId = -1;
     public double e=0;
     public Orientation orientation;
-
-    public void setBuildingHeight(double buildingHeight) {
-        this.buildingHeight = buildingHeight;
-    }
-
-    public double buildingHeight; // only if POINT_TYPE = REFL
+    public double obstacleZ; // only if POINT_TYPE = REFL
     public POINT_TYPE type; // type of point
     public enum POINT_TYPE {
+        /**
+         * Source point
+         */
         SRCE,
+        /**
+         * Reflection on > 15° obstacle
+         */
         REFL,
+        /**
+         * Diffraction on vertical edge diffraction (horizontal plane)
+         */
         DIFV,
+        /**
+         * Diffraction on horizontal edges (vertical plane)
+         */
         DIFH,
+        /**
+         * Receiver point
+         */
         RECV,
+        /**
+         * Diffraction on vertical edge due to rayleigh Criterion
+         */
         DIFH_RCRIT;
     }
     public boolean bodyBarrier = false;
@@ -56,6 +69,7 @@ public class PointPath {
      * @param coordinate
      * @param altitude
      * @param alphaWall
+     * @param buildingId Building identifier -1 if there is no buildings
      * @param type
      */
     public PointPath(Coordinate coordinate, double altitude, List<Double> alphaWall, int buildingId, POINT_TYPE type) {
@@ -64,6 +78,22 @@ public class PointPath {
         this.alphaWall = alphaWall;
         this.buildingId = buildingId;
         this.type = type;
+    }
+
+
+    /**
+     * Top obstacle altitude value in meters
+     * @param obstacleZ
+     */
+    public void setObstacleZ(double obstacleZ) {
+        this.obstacleZ = obstacleZ;
+    }
+
+    /**
+     * @return Top obstacle altitude value in meters
+     */
+    public double getObstacleZ() {
+        return obstacleZ;
     }
 
     /**
@@ -78,18 +108,6 @@ public class PointPath {
         this.altitude = altitude;
         this.alphaWall = alphaWall;
         this.type = type;
-    }
-
-    /**
-     * parameters given by user
-     * @param cutPoint CutPoint to use to generate the PointPath
-     * @param defaultType Default point type to use if the cut point is nor a source, nor a receiver.
-     */
-    public PointPath(CutPoint cutPoint, POINT_TYPE defaultType, double altitude) {
-        this.coordinate = cutPoint.getCoordinate();
-        this.altitude = altitude;
-        this.alphaWall = cutPoint.getWallAlpha();
-        this.type = cutPoint.getType().toPointType(defaultType);
     }
 
     /**
@@ -176,72 +194,14 @@ public class PointPath {
         this.coordinate =  coordinate;
     }
 
-    public static final class ReceiverPointInfo {
-        int sourcePrimaryKey;
-        public Coordinate position;
-
-        public ReceiverPointInfo(int sourcePrimaryKey, Coordinate position) {
-            this.sourcePrimaryKey = sourcePrimaryKey;
-            this.position = position;
+    public PointPath.POINT_TYPE toPointType(ProfileBuilder.IntersectionType intersectionType, PointPath.POINT_TYPE defaultPointType) {
+        if(intersectionType.equals(ProfileBuilder.IntersectionType.SOURCE)){
+            return PointPath.POINT_TYPE.SRCE;
         }
-
-        public Coordinate getCoord() {
-            return position;
-        }
-
-        public int getId() {
-            return sourcePrimaryKey;
-        }
-    }
-
-    public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
-        public final double li;
-        final int sourcePrimaryKey;
-        Coordinate position;
-        public final double globalWj;
-        Orientation orientation;
-
-        /**
-         * @param wj               Maximum received power from this source
-         * @param sourcePrimaryKey
-         * @param position
-         */
-        public SourcePointInfo(double[] wj, int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
-            this.sourcePrimaryKey = sourcePrimaryKey;
-            this.position = position;
-            if (isNaN(position.z)) {
-                this.position = new Coordinate(position.x, position.y, 0);
-            }
-            this.globalWj = sumArray(wj.length, wj);
-            this.li = li;
-            this.orientation = orientation;
-        }
-
-        public Orientation getOrientation() {
-            return orientation;
-        }
-
-        public Coordinate getCoord() {
-            return position;
-        }
-
-        public int getId() {
-            return sourcePrimaryKey;
-        }
-
-        /**
-         *
-         * @param sourcePointInfo the object to be compared.
-         * @return 1, 0 or -1
-         */
-        @Override
-        public int compareTo(SourcePointInfo sourcePointInfo) {
-            int cmp = -Double.compare(globalWj, sourcePointInfo.globalWj);
-            if (cmp == 0) {
-                return Integer.compare(sourcePrimaryKey, sourcePointInfo.sourcePrimaryKey);
-            } else {
-                return cmp;
-            }
+        else if(intersectionType.equals(ProfileBuilder.IntersectionType.RECEIVER)){
+            return PointPath.POINT_TYPE.RECV;
+        } else {
+            return defaultPointType;
         }
     }
 }

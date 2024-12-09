@@ -11,7 +11,7 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +26,8 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.WRITER_CACHE;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
 
 public class NoiseMapWriter implements Runnable {

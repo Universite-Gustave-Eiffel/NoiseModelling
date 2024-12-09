@@ -6,28 +6,20 @@
  * Official webpage : http://noise-planet.org/noisemodelling.html
  * Contact: contact@noise-planet.org
  */
-package org.noise_planet.noisemodelling.propagation;
+package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 /**
- * @author Nicolas Fortin
- * @author Pierre Aumond
+ * Pivot point on the vertical profile. It is near a vertical edge of a wall.
  */
-public class Utils {
-    /**
-     * Convert Decibel to Watt
-     * @param dB
-     * @return watt value
-     */
-    public static double dbToW(double dB) {
-        return Math.pow(10., dB / 10.);
-    }
+public class CutPointVEdgeDiffraction  extends CutPoint {
 
     /**
-     * Convert Watt to Decibel
-     * @param w
-     * @return decibel value
+     * Empty constructor for deserialization
      */
-    public static double wToDb(double w) {
-        return 10 * Math.log10(w);
+    public CutPointVEdgeDiffraction() {
+    }
+
+    public CutPointVEdgeDiffraction(CutPoint source) {
+        super(source);
     }
 }

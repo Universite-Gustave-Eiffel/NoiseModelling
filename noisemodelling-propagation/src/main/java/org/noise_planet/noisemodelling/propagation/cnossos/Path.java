@@ -7,14 +7,14 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.pathfinder.path;
+package org.noise_planet.noisemodelling.propagation.cnossos;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ReflectionAbsorption;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import java.io.ByteArrayOutputStream;
@@ -38,7 +38,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.Geometry
 
 public class Path {
     public static final int FOOTER_RESERVED_SIZE = 120; // reserved size for geojson footer
-    private List<CutPoint> cutPoints = new ArrayList<>();
+    CutProfile cutProfile; // vertical plane between source and receiver used to compute the propagation ray path attributes
     // given by user
     private SegmentPath srSegment; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
@@ -52,22 +52,32 @@ public class Path {
     public double angle;
     double gs;
     // computed in Augmented Path
-    public List<Integer> difHPoints = new ArrayList<Integer>(); // diffraction points indices on horizontal edges
-    public List<Integer> difVPoints = new ArrayList<Integer>(); // diffraction points indices on vertical edges
-    public List<Integer> refPoints = new ArrayList<Integer>(); // reflection points indices
     public boolean keepAbsorption = false;
-    public ReflectionAbsorption reflectionAbsorption = new ReflectionAbsorption();
 
     /**
      * 3D intersections points of the ray
      * @return
      */
     public List<CutPoint> getCutPoints() {
-        return cutPoints;
+        if(cutProfile == null) {
+            return new ArrayList<>();
+        } else {
+            return cutProfile.getCutPoints();
+        }
     }
 
-    public void setCutPoints(List<CutPoint> cutPoints) {
-        this.cutPoints = cutPoints;
+    /**
+     * @return Get vertical plane between source and receiver used to compute the propagation ray path attributes
+     */
+    public CutProfile getCutProfile() {
+        return cutProfile;
+    }
+
+    /**
+     * @param cutProfile vertical plane between source and receiver used to compute the propagation ray path attributes
+     */
+    public void setCutProfile(CutProfile cutProfile) {
+        this.cutProfile = cutProfile;
     }
 
     /**
@@ -99,13 +109,9 @@ public class Path {
         this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
         this.angle = other.angle;
         this.gs = other.gs;
-        this.difHPoints = other.difHPoints;
-        this.difVPoints = other.difVPoints;
-        this.refPoints = other.refPoints;
         this.keepAbsorption = other.keepAbsorption;
-        this.reflectionAbsorption = other.reflectionAbsorption;
-        this.cutPoints = new ArrayList<>(other.cutPoints);
         this.timePeriod = other.timePeriod;
+        this.cutProfile = other.cutProfile;
     }
 
     public Path() {
@@ -160,29 +166,29 @@ public class Path {
     public LineString asGeom() {
         // try to compute 3d ray geometry using two different list of points (one in 2D and the ground cut points in 3d)
         GeometryFactory geometryFactory = new GeometryFactory();
-        Coordinate[] coordinates = new Coordinate[pointList.size()];
+        Coordinate[] coordinates = new Coordinate[pointList == null ? 0  : pointList.size()];
         int i=0;
         double cutPointDistance = 0;
         int cutPointCursor = 0;
-        if(cutPoints.isEmpty() || coordinates.length <= 1) {
+        if(getCutPoints().isEmpty() || coordinates.length <= 1) {
             return geometryFactory.createLineString();
         }
         for(PointPath pointPath : pointList) {
             // report x,y from cut point
-            while(cutPointCursor < cutPoints.size() - 1) {
+            while(cutPointCursor < getCutPoints().size() - 1) {
                 if(pointPath.coordinate.x > cutPointDistance) {
                     cutPointCursor++;
-                    cutPointDistance += cutPoints.get(cutPointCursor-1).getCoordinate()
-                            .distance(cutPoints.get(cutPointCursor).getCoordinate());
+                    cutPointDistance += getCutPoints().get(cutPointCursor-1).getCoordinate()
+                            .distance(getCutPoints().get(cutPointCursor).getCoordinate());
                 } else {
                     break;
                 }
             }
-            Coordinate rayPoint = new Coordinate(cutPoints.get(cutPointCursor).getCoordinate());
+            Coordinate rayPoint = new Coordinate(getCutPoints().get(cutPointCursor).getCoordinate());
             rayPoint.setZ(pointPath.coordinate.y);
             if(cutPointCursor > 0) {
-                final Coordinate p0 = cutPoints.get(cutPointCursor - 1).getCoordinate();
-                final Coordinate p1 = cutPoints.get(cutPointCursor).getCoordinate();
+                final Coordinate p0 = getCutPoints().get(cutPointCursor - 1).getCoordinate();
+                final Coordinate p1 = getCutPoints().get(cutPointCursor).getCoordinate();
                 double distanceP0P1 = p1.distance(p0);
                 // compute ratio of pointPath position between p0 and p1
                 double ratio = Math.min(1, Math.max(0, (pointPath.coordinate.x - (cutPointDistance - distanceP0P1)) / distanceP0P1));
@@ -206,7 +212,7 @@ public class Path {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         GeoJSONDocument geoJSONDocument = new GeoJSONDocument(byteArrayOutputStream);
         geoJSONDocument.writeHeader();
-        for (CutPoint cutPoint : cutPoints) {
+        for (CutPoint cutPoint : getCutPoints()) {
             if(sizeLimitation > 0 && byteArrayOutputStream.size() + FOOTER_RESERVED_SIZE > sizeLimitation) {
                 break;
             }
