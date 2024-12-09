@@ -12,6 +12,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -1267,6 +1268,17 @@ public class ProfileBuilder {
 
 
     /**
+     * Get coordinates of triangle vertices (last point is first point)
+     * @param triIndex Index of triangle
+     * @return triangle vertices
+     */
+    Coordinate[] getClosedTriangle(int triIndex) {
+        final Triangle tri = this.topoTriangles.get(triIndex);
+        return new Coordinate[]{this.vertices.get(tri.getA()), this.vertices.get(tri.getB()),
+                this.vertices.get(tri.getC()), this.vertices.get(tri.getA())};
+    }
+
+    /**
      * Return the triangle id from a point coordinate inside the triangle
      *
      * @param pt Point test
@@ -1447,6 +1459,22 @@ public class ProfileBuilder {
      */
     public boolean hasDem() {
         return topoTree != null && !topoTree.isEmpty();
+    }
+
+    /**
+     * @return Mesh of digital elevation model
+     */
+    public MultiPolygon demAsMultiPolygon() {
+        GeometryFactory GF = new GeometryFactory();
+        if(!topoTriangles.isEmpty()) {
+            List<Polygon> polyTri = new ArrayList<>(topoTriangles.size());
+            for (int i = 0; i < topoTriangles.size(); i++) {
+                polyTri.add(GF.createPolygon(getClosedTriangle(i)));
+            }
+            return GF.createMultiPolygon(polyTri.toArray(Polygon[]::new));
+        } else {
+            return GF.createMultiPolygon();
+        }
     }
 
 

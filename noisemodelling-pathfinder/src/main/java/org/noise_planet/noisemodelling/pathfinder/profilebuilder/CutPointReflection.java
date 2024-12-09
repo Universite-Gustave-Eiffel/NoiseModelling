@@ -27,6 +27,13 @@ public class CutPointReflection extends CutPoint {
     public long wallPrimaryKey = -1;
 
     /**
+     * Empty constructor for deserialization
+     */
+    public CutPointReflection() {
+
+    }
+
+    /**
      * Constructor
      * @param cutPoint copy attributes
      * @param wall
@@ -54,6 +61,13 @@ public class CutPointReflection extends CutPoint {
 
 
     /**
+     * @return Convert alpha values to a java array
+     */
+    public double[] alphaAsArray() {
+        return wallAlpha.stream().mapToDouble(aDouble -> aDouble).toArray();
+    }
+
+    /**
      * Sets the wall alpha.
      * @param wallAlpha The wall alpha.
      */
@@ -64,12 +78,12 @@ public class CutPointReflection extends CutPoint {
     @Override
     public String toString() {
         return "CutPointReflection{" +
-                "wall=" + wall +
-                ", wallPrimaryKey=" + wallPrimaryKey +
-                ", wallAlpha=" + wallAlpha +
-                ", coordinate=" + coordinate +
-                ", zGround=" + zGround +
-                ", groundCoefficient=" + groundCoefficient +
-                '}';
+                "\nwall=" + wall +
+                "\n, wallPrimaryKey=" + wallPrimaryKey +
+                "\n, wallAlpha=" + wallAlpha +
+                "\n, coordinate=" + coordinate +
+                "\n, zGround=" + zGround +
+                "\n, groundCoefficient=" + groundCoefficient +
+                "\n}";
     }
 }

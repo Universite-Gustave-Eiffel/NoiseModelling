@@ -9,6 +9,8 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.locationtech.jts.geom.Coordinate;
@@ -35,6 +37,7 @@ import java.util.List;
 })
 public abstract class CutPoint implements Comparable<CutPoint> {
     /** {@link Coordinate} of the cut point. */
+    @JsonIgnoreProperties({"m", "valid"})
     public Coordinate coordinate = new Coordinate();
 
     /** Topographic height of the point. */

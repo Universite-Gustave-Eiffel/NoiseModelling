@@ -13,6 +13,12 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
  */
 public class CutPointVEdgeDiffraction  extends CutPoint {
 
+    /**
+     * Empty constructor for deserialization
+     */
+    public CutPointVEdgeDiffraction() {
+    }
+
     public CutPointVEdgeDiffraction(CutPoint source) {
         super(source);
     }

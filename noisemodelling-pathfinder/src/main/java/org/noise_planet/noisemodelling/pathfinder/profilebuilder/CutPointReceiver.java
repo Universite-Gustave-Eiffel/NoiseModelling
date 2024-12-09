@@ -35,11 +35,11 @@ public class CutPointReceiver  extends CutPoint {
     @Override
     public String toString() {
         return "CutPointReceiver{" +
-                "groundCoefficient=" + groundCoefficient +
-                ", zGround=" + zGround +
-                ", coordinate=" + coordinate +
-                ", id=" + id +
-                ", receiverPk=" + receiverPk +
-                '}';
+                "\ngroundCoefficient=" + groundCoefficient +
+                "\n, zGround=" + zGround +
+                "\n, coordinate=" + coordinate +
+                "\n, id=" + id +
+                "\n, receiverPk=" + receiverPk +
+                "\n}\n";
     }
 }

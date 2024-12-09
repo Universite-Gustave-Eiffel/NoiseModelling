@@ -9,6 +9,12 @@
 
 package org.noise_planet.noisemodelling.pathfinder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.cts.crs.CRSException;
 import org.cts.op.CoordinateOperationException;
 import org.junit.jupiter.api.Test;
@@ -16,20 +22,42 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.stream.XMLStreamException;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 
 import static java.lang.Double.NaN;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class PathFinderTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PathFinderTest.class);
+
+    /**
+     * Overwrite project resource expected test cases
+     */
+    public boolean overwriteTestCase = true;
 
     /**
      *  Error for coordinates
@@ -41,16 +69,64 @@ public class PathFinderTest {
      */
     public static final double DELTA_PLANES = 0.1;
 
-    /**
-     *  Error for G path value
-     */
-    public static final double DELTA_G_PATH = 0.02;
+    public static String cutProfileAsJson(CutProfile cutProfile) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectWriter writer = mapper.writer().withDefaultPrettyPrinter();
+        return writer.writeValueAsString(cutProfile);
+    }
+
+    public static void assertCutProfile(InputStream expected, CutProfile got) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        CutProfile cutProfile = mapper.readValue(expected, CutProfile.class);
+        assertCutProfile(cutProfile, got);
+    }
+
+    public static void assertCutProfile(CutProfile expected, CutProfile got) {
+        assertNotNull(expected);
+        assertNotNull(got);
+        assertEquals(expected.cutPoints.size(), got.cutPoints.size());
+        for (int i = 0; i < expected.cutPoints.size(); i++) {
+            CutPoint expectedCutPoint = expected.cutPoints.get(i);
+            CutPoint gotCutPoint = got.cutPoints.get(i);
+            assertInstanceOf(expectedCutPoint.getClass(), gotCutPoint);
+            assert3DCoordinateEquals(expectedCutPoint+"!="+gotCutPoint, expectedCutPoint.coordinate,
+                    gotCutPoint.coordinate, DELTA_COORDS);
+            assertEquals(expectedCutPoint.zGround, gotCutPoint.zGround, 0.01, "zGround");
+            assertEquals(expectedCutPoint.groundCoefficient, gotCutPoint.groundCoefficient, 0.01, "groundCoefficient");
+
+            if(expectedCutPoint instanceof CutPointSource) {
+                CutPointSource expectedCutPointSource = (CutPointSource) expectedCutPoint;
+                CutPointSource gotCutPointSource = (CutPointSource) gotCutPoint;
+                assertEquals(expectedCutPointSource.li, gotCutPointSource.li,0.01);
+                assertEquals(expectedCutPointSource.orientation.yaw, gotCutPointSource.orientation.yaw,0.01);
+                assertEquals(expectedCutPointSource.orientation.pitch, gotCutPointSource.orientation.pitch,0.01);
+                assertEquals(expectedCutPointSource.orientation.roll, gotCutPointSource.orientation.roll,0.01);
+            } else if (expectedCutPoint instanceof CutPointWall) {
+                CutPointWall expectedCutPointWall = (CutPointWall) expectedCutPoint;
+                CutPointWall gotCutPointWall = (CutPointWall) gotCutPoint;
+                assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p0,
+                        gotCutPointWall.wall.p0, DELTA_COORDS);
+                assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p1,
+                        gotCutPointWall.wall.p1, DELTA_COORDS);
+                assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01);
+            } else if (expectedCutPoint instanceof CutPointReflection) {
+                CutPointReflection expectedCutPointReflection = (CutPointReflection) expectedCutPoint;
+                CutPointReflection gotCutPointReflection = (CutPointReflection) gotCutPoint;
+                assert3DCoordinateEquals(expectedCutPointReflection+"!="+gotCutPointReflection,
+                        expectedCutPointReflection.wall.p0, gotCutPointReflection.wall.p0, DELTA_COORDS);
+                assert3DCoordinateEquals(expectedCutPointReflection+"!="+gotCutPointReflection,
+                        expectedCutPointReflection.wall.p1, gotCutPointReflection.wall.p1, DELTA_COORDS);
+                assertArrayEquals(expectedCutPointReflection.alphaAsArray(), gotCutPointReflection.alphaAsArray(), 0.01);
+            }
+        }
+
+    }
 
     /**
      * Test TC01 -- Reflecting ground (G = 0)
      */
     @Test
-    public void TC01() {
+    public void TC01() throws Exception {
         //Profile building
         ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
 
@@ -69,138 +145,153 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        //Expected values
-        double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
-        };
-        double[][] gPaths = new double[][]{
-                {0.0} //Path 1 : direct
-        };
-
-        //Assertion
-        //assertPaths(pts, gPaths, propDataOut.getCutPlanes());
+        String testCaseName = "TC01.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
     }
-//
-//    /**
-//     * Test TC02 -- Mixed ground (G = 0,5)
-//     */
-//    @Test
-//    public void TC02() {
-//        //Profile building
-//        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
-//
-//        //Propagation data building
-//        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-//                .addSource(10, 10, 1)
-//                .addReceiver(200, 50, 4)
-//                .setGs(0.5)
-//                .build();
-//
-//        //Out and computation settings
-//        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//
-//        //Run computation
-//        computeRays.run(propDataOut);
-//
-//        //Expected values
-//        double[][][] pts = new double[][][]{
-//                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
-//        };
-//        double[][] gPaths = new double[][]{
-//                {0.5} //Path 1 : direct
-//        };
-//
-//        //Assertion
-//        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
-//    }
-//
-//    /**
-//     * Test TC03 -- Mixed ground (G = 0,5)
-//     */
-//    @Test
-//    public void TC03() {
-//        //Profile building
-//        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
-//
-//        //Propagation data building
-//        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-//                .addSource(10, 10, 1)
-//                .addReceiver(200, 50, 4)
-//                .setGs(1.0)
-//                .build();
-//
-//        //Out and computation settings
-//        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//
-//        //Run computation
-//        computeRays.run(propDataOut);
-//
-//        //Expected values
-//        double[][][] pts = new double[][][]{
-//                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
-//        };
-//        double[][] gPaths = new double[][]{
-//                {1.0} //Path 1 : direct
-//        };
-//
-//        //Assertion
-//        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
-//    }
-//
-//    /**
-//     * Test TC04 -- Flat ground with spatially varying acoustic properties
-//     */
-//    @Test
-//    public void TC04() {
-//        //Profile building
-//        ProfileBuilder profileBuilder = new ProfileBuilder()
-//                //Ground effects
-//                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.2)
-//                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-//                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.9)
-//                .finishFeeding();
-//
-//        //Propagation data building
-//        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-//                .addSource(10, 10, 1)
-//                .addReceiver(200, 50, 4)
-//                .setGs(0.2)
-//                .vEdgeDiff(true)
-//                .hEdgeDiff(true)
-//                .build();
-//
-//        //Out and computation settings
-//        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//
-//        //Run computation
-//        computeRays.run(propDataOut);
-//
-//        //Expected values
-//        double[][][] pts = new double[][][]{
-//                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
-//        };
-//        double[][] gPaths = new double[][]{
-//                {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)} //Path 1 : direct
-//        };
-//
-//        //Assertion
-//        assertPaths(pts, gPaths, propDataOut.getCutPlanes());
-//    }
-//
-//
-//    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
-//        profileBuilder
-//                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-//                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-//                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
-//    }
-//
+
+    /**
+     * Test TC02 -- Mixed ground (G = 0,5)
+     */
+    @Test
+    public void TC02() throws Exception {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(0.5)
+                .build();
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        String testCaseName = "TC02.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
+    }
+
+
+
+    /**
+     * Test TC03 -- Mixed ground (G = 0,5)
+     */
+    @Test
+    public void TC03() throws Exception {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder().finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(1.0)
+                .build();
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        String testCaseName = "TC03.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
+    }
+
+    /**
+     * Test TC04 -- Flat ground with spatially varying acoustic properties
+     */
+    @Test
+    public void TC04() throws Exception {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                //Ground effects
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.2)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.9)
+                .finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 4)
+                .setGs(0.2)
+                .vEdgeDiff(true)
+                .hEdgeDiff(true)
+                .build();
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        String testCaseName = "TC04.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
+
+    }
+
+
+    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
+        profileBuilder
+                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+    }
+
     public static void addTopographicTC5Model(ProfileBuilder profileBuilder) {
         profileBuilder
                 // top horizontal line
@@ -267,139 +358,92 @@ public class PathFinderTest {
                 .addTopographicLine(54.68, 37.59, 5, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 15
                 .addTopographicLine(55.93, 37.93, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5); // 16
     }
-//
-//    /**
-//     * Test TC05 -- Ground with spatially varying heights and acoustic properties
-//     */
-//    @Test
-//    public void TC05() {
-//        //Profile building
-//        ProfileBuilder profileBuilder = new ProfileBuilder();
-//        addTopographicTC5Model(profileBuilder);
-//        addGroundAttenuationTC5(profileBuilder);
-//        profileBuilder.finishFeeding();
-//
-//        //Propagation data building
-//        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-//                .addSource(10, 10, 1)
-//                .addReceiver(200, 50, 14)
-//                .setGs(0.9)
-//                .build();
-//
-//        //Out and computation settings
-//        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//
-//        //Run computation
-//        computeRays.run(propDataOut);
-//
-//        //Expected values
-//        double[][][] pts = new double[][][]{
-//                {{0.00, 1.00}, {194.16, 14.00}} //Path 1 : direct
-//        };
-//        double[][] gPaths = new double[][]{
-//                {0.51},{0.64}
-//                //{(0.9*40.88 + 0.5*102.19 + 0.2*51.09)/194.16} //Path 1 : direct
-//        };
-//        /* Table 18 */
-//        double [][] meanPlanes = new double[][]{
-//                //  a      b    zs    zr      dp    Gp   Gp'
-//                {0.05, -2.83, 3.83, 6.16, 194.59, 0.51, 0.64}
-//        };
-//
-//        //Assertion
-//        assertPaths(pts, gPaths, propDataOut.getCutPlanes()); // table17
-//        assertPlanes(meanPlanes, propDataOut.getCutPlanes().get(0).getSRSegment()); // table 18
-//        assertPlanes(meanPlanes, propDataOut.getCutPlanes().get(0).getSegmentList()); // table 18
-//    }
-//
-//    /**
-//     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
-//     */
-//    @Test
-//    public void TC06() {
-//        //Profile building
-//        ProfileBuilder profileBuilder = new ProfileBuilder();
-//        addTopographicTC5Model(profileBuilder);
-//        addGroundAttenuationTC5(profileBuilder);
-//        profileBuilder.finishFeeding();
-//
-//        //Propagation data building
-//        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-//                .addSource(10, 10, 1)
-//                .addReceiver(200, 50, 11.5)
-//                .setGs(0.9)
-//                .build();
-//
-//        //Out and computation settings
-//        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//
-//        //Run computation
-//        computeRays.run(propDataOut);
-//
-//        assertEquals(1, propDataOut.getCutPlanes().size());
-//        assertEquals(2, propDataOut.getCutPlanes().get(0).getSegmentList().size());
-//
-//        // Test R-CRIT table 27
-//        Coordinate D = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).r;
-//        Coordinate Sp = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).sPrime;
-//        Coordinate Rp = propDataOut.getCutPlanes().get(0).getSegmentList().get(1).rPrime ;
-//
-//        double deltaD = propDataOut.getCutPlanes().get(0).getSegmentList().get(0).d + propDataOut.getCutPlanes().get(0).getSegmentList().get(1).d - propDataOut.getCutPlanes().get(0).getSRSegment().d;
-//        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
-//        List<Integer> res1 = new ArrayList<>(3) ;
-//        List<Integer> res2 = new ArrayList<>(3);
-//
-//        for(int f : computeRays.getData().freq_lvl) {
-//            if(deltaD > -(340./f) / 20) {
-//                res1.add(1);
-//            }
-//            if (!(deltaD > (((340./f) / 4) - deltaDE))){
-//                res2.add(0);
-//            }
-//        }
-//        //computeRays.
-//        //Expected values
-//        double[][][] pts = new double[][][]{
-//                {{0.00, 1.00}, {178.84, 10.0}, {194.16, 11.5}} //Path 1 : direct
-//        };
-//
-//        /* Table 23 */
-//        List<Coordinate> expectedZProfile = new ArrayList<>();
-//        expectedZProfile.add(new Coordinate(0.00, 0.00));
-//        expectedZProfile.add(new Coordinate(112.41, 0.00));
-//        expectedZProfile.add(new Coordinate(178.84, 10.00));
-//        expectedZProfile.add(new Coordinate(194.16, 10.00));
-//
-//        /* Table 25 */
-//        Coordinate expectedSPrime =new Coordinate(0.31,-5.65);
-//        Coordinate expectedRPrime =new Coordinate(194.16,8.5);
-//
-//        if(!profileBuilder.getWalls().isEmpty()){
-//            assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getCutPlanes().get(0).getSRSegment().sPrime,propDataOut.getCutPlanes().get(0).getSRSegment().rPrime);
-//        }
-//
-//
-//        /* Table 24 */
-//        double [][] srMeanPlanes = new double[][]{
-//                //  a      b    zs    zr      dp    Gp   Gp'
-//                {0.05, -2.83, 3.83, 3.66, 194.45, 0.51, 0.56}
-//        };
-//        double [][] segmentsMeanPlanes = new double[][]{
-//                //  a      b    zs    zr      dp    Gp   Gp'
-//                {0.05, -2.33, 3.33, 3.95, 179.06, 0.53, 0.60},
-//                {0.00, 10.00, 0.00, 1.50, 015.33, 0.20,  NaN}
-//        };
-//
-//        //Assertion
-//        assertZProfil(expectedZProfile, propDataOut.getCutPlanes().get(0).getCutProfile().computePts2DGround());
-//        assertPlanes(srMeanPlanes, propDataOut.getCutPlanes().get(0).getSRSegment());
-//        assertPlanes(segmentsMeanPlanes, propDataOut.getCutPlanes().get(0).getSegmentList());
-//    }
-//
+
+    /**
+     * Test TC05 -- Ground with spatially varying heights and acoustic properties
+     */
+    @Test
+    public void TC05() throws Exception {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+        profileBuilder.finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 14)
+                .setGs(0.9)
+                .build();
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        String testCaseName = "TC05.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
+    }
+
+
+
+    /**
+     * Test TC06 -- Reduced receiver height to include diffraction in some frequency bands
+     */
+    @Test
+    public void TC06() throws Exception {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        addTopographicTC5Model(profileBuilder);
+        addGroundAttenuationTC5(profileBuilder);
+        profileBuilder.finishFeeding();
+
+        //Propagation data building
+        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
+                .addSource(10, 10, 1)
+                .addReceiver(200, 50, 11.5)
+                .setGs(0.9)
+                .build();
+
+        //Out and computation settings
+        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        String testCaseName = "TC06.json";
+        if(overwriteTestCase) {
+            URL resourcePath = PathFinder.class.getResource("test_cases");
+            if(resourcePath != null) {
+                File destination = new File(resourcePath.getFile(), testCaseName);
+                try (FileWriter utFile = new FileWriter(destination)){
+                    utFile.write(cutProfileAsJson(propDataOut.cutProfiles.getFirst()));
+                }
+                LOGGER.warn("{} written in \n{}", testCaseName, destination);
+            }
+        }
+        assertCutProfile(PathFinder.class.getResourceAsStream("test_cases/"+testCaseName),
+                propDataOut.cutProfiles.getFirst());
+
+    }
+
 //    /**
 //     * Test TC07 -- Flat ground with spatially varying acoustic properties and long barrier
 //     */
@@ -2697,70 +2741,7 @@ public class PathFinderTest {
 //
 //    }
 //
-//
-//    /**
-//     * Assertions for a list of {@link CnossosPath}.
-//     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
-//     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
-//     * @param expectedGPaths Array of arrays of gPaths values. To each path corresponds an arrays of gPath values.
-//     * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
-//     */
-//    private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<CnossosPath> actualPathParameters) {
-//        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
-//        for(int i=0; i<expectedPts.length; i++) {
-//            CnossosPath pathParameters = actualPathParameters.get(i);
-//            for(int j=0; j<expectedPts[i].length; j++){
-//                PointPath point = pathParameters.getPointList().get(j);
-//                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
-//                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");            }
-//            assertEquals(expectedGPaths[i].length, pathParameters.getSegmentList().size(), "Expected path["+i+"] segments count is different than actual path segment count.");
-//            for(int j=0; j<expectedGPaths[i].length; j++) {
-//                assertEquals(expectedGPaths[i][j], pathParameters.getSegmentList().get(j).gPath, DELTA_G_PATH, "Path " + i + " g path " + j);
-//            }
-//        }
-//    }
-//
-//
-//    /**
-//     * Assertions for a list of {@link CnossosPath}.
-//     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
-//     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
-//     * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
-//     */
-//    private static void assertPaths(double[][][] expectedPts, List<CnossosPath> actualPathParameters) {
-//        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
-//        for(int i=0; i<expectedPts.length; i++) {
-//            CnossosPath pathParameters = actualPathParameters.get(i);
-//            for(int j=0; j<expectedPts[i].length; j++){
-//                PointPath point = pathParameters.getPointList().get(j);
-//                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
-//                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");
-//            }
-//        }
-//    }
-//    private static void assertPlanes(double[][] expectedPlanes, List<SegmentPath> segments) {
-//        assertPlanes(expectedPlanes, segments.toArray(new SegmentPath[0]));
-//    }
-//
-//    private static void assertPlane(double[] expectedPlane, SegmentPath segment) {
-//        assertEquals(expectedPlane[0], segment.a, DELTA_PLANES, "a");
-//        assertEquals(expectedPlane[1], segment.b, DELTA_PLANES, "b");
-//        assertEquals(expectedPlane[2], segment.zsH, DELTA_PLANES, "zs");
-//        assertEquals(expectedPlane[3], segment.zrH, DELTA_PLANES, "zr");
-//        assertEquals(expectedPlane[4], segment.dp, DELTA_PLANES, "dp");
-//        assertEquals(expectedPlane[5], segment.gPath, DELTA_PLANES, "gPath");
-//        if(!Double.isNaN(expectedPlane[6])) {
-//            assertEquals(expectedPlane[6], segment.gPathPrime, DELTA_PLANES, "gPrimePath");
-//        }
-//    }
-//
-//    private static void assertPlanes(double[][] expectedPlanes, SegmentPath... segments) {
-//        assertPlane(expectedPlanes[0], segments[0]);
-//        if(segments.length>1) {
-//            assertPlane(expectedPlanes[1], segments[segments.length - 1]);
-//        }
-//    }
-//
+
     public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
         assertZProfil(expectedZProfile, actualZ_profile, DELTA_COORDS);
     }
@@ -2826,4 +2807,9 @@ public class PathFinderTest {
 //        }
 //    }
 
+    @Test
+    public void setOverwriteTestCase() {
+        // Disable overwrite state when pushing your code (you are not testing with the commited json)
+        assertFalse(overwriteTestCase);
+    }
 }

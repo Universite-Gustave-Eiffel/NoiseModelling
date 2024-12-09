@@ -15,8 +15,16 @@ import org.locationtech.jts.geom.Coordinate;
  */
 public class CutPointTopography extends CutPoint {
 
+    /**
+     * Empty constructor for deserialization
+     */
+    public CutPointTopography() {
+
+    }
+
     public CutPointTopography(Coordinate coordinate) {
-        this.coordinate = coordinate;
+        super(coordinate);
+        this.zGround = coordinate.z;
     }
 
     @Override

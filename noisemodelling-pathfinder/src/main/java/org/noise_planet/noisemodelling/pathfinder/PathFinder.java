@@ -33,15 +33,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometricAttenuation.getADiv;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * @author Nicolas Fortin
@@ -283,17 +279,17 @@ public class PathFinder {
 
         CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.gS, !verticalDiffraction);
         if(cutProfile.getSource() != null) {
-            cutProfile.getSource().id = src.getId();
+            cutProfile.getSource().id = src.getSourceIndex();
             cutProfile.getSource().li = src.li;
             cutProfile.getSource().orientation = src.getOrientation();
-            if(data.sourcesPk.size() < src.getId()) {
-                cutProfile.getSource().sourcePk = data.sourcesPk.get(src.getId());
+            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+                cutProfile.getSource().sourcePk = data.sourcesPk.get(src.getSourceIndex());
             }
         }
 
         if(cutProfile.getReceiver() != null) {
             cutProfile.getReceiver().id = rcv.getId();
-            if(data.receiversPk.size() < rcv.getId()) {
+            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
                 cutProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.getId());
             }
         }
@@ -370,8 +366,13 @@ public class PathFinder {
             mainProfile.insertCutPoint(false,
                     cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
-            mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
-            mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+
+            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
+                mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
+            }
+            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+            }
 
             mainProfile.getSource().orientation = src.orientation;
             mainProfile.getSource().li = src.li;
@@ -586,7 +587,6 @@ public class PathFinder {
 
     /**
      * Add points to the main profile, the last point is before the reflection on the wall
-     * The profile of reflection is receiver -> on the ground before reflection -> reflection position -> on the ground after reflection
      * @param sourceOrReceiverPoint The point location recognised as a reflection point (currently is categorized as source or receiver)
      * @param mainProfileCutPoints The profile to add reflection point
      * @param mirrorReceiver Associated mirror receiver
@@ -594,17 +594,7 @@ public class PathFinder {
     private void insertReflectionPointAttributes(CutPoint sourceOrReceiverPoint, List<CutPoint> mainProfileCutPoints, MirrorReceiver mirrorReceiver) {
         CutPointReflection reflectionPoint = new CutPointReflection(sourceOrReceiverPoint,
                 mirrorReceiver.getWall().getLineSegment(), mirrorReceiver.getWall().getAlphas());
-
-        CutPointReflection reflectionPointBefore = new CutPointReflection(reflectionPoint);
-        reflectionPointBefore.getCoordinate().setZ(reflectionPoint.getzGround());
-
-        mainProfileCutPoints.add(reflectionPointBefore);
         mainProfileCutPoints.add(reflectionPoint);
-
-        CutPointReflection reflectionPointAfter = new CutPointReflection(reflectionPoint);
-        reflectionPointAfter.getCoordinate().setZ(reflectionPoint.getzGround());
-
-        mainProfileCutPoints.add(reflectionPointAfter);
     }
 
 
@@ -726,7 +716,7 @@ public class PathFinder {
                 continue;
             }
             insertReflectionPointAttributes(cutProfile.cutPoints.get(0), mainProfileCutPoints, rayPath.get(rayPath.size() - 1));
-            mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size() - 1));
+            mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size()));
 
             // A valid propagation path as been found (without looking at occlusion)
             CutProfile mainProfile = new CutProfile((CutPointSource) mainProfileCutPoints.get(0),
@@ -735,8 +725,12 @@ public class PathFinder {
             mainProfile.insertCutPoint(false, mainProfileCutPoints.subList(1,
                     mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
 
-            mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
-            mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
+                mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
+            }
+            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+            }
 
             mainProfile.getSource().orientation = src.orientation;
             mainProfile.getSource().li = src.li;
@@ -1025,7 +1019,7 @@ public class PathFinder {
             return position;
         }
 
-        public int getId() {
+        public int getSourceIndex() {
             return sourceIndex;
         }
 

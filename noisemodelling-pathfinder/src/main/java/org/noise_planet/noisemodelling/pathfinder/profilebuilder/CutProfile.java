@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
@@ -16,8 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 public class CutProfile {
     /** List of cut points.
@@ -29,6 +28,11 @@ public class CutProfile {
     /** True if Source-Receiver linestring is below topography cutting point. */
     public boolean hasTopographyIntersection = false;
 
+    /**
+     * Empty constructor for deserialization
+     */
+    public CutProfile() {
+    }
 
     public CutProfile(CutPointSource source, CutPointReceiver receiver) {
         cutPoints.add(source);
@@ -74,6 +78,7 @@ public class CutProfile {
      * @param p1
      * @return the absorption coefficient of this path
      */
+    @JsonIgnore
     public double getGPath(CutPoint p0, CutPoint p1) {
         double totalLength = 0;
         double rsLength = 0.0;
@@ -90,6 +95,7 @@ public class CutProfile {
         return rsLength / totalLength;
     }
 
+    @JsonIgnore
     public double getGPath() {
         if(!cutPoints.isEmpty()) {
             return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1));
@@ -102,6 +108,7 @@ public class CutProfile {
      *
      * @return
      */
+    @JsonIgnore
     public boolean isFreeField() {
         return !hasBuildingIntersection && !hasTopographyIntersection;
     }
@@ -224,11 +231,13 @@ public class CutProfile {
         return computePts2DGround(this.cutPoints, tolerance, index);
     }
 
+    @JsonIgnore
     public CutPointSource getSource() {
         return !cutPoints.isEmpty() && cutPoints.get(0) instanceof CutPointSource ?
                 (CutPointSource) cutPoints.get(0) : null;
     }
 
+    @JsonIgnore
     public CutPointReceiver getReceiver() {
         return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
                 (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;

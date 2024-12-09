@@ -32,6 +32,12 @@ public class CutPointWall  extends CutPoint {
     @JsonIgnore
     public int processedWallIndex = -1;
 
+    /**
+     * Empty constructor for deserialization
+     */
+    public CutPointWall() {
+    }
+
     public CutPointWall(int processedWallIndex, Coordinate intersection, LineSegment wallSegment, List<Double> wallAlpha) {
         this.wall = wallSegment;
         this.coordinate = intersection;
@@ -48,6 +54,13 @@ public class CutPointWall  extends CutPoint {
         this.wall = other.wall;
         this.wallAlpha = other.wallAlpha;
         this.processedWallIndex = other.processedWallIndex;
+    }
+
+    /**
+     * @return Convert alpha values to a java array
+     */
+    public double[] alphaAsArray() {
+        return wallAlpha.stream().mapToDouble(aDouble -> aDouble).toArray();
     }
 
     @Override

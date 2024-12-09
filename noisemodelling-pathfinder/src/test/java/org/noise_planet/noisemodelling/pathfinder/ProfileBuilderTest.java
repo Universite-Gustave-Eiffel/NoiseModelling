@@ -266,13 +266,13 @@ public class ProfileBuilderTest {
         Coordinate source = new Coordinate(10, 10, 1);
         CutProfile cutProfile = profileBuilder.getProfile(source, receiver, 0, false);
         assertEquals(9, cutProfile.cutPoints.size());
-        assertEquals(0, cutProfile.cutPoints.get(0).getCoordinate().distance3D(new Coordinate(10, 10, 1)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(1).getCoordinate().distance3D(new Coordinate(50, 18.421, 0)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(2).getCoordinate().distance3D(new Coordinate(120, 33.158, 0)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(3).getCoordinate().distance3D(new Coordinate(150, 39.474, 4.616)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(5).getCoordinate().distance3D(new Coordinate(176.83, 45.122, 16.634)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(7).getCoordinate().distance3D(new Coordinate(185, 46.842, 10)), 0.001);
-        assertEquals(0, cutProfile.cutPoints.get(8).getCoordinate().distance3D(new Coordinate(200, 50, 14)), 0.001);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(10, 10, 1), cutProfile.cutPoints.get(0).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(50, 18.421, 0), cutProfile.cutPoints.get(1).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(120, 33.158, 0), cutProfile.cutPoints.get(2).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(150, 39.474, 4.616), cutProfile.cutPoints.get(3).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(176.83, 45.122, 16.634), cutProfile.cutPoints.get(5).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(185, 46.842, 10), cutProfile.cutPoints.get(7).getCoordinate(), 0.01);
+        PathFinderTest.assert3DCoordinateEquals("", new Coordinate(200, 50, 14), cutProfile.cutPoints.get(8).getCoordinate(), 0.01);
     }
 
     @Test

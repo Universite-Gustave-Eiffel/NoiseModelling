@@ -26,6 +26,12 @@ public class CutPointGroundEffect extends CutPoint {
         this.processedWallIndex = processedWallIndex;
     }
 
+    /**
+     * Empty constructor for deserialization
+     */
+    public CutPointGroundEffect() {
+    }
+
     @Override
     public String toString() {
         return "CutPointGroundEffect{" +

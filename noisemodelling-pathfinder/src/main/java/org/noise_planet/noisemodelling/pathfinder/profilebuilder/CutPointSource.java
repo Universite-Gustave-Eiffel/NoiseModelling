@@ -44,13 +44,13 @@ public class CutPointSource  extends CutPoint {
     @Override
     public String toString() {
         return "CutPointSource{" +
-                "sourcePk=" + sourcePk +
-                ", li=" + li +
-                ", orientation=" + orientation +
-                ", id=" + id +
-                ", coordinate=" + coordinate +
-                ", zGround=" + zGround +
-                ", groundCoefficient=" + groundCoefficient +
-                '}';
+                "\nsourcePk=" + sourcePk +
+                "\n, li=" + li +
+                "\n, orientation=" + orientation +
+                "\n, id=" + id +
+                "\n, coordinate=" + coordinate +
+                "\n, zGround=" + zGround +
+                "\n, groundCoefficient=" + groundCoefficient +
+                "\n}\n";
     }
 }

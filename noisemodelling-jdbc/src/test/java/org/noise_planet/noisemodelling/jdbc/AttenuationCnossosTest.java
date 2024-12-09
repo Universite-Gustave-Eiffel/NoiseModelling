@@ -21,6 +21,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
+import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.SegmentPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
@@ -47,6 +48,21 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * Test class evaluation and testing attenuation values.
  */
 public class AttenuationCnossosTest {
+
+    /**
+     *  Error for planes values
+     */
+    public static final double DELTA_PLANES = 0.1;
+
+    /**
+     *  Error for coordinates
+     */
+    public static final double DELTA_COORDS = 0.1;
+
+    /**
+     *  Error for G path value
+     */
+    public static final double DELTA_G_PATH = 0.02;
 
     private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossosTest.class);
     public static final double ERROR_EPSILON_HIGHEST = 1e5;
@@ -520,6 +536,17 @@ public class AttenuationCnossosTest {
         assertEquals(1, propDataOut.getPropagationPaths().size());
 
         //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {0.0} //Path 1 : direct
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+
+        //Expected values
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
         double[] expectedCfH = new double[]{194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16, 194.16};
         double[] expectedAGroundH = new double[]{-3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00, -3.00};
@@ -714,6 +741,17 @@ public class AttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {0.5} //Path 1 : direct
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+
+        //Expected values
         double[] expectedWH = new double[]{8.2e-05, 4.5e-04, 2.5e-03, 0.01, 0.08, 0.41, 2.10, 10.13};
         double[] expectedCfH = new double[]{199.17, 213.44, 225.43, 134.05, 23.76, 2.49, 0.47, 0.10};
         double[] expectedAGroundH = new double[]{-1.50, -1.50, -1.50, 0.85, 5.71, -1.50, -1.50, -1.50};
@@ -886,6 +924,17 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {1.0} //Path 1 : direct
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
 
         //Expected values
         double[] expectedWH = new double[]{4.9e-04, 2.7e-03, 1.5e-02, 0.08, 0.41, 2.02, 9.06, 35.59};
@@ -1068,6 +1117,17 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)} //Path 1 : direct
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
 
         //Expected values
         double[] expectedWH = new double[]{1.0e-04, 5.6e-04, 3.1e-03, 0.02, 0.09, 0.50, 2.53, 11.96};
@@ -1254,6 +1314,25 @@ public class AttenuationCnossosTest {
         computeRays.run(propDataOut);
 
         //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {194.16, 14.00}} //Path 1 : direct
+        };
+        double[][] gPaths = new double[][]{
+                {0.51},{0.64}
+                //{(0.9*40.88 + 0.5*102.19 + 0.2*51.09)/194.16} //Path 1 : direct
+        };
+        /* Table 18 */
+        double [][] meanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 6.16, 194.59, 0.51, 0.64}
+        };
+
+        //Assertion
+        assertPaths(pts, gPaths, propDataOut.getPropagationPaths()); // table17
+        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment()); // table 18
+        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList()); // table 18
+
+        //Expected values
         double[] expectedWH = new double[]{1.6e-04, 8.7e-04, 4.8e-03, 0.03, 0.14, 0.75, 3.70, 16.77};
         double[] expectedCfH = new double[]{203.37, 222.35, 207.73, 82.09, 9.63, 1.33, 0.27, 0.06};
         double[] expectedAGroundH = new double[]{-1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07, -1.07};
@@ -1305,102 +1384,11 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-       /* FileWriter writerTc01 = new FileWriter("/home/maguettte/IdeaProjects/NoiseModelling/source/TC05_D.rst");
-
-
-//        System.out.println(new BigDecimal(Double.toString(getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0])).toPlainString());
-        //double v2 = getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0];
-        //double v1 = getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[1];
-        try{
-            writerTc01.write("TC05\n");
-            writerTc01.write("================\n\n");
-            writerTc01.write(".. list-table::\n");
-            writerTc01.write("   :widths: 25 25 25\n\n");
-            writerTc01.write("   * - Parameters\n");
-            writerTc01.write("     - Maximum Difference\n");
-            writerTc01.write("     - Frequency\n");
-            writerTc01.write("   * - WH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[1]]+"\n");
-            writerTc01.write("   * - CfH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedCfH, actualCfH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedCfH, actualCfH))[1]]+"\n");
-            writerTc01.write("   * - AGroundH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundH, actualAGroundH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundH, actualAGroundH))[1]]+"\n");
-            writerTc01.write("   * - WF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedWF, actualWF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedWF, actualWF))[1]]+"\n");
-            writerTc01.write("   * - CfF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedCfF, actualCfF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedCfF, actualCfF))[1]]+"\n");
-            writerTc01.write("   * - AGroundF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundF, actualAGroundF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundF, actualAGroundF))[1]]+"\n");
-            writerTc01.write("   * - AlphaAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[1]]+"\n");
-            writerTc01.write("   * - AAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[1]]+"\n");
-            writerTc01.write("   * - ADiv\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[1]]+"\n");
-            writerTc01.write("   * - LH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[1]]+"\n");
-            writerTc01.write("   * - LF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[1]]+"\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
-        finally {
-            try {
-                if (writerTc01 != null) {
-                    System.out.println("post");
-                    writerTc01.close();
-                    System.out.println("fin");
-                }
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
-            }
-        }*/
-
         double[] diffL = diffArray(expectedL, actualL);
         double[] diffLa = diffArray(expectedLA, actualLA);
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        /*try{
-            //System.out.println("ici");
-            writer.write("   * - TC05\n");
-            if (valL[0] < 0.1) {
-                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
-                System.out.println("ici");
-            } else {
-                writer.write("     - No\n");
-            }
-
-            if (valLA[0] < 0.1) {
-                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
-            } else {
-                writer.write("     - No\n");
-            }
-            double v = valLA[1];
-            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
-            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
-            writer.write("     - `Details <./.build/TC05_D.html>`_\n");
-
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }*/
     }
 
     /**
@@ -1437,6 +1425,69 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+
+
+        assertEquals(1, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
+
+        // Test R-CRIT table 27
+        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
+        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
+        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
+
+        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d - propDataOut.getCutPlanes().get(0).getSRSegment().d;
+        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
+        List<Integer> res1 = new ArrayList<>(3) ;
+        List<Integer> res2 = new ArrayList<>(3);
+
+        for(int f : computeRays.getData().freq_lvl) {
+            if(deltaD > -(340./f) / 20) {
+                res1.add(1);
+            }
+            if (!(deltaD > (((340./f) / 4) - deltaDE))){
+                res2.add(0);
+            }
+        }
+        //computeRays.
+        //Expected values
+        double[][][] pts = new double[][][]{
+                {{0.00, 1.00}, {178.84, 10.0}, {194.16, 11.5}} //Path 1 : direct
+        };
+
+        /* Table 23 */
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(112.41, 0.00));
+        expectedZProfile.add(new Coordinate(178.84, 10.00));
+        expectedZProfile.add(new Coordinate(194.16, 10.00));
+
+        /* Table 25 */
+        Coordinate expectedSPrime =new Coordinate(0.31,-5.65);
+        Coordinate expectedRPrime =new Coordinate(194.16,8.5);
+
+        if(!profileBuilder.getWalls().isEmpty()){
+            assertMirrorPoint(expectedSPrime,expectedRPrime,
+                    propDataOut.getPropagationPaths().get(0).getSRSegment().sPrime,
+                    propDataOut.getPropagationPaths().get(0).getSRSegment().rPrime);
+        }
+
+
+        /* Table 24 */
+        double [][] srMeanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.83, 3.83, 3.66, 194.45, 0.51, 0.56}
+        };
+        double [][] segmentsMeanPlanes = new double[][]{
+                //  a      b    zs    zr      dp    Gp   Gp'
+                {0.05, -2.33, 3.33, 3.95, 179.06, 0.53, 0.60},
+                {0.00, 10.00, 0.00, 1.50, 015.33, 0.20,  NaN}
+        };
+
+        //Assertion
+        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
+        assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
 
         //Expected values
         double[] expectedDeltaDiffSR = new double[]{0., 0., 0., 3.16, 0.56, 0., 0., 0.};
@@ -7800,10 +7851,6 @@ public class AttenuationCnossosTest {
             sourcesIndex = new QueryRTree();
         }
 
-        @Override
-        public double[] getMaximalSourcePower(int sourceId) {
-            return wjSources.get(sourceId);
-        }
     }
 
 
@@ -7844,6 +7891,100 @@ public class AttenuationCnossosTest {
             assertFalse(Double.isNaN(aGlobalMeteoHom[i]), String.format("freq %d Hz with nan value", pathData.freq_lvl.get(i)));
         }
 
+    }
+
+
+    /**
+     * Assertions for a list of {@link CnossosPath}.
+     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
+     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
+     * @param expectedGPaths Array of arrays of gPaths values. To each path corresponds an arrays of gPath values.
+     * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
+     */
+    private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<CnossosPath> actualPathParameters) {
+        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
+        for(int i=0; i<expectedPts.length; i++) {
+            CnossosPath pathParameters = actualPathParameters.get(i);
+            for(int j=0; j<expectedPts[i].length; j++){
+                PointPath point = pathParameters.getPointList().get(j);
+                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
+                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");            }
+            assertEquals(expectedGPaths[i].length, pathParameters.getSegmentList().size(), "Expected path["+i+"] segments count is different than actual path segment count.");
+            for(int j=0; j<expectedGPaths[i].length; j++) {
+                assertEquals(expectedGPaths[i][j], pathParameters.getSegmentList().get(j).gPath, DELTA_G_PATH, "Path " + i + " g path " + j);
+            }
+        }
+    }
+
+
+    /**
+     * Assertions for a list of {@link CnossosPath}.
+     * @param expectedPts    Array of arrays of array of expected coordinates (xyz) of points of paths. To each path
+     *                       corresponds an array of points. To each point corresponds an array of coordinates (xyz).
+     * @param actualPathParameters    Computed arrays of {@link CnossosPath}.
+     */
+    private static void assertPaths(double[][][] expectedPts, List<CnossosPath> actualPathParameters) {
+        assertEquals(expectedPts.length, actualPathParameters.size(), "Expected path count is different than actual path count.");
+        for(int i=0; i<expectedPts.length; i++) {
+            CnossosPath pathParameters = actualPathParameters.get(i);
+            for(int j=0; j<expectedPts[i].length; j++){
+                PointPath point = pathParameters.getPointList().get(j);
+                assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
+                assertEquals(expectedPts[i][j][1], point.coordinate.y, DELTA_COORDS, "Path "+i+" point "+j+" coord Y");
+            }
+        }
+    }
+    private static void assertPlanes(double[][] expectedPlanes, List<SegmentPath> segments) {
+        assertPlanes(expectedPlanes, segments.toArray(new SegmentPath[0]));
+    }
+
+    private static void assertPlane(double[] expectedPlane, SegmentPath segment) {
+        assertEquals(expectedPlane[0], segment.a, DELTA_PLANES, "a");
+        assertEquals(expectedPlane[1], segment.b, DELTA_PLANES, "b");
+        assertEquals(expectedPlane[2], segment.zsH, DELTA_PLANES, "zs");
+        assertEquals(expectedPlane[3], segment.zrH, DELTA_PLANES, "zr");
+        assertEquals(expectedPlane[4], segment.dp, DELTA_PLANES, "dp");
+        assertEquals(expectedPlane[5], segment.gPath, DELTA_PLANES, "gPath");
+        if(!Double.isNaN(expectedPlane[6])) {
+            assertEquals(expectedPlane[6], segment.gPathPrime, DELTA_PLANES, "gPrimePath");
+        }
+    }
+
+    public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile) {
+        assertZProfil(expectedZProfile, actualZ_profile, DELTA_COORDS);
+    }
+
+    public static void assertZProfil(List<Coordinate> expectedZProfile, List<Coordinate> actualZ_profile, double delta) {
+        if (expectedZProfile.size() != actualZ_profile.size()){
+            assertEquals(expectedZProfile.size(), actualZ_profile.size(), "Expected zprofil count is different than actual zprofil count.");
+        }
+        for (int i = 0; i < actualZ_profile.size(); i++) {
+            assertEquals(expectedZProfile.get(i).x, actualZ_profile.get(i).x, delta, String.format(Locale.ROOT, "Coord X point %d", i));
+            assertEquals(expectedZProfile.get(i).y, actualZ_profile.get(i).y, delta, String.format(Locale.ROOT, "Coord Y point %d", i));
+        }
+    }
+
+    private static void assertPlanes(double[][] expectedPlanes, SegmentPath... segments) {
+        assertPlane(expectedPlanes[0], segments[0]);
+        if(segments.length>1) {
+            assertPlane(expectedPlanes[1], segments[segments.length - 1]);
+        }
+    }
+
+    public static void assertMirrorPoint(Coordinate expectedSprime, Coordinate expectedRprime,Coordinate actualSprime, Coordinate actualRprime) {
+        assertCoordinateEquals("Sprime ",expectedSprime, actualSprime, DELTA_COORDS);
+        assertCoordinateEquals("Rprime ",expectedRprime, actualRprime, DELTA_COORDS);
+    }
+
+    public static void assertCoordinateEquals(String message,Coordinate expected, Coordinate actual, double toleranceX) {
+        double diffX = Math.abs(expected.getX() - actual.getX());
+        double diffY = Math.abs(expected.getY() - actual.getY());
+
+        if (diffX > toleranceX || diffY > toleranceX) {
+            String result = String.format(Locale.ROOT, "Expected coordinate: (%.3f, %.3f), Actual coordinate: (%.3f, %.3f)",
+                    expected.getX(), expected.getY(), actual.getX(), actual.getY());
+            throw new AssertionError(message+result);
+        }
     }
 }
 
