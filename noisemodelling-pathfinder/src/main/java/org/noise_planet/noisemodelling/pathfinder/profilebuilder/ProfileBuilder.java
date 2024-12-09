@@ -1005,6 +1005,59 @@ public class ProfileBuilder {
         return -1;
     }
 
+
+
+    private boolean processWall(int processedWallIndex, Coordinate intersection, Wall facetLine,
+                                    LineSegment fullLine, List<CutPoint> newCutPoints,
+                                    boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
+        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
+        Vector2D directionBefore = directionAfter.negate();
+        newCutPoints.add(new CutPointWall(i,
+                Vector2D.create(intersection).add(directionBefore).toCoordinate(),
+                facetLine.getLineSegment(), facetLine.alphas));
+        newCutPoints.add(new CutPointWall(i,
+                intersection, facetLine.getLineSegment(), facetLine.alphas));
+        newCutPoints.add(new CutPointWall(i,
+                Vector2D.create(intersection).add(directionAfter).toCoordinate(),
+                facetLine.getLineSegment(), facetLine.alphas));
+
+        double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
+        if (zRayReceiverSource <= intersection.z) {
+            profile.hasBuildingIntersection = true;
+            if (stopAtObstacleOverSourceReceiver) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    private boolean processBuilding(int processedWallIndex, Coordinate intersection, Wall facetLine,
+                                 LineSegment fullLine, List<CutPoint> newCutPoints,
+                                    boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
+        CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
+                buildings.get(facetLine.getOriginId()).alphas);
+        newCutPoints.add(wallCutPoint);
+        wallCutPoint.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
+        wallCutPoint.wallAlpha = ;
+        double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
+        // add a point at the bottom of the building on the exterior side of the building
+        Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
+        // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
+        // it works also with polygon holes as interiors are CCW
+        Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
+        Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
+        CutPointWall exteriorPointCutPoint = new CutPointWall(wallCutPoint);
+        exteriorPointCutPoint.coordinate = exteriorPoint;
+        newCutPoints.add(exteriorPointCutPoint);
+
+        if (zRayReceiverSource <= intersection.z) {
+            profile.hasBuildingIntersection = true;
+            return !stopAtObstacleOverSourceReceiver;
+        }
+        return true;
+    }
+
     /**
      * Fetch intersection of a line segment with Buildings lines/Walls lines/Ground Effect lines
      * @param fullLine P0 to P1 query for the profile of buildings
@@ -1013,8 +1066,6 @@ public class ProfileBuilder {
      *                                        receiverCoordinate, stop computing and set #CutProfile.hasBuildingInter to buildings in profile data
      */
     private void addGroundBuildingCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
-        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
-        Vector2D directionBefore = directionAfter.negate();
         // Collect all objects where envelope intersects all sub-segments of fullLine
         Set<Integer> processed = new HashSet<>();
 
@@ -1043,45 +1094,12 @@ public class ProfileBuilder {
                             }
                         }
                         if (facetLine.type == IntersectionType.BUILDING) {
-                            CutPointWall wallCutPoint = new CutPointWall(i, intersection, facetLine.getLineSegment(),
-                                    buildings.get(facetLine.getOriginId()).alphas);
-                            newCutPoints.add(wallCutPoint);
-                            wallCutPoint.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
-                            wallCutPoint.wallAlpha = ;
-                            double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
-                            // add a point at the bottom of the building on the exterior side of the building
-                            Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
-                            // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
-                            // it works also with polygon holes as interiors are CCW
-                            Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
-                            Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
-                            CutPointWall exteriorPointCutPoint = new CutPointWall(wallCutPoint);
-                            exteriorPointCutPoint.coordinate = exteriorPoint;
-                            newCutPoints.add(exteriorPointCutPoint);
-
-                            if (zRayReceiverSource <= intersection.z) {
-                                profile.hasBuildingIntersection = true;
-                                if (stopAtObstacleOverSourceReceiver) {
-                                    break;
-                                }
+                            if(!processBuilding(i, intersection, facetLine, fullLine, newCutPoints,
+                                    stopAtObstacleOverSourceReceiver, profile)) {
+                                break;
                             }
                         } else if (facetLine.type == IntersectionType.WALL) {
-                            newCutPoints.add(new CutPointWall(i,
-                                    Vector2D.create(intersection).add(directionBefore).toCoordinate(),
-                                    facetLine.getLineSegment(), facetLine.alphas));
-                            newCutPoints.add(new CutPointWall(i,
-                                    intersection, facetLine.getLineSegment(), facetLine.alphas));
-                            newCutPoints.add(new CutPointWall(i,
-                                    Vector2D.create(intersection).add(directionAfter).toCoordinate(),
-                                    facetLine.getLineSegment(), facetLine.alphas));
-
-                            double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
-                            if (zRayReceiverSource <= intersection.z) {
-                                profile.hasBuildingIntersection = true;
-                                if (stopAtObstacleOverSourceReceiver) {
-                                    break;
-                                }
-                            }
+                            sdfsdf
                         } else if (facetLine.type == GROUND_EFFECT) {
                             // we hit the border of a ground effect
                             // we need to add a new point with the new value of the ground effect
@@ -1123,6 +1141,7 @@ public class ProfileBuilder {
                 }
             }
         }
+        profile.insertCutPoint(true, newCutPoints.toArray(CutPoint[]::new));
     }
 
     Coordinate[] getTriangleVertices(int triIndex) {
