@@ -25,4 +25,14 @@ public class CutPointGroundEffect extends CutPoint {
         this.groundCoefficient = groundAbsorptionCoefficient;
         this.processedWallIndex = processedWallIndex;
     }
+
+    @Override
+    public String toString() {
+        return "CutPointGroundEffect{" +
+                "groundCoefficient=" + groundCoefficient +
+                ", zGround=" + zGround +
+                ", coordinate=" + coordinate +
+                ", processedWallIndex=" + processedWallIndex +
+                '}';
+    }
 }

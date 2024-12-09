@@ -971,7 +971,7 @@ public class ProfileBuilder {
                         new Coordinate(previousZGround.coordinate.x, previousZGround.coordinate.y,
                                 previousZGround.getzGround()),
                         new Coordinate(nextPoint.coordinate.x, nextPoint.coordinate.y, nextPoint.getzGround()));
-                if(Double.isNaN(cutPoint.coordinate.z) || cutPoint.getType().equals(GROUND_EFFECT)) {
+                if(Double.isNaN(cutPoint.coordinate.z) || cutPoint instanceof CutPointGroundEffect) {
                     // Bottom of walls are set to NaN z because it can be computed here at low cost
                     // (without fetch dem r-tree)
                     // ground effect change points is taking the Z of ground in coordinate too
@@ -1012,23 +1012,22 @@ public class ProfileBuilder {
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
         Vector2D directionBefore = directionAfter.negate();
-        newCutPoints.add(new CutPointWall(i,
+        newCutPoints.add(new CutPointWall(processedWallIndex,
                 Vector2D.create(intersection).add(directionBefore).toCoordinate(),
                 facetLine.getLineSegment(), facetLine.alphas));
-        newCutPoints.add(new CutPointWall(i,
+        newCutPoints.add(new CutPointWall(processedWallIndex,
                 intersection, facetLine.getLineSegment(), facetLine.alphas));
-        newCutPoints.add(new CutPointWall(i,
+        newCutPoints.add(new CutPointWall(processedWallIndex,
                 Vector2D.create(intersection).add(directionAfter).toCoordinate(),
                 facetLine.getLineSegment(), facetLine.alphas));
 
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         if (zRayReceiverSource <= intersection.z) {
             profile.hasBuildingIntersection = true;
-            if (stopAtObstacleOverSourceReceiver) {
-                return false;
-            }
+            return !stopAtObstacleOverSourceReceiver;
+        } else {
+            return true;
         }
-        return true;
     }
 
 
@@ -1039,7 +1038,6 @@ public class ProfileBuilder {
                 buildings.get(facetLine.getOriginId()).alphas);
         newCutPoints.add(wallCutPoint);
         wallCutPoint.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
-        wallCutPoint.wallAlpha = ;
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         // add a point at the bottom of the building on the exterior side of the building
         Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
@@ -1054,10 +1052,54 @@ public class ProfileBuilder {
         if (zRayReceiverSource <= intersection.z) {
             profile.hasBuildingIntersection = true;
             return !stopAtObstacleOverSourceReceiver;
+        } else {
+            return true;
+        }
+    }
+
+
+    private boolean processGroundEffect(int processedWallIndex, Coordinate intersection, Wall facetLine,
+                                    LineSegment fullLine, List<CutPoint> newCutPoints,
+                                    boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
+
+        // we hit the border of a ground effect
+        // we need to add a new point with the new value of the ground effect
+        // we will query for the point that lie after the intersection with the ground effect border
+        // in order to have the new value of the ground effect, if there is nothing at this location
+        // we fall back to the default value of ground effect
+        // if this is another ground effect we will add it here because we may have overlapping ground effect.
+        // if it is overlapped then we will have two points with the same G at almost the same location. (it's ok)
+        // retrieve the ground coefficient after the intersection in the direction of the profile
+        // this method will solve the question if we enter a new ground absorption or we will leave one
+        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
+        Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
+        GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
+        if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
+            // we enter a new ground effect
+            newCutPoints.add(new CutPointGroundEffect(processedWallIndex, intersection, groundAbsorption.getCoefficient()));
+        } else {
+            // we exit a ground surface, we have to check if there is
+            // another ground surface at this point, could be none or could be
+            // an overlapping/touching ground surface
+            int groundSurfaceIndex = getIntersectingGroundAbsorption(afterIntersectionPoint);
+            if (groundSurfaceIndex == -1) {
+                // no new ground effect, we fall back to default G
+                newCutPoints.add(new CutPointGroundEffect(-1, intersection, Scene.DEFAULT_G));
+            } else {
+                // add another ground surface, could be duplicate points if
+                // the two ground surfaces is touching
+                GroundAbsorption nextGroundAbsorption = groundAbsorptions.get(groundSurfaceIndex);
+                // if the interior of the two ground surfaces overlaps we add the ground point
+                // (as we will not encounter the side of this other ground surface)
+                if (!nextGroundAbsorption.geom.touches(groundAbsorption.geom)) {
+                    newCutPoints.add(new CutPointGroundEffect(groundSurfaceIndex,
+                            afterIntersectionPoint.getCoordinate(),
+                            nextGroundAbsorption.getCoefficient()));
+                }
+            }
         }
         return true;
     }
-
     /**
      * Fetch intersection of a line segment with Buildings lines/Walls lines/Ground Effect lines
      * @param fullLine P0 to P1 query for the profile of buildings
@@ -1074,11 +1116,14 @@ public class ProfileBuilder {
         // (for large area of the line segment envelope)
         List<LineSegment> lines = splitSegment(fullLine.p0, fullLine.p1, maxLineLength);
         List<CutPoint> newCutPoints = new LinkedList<>();
-        for (int j = 0; j < lines.size()
-                && !(profile.hasBuildingIntersection && stopAtObstacleOverSourceReceiver); j++) {
-            LineSegment line = lines.get(j);
-            for (Object result : rtree.query(new Envelope(line.p0, line.p1))) {
-                if (result instanceof Integer && !processed.contains((Integer) result)) {
+        try {
+            for (int j = 0; j < lines.size()
+                    && !(profile.hasBuildingIntersection && stopAtObstacleOverSourceReceiver); j++) {
+                LineSegment line = lines.get(j);
+                for (Object result : rtree.query(new Envelope(line.p0, line.p1))) {
+                    if (!(result instanceof Integer) || processed.contains((Integer) result)) {
+                        continue;
+                    }
                     processed.add((Integer) result);
                     int i = (Integer) result;
                     Wall facetLine = processedWalls.get(i);
@@ -1093,55 +1138,32 @@ public class ProfileBuilder {
                                 intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
                             }
                         }
-                        if (facetLine.type == IntersectionType.BUILDING) {
-                            if(!processBuilding(i, intersection, facetLine, fullLine, newCutPoints,
-                                    stopAtObstacleOverSourceReceiver, profile)) {
-                                break;
-                            }
-                        } else if (facetLine.type == IntersectionType.WALL) {
-                            sdfsdf
-                        } else if (facetLine.type == GROUND_EFFECT) {
-                            // we hit the border of a ground effect
-                            // we need to add a new point with the new value of the ground effect
-                            // we will query for the point that lie after the intersection with the ground effect border
-                            // in order to have the new value of the ground effect, if there is nothing at this location
-                            // we fall back to the default value of ground effect
-                            // if this is another ground effect we will add it here because we may have overlapping ground effect.
-                            // if it is overlapped then we will have two points with the same G at almost the same location. (it's ok)
-                            // retrieve the ground coefficient after the intersection in the direction of the profile
-                            // this method will solve the question if we enter a new ground absorption or we will leave one
-                            Point afterIntersectionPoint = FACTORY.createPoint(Vector2D.create(intersection).add(directionAfter).toCoordinate());
-                            GroundAbsorption groundAbsorption = groundAbsorptions.get(facetLine.getOriginId());
-                            if (groundAbsorption.geom.intersects(afterIntersectionPoint)) {
-                                // we enter a new ground effect
-                                newCutPoints.add(new CutPointGroundEffect(i, intersection, groundAbsorption.getCoefficient()));
-                            } else {
-                                // we exit a ground surface, we have to check if there is
-                                // another ground surface at this point, could be none or could be
-                                // an overlapping/touching ground surface
-                                int groundSurfaceIndex = getIntersectingGroundAbsorption(afterIntersectionPoint);
-                                if (groundSurfaceIndex == -1) {
-                                    // no new ground effect, we fall back to default G
-                                    newCutPoints.add(new CutPointGroundEffect(-1, intersection, Scene.DEFAULT_G));
-                                } else {
-                                    // add another ground surface, could be duplicate points if
-                                    // the two ground surfaces is touching
-                                    GroundAbsorption nextGroundAbsorption = groundAbsorptions.get(groundSurfaceIndex);
-                                    // if the interior of the two ground surfaces overlaps we add the ground point
-                                    // (as we will not encounter the side of this other ground surface)
-                                    if (!nextGroundAbsorption.geom.touches(groundAbsorption.geom)) {
-                                        newCutPoints.add(new CutPointGroundEffect(groundSurfaceIndex,
-                                                afterIntersectionPoint.getCoordinate(),
-                                                nextGroundAbsorption.getCoefficient()));
-                                    }
+                        switch (facetLine.type) {
+                            case BUILDING:
+                                if (!processBuilding(i, intersection, facetLine, fullLine, newCutPoints,
+                                        stopAtObstacleOverSourceReceiver, profile)) {
+                                    return;
                                 }
-                            }
+                                break;
+                            case WALL:
+                                if (!processWall(i, intersection, facetLine, fullLine, newCutPoints,
+                                        stopAtObstacleOverSourceReceiver, profile)) {
+                                    return;
+                                }
+                                break;
+                            case GROUND_EFFECT:
+                                if (!processGroundEffect(i, intersection, facetLine, fullLine, newCutPoints,
+                                        stopAtObstacleOverSourceReceiver, profile)) {
+                                    return;
+                                }
+                                break;
                         }
                     }
                 }
             }
+        } finally {
+            profile.insertCutPoint(true, newCutPoints.toArray(CutPoint[]::new));
         }
-        profile.insertCutPoint(true, newCutPoints.toArray(CutPoint[]::new));
     }
 
     Coordinate[] getTriangleVertices(int triIndex) {
@@ -1254,7 +1276,7 @@ public class ProfileBuilder {
     public int getTriangleIdByCoordinate(Coordinate pt) {
         Envelope ptEnv = new Envelope(pt);
         ptEnv.expandBy(1);
-        List res = topoTree.query(new Envelope(ptEnv));
+        var res = topoTree.query(new Envelope(ptEnv));
         double minDistance = Double.MAX_VALUE;
         int minDistanceTriangle = -1;
         for(Object objInd : res) {

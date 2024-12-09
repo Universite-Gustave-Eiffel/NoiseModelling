@@ -15,6 +15,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
@@ -125,6 +126,20 @@ public class CutProfile {
         return computePts2DGround(0, null);
     }
 
+
+    /**
+     *
+     * @param pts points
+     * @return @return the computed coordinate list
+     */
+    public List<Coordinate> computePts2D() {
+        List<Coordinate> pts2D = cutPoints.stream()
+                .map(CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        return pts2D;
+    }
+
     /**
      * From the vertical plane cut, extract only the top elevation points
      * (buildings/walls top or ground if no buildings) then re-project it into
@@ -150,32 +165,33 @@ public class CutProfile {
             return pts2D;
         }
         // keep track of the obstacle under our current position. If -1 there is only ground below
-        int overObstacleIndex = pts.get(0).getBuildingId();
+        int overObstacleIndex = pts.get(0) instanceof CutPointWall ? ((CutPointWall)pts.get(0)).processedWallIndex : -1;
         for (int i=0; i < pts.size(); i++) {
             CutPoint cut = pts.get(i);
-            if (cut.getType() != GROUND_EFFECT) {
-                Coordinate coordinate;
-                if (BUILDING.equals(cut.getType()) || WALL.equals(cut.getType())) {
-                    if(Double.compare(cut.getCoordinate().z, cut.getzGround()) == 0) {
-                        // current position is at the ground level in front of or behind the first/last wall
-                        if(overObstacleIndex == -1) {
-                            overObstacleIndex = cut.getId();
-                        } else {
-                            overObstacleIndex = -1;
-                        }
-                    }
-                    // Take the obstacle altitude instead of the ground level
-                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z);
-                } else {
-                    coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround());
-                }
-                // we will ignore topographic point if we are over a building
-                if(!(overObstacleIndex >= 0 && TOPOGRAPHY.equals(cut.getType()))) {
-                    pts2D.add(coordinate);
-                }
+            if (cut instanceof CutPointGroundEffect) {
+                continue;
             }
-            if(index != null) {
-                index.add(pts2D.size() - 1);
+            Coordinate coordinate;
+            if (cut instanceof CutPointWall) {
+                if(Double.compare(cut.getCoordinate().z, cut.getzGround()) == 0) {
+                    // current position is at the ground level in front of or behind the first/last wall
+                    if(overObstacleIndex == -1) {
+                        overObstacleIndex = ((CutPointWall) cut).processedWallIndex;
+                    } else {
+                        overObstacleIndex = -1;
+                    }
+                }
+                // Take the obstacle altitude instead of the ground level
+                coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z);
+            } else {
+                coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround());
+            }
+            // we will ignore topographic point if we are over a building
+            if(!(overObstacleIndex >= 0 && cut instanceof CutPointTopography)) {
+                pts2D.add(coordinate);
+                if(index != null) {
+                    index.add(pts2D.size() - 1);
+                }
             }
         }
         return pts2D;

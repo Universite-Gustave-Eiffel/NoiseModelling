@@ -18,4 +18,13 @@ public class CutPointTopography extends CutPoint {
     public CutPointTopography(Coordinate coordinate) {
         this.coordinate = coordinate;
     }
+
+    @Override
+    public String toString() {
+        return "CutPointTopography{" +
+                "groundCoefficient=" + groundCoefficient +
+                ", zGround=" + zGround +
+                ", coordinate=" + coordinate +
+                '}';
+    }
 }

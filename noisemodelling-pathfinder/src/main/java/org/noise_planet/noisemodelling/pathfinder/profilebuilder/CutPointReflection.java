@@ -9,6 +9,7 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
 import java.util.Collections;
@@ -23,14 +24,30 @@ public class CutPointReflection extends CutPoint {
     /**
      * Unique external identifier of the wall. Could be the primary key of the related building in the database
      */
-    public long wallPrimaryKey;
+    public long wallPrimaryKey = -1;
 
     /**
-     * Obstacle index in the subdomain
-     * @see ProfileBuilder#processedWalls
+     * Constructor
+     * @param cutPoint copy attributes
+     * @param wall
+     * @param wallAlpha
      */
-    @JsonIgnore
-    public int obstacleIndex = -1;
+    public CutPointReflection(CutPoint cutPoint, LineSegment wall, List<Double> wallAlpha) {
+        super(cutPoint);
+        this.wall = wall;
+        this.wallAlpha = wallAlpha;
+    }
+
+    /**
+     * Copy constructor
+     * @param other
+     */
+    public CutPointReflection(CutPointReflection other) {
+        super(other);
+        this.wall = other.wall;
+        this.wallPrimaryKey = other.wallPrimaryKey;
+        this.wallAlpha = other.wallAlpha;
+    }
 
     /** Wall absorption coefficient per frequency band.*/
     public List<Double> wallAlpha = Collections.emptyList();
@@ -42,5 +59,17 @@ public class CutPointReflection extends CutPoint {
      */
     public void setWallAlpha(List<Double> wallAlpha) {
         this.wallAlpha = wallAlpha;
+    }
+
+    @Override
+    public String toString() {
+        return "CutPointReflection{" +
+                "wall=" + wall +
+                ", wallPrimaryKey=" + wallPrimaryKey +
+                ", wallAlpha=" + wallAlpha +
+                ", coordinate=" + coordinate +
+                ", zGround=" + zGround +
+                ", groundCoefficient=" + groundCoefficient +
+                '}';
     }
 }

@@ -201,14 +201,14 @@ public class CnossosPathBuilder {
     public static CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
-        final List<CutPoint> cutProfilePoints = cutProfile.getCutPoints();
+        final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
 
-        List<Coordinate> pts2D = PathFinder.computePts2D(cutProfilePoints);
+        List<Coordinate> pts2D = cutProfile.computePts2D();
         if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
 
-        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.getCutPoints().size());
+        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfilePoints.size());
         Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
         Coordinate firstPts2D = pts2D.get(0);

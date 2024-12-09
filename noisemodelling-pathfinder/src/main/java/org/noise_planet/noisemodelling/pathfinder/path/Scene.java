@@ -236,16 +236,6 @@ public class Scene {
     }
 
     /**
-     * Optional - Return the maximal power spectrum of the sound source
-     //* @param sourceId Source identifier (index in {@link })
-     * @return maximal power spectrum or empty array
-     */
-    public double[] getMaximalSourcePower(int sourceId) {
-        return new double[0];
-    }
-
-
-    /**
      *
      * @param receiver
      */

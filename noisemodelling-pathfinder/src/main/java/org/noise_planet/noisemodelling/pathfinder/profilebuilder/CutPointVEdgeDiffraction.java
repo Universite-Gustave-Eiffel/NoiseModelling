@@ -8,5 +8,12 @@
  */
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+/**
+ * Pivot point on the vertical profile. It is near a vertical edge of a wall.
+ */
 public class CutPointVEdgeDiffraction  extends CutPoint {
+
+    public CutPointVEdgeDiffraction(CutPoint source) {
+        super(source);
+    }
 }

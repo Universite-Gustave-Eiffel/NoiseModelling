@@ -49,4 +49,16 @@ public class CutPointWall  extends CutPoint {
         this.wallAlpha = other.wallAlpha;
         this.processedWallIndex = other.processedWallIndex;
     }
+
+    @Override
+    public String toString() {
+        return "CutPointWall{" +
+                "groundCoefficient=" + groundCoefficient +
+                ", zGround=" + zGround +
+                ", coordinate=" + coordinate +
+                ", processedWallIndex=" + processedWallIndex +
+                ", wallAlpha=" + wallAlpha +
+                ", wall=" + wall +
+                '}';
+    }
 }

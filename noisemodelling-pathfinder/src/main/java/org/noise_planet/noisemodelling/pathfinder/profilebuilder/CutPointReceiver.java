@@ -31,4 +31,15 @@ public class CutPointReceiver  extends CutPoint {
      */
     @JsonIgnore
     public int id = -1;
+
+    @Override
+    public String toString() {
+        return "CutPointReceiver{" +
+                "groundCoefficient=" + groundCoefficient +
+                ", zGround=" + zGround +
+                ", coordinate=" + coordinate +
+                ", id=" + id +
+                ", receiverPk=" + receiverPk +
+                '}';
+    }
 }

@@ -40,4 +40,17 @@ public class CutPointSource  extends CutPoint {
      */
     @JsonIgnore
     public int id = -1;
+
+    @Override
+    public String toString() {
+        return "CutPointSource{" +
+                "sourcePk=" + sourcePk +
+                ", li=" + li +
+                ", orientation=" + orientation +
+                ", id=" + id +
+                ", coordinate=" + coordinate +
+                ", zGround=" + zGround +
+                ", groundCoefficient=" + groundCoefficient +
+                '}';
+    }
 }
