@@ -10,18 +10,21 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
-
 /**
- * ToDo descripion
+ * Receive vertical cut plane, compute the attenuation corresponding to this plane
  */
 public class AttenuationVisitor implements IComputePathsOut {
     public Attenuation multiThreadParent;
@@ -36,6 +39,17 @@ public class AttenuationVisitor implements IComputePathsOut {
         this.attenuationCnossosParameters = attenuationCnossosParameters;
     }
 
+    @Override
+    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        final Scene scene = multiThreadParent.inputData;
+        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.freq_lvl, scene.gS);
+        if(cnossosPath != null) {
+            addPropagationPaths(cutProfile.getSource().id, cutProfile.getSource().li, cutProfile.getReceiver().id,
+                    Collections.singletonList(cnossosPath));
+        }
+        return PathSearchStrategy.CONTINUE;
+    }
 
     /**
      * Get propagation path result
@@ -43,7 +57,6 @@ public class AttenuationVisitor implements IComputePathsOut {
      * @param sourceLi Source power per meter coefficient
      * @param path Propagation path result
      */
-    @Override
     public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> path) {
         double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, sourceId, sourceLi, receiverId, path);
         multiThreadParent.rayCount.addAndGet(path.size());
@@ -109,7 +122,8 @@ public class AttenuationVisitor implements IComputePathsOut {
                     levelsPerSourceLines.put(lvl.sourceId, lvl.value);
                 } else {
                     // merge
-                    levelsPerSourceLines.put(lvl.sourceId, sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                    levelsPerSourceLines.put(lvl.sourceId,
+                            AcousticIndicatorsFunctions.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
                             lvl.value));
                 }
             }

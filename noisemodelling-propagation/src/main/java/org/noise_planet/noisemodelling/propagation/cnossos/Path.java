@@ -62,7 +62,7 @@ public class Path {
         if(cutProfile == null) {
             return new ArrayList<>();
         } else {
-            return cutProfile.getCutPoints();
+            return cutProfile.cutPoints;
         }
     }
 

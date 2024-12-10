@@ -26,6 +26,11 @@ public class CutPointReceiver  extends CutPoint {
         this.coordinate = location;
     }
 
+
+    public CutPointReceiver(CutPoint receiver) {
+        super(receiver);
+    }
+
     /**
      * Index in the subdomain
      */

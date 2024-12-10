@@ -198,7 +198,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Run computation
-        Attenuation propDataOut0 = new Attenuation(true, true, attData);
+        Attenuation propDataOut0 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays0 = new PathFinder(rayData);
         computeRays0.setThreadCount(1);
         computeRays0.run(propDataOut0);
@@ -206,7 +206,7 @@ public class AttenuationCnossosTest {
 
         // Barrier, no interaction
         rayData.setBodyBarrier(false);
-        Attenuation propDataOut1 = new Attenuation(true, true, attData);
+        Attenuation propDataOut1 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays1 = new PathFinder(rayData);
         computeRays1.setThreadCount(1);
         computeRays1.run(propDataOut1);
@@ -235,7 +235,7 @@ public class AttenuationCnossosTest {
         rayData2.setComputeVerticalDiffraction(true);
         rayData2.setBodyBarrier(true);
 
-        Attenuation propDataOut2 = new Attenuation(true, true, attData);
+        Attenuation propDataOut2 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays2 = new PathFinder(rayData2);
         computeRays2.run(propDataOut2);
         double[] values2 = propDataOut2.receiversAttenuationLevels.pop().value;
@@ -258,7 +258,7 @@ public class AttenuationCnossosTest {
         rayData3.setComputeHorizontalDiffraction(false);
         rayData3.setComputeVerticalDiffraction(true);
         rayData3.setBodyBarrier(false);
-        Attenuation propDataOut3 = new Attenuation(true, true, attData);
+        Attenuation propDataOut3 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays3 = new PathFinder(rayData3);
         computeRays3.run(propDataOut3);
         double[] values3 = propDataOut3.receiversAttenuationLevels.pop().value;
@@ -315,14 +315,14 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Run computation
-        Attenuation propDataOut0 = new Attenuation(true, true, attData);
+        Attenuation propDataOut0 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays0 = new PathFinder(rayData);
         computeRays0.setThreadCount(1);
         rayData.reflexionOrder=0;
         computeRays0.run(propDataOut0);
         double[] values0 = propDataOut0.receiversAttenuationLevels.pop().value;
 
-        Attenuation propDataOut1 = new Attenuation(true, true, attData);
+        Attenuation propDataOut1 = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays1 = new PathFinder(rayData);
         computeRays1.setThreadCount(1);
         rayData.reflexionOrder=1;
@@ -376,7 +376,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -427,7 +427,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -465,7 +465,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -497,7 +497,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -529,7 +529,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -736,7 +736,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -921,7 +921,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1114,7 +1114,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1309,7 +1309,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1422,7 +1422,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1754,7 +1754,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1957,7 +1957,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -2282,7 +2282,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -2574,7 +2574,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -2846,7 +2846,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -3119,7 +3119,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -3409,7 +3409,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -3911,7 +3911,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -4198,7 +4198,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -4678,7 +4678,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -4899,7 +4899,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -5165,7 +5165,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -5425,7 +5425,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -5518,7 +5518,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -5860,7 +5860,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -5993,7 +5993,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -6339,7 +6339,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -6691,7 +6691,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -7022,7 +7022,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -7517,7 +7517,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -7871,7 +7871,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -8031,7 +8031,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -8276,7 +8276,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData);
+        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);
@@ -8492,7 +8492,7 @@ public class AttenuationCnossosTest {
             attData.setWindRose(favorableConditionDirections);
 
             //Out and computation settings
-            Attenuation propDataOut = new Attenuation(true, true, attData);
+            Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
             PathFinder computeRays = new PathFinder(rayData);
             computeRays.setThreadCount(1);
             computeRays.run(propDataOut);
@@ -8723,7 +8723,7 @@ public class AttenuationCnossosTest {
         for(int i = 0; i < 100; i++) {
 
             //Out and computation settings
-            Attenuation propDataOut = new Attenuation(true, true, attData);
+            Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
             rayData.reflexionOrder = i;
             PathFinder computeRays = new PathFinder(rayData);
             computeRays.setThreadCount(1);
@@ -8814,7 +8814,7 @@ public class AttenuationCnossosTest {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPropagationProcessData processData) {
-            super(keepRays, pathData);
+            super(keepRays, pathData, processData);
             this.processData = processData;
         }
 

@@ -137,11 +137,6 @@ public class Utils {
             }
             wjSources.add(sl);
         }
-
-        @Override
-        public double[] getMaximalSourcePower(int sourceId) {
-            return wjSources.get(sourceId);
-        }
     }
 
 

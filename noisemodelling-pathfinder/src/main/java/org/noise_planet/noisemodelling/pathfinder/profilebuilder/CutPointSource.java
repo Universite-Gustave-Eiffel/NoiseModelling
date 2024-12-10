@@ -26,6 +26,10 @@ public class CutPointSource  extends CutPoint {
         this.coordinate = location;
     }
 
+    public CutPointSource(CutPoint src) {
+        super(src);
+    }
+
     /** Source line subdivision length (1.0 means a point is representing 1 meter of line sound source) */
     public double li = 1.0;
 

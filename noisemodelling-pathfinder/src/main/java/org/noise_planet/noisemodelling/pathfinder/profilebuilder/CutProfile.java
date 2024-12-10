@@ -176,6 +176,9 @@ public class CutProfile {
         for (int i=0; i < pts.size(); i++) {
             CutPoint cut = pts.get(i);
             if (cut instanceof CutPointGroundEffect) {
+                if(index != null) {
+                    index.add(pts2D.size() - 1);
+                }
                 continue;
             }
             Coordinate coordinate;
@@ -196,9 +199,9 @@ public class CutProfile {
             // we will ignore topographic point if we are over a building
             if(!(overObstacleIndex >= 0 && cut instanceof CutPointTopography)) {
                 pts2D.add(coordinate);
-                if(index != null) {
-                    index.add(pts2D.size() - 1);
-                }
+            }
+            if(index != null) {
+                index.add(pts2D.size() - 1);
             }
         }
         return pts2D;

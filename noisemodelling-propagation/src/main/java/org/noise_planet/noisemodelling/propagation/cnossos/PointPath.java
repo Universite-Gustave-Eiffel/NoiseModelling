@@ -21,9 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static java.lang.Double.isNaN;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
-
 public class PointPath {
 
     // given by user
@@ -108,6 +105,16 @@ public class PointPath {
         this.altitude = altitude;
         this.alphaWall = alphaWall;
         this.type = type;
+    }
+
+    /**
+     * parameters given by user
+     * @param coordinate
+     * @param altitude
+     * @param type
+     */
+    public PointPath(Coordinate coordinate, double altitude, POINT_TYPE type) {
+        this(coordinate, altitude, new ArrayList<>(), type);
     }
 
     /**

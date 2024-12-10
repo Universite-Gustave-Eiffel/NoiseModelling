@@ -13,8 +13,10 @@ package org.noise_planet.noisemodelling.propagation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
@@ -52,15 +54,11 @@ public class Attenuation implements IComputePathsOut {
         this.inputData = inputData;
     }
 
-    public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData) {
-        this.exportPaths = exportPaths;
-        this.genericMeteoData = pathData;
-    }
-
-    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData) {
+    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, Scene inputData) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
         this.genericMeteoData = pathData;
+        this.inputData = inputData;
     }
 
     public boolean exportPaths;
@@ -86,13 +84,25 @@ public class Attenuation implements IComputePathsOut {
         return inputData;
     }
 
+
+    @Override
+    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        final Scene scene = inputData;
+        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.freq_lvl, scene.gS);
+        if(cnossosPath != null) {
+            addPropagationPaths(cutProfile.getSource().id, cutProfile.getSource().li, cutProfile.getReceiver().id,
+                    Collections.singletonList(cnossosPath));
+        }
+        return PathSearchStrategy.CONTINUE;
+    }
+
     /**
      * Get propagation path result
      * @param sourceId Source identifier
      * @param sourceLi Source power per meter coefficient
      * @param path Propagation path result
      */
-    @Override
     public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> path) {
         rayCount.addAndGet(path.size());
         if(exportPaths) {

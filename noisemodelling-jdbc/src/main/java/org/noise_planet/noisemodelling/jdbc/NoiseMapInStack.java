@@ -10,10 +10,13 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -77,14 +80,24 @@ public class NoiseMapInStack implements IComputePathsOut {
         return levels;
     }
 
+    @Override
+    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        final Scene scene = noiseMapComputeRaysOut.inputData;
+        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.freq_lvl, scene.gS);
+        if(cnossosPath != null) {
+            addPropagationPaths(cutProfile.getSource().id, cutProfile.getSource().li, cutProfile.getReceiver().id,
+                    Collections.singletonList(cnossosPath));
+        }
+        return PathSearchStrategy.CONTINUE;
+    }
+
     /**
      * Get propagation path result
      * @param sourceId Source identifier
      * @param sourceLi Source power per meter coefficient
      * @param pathsParameter Propagation path result
      */
-
-    @Override
     public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathsParameter) {
         noiseMapComputeRaysOut.rayCount.addAndGet(pathsParameter.size());
         if(noiseMapComputeRaysOut.exportPaths && !noiseMapComputeRaysOut.exportAttenuationMatrix) {

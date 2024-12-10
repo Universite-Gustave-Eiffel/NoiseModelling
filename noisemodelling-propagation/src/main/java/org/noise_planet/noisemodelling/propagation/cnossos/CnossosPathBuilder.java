@@ -7,12 +7,15 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
-import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointVEdgeDiffraction;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
@@ -24,8 +27,6 @@ import java.util.stream.Collectors;
 import static java.lang.Math.*;
 import static java.lang.Math.max;
 import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POINT_TYPE.*;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.V_EDGE_DIFFRACTION;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
 
 /**
@@ -33,12 +34,13 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.Geometry
  */
 public class CnossosPathBuilder {
     public static final double ALPHA0 = 2e-4;
+    private static final double EPSILON = 1e-7;
 
     public static void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
                                      LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
                                      List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex,
                                            List<Integer> frequencyTable) {
-        final List<CutPoint> cuts = cutProfile.getCutPoints();
+        final List<CutPoint> cuts = cutProfile.cutPoints;
 
         Coordinate src = pts2D.get(0);
         Coordinate rcv = pts2D.get(pts2D.size() - 1);
@@ -198,7 +200,7 @@ public class CnossosPathBuilder {
      * @param bodyBarrier
      * @return The cnossos path or null
      */
-    public static CnossosPath computeHEdgeDiffraction(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable) {
+    public static CnossosPath computeAttenuationFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable, double gS) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
@@ -213,7 +215,7 @@ public class CnossosPathBuilder {
         double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
-        SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().getGroundCoef());
+        SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().groundCoefficient);
         srPath.setPoints2DGround(pts2DGround);
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
@@ -235,20 +237,11 @@ public class CnossosPathBuilder {
         convexHullInput.add(pts2D.get(0));
         // Add valid diffraction point, building/walls/dem
         for (int idPoint=1; idPoint < cutProfilePoints.size() - 1; idPoint++) {
-            boolean validIntersection = false;
             CutPoint currentPoint = cutProfilePoints.get(idPoint);
-            switch (currentPoint.getType()) {
-                case BUILDING:
-                case WALL:
-                    // We only add the point at the top of the wall, not the point at the bottom of the wall
-                    validIntersection = Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0;
-                    break;
-                case TOPOGRAPHY:
-                    validIntersection = true;
-                    break;
-                default:
-            }
-            if(validIntersection) {
+            // We only add the point at the top of the wall, not the point at the bottom of the wall
+            if(currentPoint instanceof CutPointTopography
+                    || (currentPoint instanceof CutPointWall
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
                 convexHullInput.add(pts2D.get(idPoint));
             }
         }
@@ -300,14 +293,14 @@ public class CnossosPathBuilder {
                 for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                     final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
                     // If the current point is the reflection point (not on the ground level)
-                    if (currentPoint.getType().equals(REFLECTION) &&
+                    if (currentPoint instanceof CutPointReflection &&
                             Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
-                        MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
+                        CutPointReflection cutPointReflection = (CutPointReflection) currentPoint;
                         Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
                         // Check if the new elevation of the reflection point is not higher than the wall
-                        double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
-                                mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                        if(wallAltitudeAtReflexionPoint + epsilon >= interpolatedReflectionPoint.y) {
+                        double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(currentPoint.coordinate,
+                                cutPointReflection.wall.p0, cutPointReflection.wall.p1);
+                        if(wallAltitudeAtReflexionPoint + EPSILON >= interpolatedReflectionPoint.y) {
                             // update the reflection position
                             currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
                             pts2D.get(pointIndex).setY(interpolatedReflectionPoint.y);
@@ -332,35 +325,34 @@ public class CnossosPathBuilder {
             // mean ground plane is computed using from the bottom of the walls
             if (i0Ground < i1Ground - 1) {
                 CutPoint nextPoint = cutProfilePoints.get(i0 + 1);
-                if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + epsilon
+                if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + EPSILON
                         && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0
-                        && (nextPoint.getType().equals(WALL) || nextPoint.getType().equals(BUILDING))) {
+                        && nextPoint instanceof CutPointWall) {
                     i0Ground += 1;
                 }
             }
             if (i1Ground - 1 > i0Ground) {
                 CutPoint previousPoint = cutProfilePoints.get(i1 - 1);
                 if (cutPt1.getCoordinate().distance(previousPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER +
-                        epsilon && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0
-                        && (previousPoint.getType().equals(WALL) || previousPoint.getType().equals(BUILDING))) {
+                        EPSILON && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0
+                        && previousPoint instanceof CutPointWall) {
                     i1Ground -= 1;
                 }
             }
             // Create a profile for the segment i0->i1
-            CutProfile profileSeg = new CutProfile();
-            profileSeg.addCutPoints(cutProfilePoints.subList(i0, i1 + 1));
-            profileSeg.setSource(cutPt0);
-            profileSeg.setReceiver(cutPt1);
+            CutProfile profileSeg = new CutProfile(new CutPointSource(cutPt0), new CutPointReceiver(cutPt1));
+            profileSeg.insertCutPoint(false, cutProfilePoints.subList(i0, i1 + 1).toArray(CutPoint[]::new));
 
 
             if (points.isEmpty()) {
                 // First segment, add the source point in the array
-                points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), cutPt0.getWallAlpha(), cutPt1.getBuildingId(), SRCE));
+                points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), SRCE));
                 // look for the first reflection before the first diffraction, the source orientation is to the first reflection point
                 Coordinate targetPosition = cutProfilePoints.get(i1).getCoordinate();
                 for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                     final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                    if ((currentPoint.getType().equals(REFLECTION) || currentPoint.getType().equals(V_EDGE_DIFFRACTION)) &&
+                    if ((currentPoint instanceof CutPointReflection ||
+                            currentPoint instanceof CutPointVEdgeDiffraction) &&
                             Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
                         // The first reflection (the one not at ground level)
                         // from the source coordinate is the direction of the propagation
@@ -377,32 +369,31 @@ public class CnossosPathBuilder {
             int previousPivotPoint = i0;
             for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                 final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
-                if (currentPoint.getType().equals(REFLECTION) &&
+                if (currentPoint instanceof CutPointReflection &&
                         Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
                     // If the current point is a reflection and not before/after the reflection
-                    MirrorReceiver mirrorReceiver = currentPoint.getMirrorReceiver();
-                    double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(mirrorReceiver.getReflectionPosition(),
-                            mirrorReceiver.getWall().p0, mirrorReceiver.getWall().p1);
-                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), currentPoint.getWallAlpha(), REFL);
+                    CutPointReflection cutPointReflection = (CutPointReflection) currentPoint;
+                    double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(cutPointReflection.coordinate,
+                            cutPointReflection.wall.p0, cutPointReflection.wall.p1);
+                    PointPath reflectionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(),
+                            cutPointReflection.wallAlpha, REFL);
                     reflectionPoint.obstacleZ = wallAltitudeAtReflexionPoint;
-                    reflectionPoint.setWallId(currentPoint.getWallId());
                     points.add(reflectionPoint);
-                } else if (currentPoint.getType().equals(V_EDGE_DIFFRACTION)) {
+                } else if (currentPoint instanceof CutPointVEdgeDiffraction) {
                     // current point is a vertical edge diffraction (there is no additional points unlike reflection)
                     PointPath diffractionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
-                    diffractionPoint.setWallId(currentPoint.getWallId());
                     points.add(diffractionPoint);
                     // Compute additional segment
                     Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,cut2DGroundIndex.get(pointIndex) + 1);
                     meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                     SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pointIndex),
-                            meanPlane, profileSeg.getGPath(cutPt0, cutProfilePoints.get(pointIndex)), data.gS);
+                            meanPlane, profileSeg.getGPath(cutPt0, cutProfilePoints.get(pointIndex)), gS);
                     seg.setPoints2DGround(segmentGroundPoints);
                     previousPivotPoint = pointIndex;
                     segments.add(seg);
                 }
             }
-            points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), cutPt1.getWallAlpha(), cutPt1.getBuildingId(), RECV));
+            points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), RECV));
             if(previousPivotPoint != i0 && i == pts.size() - 1) {
                 // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
                 // diffraction point and we must add the remaining segment between the last horizontal diffraction point
@@ -411,7 +402,7 @@ public class CnossosPathBuilder {
                 meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                 SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
                         meanPlane, profileSeg.getGPath(cutPt1, cutProfilePoints.get(cutProfilePoints.size() - 1)),
-                        data.gS);
+                        gS);
                 seg.setPoints2DGround(segmentGroundPoints);
                 segments.add(seg);
             }
@@ -422,7 +413,7 @@ public class CnossosPathBuilder {
             Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,i1Ground + 1);
             meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
             SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
-                    profileSeg.getSource().getGroundCoef());
+                    profileSeg.getSource().groundCoefficient);
             path.dc = cutPt0.getCoordinate().distance3D(cutPt1.getCoordinate());
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
@@ -430,14 +421,14 @@ public class CnossosPathBuilder {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
-                if (pt.buildingId != -1) {
-                    pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
-                } else if (pt.wallId != -1) {
-                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-                    Wall wall = data.profileBuilder.getWall(pt.wallId);
-                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
-                }
+//                if (pt.buildingId != -1) {
+//                    pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
+//                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
+//                } else if (pt.wallId != -1) {
+//                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
+//                    Wall wall = data.profileBuilder.getWall(pt.wallId);
+//                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
+//                }
             }
         }
 
@@ -449,9 +440,9 @@ public class CnossosPathBuilder {
         PointPath p0 = points.stream().filter(p -> p.type.equals(DIFH)).findFirst().orElse(null);
         if(p0==null){
             // Direct propagation (no diffraction over obstructing objects)
-            boolean horizontalPlaneDiffraction = cutProfile.getCutPoints().stream()
+            boolean horizontalPlaneDiffraction = cutProfile.cutPoints.stream()
                     .anyMatch(
-                            cutPoint -> cutPoint.getType().equals(V_EDGE_DIFFRACTION));
+                            cutPoint -> cutPoint instanceof CutPointVEdgeDiffraction);
             List<SegmentPath> rayleighSegments = new ArrayList<>();
             List<PointPath> rayleighPoints = new ArrayList<>();
             // do not check for rayleigh if the path is not direct between R and S
