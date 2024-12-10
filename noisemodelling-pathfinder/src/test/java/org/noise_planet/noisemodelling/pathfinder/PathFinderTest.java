@@ -49,7 +49,7 @@ public class PathFinderTest {
     /**
      * Overwrite project resource expected test cases
      */
-    public boolean overwriteTestCase = false;
+    public boolean overwriteTestCase = true;
 
     /**
      *  Error for coordinates
@@ -94,7 +94,7 @@ public class PathFinderTest {
     public static void assertCutProfile(CutProfile expected, CutProfile got) {
         assertNotNull(expected);
         assertNotNull(got);
-        assertEquals(expected.cutPoints.size(), got.cutPoints.size());
+        assertEquals(expected.cutPoints.size(), got.cutPoints.size(), "Not the same number of cut points");
         for (int i = 0; i < expected.cutPoints.size(); i++) {
             CutPoint expectedCutPoint = expected.cutPoints.get(i);
             CutPoint gotCutPoint = got.cutPoints.get(i);

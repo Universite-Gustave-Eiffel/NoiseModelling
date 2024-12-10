@@ -6617,6 +6617,46 @@ public class AttenuationCnossosTest {
 
     }
 
+
+    public static void addTopographicTC23Model(ProfileBuilder profileBuilder) {
+        // Create parallel lines for the slope edge because unit test table values are rounded and
+        // the rounding make the lines non-parallel
+
+        // base line left
+        Vector3D v1 = new Vector3D(new Coordinate(46.27, 36.28, 0),
+                new Coordinate(59.6, -9.87, 0));
+
+        // original top segment (left side)
+        Vector3D v2 = new Vector3D(new Coordinate(54.68, 37.59, 5),
+                new Coordinate(67.35, -6.83, 5));
+
+
+        // base line right
+        Vector3D v3 = new Vector3D(new Coordinate(63.71, 41.16, 0),
+                new Coordinate(76.84, -5.28, 0));
+
+        Vector3D parallelPoint1 = new Vector3D(new Coordinate(54.68, 37.59, 5)).add(v1.normalize().divide(1/v2.length()));
+        Vector3D parallelPoint2 = new Vector3D(new Coordinate(55.93, 37.93, 5)).add(v3.normalize().divide(1/v2.length()));
+
+
+        profileBuilder.addTopographicLine(30, -14, 0, 122, -14, 0)// 1
+                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
+                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
+                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
+                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
+                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
+                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
+                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
+                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
+                .addTopographicLine(54.68, 37.59, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 10
+                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
+                .addTopographicLine(59.6, -9.87, 0, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 12
+                .addTopographicLine(parallelPoint1.getX(), parallelPoint1.getY(), 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 13
+                .addTopographicLine(parallelPoint2.getX(), parallelPoint2.getY(), 5, 76.84, -5.28, 0)// 14
+                .addTopographicLine(54.68, 37.59, 5, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 15
+                .addTopographicLine(55.93, 37.93, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5); // 16
+    }
+
     /**
      * TC23 – Two buildings behind an earth-berm on flat ground with homogeneous acoustic properties
      */
@@ -6644,22 +6684,6 @@ public class AttenuationCnossosTest {
                         new Coordinate(83, 10, 0)}, 8, buildingsAbs)
                 // Ground Surface
 
-                .addTopographicLine(30, -14, 0, 122, -14, 0)// 1
-                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
-                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
-                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
-                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
-                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
-                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
-                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
-                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
-                .addTopographicLine(54.68, 37.59, 5, 55.93, 37.93, 5)// 10
-                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
-                .addTopographicLine(59.6, -9.87, 0, 67.35, -6.83, 5)// 12
-                .addTopographicLine(67.35, -6.83, 5, 68.68, -6.49, 5)// 13
-                .addTopographicLine(68.68, -6.49, 5, 76.84, -5.28, 0)// 14
-                .addTopographicLine(54.68, 37.59, 5, 67.35, -6.83, 5)// 15
-                .addTopographicLine(55.93, 37.93, 5, 68.68, -6.49, 5)// 16
                 .addGroundEffect(factory.createPolygon(new Coordinate[]{
                         new Coordinate(59.6, -9.87, 0), // 5
                         new Coordinate(76.84, -5.28, 0), // 5-6
@@ -6673,8 +6697,11 @@ public class AttenuationCnossosTest {
                         new Coordinate(122, 45, 0), // 6-7
                         new Coordinate(30, 45, 0), // 7-8
                         new Coordinate(30, -14, 0)
-                }), 0.)
-                .finishFeeding();
+                }), 0.);
+
+        addTopographicTC23Model(builder);
+
+        builder.finishFeeding();
 
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(builder)
@@ -6789,107 +6816,7 @@ public class AttenuationCnossosTest {
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
 
-       /* FileWriter writerTc01 = new FileWriter("/home/maguettte/IdeaProjects/NoiseModelling/source/TC23_D.rst");
-
-
-
-//        System.out.println(new BigDecimal(Double.toString(getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0])).toPlainString());
-        //double v2 = getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[0];
-        //double v1 = getMaxValeurAbsolue(diffArray(expectedWH, actualWH))[1];
-        try{
-            writerTc01.write("TC23\n\n");
-            writerTc01.write("Vertical Plane \n\n");
-            writerTc01.write("================\n\n");
-            writerTc01.write(".. list-table::\n");
-            writerTc01.write("   :widths: 25 25 25\n\n");
-            writerTc01.write("   * - Parameters\n");
-            writerTc01.write("     - Maximum Difference\n");
-            writerTc01.write("     - Frequency\n");
-            writerTc01.write("   * - DeltaDiffSRH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRH, actualDeltaDiffSRH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRH, actualDeltaDiffSRH))[1]]+"\n");
-            writerTc01.write("   * - AGroundSOH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundSOH, actualAGroundSOH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundSOH, actualAGroundSOH))[1]]+"\n");
-            writerTc01.write("   * - AGroundORH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundORH, actualAGroundORH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundORH, actualAGroundORH))[1]]+"\n");
-            writerTc01.write("   * - DeltaDiffSPrimeRH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSPrimeRH, actualDeltaDiffSPrimeRH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSPrimeRH, actualDeltaDiffSPrimeRH))[1]]+"\n");
-            writerTc01.write("   * - DeltaDiffSRPrimeH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRPrimeH, actualDeltaDiffSRPrimeH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRPrimeH, actualDeltaDiffSRPrimeH))[1]]+"\n");
-            writerTc01.write("   * - DeltaGroundSOH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaGroundSOH, actualDeltaGroundSOH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaGroundSOH, actualDeltaGroundSOH))[1]]+"\n");
-            writerTc01.write("   * - DeltaGroundORH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaGroundORH, actualDeltaGroundORH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaGroundORH, actualDeltaGroundORH))[1]]+"\n");
-            writerTc01.write("   * - ADiffH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiffH, actualADiffH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiffH, actualADiffH))[1]]+"\n");
-            writerTc01.write("   * - DeltaDiffSRF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRF, actualDeltaDiffSRF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRF, actualDeltaDiffSRF))[1]]+"\n");
-            writerTc01.write("   * - AGroundSOF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundSOF, actualAGroundSOF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundSOF, actualAGroundSOF))[1]]+"\n");
-            writerTc01.write("   * - AGroundORF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAGroundORF, actualAGroundORF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAGroundORF, actualAGroundORF))[1]]+"\n");
-            writerTc01.write("   * - DeltaDiffSPrimeRF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF))[1]]+"\n");
-            writerTc01.write("   * - DeltaDiffSRPrimeF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF))[1]]+"\n");
-            writerTc01.write("   * - DeltaGroundSOF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaGroundSOF, actualDeltaGroundSOF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaGroundSOF, actualDeltaGroundSOF))[1]]+"\n");
-            writerTc01.write("   * - DeltaGroundORF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedDeltaGroundORF, actualDeltaGroundORF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedDeltaGroundORF, actualDeltaGroundORF))[1]]+"\n");
-            writerTc01.write("   * - ADiffF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiffF, actualADiffF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiffF, actualADiffF))[1]]+"\n");
-            writerTc01.write("   * - AlphaAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAlphaAtm, actualAlphaAtm))[1]]+"\n");
-            writerTc01.write("   * - AAtm\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedAAtm, actualAAtm))[1]]+"\n");
-            writerTc01.write("   * - ADiv\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedADiv, actualADiv))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryH, actualABoundaryH))[1]]+"\n");
-            writerTc01.write("   * - ABoundaryF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedABoundaryF, actualABoundaryF))[1]]+"\n\n");
-            writerTc01.write("   * - LH\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLH, actualLH))[1]]+"\n");
-            writerTc01.write("   * - LF\n");
-            writerTc01.write("     - " +getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[0]+"\n");
-            writerTc01.write("     - " +frequencies[(int)getMaxValeurAbsolue(diffArray(expectedLF, actualLF))[1]]+"\n");
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }
-        finally {
-            try {
-                if (writerTc01 != null) {
-                    System.out.println("post");
-                    writerTc01.close();
-                    System.out.println("fin");
-                }
-            } catch (IOException e) {
-                System.out.println("Erreur lors de la fermeture du fichier : " + e.getMessage());
-            }
-        }*/
-
-       /* assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("DeltaDiffSPrimeRH - vertical plane", expectedDeltaDiffSPrimeRH, actualDeltaDiffSPrimeRH, ERROR_EPSILON_LOWEST);
@@ -6911,38 +6838,11 @@ public class AttenuationCnossosTest {
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);*/
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        /*assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);*/
-
-
-       /* try{
-            //System.out.println("ici");
-            writer.write("   * - TC23\n");
-            System.out.println("ici8");
-            if (valL[0] < 0.1) {
-                writer.write("     - Yes\n"); // Without lateral diffraction (Yes)
-            } else {
-                writer.write("     - No\n");
-            }
-
-            if (valLA[0] < 0.1) {
-                writer.write("     - Yes\n"); // With lateral diffraction (Yes)
-            } else {
-                writer.write("     - No\n");
-            }
-            double v = valLA[1];
-            double vLA = Math.round(valLA[0] * 100.0) / 100.0;
-            writer.write("     - " + vLA +" / " + frequencies[(int)v]+ "\n");
-            writer.write("     - `Details <./.build/TC23_D.html>`_\n");
-
-        }catch (IOException e) {
-            System.out.println("Erreur lors de l'écriture dans le fichier : " + e.getMessage());
-        }*/
-
-
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
     }
 
     /**

@@ -17,6 +17,7 @@ public class Wall {
     public final ProfileBuilder.IntersectionType type;
     /** Id or index of the source building or topographic triangle. */
     public final int originId;
+    public long primaryKey = -1;
     /** Wall alpha value. */
     public List<Double> alphas;
     /** Wall height, if -1, use z coordinate. */
@@ -53,6 +54,16 @@ public class Wall {
         this.originId = originId;
         this.type = type;
         this.alphas = new ArrayList<>();
+    }
+
+    /**
+     * Database primary key of this wall or the building
+     * @param primaryKey primary key value
+     * @return this
+     */
+    public Wall setPrimaryKey(long primaryKey) {
+        this.primaryKey = primaryKey;
+        return this;
     }
 
     /**

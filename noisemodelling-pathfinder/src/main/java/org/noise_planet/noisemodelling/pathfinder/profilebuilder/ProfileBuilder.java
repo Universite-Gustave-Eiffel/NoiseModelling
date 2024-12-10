@@ -396,6 +396,16 @@ public class ProfileBuilder {
 
     /**
      * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * @param wall
+     */
+    public ProfileBuilder addWall(Wall wall) {
+        walls.add(wall);
+        wallTree.insert(new Envelope(wall.p0, wall.p1), walls.size());
+        return this;
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
      * @param height Wall height.
      * @param alphas Absorption coefficient.
@@ -414,8 +424,7 @@ public class ProfileBuilder {
                 Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
                 wall.setHeight(height);
                 wall.setAlpha(alphas);
-                walls.add(wall);
-                wallTree.insert(new Envelope(wall.p0, wall.p1), walls.size());
+                addWall(wall);
             }
             return this;
         }
@@ -772,6 +781,7 @@ public class ProfileBuilder {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
+                w.setPrimaryKey(building.getPrimaryKey());
                 w.setAlpha(building.alphas);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
@@ -785,6 +795,7 @@ public class ProfileBuilder {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
                 w.setAlpha(wall.alphas);
+                w.setPrimaryKey(wall.primaryKey);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -1011,16 +1022,12 @@ public class ProfileBuilder {
     private boolean processWall(int processedWallIndex, Coordinate intersection, Wall facetLine,
                                     LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
-        Vector2D directionAfter = Vector2D.create(fullLine.p0, fullLine.p1).normalize().multiply(MILLIMETER);
-        Vector2D directionBefore = directionAfter.negate();
-        newCutPoints.add(new CutPointWall(processedWallIndex,
-                Vector2D.create(intersection).add(directionBefore).toCoordinate(),
-                facetLine.getLineSegment(), facetLine.alphas));
-        newCutPoints.add(new CutPointWall(processedWallIndex,
-                intersection, facetLine.getLineSegment(), facetLine.alphas));
-        newCutPoints.add(new CutPointWall(processedWallIndex,
-                Vector2D.create(intersection).add(directionAfter).toCoordinate(),
-                facetLine.getLineSegment(), facetLine.alphas));
+
+        CutPointWall cutPointWall = new CutPointWall(processedWallIndex,
+                intersection, facetLine.getLineSegment(), facetLine.alphas);
+        cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.LINE_ENTER_EXIT;
+        cutPointWall.setPk(facetLine.primaryKey);
+        newCutPoints.add(cutPointWall);
 
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         if (zRayReceiverSource <= intersection.z) {
@@ -1037,8 +1044,8 @@ public class ProfileBuilder {
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
                 buildings.get(facetLine.getOriginId()).alphas);
+        wallCutPoint.setPk(facetLine.primaryKey);
         newCutPoints.add(wallCutPoint);
-        wallCutPoint.setGroundCoefficient(Scene.DEFAULT_G_BUILDING);
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         // add a point at the bottom of the building on the exterior side of the building
         Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
@@ -1046,9 +1053,12 @@ public class ProfileBuilder {
         // it works also with polygon holes as interiors are CCW
         Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
         Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
-        CutPointWall exteriorPointCutPoint = new CutPointWall(wallCutPoint);
-        exteriorPointCutPoint.coordinate = exteriorPoint;
-        newCutPoints.add(exteriorPointCutPoint);
+        // exterior point closer to source so we know that we enter the building
+        if(exteriorPoint.distance(fullLine.p0) < intersection.distance(fullLine.p0)) {
+            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.AREA_ENTER;
+        } else {
+            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.AREA_EXIT;
+        }
 
         if (zRayReceiverSource <= intersection.z) {
             profile.hasBuildingIntersection = true;

@@ -26,6 +26,9 @@ public class CutPointReflection extends CutPoint {
      */
     public long wallPrimaryKey = -1;
 
+    /** Database primary key value of the obstacle */
+    public Long wallPk = null;
+
     /**
      * Empty constructor for deserialization
      */
@@ -45,15 +48,9 @@ public class CutPointReflection extends CutPoint {
         this.wallAlpha = wallAlpha;
     }
 
-    /**
-     * Copy constructor
-     * @param other
-     */
-    public CutPointReflection(CutPointReflection other) {
-        super(other);
-        this.wall = other.wall;
-        this.wallPrimaryKey = other.wallPrimaryKey;
-        this.wallAlpha = other.wallAlpha;
+    public CutPointReflection setPk(long pk) {
+        this.wallPk = pk;
+        return this;
     }
 
     /** Wall absorption coefficient per frequency band.*/

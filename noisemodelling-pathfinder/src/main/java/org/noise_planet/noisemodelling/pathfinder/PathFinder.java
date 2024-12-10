@@ -348,16 +348,19 @@ public class PathFinder {
             for(int i=0; i<coordinates.size()-1; i++) {
                 CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS,
                         false);
+
                 // Push new plane (except duplicate points for intermediate segments)
                 if( i > 0 ) {
                     // update first point as it is not source but diffraction point
                     cutPoints.add(new CutPointVEdgeDiffraction(profile.getSource()));
                 } else {
+                    profile.getSource().id = src.sourceIndex;
                     cutPoints.add(profile.getSource());
                 }
                 cutPoints.addAll(profile.cutPoints.subList(1, profile.cutPoints.size() - 1));
                 if(i+1 == coordinates.size() - 1) {
                     // we keep the last point as it is really the receiver
+                    profile.getReceiver().id = rcv.receiverIndex;
                     cutPoints.add(profile.getReceiver());
                 }
             }

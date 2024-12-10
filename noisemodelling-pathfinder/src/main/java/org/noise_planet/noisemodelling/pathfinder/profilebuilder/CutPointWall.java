@@ -33,6 +33,16 @@ public class CutPointWall  extends CutPoint {
     @JsonIgnore
     public int processedWallIndex = -1;
 
+    /** This point encounter this kind of limit
+     * - We can enter or exit a polygon
+     * - pass a line (a wall without width) */
+    public enum INTERSECTION_TYPE { AREA_ENTER, AREA_EXIT, LINE_ENTER_EXIT}
+
+    public INTERSECTION_TYPE intersectionType = INTERSECTION_TYPE.LINE_ENTER_EXIT;
+
+    /** Database primary key value of the obstacle */
+    public Long wallPk = null;
+
     /**
      * Empty constructor for deserialization
      */
@@ -46,15 +56,9 @@ public class CutPointWall  extends CutPoint {
         this.wallAlpha = wallAlpha;
     }
 
-    /**
-     * Copy constructor
-     * @param other Other instance
-     */
-    public CutPointWall(CutPointWall other) {
-        super(other);
-        this.wall = other.wall;
-        this.wallAlpha = other.wallAlpha;
-        this.processedWallIndex = other.processedWallIndex;
+    public CutPointWall setPk(long pk) {
+        this.wallPk = pk;
+        return this;
     }
 
     /**

@@ -34,7 +34,7 @@ public class Building {
     final boolean zBuildings;
 
     /** Primary key of the building in the database. */
-    int pk = -1;
+    long primaryKey = -1;
     List<Wall> walls = new ArrayList<>();
 
     /**
@@ -78,14 +78,14 @@ public class Building {
      * @param alphas Absorption coefficients.
      * @param key Primary key of the building in the database.
      */
-    public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
+    public Building(Polygon poly, double height, List<Double> alphas, long key, boolean zBuildings) {
         this.poly = poly;
         // Fix clock wise orientation of the polygon and inner holes
         this.poly.normalize();
         this.height = height;
         this.alphas = new ArrayList<>();
         this.alphas.addAll(alphas);
-        this.pk = key;
+        this.primaryKey = key;
         this.zBuildings = zBuildings;
     }
 
@@ -116,8 +116,8 @@ public class Building {
      * Retrieve the primary key of the building in the database. If there is no primary key, returns -1.
      * @return The primary key of the building in the database or -1.
      */
-    public int getPrimaryKey() {
-        return pk;
+    public long getPrimaryKey() {
+        return primaryKey;
     }
 
     /**
