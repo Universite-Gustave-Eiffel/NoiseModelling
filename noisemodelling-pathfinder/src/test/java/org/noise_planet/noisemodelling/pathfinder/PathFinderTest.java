@@ -49,7 +49,7 @@ public class PathFinderTest {
     /**
      * Overwrite project resource expected test cases
      */
-    public boolean overwriteTestCase = true;
+    public boolean overwriteTestCase = false;
 
     /**
      *  Error for coordinates
@@ -1408,7 +1408,7 @@ public class PathFinderTest {
         //Propagation data building
         Scene rayData = new ProfileBuilderDecorator(builder)
                 .addSource(10, 10, 0.05)
-                .addReceiver(120, 20, 8)
+                .addReceiver(120, 50, 8)
                 .hEdgeDiff(true)
                 .vEdgeDiff(true)
                 .setGs(0.)

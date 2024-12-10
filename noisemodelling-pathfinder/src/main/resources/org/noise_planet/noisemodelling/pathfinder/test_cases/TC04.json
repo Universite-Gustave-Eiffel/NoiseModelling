@@ -19,7 +19,7 @@
     "type" : "GroundEffect",
     "coordinate" : {
       "x" : 50.0,
-      "y" : 18.42,
+      "y" : 18.42105263157895,
       "z" : 0.0
     },
     "zGround" : 0.0,
@@ -28,7 +28,7 @@
     "type" : "GroundEffect",
     "coordinate" : {
       "x" : 150.0,
-      "y" : 39.47,
+      "y" : 39.473684210526315,
       "z" : 0.0
     },
     "zGround" : 0.0,

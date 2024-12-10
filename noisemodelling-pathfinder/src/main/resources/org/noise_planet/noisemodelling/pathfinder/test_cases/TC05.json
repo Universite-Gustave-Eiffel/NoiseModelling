@@ -19,7 +19,7 @@
     "type" : "GroundEffect",
     "coordinate" : {
       "x" : 50.0,
-      "y" : 18.42,
+      "y" : 18.42105263157895,
       "z" : 0.0
     },
     "zGround" : 0.0,
@@ -28,7 +28,7 @@
     "type" : "Topography",
     "coordinate" : {
       "x" : 120.0,
-      "y" : 33.16,
+      "y" : 33.1578947368421,
       "z" : 0.0
     },
     "zGround" : 0.0,
@@ -37,16 +37,16 @@
     "type" : "GroundEffect",
     "coordinate" : {
       "x" : 150.0,
-      "y" : 39.47,
-      "z" : 4.615
+      "y" : 39.473684210526315,
+      "z" : 4.615384615384616
     },
-    "zGround" : 4.615,
+    "zGround" : 4.615384615384616,
     "groundCoefficient" : 0.2
   }, {
     "type" : "Topography",
     "coordinate" : {
       "x" : 185.0,
-      "y" : 46.842,
+      "y" : 46.8421052631579,
       "z" : 10.0
     },
     "zGround" : 10.0,
