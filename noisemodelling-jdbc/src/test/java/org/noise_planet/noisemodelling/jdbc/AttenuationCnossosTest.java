@@ -1436,7 +1436,9 @@ public class AttenuationCnossosTest {
         Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
         Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
 
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d - propDataOut.getCutPlanes().get(0).getSRSegment().d;
+        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d
+                + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d -
+                propDataOut.getPropagationPaths().get(0).getSRSegment().d;
         double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
@@ -1755,6 +1757,45 @@ public class AttenuationCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
+
+
+        //Expected values
+
+        /* Table 33 */
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(170.23, 0.00));
+        expectedZProfile.add(new Coordinate(170.23, 6.00));
+        expectedZProfile.add(new Coordinate(170.23, 0.00));
+        expectedZProfile.add(new Coordinate(194.16, 0.00));
+
+        /* Table 34 */
+        Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
+        Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
+        if(!builder.getWalls().isEmpty()){
+            assertMirrorPoint(expectedSPrime,
+                    expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,
+                    propDataOut.getPropagationPaths().get(0).getSegmentList().
+                            get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+        }
+
+
+        double[][] gPaths = new double[][]{
+                {0.55, 0.20},{0.61,  NaN} //Path 1 : direct
+        };
+
+        /* Table 35 */
+        double [][] segmentsMeanPlanes = new double[][]{
+                //  a     b    zs    zr      dp    Gp   Gp'
+                {0.00, 0.00, 1.00, 6.00, 170.23, 0.55, 0.61},
+                {0.00, 0.00, 6.00, 4.00, 023.93, 0.20,  NaN}
+        };
+
+
+        //Assertion
+        assertZProfil(expectedZProfile,
+                Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment().getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
 
         //Expected values
         double[] expectedDeltaDiffSRH = new double[]{6.01, 6.96, 8.41, 10.36, 12.72, 15.37, 18.19, 21.10};
