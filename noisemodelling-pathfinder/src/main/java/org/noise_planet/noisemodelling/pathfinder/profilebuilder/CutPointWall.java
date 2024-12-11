@@ -10,6 +10,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
@@ -41,6 +42,7 @@ public class CutPointWall  extends CutPoint {
     public INTERSECTION_TYPE intersectionType = INTERSECTION_TYPE.LINE_ENTER_EXIT;
 
     /** Database primary key value of the obstacle */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public Long wallPk = null;
 
     /**
@@ -56,8 +58,15 @@ public class CutPointWall  extends CutPoint {
         this.wallAlpha = wallAlpha;
     }
 
+    /**
+     *
+     * @param pk External primary key value, will be updated if >= 0
+     * @return this
+     */
     public CutPointWall setPk(long pk) {
-        this.wallPk = pk;
+        if(pk >= 0) {
+            this.wallPk = pk;
+        }
         return this;
     }
 

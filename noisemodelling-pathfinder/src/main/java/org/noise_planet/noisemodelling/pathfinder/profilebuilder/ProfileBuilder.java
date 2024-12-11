@@ -1026,7 +1026,9 @@ public class ProfileBuilder {
         CutPointWall cutPointWall = new CutPointWall(processedWallIndex,
                 intersection, facetLine.getLineSegment(), facetLine.alphas);
         cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.LINE_ENTER_EXIT;
-        cutPointWall.setPk(facetLine.primaryKey);
+        if(facetLine.primaryKey >= 0) {
+            cutPointWall.setPk(facetLine.primaryKey);
+        }
         newCutPoints.add(cutPointWall);
 
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
@@ -1044,7 +1046,9 @@ public class ProfileBuilder {
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
                 buildings.get(facetLine.getOriginId()).alphas);
-        wallCutPoint.setPk(facetLine.primaryKey);
+        if(facetLine.primaryKey >= 0) {
+            wallCutPoint.setPk(facetLine.primaryKey);
+        }
         newCutPoints.add(wallCutPoint);
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         // add a point at the bottom of the building on the exterior side of the building

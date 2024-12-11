@@ -9,6 +9,7 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
@@ -21,12 +22,9 @@ public class CutPointReflection extends CutPoint {
      * z is altitude
      */
     public LineSegment wall;
-    /**
-     * Unique external identifier of the wall. Could be the primary key of the related building in the database
-     */
-    public long wallPrimaryKey = -1;
 
-    /** Database primary key value of the obstacle */
+    /** Unique external identifier of the wall. Could be the primary key of the related building in the database */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public Long wallPk = null;
 
     /**
@@ -76,7 +74,7 @@ public class CutPointReflection extends CutPoint {
     public String toString() {
         return "CutPointReflection{" +
                 "\nwall=" + wall +
-                "\n, wallPrimaryKey=" + wallPrimaryKey +
+                (wallPk == null ? "" : "\n, wallPrimaryKey=" + wallPk) +
                 "\n, wallAlpha=" + wallAlpha +
                 "\n, coordinate=" + coordinate +
                 "\n, zGround=" + zGround +

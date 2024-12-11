@@ -13,14 +13,6 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
  */
 public class CutPointVEdgeDiffraction  extends CutPoint {
 
-    /** Database primary key value of the obstacle */
-    public Long wallPk = null;
-
-    public CutPointVEdgeDiffraction setPk(long pk) {
-        this.wallPk = pk;
-        return this;
-    }
-
     /**
      * Empty constructor for deserialization
      */
@@ -29,5 +21,14 @@ public class CutPointVEdgeDiffraction  extends CutPoint {
 
     public CutPointVEdgeDiffraction(CutPoint source) {
         super(source);
+    }
+
+    @Override
+    public String toString() {
+        return "CutPointVEdgeDiffraction{" +
+                ", coordinate=" + coordinate +
+                ", zGround=" + zGround +
+                ", groundCoefficient=" + groundCoefficient +
+                '}';
     }
 }
