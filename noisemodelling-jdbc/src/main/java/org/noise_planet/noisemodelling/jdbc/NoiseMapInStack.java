@@ -11,6 +11,8 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
@@ -86,7 +88,7 @@ public class NoiseMapInStack implements IComputePathsOut {
         CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.freq_lvl, scene.gS);
         if(cnossosPath != null) {
-            addPropagationPaths(cutProfile.getSource().id, cutProfile.getSource().li, cutProfile.getReceiver().id,
+            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(),
                     Collections.singletonList(cnossosPath));
         }
         return PathSearchStrategy.CONTINUE;
@@ -98,30 +100,32 @@ public class NoiseMapInStack implements IComputePathsOut {
      * @param sourceLi Source power per meter coefficient
      * @param pathsParameter Propagation path result
      */
-    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathsParameter) {
+    public double[] addPropagationPaths(CutPointSource source, CutPointReceiver receiver, List<CnossosPath> pathsParameter) {
+
+        long receiverId = receiver.receiverPk == -1 ? receiver.id : receiver.receiverPk;
+        long sourceId = source.sourcePk == -1 ? source.id : source.sourcePk;
+
         noiseMapComputeRaysOut.rayCount.addAndGet(pathsParameter.size());
         if(noiseMapComputeRaysOut.exportPaths && !noiseMapComputeRaysOut.exportAttenuationMatrix) {
             for(CnossosPath cnossosPath : pathsParameter) {
                 // Use only one ray as the ray is the same if we not keep absorption values
-                if (noiseMapComputeRaysOut.inputData != null && sourceId < noiseMapComputeRaysOut.inputData.sourcesPk.size() && receiverId < noiseMapComputeRaysOut.inputData.receiversPk.size()) {
-                    // Copy path content in order to keep original ids for other method calls
-                    cnossosPath.setIdReceiver(noiseMapComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
-                    cnossosPath.setIdSource(noiseMapComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
-                    this.pathParameters.add(cnossosPath);
-                } else {
-                    this.pathParameters.add(cnossosPath);
-                }
+                // Copy path content in order to keep original ids for other method calls
+                cnossosPath.setIdReceiver(receiverId);
+                cnossosPath.setIdSource(sourceId);
+                this.pathParameters.add(cnossosPath);
             }
         }
+
         double[] globalLevel = null;
         for(NoiseMapParameters.TIME_PERIOD timePeriod : NoiseMapParameters.TIME_PERIOD.values()) {
             for(CnossosPath pathParameters : pathsParameter) {
                 if (globalLevel == null) {
-                    globalLevel = lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
-                            receiverId, Collections.singletonList(pathParameters));
+                    globalLevel = lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(source,
+                            receiver, Collections.singletonList(pathParameters));
                 } else {
-                    globalLevel = AcousticIndicatorsFunctions.sumDbArray(globalLevel, lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(sourceId, sourceLi,
-                            receiverId, Collections.singletonList(pathParameters)));
+                    globalLevel = AcousticIndicatorsFunctions.sumDbArray(globalLevel,
+                            lDENAttenuationVisitor[timePeriod.ordinal()].addPropagationPaths(source,
+                            receiver, Collections.singletonList(pathParameters)));
                 }
                 pathParameters.setTimePeriod(timePeriod.name());
                 if(noiseMapComputeRaysOut.exportPaths && noiseMapComputeRaysOut.exportAttenuationMatrix) {
@@ -129,8 +133,8 @@ public class NoiseMapInStack implements IComputePathsOut {
                     if (noiseMapComputeRaysOut.inputData != null && sourceId < noiseMapComputeRaysOut.inputData.sourcesPk.size() && receiverId < noiseMapComputeRaysOut.inputData.receiversPk.size()) {
                         // Copy path content in order to keep original ids for other method calls
                         CnossosPath pathParametersPk = new CnossosPath(pathParameters);
-                        pathParametersPk.setIdReceiver(noiseMapComputeRaysOut.inputData.receiversPk.get((int) receiverId).intValue());
-                        pathParametersPk.setIdSource(noiseMapComputeRaysOut.inputData.sourcesPk.get((int) sourceId).intValue());
+                        pathParametersPk.setIdReceiver(receiver.receiverPk == -1 ? receiver.id : receiver.receiverPk);
+                        pathParametersPk.setIdSource(source.sourcePk == -1 ? source.id : source.sourcePk);
                         this.pathParameters.add(pathParametersPk);
                     } else {
                         this.pathParameters.add(pathParameters);

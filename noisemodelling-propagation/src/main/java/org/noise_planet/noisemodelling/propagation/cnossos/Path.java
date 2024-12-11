@@ -44,8 +44,8 @@ public class Path {
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favorable; // if true, favorable meteorological condition path TODO move to cnossospathparameters
-    public int idSource;
-    public int idReceiver;
+    public long idSource;
+    public long idReceiver;
     private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     Orientation sourceOrientation = new Orientation(0,0,0);
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
@@ -222,19 +222,19 @@ public class Path {
         return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
     }
 
-    public int getIdSource() {
+    public long getIdSource() {
         return idSource;
     }
 
-    public void setIdSource(int idSource) {
+    public void setIdSource(long idSource) {
         this.idSource = idSource;
     }
 
-    public int getIdReceiver() {
+    public long getIdReceiver() {
         return idReceiver;
     }
 
-    public void setIdReceiver(int idReceiver) {
+    public void setIdReceiver(long idReceiver) {
         this.idReceiver = idReceiver;
     }
 

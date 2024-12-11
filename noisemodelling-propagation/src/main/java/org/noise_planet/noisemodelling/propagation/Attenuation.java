@@ -13,6 +13,8 @@ package org.noise_planet.noisemodelling.propagation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -91,8 +93,7 @@ public class Attenuation implements IComputePathsOut {
         CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.freq_lvl, scene.gS);
         if(cnossosPath != null) {
-            addPropagationPaths(cutProfile.getSource().id, cutProfile.getSource().li, cutProfile.getReceiver().id,
-                    Collections.singletonList(cnossosPath));
+            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }
         return PathSearchStrategy.CONTINUE;
     }
@@ -103,23 +104,16 @@ public class Attenuation implements IComputePathsOut {
      * @param sourceLi Source power per meter coefficient
      * @param path Propagation path result
      */
-    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> path) {
+    public double[] addPropagationPaths(CutPointSource source, CutPointReceiver receiver, List<CnossosPath> path) {
         rayCount.addAndGet(path.size());
         if(exportPaths) {
             pathParameters.addAll(path);
             propagationPathsSize.addAndGet(path.size());
         }
-        double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, path);
+        double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            if(inputData != null) {
-                if(sourceId < inputData.sourcesPk.size()) {
-                    sourceId = inputData.sourcesPk.get((int)sourceId);
-                }
-                if(receiverId < inputData.receiversPk.size()) {
-                    receiverId = inputData.receiversPk.get((int)receiverId);
-                }
-            }
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiverId, sourceId, aGlobalMeteo));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk == -1 ? receiver.id : receiver.receiverPk,
+                    source.sourcePk == -1 ? source.id : source.sourcePk, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -135,7 +129,7 @@ public class Attenuation implements IComputePathsOut {
      * @param pathParameters
      * @return double list of attenuation
      */
-    public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathParameters) {
+    public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
         if (data == null) {
             return new double[0];
         }
@@ -327,9 +321,9 @@ public class Attenuation implements IComputePathsOut {
             double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseIndex]);
 
             // Apply attenuation due to sound direction
-            if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
+            if(inputData != null && !inputData.isOmnidirectional(sourceId)) {
                 Orientation directivityToPick = proPathParameters.raySourceReceiverDirectivity;
-                double[] attSource = inputData.getSourceAttenuation((int) sourceId,
+                double[] attSource = inputData.getSourceAttenuation( sourceId,
                         frequencies, Math.toRadians(directivityToPick.yaw),
                         Math.toRadians(directivityToPick.pitch));
                 if(exportAttenuationMatrix) {

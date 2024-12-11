@@ -1772,6 +1772,9 @@ public class AttenuationCnossosTest {
         expectedZProfile.add(new Coordinate(170.23, 0.00));
         expectedZProfile.add(new Coordinate(194.16, 0.00));
 
+        assertZProfil(expectedZProfile,
+                Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment().getPoints2DGround()));
+
         /* Table 34 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
@@ -1796,8 +1799,6 @@ public class AttenuationCnossosTest {
 
 
         //Assertion
-        assertZProfil(expectedZProfile,
-                Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment().getPoints2DGround()));
         assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
 
         //Expected values
@@ -8719,10 +8720,9 @@ public class AttenuationCnossosTest {
         }
 
         @Override
-        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<CnossosPath> propagationPath) {
-            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, receiverId, propagationPath);
-            double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
-            return soundLevel;
+        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
+            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
+            return wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
         }
     }
 

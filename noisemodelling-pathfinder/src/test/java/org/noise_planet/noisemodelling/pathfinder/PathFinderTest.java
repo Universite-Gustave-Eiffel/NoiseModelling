@@ -49,7 +49,7 @@ public class PathFinderTest {
     /**
      * Overwrite project resource expected test cases
      */
-    public boolean overwriteTestCase = true;
+    public boolean overwriteTestCase = false;
 
     /**
      *  Error for coordinates

@@ -27,6 +27,7 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -417,10 +418,11 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
 
         List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
 
-        ArrayList<Building> buildings = new ArrayList<>();
+        List<Building> buildings = new LinkedList<>();
+        List<Wall> walls = new LinkedList<>();
         Envelope expandedCell = new Envelope(cellEnvelope);
         expandedCell.expandBy(buildingBuffer);
-        fetchCellBuildings(connection, cellEnvelope, buildings);
+        fetchCellBuildings(connection, cellEnvelope, buildings, walls);
 
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setEpsilon(epsilon);

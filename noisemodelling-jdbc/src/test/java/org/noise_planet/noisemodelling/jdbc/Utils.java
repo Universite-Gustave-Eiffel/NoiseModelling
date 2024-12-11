@@ -111,10 +111,9 @@ public class Utils {
         }
 
         @Override
-        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathParameters) {
-            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, receiverId, pathParameters);
-            double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
-            return soundLevel;
+        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
+            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
+            return wToDba(multArray(processData.wjSources.get(sourceId), dbaToW(attenuation)));
         }
     }
 
