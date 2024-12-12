@@ -171,36 +171,46 @@ public class CutProfile {
         if(pts.isEmpty()) {
             return pts2D;
         }
-        // keep track of the obstacle under our current position. If -1 there is only ground below
-        int overObstacleIndex = pts.get(0) instanceof CutPointWall ? ((CutPointWall)pts.get(0)).processedWallIndex : -1;
-        for (int i=0; i < pts.size(); i++) {
-            CutPoint cut = pts.get(i);
+        // keep track of the obstacle under our current position.
+        boolean overArea = false;
+        for (CutPoint cut : pts) {
+            if (cut instanceof CutPointWall) {
+                CutPointWall cutPointWall = (CutPointWall) cut;
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    overArea = true;
+                } else {
+                    break;
+                }
+            }
+        }
+        for (CutPoint cut : pts) {
             if (cut instanceof CutPointGroundEffect) {
-                if(index != null) {
+                if (index != null) {
                     index.add(pts2D.size() - 1);
                 }
                 continue;
             }
-            Coordinate coordinate;
             if (cut instanceof CutPointWall) {
-                if(Double.compare(cut.getCoordinate().z, cut.getzGround()) == 0) {
-                    // current position is at the ground level in front of or behind the first/last wall
-                    if(overObstacleIndex == -1) {
-                        overObstacleIndex = ((CutPointWall) cut).processedWallIndex;
-                    } else {
-                        overObstacleIndex = -1;
-                    }
+                // Z ground profile must add intermediate ground points before adding the top level of building/wall
+                CutPointWall cutPointWall = (CutPointWall) cut;
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER) ||
+                        cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    overArea = true;
                 }
-                // Take the obstacle altitude instead of the ground level
-                coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z);
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z));
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT) ||
+                        cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    overArea = false;
+                }
             } else {
-                coordinate = new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround());
+                // we will ignore topographic point if we are over a building
+                if (!(overArea && cut instanceof CutPointTopography)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                }
             }
-            // we will ignore topographic point if we are over a building
-            if(!(overObstacleIndex >= 0 && cut instanceof CutPointTopography)) {
-                pts2D.add(coordinate);
-            }
-            if(index != null) {
+            if (index != null) {
                 index.add(pts2D.size() - 1);
             }
         }

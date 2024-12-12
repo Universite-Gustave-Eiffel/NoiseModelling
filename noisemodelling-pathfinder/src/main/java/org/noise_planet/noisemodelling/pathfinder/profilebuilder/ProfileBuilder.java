@@ -12,7 +12,6 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -1025,7 +1024,7 @@ public class ProfileBuilder {
 
         CutPointWall cutPointWall = new CutPointWall(processedWallIndex,
                 intersection, facetLine.getLineSegment(), facetLine.alphas);
-        cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.LINE_ENTER_EXIT;
+        cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT;
         if(facetLine.primaryKey >= 0) {
             cutPointWall.setPk(facetLine.primaryKey);
         }
@@ -1059,9 +1058,9 @@ public class ProfileBuilder {
         Coordinate exteriorPoint = exteriorVector.add(Vector2D.create(intersection)).toCoordinate();
         // exterior point closer to source so we know that we enter the building
         if(exteriorPoint.distance(fullLine.p0) < intersection.distance(fullLine.p0)) {
-            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.AREA_ENTER;
+            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER;
         } else {
-            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.AREA_EXIT;
+            wallCutPoint.intersectionType = CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT;
         }
 
         if (zRayReceiverSource <= intersection.z) {

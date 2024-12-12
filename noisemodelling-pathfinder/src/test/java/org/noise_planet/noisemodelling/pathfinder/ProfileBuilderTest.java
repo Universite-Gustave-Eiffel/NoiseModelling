@@ -21,11 +21,13 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
 
 /**
  * Test class dedicated to {@link ProfileBuilder}.
@@ -294,6 +296,62 @@ public class ProfileBuilderTest {
                 new Coordinate(120.0, 33.16, 1.0),
                 new Coordinate(185.0, 46.84, 11.0),
                 new Coordinate(200.0, 50.0, 11.0));
-        PathFinderTest.assertZProfil(expectedProfile, Arrays.asList(scene.sourceGeometries.get(0).getCoordinates()));
+        assertZProfil(expectedProfile, Arrays.asList(scene.sourceGeometries.get(0).getCoordinates()));
+    }
+
+
+    @Test
+    public void test2DGroundProfile() {
+
+        //Profile building (from TC15)
+        ProfileBuilder profileBuilder = new ProfileBuilder()
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(55.0, 5.0, 8),
+                        new Coordinate(65.0, 5.0, 8),
+                        new Coordinate(65.0, 15.0, 8),
+                        new Coordinate(55.0, 15.0, 8),
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(70.0, 14.5, 12),
+                        new Coordinate(80.0, 10.2, 12),
+                        new Coordinate(80.0, 20.2, 12),
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(90.1, 19.5, 10),
+                        new Coordinate(93.3, 17.8, 10),
+                        new Coordinate(87.3, 6.6, 10),
+                        new Coordinate(84.1, 8.3, 10),
+                });
+        profileBuilder.addGroundEffect(0, 100, 0.0, 150, 0.5);
+        profileBuilder.setzBuildings(true);
+        profileBuilder.finishFeeding();
+
+        CutProfile cutProfile = profileBuilder.getProfile(new Coordinate(50,10,1), new Coordinate(100, 15, 5));
+
+        assertEquals(9, cutProfile.cutPoints.size());
+
+        List<Coordinate> zProfile = cutProfile.computePts2DGround();
+
+        /* Table 148 */
+        List<Coordinate> expectedZProfile = new ArrayList<>();
+        expectedZProfile.add(new Coordinate(0.00, 0.00));
+        expectedZProfile.add(new Coordinate(5.02, 0.00));
+        expectedZProfile.add(new Coordinate(5.02, 8.00));
+        expectedZProfile.add(new Coordinate(15.07, 8.0));
+        expectedZProfile.add(new Coordinate(15.08, 0.0));
+        expectedZProfile.add(new Coordinate(24.81, 0.0));
+        expectedZProfile.add(new Coordinate(24.81, 12.0));
+        expectedZProfile.add(new Coordinate(30.15, 12.0));
+        expectedZProfile.add(new Coordinate(30.15, 0.00));
+        expectedZProfile.add(new Coordinate(37.19, 0.0));
+        expectedZProfile.add(new Coordinate(37.19, 10.0));
+        expectedZProfile.add(new Coordinate(41.52, 10.0));
+        expectedZProfile.add(new Coordinate(41.52, 0.0));
+        expectedZProfile.add(new Coordinate(50.25, 0.0));
+
+        //Assertion
+        assertZProfil(expectedZProfile, zProfile);
+
+
     }
 }

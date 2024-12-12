@@ -9,7 +9,6 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
@@ -37,9 +36,9 @@ public class CutPointWall  extends CutPoint {
     /** This point encounter this kind of limit
      * - We can enter or exit a polygon
      * - pass a line (a wall without width) */
-    public enum INTERSECTION_TYPE { AREA_ENTER, AREA_EXIT, LINE_ENTER_EXIT}
+    public enum INTERSECTION_TYPE {BUILDING_ENTER, BUILDING_EXIT, THIN_WALL_ENTER_EXIT}
 
-    public INTERSECTION_TYPE intersectionType = INTERSECTION_TYPE.LINE_ENTER_EXIT;
+    public INTERSECTION_TYPE intersectionType = INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT;
 
     /** Database primary key value of the obstacle */
     @JsonInclude(JsonInclude.Include.NON_NULL)
