@@ -10,12 +10,18 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
+
+import java.util.concurrent.Callable;
+
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.LOGGER;
 
-public final class ThreadPathFinder implements Runnable {
+/**
+ * A Thread class to evaluate all receivers cut planes.
+ * Return true if the computation is done without issues
+ */
+public final class ThreadPathFinder implements Callable<Boolean> {
     int startReceiver; // Included
     int endReceiver; // Excluded
     PathFinder propagationProcess;
@@ -48,7 +54,7 @@ public final class ThreadPathFinder implements Runnable {
      * Executes the computation of ray paths for each receiver in the specified range.
      */
     @Override
-    public void run() {
+    public Boolean call() throws Exception {
         try {
             for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
                 if (visitor != null) {
@@ -56,7 +62,7 @@ public final class ThreadPathFinder implements Runnable {
                         break;
                     }
                 }
-                PointPath.ReceiverPointInfo rcv = new PointPath.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
+                PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
 
                 long start = 0;
                 if(propagationProcess.getProfilerThread() != null) {
@@ -83,5 +89,6 @@ public final class ThreadPathFinder implements Runnable {
             }
             throw ex;
         }
+        return true;
     }
 }

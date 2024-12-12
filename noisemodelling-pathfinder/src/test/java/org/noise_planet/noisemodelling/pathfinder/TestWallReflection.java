@@ -8,43 +8,39 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.junit.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.Polygon;
+import org.checkerframework.checker.units.qual.A;
+import org.h2.tools.Csv;
+import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWallReflection {
 
-    /*public static int pushBuildingToWalls(Building building, int index, List<Wall> wallList) {
-        ArrayList<Wall> wallsOfBuilding = new ArrayList<>();
-        Coordinate[] coords = building.getGeometry().getCoordinates();
-        for (int i = 0; i < coords.length - 1; i++) {
-            LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-            Wall w = new Wall(lineSegment, index, ProfileBuilder.IntersectionType.BUILDING);
-            w.setProcessedWallIndex(i);
-            wallsOfBuilding.add(w);
-        }
-        building.setWalls(wallsOfBuilding);
-        wallList.addAll(wallsOfBuilding);
-        return coords.length;
-    }*/
-
     @Test
     public void testWideWall() {
-
-        List<Wall> buildWalls = new ArrayList<>();
         Coordinate cA = new Coordinate(50, 100, 5);
         Coordinate cB = new Coordinate(150, 100, 5);
-        buildWalls.add(new Wall(cA, cB, 0, ProfileBuilder.IntersectionType.WALL));
 
         Polygon polygon = MirrorReceiversCompute.createWallReflectionVisibilityCone(
                 new Coordinate(100, 50, 0.1),
@@ -54,71 +50,161 @@ public class TestWallReflection {
         assertTrue(polygon.intersects(factory.createPoint(new Coordinate(100, 145, 0))));
     }
 
-//
-//    @Test
-//    public void testExportVisibilityCones() throws Exception {
-//        double maxPropagationDistance = 30;
-//        double maxPropagationDistanceFromWall = 9999;
-//        int reflectionOrder = 4;
-//
-//        List<ProfileBuilder.Wall> buildWalls = new ArrayList<>();
-//        Coordinate cA = new Coordinate(1, 1, 5);
-//        Coordinate cB = new Coordinate(1, 8, 5);
-//        Coordinate cC = new Coordinate(8, 8, 5);
-//        Coordinate cD = new Coordinate(8, 5, 5);
-//        Coordinate cE = new Coordinate(5, 5, 5);
-//        Coordinate cF = new Coordinate(5, 1, 5);
-//        Coordinate cG = new Coordinate(10, -5, 2.5);
-//        Coordinate cH = new Coordinate(13, 8, 2.5);
-//        Coordinate cI = new Coordinate(8, 9, 2.5);
-//        Coordinate cJ = new Coordinate(12, 8, 2.5);
-//        buildWalls.add(new ProfileBuilder.Wall(cE, cF, 0, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cG, cH, 2, ProfileBuilder.IntersectionType.WALL));
-//        buildWalls.add(new ProfileBuilder.Wall(cI, cJ, 2, ProfileBuilder.IntersectionType.WALL));
-//
-//
-//        GeometryFactory factory = new GeometryFactory();
-//        List<Coordinate> pts = new ArrayList<>();
-//        LineString pathReceiver = factory.createLineString(new Coordinate[] {
-//                new Coordinate(5, -1, 0.1),
-//                new Coordinate(7.8, 1.62, 0.1),
-//                new Coordinate(8.06, 6.01, 0.1),
-//                new Coordinate(4.73, 9.95)
-//        });
-//
-//        CnossosPaths.splitLineStringIntoPoints(pathReceiver, 0.5 ,pts);
-//
-//        WKTWriter wktWriter = new WKTWriter();
-//        try(FileWriter fileWriter = new FileWriter("target/testVisibilityCone.csv")) {
-//            fileWriter.write("geom, type, time\n");
-//            int t = 0;
-//            for (Coordinate receiverCoordinates : pts) {
-//                MirrorReceiverResultIndex mirrorReceiverResultIndex = new MirrorReceiverResultIndex(buildWalls, receiverCoordinates, reflectionOrder, maxPropagationDistance, maxPropagationDistanceFromWall);
-//                List<MirrorReceiverResult> objs = (List<MirrorReceiverResult>) mirrorReceiverResultIndex.mirrorReceiverTree.query(new Envelope(new Coordinate(0, 0), new Coordinate(500, 500)));
-//                for (MirrorReceiverResult res : objs) {
-//                    Polygon visibilityCone = MirrorReceiverResultIndex.createWallReflectionVisibilityCone(res.getReceiverPos(), res.getWall().getLineSegment(), maxPropagationDistance, maxPropagationDistanceFromWall);
-//                    fileWriter.write("\"");
-//                    fileWriter.write(wktWriter.write(visibilityCone));
-//                    fileWriter.write("\",0");
-//                    fileWriter.write(","+t+"\n");
-//                    fileWriter.write("\"");
-//                    fileWriter.write(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
-//                    fileWriter.write("\",4");
-//                    fileWriter.write(","+t+"\n");
-//                }
-//                for (ProfileBuilder.Wall wall : buildWalls) {
-//                    fileWriter.write("\"");
-//                    fileWriter.write(wktWriter.write(factory.createLineString(new Coordinate[]{wall.p0, wall.p1}).buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
-//                    fileWriter.write("\",1");
-//                    fileWriter.write(","+t+"\n");
-//                }
-//                fileWriter.write("\"");
-//                fileWriter.write(wktWriter.write(factory.createPoint(receiverCoordinates).buffer(0.1, 12, BufferParameters.CAP_ROUND)));
-//                fileWriter.write("\",2");
-//                fileWriter.write(","+t+"\n");
-//                t+=1;
-//            }
-//        }
-//    }
+    @Test
+    public void testNReflexion() throws ParseException, IOException, SQLException {
+        GeometryFactory factory = new GeometryFactory();
 
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        Csv csv = new Csv();
+        WKTReader wktReader = new WKTReader();
+        try(ResultSet rs = csv.read(new FileReader(
+                TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
+                new String[]{"geom", "id"})) {
+            assertTrue(rs.next()); //skip column name
+            while(rs.next()) {
+                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+            }
+        }
+        profileBuilder.finishFeeding();
+        assertEquals(5, profileBuilder.getBuildingCount());
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(new Coordinate(599093.85,646227.90, 4));
+        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 1)));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 80;
+        inputData.maxSrcDist = 180;
+        inputData.setReflexionOrder(2);
+        PathFinder computeRays = new PathFinder(inputData);
+        computeRays.setThreadCount(1);
+
+
+        Coordinate receiver = inputData.receivers.get(0);
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        // Keep only mirror receivers potentially visible from the source(and its parents)
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+                sourceGeometries.get(0).getCoordinate());
+
+        assertEquals(4, mirrorResults.size());
+
+        PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
+
+        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, receiver),
+                new PathFinder.SourcePointInfo(1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
+                new Orientation()), receiverMirrorIndex, pathFinderVisitor);
+
+        List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
+        // Only one second order reflexion propagation path must be found
+        assertEquals(1, profiles.size());
+
+        // Check expected values for the propagation path
+        CutProfile firstPath = profiles.get(0);
+        // S->Ref->Ref->R
+        assertEquals(4, firstPath.cutPoints.size());
+        var it = firstPath.cutPoints.iterator();
+        assertTrue(it.hasNext());
+        CutPoint current = it.next();
+        assertInstanceOf(CutPointSource.class, current);
+        PathFinderTest.assert3DCoordinateEquals ("Source not equal",
+                inputData.sourceGeometries.get(0).getCoordinate(),
+                current.coordinate, 1e-12);
+        current = it.next();
+        assertInstanceOf(CutPointReflection.class, current);
+        PathFinderTest.assert3DCoordinateEquals("",
+                new Coordinate(599102.81, 646245.83, 2.9), current.coordinate, 0.01);
+        current = it.next();
+        assertInstanceOf(CutPointReflection.class, current);
+        PathFinderTest.assert3DCoordinateEquals("",
+                new Coordinate(599092.38, 646235.61, 3.61), current.coordinate, 0.01);
+        current = it.next();
+        assertInstanceOf(CutPointReceiver.class, current);
+    }
+
+
+    @Test
+    public void testNReflexionWithDem() throws ParseException, IOException, SQLException {
+        GeometryFactory factory = new GeometryFactory();
+
+        //Create profile builder
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.setzBuildings(false); // building Z is height not altitude
+        Csv csv = new Csv();
+        WKTReader wktReader = new WKTReader();
+        try(ResultSet rs = csv.read(new FileReader(
+                        TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
+                new String[]{"geom", "id"})) {
+            assertTrue(rs.next()); //skip column name
+            while(rs.next()) {
+                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+            }
+        }
+        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,500.00));
+        profileBuilder.finishFeeding();
+        assertEquals(5, profileBuilder.getBuildingCount());
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(new Coordinate(599093.85,646227.90, 504));
+        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 501)));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 80;
+        inputData.maxSrcDist = 180;
+        inputData.setReflexionOrder(2);
+        PathFinder computeRays = new PathFinder(inputData);
+        computeRays.setThreadCount(1);
+
+
+        Coordinate receiver = inputData.receivers.get(0);
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        // Keep only mirror receivers potentially visible from the source(and its parents)
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(inputData.
+                sourceGeometries.get(0).getCoordinate());
+
+        assertEquals(4, mirrorResults.size());
+
+        PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
+
+        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, receiver),
+                new PathFinder.SourcePointInfo(1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
+                        new Orientation()), receiverMirrorIndex, pathFinderVisitor);
+
+        List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
+        // Only one second order reflexion propagation path must be found
+        assertEquals(1, profiles.size());
+
+        // Check expected values for the propagation path
+        CutProfile firstPath = profiles.get(0);
+        // S->Ref->Ref->R
+        assertEquals(4, firstPath.cutPoints.size());
+        var it = firstPath.cutPoints.iterator();
+        assertTrue(it.hasNext());
+        CutPoint current = it.next();
+        assertInstanceOf(CutPointSource.class, current);
+        PathFinderTest.assert3DCoordinateEquals ("Source not equal",
+                inputData.sourceGeometries.get(0).getCoordinate(),
+                current.coordinate, 1e-12);
+        current = it.next();
+        assertInstanceOf(CutPointReflection.class, current);
+        PathFinderTest.assert3DCoordinateEquals("",
+                new Coordinate(599102.81, 646245.83, 502.9), current.coordinate, 0.01);
+        current = it.next();
+        assertInstanceOf(CutPointReflection.class, current);
+        PathFinderTest.assert3DCoordinateEquals("",
+                new Coordinate(599092.38, 646235.61, 503.61), current.coordinate, 0.01);
+        current = it.next();
+        assertInstanceOf(CutPointReceiver.class, current);
+    }
 }

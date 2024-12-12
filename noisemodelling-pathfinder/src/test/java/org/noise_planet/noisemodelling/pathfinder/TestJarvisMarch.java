@@ -9,7 +9,7 @@
 
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -17,7 +17,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestJarvisMarch {
 

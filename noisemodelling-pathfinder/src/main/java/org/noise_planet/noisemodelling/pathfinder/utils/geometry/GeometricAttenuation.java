@@ -9,7 +9,7 @@
 
 package org.noise_planet.noisemodelling.pathfinder.utils.geometry;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.wToDba;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDba;
 
 public class GeometricAttenuation {
 

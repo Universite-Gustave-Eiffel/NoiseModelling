@@ -10,18 +10,23 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumDbArray;
-
 /**
- * ToDo descripion
+ * Receive vertical cut plane, compute the attenuation corresponding to this plane
  */
 public class AttenuationVisitor implements IComputePathsOut {
     public Attenuation multiThreadParent;
@@ -36,35 +41,39 @@ public class AttenuationVisitor implements IComputePathsOut {
         this.attenuationCnossosParameters = attenuationCnossosParameters;
     }
 
+    @Override
+    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        final Scene scene = multiThreadParent.inputData;
+        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.freq_lvl, scene.gS);
+        if(cnossosPath != null) {
+            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
+        }
+        return PathSearchStrategy.CONTINUE;
+    }
 
     /**
      * Get propagation path result
-     * @param sourceId Source identifier
-     * @param sourceLi Source power per meter coefficient
+     * @param source Source identifier
+     * @param receiver Receiver identifier
      * @param path Propagation path result
      */
-    @Override
-    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> path) {
-        double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, sourceId, sourceLi, receiverId, path);
+    public double[] addPropagationPaths(CutPointSource source, CutPointReceiver receiver, List<CnossosPath> path) {
+        double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, source.id, source.li, path);
         multiThreadParent.rayCount.addAndGet(path.size());
         if(keepRays) {
-            if(multiThreadParent.inputData != null && sourceId < multiThreadParent.inputData.sourcesPk.size() &&
-                    receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                for(CnossosPath pathParameter : path) {
-                    // Copy path content in order to keep original ids for other method calls
-                    //CnossosPathParameters pathParametersPk = new CnossosPathParameters(pathParameter);
-                    pathParameter.setIdReceiver(multiThreadParent.inputData.receiversPk.get((int)receiverId).intValue());
-                    pathParameter.setIdSource(multiThreadParent.inputData.sourcesPk.get((int)sourceId).intValue());
-                    pathParameter.setSourceOrientation(pathParameter.getSourceOrientation());
-                    pathParameter.setGs(pathParameter.getGs());
-                    pathParameters.add(pathParameter);
-                }
-            } else {
-                pathParameters.addAll(path);
+            for(CnossosPath pathParameter : path) {
+                // Copy path content in order to keep original ids for other method calls
+                //CnossosPathParameters pathParametersPk = new CnossosPathParameters(pathParameter);
+                pathParameter.setIdReceiver(receiver.receiverPk == -1 ? receiver.id : receiver.receiverPk);
+                pathParameter.setIdSource(source.sourcePk == -1 ? source.id : source.sourcePk);
+                pathParameter.setSourceOrientation(pathParameter.getSourceOrientation());
+                pathParameter.setGs(pathParameter.getGs());
+                pathParameters.add(pathParameter);
             }
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiverId, sourceId, aGlobalMeteo));
+            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.id, source.id, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -109,7 +118,8 @@ public class AttenuationVisitor implements IComputePathsOut {
                     levelsPerSourceLines.put(lvl.sourceId, lvl.value);
                 } else {
                     // merge
-                    levelsPerSourceLines.put(lvl.sourceId, sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                    levelsPerSourceLines.put(lvl.sourceId,
+                            AcousticIndicatorsFunctions.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
                             lvl.value));
                 }
             }

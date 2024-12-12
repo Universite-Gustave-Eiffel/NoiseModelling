@@ -85,9 +85,9 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         this.propagationProcessDataFactory = propagationProcessDataFactory;
     }
 
-    /*public int getThreadCount() {
+    public int getThreadCount() {
         return threadCount;
-    }*/
+    }
 
     public void setThreadCount(int threadCount) {
         this.threadCount = threadCount;
@@ -104,6 +104,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public Scene prepareCell(Connection connection, int cellI, int cellJ,
                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
         if(verbose) {
@@ -155,17 +156,17 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
         String receiverGeomName = GeometryTableUtilities.getGeometryColumnNames(connection,
                 TableLocation.parse(receiverTableName)).get(0);
-        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection, new TableLocation(receiverTableName));
+        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(receiverTableName, dbType));
         String pkSelect = "";
         if(intPk >= 1) {
-            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), DBUtils.getDBType(connection));
+            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), dbType);
         } else {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, DBUtils.getDBType(connection) ) + pkSelect + " FROM " +
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +
                         receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName, DBUtils.getDBType(connection)) + " && ?::geometry")) {
+                        TableLocation.quoteIdentifier(receiverGeomName, dbType) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 while (rs.next()) {
@@ -321,7 +322,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     }
 
     /**
-     * A factory interface for creating propagation process data for noise map computation.v
+     * A factory interface for creating propagation process data for noise map computation.
      */
     public interface PropagationProcessDataFactory {
 

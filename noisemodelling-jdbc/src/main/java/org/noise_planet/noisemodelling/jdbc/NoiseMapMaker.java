@@ -110,7 +110,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
             String freqField = noiseMapParameters.lwFrequencyPrepend + period;
             if (!period.isEmpty()) {
                 for (String fieldName : sourceField) {
-                    if (fieldName.startsWith(freqField)) {
+                    if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
                         int freq = Integer.parseInt(fieldName.substring(freqField.length()));
                         int index = allFrequencyValues.indexOf(freq);
                         if (index >= 0) {

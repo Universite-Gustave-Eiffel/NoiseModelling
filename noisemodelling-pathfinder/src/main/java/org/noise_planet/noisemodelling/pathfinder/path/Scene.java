@@ -38,6 +38,7 @@ public class Scene {
     public static final double DEFAULT_RECEIVER_DIST = 1.0;
     public static final double DEFAULT_GS = 0.0;
     public static final double DEFAULT_G = 0.0;
+    public static final double DEFAULT_G_BUILDING = 0.0;
     public static final String YAW_DATABASE_FIELD = "YAW";
     public static final String PITCH_DATABASE_FIELD = "PITCH";
     public static final String ROLL_DATABASE_FIELD = "ROLL";
@@ -233,16 +234,6 @@ public class Scene {
         }
         this.sourceGeometries = sourceGeometries;
     }
-
-    /**
-     * Optional - Return the maximal power spectrum of the sound source
-     //* @param sourceId Source identifier (index in {@link })
-     * @return maximal power spectrum or empty array
-     */
-    public double[] getMaximalSourcePower(int sourceId) {
-        return new double[0];
-    }
-
 
     /**
      *
