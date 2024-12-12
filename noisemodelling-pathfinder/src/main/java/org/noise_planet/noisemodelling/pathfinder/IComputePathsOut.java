@@ -44,9 +44,9 @@ public interface IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId Primary key of the receiver (not the id of the receiver in the subdomain)
+     * @param receiverId Id of the receiver in the subdomain
      */
-    void finalizeReceiver(long receiverId);
+    void finalizeReceiver(int receiverId);
 
     /**
      * If the implementation does not support thread concurrency, this method is called to return an instance

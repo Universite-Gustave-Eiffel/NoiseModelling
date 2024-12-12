@@ -45,7 +45,7 @@ public class PathFinderVisitor implements IComputePathsOut {
      * @param receiverId
      */
     @Override
-    public void finalizeReceiver(long receiverId) {
+    public void finalizeReceiver(int receiverId) {
 
     }
 

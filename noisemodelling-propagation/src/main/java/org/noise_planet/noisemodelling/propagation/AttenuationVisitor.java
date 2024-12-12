@@ -62,18 +62,10 @@ public class AttenuationVisitor implements IComputePathsOut {
         double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, source.id, source.li, path);
         multiThreadParent.rayCount.addAndGet(path.size());
         if(keepRays) {
-            for(CnossosPath pathParameter : path) {
-                // Copy path content in order to keep original ids for other method calls
-                //CnossosPathParameters pathParametersPk = new CnossosPathParameters(pathParameter);
-                pathParameter.setIdReceiver(receiver.receiverPk == -1 ? receiver.id : receiver.receiverPk);
-                pathParameter.setIdSource(source.sourcePk == -1 ? source.id : source.sourcePk);
-                pathParameter.setSourceOrientation(pathParameter.getSourceOrientation());
-                pathParameter.setGs(pathParameter.getGs());
-                pathParameters.add(pathParameter);
-            }
+            pathParameters.addAll(path);
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.id, source.id, aGlobalMeteo));
+            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.receiverPk, source.sourcePk, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -82,12 +74,12 @@ public class AttenuationVisitor implements IComputePathsOut {
 
     /**
      *
-     * @param receiverId
-     * @param sourceId
+     * @param receiverPk
+     * @param sourcePk
      * @param level
      */
-    protected void pushResult(long receiverId, long sourceId, double[] level) {
-        multiThreadParent.receiversAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiverId, sourceId, level));
+    protected void pushResult(long receiverPk, long sourcePk, double[] level) {
+        multiThreadParent.receiversAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiverPk, sourcePk, level));
     }
 
 
@@ -96,7 +88,7 @@ public class AttenuationVisitor implements IComputePathsOut {
      * @param receiverId
      */
     @Override
-    public void finalizeReceiver(final long receiverId) {
+    public void finalizeReceiver(int receiverId) {
         if(keepRays && !pathParameters.isEmpty()) {
             multiThreadParent.pathParameters.addAll(this.pathParameters);
             multiThreadParent.propagationPathsSize.addAndGet(pathParameters.size());
@@ -123,17 +115,8 @@ public class AttenuationVisitor implements IComputePathsOut {
                             lvl.value));
                 }
             }
-            long sourcePK;
             for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
-                final long sourceId = entry.getKey();
-                sourcePK = sourceId;
-                if(multiThreadParent.inputData != null) {
-                    // Retrieve original identifier
-                    if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
-                        sourcePK = multiThreadParent.inputData.sourcesPk.get((int)sourceId);
-                    }
-                }
-                pushResult(receiverPK, sourcePK, entry.getValue());
+                pushResult(receiverPK, entry.getKey(), entry.getValue());
             }
         }
         receiverAttenuationLevels.clear();

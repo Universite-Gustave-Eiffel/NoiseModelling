@@ -18,7 +18,6 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.math.Vector3D;
-import org.noise_planet.noisemodelling.pathfinder.PathFinderVisitor;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -8404,61 +8403,62 @@ public class AttenuationCnossosTest {
                 double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
-                    maxPowerReceiverIndex = (int) v.receiverId;
+                    maxPowerReceiverIndex = (int) v.receiver;
                 }
             }
             assertEquals(idReceiver, maxPowerReceiverIndex);
         }
     }
-
-    /**
-     * Test optimisation feature {@link Scene#maximumError}
-     */
-    @Test
-    public void testIgnoreNonSignificantSources() throws LayerDelaunayError {
-
-        GeometryFactory factory = new GeometryFactory();
-        //Scene dimension
-        Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
-
-        //Create obstruction test object
-        ProfileBuilder builder = new ProfileBuilder();
-
-        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
-        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
-
-        builder.finishFeeding();
-
-        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
-        for(int i = 0; i < roadLvl.length; i++) {
-            roadLvl[i] = dbaToW(roadLvl[i]);
-        }
-
-        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
-        rayData.addReceiver(new Coordinate(0, 0, 4));
-        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), roadLvl);
-        rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), roadLvl);
-        rayData.setComputeHorizontalDiffraction(true);
-        rayData.setComputeVerticalDiffraction(true);
-
-        rayData.maxSrcDist = 2000;
-        rayData.maximumError = 3; // 3 dB error max
-
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
-        attData.setHumidity(70);
-        attData.setTemperature(10);
-        RayOut propDataOut = new RayOut(true, attData, rayData);
-        PathFinder computeRays = new PathFinder(rayData);
-        computeRays.setThreadCount(1);
-        computeRays.run(propDataOut);
-
-        // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
-        assertEquals(1, propDataOut.receiversAttenuationLevels.size());
-
-        //TODO check the expected level and the delta should be reduced to at least 0.1
-        assertEquals(44.07, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 3);
-    }
+//
+//    /**
+//     * Test optimisation feature {@link Scene#maximumError}
+//     * This feature is disabled and all sound sources are computed
+//     */
+//    @Test
+//    public void testIgnoreNonSignificantSources() throws LayerDelaunayError {
+//
+//        GeometryFactory factory = new GeometryFactory();
+//        //Scene dimension
+//        Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
+//
+//        //Create obstruction test object
+//        ProfileBuilder builder = new ProfileBuilder();
+//
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
+//        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
+//
+//        builder.finishFeeding();
+//
+//        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
+//        for(int i = 0; i < roadLvl.length; i++) {
+//            roadLvl[i] = dbaToW(roadLvl[i]);
+//        }
+//
+//        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
+//        rayData.addReceiver(new Coordinate(0, 0, 4));
+//        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), roadLvl);
+//        rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), roadLvl);
+//        rayData.setComputeHorizontalDiffraction(true);
+//        rayData.setComputeVerticalDiffraction(true);
+//
+//        rayData.maxSrcDist = 2000;
+//        rayData.maximumError = 3; // 3 dB error max
+//
+//        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+//        attData.setHumidity(70);
+//        attData.setTemperature(10);
+//        RayOut propDataOut = new RayOut(true, attData, rayData);
+//        PathFinder computeRays = new PathFinder(rayData);
+//        computeRays.setThreadCount(1);
+//        computeRays.run(propDataOut);
+//
+//        // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
+//        assertEquals(1, propDataOut.receiversAttenuationLevels.size());
+//
+//        //TODO check the expected level and the delta should be reduced to at least 0.1
+//        assertEquals(44.07, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 3);
+//    }
 
     @Test
     public void testRoseIndex() {
@@ -8539,11 +8539,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOut.receiversAttenuationLevels) {
-            if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
-                levelsPerReceiver.put(lvl.receiverId, lvl.value);
+            if(!levelsPerReceiver.containsKey(lvl.receiver)) {
+                levelsPerReceiver.put(lvl.receiver, lvl.value);
             } else {
                 // merge
-                levelsPerReceiver.put(lvl.receiverId, sumDbArray(levelsPerReceiver.get(lvl.receiverId),
+                levelsPerReceiver.put(lvl.receiver, sumDbArray(levelsPerReceiver.get(lvl.receiver),
                         lvl.value));
             }
         }
@@ -8552,11 +8552,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOutTest.receiversAttenuationLevels) {
-            if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
-                levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
+            if(!levelsPerReceiverLines.containsKey(lvl.receiver)) {
+                levelsPerReceiverLines.put(lvl.receiver, lvl.value);
             } else {
                 // merge
-                levelsPerReceiverLines.put(lvl.receiverId, sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
+                levelsPerReceiverLines.put(lvl.receiver, sumDbArray(levelsPerReceiverLines.get(lvl.receiver),
                         lvl.value));
             }
         }

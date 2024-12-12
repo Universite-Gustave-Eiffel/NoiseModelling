@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
@@ -330,7 +331,10 @@ public class ProfileBuilderTest {
 
         assertEquals(9, cutProfile.cutPoints.size());
 
-        List<Coordinate> zProfile = cutProfile.computePts2DGround();
+        List<Integer> index = new ArrayList<>(cutProfile.cutPoints.size());
+        List<Coordinate> zProfile = cutProfile.computePts2DGround(index);
+
+        assertEquals(cutProfile.cutPoints.size(), index.size());
 
         /* Table 148 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -351,6 +355,9 @@ public class ProfileBuilderTest {
 
         //Assertion
         assertZProfil(expectedZProfile, zProfile);
+
+        assertArrayEquals(new int[]{0, 2, 4, 6, 8, 10, 12, 12, 13},
+                index.stream().mapToInt(Integer::intValue).toArray());
 
 
     }

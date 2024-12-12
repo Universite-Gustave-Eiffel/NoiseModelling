@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
@@ -79,18 +80,33 @@ public class CutProfile {
      * @return the absorption coefficient of this path
      */
     @JsonIgnore
-    public double getGPath(CutPoint p0, CutPoint p1) {
+    public double getGPath(CutPoint p0, CutPoint p1, double buildingRoofG) {
         double totalLength = 0;
         double rsLength = 0.0;
 
         // Extract part of the path from the specified argument
-        List<CutPoint> reduced = cutPoints.subList(cutPoints.indexOf(p0), cutPoints.indexOf(p1) + 1);
+        int i0 = cutPoints.indexOf(p0);
+        int i1 = cutPoints.indexOf(p1);
+        if(i0 == -1 || i1 == -1 || i1 < i0) {
+            return 0.0;
+        }
 
-        for(int index = 0; index < reduced.size() - 1; index++) {
-            CutPoint current = reduced.get(index);
-            double segmentLength = current.getCoordinate().distance(reduced.get(index+1).getCoordinate());
-            rsLength += segmentLength * current.getGroundCoefficient();
-            totalLength += segmentLength;
+        boolean aboveRoof = false;
+        for(int index = 0; index < i1; index++) {
+            CutPoint current = cutPoints.get(index);
+            if(current instanceof CutPointWall) {
+                CutPointWall currentWall = (CutPointWall) current;
+                if(!aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                    aboveRoof = true;
+                } else if(aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    aboveRoof = false;
+                }
+            }
+            if(index >= i0) {
+                double segmentLength = current.getCoordinate().distance(cutPoints.get(index + 1).getCoordinate());
+                rsLength += segmentLength * (aboveRoof ? buildingRoofG : current.getGroundCoefficient());
+                totalLength += segmentLength;
+            }
         }
         return rsLength / totalLength;
     }
@@ -98,7 +114,7 @@ public class CutProfile {
     @JsonIgnore
     public double getGPath() {
         if(!cutPoints.isEmpty()) {
-            return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1));
+            return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1), Scene.DEFAULT_G_BUILDING);
         } else {
             return 0;
         }
@@ -204,6 +220,11 @@ public class CutProfile {
                     pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
                     overArea = false;
                 }
+            } else if (cut instanceof CutPointReflection) {
+                // Z ground profile is duplicated for reflection point before and after
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
             } else {
                 // we will ignore topographic point if we are over a building
                 if (!(overArea && cut instanceof CutPointTopography)) {

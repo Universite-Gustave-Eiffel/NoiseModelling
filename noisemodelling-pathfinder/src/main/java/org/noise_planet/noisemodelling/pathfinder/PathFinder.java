@@ -371,9 +371,11 @@ public class PathFinder {
 
 
             if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
+                mainProfile.getReceiver().id = rcv.receiverIndex;
                 mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
             }
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+                mainProfile.getSource().id = src.sourceIndex;
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
             }
 
@@ -732,9 +734,11 @@ public class PathFinder {
                     mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
 
             if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
+                mainProfile.getReceiver().id = rcv.receiverIndex;
                 mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
             }
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+                mainProfile.getSource().id = src.sourceIndex;
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
             }
 

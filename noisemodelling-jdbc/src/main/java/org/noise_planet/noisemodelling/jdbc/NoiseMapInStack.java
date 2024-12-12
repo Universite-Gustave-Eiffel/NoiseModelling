@@ -59,7 +59,7 @@ public class NoiseMapInStack implements IComputePathsOut {
         double[] levels = new double[noiseMapComputeRaysOut.dayPathData.freq_lvl.size()];
         for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
             levels = sumArray(levels,
-                    dbaToW(sumArray(wToDba(wjSources.get((int) lvl.sourceId)), lvl.value)));
+                    dbaToW(sumArray(wToDba(wjSources.get((int) lvl.source)), lvl.value)));
         }
         return levels;
     }
@@ -224,7 +224,7 @@ public class NoiseMapInStack implements IComputePathsOut {
      * @param receiverId
      */
     @Override
-    public void finalizeReceiver(final long receiverId) {
+    public void finalizeReceiver(int receiverId) {
         if(!this.pathParameters.isEmpty()) {
             if(noiseMapParameters.getExportRaysMethod() == org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE) {
                 // Push propagation rays
@@ -245,7 +245,7 @@ public class NoiseMapInStack implements IComputePathsOut {
         }
         long receiverPK = receiverId;
         if(noiseMapComputeRaysOut.inputData != null) {
-            if(receiverId < noiseMapComputeRaysOut.inputData.receiversPk.size()) {
+            if(receiverId >= 0 && receiverId < noiseMapComputeRaysOut.inputData.receiversPk.size()) {
                 receiverPK = noiseMapComputeRaysOut.inputData.receiversPk.get((int)receiverId);
             }
         }
@@ -257,11 +257,11 @@ public class NoiseMapInStack implements IComputePathsOut {
                 AttenuationVisitor attenuationVisitor = lDENAttenuationVisitor[timePeriod.ordinal()];
                 for (Attenuation.SourceReceiverAttenuation lvl : attenuationVisitor.receiverAttenuationLevels) {
                     NoiseMapParameters.TimePeriodParameters timePeriodParameters;
-                    if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
+                    if (!levelsPerSourceLines.containsKey(lvl.source)) {
                         timePeriodParameters = new NoiseMapParameters.TimePeriodParameters();
-                        levelsPerSourceLines.put(lvl.sourceId, timePeriodParameters);
+                        levelsPerSourceLines.put(lvl.source, timePeriodParameters);
                     } else {
-                        timePeriodParameters = levelsPerSourceLines.get(lvl.sourceId);
+                        timePeriodParameters = levelsPerSourceLines.get(lvl.source);
                     }
                     if (timePeriodParameters.getTimePeriodLevel(timePeriod) == null) {
                         timePeriodParameters.setTimePeriodLevel(timePeriod, lvl.value);

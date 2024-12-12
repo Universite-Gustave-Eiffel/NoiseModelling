@@ -7,6 +7,7 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
@@ -92,8 +93,8 @@ public class CnossosPathBuilder {
                 if (rcrit) {
                     pathParameters.deltaH = deltaH;
                     pathParameters.deltaPrimeH = deltaPrimeH;
-                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut)), srcCut.getGroundCoefficient());
-                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut), srcCut.getGroundCoefficient());
+                    seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut), Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
+                    seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut, Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
 
                     if(dSR.orientationIndex(o) == 1) {
                         pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
@@ -322,28 +323,11 @@ public class CnossosPathBuilder {
             final CutPoint cutPt0 = cutProfilePoints.get(i0);
             final CutPoint cutPt1 = cutProfilePoints.get(i1);
             // ground index may be near the diffraction point
-            // mean ground plane is computed using from the bottom of the walls
-            if (i0Ground < i1Ground - 1) {
-                CutPoint nextPoint = cutProfilePoints.get(i0 + 1);
-                if (cutPt0.getCoordinate().distance(nextPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER + EPSILON
-                        && Double.compare(nextPoint.getCoordinate().z, nextPoint.getzGround()) == 0
-                        && nextPoint instanceof CutPointWall) {
-                    i0Ground += 1;
-                }
+            // Depending on the range, we have to pick the bottom of the wall or the top of the wall point
+            if (i1Ground - 1 > i0Ground && cutPt1 instanceof CutPointWall &&
+                    ((CutPointWall) cutPt1).intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                i1Ground -= 1;
             }
-            if (i1Ground - 1 > i0Ground) {
-                CutPoint previousPoint = cutProfilePoints.get(i1 - 1);
-                if (cutPt1.getCoordinate().distance(previousPoint.getCoordinate()) <= ProfileBuilder.MILLIMETER +
-                        EPSILON && Double.compare(previousPoint.getCoordinate().z, previousPoint.getzGround()) == 0
-                        && previousPoint instanceof CutPointWall) {
-                    i1Ground -= 1;
-                }
-            }
-            // Create a profile for the segment i0->i1
-            CutProfile profileSeg = new CutProfile(new CutPointSource(cutPt0), new CutPointReceiver(cutPt1));
-            profileSeg.insertCutPoint(false, cutProfilePoints.subList(i0, i1 + 1).toArray(CutPoint[]::new));
-
-
             if (points.isEmpty()) {
                 // First segment, add the source point in the array
                 points.add(new PointPath(pts2D.get(i0), cutPt0.getzGround(), SRCE));
@@ -387,7 +371,7 @@ public class CnossosPathBuilder {
                     Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,cut2DGroundIndex.get(pointIndex) + 1);
                     meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                     SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pointIndex),
-                            meanPlane, profileSeg.getGPath(cutPt0, cutProfilePoints.get(pointIndex)), gS);
+                            meanPlane, cutProfile.getGPath(cutPt0, cutProfilePoints.get(pointIndex), Scene.DEFAULT_G_BUILDING), gS);
                     seg.setPoints2DGround(segmentGroundPoints);
                     previousPivotPoint = pointIndex;
                     segments.add(seg);
@@ -401,7 +385,7 @@ public class CnossosPathBuilder {
                 Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i1Ground, pts2DGround.length);
                 meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                 SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
-                        meanPlane, profileSeg.getGPath(cutPt1, cutProfilePoints.get(cutProfilePoints.size() - 1)),
+                        meanPlane, cutProfile.getGPath(cutPt1, cutProfilePoints.get(cutProfilePoints.size() - 1), Scene.DEFAULT_G_BUILDING),
                         gS);
                 seg.setPoints2DGround(segmentGroundPoints);
                 segments.add(seg);
@@ -412,8 +396,9 @@ public class CnossosPathBuilder {
             }
             Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,i1Ground + 1);
             meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
-            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane, profileSeg.getGPath(),
-                    profileSeg.getSource().groundCoefficient);
+            SegmentPath path = computeSegment(pts2D.get(i0), pts2D.get(i1), meanPlane,
+                    cutProfile.getGPath(cutProfilePoints.get(i0), cutProfilePoints.get(i1), Scene.DEFAULT_G_BUILDING),
+                    cutProfilePoints.get(i0).groundCoefficient);
             path.dc = cutPt0.getCoordinate().distance3D(cutPt1.getCoordinate());
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
