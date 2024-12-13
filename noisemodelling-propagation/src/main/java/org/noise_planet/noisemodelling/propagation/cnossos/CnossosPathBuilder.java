@@ -324,9 +324,13 @@ public class CnossosPathBuilder {
             final CutPoint cutPt1 = cutProfilePoints.get(i1);
             // ground index may be near the diffraction point
             // Depending on the range, we have to pick the bottom of the wall or the top of the wall point
-            if (i1Ground - 1 > i0Ground && cutPt1 instanceof CutPointWall &&
-                    ((CutPointWall) cutPt1).intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
-                i1Ground -= 1;
+            if (i1Ground - 1 > i0Ground && cutPt1 instanceof CutPointWall) {
+                final CutPointWall cutPt1Wall = (CutPointWall) cutPt1;
+                if(cutPt1Wall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                    i1Ground -= 1;
+                } else if (cutPt1Wall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT)) {
+                    i1Ground -= 2;
+                }
             }
             if (points.isEmpty()) {
                 // First segment, add the source point in the array
@@ -406,14 +410,6 @@ public class CnossosPathBuilder {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
-//                if (pt.buildingId != -1) {
-//                    pt.alphaWall = data.profileBuilder.getBuilding(pt.buildingId).getAlphas();
-//                    pt.setObstacleZ(data.profileBuilder.getBuilding(pt.buildingId).getZ());
-//                } else if (pt.wallId != -1) {
-//                    pt.alphaWall = data.profileBuilder.getWall(pt.wallId).getAlphas();
-//                    Wall wall = data.profileBuilder.getWall(pt.wallId);
-//                    pt.setObstacleZ(Vertex.interpolateZ(pt.coordinate, wall.p0, wall.p1));
-//                }
             }
         }
 

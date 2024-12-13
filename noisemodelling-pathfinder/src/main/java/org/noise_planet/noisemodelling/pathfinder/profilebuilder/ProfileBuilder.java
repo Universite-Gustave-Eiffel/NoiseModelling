@@ -475,6 +475,22 @@ public class ProfileBuilder {
     /**
      * Add the topographic line in the data, to complete the topographic data.
      */
+    public ProfileBuilder addTopographicLine(LineSegment segment) {
+        addTopographicLine(segment.p0, segment.p1);
+        return this;
+    }
+
+    /**
+     * Add the topographic line in the data, to complete the topographic data.
+     */
+    public ProfileBuilder addTopographicLine(Coordinate p0, Coordinate p1) {
+        addTopographicLine(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+        return this;
+    }
+
+    /**
+     * Add the topographic line in the data, to complete the topographic data.
+     */
     public ProfileBuilder addTopographicLine(double x0, double y0, double z0, double x1, double y1, double z1) {
         if(!isFeedingFinished) {
             LineString lineSegment = FACTORY.createLineString(new Coordinate[]{new Coordinate(x0, y0, z0), new Coordinate(x1, y1, z1)});

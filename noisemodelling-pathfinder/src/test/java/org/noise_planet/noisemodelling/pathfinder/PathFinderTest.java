@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
@@ -283,43 +284,87 @@ public class PathFinderTest {
     }
 
 
+    private static Coordinate from3DVector(Vector3D vector3D) {
+        return new Coordinate(vector3D.getX(), vector3D.getY(), vector3D.getZ());
+    }
+
+    private static Vector3D to3DVector(Vector2D vector2D) {
+        return new Vector3D(vector2D.getX(), vector2D.getY(), 0);
+    }
+
+    /**
+     * Move linesegment to match the expected distance from source
+     * @param sourceReceiver
+     * @param segmentToMove
+     * @param expectedDistance
+     */
+    private static void fixLineSegment(LineSegment sourceReceiver, LineSegment segmentToMove, double expectedDistance) {
+        Coordinate[] closestPoints = sourceReceiver.closestPoints(segmentToMove);
+        // create a translation vector to fix the distance
+        Vector3D fixVector = to3DVector(Vector2D.create(sourceReceiver.p0, sourceReceiver.p1).normalize()
+                .multiply(expectedDistance-closestPoints[0].distance(sourceReceiver.p0)));
+        segmentToMove.p0 = from3DVector(Vector3D.create(segmentToMove.p0).add(fixVector));
+        segmentToMove.p1 = from3DVector(Vector3D.create(segmentToMove.p1).add(fixVector));
+    }
+
+    public static void makeParallel(LineSegment reference, LineSegment toEdit) {
+        // edit second point position in order to have the second line parallel to the first line
+        toEdit.p1 =
+                Vector2D.create(reference.p0, reference.p1).normalize()
+                        .multiply(toEdit.getLength())
+                        .add(Vector2D.create(toEdit.p0)).toCoordinate();
+        toEdit.p1.z = toEdit.p0.z;
+    }
+
+
     public static void addTopographicTC23Model(ProfileBuilder profileBuilder) {
         // Create parallel lines for the slope edge because unit test table values are rounded and
-        // the rounding make the lines non-parallel
+        // the rounding make the lines non-parallel and at the wrong distance
 
-        // base line left
-        Vector3D v1 = new Vector3D(new Coordinate(46.27, 36.28, 0),
+        // we will use expected distance on Z Profile to construct the lines
+        Coordinate source = new Coordinate(38, 14, 1);
+        Coordinate receiver = new Coordinate(107, 25.95, 4);
+        LineSegment sourceReceiver = new LineSegment(source, receiver);
+        Double[] expectedDistance = new Double[] {14.21, 22.64, 23.98, 32.3};
+
+        // base line for constructing expected results
+        LineSegment leftTopographicVerticalLine = new LineSegment(new Coordinate(46.27, 36.28,0),
                 new Coordinate(59.6, -9.87, 0));
-
-        // original top segment (left side)
-        Vector3D v2 = new Vector3D(new Coordinate(54.68, 37.59, 5),
+        LineSegment leftShortTopographicVerticalLine = new LineSegment(new Coordinate(54.68, 37.59, 5),
                 new Coordinate(67.35, -6.83, 5));
+        LineSegment rightShortTopographicVerticalLine = new LineSegment(new Coordinate(55.93, 37.93, 5),
+                new Coordinate(68.68, -6.49, 5));
+        LineSegment rightTopographicVerticalLine = new LineSegment(new Coordinate(63.71, 41.16, 0),
+                new Coordinate(76.84, -5.28,0));
 
+        // Fix lines
+        fixLineSegment(sourceReceiver, leftTopographicVerticalLine, expectedDistance[0]);
 
-        // base line right
-        Vector3D v3 = new Vector3D(new Coordinate(63.71, 41.16, 0),
-                new Coordinate(76.84, -5.28, 0));
+        makeParallel(leftTopographicVerticalLine, leftShortTopographicVerticalLine);
+        fixLineSegment(sourceReceiver, leftShortTopographicVerticalLine, expectedDistance[1]);
 
-        Vector3D parallelPoint1 = new Vector3D(new Coordinate(54.68, 37.59, 5)).add(v1.normalize().divide(1/v2.length()));
-        Vector3D parallelPoint2 = new Vector3D(new Coordinate(55.93, 37.93, 5)).add(v3.normalize().divide(1/v2.length()));
+        makeParallel(leftTopographicVerticalLine, rightShortTopographicVerticalLine);
+        fixLineSegment(sourceReceiver, rightShortTopographicVerticalLine, expectedDistance[2]);
 
+        makeParallel(leftTopographicVerticalLine, rightTopographicVerticalLine);
+        fixLineSegment(sourceReceiver, rightTopographicVerticalLine, expectedDistance[3]);
 
-        profileBuilder.addTopographicLine(30, -14, 0, 122, -14, 0)// 1
-                .addTopographicLine(122, -14, 0, 122, 45, 0)// 2
-                .addTopographicLine(122, 45, 0, 30, 45, 0)// 3
-                .addTopographicLine(30, 45, 0, 30, -14, 0)// 4
-                .addTopographicLine(59.6, -9.87, 0, 76.84, -5.28, 0)// 5
-                .addTopographicLine(76.84, -5.28, 0, 63.71, 41.16, 0)// 6
-                .addTopographicLine(63.71, 41.16, 0, 46.27, 36.28, 0)// 7
-                .addTopographicLine(46.27, 36.28, 0, 59.6, -9.87, 0)// 8
-                .addTopographicLine(46.27, 36.28, 0, 54.68, 37.59, 5)// 9
-                .addTopographicLine(54.68, 37.59, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 10
-                .addTopographicLine(55.93, 37.93, 5, 63.71, 41.16, 0)// 11
-                .addTopographicLine(59.6, -9.87, 0, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 12
-                .addTopographicLine(parallelPoint1.getX(), parallelPoint1.getY(), 5, parallelPoint2.getX(), parallelPoint2.getY(), 5)// 13
-                .addTopographicLine(parallelPoint2.getX(), parallelPoint2.getY(), 5, 76.84, -5.28, 0)// 14
-                .addTopographicLine(54.68, 37.59, 5, parallelPoint1.getX(), parallelPoint1.getY(), 5)// 15
-                .addTopographicLine(55.93, 37.93, 5, parallelPoint2.getX(), parallelPoint2.getY(), 5); // 16
+        profileBuilder.addTopographicLine(30, -14, 0, 122, -14, 0);
+        profileBuilder.addTopographicLine(122, -14, 0, 122, 45, 0);
+        profileBuilder.addTopographicLine(122, 45, 0, 30, 45, 0);
+        profileBuilder.addTopographicLine(30, 45, 0, 30, -14, 0);
+        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, rightTopographicVerticalLine.p0);
+        profileBuilder.addTopographicLine(rightTopographicVerticalLine);
+        profileBuilder.addTopographicLine(rightTopographicVerticalLine.p0, leftTopographicVerticalLine.p0);
+        profileBuilder.addTopographicLine(leftTopographicVerticalLine);
+        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, leftShortTopographicVerticalLine.p0);
+        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine.p0, rightShortTopographicVerticalLine.p0);
+        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine.p0, rightTopographicVerticalLine.p1);
+        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, leftShortTopographicVerticalLine.p1);
+        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine.p1, rightShortTopographicVerticalLine.p1);
+        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine.p1, rightTopographicVerticalLine.p0);
+        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine);
+        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine);
     }
 
     /**
