@@ -369,13 +369,12 @@ public class PathFinder {
             mainProfile.insertCutPoint(false,
                     cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
-
+            mainProfile.getReceiver().id = rcv.receiverIndex;
             if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
-                mainProfile.getReceiver().id = rcv.receiverIndex;
                 mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
             }
+            mainProfile.getSource().id = src.sourceIndex;
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().id = src.sourceIndex;
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
             }
 
@@ -733,12 +732,12 @@ public class PathFinder {
             mainProfile.insertCutPoint(false, mainProfileCutPoints.subList(1,
                     mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
 
+            mainProfile.getReceiver().id = rcv.receiverIndex;
             if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
-                mainProfile.getReceiver().id = rcv.receiverIndex;
                 mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
             }
+            mainProfile.getSource().id = src.sourceIndex;
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().id = src.sourceIndex;
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
             }
 

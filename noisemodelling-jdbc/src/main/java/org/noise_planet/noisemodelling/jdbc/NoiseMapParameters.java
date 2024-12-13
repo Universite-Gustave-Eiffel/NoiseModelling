@@ -55,7 +55,7 @@ public class NoiseMapParameters {
     }
     int outputMaximumQueue = 50000;
 
-    static boolean mergeSources = true;
+    public boolean mergeSources = true;
 
     String lDayTable = "LDAY_RESULT";
     String lEveningTable = "LEVENING_RESULT";

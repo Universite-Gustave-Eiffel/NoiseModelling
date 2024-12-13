@@ -112,8 +112,8 @@ public class Attenuation implements IComputePathsOut {
         }
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,
-                    source.sourcePk, aGlobalMeteo));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,receiver.id,
+                    source.sourcePk, source.id, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -426,12 +426,22 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
+
         /**
-         * Source identifier. -1 if it is the receiver values merged from multiple sources. In this case the value is
+         * Source primary key. -1 if it is the receiver values merged from multiple sources. In this case the value is
          * not attenuation but spl at receiver position
          */
         public final long sourceId;
+
+        /**
+         * Receiver primary key.
+         */
         public final long receiverId;
+
+        /** Source index in the sub-domain */
+        public final int sourceIndex;
+        public final int receiverIndex;
+
         /**
          * Attenuation in dB or Spl in dB or dB(A)
          */
@@ -444,9 +454,11 @@ public class Attenuation implements IComputePathsOut {
          * @param sourceId Source identifier
          * @param value Noise level in dB
          */
-        public SourceReceiverAttenuation(long receiverId, long sourceId, double[] value) {
+        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
+            this.sourceIndex = sourceIndex;
+            this.receiverIndex = receiverIndex;
             this.value = value;
             this.receiverPosition = null;
         }

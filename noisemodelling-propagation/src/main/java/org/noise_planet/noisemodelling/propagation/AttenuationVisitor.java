@@ -65,23 +65,13 @@ public class AttenuationVisitor implements IComputePathsOut {
             pathParameters.addAll(path);
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.receiverPk, source.sourcePk, aGlobalMeteo));
+            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.receiverPk, receiver.id,
+                    source.sourcePk, source.id, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
         }
     }
-
-    /**
-     *
-     * @param receiverPk
-     * @param sourcePk
-     * @param level
-     */
-    protected void pushResult(long receiverPk, long sourcePk, double[] level) {
-        multiThreadParent.receiversAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiverPk, sourcePk, level));
-    }
-
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
@@ -104,19 +94,25 @@ public class AttenuationVisitor implements IComputePathsOut {
         if(multiThreadParent.receiversAttenuationLevels != null) {
             // Push merged sources into multi-thread parent
             // Merge levels for each receiver for lines sources
-            Map<Long, double[]> levelsPerSourceLines = new HashMap<>();
+            Map<Integer, double[]> levelsPerSourceLines = new HashMap<>();
             for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
-                if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
-                    levelsPerSourceLines.put(lvl.sourceId, lvl.value);
+                if (!levelsPerSourceLines.containsKey(lvl.sourceIndex)) {
+                    levelsPerSourceLines.put(lvl.sourceIndex, lvl.value);
                 } else {
                     // merge
-                    levelsPerSourceLines.put(lvl.sourceId,
-                            AcousticIndicatorsFunctions.sumDbArray(levelsPerSourceLines.get(lvl.sourceId),
+                    levelsPerSourceLines.put(lvl.sourceIndex,
+                            AcousticIndicatorsFunctions.sumDbArray(levelsPerSourceLines.get(lvl.sourceIndex),
                             lvl.value));
                 }
             }
-            for (Map.Entry<Long, double[]> entry : levelsPerSourceLines.entrySet()) {
-                pushResult(receiverPK, entry.getKey(), entry.getValue());
+            for (Map.Entry<Integer, double[]> entry : levelsPerSourceLines.entrySet()) {
+                long sourcePk = -1;
+                if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
+                    sourcePk = multiThreadParent.inputData.sourcesPk.get(entry.getKey());
+                }
+                multiThreadParent.receiversAttenuationLevels.add(
+                        new Attenuation.SourceReceiverAttenuation(receiverPK, receiverId,  sourcePk,
+                                entry.getKey(), entry.getValue()));
             }
         }
         receiverAttenuationLevels.clear();

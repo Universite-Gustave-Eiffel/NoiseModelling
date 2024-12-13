@@ -222,6 +222,7 @@ public class CnossosPathBuilder {
                 cutProfile.getSource().getCoordinate());
         CnossosPath pathParameters = new CnossosPath();
         pathParameters.setCutProfile(cutProfile);
+        pathParameters.setSourceOrientation(cutProfile.getSource().orientation);
         pathParameters.setFavorable(true);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
@@ -348,9 +349,10 @@ public class CnossosPathBuilder {
                         break;
                     }
                 }
-                points.get(0).orientation = computeOrientation(cutProfile.getSource().orientation,
+                Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfilePoints.get(0).getCoordinate(), targetPosition);
-                pathParameters.raySourceReceiverDirectivity = points.get(0).orientation;
+                points.get(0).orientation = emissionDirection;
+                pathParameters.raySourceReceiverDirectivity = emissionDirection;
                 src = pts2D.get(i0);
             }
             // Add reflection/vertical edge diffraction points/segments between i0 i1

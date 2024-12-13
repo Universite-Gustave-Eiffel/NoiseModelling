@@ -158,7 +158,7 @@ public class NoiseMapWriter implements Runnable {
             AttenuatedPaths.queueSize.decrementAndGet();
             int parameterIndex = 1;
             ps.setLong(parameterIndex++, row.receiverId);
-            if(!NoiseMapParameters.mergeSources) {
+            if(!noiseMapParameters.mergeSources) {
                 ps.setLong(parameterIndex++, row.sourceId);
             }
 
@@ -206,7 +206,7 @@ public class NoiseMapWriter implements Runnable {
     private String forgeCreateTable(String tableName) {
         StringBuilder sb = new StringBuilder("create table ");
         sb.append(tableName);
-        if(!NoiseMapParameters.mergeSources) {
+        if(!noiseMapParameters.mergeSources) {
             sb.append(" (IDRECEIVER bigint NOT NULL");
             sb.append(", IDSOURCE bigint NOT NULL");
         } else {
@@ -232,7 +232,7 @@ public class NoiseMapWriter implements Runnable {
      * @param tableName
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
-        if (NoiseMapParameters.mergeSources) {
+        if (noiseMapParameters.mergeSources) {
             return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
         } else {
             return "CREATE INDEX ON " + tableName + " (IDRECEIVER);";

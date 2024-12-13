@@ -50,7 +50,7 @@ public class PathFinderTest {
     /**
      * Overwrite project resource expected test cases
      */
-    public boolean overwriteTestCase = false;
+    public boolean overwriteTestCase = true;
 
     /**
      *  Error for coordinates

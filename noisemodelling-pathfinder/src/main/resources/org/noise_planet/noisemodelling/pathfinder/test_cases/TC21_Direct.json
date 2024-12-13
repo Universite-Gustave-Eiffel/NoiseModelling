@@ -45,34 +45,12 @@
   }, {
     "type" : "Wall",
     "coordinate" : {
-      "x" : 156.2941442723584,
-      "y" : 21.54871053104759,
-      "z" : 5.5837045204459566
-    },
-    "zGround" : 5.5837045204459566,
-    "groundCoefficient" : 0.0,
-    "wall" : {
-      "p0" : {
-        "x" : 156.657,
-        "y" : 21.3409,
-        "z" : 11.5
-      },
-      "p1" : {
-        "x" : 141.1,
-        "y" : 30.3,
-        "z" : 11.5
-      }
-    },
-    "wallAlpha" : [ ]
-  }, {
-    "type" : "Wall",
-    "coordinate" : {
       "x" : 156.29464332211882,
       "y" : 21.5495771043778,
       "z" : 11.5
     },
     "zGround" : 5.583791280325972,
-    "groundCoefficient" : 0.0,
+    "groundCoefficient" : 0.2,
     "wall" : {
       "p0" : {
         "x" : 156.657,
@@ -85,7 +63,8 @@
         "z" : 11.5
       }
     },
-    "wallAlpha" : [ ]
+    "wallAlpha" : [ ],
+    "intersectionType" : "BUILDING_ENTER"
   }, {
     "type" : "Wall",
     "coordinate" : {
@@ -94,7 +73,7 @@
       "z" : 11.5
     },
     "zGround" : 5.662122036690614,
-    "groundCoefficient" : 0.0,
+    "groundCoefficient" : 0.2,
     "wall" : {
       "p0" : {
         "x" : 159.7,
@@ -107,29 +86,8 @@
         "z" : 11.5
       }
     },
-    "wallAlpha" : [ ]
-  }, {
-    "type" : "Wall",
-    "coordinate" : {
-      "x" : 156.80465457123591,
-      "y" : 21.589265109169435,
-      "z" : 5.662247596990744
-    },
-    "zGround" : 5.662247596990744,
-    "groundCoefficient" : 0.0,
-    "wall" : {
-      "p0" : {
-        "x" : 159.7,
-        "y" : 26.5,
-        "z" : 11.5
-      },
-      "p1" : {
-        "x" : 156.657,
-        "y" : 21.3409,
-        "z" : 11.5
-      }
-    },
-    "wallAlpha" : [ ]
+    "wallAlpha" : [ ],
+    "intersectionType" : "BUILDING_EXIT"
   }, {
     "type" : "Topography",
     "coordinate" : {

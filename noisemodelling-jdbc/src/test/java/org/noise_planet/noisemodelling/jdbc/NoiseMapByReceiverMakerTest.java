@@ -276,9 +276,8 @@ public class NoiseMapByReceiverMakerTest {
     }
 
     public static void assertOrientationEquals(Orientation orientationA, Orientation orientationB, double epsilon) {
-        assertEquals(orientationA.pitch, orientationB.pitch, epsilon);
-        assertEquals(orientationA.roll, orientationB.roll, epsilon);
-        assertEquals(orientationA.yaw, orientationB.yaw, epsilon);
+        assertArrayEquals(new double[]{orientationA.yaw, orientationA.pitch, orientationA.roll},
+                new double[]{orientationB.yaw, orientationB.pitch, orientationB.roll}, epsilon, orientationA+" != "+orientationB);
     }
 
 
@@ -291,8 +290,8 @@ public class NoiseMapByReceiverMakerTest {
                             new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
                     new Orientation(0,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
-                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 0.0)');" +
-                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 0.0)');");
+                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 4.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 4.0)');");
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
@@ -348,14 +347,14 @@ public class NoiseMapByReceiverMakerTest {
                         assertEquals(0, new Coordinate(0, 5.07).distance(pathParameters.getPointList().get(0).coordinate), 0.1);
                         // This is source orientation, not relevant to receiver position
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(330.07, -24.12, 0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
 
                         pathParameters = pathsParameters.remove(0);;
                         assertEquals(1, pathParameters.getIdReceiver());
                         assertEquals(0, new Coordinate(0, 5.02).
                                 distance(pathParameters.getPointList().get(0).coordinate), 0.1);
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(336.90675972385696, -19.398969693698437, 0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
                         pathParameters = pathsParameters.remove(0);
                         assertEquals(2, pathParameters.getIdReceiver());
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);

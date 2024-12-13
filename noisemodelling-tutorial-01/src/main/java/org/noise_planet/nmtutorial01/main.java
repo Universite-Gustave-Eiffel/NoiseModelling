@@ -252,9 +252,6 @@ class Main {
             if(builder != null) {
                 kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
             }
-            if(result != null) {
-                kmlDocument.writeRays(result.getPropagationPaths());
-            }
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
                 if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty()) {
