@@ -28,7 +28,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters
-import org.noise_planet.noisemodelling.pathfinder.utils.Utils
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -205,9 +205,9 @@ def exec(Connection connection, input) {
 
             // Compute emission sound level for each road segment
             def results = noiseEmissionMaker.computeLw(rs)
-            def lday = Utils.wToDba(results[0])
-            def levening = Utils.wToDba(results[1])
-            def lnight = Utils.wToDba(results[2])
+            def lday = AcousticIndicatorsFunctions.wToDba(results[0])
+            def levening = AcousticIndicatorsFunctions.wToDba(results[1])
+            def lnight = AcousticIndicatorsFunctions.wToDba(results[2])
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
                     lday[0] as Double, lday[1] as Double, lday[2] as Double,

@@ -8,8 +8,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -17,11 +16,13 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  *
  * @author SU Qi
  */
-public class Test3DPropagation extends TestCase{
+public class Test3DPropagation {
 
     @Test
     public void testChangePlan() {

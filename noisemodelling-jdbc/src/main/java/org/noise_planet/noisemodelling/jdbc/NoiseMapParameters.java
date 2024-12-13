@@ -55,7 +55,7 @@ public class NoiseMapParameters {
     }
     int outputMaximumQueue = 50000;
 
-    static boolean mergeSources = true;
+    public boolean mergeSources = true;
 
     String lDayTable = "LDAY_RESULT";
     String lEveningTable = "LEVENING_RESULT";
@@ -69,6 +69,28 @@ public class NoiseMapParameters {
     Boolean sqlOutputFileCompression = true;
     Boolean dropResultsTable = true;
     public boolean computeLAEQOnly = false;
+
+    /**
+     * If true the position of the receiver (with the altitude if available) will be exported into the results tables
+     */
+    boolean exportReceiverPosition = false;
+
+    /**
+     * @return If true the position of the receiver (with the altitude if available) will be exported into the results
+     * tables
+     */
+    public boolean isExportReceiverPosition() {
+        return exportReceiverPosition;
+    }
+
+    /**
+     * @param exportReceiverPosition If true the position of the receiver (with the altitude if available) will be
+     *                               exported into the results tables
+     */
+    public void setExportReceiverPosition(boolean exportReceiverPosition) {
+        this.exportReceiverPosition = exportReceiverPosition;
+    }
+
     /**
      * @param maximumRaysOutputCount if export rays, do not keep more than this number of rays per computation area (0 infinite)
      */

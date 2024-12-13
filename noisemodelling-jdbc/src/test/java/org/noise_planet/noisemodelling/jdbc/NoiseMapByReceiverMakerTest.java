@@ -12,9 +12,9 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -23,7 +23,7 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
@@ -40,19 +40,19 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
 
 public class NoiseMapByReceiverMakerTest {
 
     private Connection connection;
 
-    @Before
+    @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(NoiseMapByReceiverMakerTest.class.getSimpleName(), true, ""));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();
@@ -175,33 +175,6 @@ public class NoiseMapByReceiverMakerTest {
         }
     }
 
-    //    @Test
-    //    public void testNoiseMapBuilding2() throws Exception {
-    //        try(Statement st = connection.createStatement()) {
-    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("roads_traff.shp").getFile(), "ROADS_GEOM");
-    //            SHPRead.readShape(connection, LDENPointNoiseMapFactoryTest.class.getResource("buildings.shp").getFile(), " BUILDINGS");
-    //            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
-    //            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-    //            noisemap.setSourceHasAbsoluteZCoordinates(false);
-    //            noisemap.setHeightField("HEIGHT");
-    //            noisemap.setMaximumArea(300);
-    //            noisemap.setBuildingBuffer(0);
-    //            noisemap.setMaximumPropagationDistance(800);
-    //
-    //
-    //
-    //            noisemap.initialize(connection, new EmptyProgressVisitor());
-    //            AtomicInteger pk = new AtomicInteger(0);
-    //            for(int i=0; i < noisemap.getGridDim(); i++) {
-    //                for(int j=0; j < noisemap.getGridDim(); j++) {
-    //                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
-    //                }
-    //            }
-    //            assertNotSame(0, pk.get());
-    //            SHPWrite.exportTable(connection, "target/triangle.shp", "TRIANGLES");
-    //        }
-    //    }
-
     private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
         StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");
@@ -286,7 +259,7 @@ public class NoiseMapByReceiverMakerTest {
 
                         List<CnossosPath> pathsParameters = rout.getPropagationPaths();
                         assertEquals(2 , pathsParameters.size());
-                        //System.out.println("laaaaaa"+rout.getPropagationPaths());
+
                         CnossosPath pathParameters = pathsParameters.remove(0);
                         assertEquals(1, pathParameters.getIdReceiver());
                         assertEquals(new Orientation(90, 15, 0), pathParameters.getSourceOrientation());
@@ -303,9 +276,8 @@ public class NoiseMapByReceiverMakerTest {
     }
 
     public static void assertOrientationEquals(Orientation orientationA, Orientation orientationB, double epsilon) {
-        assertEquals(orientationA.pitch, orientationB.pitch, epsilon);
-        assertEquals(orientationA.roll, orientationB.roll, epsilon);
-        assertEquals(orientationA.yaw, orientationB.yaw, epsilon);
+        assertArrayEquals(new double[]{orientationA.yaw, orientationA.pitch, orientationA.roll},
+                new double[]{orientationB.yaw, orientationB.pitch, orientationB.roll}, epsilon, orientationA+" != "+orientationB);
     }
 
 
@@ -318,8 +290,8 @@ public class NoiseMapByReceiverMakerTest {
                             new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
                     new Orientation(0,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
-                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 0.0)');" +
-                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 0.0)');");
+                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 4.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 4.0)');");
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
@@ -375,14 +347,14 @@ public class NoiseMapByReceiverMakerTest {
                         assertEquals(0, new Coordinate(0, 5.07).distance(pathParameters.getPointList().get(0).coordinate), 0.1);
                         // This is source orientation, not relevant to receiver position
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(330.07, -24.12, 0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
 
                         pathParameters = pathsParameters.remove(0);;
                         assertEquals(1, pathParameters.getIdReceiver());
                         assertEquals(0, new Coordinate(0, 5.02).
                                 distance(pathParameters.getPointList().get(0).coordinate), 0.1);
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(336.90675972385696, -19.398969693698437, 0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
                         pathParameters = pathsParameters.remove(0);
                         assertEquals(2, pathParameters.getIdReceiver());
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);

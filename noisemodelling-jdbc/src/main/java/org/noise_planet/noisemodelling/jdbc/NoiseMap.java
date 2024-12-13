@@ -43,10 +43,6 @@ public class NoiseMap extends Attenuation {
         this.noiseMapParameters = noiseMapParameters;
     }
 
-    /*public LdenData getLdenData() {
-        return ldenData;
-    }*/
-
     /**
      *
      * @return an instance of the interface IComputePathsOut

@@ -9,7 +9,8 @@
 
 package org.noise_planet.noisemodelling.emission.road;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar;
@@ -17,7 +18,8 @@ import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnoss
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 /**
  * Test the Road model CNOSSOS as implemented in RoadVehicleCnossosVar.java

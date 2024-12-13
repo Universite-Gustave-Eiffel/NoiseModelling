@@ -35,7 +35,6 @@ import java.sql.SQLException
 class TestAcousticTools extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestAcousticTools.class)
 
-    @Test
     void testAddLeqLaeqColumns1() {
 
         SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
@@ -50,7 +49,6 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals("This table does not contain column with this suffix : HZ", res)
     }
 
-    @Test
     void testAddLeqLaeqColumns2() {
 
         SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
@@ -67,7 +65,6 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals(true, fields.contains("LEQ"))
     }
 
-    /*@Test
     void testCreateIsosurface() {
         def sql = new Sql(connection)
 
@@ -102,10 +99,8 @@ class TestAcousticTools extends JdbcTestCase {
         assertTrue(fieldValues.contains("5"));
         assertTrue(fieldValues.contains("6"));
         assertTrue(fieldValues.contains("7"));
-    }*/
+    }
 
-
-    @Test
     void testUpdateZ() throws SQLException, IOException {
         SHPRead.importTable(connection, TestAcousticTools.getResource("receivers.shp").getPath())
         def st = new Sql(connection)

@@ -45,11 +45,7 @@ public class Orientation {
 
     @Override
     public String toString() {
-        return "Orientation{" +
-                "yaw=" + yaw +
-                ", pitch=" + pitch +
-                ", roll=" + roll +
-                '}';
+        return "Orientation("+yaw+","+pitch+","+roll+")";
     }
 
     /**
