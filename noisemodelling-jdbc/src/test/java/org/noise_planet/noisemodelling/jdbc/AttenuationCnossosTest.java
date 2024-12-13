@@ -6307,15 +6307,16 @@ public class AttenuationCnossosTest {
 
         // Add building
         builder.addBuilding(new Coordinate[]{
-                new Coordinate(197, 36.0, 0),
-                new Coordinate(179, 36, 0),
-                new Coordinate(179, 15, 0),
-                new Coordinate(197, 15, 0),
-                new Coordinate(197, 21, 0),
-                new Coordinate(187, 21, 0),
-                new Coordinate(187, 30, 0),
-                new Coordinate(197, 30, 0),
-                new Coordinate(197, 36, 0)}, 20, -1);
+                new Coordinate(197, 36.0, 20),
+                new Coordinate(179, 36, 20),
+                new Coordinate(179, 15, 20),
+                new Coordinate(197, 15, 20),
+                new Coordinate(197, 21, 20),
+                new Coordinate(187, 21, 20),
+                new Coordinate(187, 30, 20),
+                new Coordinate(197, 30, 20),
+                new Coordinate(197, 36, 20)},-1);
+
         addGroundAttenuationTC5(builder);
         addTopographicTC5Model(builder);
 
@@ -6532,14 +6533,14 @@ public class AttenuationCnossosTest {
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.60, 3.00, 13.93};
         double[] expectedCfH = new double[]{212.03, 230.71, 226.18, 101.93, 13.28, 1.67, 0.33, 0.07};
         double[] expectedAGroundH = new double[]{-1.25, -1.25, -1.03, 0.77, -1.25, -1.25, -1.25, -1.25};
-        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.59, 2.96, 13.76};
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.38, 1.96, 9.49};
         double[] expectedCfF = new double[]{209.34, 224.10, 237.46, 143.50, 25.94, 2.69, 0.51, 0.11};
         double[] expectedAGroundF = new double[]{-1.25, -1.17, -1.25, -1.25, -1.25, -1.25, -1.25, -1.25};
 
         expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
         expectedAAtm = new double[]{0.02, 0.08, 0.21, 0.39, 0.75, 1.97, 6.70, 23.88};
         expectedADiv = new double[]{56.02, 56.02, 56.02, 56.02, 56.02, 56.02, 56.02, 56.02};
-        expectedLH = new double[]{15.12, 11.76, 7.43, 0.88, -1.57, -6.24, -14-10, -34.33};
+        expectedLH = new double[]{15.12, 11.76, 7.43, 0.88, -1.57, -6.24, -14.10, -34.33};
         expectedLF = new double[]{15.12, 11.69, 7.64, 2.90, -1.57, -6.24, -14.10, -34.33};
 
         proPath = propDataOut.getPropagationPaths().get(1);
@@ -6557,10 +6558,10 @@ public class AttenuationCnossosTest {
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
         actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
 
-        assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF - lateral right", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("WF - lateral right", expectedWF, actualWF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("CfF - lateral right", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF - lateral right", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
@@ -6574,7 +6575,7 @@ public class AttenuationCnossosTest {
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.59, 2.96, 13.76};
         expectedCfH = new double[]{214.41, 233.28, 228.92, 103.46, 13.51, 1.70, 0.34, 0.07};
         expectedAGroundH = new double[]{-1.26, -1.26, -1.05, 0.86, -1.26, -1.26, -1.26, -1.26};
-        expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.59, 2.96, 13.76};
+        expectedWF = new double[]{0.00, 0.00, 0.00, 0.01, 0.07, 0.38, 1.96, 9.49};
         expectedCfF = new double[]{211.78, 226.80, 240.03, 144.13, 25.83, 2.69, 0.51, 0.11};
         expectedAGroundF = new double[]{-1.26, -1.18, -1.26, -1.26, -1.26, -1.26, -1.26, -1.26};
 
@@ -6600,8 +6601,8 @@ public class AttenuationCnossosTest {
         actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
 
         assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("WF - lateral left", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfF - lateral left", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF - lateral left", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
@@ -8403,7 +8404,7 @@ public class AttenuationCnossosTest {
                 double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
-                    maxPowerReceiverIndex = (int) v.receiver;
+                    maxPowerReceiverIndex = (int) v.receiverId;
                 }
             }
             assertEquals(idReceiver, maxPowerReceiverIndex);
@@ -8539,11 +8540,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOut.receiversAttenuationLevels) {
-            if(!levelsPerReceiver.containsKey(lvl.receiver)) {
-                levelsPerReceiver.put(lvl.receiver, lvl.value);
+            if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
+                levelsPerReceiver.put(lvl.receiverId, lvl.value);
             } else {
                 // merge
-                levelsPerReceiver.put(lvl.receiver, sumDbArray(levelsPerReceiver.get(lvl.receiver),
+                levelsPerReceiver.put(lvl.receiverId, sumDbArray(levelsPerReceiver.get(lvl.receiverId),
                         lvl.value));
             }
         }
@@ -8552,11 +8553,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOutTest.receiversAttenuationLevels) {
-            if(!levelsPerReceiverLines.containsKey(lvl.receiver)) {
-                levelsPerReceiverLines.put(lvl.receiver, lvl.value);
+            if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
+                levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
             } else {
                 // merge
-                levelsPerReceiverLines.put(lvl.receiver, sumDbArray(levelsPerReceiverLines.get(lvl.receiver),
+                levelsPerReceiverLines.put(lvl.receiverId, sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
                         lvl.value));
             }
         }

@@ -58,8 +58,10 @@ public class NoiseMapInStack implements IComputePathsOut {
     double[] sumLevels(List<double[]> wjSources,List<Attenuation.SourceReceiverAttenuation> receiverAttenuationLevels) {
         double[] levels = new double[noiseMapComputeRaysOut.dayPathData.freq_lvl.size()];
         for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
-            levels = sumArray(levels,
-                    dbaToW(sumArray(wToDba(wjSources.get((int) lvl.source)), lvl.value)));
+            if(wjSources.size() > lvl.sourceId && lvl.sourceId >= 0) {
+                levels = sumArray(levels,
+                        dbaToW(sumArray(wToDba(wjSources.get((int) lvl.sourceId)), lvl.value)));
+            }
         }
         return levels;
     }
@@ -96,7 +98,7 @@ public class NoiseMapInStack implements IComputePathsOut {
 
     /**
      * Get propagation path result
-     * @param sourceId Source identifier
+     * @param source Source identifier
      * @param sourceLi Source power per meter coefficient
      * @param pathsParameter Propagation path result
      */
@@ -257,11 +259,11 @@ public class NoiseMapInStack implements IComputePathsOut {
                 AttenuationVisitor attenuationVisitor = lDENAttenuationVisitor[timePeriod.ordinal()];
                 for (Attenuation.SourceReceiverAttenuation lvl : attenuationVisitor.receiverAttenuationLevels) {
                     NoiseMapParameters.TimePeriodParameters timePeriodParameters;
-                    if (!levelsPerSourceLines.containsKey(lvl.source)) {
+                    if (!levelsPerSourceLines.containsKey(lvl.sourceId)) {
                         timePeriodParameters = new NoiseMapParameters.TimePeriodParameters();
-                        levelsPerSourceLines.put(lvl.source, timePeriodParameters);
+                        levelsPerSourceLines.put(lvl.sourceId, timePeriodParameters);
                     } else {
-                        timePeriodParameters = levelsPerSourceLines.get(lvl.source);
+                        timePeriodParameters = levelsPerSourceLines.get(lvl.sourceId);
                     }
                     if (timePeriodParameters.getTimePeriodLevel(timePeriod) == null) {
                         timePeriodParameters.setTimePeriodLevel(timePeriod, lvl.value);

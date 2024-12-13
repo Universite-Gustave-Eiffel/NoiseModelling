@@ -157,9 +157,9 @@ public class NoiseMapWriter implements Runnable {
             Attenuation.SourceReceiverAttenuation row = stack.pop();
             AttenuatedPaths.queueSize.decrementAndGet();
             int parameterIndex = 1;
-            ps.setLong(parameterIndex++, row.receiver);
+            ps.setLong(parameterIndex++, row.receiverId);
             if(!NoiseMapParameters.mergeSources) {
-                ps.setLong(parameterIndex++, row.source);
+                ps.setLong(parameterIndex++, row.sourceId);
             }
 
             if (!noiseMapParameters.computeLAEQOnly){

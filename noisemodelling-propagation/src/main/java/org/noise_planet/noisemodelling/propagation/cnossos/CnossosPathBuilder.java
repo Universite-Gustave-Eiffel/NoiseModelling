@@ -47,8 +47,8 @@ public class CnossosPathBuilder {
         Coordinate rcv = pts2D.get(pts2D.size() - 1);
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
-        for (int iO = 1; iO < pts2DGround.length - 1; iO++) {
-            int i0Cut = cut2DGroundIndex.indexOf(iO);
+        for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
+            int iO = cut2DGroundIndex.get(i0Cut);
             Coordinate o = pts2DGround[iO];
 
             double dSO = src.distance(o);
