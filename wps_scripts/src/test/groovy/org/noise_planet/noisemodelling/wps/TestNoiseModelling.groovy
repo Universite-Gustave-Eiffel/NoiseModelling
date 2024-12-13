@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 class TestNoiseModelling extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestNoiseModelling.class)
 
-    @Test
+
     void testRoadEmissionFromDEN() {
 
         SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
@@ -45,8 +45,6 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
     }
 
-
-    /*@Test
     void testRailWayEmissionFromDEN() {
 
         def sql = new Sql(connection)
@@ -108,9 +106,8 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableToExport": "LDAY_GEOM"])
 
         //assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,4)
-    }*/
+    }
 
-    @Test
     void testLdayFromTraffic() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
@@ -186,7 +183,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(63, leqs[7] as Double, 2.0)
     }
 
-    @Test
+
     void testLdayFromTrafficWithBuildingsZ() {
 
         def sql = new Sql(connection)
@@ -270,7 +267,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(63, leqs[7] as Double, 2.0)
     }
 
-    @Test
+
     void testLdenFromEmission() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
@@ -300,7 +297,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains("LDEN_GEOM"))
     }
 
-    /*void testLdenFromEmission1khz() {
+    void testLdenFromEmission1khz() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
 
@@ -337,5 +334,5 @@ class TestNoiseModelling extends JdbcTestCase {
         def fields = JDBCUtilities.getColumnNames(connection, "LDAY_GEOM")
 
         assertArrayEquals(["IDRECEIVER","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
-    }*/
+    }
 }

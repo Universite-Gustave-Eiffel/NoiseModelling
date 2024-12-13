@@ -26,7 +26,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- *
+ * Create SQL Tables from a stream of noise levels
  */
 public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcessDataFactory, NoiseMapByReceiverMaker.IComputeRaysOutFactory, ProfilerThread.Metric {
     NoiseMapParameters noiseMapParameters;

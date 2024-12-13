@@ -9,7 +9,9 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
@@ -29,7 +31,9 @@ import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.WRITER_CACHE;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
-
+/**
+ * Process that run SQL query to feed tables
+ */
 public class NoiseMapWriter implements Runnable {
     Logger LOGGER = LoggerFactory.getLogger(NoiseMapWriter.class);
     File sqlFilePath;
@@ -140,6 +144,9 @@ public class NoiseMapWriter implements Runnable {
         if(!noiseMapParameters.mergeSources) {
             query.append(", ?"); // ID_SOURCE
         }
+        if(noiseMapParameters.exportReceiverPosition) {
+            query.append(", ?"); // THE_GEOM
+        }
         if (!noiseMapParameters.computeLAEQOnly) {
             query.append(", ?".repeat(noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size())); // freq value
             query.append(", ?, ?);"); // laeq, leq
@@ -153,6 +160,7 @@ public class NoiseMapWriter implements Runnable {
             ps = new StringPreparedStatements(o, query.toString());
         }
         int batchSize = 0;
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
         while(!stack.isEmpty()) {
             Attenuation.SourceReceiverAttenuation row = stack.pop();
             AttenuatedPaths.queueSize.decrementAndGet();
@@ -161,7 +169,11 @@ public class NoiseMapWriter implements Runnable {
             if(!noiseMapParameters.mergeSources) {
                 ps.setLong(parameterIndex++, row.sourceId);
             }
-
+            if(noiseMapParameters.exportReceiverPosition) {
+                ps.setObject(parameterIndex++,  row.receiverPosition != null ?
+                        factory.createPoint(row.receiverPosition):
+                        factory.createPoint());
+            }
             if (!noiseMapParameters.computeLAEQOnly){
                 for(int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                     double value = row.value[idfreq];
@@ -211,6 +223,11 @@ public class NoiseMapWriter implements Runnable {
             sb.append(", IDSOURCE bigint NOT NULL");
         } else {
             sb.append(" (IDRECEIVER bigint NOT NULL");
+        }
+        if(noiseMapParameters.exportReceiverPosition) {
+            sb.append(", THE_GEOM GEOMETRY(POINTZ,");
+            sb.append(srid);
+            sb.append(")");
         }
         if (noiseMapParameters.computeLAEQOnly){
             sb.append(", LAEQ REAL");
