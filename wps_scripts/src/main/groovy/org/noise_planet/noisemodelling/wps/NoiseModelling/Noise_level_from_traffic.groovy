@@ -505,6 +505,11 @@ def exec(Connection connection, input) {
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
 
+    boolean recordProfile = false;
+    if (input['confRecordProfile']) {
+        recordProfile = input['confRecordProfile']
+    }
+
     int reflexion_order = 0
     if (input['confReflOrder']) {
         reflexion_order = Integer.valueOf(input['confReflOrder'])
@@ -724,10 +729,14 @@ def exec(Connection connection, input) {
     profilerThread.addMetric(new ReceiverStatsMetric());
     profilerThread.setWriteInterval(300);
     profilerThread.setFlushInterval(300);
-    pointNoiseMap.setProfilerThread(profilerThread);
+    if(recordProfile) {
+        pointNoiseMap.setProfilerThread(profilerThread);
+    }
     try {
         ldenProcessing.start()
-        new Thread(profilerThread).start();
+        if(recordProfile) {
+            new Thread(profilerThread).start();
+        }
         // Iterate over computation areas
         int k = 0
         Map cells = pointNoiseMap.searchPopulatedCells(connection)

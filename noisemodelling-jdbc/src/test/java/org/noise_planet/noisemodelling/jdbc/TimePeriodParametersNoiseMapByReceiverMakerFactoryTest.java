@@ -16,12 +16,14 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
@@ -1079,6 +1081,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         NoiseMapParameters.setComputeLNight(false);
         NoiseMapParameters.setComputeLDEN(false);
         NoiseMapParameters.setMergeSources(true); // No idsource column
+        NoiseMapParameters.setExportReceiverPosition(true); // create geometry columns with receiver position
 
         NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
 
@@ -1094,6 +1097,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.createStatement().execute("SELECT UpdateGeometrySRID('BUILD_GRID2', 'THE_GEOM', 2154);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('DEM_FENCE', 'THE_GEOM', 2154);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('LANDCOVER', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('SOURCESI', 'THE_GEOM', 2154);");
         //connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
         String name_output = "real";
 
@@ -1147,20 +1151,16 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             assertEquals(4361, rs.getInt(1));
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, LVL.* FROM "+ NoiseMapParameters.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK");
-        SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), true,new EmptyProgressVisitor());
-
-        //assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ NoiseMapParameters.lDayTable+" ORDER BY IDRECEIVER")) {
             assertTrue(rs.next());
-            /* assertEquals(1, rs.getInt("IDRECEIVER"));
+            assertEquals(1, rs.getInt("IDRECEIVER"));
             Object geom = rs.getObject("THE_GEOM");
             assertNotNull(geom);
             assertTrue(geom instanceof Point);
             // We get receiver Altitude not height
-            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);*/
+            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);
         }
     }
 

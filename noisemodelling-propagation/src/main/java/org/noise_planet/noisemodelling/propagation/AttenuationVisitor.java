@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Receive vertical cut plane, compute the attenuation corresponding to this plane
@@ -66,7 +68,7 @@ public class AttenuationVisitor implements IComputePathsOut {
         }
         if (aGlobalMeteo != null) {
             receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver.receiverPk, receiver.id,
-                    source.sourcePk, source.id, aGlobalMeteo));
+                    source.sourcePk, source.id, aGlobalMeteo, receiver.coordinate));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -95,7 +97,11 @@ public class AttenuationVisitor implements IComputePathsOut {
             // Push merged sources into multi-thread parent
             // Merge levels for each receiver for lines sources
             Map<Integer, double[]> levelsPerSourceLines = new HashMap<>();
+            AtomicReference<Coordinate> receiverPosition = new AtomicReference<>(new Coordinate());
             for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
+                if(lvl.receiverPosition != null) {
+                    receiverPosition.set(lvl.receiverPosition);
+                }
                 if (!levelsPerSourceLines.containsKey(lvl.sourceIndex)) {
                     levelsPerSourceLines.put(lvl.sourceIndex, lvl.value);
                 } else {
@@ -112,7 +118,7 @@ public class AttenuationVisitor implements IComputePathsOut {
                 }
                 multiThreadParent.receiversAttenuationLevels.add(
                         new Attenuation.SourceReceiverAttenuation(receiverPK, receiverId,  sourcePk,
-                                entry.getKey(), entry.getValue()));
+                                entry.getKey(), entry.getValue(), receiverPosition.get()));
             }
         }
         receiverAttenuationLevels.clear();

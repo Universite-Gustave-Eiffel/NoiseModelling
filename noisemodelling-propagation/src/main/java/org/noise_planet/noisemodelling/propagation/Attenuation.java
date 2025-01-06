@@ -113,7 +113,7 @@ public class Attenuation implements IComputePathsOut {
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
             receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,receiver.id,
-                    source.sourcePk, source.id, aGlobalMeteo));
+                    source.sourcePk, source.id, aGlobalMeteo, receiver.coordinate));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -448,22 +448,14 @@ public class Attenuation implements IComputePathsOut {
         public final double[] value;
         public final Coordinate receiverPosition;
 
-        /**
-         *
-         * @param receiverId Receiver identifier
-         * @param sourceId Source identifier
-         * @param value Noise level in dB
-         */
-        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value) {
+        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value, Coordinate receiverPosition) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
             this.sourceIndex = sourceIndex;
             this.receiverIndex = receiverIndex;
             this.value = value;
-            this.receiverPosition = null;
+            this.receiverPosition = receiverPosition;
         }
-
-
 
     }
 
