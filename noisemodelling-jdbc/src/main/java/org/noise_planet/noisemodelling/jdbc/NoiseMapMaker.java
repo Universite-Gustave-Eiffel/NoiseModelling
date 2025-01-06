@@ -93,10 +93,12 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
 
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
+        if(JDBCUtilities.tableExists(connection, noiseMapByReceiverMaker.getSourcesTableName())) {
+            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
+        }
         if(noiseMapParameters.input_mode == org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
-            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
             List<Integer> allFrequencyValues = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";

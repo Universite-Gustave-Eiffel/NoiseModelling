@@ -87,6 +87,8 @@ class TestAcousticTools extends JdbcTestCase {
 
         new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
 
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS2")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("LDEN_GEOM")))
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))
 
 
