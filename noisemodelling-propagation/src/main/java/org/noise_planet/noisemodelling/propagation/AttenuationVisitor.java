@@ -113,7 +113,7 @@ public class AttenuationVisitor implements IComputePathsOut {
             }
             for (Map.Entry<Integer, double[]> entry : levelsPerSourceLines.entrySet()) {
                 long sourcePk = -1;
-                if(entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
+                if(entry.getKey() >= 0 && entry.getKey() < multiThreadParent.inputData.sourcesPk.size()) {
                     sourcePk = multiThreadParent.inputData.sourcesPk.get(entry.getKey());
                 }
                 multiThreadParent.receiversAttenuationLevels.add(

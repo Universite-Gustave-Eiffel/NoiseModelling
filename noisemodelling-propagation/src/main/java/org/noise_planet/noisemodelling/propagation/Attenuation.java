@@ -173,7 +173,7 @@ public class Attenuation implements IComputePathsOut {
             Coordinate src = ptList.get(0).coordinate;
             PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
-            if (pDif != null && pDif.alphaWall.size()>0) {
+            if (pDif != null && !pDif.alphaWall.isEmpty()) {
                 if (pDif.bodyBarrier){
 
                     int n = 3;

@@ -1482,7 +1482,14 @@ public class PathFinderTest {
         //Create obstruction test object
         ProfileBuilder builder = new ProfileBuilder();
 
-        builder.addTopographicLine(80.0, 20.0, -0.5, 110.0, 20.0, -0.5)
+        // Add building
+        // screen
+        builder.addWall(new Coordinate[]{
+                        new Coordinate(114.0, 52.0, 2.5),
+                        new Coordinate(170.0, 60.0, 4.5)},
+                Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
+
+                .addTopographicLine(80.0, 20.0, -0.5, 110.0, 20.0, -0.5)
                 .addTopographicLine(110.0, 20.0, -0.5, 111.0, 20.0, 0.0)
                 .addTopographicLine(111.0, 20.0, 0.0, 215.0, 20.0, 0.0)
                 .addTopographicLine(215.0, 20.0, 0.0, 215.0, 80.0, 0.0)
@@ -1495,10 +1502,7 @@ public class PathFinderTest {
 
                 .addGroundEffect(80, 110, 20, 80, 0.0)
                 .addGroundEffect(110, 215, 20, 80, 1.0)
-                .addWall(new Coordinate[]{
-                        new Coordinate(114.0, 52.0, 2.5),
-                        new Coordinate(170.0, 60.0, 4.5)}, -1)
-
+                .setzBuildings(true)
                 .finishFeeding();
 
 
