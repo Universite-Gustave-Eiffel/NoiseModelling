@@ -537,8 +537,6 @@ public class AttenuationCnossosTest {
 
     private static Attenuation computeCnossosPath(String... utNames)
             throws IOException {
-        GeometryFactory factory = new GeometryFactory();
-
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
                 .finishFeeding();
