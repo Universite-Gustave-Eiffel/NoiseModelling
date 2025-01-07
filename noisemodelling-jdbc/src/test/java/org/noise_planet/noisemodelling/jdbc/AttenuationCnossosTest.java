@@ -3744,7 +3744,7 @@ public class AttenuationCnossosTest {
     @Test
     public void TC16() throws IOException {
         //Out and computation settings
-        Attenuation propDataOut =  computeCnossosPath("TC16_Direct", "TC16_Left");
+        Attenuation propDataOut =  computeCnossosPath("TC16_Direct", "TC16_Reflection");
 
         /* Table 163 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -3931,7 +3931,7 @@ public class AttenuationCnossosTest {
     @Test
     public void TC17() throws IOException {
         //Out and computation settings
-        Attenuation propDataOut =  computeCnossosPath("TC17_Direct", "TC17_Left");
+        Attenuation propDataOut =  computeCnossosPath("TC17_Direct", "TC17_Reflection");
 
         // Expected Values
 
@@ -4142,7 +4142,7 @@ public class AttenuationCnossosTest {
     @Test
     public void TC18() throws IOException {
         //Out and computation settings
-        Attenuation propDataOut =  computeCnossosPath("TC18_Direct", "TC18_Left");
+        Attenuation propDataOut =  computeCnossosPath("TC18_Direct", "TC18_Reflection");
 
         assertEquals(2, propDataOut.getPropagationPaths().size());
 
@@ -5642,7 +5642,7 @@ public class AttenuationCnossosTest {
      */
     @Test
     public void TC24() throws IOException {
-        Attenuation propDataOut =  computeCnossosPath("TC24_Direct", "TC24_Left");
+        Attenuation propDataOut =  computeCnossosPath("TC24_Direct", "TC24_Reflection");
 
         /* Table 279 */
         List<Coordinate> expectedZProfile = new ArrayList<>();

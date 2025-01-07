@@ -887,7 +887,7 @@ public class PathFinderTest {
         assertEquals(2, propDataOut.getCutProfiles().size());
 
         assertCutProfile("TC16_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC16_Left", propDataOut.cutProfiles.poll());
+        assertCutProfile("TC16_Reflection", propDataOut.cutProfiles.poll());
     }
 
     /**
@@ -931,7 +931,7 @@ public class PathFinderTest {
         assertEquals(2, propDataOut.getCutProfiles().size());
 
         assertCutProfile("TC17_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC17_Left", propDataOut.cutProfiles.poll());
+        assertCutProfile("TC17_Reflection", propDataOut.cutProfiles.poll());
 
     }
 
@@ -979,7 +979,7 @@ public class PathFinderTest {
         assertEquals(2, propDataOut.getCutProfiles().size());
 
         assertCutProfile("TC18_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC18_Left", propDataOut.cutProfiles.poll());
+        assertCutProfile("TC18_Reflection", propDataOut.cutProfiles.poll());
     }
 
     /**
@@ -1373,7 +1373,7 @@ public class PathFinderTest {
         assertEquals(2, propDataOut.getCutProfiles().size());
 
         assertCutProfile("TC24_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC24_Left", propDataOut.cutProfiles.poll());
+        assertCutProfile("TC24_Reflection", propDataOut.cutProfiles.poll());
     }
 
     @Test
