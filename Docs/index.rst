@@ -183,7 +183,7 @@ Fundings
     :caption: For Developers
 
     Get_Started_Dev
-    Rapport
+    Cnossos_Report
 
 .. toctree::
     :maxdepth: 2
