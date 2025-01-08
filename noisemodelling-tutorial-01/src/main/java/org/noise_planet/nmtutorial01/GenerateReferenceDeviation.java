@@ -22,20 +22,44 @@ import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosPar
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class GenerateReferenceDeviation {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenerateReferenceDeviation.class);
+    private static final List<Integer> FREQ_LVL = Arrays.asList(Scene.asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
+    private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
+
     private static final double HUMIDITY = 70;
     private static final double TEMPERATURE = 10;
+    private static final String CHECKED = "☑";
+    private static final String UNCHECKED = "□";
+    private static final String REPORT_HEADER = "Final results\n" +
+            "================\n" +
+            "\n" +
+            ".. list-table:: Tests list\n" +
+            "   :widths: 10 20 20 25 30\n" +
+            "\n" +
+            "   * - Test Case\n" +
+            "     - Do not the deviate more than ±0,1 dB\n" +
+            "       - Yes/No\n" +
+            "     - Do not the deviate more than ±0,1 dB neglecting lateral diffraction\n" +
+            "       - Yes/No\n" +
+            "     - Largest Deviation\n" +
+            "       - dB / Hz\n" +
+            "     - Details\n";
 
     private static CutProfile loadCutProfile(String utName) throws IOException {
         String testCaseFileName = utName + ".json";
         try(InputStream inputStream = PathFinder.class.getResourceAsStream("test_cases/"+testCaseFileName)) {
+            if(inputStream == null) {
+                throw new IOException("Document " + testCaseFileName + " not found");
+            }
             ObjectMapper mapper = new ObjectMapper();
             return mapper.readValue(inputStream, CutProfile.class);
         }
@@ -89,6 +113,78 @@ public class GenerateReferenceDeviation {
         return doubleArray;
     }
 
+    private static DeviationResult computeDeviation(double[] expected, double[] actual) {
+        assert expected.length == actual.length;
+        assert expected.length == FREQ_LVL.size();
+        int largestDiffIndex = IntStream.range(0, expected.length)
+                .boxed()
+                .max(Comparator.comparingDouble(i -> Math.abs(expected[i] - actual[i])))
+                .orElse(-1);
+        if(largestDiffIndex >= 0) {
+            return new DeviationResult(Math.abs(expected[largestDiffIndex] - actual[largestDiffIndex]),
+                    FREQ_LVL.get(largestDiffIndex));
+        } else {
+            return new DeviationResult(0, 0);
+        }
+    }
+
+    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, Attenuation actual) {
+        double[] expectedLA = asArray(expectedValues.get("LA"));
+        double[] expectedLAWithoutLateral = asArray(expectedValues.get("LA_WL"));
+        double[] actualLA = addArray(SOUND_POWER_LEVELS, addArray(actual.receiversAttenuationLevels.getFirst().value,
+                A_WEIGHTING));
+        double[] actualLAWithoutLateral = addArray(SOUND_POWER_LEVELS, addArray(actual.getPropagationPaths().get(0).aGlobal,
+                A_WEIGHTING));
+        DeviationResult lADeviation = computeDeviation(expectedLA, actualLA);
+        DeviationResult lADeviationWithoutLateral = computeDeviation(expectedLAWithoutLateral, actualLAWithoutLateral);
+        sb.append(String.format(Locale.ROOT, "   * - %s\n" +
+                "     - %s\n" +
+                "     - %s\n" +
+                "     - %s\n" +
+                "     - :doc:`Detail <%s>`\n",
+                utName,
+                lADeviation.deviation <= 0.1 ? CHECKED : UNCHECKED,
+                lADeviationWithoutLateral.deviation <= 0.1 ? CHECKED : UNCHECKED,
+                lADeviation.deviation > lADeviationWithoutLateral.deviation ?
+                        String.format(Locale.ROOT, "%.2f dB / %d Hz",
+                                lADeviation.deviation,
+                                lADeviation.frequency)
+                        :
+                        String.format(Locale.ROOT, "%.2f dB / %d Hz",
+                                lADeviationWithoutLateral.deviation,
+                                lADeviationWithoutLateral.frequency),
+                utName));
+    }
+
+    private static void addUTDeviationDetails(String utName, StringBuilder sb, JsonNode expectedValues, Attenuation actual) {
+        double[] actualLH = addArray(actual.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
+        double[] expectedLH = asArray(expectedValues.get("LH"));
+        DeviationResult lhDeviation = computeDeviation(expectedLH, actualLH);
+        sb.append(String.format(Locale.ROOT, "\n\n%s \n" +
+                "\n" +
+                "================\n" +
+                "\n" +
+                ".. list-table::\n" +
+                "   :widths: 25 25 25\n" +
+                "\n" +
+                "   * - Parameters\n" +
+                "     - Maximum Difference\n" +
+                "     - Frequency\n" +
+                "   * - Lʜ\n" +
+                "     - %.2f dB\n" +
+                "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
+
+        if(expectedValues.has("LF")) {
+            double[] actualLF = addArray(actual.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
+            double[] expectedLF = asArray(expectedValues.get("LF"));
+            DeviationResult lfDeviation = computeDeviation(expectedLF, actualLF);
+            sb.append(String.format("   * - Lꜰ\n" +
+                    "     - %.2f dB\n" +
+                    "     - %d\n", lfDeviation.deviation, lfDeviation.frequency));
+        }
+
+    }
+
     /**
      * For each cnossos test case, compute the attenuation and compare with the expected value, generate the result
      * report in rst format.
@@ -96,22 +192,52 @@ public class GenerateReferenceDeviation {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        Logger logger = LoggerFactory.getLogger(GenerateReferenceDeviation.class);
-        try(InputStream referenceStream = GenerateReferenceDeviation.class.getResourceAsStream("reference_cnossos.json")) {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = mapper.getFactory().createParser(referenceStream).readValueAsTree();
-            for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
-                Map.Entry<String, JsonNode> elt = it.next();
-                String utName = elt.getKey();
-                Attenuation attenuation = computeCnossosPath(utName);
-                double[] actualLH = addArray(attenuation.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-                double[] actualLF = addArray(attenuation.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-                double[] expectedLH = asArray(elt.getValue().get("LH"));
-                if(elt.getValue().has("LF")) {
-                    double[] expectedLF = asArray(elt.getValue().get("LF"));
+        // Read working directory argument
+        String workingDir = "Docs";
+        if (args.length > 0) {
+            workingDir = args[0];
+        }
+        File workingDirPath = new File(workingDir).getAbsoluteFile();
+        if(!workingDirPath.exists()) {
+            LOGGER.error("Working directory {} does not exists", workingDir);
+            return;
+        }
+        try(FileWriter fileWriter = new FileWriter(new File(workingDirPath, "Cnossos_Report.rst"))) {
+            fileWriter.write(REPORT_HEADER);
+            try (InputStream referenceStream = GenerateReferenceDeviation.class.getResourceAsStream("reference_cnossos.json")) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode node = mapper.getFactory().createParser(referenceStream).readValueAsTree();
+                for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
+                    Map.Entry<String, JsonNode> elt = it.next();
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String utName = elt.getKey();
+                    JsonNode pathsExpected = elt.getValue();
+                    List<String> verticalCutFileNames = new ArrayList<>();
+                    verticalCutFileNames.add(utName+"_Direct");
+                    if(pathsExpected.has("Left")) {
+                        verticalCutFileNames.add(utName+"_Left");
+                    }
+                    if(pathsExpected.has("Right")) {
+                        verticalCutFileNames.add(utName+"_Right");
+                    }
+                    if(pathsExpected.has("Reflection")) {
+                        verticalCutFileNames.add(utName+"_Reflection");
+                    }
+                    Attenuation attenuation = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
+                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuation);
+                    fileWriter.write(stringBuilder.toString());
                 }
             }
         }
     }
 
+    static class DeviationResult {
+        public DeviationResult(double deviation, int frequency) {
+            this.deviation = deviation;
+            this.frequency = frequency;
+        }
+
+        double deviation;
+        int frequency;
+    }
 }

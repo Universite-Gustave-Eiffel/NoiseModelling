@@ -18,7 +18,7 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 
 * for **more information** on NoiseModelling, visit the `offical NoiseModelling website`_
 * to **contribute to NoiseModelling** source code, follow the ":doc:`Get_Started_Dev`" page
-* for **more information** for the final results with the reference results in ISO/TR 17534-4: 2020 follow the ":doc:`Rapport`" page
+* for **more information** for the final results with the reference results in ISO/TR 17534-4: 2020 follow the ":doc:`Cnossos_Report`" page
 * to **contact the support / development team**, 
     - open an `issue`_ or a write a `message`_ *(we prefer these two options)*
     - send us an email at contact@noise-planet.org  

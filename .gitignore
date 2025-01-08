@@ -6,6 +6,7 @@ nbactions.xml
 .attach*
 Docs/build
 Docs/.build
+Docs/Cnossos_Report*
 Docs/venv
 profile_*.csv
 venv/
