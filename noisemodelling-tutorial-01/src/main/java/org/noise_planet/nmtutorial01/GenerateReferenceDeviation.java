@@ -42,6 +42,7 @@ public class GenerateReferenceDeviation {
     private static final String UNCHECKED = "□";
     private static final String REPORT_HEADER = "Conformity to ISO 17534-1:2015\n" +
             "==============================\n" +
+            ".. This document has been generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
             "\n" +
             "Conformity table\n" +
             "^^^^^^^^^^^^^^^^\n" +
@@ -130,12 +131,13 @@ public class GenerateReferenceDeviation {
         }
     }
 
-    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, Attenuation actual) {
+    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, Attenuation actual, Attenuation actualWithoutLateral, double[] powerLevel) {
         double[] expectedLA = asArray(expectedValues.get("LA"));
         double[] expectedLAWithoutLateral = asArray(expectedValues.get("LA_WL"));
-        double[] actualLA = addArray(SOUND_POWER_LEVELS, addArray(actual.receiversAttenuationLevels.getFirst().value,
+        double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().value,
                 A_WEIGHTING));
-        double[] actualLAWithoutLateral = addArray(SOUND_POWER_LEVELS, addArray(actual.getPropagationPaths().get(0).aGlobal,
+        double[] actualLAWithoutLateral = addArray(powerLevel,
+                addArray(actualWithoutLateral.receiversAttenuationLevels.getFirst().value,
                 A_WEIGHTING));
         DeviationResult lADeviation = computeDeviation(expectedLA, actualLA);
         DeviationResult lADeviationWithoutLateral = computeDeviation(expectedLAWithoutLateral, actualLAWithoutLateral);
@@ -158,8 +160,8 @@ public class GenerateReferenceDeviation {
                 utName));
     }
 
-    private static void addUTDeviationDetails(String utName, StringBuilder sb, JsonNode expectedValues, CnossosPath actual) {
-        double[] actualLH = addArray(actual.aGlobalH, SOUND_POWER_LEVELS);
+    private static void addUTDeviationDetails(String utName, StringBuilder sb, JsonNode expectedValues, CnossosPath actual, double[] powerLevel) {
+        double[] actualLH = addArray(actual.aGlobalH, powerLevel);
         double[] expectedLH = asArray(expectedValues.get("LH"));
         DeviationResult lhDeviation = computeDeviation(expectedLH, actualLH);
         sb.append(String.format(Locale.ROOT, "\n\n%s \n" +
@@ -177,7 +179,7 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            double[] actualLF = addArray(actual.aGlobalF, SOUND_POWER_LEVELS);
+            double[] actualLF = addArray(actual.aGlobalF, powerLevel);
             double[] expectedLF = asArray(expectedValues.get("LF"));
             DeviationResult lfDeviation = computeDeviation(expectedLF, actualLF);
             sb.append(String.format(Locale.ROOT,"   * - Lꜰ\n" +
@@ -214,8 +216,14 @@ public class GenerateReferenceDeviation {
                     StringBuilder stringBuilder = new StringBuilder();
                     String utName = elt.getKey();
                     JsonNode pathsExpected = elt.getValue();
+                    double[] powerLevel = SOUND_POWER_LEVELS;
+                    if(pathsExpected.has("PL")) {
+                        powerLevel = asArray(pathsExpected.get("PL"));
+                    }
                     List<String> verticalCutFileNames = new ArrayList<>();
+                    List<String> verticalCutFileNamesWithoutLateral = new ArrayList<>();
                     verticalCutFileNames.add(utName+"_Direct");
+                    verticalCutFileNamesWithoutLateral.add(utName+"_Direct");
                     if(pathsExpected.has("Right")) {
                         verticalCutFileNames.add(utName+"_Right");
                     }
@@ -224,22 +232,24 @@ public class GenerateReferenceDeviation {
                     }
                     if(pathsExpected.has("Reflection")) {
                         verticalCutFileNames.add(utName+"_Reflection");
+                        verticalCutFileNamesWithoutLateral.add(utName+"_Reflection");
                     }
                     Attenuation attenuation = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
-                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuation);
+                    Attenuation attenuationWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
+                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuation, attenuationWithoutLateral, powerLevel);
                     fileWriter.write(stringBuilder.toString());
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
-                    addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuation.getPropagationPaths().get(0));
+                    addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuation.getPropagationPaths().get(0), powerLevel);
                     int index = 1;
                     if(pathsExpected.has("Right")) {
-                        addUTDeviationDetails("Right Lateral", stringBuilderDetail, pathsExpected.get("Right"), attenuation.getPropagationPaths().get(index++));
+                        addUTDeviationDetails("Right Lateral", stringBuilderDetail, pathsExpected.get("Right"), attenuation.getPropagationPaths().get(index++), powerLevel);
                     }
                     if(pathsExpected.has("Left")) {
-                        addUTDeviationDetails("Left Lateral", stringBuilderDetail, pathsExpected.get("Left"), attenuation.getPropagationPaths().get(index++));
+                        addUTDeviationDetails("Left Lateral", stringBuilderDetail, pathsExpected.get("Left"), attenuation.getPropagationPaths().get(index++), powerLevel);
                     }
                     if(pathsExpected.has("Reflection")) {
-                        addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuation.getPropagationPaths().get(index));
+                        addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuation.getPropagationPaths().get(index), powerLevel);
                     }
                 }
                 fileWriter.write(stringBuilderDetail.toString());
