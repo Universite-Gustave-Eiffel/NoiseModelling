@@ -813,11 +813,6 @@ class WpsPropagationProcessDataProba extends Scene {
         return [ld, le, ln, lden]
     }
 
-
-    @Override
-    double[] getMaximalSourcePower(int sourceId) {
-        return wjSourcesD.get(sourceId)
-    }
 }
 
 class WpsPropagationProcessDataProbaFactory implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {

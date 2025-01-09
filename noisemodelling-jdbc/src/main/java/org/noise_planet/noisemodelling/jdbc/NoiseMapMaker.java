@@ -26,7 +26,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- *
+ * Create SQL Tables from a stream of noise levels
  */
 public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcessDataFactory, NoiseMapByReceiverMaker.IComputeRaysOutFactory, ProfilerThread.Metric {
     NoiseMapParameters noiseMapParameters;
@@ -93,10 +93,12 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
 
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
+        if(JDBCUtilities.tableExists(connection, noiseMapByReceiverMaker.getSourcesTableName())) {
+            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
+        }
         if(noiseMapParameters.input_mode == org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
-            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
             List<Integer> frequencyValues = new ArrayList<>();
             List<Integer> allFrequencyValues = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
             String period = "";
@@ -110,7 +112,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
             String freqField = noiseMapParameters.lwFrequencyPrepend + period;
             if (!period.isEmpty()) {
                 for (String fieldName : sourceField) {
-                    if (fieldName.startsWith(freqField)) {
+                    if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
                         int freq = Integer.parseInt(fieldName.substring(freqField.length()));
                         int index = allFrequencyValues.indexOf(freq);
                         if (index >= 0) {

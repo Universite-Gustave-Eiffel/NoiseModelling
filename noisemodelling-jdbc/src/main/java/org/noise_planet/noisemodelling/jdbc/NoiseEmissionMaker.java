@@ -33,7 +33,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
 /**
  * Read source database and compute the sound emission spectrum of roads sources

@@ -9,9 +9,11 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +28,12 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.WRITER_CACHE;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
-
+/**
+ * Process that run SQL query to feed tables
+ */
 public class NoiseMapWriter implements Runnable {
     Logger LOGGER = LoggerFactory.getLogger(NoiseMapWriter.class);
     File sqlFilePath;
@@ -140,6 +144,9 @@ public class NoiseMapWriter implements Runnable {
         if(!noiseMapParameters.mergeSources) {
             query.append(", ?"); // ID_SOURCE
         }
+        if(noiseMapParameters.exportReceiverPosition) {
+            query.append(", ?"); // THE_GEOM
+        }
         if (!noiseMapParameters.computeLAEQOnly) {
             query.append(", ?".repeat(noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size())); // freq value
             query.append(", ?, ?);"); // laeq, leq
@@ -153,15 +160,20 @@ public class NoiseMapWriter implements Runnable {
             ps = new StringPreparedStatements(o, query.toString());
         }
         int batchSize = 0;
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
         while(!stack.isEmpty()) {
             Attenuation.SourceReceiverAttenuation row = stack.pop();
             AttenuatedPaths.queueSize.decrementAndGet();
             int parameterIndex = 1;
             ps.setLong(parameterIndex++, row.receiverId);
-            if(!NoiseMapParameters.mergeSources) {
+            if(!noiseMapParameters.mergeSources) {
                 ps.setLong(parameterIndex++, row.sourceId);
             }
-
+            if(noiseMapParameters.exportReceiverPosition) {
+                ps.setObject(parameterIndex++,  row.receiverPosition != null ?
+                        factory.createPoint(row.receiverPosition):
+                        factory.createPoint());
+            }
             if (!noiseMapParameters.computeLAEQOnly){
                 for(int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                     double value = row.value[idfreq];
@@ -206,11 +218,16 @@ public class NoiseMapWriter implements Runnable {
     private String forgeCreateTable(String tableName) {
         StringBuilder sb = new StringBuilder("create table ");
         sb.append(tableName);
-        if(!NoiseMapParameters.mergeSources) {
+        if(!noiseMapParameters.mergeSources) {
             sb.append(" (IDRECEIVER bigint NOT NULL");
             sb.append(", IDSOURCE bigint NOT NULL");
         } else {
             sb.append(" (IDRECEIVER bigint NOT NULL");
+        }
+        if(noiseMapParameters.exportReceiverPosition) {
+            sb.append(", THE_GEOM GEOMETRY(POINTZ,");
+            sb.append(srid);
+            sb.append(")");
         }
         if (noiseMapParameters.computeLAEQOnly){
             sb.append(", LAEQ REAL");
@@ -232,7 +249,7 @@ public class NoiseMapWriter implements Runnable {
      * @param tableName
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
-        if (NoiseMapParameters.mergeSources) {
+        if (noiseMapParameters.mergeSources) {
             return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
         } else {
             return "CREATE INDEX ON " + tableName + " (IDRECEIVER);";

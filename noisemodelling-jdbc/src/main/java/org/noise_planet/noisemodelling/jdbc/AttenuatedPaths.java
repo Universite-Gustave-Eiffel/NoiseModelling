@@ -9,7 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 
 import java.util.concurrent.ConcurrentLinkedDeque;

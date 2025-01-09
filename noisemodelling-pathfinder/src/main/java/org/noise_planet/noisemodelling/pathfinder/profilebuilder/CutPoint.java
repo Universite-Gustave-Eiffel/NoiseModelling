@@ -9,82 +9,65 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-
-public  class CutPoint implements Comparable<CutPoint> {
+/**
+ * On the vertical cut profile, this is one of the point
+ * This abstract class is implemented with specific attributes depending on the intersection object
+ */
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = CutPointSource.class, name = "Source"),
+        @JsonSubTypes.Type(value = CutPointReceiver.class, name = "Receiver"),
+        @JsonSubTypes.Type(value = CutPointWall.class, name = "Wall"),
+        @JsonSubTypes.Type(value = CutPointReflection.class, name = "Reflection"),
+        @JsonSubTypes.Type(value = CutPointGroundEffect.class, name = "GroundEffect"),
+        @JsonSubTypes.Type(value = CutPointTopography.class, name = "Topography"),
+        @JsonSubTypes.Type(value = CutPointVEdgeDiffraction.class, name = "VEdgeDiffraction")
+})
+public abstract class CutPoint implements Comparable<CutPoint> {
     /** {@link Coordinate} of the cut point. */
-    Coordinate coordinate;
-    /** Intersection type. */
-    ProfileBuilder.IntersectionType type;
-    /** Identifier of the cut element. */
-    int id;
-    /** Identifier of the building containing the point. -1 if no building. */
-    int buildingId;
-    /** Identifier of the wall containing the point. -1 if no wall. */
-    int wallId;
-    /** Height of the building containing the point. NaN of no building. */
-    double height;
+    public Coordinate coordinate = new Coordinate();
+
     /** Topographic height of the point. */
-    double zGround = Double.NaN;
-    /** Ground effect coefficient. 0 if there is no coefficient. */
-    double groundCoef;
-    /** Wall alpha. NaN if there is no coefficient. */
-    List<Double> wallAlpha = Collections.emptyList();
-    boolean corner;
+    public double zGround = Double.NaN;
 
     /**
-     * Constructor using a {@link Coordinate}.
-     * @param coord Coordinate to copy.
-     * @param type  Intersection type.
-     * @param id    Identifier of the cut element.
-     */
-    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id, boolean corner) {
-        this.coordinate = new Coordinate(coord.x, coord.y, coord.z);
-        this.type = type;
-        this.id = id;
-        this.buildingId = -1;
-        this.wallId = -1;
-        this.groundCoef = 0;
-        this.wallAlpha = new ArrayList<>();
-        this.height = 0;
-        this.corner = corner;
-    }
-    public CutPoint(Coordinate coord, ProfileBuilder.IntersectionType type, int id) {
-        this(coord, type, id, false);
-    }
+     * Ground effect coefficient.
+     * G=1.0 Soft, uncompacted ground (pasture, loose soil); snow etc
+     * G=0.7 Compacted soft ground (lawns, park areas):
+     * G=0.3 Compacted dense ground (gravel road, compacted soil):
+     * G=0.0 Hard surfaces (asphalt, concrete, top of buildings):
+     **/
+    public double groundCoefficient = Double.NaN;
 
     public CutPoint() {
-        coordinate = new Coordinate();
+    }
+
+    public CutPoint(Coordinate coordinate) {
+        this.coordinate = coordinate;
     }
 
     /**
      * Copy constructor
-     * @param cut
+     * @param other Other instance to copy
      */
-    public CutPoint(CutPoint cut) {
-        this.coordinate = new Coordinate(cut.getCoordinate());
-        this.type = cut.type;
-        this.id = cut.id;
-        this.buildingId = cut.buildingId;
-        this.wallId = cut.wallId;
-        this.groundCoef = cut.groundCoef;
-        this.wallAlpha = new ArrayList<>(cut.wallAlpha);
-        this.height = cut.height;
-        this.zGround = cut.zGround;
-        this.corner = cut.corner;
-    }
-
-    public void setType(ProfileBuilder.IntersectionType type) {
-        this.type = type;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+    @SuppressWarnings("IncompleteCopyConstructor")
+    public CutPoint(CutPoint other) {
+        this.coordinate = other.coordinate.copy();
+        this.zGround = other.zGround;
+        this.groundCoefficient = other.groundCoefficient;
     }
 
     public void setCoordinate(Coordinate coordinate) {
@@ -92,54 +75,21 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Sets the id of the building containing the point.
-     * @param buildingId Id of the building containing the point.
-     */
-    public void setBuildingId(int buildingId) {
-        this.buildingId = buildingId;
-        this.wallId = -1;
-    }
-
-    /**
-     * Sets the id of the wall containing the point.
-     * @param wallId Id of the wall containing the point.
-     */
-    public void setWallId(int wallId) {
-        this.wallId = wallId;
-        this.buildingId = -1;
-    }
-
-    /**
      * Sets the ground coefficient of this point.
-     * @param groundCoef The ground coefficient of this point.
+     * @param groundCoefficient The ground coefficient of this point.
      */
-    public void setGroundCoef(double groundCoef) {
-        this.groundCoef = groundCoef;
-    }
-
-    /**
-     * Sets the building height.
-     * @param height The building height.
-     */
-    public void setHeight(double height) {
-        this.height = height;
+    public void setGroundCoefficient(double groundCoefficient) {
+        this.groundCoefficient = groundCoefficient;
     }
 
     /**
      * Sets the topographic height.
      * @param zGround The topographic height.
      */
-    /*public void setzGround(double zGround) {
+    public void setZGround(double zGround) {
         this.zGround = zGround;
-    }*/
-
-    /**
-     * Sets the wall alpha.
-     * @param wallAlpha The wall alpha.
-     */
-    public void setWallAlpha(List<Double> wallAlpha) {
-        this.wallAlpha = wallAlpha;
     }
+
 
     /**
      * Retrieve the coordinate of the point.
@@ -150,43 +100,11 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Retrieve the identifier of the cut element.
-     * @return Identifier of the cut element.
-     */
-    public int getId() {
-        return id;
-    }
-
-    /**
-     * Retrieve the identifier of the building containing the point. If no building, returns -1.
-     * @return Building identifier or -1
-     */
-    public int getBuildingId() {
-        return buildingId;
-    }
-
-    /**
-     * Retrieve the identifier of the wall containing the point. If no wall, returns -1.
-     * @return Wall identifier or -1
-     */
-    public int getWallId() {
-        return wallId;
-    }
-
-    /**
      * Retrieve the ground effect coefficient of the point. If there is no coefficient, returns 0.
      * @return Ground effect coefficient or NaN.
      */
-    public double getGroundCoef() {
-        return groundCoef;
-    }
-
-    /**
-     * Retrieve the height of the building containing the point. If there is no building, returns NaN.
-     * @return The building height, or NaN if no building.
-     */
-    public double getHeight() {
-        return height;
+    public double getGroundCoefficient() {
+        return groundCoefficient;
     }
 
     /**
@@ -198,131 +116,21 @@ public  class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Return the wall alpha value.
-     * @return The wall alpha value.
-     */
-    public List<Double> getWallAlpha() {
-        return wallAlpha;
-    }
-
-    public ProfileBuilder.IntersectionType getType() {
-        return type;
-    }
-
-    @Override
-    public String toString() {
-        String str = "";
-        str += type.name();
-        str += " ";
-        str += "(" + coordinate.x +"," + coordinate.y +"," + coordinate.z + ") ; ";
-        str += "grd : " + groundCoef + " ; ";
-        str += "topoH : " + zGround + " ; ";
-        str += "buildH : " + height + " ; ";
-        str += "buildId : " + buildingId + " ; ";
-        str += "alpha : " + wallAlpha + " ; ";
-        str += "id : " + id + " ; ";
-        return str;
-    }
-
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox01y01(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox10y01(CutPoint cutPoint) {
-        if(this.coordinate.x > cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox01y10(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
-    /**
-     *
-     * @param cutPoint
-     * @return
-     */
-    public int compareTox10y10(CutPoint cutPoint) {
-        if(this.coordinate.x > cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y > cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
-    }
-
-
-    /**
      *
      * @param cutPoint the object to be compared.
      * @return
      */
     @Override
     public int compareTo(CutPoint cutPoint) {
-        if(this.coordinate.x < cutPoint.coordinate.x ||
-                (this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y < cutPoint.coordinate.y)) {
-            return -1;
-        }
-        if(this.coordinate.x == cutPoint.coordinate.x && this.coordinate.y == cutPoint.coordinate.y) {
-            return 0;
-        }
-        else {
-            return 1;
-        }
+        return this.coordinate.compareTo(cutPoint.coordinate);
     }
 
-    public boolean isCorner(){
-        return corner;
+    @Override
+    public String toString() {
+        return "CutPoint{" +
+                "coordinate=" + coordinate +
+                ", zGround=" + zGround +
+                ", groundCoefficient=" + groundCoefficient +
+                '}';
     }
-
-
-
 }

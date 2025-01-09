@@ -13,9 +13,13 @@ package org.noise_planet.noisemodelling.propagation;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
+import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -29,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.*;
 import static java.lang.Math.log10;
 //import static org.noise_planet.noisemodelling.pathfinder.path.PointPath.POINT_TYPE.DIFH;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * Way to store data computed by threads.
@@ -45,8 +49,6 @@ public class Attenuation implements IComputePathsOut {
 
     public AttenuationCnossosParameters genericMeteoData;
     public Scene inputData;
-    //public CnossosPathParameters inputData;
-   // public org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPathParameters CnossosPathParameters;
 
     public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData, Scene inputData) {
         this.exportPaths = exportPaths;
@@ -54,15 +56,11 @@ public class Attenuation implements IComputePathsOut {
         this.inputData = inputData;
     }
 
-    public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData) {
-        this.exportPaths = exportPaths;
-        this.genericMeteoData = pathData;
-    }
-
-    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData) {
+    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, Scene inputData) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
         this.genericMeteoData = pathData;
+        this.inputData = inputData;
     }
 
     public boolean exportPaths;
@@ -79,8 +77,8 @@ public class Attenuation implements IComputePathsOut {
      * No more propagation paths will be pushed for this receiver identifier
      * @param receiverId
      */
-
-    public void finalizeReceiver(long receiverId) {
+    @Override
+    public void finalizeReceiver(int receiverId) {
 
     }
 
@@ -88,30 +86,34 @@ public class Attenuation implements IComputePathsOut {
         return inputData;
     }
 
+
+    @Override
+    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        final Scene scene = inputData;
+        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                scene.freq_lvl, scene.gS);
+        if(cnossosPath != null) {
+            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
+        }
+        return PathSearchStrategy.CONTINUE;
+    }
+
     /**
      * Get propagation path result
-     * @param sourceId Source identifier
-     * @param sourceLi Source power per meter coefficient
+     * @param source Source identifier
+     * @param receiver receiver identifier
      * @param path Propagation path result
      */
-    @Override
-    public double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> path) {
+    public double[] addPropagationPaths(CutPointSource source, CutPointReceiver receiver, List<CnossosPath> path) {
         rayCount.addAndGet(path.size());
         if(exportPaths) {
             pathParameters.addAll(path);
             propagationPathsSize.addAndGet(path.size());
         }
-        double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, sourceId, sourceLi, receiverId, path);
+        double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            if(inputData != null) {
-                if(sourceId < inputData.sourcesPk.size()) {
-                    sourceId = inputData.sourcesPk.get((int)sourceId);
-                }
-                if(receiverId < inputData.receiversPk.size()) {
-                    receiverId = inputData.receiversPk.get((int)receiverId);
-                }
-            }
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiverId, sourceId, aGlobalMeteo));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,receiver.id,
+                    source.sourcePk, source.id, aGlobalMeteo, receiver.coordinate));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -123,11 +125,10 @@ public class Attenuation implements IComputePathsOut {
      * @param data
      * @param sourceId
      * @param sourceLi
-     * @param receiverId
      * @param pathParameters
      * @return double list of attenuation
      */
-    public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathParameters) {
+    public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
         if (data == null) {
             return new double[0];
         }
@@ -144,7 +145,6 @@ public class Attenuation implements IComputePathsOut {
         for (CnossosPath proPathParameters : pathParameters) {
             if(exportAttenuationMatrix) {
                 proPathParameters.keepAbsorption = true;
-                //CnossosPathsParameters.keepAbsorption = true;
                 proPathParameters.groundAttenuation.init(data.freq_lvl.size());
                 proPathParameters.init(data.freq_lvl.size());
             }
@@ -155,6 +155,10 @@ public class Attenuation implements IComputePathsOut {
             double[] aAtm = AttenuationCnossos.aAtm(data, proPathParameters.getSRSegment().d);
             //Reflexion computation
             double[] aRef = AttenuationCnossos.evaluateAref(proPathParameters, data);
+            //For testing purpose
+            if(exportAttenuationMatrix) {
+                proPathParameters.aRef = aRef.clone();
+            }
             double[] aRetroDiff;
             //ABoundary computation
             double[] aBoundary;
@@ -169,7 +173,7 @@ public class Attenuation implements IComputePathsOut {
             Coordinate src = ptList.get(0).coordinate;
             PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
-            if (pDif != null && pDif.alphaWall.size()>0) {
+            if (pDif != null && !pDif.alphaWall.isEmpty()) {
                 if (pDif.bodyBarrier){
 
                     int n = 3;
@@ -280,10 +284,11 @@ public class Attenuation implements IComputePathsOut {
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] + aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
+                    aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
                 }
                 //For testing purpose
                 if(exportAttenuationMatrix) {
+                    proPathParameters.aRetroDiffH = aRetroDiff.clone();
                     proPathParameters.double_aBoundaryH = aBoundary.clone();
                     proPathParameters.aGlobalH = aGlobalMeteoHom.clone();
                 }
@@ -294,11 +299,12 @@ public class Attenuation implements IComputePathsOut {
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
                 for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq]+ aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
+                    aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
                 }
                 //For testing purpose
                 if(exportAttenuationMatrix) {
                     proPathParameters.double_aBoundaryF = aBoundary.clone();
+                    proPathParameters.aRetroDiffF = aRetroDiff.clone();
                     proPathParameters.aGlobalF = aGlobalMeteoFav.clone();
                 }
             }
@@ -314,9 +320,9 @@ public class Attenuation implements IComputePathsOut {
             double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseIndex]);
 
             // Apply attenuation due to sound direction
-            if(inputData != null && !inputData.isOmnidirectional((int)sourceId)) {
+            if(inputData != null && !inputData.isOmnidirectional(sourceId)) {
                 Orientation directivityToPick = proPathParameters.raySourceReceiverDirectivity;
-                double[] attSource = inputData.getSourceAttenuation((int) sourceId,
+                double[] attSource = inputData.getSourceAttenuation( sourceId,
                         frequencies, Math.toRadians(directivityToPick.yaw),
                         Math.toRadians(directivityToPick.pitch));
                 if(exportAttenuationMatrix) {
@@ -420,25 +426,36 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
+
+        /**
+         * Source primary key. -1 if it is the receiver values merged from multiple sources. In this case the value is
+         * not attenuation but spl at receiver position
+         */
         public final long sourceId;
+
+        /**
+         * Receiver primary key.
+         */
         public final long receiverId;
+
+        /** Source index in the sub-domain */
+        public final int sourceIndex;
+        public final int receiverIndex;
+
+        /**
+         * Attenuation in dB or Spl in dB or dB(A)
+         */
         public final double[] value;
         public final Coordinate receiverPosition;
 
-        /**
-         *
-         * @param receiverId Receiver identifier
-         * @param sourceId Source identifier
-         * @param value Noise level in dB
-         */
-        public SourceReceiverAttenuation(long receiverId, long sourceId, double[] value) {
+        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value, Coordinate receiverPosition) {
             this.sourceId = sourceId;
             this.receiverId = receiverId;
+            this.sourceIndex = sourceIndex;
+            this.receiverIndex = receiverIndex;
             this.value = value;
-            this.receiverPosition = null;
+            this.receiverPosition = receiverPosition;
         }
-
-
 
     }
 

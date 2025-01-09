@@ -18,9 +18,9 @@ import org.h2gis.functions.io.shp.SHPDriverFunction;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
@@ -28,6 +28,8 @@ import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.utils.Utils;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
@@ -50,9 +52,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-import static org.junit.Assert.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.sumDbArray;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
 public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
@@ -62,12 +64,12 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     private Connection connection;
 
-    @Before
+    @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getSimpleName(), true, ""));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();
@@ -398,13 +400,13 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(INPUT_MODE.INPUT_MODE_LW_DEN);
 
         NoiseMapParameters.setComputeLDay(true);
         NoiseMapParameters.setComputeLEvening(false);
         NoiseMapParameters.setComputeLNight(false);
         NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setExportRaysMethod(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+        NoiseMapParameters.setExportRaysMethod(ExportRaysMethods.TO_MEMORY);
 
         NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
 
@@ -423,6 +425,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        noiseMapByReceiverMaker.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -1078,6 +1081,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         NoiseMapParameters.setComputeLNight(false);
         NoiseMapParameters.setComputeLDEN(false);
         NoiseMapParameters.setMergeSources(true); // No idsource column
+        NoiseMapParameters.setExportReceiverPosition(true); // create geometry columns with receiver position
 
         NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
 
@@ -1093,6 +1097,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.createStatement().execute("SELECT UpdateGeometrySRID('BUILD_GRID2', 'THE_GEOM', 2154);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('DEM_FENCE', 'THE_GEOM', 2154);");
         connection.createStatement().execute("SELECT UpdateGeometrySRID('LANDCOVER', 'THE_GEOM', 2154);");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('SOURCESI', 'THE_GEOM', 2154);");
         //connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
         String name_output = "real";
 
@@ -1146,20 +1151,16 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             assertEquals(4361, rs.getInt(1));
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, LVL.* FROM "+ NoiseMapParameters.lDayTable + " LVL, RECEIVERS R WHERE LVL.IDRECEIVER = R.PK");
-        SHPDriverFunction shpDriver = new SHPDriverFunction();
-        shpDriver.exportTable(connection, "RESULTS", new File("target/Results_PtSource"+name_output+".shp"), true,new EmptyProgressVisitor());
-
-        //assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
 
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ NoiseMapParameters.lDayTable+" ORDER BY IDRECEIVER")) {
             assertTrue(rs.next());
-            /* assertEquals(1, rs.getInt("IDRECEIVER"));
+            assertEquals(1, rs.getInt("IDRECEIVER"));
             Object geom = rs.getObject("THE_GEOM");
             assertNotNull(geom);
             assertTrue(geom instanceof Point);
             // We get receiver Altitude not height
-            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);*/
+            assertEquals(293.27, ((Point) geom).getCoordinate().z, 0.01);
         }
     }
 

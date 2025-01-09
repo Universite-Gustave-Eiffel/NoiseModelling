@@ -10,15 +10,15 @@
 package org.noise_planet.noisemodelling.propagation;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.junit.Test;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class RayAttenuationTest {
 

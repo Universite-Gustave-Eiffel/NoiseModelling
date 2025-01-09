@@ -9,25 +9,45 @@
 
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.List;
 
+/**
+ * Instead of feeding a list and returning all vertical cut planes.
+ * A visitor instance that implement this interface can skip planes and intervene in the search of cut planes.
+ */
 public interface IComputePathsOut {
 
     /**
-     * Get propagation path result
-     * @param sourceId Source identifier
-     * @param sourceLi Source power per meter coefficient
-     * @param pathParameters Propagation path result
+     * A new vertical profile between a receiver and a source has been found
+     *
+     * @param cutProfile vertical profile
+     * @return Will skip or not the next processing depending on this value.
      */
-    double[] addPropagationPaths(long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathParameters);
+    PathSearchStrategy onNewCutPlane(CutProfile cutProfile);
+
+    enum PathSearchStrategy {
+        /**
+         * Continue looking for vertical cut planes
+         */
+        CONTINUE,
+        /**
+         * Skip remaining potential vertical planes for this source point
+         */
+        SKIP_SOURCE,
+        /**
+         * Ignore other sources and process to the next receiver
+         */
+        SKIP_RECEIVER
+    }
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     * @param receiverId Id of the receiver in the subdomain
      */
-    void finalizeReceiver(long receiverId);
+    void finalizeReceiver(int receiverId);
+
     /**
      * If the implementation does not support thread concurrency, this method is called to return an instance
      * @return

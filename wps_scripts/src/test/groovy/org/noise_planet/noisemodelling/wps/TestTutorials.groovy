@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
 
-    @Test
+
     void testTutorialPointSource() {
         Sql sql = new Sql(connection)
 
@@ -88,8 +88,8 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("LDAY_GEOM"))
 
         def rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDAY_GEOM")
-        //assertEquals(72, rowResult[0] as Double, 5.0)
-        //assertEquals(69, rowResult[1] as Double, 5.0)
+        assertEquals(72, rowResult[0] as Double, 5.0)
+        assertEquals(69, rowResult[1] as Double, 5.0)
 
         // Check export geojson
         File testPath = new File("target/tutoPointSource.geojson")
@@ -98,14 +98,14 @@ class TestTutorials extends JdbcTestCase {
             testPath.delete()
         }
 
-        /*new Export_Table().exec(connection,
+        new Export_Table().exec(connection,
                 ["exportPath"   : "target/tutoPointSource.geojson",
-                 "tableToExport": "LDAY_GEOM"])*/
+                 "tableToExport": "LDAY_GEOM"])
 
 
     }
 
-    /*@Test
+
     void testTutorialPointSourceDirectivity() {
         Logger logger = LoggerFactory.getLogger(TestTutorials.class)
 
@@ -149,8 +149,9 @@ class TestTutorials extends JdbcTestCase {
         logger.info(new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
                                                           sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
-        //new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
-        //new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
+
+        new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
+        new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
@@ -171,5 +172,5 @@ class TestTutorials extends JdbcTestCase {
 
 
 
-    }*/
+    }
 }

@@ -11,15 +11,11 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.functions.spatial.mesh.DelaunayData;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
-import org.h2gis.utilities.TableLocation;
-import org.h2gis.utilities.TableUtilities;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
@@ -30,23 +26,21 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class IsoSurfaceJDBCTest {
 
     private Connection connection;
 
-    @Before
+    @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(IsoSurfaceJDBCTest.class.getSimpleName(), true, ""));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();

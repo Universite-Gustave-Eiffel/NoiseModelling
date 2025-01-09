@@ -12,7 +12,7 @@ import org.h2.util.StringUtils;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -26,7 +26,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.Utils.*;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 public class Utils {
 
@@ -111,10 +111,9 @@ public class Utils {
         }
 
         @Override
-        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, long sourceId, double sourceLi, long receiverId, List<CnossosPath> pathParameters) {
-            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, receiverId, pathParameters);
-            double[] soundLevel = wToDba(multArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
-            return soundLevel;
+        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
+            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
+            return wToDba(multArray(processData.wjSources.get(sourceId), dbaToW(attenuation)));
         }
     }
 
@@ -136,11 +135,6 @@ public class Utils {
                 sl[i++] = dbaToW(rs.getDouble(columnName));
             }
             wjSources.add(sl);
-        }
-
-        @Override
-        public double[] getMaximalSourcePower(int sourceId) {
-            return wjSources.get(sourceId);
         }
     }
 

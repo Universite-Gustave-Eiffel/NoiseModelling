@@ -9,207 +9,69 @@
 
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
-
-
 public class CutProfile {
-    /** List of cut points. */
-    ArrayList<CutPoint> pts = new ArrayList<>();
-    /** Source cut point. */
-    CutPoint source;
-    /** Receiver cut point. */
-    CutPoint receiver;
-    //TODO cache has intersection properties
-    /** True if contains a building cutting point. */
-    Boolean hasBuildingInter = false;
-    /** True if contains a topography cutting point. */
-    Boolean hasTopographyInter = false;
-    /** True if contains a ground effect cutting point. */
-    Boolean hasGroundEffectInter = false;
-    Boolean isFreeField;
-    double distanceToSR = 0;
-    Orientation srcOrientation;
+    /** List of cut points.
+     * First point is source, last point is receiver */
+    public ArrayList<CutPoint> cutPoints = new ArrayList<>();
+
+    /** True if Source-Receiver linestring is below building intersection */
+    public boolean hasBuildingIntersection = false;
+    /** True if Source-Receiver linestring is below topography cutting point. */
+    public boolean hasTopographyIntersection = false;
 
     /**
-     * Add the source point.
-     * @param coord Coordinate of the source point.
+     * Empty constructor for deserialization
      */
-    public void addSource(Coordinate coord) {
-        source = new CutPoint(coord, SOURCE, -1);
-        pts.add(0, source);
+    public CutProfile() {
+    }
+
+    public CutProfile(CutPointSource source, CutPointReceiver receiver) {
+        cutPoints.add(source);
+        cutPoints.add(receiver);
     }
 
     /**
-     * Add the receiver point.
-     * @param coord Coordinate of the receiver point.
+     * Insert and sort cut points,
+     * @param sortBySourcePosition After inserting points, sort the by the distance from the source
+     * @param cutPointsToInsert
      */
-    public void addReceiver(Coordinate coord) {
-        receiver = new CutPoint(coord, RECEIVER, -1);
-        pts.add(receiver);
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord      Coordinate of the cutting point.
-     * @param buildingId Id of the cut building.
-     */
-    public void addBuildingCutPt(Coordinate coord, int buildingId, int wallId, boolean corner) {
-        CutPoint cut = new CutPoint(coord, ProfileBuilder.IntersectionType.BUILDING, buildingId, corner);
-        cut.wallId = wallId;
-        pts.add(cut);
-        pts.get(pts.size()-1).buildingId = buildingId;
-        hasBuildingInter = true;
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut building.
-     */
-    public void addWallCutPt(Coordinate coord, int id, boolean corner) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner));
-        pts.get(pts.size()-1).wallId = id;
-        hasBuildingInter = true;
-    }
-
-    /**
-     * Add a building cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut building.
-     */
-    public void addWallCutPt(Coordinate coord, int id, boolean corner, List<Double> alphas) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.WALL, id, corner));
-        pts.get(pts.size()-1).wallId = id;
-        pts.get(pts.size()-1).setWallAlpha(alphas);
-        hasBuildingInter = true;
-    }
-
-    /**
-     * Add a topographic cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut topography.
-     */
-    public void addTopoCutPt(Coordinate coord, int id) {
-        pts.add(new CutPoint(coord, TOPOGRAPHY, id));
-        hasTopographyInter = true;
-    }
-
-    /**
-     * In order to reduce the number of reallocation, reserve the provided points size
-     * @param numberOfPointsToBePushed
-     */
-    public void reservePoints(int numberOfPointsToBePushed) {
-        pts.ensureCapacity(pts.size() + numberOfPointsToBePushed);
-    }
-
-    /**
-     * Add a ground effect cutting point.
-     * @param coord Coordinate of the cutting point.
-     * @param id    Id of the cut topography.
-     */
-    public void addGroundCutPt(Coordinate coord, int id) {
-        pts.add(new CutPoint(coord, ProfileBuilder.IntersectionType.GROUND_EFFECT, id));
-        hasGroundEffectInter = true;
-    }
-
-    /**
-     * Retrieve the cutting points.
-     * @return The cutting points.
-     */
-    public List<CutPoint> getCutPoints() {
-        return pts;
-    }
-    public void setCutPoints ( ArrayList<CutPoint> ge){
-        pts = ge;
-    }
-
-    /**
-     * Retrieve the profile source.
-     * @return The profile source.
-     */
-    public CutPoint getSource() {
-        return source;
-    }
-
-    /**
-     * get Distance of the not free field point to the Source-Receiver Segement
-     * @return
-     */
-    public double getDistanceToSR(){return distanceToSR;}
-    /**
-     * Retrieve the profile receiver.
-     * @return The profile receiver.
-     */
-    public CutPoint getReceiver() {
-        return receiver;
-    }
-
-    /**
-     * Sort the CutPoints by there coordinates
-     */
-    public void sort(Coordinate c0, Coordinate c1) {
-        if(c0.x<=c1.x){
-            if(c0.y<=c1.y){
-                pts.sort(CutPoint::compareTox01y01);
+    public void insertCutPoint(boolean sortBySourcePosition, CutPoint... cutPointsToInsert) {
+        CutPointSource sourcePoint = getSource();
+        CutPointReceiver receiverPoint = getReceiver();
+        cutPoints.addAll(1, Arrays.asList(cutPointsToInsert));
+        if(sortBySourcePosition) {
+            sort(sourcePoint.coordinate);
+            // move source as the first point
+            int sourceIndex = cutPoints.indexOf(sourcePoint);
+            if (sourceIndex != 0) {
+                cutPoints.remove(sourceIndex);
+                cutPoints.add(0, sourcePoint);
             }
-            else {
-                pts.sort(CutPoint::compareTox01y10);
-            }
-        }
-        if(c0.x>c1.x){
-            if(c0.y<=c1.y){
-                pts.sort(CutPoint::compareTox10y01);
-            }
-            else {
-                pts.sort(CutPoint::compareTox10y10);
+            // move receiver as the last point
+            int receiverIndex = cutPoints.indexOf(receiverPoint);
+            if (receiverIndex != cutPoints.size() - 1) {
+                cutPoints.remove(receiverIndex);
+                cutPoints.add(cutPoints.size(), receiverPoint);
             }
         }
     }
 
     /**
-     * Add an existing CutPoint.
-     * @param cutPoint CutPoint to add.
+     * Sort the CutPoints by distance with c0
      */
-    public void addCutPt(CutPoint cutPoint) {
-        pts.add(cutPoint);
+    public void sort(Coordinate c0) {
+        cutPoints.sort(new CutPointDistanceComparator(c0));
     }
-
-    /**
-     * Reverse the order of the CutPoints.
-     */
-    public void reverse() {
-        Collections.reverse(pts);
-    }
-
-    public void setSrcOrientation(Orientation srcOrientation){
-        this.srcOrientation = srcOrientation;
-    }
-
-    public Orientation getSrcOrientation(){
-        return srcOrientation;
-    }
-
-    public boolean intersectBuilding(){
-        return hasBuildingInter;
-    }
-
-    public boolean intersectTopography(){
-        return hasTopographyInter;
-    }
-
-    public boolean intersectGroundEffect(){
-        return hasGroundEffectInter;
-    }
-
 
     /**
      * compute the path between two points
@@ -217,137 +79,201 @@ public class CutProfile {
      * @param p1
      * @return the absorption coefficient of this path
      */
-    public double getGPath(CutPoint p0, CutPoint p1) {
-        CutPoint current = p0;
-        double totLength = p0.getCoordinate().distance(p1.getCoordinate());
+    @JsonIgnore
+    public double getGPath(CutPoint p0, CutPoint p1, double buildingRoofG) {
+        double totalLength = 0;
         double rsLength = 0.0;
 
-        List<CutPoint> pts = new ArrayList<>();
-        for(CutPoint cut : getCutPoints()) {
-            if(cut.getType() != TOPOGRAPHY && cut.getType() != BUILDING) {
-                pts.add(cut);
-            }
-        }
-        if(p0.compareTo(p1)<=0) {
-            pts.sort(CutPoint::compareTo);
-        } else {
-            pts.sort(Collections.reverseOrder());
+        // Extract part of the path from the specified argument
+        int i0 = cutPoints.indexOf(p0);
+        int i1 = cutPoints.indexOf(p1);
+        if(i0 == -1 || i1 == -1 || i1 < i0) {
+            return 0.0;
         }
 
-        int dir = -p0.compareTo(p1);
-        for(CutPoint cut : pts) {
-            if(dir*cut.compareTo(current)>=0 && dir*cut.compareTo(p1)<0) {
-                rsLength += current.getCoordinate().distance(cut.getCoordinate()) * current.getGroundCoef();
-                current = cut;
+        boolean aboveRoof = false;
+        for(int index = 0; index < i1; index++) {
+            CutPoint current = cutPoints.get(index);
+            if(current instanceof CutPointWall) {
+                CutPointWall currentWall = (CutPointWall) current;
+                if(!aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                    aboveRoof = true;
+                } else if(aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    aboveRoof = false;
+                }
+            }
+            if(index >= i0) {
+                double segmentLength = current.getCoordinate().distance(cutPoints.get(index + 1).getCoordinate());
+                rsLength += segmentLength * (aboveRoof ? buildingRoofG : current.getGroundCoefficient());
+                totalLength += segmentLength;
             }
         }
-        rsLength += current.getCoordinate().distance(p1.getCoordinate()) * current.getGroundCoef();
-        return rsLength / totLength;
+        return rsLength / totalLength;
     }
 
+    @JsonIgnore
     public double getGPath() {
-        return getGPath(getSource(), getReceiver());
+        if(!cutPoints.isEmpty()) {
+            return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1), Scene.DEFAULT_G_BUILDING);
+        } else {
+            return 0;
+        }
     }
 
     /**
      *
      * @return
      */
+    @JsonIgnore
     public boolean isFreeField() {
-        if(isFreeField == null) {
-            isFreeField = true;
-            Coordinate s = getSource().getCoordinate();
-            Coordinate r = getReceiver().getCoordinate();
-            List<CutPoint> tmp = new ArrayList<>();
-            boolean allMatch = true;
-            for(CutPoint cut : pts) {
-                if(cut.getType() == BUILDING || cut.getType() == WALL) {
-                    tmp.add(cut);
-                }
-                else if(cut.getType() == TOPOGRAPHY) {
-                    tmp.add(cut);
-                }
-                if(!(cut.getCoordinate().equals(s) || cut.getCoordinate().equals(r))) {
-                    allMatch = false;
-                }
-            }
-            if(allMatch) {
-                return true;
-            }
-            List<CutPoint> ptsWithouGroundEffect = pts.stream()
-                    .filter(cut -> !cut.getType().equals(GROUND_EFFECT))
-                    .collect(Collectors.toList());
-            for(CutPoint pt : ptsWithouGroundEffect) {
-                double frac = (pt.coordinate.x-s.x)/(r.x-s.x);
-                double z = source.getCoordinate().z + frac * (receiver.getCoordinate().z-source.getCoordinate().z);
-                double[] distanceSRpt = distance3D(source.getCoordinate(), receiver.getCoordinate(), pt.getCoordinate());
-                if(distanceSRpt[0]>0 && distanceSRpt[1]>0 && !pt.isCorner()) {
-                    isFreeField = false;
-                    distanceToSR = distanceSRpt[0];
+        return !hasBuildingIntersection && !hasTopographyIntersection;
+    }
+
+
+    @Override
+    public String toString() {
+        return "CutProfile{" +
+                "pts=" + cutPoints +
+                ", hasBuildingIntersection=" + hasBuildingIntersection +
+                ", hasTopographyIntersection=" + hasTopographyIntersection +
+                '}';
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround() {
+        return computePts2DGround(0, null);
+    }
+
+
+    /**
+     *
+     * @param pts points
+     * @return @return the computed coordinate list
+     */
+    public List<Coordinate> computePts2D() {
+        List<Coordinate> pts2D = cutPoints.stream()
+                .map(CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        return pts2D;
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround(List<Integer> index) {
+        return computePts2DGround(0, index);
+    }
+
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings)
+     * @param pts Cut points
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed coordinate list of the vertical cut
+     */
+    public static List<Coordinate> computePtsGround(List<CutPoint> pts, List<Integer> index) {
+
+        List<Coordinate> pts2D = new ArrayList<>(pts.size());
+        if(pts.isEmpty()) {
+            return pts2D;
+        }
+        // keep track of the obstacle under our current position.
+        boolean overArea = false;
+        for (CutPoint cut : pts) {
+            if (cut instanceof CutPointWall) {
+                CutPointWall cutPointWall = (CutPointWall) cut;
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    overArea = true;
+                } else {
                     break;
                 }
             }
         }
-        return isFreeField;
+        for (CutPoint cut : pts) {
+            if (cut instanceof CutPointGroundEffect) {
+                if (index != null) {
+                    index.add(pts2D.size() - 1);
+                }
+                continue;
+            }
+            if (cut instanceof CutPointWall) {
+                // Z ground profile must add intermediate ground points before adding the top level of building/wall
+                CutPointWall cutPointWall = (CutPointWall) cut;
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER) ||
+                        cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    overArea = true;
+                }
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getCoordinate().z));
+                if (cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT) ||
+                        cutPointWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                    overArea = false;
+                }
+            } else if (cut instanceof CutPointReflection) {
+                // Z ground profile is duplicated for reflection point before and after
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+            } else {
+                // we will ignore topographic point if we are over a building
+                if (!(overArea && cut instanceof CutPointTopography)) {
+                    pts2D.add(new Coordinate(cut.getCoordinate().x, cut.getCoordinate().y, cut.getzGround()));
+                }
+            }
+            if (index != null) {
+                index.add(pts2D.size() - 1);
+            }
+        }
+        return pts2D;
     }
 
     /**
-     * Get distance between a segment (p1,p2) and a point (point) with point perpendicular to (p1,p2)
-     * @param p1
-     * @param p2
-     * @param point
-     * @return distance in meters
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param pts Cut points
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
      */
-    private static double[] distance3D(Coordinate p1, Coordinate p2, Coordinate point) {
-        double[] DistanceInfo = new double[2];
-        double x1 = p1.getX();
-        double y1 = p1.getY();
-        double z1 = p1.getZ();
-
-        double x2 = p2.getX();
-        double y2 = p2.getY();
-        double z2 = p2.getZ();
-
-        double x0 = point.getX();
-        double y0 = point.getY();
-        double z0 = point.getZ();
-
-        // Vector representing the LineSegment
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        double dz = z2 - z1;
-
-        // Vector from the start point of the LineSegment to the Point
-        double px = x0 - x1;
-        double py = y0 - y1;
-        double pz = z0 - z1;
-
-        // Compute the dot product of the vectors
-        double dotProduct = dx * px + dy * py + dz * pz;
-
-        // Calculate the projection of the Point onto the LineSegment
-        double t = dotProduct / (dx * dx + dy * dy + dz * dz);
-
-        // Calculate the closest point on the LineSegment to the Point
-        double closestX = x1 + t * dx;
-        double closestY = y1 + t * dy;
-        double closestZ = z1 + t * dz;
-
-        // Calculate the distance between the closest point and the Point
-        double distance = Math.sqrt((x0 - closestX) * (x0 - closestX)
-                + (y0 - closestY) * (y0 - closestY)
-                + (z0 - closestZ) * (z0 - closestZ));
-        double sign = z0 - closestZ;
-        DistanceInfo[0]=distance;
-        DistanceInfo[1]=sign;
-        return DistanceInfo;
+    public static List<Coordinate> computePts2DGround(List<CutPoint> pts, double tolerance, List<Integer> index) {
+        return JTSUtility.getNewCoordinateSystem(computePtsGround(pts, index), tolerance);
     }
 
-    @Override
-    public String toString() {
-        return "CutProfile{" + "pts=" + pts + ", source=" + source + ", receiver=" + receiver + ", " +
-                "hasBuildingInter=" + hasBuildingInter + ", hasTopographyInter=" + hasTopographyInter + ", " +
-                "hasGroundEffectInter=" + hasGroundEffectInter + ", isFreeField=" + isFreeField + ", " +
-                "srcOrientation=" + srcOrientation + '}';
+    /**
+     * From the vertical plane cut, extract only the top elevation points
+     * (buildings/walls top or ground if no buildings) then re-project it into
+     * a 2d coordinate system. The first point is always x=0.
+     * @param tolerance Simplify the point list by not adding points where the distance from the line segments
+     *                 formed from the previous and the next point is inferior to this tolerance (remove intermediate collinear points)
+     * @param index Corresponding index from parameter to return list items
+     * @return the computed 2D coordinate list of DEM
+     */
+    public List<Coordinate> computePts2DGround(double tolerance, List<Integer> index) {
+        return computePts2DGround(this.cutPoints, tolerance, index);
+    }
+
+    @JsonIgnore
+    public CutPointSource getSource() {
+        return !cutPoints.isEmpty() && cutPoints.get(0) instanceof CutPointSource ?
+                (CutPointSource) cutPoints.get(0) : null;
+    }
+
+    @JsonIgnore
+    public CutPointReceiver getReceiver() {
+        return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
+                (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;
     }
 }

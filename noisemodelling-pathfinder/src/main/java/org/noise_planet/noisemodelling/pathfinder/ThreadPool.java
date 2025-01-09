@@ -10,14 +10,8 @@
 package org.noise_planet.noisemodelling.pathfinder;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+
+import java.util.concurrent.*;
 
 /**
  *
@@ -139,5 +133,23 @@ public class ThreadPool extends ThreadPoolExecutor {
             }
         }
         super.execute(command);
+    }
+
+    /**
+     * Wait for free queue slot if poolSize is superior or equal of maximum pool
+     * size then executes the given task sometime in the future. The task may
+     * execute in a new thread or in an existing pooled thread. If the task
+     * cannot be submitted for execution, either because this executor has been
+     * shutdown or because its capacity has been reached, the task is handled by
+     * the current RejectedExecutionHandler.
+     *
+     * @throws RejectedExecutionException {@inheritDoc}
+     * @throws NullPointerException       {@inheritDoc}
+     */
+    public <T> Future<T> submitBlocking(Callable<T> task) {
+        if (task == null) throw new NullPointerException();
+        RunnableFuture<T> ftask = newTaskFor(task);
+        executeBlocking(ftask);
+        return ftask;
     }
 }
