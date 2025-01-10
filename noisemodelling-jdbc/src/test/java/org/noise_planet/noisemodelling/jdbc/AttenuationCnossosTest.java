@@ -12,6 +12,10 @@ package org.noise_planet.noisemodelling.jdbc;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
@@ -19,9 +23,12 @@ import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
@@ -45,14 +52,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
@@ -6151,56 +6154,80 @@ public class AttenuationCnossosTest {
             assertEquals(idReceiver, maxPowerReceiverIndex);
         }
     }
-//
-//    /**
-//     * Test optimisation feature {@link Scene#maximumError}
-//     * This feature is disabled and all sound sources are computed
-//     */
-//    @Test
-//    public void testIgnoreNonSignificantSources() throws LayerDelaunayError {
-//
-//        GeometryFactory factory = new GeometryFactory();
-//        //Scene dimension
-//        Envelope cellEnvelope = new Envelope(new Coordinate(-1200, -1200, 0.), new Coordinate(1200, 1200, 0.));
-//
-//        //Create obstruction test object
-//        ProfileBuilder builder = new ProfileBuilder();
-//
-//        builder.addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9);
-//        builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
-//        builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
-//
-//        builder.finishFeeding();
-//
-//        double[] roadLvl = new double[]{25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95};
-//        for(int i = 0; i < roadLvl.length; i++) {
-//            roadLvl[i] = dbaToW(roadLvl[i]);
-//        }
-//
-//        DirectPropagationProcessData rayData = new DirectPropagationProcessData(builder);
-//        rayData.addReceiver(new Coordinate(0, 0, 4));
-//        rayData.addSource(factory.createPoint(new Coordinate(10, 10, 1)), roadLvl);
-//        rayData.addSource(factory.createPoint(new Coordinate(1100, 1100, 1)), roadLvl);
-//        rayData.setComputeHorizontalDiffraction(true);
-//        rayData.setComputeVerticalDiffraction(true);
-//
-//        rayData.maxSrcDist = 2000;
-//        rayData.maximumError = 3; // 3 dB error max
-//
-//        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
-//        attData.setHumidity(70);
-//        attData.setTemperature(10);
-//        RayOut propDataOut = new RayOut(true, attData, rayData);
-//        PathFinder computeRays = new PathFinder(rayData);
-//        computeRays.setThreadCount(1);
-//        computeRays.run(propDataOut);
-//
-//        // Second source has not been computed because at best it would only increase the received level of only 0.0004 dB
-//        assertEquals(1, propDataOut.receiversAttenuationLevels.size());
-//
-//        //TODO check the expected level and the delta should be reduced to at least 0.1
-//        assertEquals(44.07, wToDba(sumArray(roadLvl.length, dbaToW(propDataOut.getVerticesSoundLevel().get(0).value))), 3);
-//    }
+
+    /**
+     * Test optimisation feature {@link Scene#maximumError}
+     * This feature is disabled and all sound sources are computed
+     */
+    @Test
+    public void testIgnoreNonSignificantSources() throws Exception {
+        try (Connection connection =
+                     JDBCUtilities.wrapConnection(
+                             H2GISDBFactory.createSpatialDataBase(
+                                     "testReceiverOverBuilding", true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute(Utils.getRunScriptRes("scenario_skip_far_source.sql"));
+
+                // Init NoiseModelling
+                NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                        "LW_ROADS", "RECEIVERS");
+
+                noiseMapByReceiverMaker.setMaximumPropagationDistance(5000.0);
+                noiseMapByReceiverMaker.setSoundReflectionOrder(1);
+                noiseMapByReceiverMaker.setMaximumError(0.5);
+                noiseMapByReceiverMaker.setThreadCount(1);
+                noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
+                noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+                // Building height field name
+                noiseMapByReceiverMaker.setHeightField("HEIGHT");
+
+
+                // Init custom input in order to compute more than just attenuation
+                // LW_ROADS contain Day Evening Night emission spectrum
+                NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+                noiseMapParameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+
+                noiseMapParameters.setComputeLDay(false);
+                noiseMapParameters.setComputeLEvening(false);
+                noiseMapParameters.setComputeLNight(false);
+                noiseMapParameters.setComputeLDEN(true);
+                noiseMapParameters.keepAbsorption = true;
+
+                NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
+
+                noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
+                noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
+
+                RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
+
+                noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+
+                noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
+                noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
+                noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
+
+                noiseMapByReceiverMaker.setGridDim(1);
+
+                // Set of already processed receivers
+                Set<Long> receivers = new HashSet<>();
+
+                // Fetch cell identifiers with receivers
+                Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+                ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+                assertEquals(1, cells.size());
+                for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                    // Run ray propagation
+                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(),
+                            cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                    assertInstanceOf(NoiseMap.class, out);
+                    NoiseMap rout = (NoiseMap) out;
+                    assertEquals(1, rout.attenuatedPaths.lDenLevels.size());
+                    Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+                    assertEquals(36.77, AcousticIndicatorsFunctions.sumDbArray(sl.value), AttenuationCnossosTest.ERROR_EPSILON_LOWEST);
+                }
+            }
+        }
+    }
 
     @Test
     public void testRoseIndex() {

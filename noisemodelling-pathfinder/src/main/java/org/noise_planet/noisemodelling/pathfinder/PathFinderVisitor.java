@@ -63,6 +63,11 @@ public class PathFinderVisitor implements IComputePathsOut {
         return PathSearchStrategy.CONTINUE;
     }
 
+    @Override
+    public void startReceiver(Collection<PathFinder.SourcePointInfo> sourceList) {
+
+    }
+
     /**
      *
      * @return an instance of the interface IComputePathsOut

@@ -140,7 +140,6 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
         propagationProcessData.maximumError = getMaximumError();
-        propagationProcessData.noiseFloor = getNoiseFloor();
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.maxSrcDist = maximumPropagationDistance;
         propagationProcessData.gS = getGs();

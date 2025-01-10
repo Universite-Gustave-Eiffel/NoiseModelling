@@ -78,14 +78,7 @@ public abstract class NoiseMapLoader {
     /** TODO missing reference to the SIGMA value of materials */
     protected double wallAbsorption = 100000;
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
-    public double maximumError = Double.NEGATIVE_INFINITY;
-
-    /** stop calculation if the sum of further sources contributions are smaller than this value */
-    /**
-     * ligne  51 à 74 should be noise map parameters todo
-     */
-    public double noiseFloor = Double.NEGATIVE_INFINITY;
-
+    public double maximumError = 0;
     protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
     protected int parallelComputationCount = 0;
@@ -775,14 +768,6 @@ public abstract class NoiseMapLoader {
         return this.gs;
     }
 
-    public double getNoiseFloor() {
-        return noiseFloor;
-    }
-
-    public void setNoiseFloor(double noiseFloor) {
-        this.noiseFloor = noiseFloor;
-    }
-
     /**
      * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
      */
@@ -791,7 +776,8 @@ public abstract class NoiseMapLoader {
     }
 
     /**
-     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
+     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions
+     *                    compared to the current level at the receiver position are smaller than this value
      */
     public void setMaximumError(double maximumError) {
         this.maximumError = maximumError;

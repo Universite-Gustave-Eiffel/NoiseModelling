@@ -282,9 +282,35 @@ public class NoiseMapParameters {
      * representing the noise levels for different time periods.
      */
     public static class TimePeriodParameters {
-        public double [] dayLevels = null;
-        public double [] eveningLevels = null;
-        public double [] nightLevels = null;
+        public double [] dayLevels = new double[0];
+        public double [] eveningLevels = new double[0];
+        public double [] nightLevels = new double[0];
+        public static final double DAY_RATIO = 12. / 24.;
+        public static final double EVENING_RATIO = 4. / 24.;
+        public static final double NIGHT_RATIO = 8. / 24.;
+
+        public TimePeriodParameters(double[] dayLevels, double[] eveningLevels, double[] nightLevels) {
+            this.dayLevels = dayLevels;
+            this.eveningLevels = eveningLevels;
+            this.nightLevels = nightLevels;
+        }
+
+        public TimePeriodParameters() {
+        }
+
+        /**
+         * Compute lden w value from day evening and night w values
+         * @return
+         */
+        public double[] computeLDENLevels() {
+            double[] denAttenuation = new double[dayLevels.length];
+            for(int idFrequency = 0; idFrequency < denAttenuation.length; idFrequency++) {
+                denAttenuation[idFrequency] = dayLevels[idFrequency] * DAY_RATIO +
+                        eveningLevels[idFrequency] * EVENING_RATIO +
+                        nightLevels[idFrequency] * NIGHT_RATIO;
+            }
+            return denAttenuation;
+        }
 
         /**
          * Gets the noise levels for the specified time period.

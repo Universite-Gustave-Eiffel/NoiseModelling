@@ -282,6 +282,13 @@ inputs = [
                         'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
                         '&#128736; Default value: <b>empty (do not keep rays)</b>',
                 min        : 0, max: 1, type: String.class
+        ],
+        confMaxError            : [
+                name       : 'Max Error (dB)',
+                title      : 'Max Error (dB)',
+                description: 'Threshold for excluding negligible sound sources in calculations. Default value: <b>0.1</b>',
+                min        : 0, max: 1,
+                type       : Double.class
         ]
 ]
 
@@ -569,6 +576,12 @@ def exec(Connection connection, input) {
         confExportSourceId = input['confExportSourceId']
     }
 
+    double confMaxError = 0.1;
+    if (input['confMaxError']) {
+        confMaxError = Double.valueOf(input['confMaxError'])
+    }
+
+
     // -------------------------
     // Initialize some variables
     // -------------------------
@@ -718,7 +731,7 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.1d)
+    pointNoiseMap.setMaximumError(confMaxError)
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 

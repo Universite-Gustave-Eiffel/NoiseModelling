@@ -1,4 +1,4 @@
-/**
+ /**
  * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and education, as well as by experts in a professional use.
  * <p>
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,6 +27,12 @@ public interface IComputePathsOut {
      * @return Will skip or not the next processing depending on this value.
      */
     PathSearchStrategy onNewCutPlane(CutProfile cutProfile);
+
+    /**
+     * Called before looking for vertical cut planes between the receiver and the sources.
+     * @param sourceList All sources in the range of this receiver sorted by the distance from the receiver
+     */
+    void startReceiver(Collection<PathFinder.SourcePointInfo> sourceList);
 
     enum PathSearchStrategy {
         /**

@@ -9,14 +9,11 @@ import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointVEdgeDiffraction;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
@@ -201,7 +198,7 @@ public class CnossosPathBuilder {
      * @param bodyBarrier
      * @return The cnossos path or null
      */
-    public static CnossosPath computeAttenuationFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable, double gS) {
+    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable, double gS) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;

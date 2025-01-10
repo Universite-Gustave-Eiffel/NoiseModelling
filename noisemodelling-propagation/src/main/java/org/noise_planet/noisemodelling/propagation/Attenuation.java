@@ -90,12 +90,17 @@ public class Attenuation implements IComputePathsOut {
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         final Scene scene = inputData;
-        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+        CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.freq_lvl, scene.gS);
         if(cnossosPath != null) {
-            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
+            double[] power = addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }
         return PathSearchStrategy.CONTINUE;
+    }
+
+    @Override
+    public void startReceiver(Collection<PathFinder.SourcePointInfo> sourceList) {
+
     }
 
     /**

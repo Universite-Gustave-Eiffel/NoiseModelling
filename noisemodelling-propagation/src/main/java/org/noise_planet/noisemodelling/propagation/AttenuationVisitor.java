@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
@@ -20,11 +21,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -46,12 +43,17 @@ public class AttenuationVisitor implements IComputePathsOut {
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         final Scene scene = multiThreadParent.inputData;
-        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+        CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.freq_lvl, scene.gS);
         if(cnossosPath != null) {
             addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }
         return PathSearchStrategy.CONTINUE;
+    }
+
+    @Override
+    public void startReceiver(Collection<PathFinder.SourcePointInfo> sourceList) {
+
     }
 
     /**

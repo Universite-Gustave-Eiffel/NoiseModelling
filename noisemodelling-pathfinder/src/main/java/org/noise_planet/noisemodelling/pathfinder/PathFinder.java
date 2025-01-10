@@ -150,28 +150,28 @@ public class PathFinder {
 
     /**
      * Compute the rays to the given receiver.
-     * @param rcv     Receiver point.
+     * @param receiverPointInfo     Receiver point.
      * @param dataOut Computation output.
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
-    public void computeRaysAtPosition(ReceiverPointInfo rcv, IComputePathsOut dataOut, ProgressVisitor visitor) {
+    public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, IComputePathsOut dataOut, ProgressVisitor visitor) {
         MirrorReceiversCompute receiverMirrorIndex = null;
 
         if(data.reflexionOrder > 0) {
-            Envelope receiverPropagationEnvelope = new Envelope(rcv.getCoordinates());
+            Envelope receiverPropagationEnvelope = new Envelope(receiverPointInfo.getCoordinates());
             receiverPropagationEnvelope.expandBy(data.maxSrcDist);
             List<Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-            receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, rcv.position, data.reflexionOrder,
+            receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
                     data.maxSrcDist, data.maxRefDist);
         }
 
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(
-                rcv.getCoordinates().x - searchSourceDistance,
-                rcv.getCoordinates().x + searchSourceDistance,
-                rcv.getCoordinates().y - searchSourceDistance,
-                rcv.getCoordinates().y + searchSourceDistance
+                receiverPointInfo.getCoordinates().x - searchSourceDistance,
+                receiverPointInfo.getCoordinates().x + searchSourceDistance,
+                receiverPointInfo.getCoordinates().y - searchSourceDistance,
+                receiverPointInfo.getCoordinates().y + searchSourceDistance
         );
         Iterator<Integer> regionSourcesLst = data.sourcesIndex.query(receiverSourceRegion);
         List<SourcePointInfo> sourceList = new ArrayList<>();
@@ -184,7 +184,7 @@ public class PathFinder {
                 Geometry source = data.sourceGeometries.get(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    if (ptpos.distance(rcv.getCoordinates()) < data.maxSrcDist) {
+                    if (ptpos.distance(receiverPointInfo.getCoordinates()) < data.maxSrcDist) {
                         Orientation orientation = null;
                         if(data.sourcesPk.size() > srcIndex) {
                             orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
@@ -195,12 +195,12 @@ public class PathFinder {
                         insertPtSource(ptpos, srcIndex, sourceList, 1., orientation);
                     }
                 } else if (source instanceof LineString) {
-                    addLineSource((LineString) source, rcv.getCoordinates(), srcIndex, sourceList);
+                    addLineSource((LineString) source, receiverPointInfo.getCoordinates(), srcIndex, sourceList);
                 } else if (source instanceof MultiLineString) {
                     for (int id = 0; id < source.getNumGeometries(); id++) {
                         Geometry subGeom = source.getGeometryN(id);
                         if (subGeom instanceof LineString) {
-                            addLineSource((LineString) subGeom, rcv.getCoordinates(), srcIndex, sourceList);
+                            addLineSource((LineString) subGeom, receiverPointInfo.getCoordinates(), srcIndex, sourceList);
                         }
                     }
                 } else {
@@ -210,12 +210,14 @@ public class PathFinder {
             }
         }
         // Sort sources by power contribution descending
-        Collections.sort(sourceList);
+        Collections.sort(sourceList, Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
+
+        dataOut.startReceiver(sourceList);
 
         // For each Pt Source - Pt Receiver
         AtomicInteger raysCount = new AtomicInteger(0);
-        for (SourcePointInfo src : sourceList) {
-            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(src, rcv, dataOut, raysCount, receiverMirrorIndex);
+        for (SourcePointInfo sourcePointInfo : sourceList) {
+            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, raysCount, receiverMirrorIndex);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
             if ((visitor != null && visitor.isCanceled()) ||  !strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
                 break; //Stop looking for more rays
@@ -224,11 +226,11 @@ public class PathFinder {
 
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
-            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(rcv.getId(), raysCount.get());
+            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(receiverPointInfo.getId(), raysCount.get());
         }
 
         // No more rays for this receiver
-        dataOut.finalizeReceiver(rcv.getId());
+        dataOut.finalizeReceiver(receiverPointInfo.getId());
     }
 
     /**
@@ -250,13 +252,13 @@ public class PathFinder {
             strategy = directPath(src, rcv, data.computeVerticalDiffraction,
                     data.computeHorizontalDiffraction, dataOut);
             if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
-                return strategy;
+                return strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ? IComputePathsOut.PathSearchStrategy.CONTINUE : strategy;
             }
             // Process reflection
             if (data.reflexionOrder > 0) {
                 strategy = computeReflexion(rcv, src, receiverMirrorIndex, dataOut);
                 if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
-                    return strategy;
+                    return strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ? IComputePathsOut.PathSearchStrategy.CONTINUE : strategy;
                 }
             }
         }
@@ -760,7 +762,7 @@ public class PathFinder {
      */
     public static double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                                                    List<Coordinate> pts) {
-        // If the linear sound source length is inferior than half the distance between the nearest point of the sound
+        // If the linear sound source length is inferior to half the distance between the nearest point of the sound
         // source and the receiver then it can be modelled as a single point source
         double geomLength = geom.getLength();
         if (geomLength < segmentSizeConstraint) {
