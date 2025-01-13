@@ -113,7 +113,7 @@ public class Utils {
         @Override
         public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
             double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
-            return wToDba(multArray(processData.wjSources.get(sourceId), dbaToW(attenuation)));
+            return wToDba(multiplicationArray(processData.wjSources.get(sourceId), dbaToW(attenuation)));
         }
     }
 

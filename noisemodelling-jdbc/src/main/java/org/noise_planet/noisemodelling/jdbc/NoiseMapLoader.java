@@ -769,21 +769,6 @@ public abstract class NoiseMapLoader {
     }
 
     /**
-     * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
-     */
-    public double getMaximumError() {
-        return maximumError;
-    }
-
-    /**
-     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions
-     *                    compared to the current level at the receiver position are smaller than this value
-     */
-    public void setMaximumError(double maximumError) {
-        this.maximumError = maximumError;
-    }
-
-    /**
      * @return Reflection and diffraction maximum search distance, default to 400m.
     */
     public double getMaximumReflectionDistance() {

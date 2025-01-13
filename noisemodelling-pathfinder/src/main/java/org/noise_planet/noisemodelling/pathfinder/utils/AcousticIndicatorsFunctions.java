@@ -128,7 +128,7 @@ public class AcousticIndicatorsFunctions {
      * @param array2
      * @return
      */
-    public static double[] multArray(double[] array1, double[] array2) {
+    public static double[] multiplicationArray(double[] array1, double[] array2) {
         if (array1.length != array2.length) {
             throw new IllegalArgumentException("Not same size array");
         }
@@ -137,6 +137,21 @@ public class AcousticIndicatorsFunctions {
             sum[i] = array1[i] * array2[i];
         }
         return sum;
+    }
+
+    /**
+     * Multiply component of two same size array
+     *
+     * @param array Array input
+     * @param coefficient number to multiply at each index
+     * @return Array multiplied
+     */
+    public static double[] multiplicationArray(double[] array, double coefficient) {
+        double[] result = new double[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = array[i] * coefficient;
+        }
+        return result;
     }
 
     /**

@@ -212,7 +212,7 @@ public class PathFinder {
         // Sort sources by power contribution descending
         Collections.sort(sourceList, Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
 
-        dataOut.startReceiver(sourceList);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
 
         // For each Pt Source - Pt Receiver
         AtomicInteger raysCount = new AtomicInteger(0);
@@ -1005,8 +1005,8 @@ public class PathFinder {
     public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
         public final double li;
         public int sourceIndex;
-        Coordinate position;
-        Orientation orientation;
+        public Coordinate position;
+        public Orientation orientation;
 
         /**
          * @param sourcePrimaryKey

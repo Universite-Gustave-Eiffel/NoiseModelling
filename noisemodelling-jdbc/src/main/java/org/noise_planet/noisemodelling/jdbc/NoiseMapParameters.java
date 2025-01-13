@@ -48,6 +48,10 @@ public class NoiseMapParameters {
     boolean computeLEvening = true;
     boolean computeLNight = true;
     boolean computeLDEN = true;
+
+    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
+    public double maximumError = 0;
+
     public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
     public int getMaximumRaysOutputCount() {
@@ -207,6 +211,21 @@ public class NoiseMapParameters {
         this.computeLDEN = computeLDEN;
     }
 
+    /**
+     * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
+     */
+    public double getMaximumError() {
+        return maximumError;
+    }
+
+    /**
+     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions
+     *                    compared to the current level at the receiver position are smaller than this value
+     */
+    public void setMaximumError(double maximumError) {
+        this.maximumError = maximumError;
+    }
+
     public void setMergeSources(boolean mergeSources) {
         this.mergeSources = mergeSources;
     }
@@ -285,9 +304,6 @@ public class NoiseMapParameters {
         public double [] dayLevels = new double[0];
         public double [] eveningLevels = new double[0];
         public double [] nightLevels = new double[0];
-        public static final double DAY_RATIO = 12. / 24.;
-        public static final double EVENING_RATIO = 4. / 24.;
-        public static final double NIGHT_RATIO = 8. / 24.;
 
         public TimePeriodParameters(double[] dayLevels, double[] eveningLevels, double[] nightLevels) {
             this.dayLevels = dayLevels;
@@ -296,20 +312,6 @@ public class NoiseMapParameters {
         }
 
         public TimePeriodParameters() {
-        }
-
-        /**
-         * Compute lden w value from day evening and night w values
-         * @return
-         */
-        public double[] computeLDENLevels() {
-            double[] denAttenuation = new double[dayLevels.length];
-            for(int idFrequency = 0; idFrequency < denAttenuation.length; idFrequency++) {
-                denAttenuation[idFrequency] = dayLevels[idFrequency] * DAY_RATIO +
-                        eveningLevels[idFrequency] * EVENING_RATIO +
-                        nightLevels[idFrequency] * NIGHT_RATIO;
-            }
-            return denAttenuation;
         }
 
         /**

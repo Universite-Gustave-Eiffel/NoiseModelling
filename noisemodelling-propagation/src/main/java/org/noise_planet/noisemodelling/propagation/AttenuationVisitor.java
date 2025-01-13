@@ -52,7 +52,7 @@ public class AttenuationVisitor implements IComputePathsOut {
     }
 
     @Override
-    public void startReceiver(Collection<PathFinder.SourcePointInfo> sourceList) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
 
     }
 

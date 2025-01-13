@@ -10,6 +10,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 
 public class CutPointReceiver  extends CutPoint {
 
@@ -36,6 +37,15 @@ public class CutPointReceiver  extends CutPoint {
      */
     @JsonIgnore
     public int id = -1;
+
+    /**
+     * Create default receiver information
+     * @param receiver
+     */
+    public CutPointReceiver(PathFinder.ReceiverPointInfo receiver) {
+        super(receiver.position, receiver.position.z - 4.0, 0);
+        id = receiver.getId();
+    }
 
     @Override
     public String toString() {
