@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import java.io.File;
 
@@ -301,11 +303,15 @@ public class NoiseMapParameters {
      * representing the noise levels for different time periods.
      */
     public static class TimePeriodParameters {
+        public CutPointSource source;
+        public CutPointReceiver receiver;
         public double [] dayLevels = new double[0];
         public double [] eveningLevels = new double[0];
         public double [] nightLevels = new double[0];
 
-        public TimePeriodParameters(double[] dayLevels, double[] eveningLevels, double[] nightLevels) {
+        public TimePeriodParameters(CutPointSource source, CutPointReceiver receiver, double[] dayLevels, double[] eveningLevels, double[] nightLevels) {
+            this.source = source;
+            this.receiver = receiver;
             this.dayLevels = dayLevels;
             this.eveningLevels = eveningLevels;
             this.nightLevels = nightLevels;

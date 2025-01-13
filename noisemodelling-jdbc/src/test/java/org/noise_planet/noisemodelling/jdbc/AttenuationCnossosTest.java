@@ -6148,7 +6148,7 @@ public class AttenuationCnossosTest {
                 double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
-                    maxPowerReceiverIndex = (int) v.receiverId;
+                    maxPowerReceiverIndex = v.receiver.id;
                 }
             }
             assertEquals(idReceiver, maxPowerReceiverIndex);
@@ -6316,11 +6316,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOut.receiversAttenuationLevels) {
-            if(!levelsPerReceiver.containsKey(lvl.receiverId)) {
-                levelsPerReceiver.put(lvl.receiverId, lvl.value);
+            if(!levelsPerReceiver.containsKey(lvl.receiver.receiverPk)) {
+                levelsPerReceiver.put(lvl.receiver.receiverPk, lvl.value);
             } else {
                 // merge
-                levelsPerReceiver.put(lvl.receiverId, sumDbArray(levelsPerReceiver.get(lvl.receiverId),
+                levelsPerReceiver.put(lvl.receiver.receiverPk, sumDbArray(levelsPerReceiver.get(lvl.receiver.receiverPk),
                         lvl.value));
             }
         }
@@ -6329,11 +6329,11 @@ public class AttenuationCnossosTest {
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
         for(Attenuation.SourceReceiverAttenuation lvl : propDataOutTest.receiversAttenuationLevels) {
-            if(!levelsPerReceiverLines.containsKey(lvl.receiverId)) {
-                levelsPerReceiverLines.put(lvl.receiverId, lvl.value);
+            if(!levelsPerReceiverLines.containsKey(lvl.receiver.receiverPk)) {
+                levelsPerReceiverLines.put(lvl.receiver.receiverPk, lvl.value);
             } else {
                 // merge
-                levelsPerReceiverLines.put(lvl.receiverId, sumDbArray(levelsPerReceiverLines.get(lvl.receiverId),
+                levelsPerReceiverLines.put(lvl.receiver.receiverPk, sumDbArray(levelsPerReceiverLines.get(lvl.receiver.receiverPk),
                         lvl.value));
             }
         }

@@ -75,4 +75,19 @@ public class CutPointSource  extends CutPoint {
                 "\n, groundCoefficient=" + groundCoefficient +
                 "\n}\n";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CutPointSource that = (CutPointSource) o;
+        return sourcePk == that.sourcePk && id == that.id;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Long.hashCode(sourcePk);
+        result = 31 * result + id;
+        return result;
+    }
 }

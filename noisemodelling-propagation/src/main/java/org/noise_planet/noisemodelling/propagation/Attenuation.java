@@ -117,8 +117,8 @@ public class Attenuation implements IComputePathsOut {
         }
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,receiver.id,
-                    source.sourcePk, source.id, aGlobalMeteo, receiver.coordinate));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver,
+                    source, aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -431,37 +431,19 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
-
-        /**
-         * Source primary key. -1 if it is the receiver values merged from multiple sources. In this case the value is
-         * not attenuation but spl at receiver position
-         */
-        public final long sourceId;
-
-        /**
-         * Receiver primary key.
-         */
-        public final long receiverId;
-
-        /** Source index in the sub-domain */
-        public final int sourceIndex;
-        public final int receiverIndex;
+        public final CutPointReceiver receiver;
+        public final CutPointSource source;
 
         /**
          * Attenuation in dB or Spl in dB or dB(A)
          */
         public final double[] value;
-        public final Coordinate receiverPosition;
 
-        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value, Coordinate receiverPosition) {
-            this.sourceId = sourceId;
-            this.receiverId = receiverId;
-            this.sourceIndex = sourceIndex;
-            this.receiverIndex = receiverIndex;
+        public SourceReceiverAttenuation(CutPointReceiver receiver, CutPointSource source, double[] value) {
+            this.receiver = receiver;
+            this.source = source;
             this.value = value;
-            this.receiverPosition = receiverPosition;
         }
-
     }
 
 

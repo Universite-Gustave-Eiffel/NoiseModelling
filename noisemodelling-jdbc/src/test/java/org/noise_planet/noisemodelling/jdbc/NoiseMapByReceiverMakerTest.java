@@ -250,10 +250,10 @@ public class NoiseMapByReceiverMakerTest {
                         NoiseMap rout = (NoiseMap) out;
 
                         Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
-                        assertEquals(1, sl.receiverId);
+                        assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(73.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
-                        assertEquals(2, sl.receiverId);
+                        assertEquals(2, sl.receiver.receiverPk);
                         assertEquals(53.3, sl.value[0], 1);
                         assertTrue(rout.attenuatedPaths.lDenLevels.isEmpty());
 
@@ -333,10 +333,10 @@ public class NoiseMapByReceiverMakerTest {
                         assertEquals(2, rout.attenuatedPaths.lDenLevels.size());
 
                         Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
-                        assertEquals(1, sl.receiverId);
+                        assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(68.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
-                        assertEquals(2, sl.receiverId);
+                        assertEquals(2, sl.receiver.receiverPk);
                         assertEquals(70.8, sl.value[0], 1);
 
                         assertEquals(3 , rout.pathParameters.size());

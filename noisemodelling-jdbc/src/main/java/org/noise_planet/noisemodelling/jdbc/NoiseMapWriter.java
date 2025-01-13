@@ -165,13 +165,13 @@ public class NoiseMapWriter implements Runnable {
             Attenuation.SourceReceiverAttenuation row = stack.pop();
             AttenuatedPaths.queueSize.decrementAndGet();
             int parameterIndex = 1;
-            ps.setLong(parameterIndex++, row.receiverId);
+            ps.setLong(parameterIndex++, row.receiver.receiverPk);
             if(!noiseMapParameters.mergeSources) {
-                ps.setLong(parameterIndex++, row.sourceId);
+                ps.setLong(parameterIndex++, row.source.sourcePk);
             }
             if(noiseMapParameters.exportReceiverPosition) {
-                ps.setObject(parameterIndex++,  row.receiverPosition != null ?
-                        factory.createPoint(row.receiverPosition):
+                ps.setObject(parameterIndex++,  row.receiver.coordinate != null ?
+                        factory.createPoint(row.receiver.coordinate):
                         factory.createPoint());
             }
             if (!noiseMapParameters.computeLAEQOnly){
