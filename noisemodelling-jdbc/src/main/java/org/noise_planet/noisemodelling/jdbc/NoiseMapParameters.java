@@ -303,8 +303,8 @@ public class NoiseMapParameters {
      * representing the noise levels for different time periods.
      */
     public static class TimePeriodParameters {
-        public CutPointSource source;
-        public CutPointReceiver receiver;
+        public CutPointSource source = null;
+        public CutPointReceiver receiver = null;
         public double [] dayLevels = new double[0];
         public double [] eveningLevels = new double[0];
         public double [] nightLevels = new double[0];

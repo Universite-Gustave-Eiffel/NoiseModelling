@@ -385,42 +385,93 @@ public class NoiseMapInStack implements IComputePathsOut {
             this.pathParameters.clear();
         }
         NoiseEmissionMaker noiseEmissionMaker = noiseMapComputeRaysOut.noiseEmissionMaker;
+        Map<Integer, NoiseMapParameters.TimePeriodParameters> attenuationPerSource = receiverAttenuationPerSource;
+
+        double[] mergedLdenSpectrum = new double[0];
+        NoiseMapParameters.TimePeriodParameters mergedLden = new NoiseMapParameters.TimePeriodParameters();
         for (Map.Entry<Integer, NoiseMapParameters.TimePeriodParameters> timePeriodParametersEntry :
-                receiverAttenuationPerSource.entrySet()) {
+                attenuationPerSource.entrySet()) {
             int sourceId = timePeriodParametersEntry.getKey();
             NoiseMapParameters.TimePeriodParameters denValues = new NoiseMapParameters.TimePeriodParameters();
             NoiseMapParameters.TimePeriodParameters denAttenuation = timePeriodParametersEntry.getValue();
+            // Apply attenuation to emission level
             double[] ldenSpectrum = computeLden(denAttenuation,
-            noiseEmissionMaker.wjSourcesD.get(sourceId),
-            noiseEmissionMaker.wjSourcesE.get(sourceId),
-            noiseEmissionMaker.wjSourcesN.get(sourceId),
+                    noiseEmissionMaker.wjSourcesD.get(sourceId),
+                    noiseEmissionMaker.wjSourcesE.get(sourceId),
+                    noiseEmissionMaker.wjSourcesN.get(sourceId),
                     denValues);
-            if (noiseMapParameters.computeLDay) {
+            if(mergedLden.receiver == null) {
+                mergedLden.receiver = denAttenuation.receiver;
+                mergedLden.source = new CutPointSource();
+                mergedLden.dayLevels = new double[denAttenuation.dayLevels.length];
+                mergedLden.eveningLevels = new double[denAttenuation.eveningLevels.length];
+                mergedLden.nightLevels = new double[denAttenuation.nightLevels.length];
+                mergedLdenSpectrum = new double[ldenSpectrum.length];
+            }
+            // Store receiver level in appropriate stack
+            if (noiseMapParameters.mergeSources) {
+                mergedLdenSpectrum = sumArray(mergedLdenSpectrum, ldenSpectrum);
+                mergedLden.dayLevels = sumArray(mergedLden.dayLevels, denValues.dayLevels);
+                mergedLden.eveningLevels = sumArray(mergedLden.eveningLevels, denValues.eveningLevels);
+                mergedLden.nightLevels = sumArray(mergedLden.nightLevels, denValues.nightLevels);
+            } else {
+                if (noiseMapParameters.computeLDay) {
                 pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lDayLevels,
                         new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
                                 denAttenuation.source,
                                 wToDba(denValues.dayLevels)
                         ));
+                }
+                if (noiseMapParameters.computeLEvening) {
+                    pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lEveningLevels,
+                            new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
+                                    denAttenuation.source,
+                                    wToDba(denValues.eveningLevels)
+                            ));
+                }
+                if (noiseMapParameters.computeLNight) {
+                    pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lNightLevels,
+                            new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
+                                    denAttenuation.source,
+                                    wToDba(denValues.nightLevels)
+                            ));
+                }
+                if (noiseMapParameters.computeLDEN) {
+                    pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lDenLevels,
+                            new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
+                                    denAttenuation.source,
+                                    wToDba(ldenSpectrum)
+                            ));
+                }
+            }
+        }
+        if (noiseMapParameters.mergeSources) {
+            if (noiseMapParameters.computeLDay) {
+                pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lDayLevels,
+                        new Attenuation.SourceReceiverAttenuation(mergedLden.receiver,
+                                mergedLden.source,
+                                wToDba(mergedLden.dayLevels)
+                        ));
             }
             if (noiseMapParameters.computeLEvening) {
                 pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lEveningLevels,
-                        new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
-                                denAttenuation.source,
-                                wToDba(denValues.eveningLevels)
+                        new Attenuation.SourceReceiverAttenuation(mergedLden.receiver,
+                                mergedLden.source,
+                                wToDba(mergedLden.eveningLevels)
                         ));
             }
             if (noiseMapParameters.computeLNight) {
                 pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lNightLevels,
-                        new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
-                                denAttenuation.source,
-                                wToDba(denValues.nightLevels)
+                        new Attenuation.SourceReceiverAttenuation(mergedLden.receiver,
+                                mergedLden.source,
+                                wToDba(mergedLden.nightLevels)
                         ));
             }
             if (noiseMapParameters.computeLDEN) {
                 pushInStack(noiseMapComputeRaysOut.attenuatedPaths.lDenLevels,
-                        new Attenuation.SourceReceiverAttenuation(denAttenuation.receiver,
-                                denAttenuation.source,
-                                wToDba(ldenSpectrum)
+                        new Attenuation.SourceReceiverAttenuation(mergedLden.receiver,
+                                mergedLden.source,
+                                wToDba(mergedLdenSpectrum)
                         ));
             }
         }
