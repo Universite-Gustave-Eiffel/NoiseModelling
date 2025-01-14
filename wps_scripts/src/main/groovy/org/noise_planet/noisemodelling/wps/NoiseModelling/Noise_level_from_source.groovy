@@ -53,6 +53,7 @@ import java.nio.file.Paths
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 
 title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
 description = '&#10145;&#65039; Computes the Lden, LDay, LEvening, LNight maps from the noise emission table.' +
@@ -398,6 +399,8 @@ static void exportScene(String name, ProfileBuilder builder, AttenuationCnossosP
 
 // main function of the script
 def exec(Connection connection, input) {
+
+    long startCompute = System.currentTimeMillis()
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -804,7 +807,14 @@ def exec(Connection connection, input) {
         createdTables.append(" LDEN_GEOM")
     }
 
-    resultString = "Calculation Done ! " + createdTables.toString() + " table(s) have been created."
+    long elapsed = System.currentTimeMillis() - startCompute;
+    long hours = TimeUnit.MILLISECONDS.toHours(elapsed)
+    elapsed -= TimeUnit.HOURS.toMillis(hours)
+    long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed)
+    elapsed -= TimeUnit.MINUTES.toMillis(minutes)
+    long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsed)
+    String timeString = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
+    resultString = "Calculation Done in "+timeString+" ! " + createdTables.toString() + " table(s) have been created."
 
 
     // print to command window

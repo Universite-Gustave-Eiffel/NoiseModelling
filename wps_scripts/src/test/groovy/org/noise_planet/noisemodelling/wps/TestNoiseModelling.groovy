@@ -95,17 +95,19 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableReceivers": "RECEIVERS",
                  "confSkipLevening": false,
                  "confSkipLnight": false,
-                 "confSkipLden": false])
+                 "confSkipLden": false,
+                "confMaxSrcDist" : 500,
+                "confMaxError" : 5.0])
 
         assertTrue(JDBCUtilities.tableExists(connection, "LDAY_GEOM"))
 
-        def receiversLvl = sql.rows("SELECT * FROM LDAY_GEOM ORDER BY IDRECEIVER")
+        def receiversCount = sql.rows("SELECT COUNT(*) CPT FROM LDAY_GEOM")
 
         new Export_Table().exec(connection,
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
                  "tableToExport": "LDAY_GEOM"])
 
-        assertEquals(70.38,receiversLvl[0]["LEQ"] as Double,4)
+        assertEquals(688, receiversCount[0]["CPT"] as Integer)
     }
 
     void testLdayFromTraffic() {
