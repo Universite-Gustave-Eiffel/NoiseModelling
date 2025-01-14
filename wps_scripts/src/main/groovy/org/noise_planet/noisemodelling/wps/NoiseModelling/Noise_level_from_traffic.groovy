@@ -712,7 +712,7 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(confMaxError)
+    ldenConfig.setMaximumError(confMaxError)
 
     // --------------------------------------------
     // Initialize NoiseModelling emission part

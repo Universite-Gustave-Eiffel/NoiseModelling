@@ -52,13 +52,13 @@ class TestTutorials extends JdbcTestCase {
                  "importExt" : "geojson"])
 
         // Check SRID
-        //assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
         res = new Display_Database().exec(connection, [])
 
-        //assertTrue(res.contains("SOURCES"))
-        //assertTrue(res.contains("BUILDINGS"))
+        assertTrue(res.contains("SOURCES"))
+        assertTrue(res.contains("BUILDINGS"))
 
         new Regular_Grid().exec(connection, ["sourcesTableName": "SOURCES",
                                              delta             : 0.2,
@@ -67,7 +67,7 @@ class TestTutorials extends JdbcTestCase {
         // Check database
         res = new Display_Database().exec(connection, [])
 
-        //assertTrue(res.contains("RECEIVERS"))
+        assertTrue(res.contains("RECEIVERS"))
 
 
         res = new Noise_level_from_source().exec(connection, ["tableSources"  : "SOURCES",
