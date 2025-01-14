@@ -47,6 +47,11 @@ public interface IComputePathsOut {
         /**
          * Ignore other sources and process to the next receiver
          */
+        PROCESS_SOURCE_BUT_SKIP_RECEIVER,
+        /**
+         * Skip remaining potential vertical planes for this source point and
+         * ignore other sources, proceed to the next receiver
+         */
         SKIP_RECEIVER
     }
 

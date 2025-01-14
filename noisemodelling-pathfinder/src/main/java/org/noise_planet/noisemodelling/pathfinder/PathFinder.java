@@ -219,7 +219,9 @@ public class PathFinder {
         for (SourcePointInfo sourcePointInfo : sourceList) {
             IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, raysCount, receiverMirrorIndex);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
-            if ((visitor != null && visitor.isCanceled()) ||  !strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+            if ((visitor != null && visitor.isCanceled()) ||
+                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER) ||
+                    strategy.equals(IComputePathsOut.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER)) {
                 break; //Stop looking for more rays
             }
         }
@@ -251,15 +253,13 @@ public class PathFinder {
             // Process direct : horizontal and vertical diff
             strategy = directPath(src, rcv, data.computeVerticalDiffraction,
                     data.computeHorizontalDiffraction, dataOut);
-            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
-                return strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ? IComputePathsOut.PathSearchStrategy.CONTINUE : strategy;
+            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
+                return strategy;
             }
             // Process reflection
             if (data.reflexionOrder > 0) {
                 strategy = computeReflexion(rcv, src, receiverMirrorIndex, dataOut);
-                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
-                    return strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ? IComputePathsOut.PathSearchStrategy.CONTINUE : strategy;
-                }
             }
         }
         return strategy;
@@ -299,7 +299,8 @@ public class PathFinder {
 
         if(verticalDiffraction || cutProfile.isFreeField()) {
             strategy = dataOut.onNewCutPlane(cutProfile);
-            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
             }
         }
@@ -313,16 +314,14 @@ public class PathFinder {
             CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
             if (cutProfileRight != null) {
                 strategy = dataOut.onNewCutPlane(cutProfileRight);
-                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+                if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
+                        strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
                     return strategy;
                 }
             }
             CutProfile cutProfileLeft = computeVEdgeDiffraction(rcv, src, data, LEFT);
             if (cutProfileLeft != null) {
                 strategy = dataOut.onNewCutPlane(cutProfileLeft);
-                if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
-                    return strategy;
-                }
             }
         }
 
@@ -619,7 +618,7 @@ public class PathFinder {
                                                                 SourcePointInfo src,
                                                                 MirrorReceiversCompute receiverMirrorIndex,
                                                                 IComputePathsOut dataOut) {
-
+        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
         // Compute receiver mirror
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
@@ -746,12 +745,13 @@ public class PathFinder {
             mainProfile.getSource().orientation = src.orientation;
             mainProfile.getSource().li = src.li;
 
-            IComputePathsOut.PathSearchStrategy strategy = dataOut.onNewCutPlane(mainProfile);
-            if(!strategy.equals(IComputePathsOut.PathSearchStrategy.CONTINUE)) {
+            strategy = dataOut.onNewCutPlane(mainProfile);
+            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
             }
         }
-        return IComputePathsOut.PathSearchStrategy.CONTINUE;
+        return strategy;
     }
 
     /**
@@ -1042,6 +1042,21 @@ public class PathFinder {
         @Override
         public int compareTo(SourcePointInfo sourcePointInfo) {
             return Integer.compare(sourceIndex, sourcePointInfo.sourceIndex);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SourcePointInfo that = (SourcePointInfo) o;
+            return sourceIndex == that.sourceIndex && position.equals(that.position);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = sourceIndex;
+            result = 31 * result + position.hashCode();
+            return result;
         }
     }
 }

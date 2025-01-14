@@ -6216,6 +6216,11 @@ public class AttenuationCnossosTest {
         }
         return 0;
     }
+
+    static public void assertInferiorThan(double expected, double actual) {
+        assertTrue(expected < actual, String.format(Locale.ROOT, "Expected %f < %f", expected, actual));
+    }
+
     /**
      * Test optimisation feature {@link NoiseMapParameters#maximumError}
      * This feature is disabled and all sound sources are computed
@@ -6232,7 +6237,7 @@ public class AttenuationCnossosTest {
                 double levelAllSources = testIgnoreNonSignificantSourcesParam(connection, 0.);
                 double levelIgnoreFarSources = testIgnoreNonSignificantSourcesParam(connection, maxError);
                 assertNotEquals(levelAllSources, levelIgnoreFarSources, 0.0001);
-                assertTrue(Math.abs(levelAllSources - levelIgnoreFarSources) < maxError);
+                assertInferiorThan(Math.abs(levelAllSources - levelIgnoreFarSources), maxError);
             }
         }
     }
