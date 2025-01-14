@@ -62,7 +62,11 @@ public final class ThreadPathFinder implements Callable<Boolean> {
                         break;
                     }
                 }
-                PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
+                long receiverPk = idReceiver;
+                if(idReceiver < data.receiversPk.size()) {
+                    receiverPk = data.receiversPk.get(idReceiver);
+                }
+                PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, receiverPk, data.receivers.get(idReceiver));
 
                 long start = 0;
                 if(propagationProcess.getProfilerThread() != null) {

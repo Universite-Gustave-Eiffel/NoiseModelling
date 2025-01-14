@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
-import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -69,8 +68,8 @@ public class AttenuationVisitor implements IComputePathsOut {
             pathParameters.addAll(path);
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(receiver,
-                    source, aGlobalMeteo));
+            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
+                    new PathFinder.SourcePointInfo(source), aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -79,31 +78,22 @@ public class AttenuationVisitor implements IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     *
+     * @param receiver
      */
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
         if(keepRays && !pathParameters.isEmpty()) {
             multiThreadParent.pathParameters.addAll(this.pathParameters);
             multiThreadParent.propagationPathsSize.addAndGet(pathParameters.size());
             this.pathParameters.clear();
         }
-        long receiverPK = receiverId;
-        if(multiThreadParent.inputData != null) {
-            if(receiverId < multiThreadParent.inputData.receiversPk.size()) {
-                receiverPK = multiThreadParent.inputData.receiversPk.get((int)receiverId);
-            }
-        }
-        multiThreadParent.finalizeReceiver(receiverId);
+        multiThreadParent.finalizeReceiver(receiver);
         if(multiThreadParent.receiversAttenuationLevels != null) {
             // Push merged sources into multi-thread parent
             // Merge levels for each receiver for lines sources
-            Map<CutPointSource, double[]> levelsPerSourceLines = new HashMap<>();
-            AtomicReference<CutPointReceiver> receiver = new AtomicReference<>(null);
+            Map<PathFinder.SourcePointInfo, double[]> levelsPerSourceLines = new HashMap<>();
             for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
-                if(lvl.receiver != null && receiver.get() == null) {
-                    receiver.set(lvl.receiver);
-                }
                 if (!levelsPerSourceLines.containsKey(lvl.source)) {
                     levelsPerSourceLines.put(lvl.source, lvl.value);
                 } else {
@@ -113,9 +103,9 @@ public class AttenuationVisitor implements IComputePathsOut {
                             lvl.value));
                 }
             }
-            for (Map.Entry<CutPointSource, double[]> entry : levelsPerSourceLines.entrySet()) {
+            for (Map.Entry<PathFinder.SourcePointInfo, double[]> entry : levelsPerSourceLines.entrySet()) {
                 multiThreadParent.receiversAttenuationLevels.add(
-                        new Attenuation.SourceReceiverAttenuation(receiver.get(), entry.getKey(), entry.getValue()));
+                        new Attenuation.SourceReceiverAttenuation(receiver, entry.getKey(), entry.getValue()));
             }
         }
         receiverAttenuationLevels.clear();

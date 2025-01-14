@@ -57,9 +57,10 @@ public interface IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId Id of the receiver in the subdomain
+     *
+     * @param receiver
      */
-    void finalizeReceiver(int receiverId);
+    void finalizeReceiver(PathFinder.ReceiverPointInfo receiver);
 
     /**
      * If the implementation does not support thread concurrency, this method is called to return an instance

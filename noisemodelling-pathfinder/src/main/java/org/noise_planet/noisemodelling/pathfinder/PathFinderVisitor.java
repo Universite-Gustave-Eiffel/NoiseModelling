@@ -42,10 +42,11 @@ public class PathFinderVisitor implements IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     *
+     * @param receiver
      */
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
 
     }
 

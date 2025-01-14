@@ -170,8 +170,8 @@ public class NoiseMapWriter implements Runnable {
                 ps.setLong(parameterIndex++, row.source.sourcePk);
             }
             if(noiseMapParameters.exportReceiverPosition) {
-                ps.setObject(parameterIndex++,  row.receiver.coordinate != null ?
-                        factory.createPoint(row.receiver.coordinate):
+                ps.setObject(parameterIndex++,  row.receiver.position != null ?
+                        factory.createPoint(row.receiver.position):
                         factory.createPoint());
             }
             if (!noiseMapParameters.computeLAEQOnly){

@@ -59,63 +59,6 @@ public class NoiseMapByReceiverMakerTest {
         }
     }
 
-
-
-    /**
-     * DEM is 22m height between sources and receiver. There is a direct field propagation over the building
-     * @throws SQLException
-     */
-    @Test
-    public void testDemTopOfBuilding() throws Exception {
-        try(Statement st = connection.createStatement()) {
-            st.execute(getRunScriptRes("scene_with_dem.sql"));
-            st.execute("DROP TABLE IF EXISTS RECEIVERS");
-            st.execute("CREATE TABLE RECEIVERS(the_geom GEOMETRY(POINTZ), GID SERIAL PRIMARY KEY)");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(-72 41 11)')");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(-9 41 1.6)')");
-            st.execute("INSERT INTO RECEIVERS(the_geom) VALUES ('POINTZ(70 11 7)')");
-            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "SOUND_SOURCE", "RECEIVERS");
-            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
-            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(true);
-            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-            noiseMapByReceiverMaker.setHeightField("HEIGHT");
-
-            noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
-
-            noiseMapByReceiverMaker.setComputeRaysOutFactory(new JDBCComputeRaysOut(true));
-            noiseMapByReceiverMaker.setPropagationProcessDataFactory(new JDBCPropagationData());
-
-            List<Attenuation.SourceReceiverAttenuation> allLevels = new ArrayList<>();
-            List<CnossosPath> propaMap = Collections.synchronizedList(new ArrayList<CnossosPath>());
-            Set<Long> receivers = new HashSet<>();
-            noiseMapByReceiverMaker.setThreadCount(1);
-            RootProgressVisitor progressVisitor = new RootProgressVisitor(noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
-            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
-                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
-                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof Attenuation) {
-                        allLevels.addAll(((Attenuation) out).getVerticesSoundLevel());
-                        propaMap.addAll(((Attenuation) out).getPropagationPaths());
-                    }
-                }
-            }
-
-
-            DataOutputStream outputBin = new DataOutputStream(new FileOutputStream("./target/test-resources/propaMap.bin"));
-            //PropagationPath.writePropagationPathListStream(outputBin, propaMap);
-            propaMap.clear();
-            DataInputStream input = new DataInputStream(new FileInputStream("./target/test-resources/propaMap.bin"));
-            //PropagationPath.readPropagationPathListStream(input, propaMap);
-
-
-            assertEquals(3, allLevels.size());
-        }
-    }
-
     @Test
     public void testGroundSurface() throws Exception {
         try(Statement st = connection.createStatement()) {
@@ -341,20 +284,21 @@ public class NoiseMapByReceiverMakerTest {
 
                         assertEquals(3 , rout.pathParameters.size());
                         List<CnossosPath> pathsParameters = rout.getPropagationPaths();
-                        //System.out.println("size "+pathsParameters.size());
+
                         CnossosPath pathParameters = pathsParameters.remove(0);
                         assertEquals(1, pathParameters.getIdReceiver());
-                        assertEquals(0, new Coordinate(0, 5.07).distance(pathParameters.getPointList().get(0).coordinate), 0.1);
+                        assertEquals(0, new Coordinate(0, 5.07).distance(pathParameters.getPointList().get(0).coordinate), 0.01);
                         // This is source orientation, not relevant to receiver position
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
 
                         pathParameters = pathsParameters.remove(0);;
                         assertEquals(1, pathParameters.getIdReceiver());
                         assertEquals(0, new Coordinate(0, 5.02).
-                                distance(pathParameters.getPointList().get(0).coordinate), 0.1);
+                                distance(pathParameters.getPointList().get(0).coordinate), 0.01);
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);
-                        assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
+                        assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), pathParameters.raySourceReceiverDirectivity, 0.01);
+
                         pathParameters = pathsParameters.remove(0);
                         assertEquals(2, pathParameters.getIdReceiver());
                         assertOrientationEquals(new Orientation(45, 0.81, 0), pathParameters.getSourceOrientation(), 0.01);

@@ -45,6 +45,7 @@ public class CutPointReceiver  extends CutPoint {
     public CutPointReceiver(PathFinder.ReceiverPointInfo receiver) {
         super(receiver.position, receiver.position.z - 4.0, 0);
         id = receiver.getId();
+        receiverPk = receiver.receiverPk;
     }
 
     @Override

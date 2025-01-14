@@ -38,7 +38,7 @@ public class CutPointSource  extends CutPoint {
      */
     public CutPointSource(PathFinder.SourcePointInfo sourcePointInfo) {
         super(sourcePointInfo.position, sourcePointInfo.position.z - 0.05, 0);
-        this.sourcePk = -1;
+        this.sourcePk = sourcePointInfo.getSourcePk();
         this.li = sourcePointInfo.li;
         this.orientation = sourcePointInfo.orientation;
         this.id = sourcePointInfo.sourceIndex;

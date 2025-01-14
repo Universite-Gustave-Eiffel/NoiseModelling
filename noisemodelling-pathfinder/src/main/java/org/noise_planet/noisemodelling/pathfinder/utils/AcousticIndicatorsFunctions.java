@@ -190,6 +190,12 @@ public class AcousticIndicatorsFunctions {
      */
     public static double[] sumArray(double array1[], double array2[]) {
         if (array1.length != array2.length) {
+            if(array1.length == 0) {
+                return array2;
+            }
+            if(array2.length == 0) {
+                return array1;
+            }
             throw new IllegalArgumentException("Arrays with different size");
         }
         double[] ret = new double[array1.length];

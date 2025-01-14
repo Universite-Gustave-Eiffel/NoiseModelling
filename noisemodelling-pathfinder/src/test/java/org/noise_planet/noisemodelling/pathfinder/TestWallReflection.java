@@ -95,8 +95,8 @@ public class TestWallReflection {
 
         PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
 
-        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, receiver),
-                new PathFinder.SourcePointInfo(1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
+        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
+                new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
                 new Orientation()), receiverMirrorIndex, pathFinderVisitor);
 
         List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
@@ -177,8 +177,8 @@ public class TestWallReflection {
 
         PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
 
-        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, receiver),
-                new PathFinder.SourcePointInfo(1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
+        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
+                new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
                         new Orientation()), receiverMirrorIndex, pathFinderVisitor);
 
         List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);

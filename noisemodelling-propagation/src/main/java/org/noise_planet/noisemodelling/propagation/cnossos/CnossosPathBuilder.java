@@ -347,7 +347,7 @@ public class CnossosPathBuilder {
                     }
                 }
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
-                        cutProfilePoints.get(0).getCoordinate(), targetPosition);
+                        cutProfilePoints.get(i0).getCoordinate(), targetPosition);
                 points.get(0).orientation = emissionDirection;
                 pathParameters.raySourceReceiverDirectivity = emissionDirection;
                 src = pts2D.get(i0);

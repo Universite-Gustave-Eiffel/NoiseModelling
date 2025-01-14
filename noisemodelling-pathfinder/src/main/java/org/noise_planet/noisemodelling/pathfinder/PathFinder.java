@@ -192,7 +192,11 @@ public class PathFinder {
                         if(orientation == null) {
                             orientation = new Orientation(0,0, 0);
                         }
-                        insertPtSource(ptpos, srcIndex, sourceList, 1., orientation);
+                        long sourcePk = srcIndex;
+                        if(srcIndex < data.sourcesPk.size()) {
+                            sourcePk = data.sourcesPk.get(srcIndex);
+                        }
+                        sourceList.add(new SourcePointInfo(srcIndex, sourcePk, ptpos, 1., orientation));
                     }
                 } else if (source instanceof LineString) {
                     addLineSource((LineString) source, receiverPointInfo.getCoordinates(), srcIndex, sourceList);
@@ -210,7 +214,7 @@ public class PathFinder {
             }
         }
         // Sort sources by power contribution descending
-        Collections.sort(sourceList, Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
+        sourceList.sort(Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
 
         dataOut.startReceiver(receiverPointInfo, sourceList);
 
@@ -232,7 +236,7 @@ public class PathFinder {
         }
 
         // No more rays for this receiver
-        dataOut.finalizeReceiver(receiverPointInfo.getId());
+        dataOut.finalizeReceiver(receiverPointInfo);
     }
 
     /**
@@ -291,9 +295,7 @@ public class PathFinder {
 
         if(cutProfile.getReceiver() != null) {
             cutProfile.getReceiver().id = rcv.getId();
-            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
-                cutProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.getId());
-            }
+            cutProfile.getReceiver().receiverPk = rcv.receiverPk;
         }
 
 
@@ -371,9 +373,7 @@ public class PathFinder {
                     cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
 
             mainProfile.getReceiver().id = rcv.receiverIndex;
-            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
-                mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
-            }
+            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
             mainProfile.getSource().id = src.sourceIndex;
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
@@ -734,9 +734,7 @@ public class PathFinder {
                     mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
 
             mainProfile.getReceiver().id = rcv.receiverIndex;
-            if(rcv.receiverIndex >= 0 && rcv.receiverIndex < data.receiversPk.size()) {
-                mainProfile.getReceiver().receiverPk = data.receiversPk.get(rcv.receiverIndex);
-            }
+            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
             mainProfile.getSource().id = src.sourceIndex;
             if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
                 mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
@@ -919,21 +917,6 @@ public class PathFinder {
         }
     }
 
-
-    /**
-     * Compute maximal power at freefield at the receiver position with reflective ground
-     * @param source
-     * @param sourceId
-     * @param sourceList
-     * @param li
-     * @param orientation
-     * @return
-     */
-    private static void insertPtSource(Coordinate source, Integer sourceId,
-                                         List<SourcePointInfo> sourceList, double li, Orientation orientation) {
-        sourceList.add(new SourcePointInfo(sourceId, source, li, orientation));
-    }
-
     /**
      * Compute li to equation 4.1 NMPB 2008 (June 2009)
      * @param source
@@ -970,7 +953,11 @@ public class PathFinder {
                 } else {
                     orientation = Orientation.fromVector(Orientation.rotate(new Orientation(0,0,0), v.normalize()), 0);
                 }
-                insertPtSource(pt, srcIndex, sourceList, li, orientation);
+                long sourcePk = srcIndex;
+                if(srcIndex < data.sourcesPk.size()) {
+                    sourcePk = data.sourcesPk.get(srcIndex);
+                }
+                sourceList.add(new SourcePointInfo(srcIndex, sourcePk, pt, li, orientation));
             }
         }
     }
@@ -983,17 +970,35 @@ public class PathFinder {
      */
     public static final class ReceiverPointInfo {
         public int receiverIndex;
+        public long receiverPk;
         public Coordinate position;
 
-        public ReceiverPointInfo(int sourcePrimaryKey, Coordinate position) {
-            this.receiverIndex = sourcePrimaryKey;
+        public ReceiverPointInfo(int receiverIndex, long receiverPk, Coordinate position) {
+            this.receiverIndex = receiverIndex;
+            this.receiverPk = receiverPk;
             this.position = position;
+        }
+
+        public ReceiverPointInfo(CutPointReceiver receiver) {
+            this.receiverIndex = receiver.id;
+            this.receiverPk = receiver.receiverPk;
+            this.position = receiver.coordinate;
         }
 
         public Coordinate getCoordinates() {
             return position;
         }
 
+        /**
+         * @return Receiver primary key
+         */
+        public long getReceiverPk() {
+            return receiverPk;
+        }
+
+        /**
+         * @return Receiver index, related to its location in memory data arrays
+         */
         public int getId() {
             return receiverIndex;
         }
@@ -1003,23 +1008,37 @@ public class PathFinder {
      * Attributes of the source point
      */
     public static final class SourcePointInfo implements Comparable<SourcePointInfo> {
-        public final double li;
-        public int sourceIndex;
-        public Coordinate position;
-        public Orientation orientation;
+        public double li = -1.0;
+        public int sourceIndex = -1;
+        public long sourcePk = -1;
+        public Coordinate position = new Coordinate();
+        public Orientation orientation = new Orientation();
+
+        public SourcePointInfo() {
+        }
 
         /**
          * @param sourcePrimaryKey
          * @param position
          */
-        public SourcePointInfo(int sourcePrimaryKey, Coordinate position, double li, Orientation orientation) {
-            this.sourceIndex = sourcePrimaryKey;
+        public SourcePointInfo(int sourceIndex, long sourcePrimaryKey, Coordinate position, double li,
+                               Orientation orientation) {
+            this.sourceIndex = sourceIndex;
+            this.sourcePk = sourcePrimaryKey;
             this.position = position;
             if (isNaN(position.z)) {
                 this.position = new Coordinate(position.x, position.y, 0);
             }
             this.li = li;
             this.orientation = orientation;
+        }
+
+        public SourcePointInfo(CutPointSource source) {
+            this.sourceIndex = source.id;
+            this.sourcePk = source.sourcePk;
+            this.position = source.coordinate;
+            this.li = source.li;
+            this.orientation = source.orientation;
         }
 
         public Orientation getOrientation() {
@@ -1032,6 +1051,10 @@ public class PathFinder {
 
         public int getSourceIndex() {
             return sourceIndex;
+        }
+
+        public long getSourcePk() {
+            return sourcePk;
         }
 
         /**

@@ -12,6 +12,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.checkerframework.checker.units.qual.C;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -506,12 +507,18 @@ public class AttenuationCnossosTest {
         Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
 
         AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
+        PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
             attenuationVisitor.onNewCutPlane(cutProfile);
+            if(lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
+                // merge attenuation per receiver
+                attenuationVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+            }
+            lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
         }
         // merge attenuation per receiver
-        attenuationVisitor.finalizeReceiver(0);
+        attenuationVisitor.finalizeReceiver(lastReceiver);
 
         return propDataOut;
     }
@@ -6148,7 +6155,7 @@ public class AttenuationCnossosTest {
                 double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
-                    maxPowerReceiverIndex = v.receiver.id;
+                    maxPowerReceiverIndex = v.receiver.receiverIndex;
                 }
             }
             assertEquals(idReceiver, maxPowerReceiverIndex);

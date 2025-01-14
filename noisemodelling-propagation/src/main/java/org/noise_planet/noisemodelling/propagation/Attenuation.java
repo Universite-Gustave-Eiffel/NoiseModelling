@@ -75,10 +75,11 @@ public class Attenuation implements IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     *
+     * @param receiver
      */
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
 
     }
 
@@ -117,8 +118,8 @@ public class Attenuation implements IComputePathsOut {
         }
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver,
-                    source, aGlobalMeteo));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
+                    new PathFinder.SourcePointInfo(source), aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -431,15 +432,15 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
-        public final CutPointReceiver receiver;
-        public final CutPointSource source;
+        public final PathFinder.ReceiverPointInfo receiver;
+        public final PathFinder.SourcePointInfo source;
 
         /**
          * Attenuation in dB or Spl in dB or dB(A)
          */
         public final double[] value;
 
-        public SourceReceiverAttenuation(CutPointReceiver receiver, CutPointSource source, double[] value) {
+        public SourceReceiverAttenuation(PathFinder.ReceiverPointInfo receiver, PathFinder.SourcePointInfo source, double[] value) {
             this.receiver = receiver;
             this.source = source;
             this.value = value;
