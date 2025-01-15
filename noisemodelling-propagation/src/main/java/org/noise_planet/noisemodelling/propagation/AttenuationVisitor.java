@@ -21,7 +21,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosPar
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Receive vertical cut plane, compute the attenuation corresponding to this plane
@@ -51,7 +51,7 @@ public class AttenuationVisitor implements IComputePathsOut {
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
 
     }
 

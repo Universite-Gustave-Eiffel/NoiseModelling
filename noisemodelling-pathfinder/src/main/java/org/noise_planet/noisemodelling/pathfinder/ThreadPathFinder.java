@@ -68,19 +68,8 @@ public final class ThreadPathFinder implements Callable<Boolean> {
                 }
                 PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, receiverPk, data.receivers.get(idReceiver));
 
-                long start = 0;
-                if(propagationProcess.getProfilerThread() != null) {
-                    start = propagationProcess.getProfilerThread().timeTracker.get();
-                }
 
                 propagationProcess.computeRaysAtPosition(rcv, dataOut, visitor);
-
-                // Save computation time for this receiver
-                if(propagationProcess.getProfilerThread() != null &&
-                        propagationProcess.getProfilerThread().getMetric(ReceiverStatsMetric.class) != null) {
-                    propagationProcess.getProfilerThread().getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
-                            (int) (propagationProcess.getProfilerThread().timeTracker.get() - start));
-                }
 
                 if (visitor != null) {
                     visitor.endStep();

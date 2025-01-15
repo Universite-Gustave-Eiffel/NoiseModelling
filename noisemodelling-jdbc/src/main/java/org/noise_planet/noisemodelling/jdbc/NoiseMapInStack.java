@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -23,6 +22,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDba;
@@ -49,6 +49,8 @@ public class NoiseMapInStack implements IComputePathsOut {
     public static final double DAY_RATIO = 12. / 24.;
     public static final double EVENING_RATIO = 4. / 24. * dbaToW(5.0);
     public static final double NIGHT_RATIO = 8. / 24. * dbaToW(10.0);
+
+    public AtomicInteger cutProfileCount = new AtomicInteger(0);
 
     /**
      * Constructs a NoiseMapInStack object with a multi-threaded parent NoiseMap instance.
@@ -144,6 +146,7 @@ public class NoiseMapInStack implements IComputePathsOut {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        cutProfileCount.addAndGet(1);
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final Scene scene = noiseMapComputeRaysOut.inputData;
         CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
@@ -202,7 +205,8 @@ public class NoiseMapInStack implements IComputePathsOut {
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+        this.cutProfileCount = cutProfileCount;
         if(noiseMapParameters.getMaximumError() > 0) {
             maximumWjExpectedSplAtReceiver.clear();
             sumMaximumRemainingWjExpectedSplAtReceiver = 0;
@@ -420,5 +424,7 @@ public class NoiseMapInStack implements IComputePathsOut {
             }
         }
         receiverAttenuationPerSource.clear();
+        maximumWjExpectedSplAtReceiver.clear();
+        sumMaximumRemainingWjExpectedSplAtReceiver = 0;
     }
 }

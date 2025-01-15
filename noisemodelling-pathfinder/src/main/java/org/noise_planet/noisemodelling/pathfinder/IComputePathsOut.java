@@ -12,6 +12,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
  /**
  * Instead of feeding a list and returning all vertical cut planes.
@@ -30,10 +31,11 @@ public interface IComputePathsOut {
     /**
      * Called before looking for vertical cut planes between the receiver and the sources.
      *
-     * @param receiver Receiver information
-     * @param sourceList All sources in the range of this receiver sorted by the distance from the receiver
+     * @param receiver        Receiver information
+     * @param sourceList      All sources in the range of this receiver sorted by the distance from the receiver
+     * @param cutProfileCount
      */
-    void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList);
+    void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount);
 
     enum PathSearchStrategy {
         /**

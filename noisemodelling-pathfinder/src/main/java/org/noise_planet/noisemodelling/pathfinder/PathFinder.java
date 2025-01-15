@@ -155,16 +155,31 @@ public class PathFinder {
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
     public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, IComputePathsOut dataOut, ProgressVisitor visitor) {
+
+        long start = 0;
+        if(profilerThread != null) {
+            start = profilerThread.timeTracker.get();
+        }
+
         MirrorReceiversCompute receiverMirrorIndex = null;
 
+        long reflectionPreprocessTime = 0;
         if(data.reflexionOrder > 0) {
             Envelope receiverPropagationEnvelope = new Envelope(receiverPointInfo.getCoordinates());
             receiverPropagationEnvelope.expandBy(data.maxSrcDist);
             List<Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
             receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
                     data.maxSrcDist, data.maxRefDist);
+            if(profilerThread != null) {
+                reflectionPreprocessTime = profilerThread.timeTracker.get() - start;
+            }
         }
 
+
+        long startSourceCollect = 0;
+        if(profilerThread != null) {
+            startSourceCollect = profilerThread.timeTracker.get();
+        }
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
         Envelope receiverSourceRegion = new Envelope(
@@ -216,12 +231,19 @@ public class PathFinder {
         // Sort sources by power contribution descending
         sourceList.sort(Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
 
-        dataOut.startReceiver(receiverPointInfo, sourceList);
+        long sourceCollectTime = 0;
+        if(profilerThread != null) {
+            sourceCollectTime = profilerThread.timeTracker.get() - startSourceCollect;
+        }
 
+        AtomicInteger cutProfileCount = new AtomicInteger(0);
+        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+
+        AtomicInteger processedSources = new AtomicInteger(0);
         // For each Pt Source - Pt Receiver
-        AtomicInteger raysCount = new AtomicInteger(0);
         for (SourcePointInfo sourcePointInfo : sourceList) {
-            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, raysCount, receiverMirrorIndex);
+            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, receiverMirrorIndex);
+            processedSources.addAndGet(1);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
             if ((visitor != null && visitor.isCanceled()) ||
                     strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER) ||
@@ -232,7 +254,12 @@ public class PathFinder {
 
         if(profilerThread != null &&
                 profilerThread.getMetric(ReceiverStatsMetric.class) != null) {
-            profilerThread.getMetric(ReceiverStatsMetric.class).onReceiverRays(receiverPointInfo.getId(), raysCount.get());
+            ReceiverStatsMetric receiverStatsMetric = profilerThread.getMetric(ReceiverStatsMetric.class);
+            receiverStatsMetric.onReceiverCutProfiles(receiverPointInfo.getId(),
+                    cutProfileCount.get(), sourceList.size(), processedSources.get());
+            // Save computation time for this receiver
+            receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
+                        (int) (profilerThread.timeTracker.get() - start), (int) reflectionPreprocessTime, (int) sourceCollectTime));
         }
 
         // No more rays for this receiver
@@ -249,7 +276,7 @@ public class PathFinder {
      */
     private IComputePathsOut.PathSearchStrategy rcvSrcPropagation(SourcePointInfo src,
                                                                   ReceiverPointInfo rcv,
-                                                                  IComputePathsOut dataOut, AtomicInteger raysCount,
+                                                                  IComputePathsOut dataOut,
                                                                   MirrorReceiversCompute receiverMirrorIndex) {
         IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
         double propaDistance = src.getCoord().distance(rcv.getCoordinates());
