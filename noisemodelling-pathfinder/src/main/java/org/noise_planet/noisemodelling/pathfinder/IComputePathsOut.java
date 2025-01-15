@@ -47,12 +47,13 @@ public interface IComputePathsOut {
          */
         SKIP_SOURCE,
         /**
-         * Ignore other sources and process to the next receiver
+         * Process remaining potential vertical planes for this source but ignore the farthest sources,
+         * then proceed to the next receivers
          */
         PROCESS_SOURCE_BUT_SKIP_RECEIVER,
         /**
          * Skip remaining potential vertical planes for this source point and
-         * ignore other sources, proceed to the next receiver
+         * ignore then remaining farthest sources, proceed directly to the next receiver
          */
         SKIP_RECEIVER
     }

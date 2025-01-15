@@ -14,6 +14,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Plane;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -457,12 +458,17 @@ public class PathFinder {
             ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
             Geometry convexhull = convexHull.getConvexHull();
 
-            if (convexhull.getLength() / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH) {
+            coordinates = convexhull.getCoordinates();
+            // for the length we do not count the return ray from receiver to source (closed polygon here)
+            double convexHullLength = Length.ofLine(
+                    CoordinateArraySequenceFactory.instance()
+                            .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
+            if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
+                    convexHullLength >= data.maxSrcDist) {
                 return new ArrayList<>();
             }
 
             convexHullIntersects = false;
-            coordinates = convexhull.getCoordinates();
 
             input.clear();
             input.addAll(Arrays.asList(coordinates));
