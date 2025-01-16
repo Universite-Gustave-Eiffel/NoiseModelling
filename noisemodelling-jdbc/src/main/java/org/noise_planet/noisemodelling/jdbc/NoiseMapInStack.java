@@ -37,13 +37,19 @@ public class NoiseMapInStack implements IComputePathsOut {
      */
     Map<Integer, NoiseMapParameters.TimePeriodParameters> receiverAttenuationPerSource = new HashMap<>();
     /**
-     * Cumulated global power at receiver, only used to stop looking for far sources
+     * MaxError DB Processing variable
+     * Current, cumulated global power at receiver, only used to stop looking for far sources
      */
     double[] wjAtReceiver = new double[0];
     /**
+     * MaxError DB Processing variable
      * Favorable Free Field cumulated global power at receiver, only used to stop looking for far sources
      */
     Map<Integer, Double> maximumWjExpectedSplAtReceiver = new HashMap<>();
+    /**
+     * MaxError DB Processing variable
+     * Next Free Field cumulated global power at receiver, only used to stop looking for far sources
+     */
     double sumMaximumRemainingWjExpectedSplAtReceiver = 0;
     //
     public static final double DAY_RATIO = 12. / 24.;
@@ -207,6 +213,7 @@ public class NoiseMapInStack implements IComputePathsOut {
     @Override
     public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
         this.cutProfileCount = cutProfileCount;
+        wjAtReceiver = new double[0];
         if(noiseMapParameters.getMaximumError() > 0) {
             maximumWjExpectedSplAtReceiver.clear();
             sumMaximumRemainingWjExpectedSplAtReceiver = 0;
@@ -426,5 +433,6 @@ public class NoiseMapInStack implements IComputePathsOut {
         receiverAttenuationPerSource.clear();
         maximumWjExpectedSplAtReceiver.clear();
         sumMaximumRemainingWjExpectedSplAtReceiver = 0;
+        wjAtReceiver = new double[0];
     }
 }

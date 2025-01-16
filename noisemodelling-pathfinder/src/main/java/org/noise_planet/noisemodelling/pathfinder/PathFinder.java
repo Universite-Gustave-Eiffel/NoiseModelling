@@ -159,7 +159,7 @@ public class PathFinder {
 
         long start = 0;
         if(profilerThread != null) {
-            start = profilerThread.timeTracker.get();
+            start = System.nanoTime();
         }
 
         MirrorReceiversCompute receiverMirrorIndex = null;
@@ -172,23 +172,21 @@ public class PathFinder {
             receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
                     data.maxSrcDist, data.maxRefDist);
             if(profilerThread != null) {
-                reflectionPreprocessTime = profilerThread.timeTracker.get() - start;
+                reflectionPreprocessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start,
+                        TimeUnit.NANOSECONDS);
             }
         }
 
 
         long startSourceCollect = 0;
         if(profilerThread != null) {
-            startSourceCollect = profilerThread.timeTracker.get();
+            startSourceCollect = System.nanoTime();
         }
         //Compute the source search area
         double searchSourceDistance = data.maxSrcDist;
-        Envelope receiverSourceRegion = new Envelope(
-                receiverPointInfo.getCoordinates().x - searchSourceDistance,
-                receiverPointInfo.getCoordinates().x + searchSourceDistance,
-                receiverPointInfo.getCoordinates().y - searchSourceDistance,
-                receiverPointInfo.getCoordinates().y + searchSourceDistance
-        );
+        Envelope receiverSourceRegion = new Envelope(receiverPointInfo.getCoordinates());
+        receiverSourceRegion.expandBy(searchSourceDistance);
+
         Iterator<Integer> regionSourcesLst = data.sourcesIndex.query(receiverSourceRegion);
         List<SourcePointInfo> sourceList = new ArrayList<>();
         //Already processed Raw source (line and/or points)
@@ -232,13 +230,15 @@ public class PathFinder {
         // Sort sources by power contribution descending
         sourceList.sort(Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
 
-        long sourceCollectTime = 0;
-        if(profilerThread != null) {
-            sourceCollectTime = profilerThread.timeTracker.get() - startSourceCollect;
-        }
-
+        // Provides full sources points list to output data in order to do preprocessing step to evaluate
+        // the maximum expected power at receivers level
         AtomicInteger cutProfileCount = new AtomicInteger(0);
         dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+
+        long sourceCollectTime = 0;
+        if(profilerThread != null) {
+            sourceCollectTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startSourceCollect, TimeUnit.NANOSECONDS);
+        }
 
         AtomicInteger processedSources = new AtomicInteger(0);
         // For each Pt Source - Pt Receiver
@@ -260,7 +260,8 @@ public class PathFinder {
                     cutProfileCount.get(), sourceList.size(), processedSources.get());
             // Save computation time for this receiver
             receiverStatsMetric.onEndComputation(new ReceiverStatsMetric.ReceiverComputationTime(receiverPointInfo.receiverIndex,
-                        (int) (profilerThread.timeTracker.get() - start), (int) reflectionPreprocessTime, (int) sourceCollectTime));
+                    (int) TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS),
+                    (int) reflectionPreprocessTime, (int) sourceCollectTime));
         }
 
         // No more rays for this receiver
@@ -291,7 +292,7 @@ public class PathFinder {
             }
             // Process reflection
             if (data.reflexionOrder > 0) {
-                strategy = computeReflexion(rcv, src, receiverMirrorIndex, dataOut);
+                strategy = computeReflexion(rcv, src, receiverMirrorIndex, dataOut, strategy);
             }
         }
         return strategy;
@@ -650,8 +651,8 @@ public class PathFinder {
     public IComputePathsOut.PathSearchStrategy computeReflexion(ReceiverPointInfo rcv,
                                                                 SourcePointInfo src,
                                                                 MirrorReceiversCompute receiverMirrorIndex,
-                                                                IComputePathsOut dataOut) {
-        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
+                                                                IComputePathsOut dataOut, IComputePathsOut.PathSearchStrategy initialStrategy) {
+        IComputePathsOut.PathSearchStrategy strategy = initialStrategy;
         // Compute receiver mirror
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.

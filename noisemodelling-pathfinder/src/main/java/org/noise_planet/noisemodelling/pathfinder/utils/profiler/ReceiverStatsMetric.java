@@ -24,6 +24,7 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
     private DescriptiveStatistics computationProcessSourcesPercentage = new DescriptiveStatistics();
     private DescriptiveStatistics collectSourcesTime = new DescriptiveStatistics();
     private DescriptiveStatistics precomputeReflectionTime = new DescriptiveStatistics();
+    private DescriptiveStatistics sourcesPerReceiver = new DescriptiveStatistics();
 
     public ReceiverStatsMetric() {
     }
@@ -33,10 +34,13 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
         while (!receiverComputationTimes.isEmpty()) {
             ReceiverComputationTime receiverProfile = receiverComputationTimes.pop();
             computationTime.addValue(receiverProfile.computationTime);
+            collectSourcesTime.addValue(receiverProfile.sourceCollectTime);
+            precomputeReflectionTime.addValue(receiverProfile.reflectionPreprocessTime);
         }
         while (!receiverCutProfilesDeque.isEmpty()) {
             ReceiverCutProfiles receiverProfile = receiverCutProfilesDeque.pop();
             computationCutProfiles.addValue(receiverProfile.numberOfRays);
+            sourcesPerReceiver.addValue(receiverProfile.numberOfSources);
             if(receiverProfile.numberOfSources > 0) {
                 computationProcessSourcesPercentage.addValue(((double) receiverProfile.numberOfProcessSources / receiverProfile.numberOfSources) * 100);
             }
@@ -45,7 +49,7 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
 
     @Override
     public String[] getColumnNames() {
-        return new String[] {"receiver_min_milliseconds","receiver_median_milliseconds","receiver_mean_milliseconds","receiver_max_milliseconds", "receiver_collect_sources_max_milliseconds", "receiver_precompute_reflection_max_milliseconds", "receiver_median_profiles_count", "receiver_max_profiles_count", "receiver_processed_sources_percentage_mean"};
+        return new String[] {"receiver_min_milliseconds","receiver_median_milliseconds","receiver_mean_milliseconds","receiver_max_milliseconds", "receiver_collect_sources_max_milliseconds", "receiver_precompute_reflection_max_milliseconds", "receiver_median_profiles_count", "receiver_max_profiles_count", "receiver_processed_sources_percentage_mean", "receiver_median_point_sources_in_range"};
     }
 
     public void onEndComputation(ReceiverComputationTime receiverComputationTime) {
@@ -70,12 +74,14 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
                 Integer.toString((int) computationCutProfiles.getPercentile(50)),
                 Integer.toString((int) computationCutProfiles.getMax()),
                 Integer.toString((int) computationProcessSourcesPercentage.getMean()),
+                Integer.toString((int) sourcesPerReceiver.getPercentile(50))
         };
         computationTime.clear();
         computationCutProfiles.clear();
         computationProcessSourcesPercentage.clear();
         collectSourcesTime.clear();
         precomputeReflectionTime.clear();
+        sourcesPerReceiver.clear();
         return res;
     }
 
