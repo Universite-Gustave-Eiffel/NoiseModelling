@@ -8,7 +8,6 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
-import org.checkerframework.checker.units.qual.A;
 import org.h2.tools.Csv;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
@@ -97,7 +96,7 @@ public class TestWallReflection {
 
         computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
                 new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
-                new Orientation()), receiverMirrorIndex, pathFinderVisitor);
+                new Orientation()), receiverMirrorIndex, pathFinderVisitor, IComputePathsOut.PathSearchStrategy.CONTINUE);
 
         List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
         // Only one second order reflexion propagation path must be found
@@ -179,7 +178,7 @@ public class TestWallReflection {
 
         computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
                 new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
-                        new Orientation()), receiverMirrorIndex, pathFinderVisitor);
+                        new Orientation()), receiverMirrorIndex, pathFinderVisitor, IComputePathsOut.PathSearchStrategy.CONTINUE);
 
         List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
         // Only one second order reflexion propagation path must be found
