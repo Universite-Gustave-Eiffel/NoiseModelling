@@ -158,7 +158,7 @@ public class Attenuation implements IComputePathsOut {
             //ADiv computation
             double[] aDiv = AttenuationCnossos.aDiv(proPathParameters, data);
             //AAtm computation
-            double[] aAtm = AttenuationCnossos.aAtm(data, proPathParameters.getSRSegment().d);
+            double[] aAtm = AttenuationCnossos.aAtm(data.getAlpha_atmo(), proPathParameters.getSRSegment().d);
             //Reflexion computation
             double[] aRef = AttenuationCnossos.evaluateAref(proPathParameters, data);
             //For testing purpose

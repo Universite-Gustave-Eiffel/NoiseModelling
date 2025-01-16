@@ -204,4 +204,12 @@ public class AcousticIndicatorsFunctions {
         }
         return ret;
     }
+
+    public static double[] sumArray(double[] array, double number) {
+        double[] ret = new double[array.length];
+        for (int idfreq = 0; idfreq < array.length; idfreq++) {
+            ret[idfreq] = array[idfreq] + number;
+        }
+        return ret;
+    }
 }

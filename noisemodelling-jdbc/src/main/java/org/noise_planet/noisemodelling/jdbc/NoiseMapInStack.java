@@ -15,6 +15,8 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
@@ -91,6 +93,35 @@ public class NoiseMapInStack implements IComputePathsOut {
             wjAtReceiver = AcousticIndicatorsFunctions.sumArray(wjAtReceiver, wjLevel);
         }
     }
+
+    private NoiseMapParameters.TimePeriodParameters computeFastLdenAttenuation(PathFinder.SourcePointInfo sourceInfo,
+                                                                               PathFinder.ReceiverPointInfo receiverInfo) {
+        // For the quick attenuation evaluation
+        // only take account of geometric dispersion and atmospheric attenuation
+        double distance = Math.max(1.0, sourceInfo.position.distance3D(receiverInfo.position));
+        // 3 dB gain as we consider source G path is equal to 0
+        double attenuationDivGeom = AttenuationCnossos.getADiv(distance) - 3;
+        NoiseMapParameters.TimePeriodParameters denWAttenuation =
+                new NoiseMapParameters.TimePeriodParameters(sourceInfo,
+                        receiverInfo, new double[0], new double[0], new double[0]);
+        if (noiseMapParameters.computeLDay || noiseMapParameters.computeLDEN) {
+            denWAttenuation.dayLevels = dbaToW(AcousticIndicatorsFunctions.multiplicationArray(AcousticIndicatorsFunctions.sumArray(
+                    AttenuationCnossos.aAtm(noiseMapComputeRaysOut.dayPathData.getAlpha_atmo(), distance),
+                    attenuationDivGeom), -1));
+        }
+        if (noiseMapParameters.computeLEvening || noiseMapParameters.computeLDEN) {
+            denWAttenuation.eveningLevels = dbaToW(AcousticIndicatorsFunctions.multiplicationArray(AcousticIndicatorsFunctions.sumArray(
+                    AttenuationCnossos.aAtm(noiseMapComputeRaysOut.eveningPathData.getAlpha_atmo(), distance),
+                    attenuationDivGeom), -1));
+        }
+        if (noiseMapParameters.computeLNight || noiseMapParameters.computeLDEN) {
+            denWAttenuation.nightLevels = dbaToW(AcousticIndicatorsFunctions.multiplicationArray(AcousticIndicatorsFunctions.sumArray(
+                    AttenuationCnossos.aAtm(noiseMapComputeRaysOut.nightPathData.getAlpha_atmo(), distance),
+                    attenuationDivGeom), -1));
+        }
+        return denWAttenuation;
+    }
+
 
     private NoiseMapParameters.TimePeriodParameters computeLdenAttenuation(CnossosPath cnossosPath) {
         PathFinder.SourcePointInfo sourceInfo = new PathFinder.SourcePointInfo(cnossosPath.getCutProfile().getSource());
@@ -217,23 +248,21 @@ public class NoiseMapInStack implements IComputePathsOut {
         if(noiseMapParameters.getMaximumError() > 0) {
             maximumWjExpectedSplAtReceiver.clear();
             sumMaximumRemainingWjExpectedSplAtReceiver = 0;
-            final Scene scene = noiseMapComputeRaysOut.inputData;
-            CutPointReceiver pointReceiver = new CutPointReceiver(receiver);
             NoiseEmissionMaker noiseEmissionMaker = noiseMapComputeRaysOut.noiseEmissionMaker;
+            NoiseMapParameters.TimePeriodParameters cachedValues = new NoiseMapParameters.TimePeriodParameters();
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
-                CutProfile cutProfile = new CutProfile(new CutPointSource(sourcePointInfo), pointReceiver);
-                CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                        scene.freq_lvl, scene.gS);
-                if (cnossosPath != null) {
-                    double[] wjReceiver = computeLden(computeLdenAttenuation(cnossosPath),
-                            getSpectrum(noiseEmissionMaker.wjSourcesD, sourcePointInfo.sourceIndex),
-                            getSpectrum(noiseEmissionMaker.wjSourcesE, sourcePointInfo.sourceIndex),
-                            getSpectrum(noiseEmissionMaker.wjSourcesN, sourcePointInfo.sourceIndex),
-                            new NoiseMapParameters.TimePeriodParameters());
+                NoiseMapParameters.TimePeriodParameters ldenAttenuation = computeFastLdenAttenuation(sourcePointInfo, receiver);
+                double[] wjReceiver = computeLden(ldenAttenuation,
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesD,
+                                sourcePointInfo.sourceIndex), sourcePointInfo.li),
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesE,
+                                sourcePointInfo.sourceIndex), sourcePointInfo.li),
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesN,
+                                sourcePointInfo.sourceIndex), sourcePointInfo.li),
+                            cachedValues);
                     double globalReceiver = sumArray(wjReceiver);
                     sumMaximumRemainingWjExpectedSplAtReceiver += globalReceiver;
                     maximumWjExpectedSplAtReceiver.merge(sourcePointInfo.getCoord().hashCode(), globalReceiver, Double::sum);
-                }
             }
         }
     }
