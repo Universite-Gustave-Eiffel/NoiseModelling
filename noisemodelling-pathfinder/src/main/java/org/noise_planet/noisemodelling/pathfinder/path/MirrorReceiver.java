@@ -78,8 +78,7 @@ public class MirrorReceiver {
     /**
      * @param receiverPos coordinate of mirrored receiver
      * @param parentMirror Parent receiver, null for the first reflexion
-     * @param wallId Wall index of the last mirrored processed
-     * @param buildingId building that belongs to this wall
+     * @param wall Wall processed
      */
     public MirrorReceiver(Coordinate receiverPos, MirrorReceiver parentMirror, Wall wall) {
         this.receiverPos = receiverPos;

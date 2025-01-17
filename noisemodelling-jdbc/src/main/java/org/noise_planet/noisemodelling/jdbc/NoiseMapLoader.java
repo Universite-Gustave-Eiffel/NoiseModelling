@@ -473,7 +473,9 @@ public abstract class NoiseMapLoader {
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
+                                        wall.setAlpha(alphaList);
                                         wall.setPrimaryKey(pk);
+                                        wall.setHeight(heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField));
                                         walls.add(wall);
                                     }
                                 }
@@ -653,7 +655,7 @@ public abstract class NoiseMapLoader {
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
-
+     */
     public boolean isReceiverHasAbsoluteZCoordinates() {
         return receiverHasAbsoluteZCoordinates;
     }

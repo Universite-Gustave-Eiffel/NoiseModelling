@@ -39,7 +39,7 @@ public class PointPath {
          */
         SRCE,
         /**
-         * Reflection on > 15° obstacle
+         * Reflection on {@literal >} 15° obstacle
          */
         REFL,
         /**

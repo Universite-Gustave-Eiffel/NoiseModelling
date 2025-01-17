@@ -390,8 +390,8 @@ public class AttenuationCnossos {
 
     /**
      * Compute AAtm
-     * @param data
-     * @param distance
+     * @param alphaAtmosphericKm Absorption per km
+     * @param distance Distance (m)
      * @return list double with the values of AAtm
      */
     public static double[] aAtm(double[] alphaAtmosphericKm, double distance) {

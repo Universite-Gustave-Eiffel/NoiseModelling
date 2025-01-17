@@ -1518,7 +1518,7 @@ public class ProfileBuilder {
      * Fetch Altitude in meters from sea level at a location. You can use the triangle hint if you request a lot of
      * positions in the same location
      * @param coordinate X,Y coordinate to fetch
-     * @param triangleHint Triangle index hint (if >= 0 will be checked, and will be updated with the triangle is found)
+     * @param triangleHint Triangle index hint (if {@literal >=} 0 will be checked, and will be updated with the triangle is found)
      * @return Altitude in meters from sea level
      */
     public double getZGround(Coordinate coordinate, AtomicInteger triangleHint) {

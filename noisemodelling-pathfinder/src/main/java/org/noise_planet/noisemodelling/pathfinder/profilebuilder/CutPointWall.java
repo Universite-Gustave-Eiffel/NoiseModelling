@@ -59,7 +59,7 @@ public class CutPointWall  extends CutPoint {
 
     /**
      *
-     * @param pk External primary key value, will be updated if >= 0
+     * @param pk External primary key value, will be updated if {@literal >=} 0
      * @return this
      */
     public CutPointWall setPk(long pk) {
