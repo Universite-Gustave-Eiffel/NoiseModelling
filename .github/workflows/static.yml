@@ -41,6 +41,9 @@ jobs:
           java-version: 11
       - name: Generate Javadoc
         run: mvn javadoc:aggregate
+      - name: Generate Cnossos report
+        working-directory: noisemodelling-tutorial-01
+        run: mvn exec:java -Dmain.class=org.noise_planet.nmtutorial01.GenerateReferenceDeviation -Dexec.args="../Docs"
       -  shell: bash
          run: |
             mkdir -p Docs/build/html/javadoc
