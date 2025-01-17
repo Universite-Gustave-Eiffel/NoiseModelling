@@ -41,6 +41,10 @@ jobs:
           java-version: 11
       - name: Generate Javadoc
         run: mvn javadoc:aggregate
+      -  shell: bash
+         run: |
+            mkdir -p Docs/build/html/javadoc
+            mv target/reports/apidocs/* Docs/build/html/javadoc/
       - uses: actions/setup-python@v5
       - name: Install dependencies
         run: |
