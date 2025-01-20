@@ -252,7 +252,7 @@ public abstract class NoiseMapLoader {
     }
 
     /**
-     * Compute the envelope corresping to parameters
+     * Compute the envelope corresponding to parameters
      * @param cellIndex Cell location
      * @return Envelope of the cell
      */

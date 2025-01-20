@@ -772,7 +772,6 @@ def exec(Connection connection, input) {
             Envelope cellEnvelope = pointNoiseMap.getCellEnv(pointNoiseMap.getMainEnvelope(),
                     cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), pointNoiseMap.getCellWidth(),
                     pointNoiseMap.getCellHeight());
-            logger.info("Compute domain is " + new GeometryFactory().toGeometry(cellEnvelope))
             logger.info(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
             // Run ray propagation
             IComputePathsOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)

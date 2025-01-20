@@ -115,7 +115,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         if(verbose) {
             WKTWriter roundWKTWriter = new WKTWriter();
             roundWKTWriter.setPrecisionModel(new PrecisionModel(1.0));
-            logger.info("Begin processing of cell {}/{} \n {}", ij, gridDim * gridDim,
+            logger.info("Begin processing of cell {}/{} Compute domain is:\n {}", ij, gridDim * gridDim,
                     roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
         }
         Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
