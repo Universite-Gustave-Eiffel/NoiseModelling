@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -252,6 +253,15 @@ public abstract class NoiseMapLoader {
 
     /**
      * Compute the envelope corresping to parameters
+     * @param cellIndex Cell location
+     * @return Envelope of the cell
+     */
+    public Envelope getCellEnv(CellIndex cellIndex) {
+        return  getCellEnv(mainEnvelope, cellIndex.getLatitudeIndex(),
+                cellIndex.getLongitudeIndex(), getCellWidth(), getCellHeight());
+    }
+    /**
+     * Compute the envelope corresping to parameters
      *
      * @param mainEnvelope Global envelope
      * @param cellI        I cell index
@@ -292,6 +302,8 @@ public abstract class NoiseMapLoader {
                 throw new SQLException("Digital elevation model table \""+demTable+"\" must exist and contain a POINT field");
             }
             String topoGeomName = geomFields.get(0);
+            double sumZ = 0;
+            int topoCount = 0;
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
                             demTable + " WHERE " +
@@ -301,9 +313,26 @@ public abstract class NoiseMapLoader {
                     while (rs.next()) {
                         Geometry pt = rs.getGeometry();
                         if(pt != null) {
-                            mesh.addTopographicPoint(pt.getCoordinate());
+                            Coordinate ptCoordinate = pt.getCoordinate();
+                            mesh.addTopographicPoint(ptCoordinate);
+                            if(!Double.isNaN(ptCoordinate.z)) {
+                                sumZ+=ptCoordinate.z;
+                                topoCount+=1;
+                            }
                         }
                     }
+                }
+                double averageZ = 0;
+                if(topoCount > 0) {
+                    averageZ = sumZ / topoCount;
+                }
+                // add corners of envelope to guaranty topography continuity
+                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
+                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
+                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
+                for (int i = 0; i < coordinates.length - 1; i++) {
+                    Coordinate coordinate = coordinates[i];
+                    mesh.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
                 }
             }
         }

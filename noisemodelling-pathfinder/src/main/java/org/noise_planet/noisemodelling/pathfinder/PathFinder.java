@@ -15,6 +15,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequenceFactory;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -876,6 +877,7 @@ public class PathFinder {
      * @return computed lineString
      */
     private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder, double epsilon) {
+        boolean warned = false;
         ArrayList<Coordinate> newGeomCoordinates = new ArrayList<>();
         Coordinate[] coordinates = lineString.getCoordinates();
         for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
@@ -885,6 +887,13 @@ public class PathFinder {
             profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
             newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
             if(groundProfileCoordinates.size() < 2) {
+                if(profileBuilder.hasDem()) {
+                    if(!warned) {
+                        LOGGER.warn( "Source line out of DEM area {}",
+                                new WKTWriter(3).write(lineString));
+                        warned = true;
+                    }
+                }
                 newGeomCoordinates.add(p0);
                 newGeomCoordinates.add(p1);
             } else {

@@ -1429,11 +1429,13 @@ public class ProfileBuilder {
         LineSegment propaLine = new LineSegment(p1, p2);
         if(curTriP1 == -1) {
             // we are outside the bounds of the triangles
-            // Find the closest triangle to p1
+            // Find the closest triangle to p1 on the line p1 to p2
             Coordinate intersectionPt = new Coordinate();
             AtomicInteger minDistanceTriangle = new AtomicInteger();
             if(findClosestTriangleIntersection(propaLine, intersectionPt, minDistanceTriangle)) {
-                outputPoints.add(intersectionPt);
+                Coordinate[] triangleVertex = getTriangleVertices(minDistanceTriangle.get());
+                outputPoints.add(new Coordinate(p1.x, p1.y,
+                        Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
                 curTriP1 = minDistanceTriangle.get();
             } else {
                 // out of DEM propagation area
@@ -1443,8 +1445,8 @@ public class ProfileBuilder {
         HashSet<Integer> navigationHistory = new HashSet<Integer>();
         int navigationTri = curTriP1;
         // Add p1 coordinate
-        Coordinate[] vertices = getTriangleVertices(curTriP1);
-        outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, vertices[0], vertices[1], vertices[2])));
+        Coordinate[] triangleVertex = getTriangleVertices(curTriP1);
+        outputPoints.add(new Coordinate(p1.x, p1.y, Vertex.interpolateZ(p1, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
         boolean freeField = true;
         while (navigationTri != -1) {
             navigationHistory.add(navigationTri);
@@ -1452,8 +1454,8 @@ public class ProfileBuilder {
             int propaTri = this.getNextTri(navigationTri, propaLine, navigationHistory, intersectionPt);
             if(propaTri == -1) {
                 // Add p2 coordinate
-                vertices = getTriangleVertices(navigationTri);
-                outputPoints.add(new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, vertices[0], vertices[1], vertices[2])));
+                triangleVertex = getTriangleVertices(navigationTri);
+                outputPoints.add(new Coordinate(p2.x, p2.y, Vertex.interpolateZ(p2, triangleVertex[0], triangleVertex[1], triangleVertex[2])));
             } else {
                 // Found next triangle (if propaTri >= 0)
                 // extract X,Y,Z values of intersection with triangle segment

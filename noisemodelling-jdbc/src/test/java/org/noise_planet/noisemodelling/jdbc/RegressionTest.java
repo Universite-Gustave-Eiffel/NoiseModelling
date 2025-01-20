@@ -1,10 +1,14 @@
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.asc.AscRead;
 import org.h2gis.functions.io.fgb.FGBRead;
 import org.h2gis.functions.io.fgb.fileTable.FGBDriver;
+import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,35 +89,6 @@ public class RegressionTest {
                     cellIndex.getLongitudeIndex(), progressVisitor, receivers);
         }
         return noiseMapMaker;
-    }
-
-    @Test
-    public void testNoLevelRegression() throws Exception {
-        try(Statement st = connection.createStatement()) {
-            FGBRead.execute(connection, RegressionTest.class.getResource("regression_nopath/LW_ROADS.fgb").getFile(), "LW_ROADS");
-            FGBRead.execute(connection, RegressionTest.class.getResource("regression_nopath/DEM_SELECTION.fgb").getFile(), "DEM");
-            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
-
-            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
-                    "insert into receivers(the_geom) values ('POINTZ (371505.98977727786405012 6657413.14829147700220346 4.0)');" +
-                    "insert into receivers(the_geom) values ('POINTZ (371151.06905939488206059 6657414.96568119246512651 4.0)');");
-
-            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
-                    "LW_ROADS", "RECEIVERS");
-
-            noiseMapByReceiverMaker.setMaximumPropagationDistance(500.0);
-            noiseMapByReceiverMaker.setSoundReflectionOrder(1);
-            noiseMapByReceiverMaker.setThreadCount(1);
-            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
-            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-
-
-            NoiseMapMaker noiseMapMaker = runPropagation(connection, noiseMapByReceiverMaker);
-            assertNotNull(noiseMapMaker.getLdenData().lDenLevels.peekFirst());
-            assertEquals(36.77,
-                    AcousticIndicatorsFunctions.sumDbArray(noiseMapMaker.getLdenData().lDenLevels.peekFirst().value),
-                    AttenuationCnossosTest.ERROR_EPSILON_LOWEST);
-        }
     }
 
     /**

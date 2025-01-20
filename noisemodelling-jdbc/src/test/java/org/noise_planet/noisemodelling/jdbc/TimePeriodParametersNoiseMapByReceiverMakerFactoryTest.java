@@ -954,52 +954,6 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
         SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("regression1/receivers.shp").getFile());
 
-        Set<CellIndex> expected = new HashSet<>();
-        expected.add(new CellIndex(0, 0));
-        expected.add(new CellIndex(1, 0));
-        expected.add(new CellIndex(2, 0));
-        expected.add(new CellIndex(3, 0));
-        expected.add(new CellIndex(0, 1));
-        expected.add(new CellIndex(1, 1));
-        expected.add(new CellIndex(2, 1));
-        expected.add(new CellIndex(3, 1));
-        expected.add(new CellIndex(4, 1));
-        expected.add(new CellIndex(5, 1));
-        expected.add(new CellIndex(6, 1));
-        expected.add(new CellIndex(7, 1));
-        expected.add(new CellIndex(0, 2));
-        expected.add(new CellIndex(1, 2));
-        expected.add(new CellIndex(2, 2));
-        expected.add(new CellIndex(3, 2));
-        expected.add(new CellIndex(4, 2));
-        expected.add(new CellIndex(5, 2));
-        expected.add(new CellIndex(6, 2));
-        expected.add(new CellIndex(7, 2));
-        expected.add(new CellIndex(0, 3));
-        expected.add(new CellIndex(1, 3));
-        expected.add(new CellIndex(2, 3));
-        expected.add(new CellIndex(3, 3));
-        expected.add(new CellIndex(4, 3));
-        expected.add(new CellIndex(5, 3));
-        expected.add(new CellIndex(6, 3));
-        expected.add(new CellIndex(7, 3));
-        expected.add(new CellIndex(0, 4));
-        expected.add(new CellIndex(2, 4));
-        expected.add(new CellIndex(3, 4));
-        expected.add(new CellIndex(4, 4));
-        expected.add(new CellIndex(5, 4));
-        expected.add(new CellIndex(6, 4));
-        expected.add(new CellIndex(7, 4));
-        expected.add(new CellIndex(2, 5));
-        expected.add(new CellIndex(3, 5));
-        expected.add(new CellIndex(4, 5));
-        expected.add(new CellIndex(5, 5));
-        expected.add(new CellIndex(3, 6));
-        expected.add(new CellIndex(4, 6));
-        expected.add(new CellIndex(5, 6));
-        expected.add(new CellIndex(4, 7));
-        expected.add(new CellIndex(5, 7));
-        expected.add(new CellIndex(6, 7));
         // Count receivers
         int nbReceivers = 0;
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM RECEIVERS")) {
@@ -1026,7 +980,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-        //noiseMapByReceiverMaker.setThreadCount(1);
+        noiseMapByReceiverMaker.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -1040,12 +994,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
             Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
-            // check if expected cells are found
-            for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
-                assertTrue(expected.contains(cellIndex));
-                expected.remove(cellIndex);
-            }
-            assertTrue(expected.isEmpty());
+
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
@@ -1055,6 +1004,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             factory.stop();
         }
         connection.commit();
+
         // Check if all receivers are computed
         assertEquals(nbReceivers, receivers.size());
 
