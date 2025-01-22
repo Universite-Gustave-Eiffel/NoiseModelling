@@ -78,11 +78,10 @@ public abstract class NoiseMapLoader {
     protected boolean computeVerticalDiffraction = true;
     /** TODO missing reference to the SIGMA value of materials */
     protected double wallAbsorption = 100000;
-    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
-    public double maximumError = 0;
+
     protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
-    protected int parallelComputationCount = 0;
+
     // Initialised attributes
     /**
      *  Side computation cell count (same on X and Y)
@@ -871,27 +870,6 @@ public abstract class NoiseMapLoader {
      */
     public void setHeightField(String heightField) {
         this.heightField = heightField;
-    }
-
-    /**
-     * @return True if multi-threading is activated.
-     */
-    public boolean isDoMultiThreading() {
-        return parallelComputationCount != 1;
-    }
-
-    /**
-     * @return Parallel computations, 0 for using all available cores (1 single core)
-    */
-    public int getParallelComputationCount() {
-        return parallelComputationCount;
-    }
-
-    /**
-     * @param parallelComputationCount Parallel computations, 0 for using all available cores  (1 single core)
-    */
-    public void setParallelComputationCount(int parallelComputationCount) {
-        this.parallelComputationCount = parallelComputationCount;
     }
 
     /**
