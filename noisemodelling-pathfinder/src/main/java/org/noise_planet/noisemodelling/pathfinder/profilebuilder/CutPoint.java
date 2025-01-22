@@ -59,6 +59,12 @@ public abstract class CutPoint implements Comparable<CutPoint> {
         this.coordinate = coordinate;
     }
 
+    public CutPoint(Coordinate coordinate, double zGround, double groundCoefficient) {
+        this.coordinate = coordinate;
+        this.zGround = zGround;
+        this.groundCoefficient = groundCoefficient;
+    }
+
     /**
      * Copy constructor
      * @param other Other instance to copy

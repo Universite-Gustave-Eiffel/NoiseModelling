@@ -3,8 +3,8 @@
 In shell write the following command (need Java 11)
 
 ```shell
-./gradlew installDist
+./gradlew build
 ```
 
-The program will be available in the folder `build/install/scriptrunner`
+The program will be available in the folder `build/distributions/scriptrunner.zip`
 

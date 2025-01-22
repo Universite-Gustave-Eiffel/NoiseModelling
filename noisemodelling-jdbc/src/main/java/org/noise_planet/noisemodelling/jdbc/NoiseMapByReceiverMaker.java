@@ -16,7 +16,10 @@ import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.io.WKTWriter;
+import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -107,15 +110,16 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         ProfileBuilder builder = new ProfileBuilder();
         int ij = cellI * gridDim + cellJ + 1;
-        if(verbose) {
-            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
-        }
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
-
-
+        if(verbose) {
+            WKTWriter roundWKTWriter = new WKTWriter();
+            roundWKTWriter.setPrecisionModel(new PrecisionModel(1.0));
+            logger.info("Begin processing of cell {}/{} Compute domain is:\n {}", ij, gridDim * gridDim,
+                    roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
+        }
         Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
-        expandedCellEnvelop.expandBy(maximumPropagationDistance);
+        expandedCellEnvelop.expandBy(maximumPropagationDistance + 2 * maximumReflectionDistance);
 
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
@@ -130,6 +134,8 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
         builder.finishFeeding();
 
+        expandedCellEnvelop = new Envelope(cellEnvelope);
+        expandedCellEnvelop.expandBy(maximumPropagationDistance);
 
         Scene propagationProcessData;
         if(propagationProcessDataFactory != null) {
@@ -139,8 +145,6 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
-        propagationProcessData.maximumError = getMaximumError();
-        propagationProcessData.noiseFloor = getNoiseFloor();
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.maxSrcDist = maximumPropagationDistance;
         propagationProcessData.gS = getGs();
@@ -204,11 +208,9 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
         DBTypes dbTypes = DBUtils.getDBType(connection);
-        Envelope computationEnvelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, dbTypes)).getEnvelopeInternal();
-        if(!sourcesTableName.isEmpty()) {
-            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
-        }
-        return computationEnvelope;
+        Envelope envelopeInternal = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, dbTypes)).getEnvelopeInternal();
+        envelopeInternal.expandBy(maximumPropagationDistance);
+        return envelopeInternal;
     }
 
     /**

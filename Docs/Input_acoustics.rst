@@ -20,7 +20,7 @@ Probability of occurrences
 * Description: Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one
 * Type: Double
 * Default value: ``0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5``
-* Recommanded value: 
+* Recommended value: 
 
 .. figure:: images/Input_tables/acoustics_parameters_confFavorableOccurrences.png
 	:align: center
@@ -32,7 +32,7 @@ Relative humidity
 * Description: Humidity for noise propagation (%) [0,100]
 * Type: Double
 * Default value: ``70``
-* Recommanded value: depends on the average conditions at the location where you perform the simulation
+* Recommended value: depends on the average conditions at the location where you perform the simulation
 
 Air temperature
 --------------------------------
@@ -41,7 +41,7 @@ Air temperature
 * Description: Air temperature (°C)
 * Type: Double
 * Default value: ``15``
-* Recommanded value: depends on the average conditions at the location where you perform the simulation
+* Recommended value: depends on the average conditions at the location where you perform the simulation
 
 Order of reflexion
 --------------------------------
@@ -50,7 +50,7 @@ Order of reflexion
 * Description: Maximum number of reflections to be taken into account. Warning: adding 1 order increases the processing time significantly
 * Type: Integer
 * Default value: ``1``
-* Recommanded value: ``1`` or ``2``
+* Recommended value: ``1`` or ``2``
 
 Diffraction on horizontal edges
 --------------------------------
@@ -59,7 +59,7 @@ Diffraction on horizontal edges
 * Description: Compute or not the diffraction on horizontal edges
 * Type: Boolean
 * Default value: ``False``
-* Recommanded value: ``True``
+* Recommended value: ``True``
 
 Diffraction on vertical edges
 --------------------------------
@@ -68,7 +68,7 @@ Diffraction on vertical edges
 * Description: Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only
 * Type: Boolean
 * Default value: ``False``
-* Recommanded value: 
+* Recommended value: 
 
 Maximum source-receiver distance
 ----------------------------------
@@ -77,7 +77,7 @@ Maximum source-receiver distance
 * Description: Maximum distance between source and receiver (meters)
 * Type: Double
 * Default value: ``150``
-* Recommanded value: Between ``500`` and ``800``
+* Recommended value: Between ``500`` and ``800``
 
 .. figure:: images/Input_tables/acoustics_parameters_confMaxSrcDist.png
 	:align: center
@@ -89,7 +89,7 @@ Maximum source-reflexion distance
 * Description: Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters)
 * Type: Double
 * Default value: ``50``
-* Recommanded value: Between ``350`` and ``800``
+* Recommended value: Between ``350`` and ``800``
 
 .. figure:: images/Input_tables/acoustics_parameters_confMaxReflDist.png
 	:align: center
@@ -102,7 +102,7 @@ Wall absorption coefficient
 * Description: Wall absorption coefficient [0,1] (between ``0`` : "fully absorbent" and ``1`` : "fully reflective")
 * Type: Double
 * Default value: ``0.1``
-* Recommanded value: ``0.1``
+* Recommended value: ``0.1``
 
 Separate receiver level by source identifier
 ---------------------------------------------
@@ -111,7 +111,7 @@ Separate receiver level by source identifier
 * Description: Keep source identifier in output in order to get noise contribution of each noise source
 * Type: Boolean
 * Default value: ``False``
-* Recommanded value: 
+* Recommended value: 
 
 Thread number
 --------------------------------
@@ -120,4 +120,4 @@ Thread number
 * Description: Number of thread to use on the computer
 * Type: Integer
 * Default value: ``0`` (``0`` = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used))
-* Recommanded value: ``0``
+* Recommended value: ``0``

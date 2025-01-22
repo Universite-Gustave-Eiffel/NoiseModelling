@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -77,18 +78,10 @@ public abstract class NoiseMapLoader {
     protected boolean computeVerticalDiffraction = true;
     /** TODO missing reference to the SIGMA value of materials */
     protected double wallAbsorption = 100000;
-    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
-    public double maximumError = Double.NEGATIVE_INFINITY;
-
-    /** stop calculation if the sum of further sources contributions are smaller than this value */
-    /**
-     * ligne  51 à 74 should be noise map parameters todo
-     */
-    public double noiseFloor = Double.NEGATIVE_INFINITY;
 
     protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
-    protected int parallelComputationCount = 0;
+
     // Initialised attributes
     /**
      *  Side computation cell count (same on X and Y)
@@ -258,6 +251,15 @@ public abstract class NoiseMapLoader {
     }
 
     /**
+     * Compute the envelope corresponding to parameters
+     * @param cellIndex Cell location
+     * @return Envelope of the cell
+     */
+    public Envelope getCellEnv(CellIndex cellIndex) {
+        return  getCellEnv(mainEnvelope, cellIndex.getLatitudeIndex(),
+                cellIndex.getLongitudeIndex(), getCellWidth(), getCellHeight());
+    }
+    /**
      * Compute the envelope corresping to parameters
      *
      * @param mainEnvelope Global envelope
@@ -299,6 +301,8 @@ public abstract class NoiseMapLoader {
                 throw new SQLException("Digital elevation model table \""+demTable+"\" must exist and contain a POINT field");
             }
             String topoGeomName = geomFields.get(0);
+            double sumZ = 0;
+            int topoCount = 0;
             try (PreparedStatement st = connection.prepareStatement(
                     "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
                             demTable + " WHERE " +
@@ -308,9 +312,26 @@ public abstract class NoiseMapLoader {
                     while (rs.next()) {
                         Geometry pt = rs.getGeometry();
                         if(pt != null) {
-                            mesh.addTopographicPoint(pt.getCoordinate());
+                            Coordinate ptCoordinate = pt.getCoordinate();
+                            mesh.addTopographicPoint(ptCoordinate);
+                            if(!Double.isNaN(ptCoordinate.z)) {
+                                sumZ+=ptCoordinate.z;
+                                topoCount+=1;
+                            }
                         }
                     }
+                }
+                double averageZ = 0;
+                if(topoCount > 0) {
+                    averageZ = sumZ / topoCount;
+                }
+                // add corners of envelope to guaranty topography continuity
+                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
+                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
+                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
+                for (int i = 0; i < coordinates.length - 1; i++) {
+                    Coordinate coordinate = coordinates[i];
+                    mesh.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
                 }
             }
         }
@@ -480,7 +501,9 @@ public abstract class NoiseMapLoader {
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
+                                        wall.setAlpha(alphaList);
                                         wall.setPrimaryKey(pk);
+                                        wall.setHeight(heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField));
                                         walls.add(wall);
                                     }
                                 }
@@ -660,7 +683,7 @@ public abstract class NoiseMapLoader {
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
-
+     */
     public boolean isReceiverHasAbsoluteZCoordinates() {
         return receiverHasAbsoluteZCoordinates;
     }
@@ -775,28 +798,6 @@ public abstract class NoiseMapLoader {
         return this.gs;
     }
 
-    public double getNoiseFloor() {
-        return noiseFloor;
-    }
-
-    public void setNoiseFloor(double noiseFloor) {
-        this.noiseFloor = noiseFloor;
-    }
-
-    /**
-     * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
-     */
-    public double getMaximumError() {
-        return maximumError;
-    }
-
-    /**
-     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
-     */
-    public void setMaximumError(double maximumError) {
-        this.maximumError = maximumError;
-    }
-
     /**
      * @return Reflection and diffraction maximum search distance, default to 400m.
     */
@@ -869,27 +870,6 @@ public abstract class NoiseMapLoader {
      */
     public void setHeightField(String heightField) {
         this.heightField = heightField;
-    }
-
-    /**
-     * @return True if multi-threading is activated.
-     */
-    public boolean isDoMultiThreading() {
-        return parallelComputationCount != 1;
-    }
-
-    /**
-     * @return Parallel computations, 0 for using all available cores (1 single core)
-    */
-    public int getParallelComputationCount() {
-        return parallelComputationCount;
-    }
-
-    /**
-     * @param parallelComputationCount Parallel computations, 0 for using all available cores  (1 single core)
-    */
-    public void setParallelComputationCount(int parallelComputationCount) {
-        this.parallelComputationCount = parallelComputationCount;
     }
 
     /**

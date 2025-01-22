@@ -29,6 +29,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 
@@ -37,7 +38,6 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -130,6 +130,15 @@ inputs = [
                               '&#128736; Default value: <b>false </b>',
                 min         : 0, max: 1,
                 type        : Boolean.class
+        ],
+        fenceNegativeBuffer             : [
+                name       : 'Negative buffer',
+                title      : 'Negative buffer',
+                description: 'Reduce the fence(parameter, or sound sources and buildings extent)' +
+                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT).</br> </br>' +
+                        '&#128736; Default value: <b>0 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
         ]
 ]
 
@@ -276,6 +285,16 @@ def exec(Connection connection, input) {
 
     logger.info("Delaunay initialize")
     delaunayReceiversMaker.initialize(connection, new EmptyProgressVisitor())
+
+    // Apply negative envelope parameter
+    if (input.containsKey('fenceNegativeBuffer')) {
+        double negativeBuffer = input['fenceNegativeBuffer'] as Double
+        if(negativeBuffer > 0) {
+            Envelope envelope = delaunayReceiversMaker.getMainEnvelope()
+            envelope.expandBy(-negativeBuffer)
+            delaunayReceiversMaker.setMainEnvelope(envelope)
+        }
+    }
 
     if(input['errorDumpFolder']) {
         // Will write the input mesh in this folder in order to

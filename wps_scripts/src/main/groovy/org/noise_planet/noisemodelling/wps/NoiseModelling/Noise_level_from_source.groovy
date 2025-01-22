@@ -53,6 +53,7 @@ import java.nio.file.Paths
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 
 title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
 description = '&#10145;&#65039; Computes the Lden, LDay, LEvening, LNight maps from the noise emission table.' +
@@ -282,6 +283,13 @@ inputs = [
                         'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
                         '&#128736; Default value: <b>empty (do not keep rays)</b>',
                 min        : 0, max: 1, type: String.class
+        ],
+        confMaxError            : [
+                name       : 'Max Error (dB)',
+                title      : 'Max Error (dB)',
+                description: 'Threshold for excluding negligible sound sources in calculations. Default value: <b>0.1</b>',
+                min        : 0, max: 1,
+                type       : Double.class
         ]
 ]
 
@@ -391,6 +399,8 @@ static void exportScene(String name, ProfileBuilder builder, AttenuationCnossosP
 
 // main function of the script
 def exec(Connection connection, input) {
+
+    long startCompute = System.currentTimeMillis()
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -569,6 +579,12 @@ def exec(Connection connection, input) {
         confExportSourceId = input['confExportSourceId']
     }
 
+    double confMaxError = 0.1;
+    if (input['confMaxError']) {
+        confMaxError = Double.valueOf(input['confMaxError'])
+    }
+
+
     // -------------------------
     // Initialize some variables
     // -------------------------
@@ -718,7 +734,8 @@ def exec(Connection connection, input) {
 
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    pointNoiseMap.setMaximumError(0.1d)
+    ldenConfig.setMaximumError(confMaxError)
+
     // Init Map
     pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
 
@@ -755,7 +772,6 @@ def exec(Connection connection, input) {
             Envelope cellEnvelope = pointNoiseMap.getCellEnv(pointNoiseMap.getMainEnvelope(),
                     cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), pointNoiseMap.getCellWidth(),
                     pointNoiseMap.getCellHeight());
-            logger.info("Compute domain is " + new GeometryFactory().toGeometry(cellEnvelope))
             logger.info(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
             // Run ray propagation
             IComputePathsOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
@@ -790,7 +806,14 @@ def exec(Connection connection, input) {
         createdTables.append(" LDEN_GEOM")
     }
 
-    resultString = "Calculation Done ! " + createdTables.toString() + " table(s) have been created."
+    long elapsed = System.currentTimeMillis() - startCompute;
+    long hours = TimeUnit.MILLISECONDS.toHours(elapsed)
+    elapsed -= TimeUnit.HOURS.toMillis(hours)
+    long minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed)
+    elapsed -= TimeUnit.MINUTES.toMillis(minutes)
+    long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsed)
+    String timeString = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
+    resultString = "Calculation Done in "+timeString+" ! " + createdTables.toString() + " table(s) have been created."
 
 
     // print to command window

@@ -101,13 +101,6 @@ public class Scene {
     /** Source factor absorption */
     public double gS = DEFAULT_GS;
 
-    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
-    public double maximumError = Double.NEGATIVE_INFINITY;
-
-    /** stop calculation if the sum of further sources contributions are smaller than this value */
-    public double noiseFloor = Double.NEGATIVE_INFINITY;
-
-
     /** cellId only used in output data */
     public int cellId;
     /** Progression information */

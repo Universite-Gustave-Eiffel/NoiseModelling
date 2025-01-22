@@ -11,6 +11,7 @@ package org.noise_planet.nmtutorial01;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -98,12 +99,18 @@ public class GenerateReferenceDeviation {
         Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
 
         AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
+        PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
             attenuationVisitor.onNewCutPlane(cutProfile);
+            if(lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
+                // merge attenuation per receiver
+                attenuationVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+            }
+            lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
         }
         // merge attenuation per receiver
-        attenuationVisitor.finalizeReceiver(0);
+        attenuationVisitor.finalizeReceiver(lastReceiver);
 
         return propDataOut;
     }

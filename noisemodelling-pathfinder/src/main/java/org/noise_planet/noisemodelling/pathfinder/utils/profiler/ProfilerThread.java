@@ -60,6 +60,19 @@ public class ProfilerThread  implements Runnable {
         this.flushInterval = flushInterval;
     }
 
+    private void writeData(BufferedWriter b) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (Metric m : metrics) {
+            for (String metricValue : m.getCurrentValues()) {
+                if (sb.length() != 0) {
+                    sb.append(",");
+                }
+                sb.append(metricValue);
+            }
+        }
+        sb.append("\n");
+        b.write(sb.toString());
+    }
     /**
      * Runs the thread to continuously write metric data to the output file.Runs the thread to continuously write metric data to the output file.
      */
@@ -86,23 +99,13 @@ public class ProfilerThread  implements Runnable {
                     m.tick(timeTracker.get());
                 }
                 try {
-                    if((timeTracker.get() - lastWrite) / 1000.0 >= writeInterval ) {
+                    if ((timeTracker.get() - lastWrite) / 1000.0 >= writeInterval) {
                         lastWrite = timeTracker.get();
-                        sb = new StringBuilder();
-                        for(Metric m : metrics) {
-                            for(String metricValue : m.getCurrentValues()) {
-                                if(sb.length() != 0) {
-                                    sb.append(",");
-                                }
-                                sb.append(metricValue);
-                            }
-                        }
-                        sb.append("\n");
-                        b.write(sb.toString());
+                        writeData(b);
                     } else {
                         Thread.sleep(2);
                     }
-                    if((timeTracker.get() - lastFlush) / 1000.0 >= flushInterval ) {
+                    if ((timeTracker.get() - lastFlush) / 1000.0 >= flushInterval) {
                         lastFlush = timeTracker.get();
                         b.flush();
                     }
@@ -110,6 +113,7 @@ public class ProfilerThread  implements Runnable {
                     break;
                 }
             }
+            writeData(b);
         } catch (IOException ex) {
             log.error("Error while writing file", ex);
         }

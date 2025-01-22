@@ -10,6 +10,9 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 
+import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import java.io.File;
 
@@ -48,6 +51,10 @@ public class NoiseMapParameters {
     boolean computeLEvening = true;
     boolean computeLNight = true;
     boolean computeLDEN = true;
+
+    /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
+    public double maximumError = 0;
+
     public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
     public int getMaximumRaysOutputCount() {
@@ -207,6 +214,21 @@ public class NoiseMapParameters {
         this.computeLDEN = computeLDEN;
     }
 
+    /**
+     * @return maximum dB Error, stop calculation if the maximum sum of further sources contributions are smaller than this value
+     */
+    public double getMaximumError() {
+        return maximumError;
+    }
+
+    /**
+     * @param maximumError maximum dB Error, stop calculation if the maximum sum of further sources contributions
+     *                    compared to the current level at the receiver position are smaller than this value
+     */
+    public void setMaximumError(double maximumError) {
+        this.maximumError = maximumError;
+    }
+
     public void setMergeSources(boolean mergeSources) {
         this.mergeSources = mergeSources;
     }
@@ -282,9 +304,23 @@ public class NoiseMapParameters {
      * representing the noise levels for different time periods.
      */
     public static class TimePeriodParameters {
-        public double [] dayLevels = null;
-        public double [] eveningLevels = null;
-        public double [] nightLevels = null;
+        public PathFinder.SourcePointInfo source = null;
+        public PathFinder.ReceiverPointInfo receiver = null;
+        public double [] dayLevels = new double[0];
+        public double [] eveningLevels = new double[0];
+        public double [] nightLevels = new double[0];
+
+        public TimePeriodParameters(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
+                                    double[] dayLevels, double[] eveningLevels, double[] nightLevels) {
+            this.source = source;
+            this.receiver = receiver;
+            this.dayLevels = dayLevels;
+            this.eveningLevels = eveningLevels;
+            this.nightLevels = nightLevels;
+        }
+
+        public TimePeriodParameters() {
+        }
 
         /**
          * Gets the noise levels for the specified time period.

@@ -17,13 +17,16 @@ Table definition
 	In the list below, the columns noted with ``*`` are mandatory
 
 * ``THE_GEOM`` *
-	* Description: building's geometry. It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
-	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON``)
+	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
+	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
 * ``HEIGHT`` *
 	* Description: building's height *(in meters)* 
 	* Type: Double
 * ``POP``
 	* Description: number of inhabitant in the building 
+	* Type: Double
+* ``G``
+	* Description: Wall absorption value if g is [0, 1] or wall surface impedance ([N.s.m-4] static air flow resistivity of material) if G is [20, 20000] (default is 0.1 if the column G does not exists)
 	* Type: Double
 
 .. note::

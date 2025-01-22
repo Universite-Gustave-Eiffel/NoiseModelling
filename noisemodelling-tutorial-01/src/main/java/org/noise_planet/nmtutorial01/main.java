@@ -129,6 +129,7 @@ class Main {
         NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         noiseMapParameters.setComputeLDay(true);
+        noiseMapParameters.setExportReceiverPosition(true);
         noiseMapParameters.setComputeLEvening(true);
         noiseMapParameters.setComputeLNight(true);
         noiseMapParameters.setComputeLDEN(true);
@@ -197,10 +198,6 @@ class Main {
         logger.info("Create iso contours");
         int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("LW_ROADS", DBTypes.H2GIS));
         List<Double> isoLevels = IsoSurface.NF31_133_ISO; // default values
-        sql.execute("ALTER TABLE " + noiseMapParameters.getlDenTable() +
-                " ADD COLUMN THE_GEOM GEOMETRY");
-        sql.execute(" UPDATE "+ noiseMapParameters.getlDenTable()+" SET THE_GEOM = (SELECT THE_GEOM FROM RECEIVERS R " +
-                "WHERE R.PK = " + noiseMapParameters.getlDenTable() + ".IDRECEIVER)");
         IsoSurface isoSurface = new IsoSurface(isoLevels, srid);
         isoSurface.setSmoothCoefficient(0.5);
         isoSurface.setPointTable(TableLocation.parse(noiseMapParameters.getlDenTable(), dbType).toString());

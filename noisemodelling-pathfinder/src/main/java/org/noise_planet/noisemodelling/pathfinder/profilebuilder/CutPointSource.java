@@ -10,6 +10,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 public class CutPointSource  extends CutPoint {
@@ -23,7 +24,24 @@ public class CutPointSource  extends CutPoint {
     }
 
     public CutPointSource(Coordinate location) {
-        this.coordinate = location;
+        super(location);
+    }
+
+    public CutPointSource(Coordinate coordinate, double li) {
+        super(coordinate);
+        this.li = li;
+    }
+
+    /**
+     * Generate default point source without information on DEM (source at 0.05 above ground level)
+     * @param sourcePointInfo
+     */
+    public CutPointSource(PathFinder.SourcePointInfo sourcePointInfo) {
+        super(sourcePointInfo.position, sourcePointInfo.position.z - 0.05, 0);
+        this.sourcePk = sourcePointInfo.getSourcePk();
+        this.li = sourcePointInfo.li;
+        this.orientation = sourcePointInfo.orientation;
+        this.id = sourcePointInfo.sourceIndex;
     }
 
     public CutPointSource(CutPoint src) {
@@ -56,5 +74,20 @@ public class CutPointSource  extends CutPoint {
                 "\n, zGround=" + zGround +
                 "\n, groundCoefficient=" + groundCoefficient +
                 "\n}\n";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CutPointSource that = (CutPointSource) o;
+        return sourcePk == that.sourcePk && id == that.id;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Long.hashCode(sourcePk);
+        result = 31 * result + id;
+        return result;
     }
 }

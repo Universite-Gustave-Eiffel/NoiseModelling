@@ -78,7 +78,7 @@ public class AttenuationCnossos {
      * @return Attenuated sound level. Take only account of geometric dispersion
      * of sound wave.
      */
-    private static double getADiv(double distance) {
+    public static double getADiv(double distance) {
         return 20*log10(distance)+11;
     }
 
@@ -390,17 +390,16 @@ public class AttenuationCnossos {
 
     /**
      * Compute AAtm
-     * @param data
-     * @param distance
+     * @param alphaAtmosphericKm Absorption per km
+     * @param distance Distance (m)
      * @return list double with the values of AAtm
      */
-    public static double[] aAtm(AttenuationCnossosParameters data, double distance) {
+    public static double[] aAtm(double[] alphaAtmosphericKm, double distance) {
         // init
-        double[] aAtm = new double[data.freq_lvl.size()];
+        double[] aAtm = new double[alphaAtmosphericKm.length];
         // init atmosphere
-        double[] alpha_atmo = data.getAlpha_atmo();
-        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-            aAtm[idfreq] = getAAtm(distance, alpha_atmo[idfreq]);
+        for (int idfreq = 0; idfreq < aAtm.length; idfreq++) {
+            aAtm[idfreq] = getAAtm(distance, alphaAtmosphericKm[idfreq]);
         }
         return aAtm;
     }

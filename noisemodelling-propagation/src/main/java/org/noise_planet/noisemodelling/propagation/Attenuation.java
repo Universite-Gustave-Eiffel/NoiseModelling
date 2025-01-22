@@ -75,10 +75,11 @@ public class Attenuation implements IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     *
+     * @param receiver
      */
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
 
     }
 
@@ -90,12 +91,17 @@ public class Attenuation implements IComputePathsOut {
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         final Scene scene = inputData;
-        CnossosPath cnossosPath = CnossosPathBuilder.computeAttenuationFromCutProfile(cutProfile, scene.isBodyBarrier(),
+        CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.freq_lvl, scene.gS);
         if(cnossosPath != null) {
-            addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
+            double[] power = addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }
         return PathSearchStrategy.CONTINUE;
+    }
+
+    @Override
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+
     }
 
     /**
@@ -112,8 +118,8 @@ public class Attenuation implements IComputePathsOut {
         }
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(receiver.receiverPk,receiver.id,
-                    source.sourcePk, source.id, aGlobalMeteo, receiver.coordinate));
+            receiversAttenuationLevels.add(new SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
+                    new PathFinder.SourcePointInfo(source), aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -152,7 +158,7 @@ public class Attenuation implements IComputePathsOut {
             //ADiv computation
             double[] aDiv = AttenuationCnossos.aDiv(proPathParameters, data);
             //AAtm computation
-            double[] aAtm = AttenuationCnossos.aAtm(data, proPathParameters.getSRSegment().d);
+            double[] aAtm = AttenuationCnossos.aAtm(data.getAlpha_atmo(), proPathParameters.getSRSegment().d);
             //Reflexion computation
             double[] aRef = AttenuationCnossos.evaluateAref(proPathParameters, data);
             //For testing purpose
@@ -426,37 +432,19 @@ public class Attenuation implements IComputePathsOut {
 
 
     public static class SourceReceiverAttenuation {
-
-        /**
-         * Source primary key. -1 if it is the receiver values merged from multiple sources. In this case the value is
-         * not attenuation but spl at receiver position
-         */
-        public final long sourceId;
-
-        /**
-         * Receiver primary key.
-         */
-        public final long receiverId;
-
-        /** Source index in the sub-domain */
-        public final int sourceIndex;
-        public final int receiverIndex;
+        public final PathFinder.ReceiverPointInfo receiver;
+        public final PathFinder.SourcePointInfo source;
 
         /**
          * Attenuation in dB or Spl in dB or dB(A)
          */
         public final double[] value;
-        public final Coordinate receiverPosition;
 
-        public SourceReceiverAttenuation(long receiverId,int receiverIndex, long sourceId, int sourceIndex, double[] value, Coordinate receiverPosition) {
-            this.sourceId = sourceId;
-            this.receiverId = receiverId;
-            this.sourceIndex = sourceIndex;
-            this.receiverIndex = receiverIndex;
+        public SourceReceiverAttenuation(PathFinder.ReceiverPointInfo receiver, PathFinder.SourcePointInfo source, double[] value) {
+            this.receiver = receiver;
+            this.source = source;
             this.value = value;
-            this.receiverPosition = receiverPosition;
         }
-
     }
 
 

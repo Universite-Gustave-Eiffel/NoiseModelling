@@ -13,6 +13,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -42,10 +43,11 @@ public class PathFinderVisitor implements IComputePathsOut {
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
-     * @param receiverId
+     *
+     * @param receiver
      */
     @Override
-    public void finalizeReceiver(int receiverId) {
+    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
 
     }
 
@@ -61,6 +63,11 @@ public class PathFinderVisitor implements IComputePathsOut {
             cutProfiles.add(cutProfile);
         }
         return PathSearchStrategy.CONTINUE;
+    }
+
+    @Override
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+
     }
 
     /**

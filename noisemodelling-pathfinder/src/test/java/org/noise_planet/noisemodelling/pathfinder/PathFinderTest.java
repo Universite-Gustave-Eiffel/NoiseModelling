@@ -1604,12 +1604,12 @@ public class PathFinderTest {
                 .hEdgeDiff(true)
                 .vEdgeDiff(true)
                 .setGs(0.5)
+                .setMaximumPropagationDistance(5000) // Left and right path further away than default 1200m maximum distance
                 .build();
         rayData.reflexionOrder=1;
         PathFinderVisitor propDataOut = new PathFinderVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
-
         computeRays.run(propDataOut);
 
         // Expected Values

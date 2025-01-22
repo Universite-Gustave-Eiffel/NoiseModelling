@@ -88,6 +88,16 @@ public class ProfileBuilderDecorator {
     }
 
     /**
+     * Maximum source distance
+     * @param maximumPropagationDistance Maximum source distance
+     * @return
+     */
+    public ProfileBuilderDecorator setMaximumPropagationDistance(double maximumPropagationDistance) {
+        data.maxSrcDist = maximumPropagationDistance;
+        return this;
+    }
+
+    /**
      *
      * @return
      */

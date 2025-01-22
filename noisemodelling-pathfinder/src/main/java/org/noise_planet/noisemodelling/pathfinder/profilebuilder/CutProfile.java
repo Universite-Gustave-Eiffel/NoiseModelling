@@ -151,8 +151,6 @@ public class CutProfile {
 
 
     /**
-     *
-     * @param pts points
      * @return @return the computed coordinate list
      */
     public List<Coordinate> computePts2D() {
