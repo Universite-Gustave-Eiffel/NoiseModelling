@@ -22,6 +22,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
@@ -227,7 +228,25 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
-    public void testDelaunayGrid() {
+    void testDelaunayGridReduceExtent() {
+        def sql = new Sql(connection)
+
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                              "sourcesTableName" : "ROADS",
+                                              "fenceNegativeBuffer": 500]);
+
+
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        Envelope envelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse("RECEIVERS")).envelopeInternal
+        assertEquals(1127409.17, envelope.getArea(), 1.0)
+    }
+
+    void testDelaunayGrid() {
         def sql = new Sql(connection)
 
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())

@@ -29,14 +29,15 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 
 import org.noise_planet.noisemodelling.emission.*
-import org.noise_planet.noisemodelling.pathfinder.*
+import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -126,9 +127,18 @@ inputs = [
                 name        : 'Create IsoSurfaces over buildings',
                 title       : 'Create IsoSurfaces over buildings',
                 description : 'If enabled, isosurfaces will be visible at the location of buildings </br></br>' +
-                              '&#128736; Default value: <b>false </b>',,
+                              '&#128736; Default value: <b>false </b>',
                 min         : 0, max: 1,
                 type        : Boolean.class
+        ],
+        fenceNegativeBuffer             : [
+                name       : 'Negative buffer',
+                title      : 'Negative buffer',
+                description: 'Reduce the fence(parameter, or sound sources and buildings extent)' +
+                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT).</br> </br>' +
+                        '&#128736; Default value: <b>0 </b>',
+                min        : 0, max: 1,
+                type       : Double.class
         ]
 ]
 
@@ -244,7 +254,7 @@ def exec(Connection connection, input) {
     sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
     // Generate receivers grid for noise map rendering
-    TriangleNoiseMap noiseMap = new TriangleNoiseMap(building_table_name, sources_table_name)
+    DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
 
     if (fence != null) {
         // Reproject fence
@@ -255,7 +265,7 @@ def exec(Connection connection, input) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
-            noiseMap.setMainEnvelope(fence.getEnvelopeInternal())
+            delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
         } else {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
@@ -263,33 +273,43 @@ def exec(Connection connection, input) {
 
 
     // Avoid loading to much geometries when doing Delaunay triangulation
-    noiseMap.setMaximumPropagationDistance(maxCellDist)
+    delaunayReceiversMaker.setMaximumPropagationDistance(maxCellDist)
     // Receiver height relative to the ground
-    noiseMap.setReceiverHeight(height)
+    delaunayReceiversMaker.setReceiverHeight(height)
     // No receivers closer than road width distance
-    noiseMap.setRoadWidth(roadWidth)
+    delaunayReceiversMaker.setRoadWidth(roadWidth)
     // No triangles larger than provided area
-    noiseMap.setMaximumArea(maxArea)
+    delaunayReceiversMaker.setMaximumArea(maxArea)
 
-    noiseMap.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
+    delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
     logger.info("Delaunay initialize")
-    noiseMap.initialize(connection, new EmptyProgressVisitor())
+    delaunayReceiversMaker.initialize(connection, new EmptyProgressVisitor())
+
+    // Apply negative envelope parameter
+    if (input.containsKey('fenceNegativeBuffer')) {
+        double negativeBuffer = input['fenceNegativeBuffer'] as Double
+        if(negativeBuffer > 0) {
+            Envelope envelope = delaunayReceiversMaker.getMainEnvelope()
+            envelope.expandBy(-negativeBuffer)
+            delaunayReceiversMaker.setMainEnvelope(envelope)
+        }
+    }
 
     if(input['errorDumpFolder']) {
         // Will write the input mesh in this folder in order to
         // help debugging delaunay triangulation
-        noiseMap.setExceptionDumpFolder(input['errorDumpFolder'] as String)
+        delaunayReceiversMaker.setExceptionDumpFolder(input['errorDumpFolder'] as String)
     }
 
     AtomicInteger pk = new AtomicInteger(0)
-    ProgressVisitor progressVisitorNM = progressLogger.subProcess(noiseMap.getGridDim() * noiseMap.getGridDim())
+    ProgressVisitor progressVisitorNM = progressLogger.subProcess(delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
 
     try {
-        for (int i = 0; i < noiseMap.getGridDim(); i++) {
-            for (int j = 0; j < noiseMap.getGridDim(); j++) {
-                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim())
-                noiseMap.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
+        for (int i = 0; i < delaunayReceiversMaker.getGridDim(); i++) {
+            for (int j = 0; j < delaunayReceiversMaker.getGridDim(); j++) {
+                logger.info("Compute cell " + (i * delaunayReceiversMaker.getGridDim() + j + 1) + " of " + delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
+                delaunayReceiversMaker.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
                 progressVisitorNM.endStep()
             }
         }

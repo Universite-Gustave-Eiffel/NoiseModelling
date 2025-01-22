@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
 
-    @Test
+
     void testTutorialPointSource() {
         Sql sql = new Sql(connection)
 
@@ -105,7 +105,7 @@ class TestTutorials extends JdbcTestCase {
 
     }
 
-    @Test
+
     void testTutorialPointSourceDirectivity() {
         Logger logger = LoggerFactory.getLogger(TestTutorials.class)
 
@@ -149,8 +149,9 @@ class TestTutorials extends JdbcTestCase {
         logger.info(new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
                                                           sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
-        //new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
-        //new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
+
+        new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
+        new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
