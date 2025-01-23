@@ -379,45 +379,4 @@ public class LdenNoiseMapLoader extends NoiseMapLoader {
             propagationProcessDataFactory.initialize(connection, this);
         }
     }
-
-    /**
-     * A factory interface for creating propagation process data for noise map computation.
-     */
-    public interface PropagationProcessDataFactory {
-
-        /**
-         * Creates a scene object with the given profile builder.
-         * @param builder the profile builder used to construct the scene.
-         * @return the created scene object.
-         */
-        Scene create(ProfileBuilder builder);
-
-        /**
-         * Initializes the propagation process data factory.
-         * @param connection             the database connection to be used for initialization.
-         * @param ldenNoiseMapLoader the noise map by receiver maker object associated with the computation process.
-         * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
-         */
-        void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) throws SQLException;
-    }
-
-    /**
-     * A factory interface for creating objects that compute rays out for noise map computation.
-     */
-    public interface IComputeRaysOutFactory {
-
-        /**
-         * Creates an object that computes paths out for noise map computation.
-         *
-         * @param threadData       the scene data for the current computation thread.
-         * @param pathDataDay      the attenuation parameters for daytime computation.
-         * @param pathDataEvening  the attenuation parameters for evening computation.
-         * @param pathDataNight    the attenuation parameters for nighttime computation.
-         * @return an object that computes paths out for noise map computation.
-         */
-        IComputePathsOut create(Scene threadData, AttenuationCnossosParameters pathDataDay,
-                                AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight);
-    }
-
-
 }

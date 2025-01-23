@@ -38,7 +38,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
-public class NoiseEmissionMaker extends Scene {
+public class LdenScene extends Scene {
     public Map<String, Integer> sourceFields = null;
 
     // Source value in energetic  e = pow(10, dbVal / 10.0)
@@ -58,7 +58,7 @@ public class NoiseEmissionMaker extends Scene {
      * @param builder
      * @param ldenNoiseMapParameters
      */
-    public NoiseEmissionMaker(ProfileBuilder builder, LdenNoiseMapParameters ldenNoiseMapParameters) {
+    public LdenScene(ProfileBuilder builder, LdenNoiseMapParameters ldenNoiseMapParameters) {
         super(builder);
         this.ldenNoiseMapParameters = ldenNoiseMapParameters;
     }
@@ -492,22 +492,4 @@ public class NoiseEmissionMaker extends Scene {
         }
         return new double[][] {ld, le, ln};
     }
-
-    /**
-     * Retrieves the maximal source power for the specified source ID.
-     * @param sourceId
-     * @return an array containing the maximal source power values for the specified source ID.
-     */
-    public double[] getMaximalSourcePower(int sourceId) {
-        if(ldenNoiseMapParameters.computeLDay && sourceId < wjSourcesD.size()) {
-            return wjSourcesD.get(sourceId);
-        } else if(ldenNoiseMapParameters.computeLEvening && sourceId < wjSourcesE.size()) {
-            return wjSourcesE.get(sourceId);
-        } else if(ldenNoiseMapParameters.computeLNight && sourceId < wjSourcesN.size()) {
-            return wjSourcesN.get(sourceId);
-        } else {
-            return new double[0];
-        }
-    }
-
 }

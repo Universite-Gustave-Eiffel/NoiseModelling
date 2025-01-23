@@ -28,8 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDba;
 
-
-public class NoiseMapInStack implements IComputePathsOut {
+/**
+ * Instance collecting vertical profiles, compute attenuation and push the results on thread safe arrays
+ */
+public class LdenComputePathsOut implements IComputePathsOut {
     NoiseMap noiseMapComputeRaysOut;
     LdenNoiseMapParameters ldenNoiseMapParameters;
     public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
@@ -63,9 +65,9 @@ public class NoiseMapInStack implements IComputePathsOut {
      * Constructs a NoiseMapInStack object with a multi-threaded parent NoiseMap instance.
      * @param multiThreadParent
      */
-    public NoiseMapInStack(NoiseMap multiThreadParent) {
+    public LdenComputePathsOut(NoiseMap multiThreadParent) {
         this.noiseMapComputeRaysOut = multiThreadParent;
-        this.ldenNoiseMapParameters = multiThreadParent.noiseEmissionMaker.ldenNoiseMapParameters;
+        this.ldenNoiseMapParameters = multiThreadParent.ldenScene.ldenNoiseMapParameters;
     }
 
     /**
@@ -207,11 +209,11 @@ public class NoiseMapInStack implements IComputePathsOut {
             LdenNoiseMapParameters.TimePeriodParameters denWAttenuation = computeLdenAttenuation(cnossosPath);
             if(ldenNoiseMapParameters.maximumError > 0) {
                 // Add power to evaluate potential error if ignoring remaining sources
-                NoiseEmissionMaker noiseEmissionMaker = noiseMapComputeRaysOut.noiseEmissionMaker;
+                LdenScene ldenScene = noiseMapComputeRaysOut.ldenScene;
                 double[] lden = computeLden(denWAttenuation,
-                        getSpectrum(noiseEmissionMaker.wjSourcesD, source.id),
-                        getSpectrum(noiseEmissionMaker.wjSourcesE, source.id),
-                        getSpectrum(noiseEmissionMaker.wjSourcesN, source.id), new LdenNoiseMapParameters.TimePeriodParameters());
+                        getSpectrum(ldenScene.wjSourcesD, source.id),
+                        getSpectrum(ldenScene.wjSourcesE, source.id),
+                        getSpectrum(ldenScene.wjSourcesN, source.id), new LdenNoiseMapParameters.TimePeriodParameters());
                 addGlobalReceiverLevel(lden);
 
                 double currentLevelAtReceiver = wToDba(sumArray(wjAtReceiver));
@@ -247,16 +249,16 @@ public class NoiseMapInStack implements IComputePathsOut {
         if(ldenNoiseMapParameters.getMaximumError() > 0) {
             maximumWjExpectedSplAtReceiver.clear();
             sumMaximumRemainingWjExpectedSplAtReceiver = 0;
-            NoiseEmissionMaker noiseEmissionMaker = noiseMapComputeRaysOut.noiseEmissionMaker;
+            LdenScene ldenScene = noiseMapComputeRaysOut.ldenScene;
             LdenNoiseMapParameters.TimePeriodParameters cachedValues = new LdenNoiseMapParameters.TimePeriodParameters();
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 LdenNoiseMapParameters.TimePeriodParameters ldenAttenuation = computeFastLdenAttenuation(sourcePointInfo, receiver);
                 double[] wjReceiver = computeLden(ldenAttenuation,
-                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesD,
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(ldenScene.wjSourcesD,
                                 sourcePointInfo.sourceIndex), sourcePointInfo.li),
-                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesE,
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(ldenScene.wjSourcesE,
                                 sourcePointInfo.sourceIndex), sourcePointInfo.li),
-                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(noiseEmissionMaker.wjSourcesN,
+                        AcousticIndicatorsFunctions.multiplicationArray(getSpectrum(ldenScene.wjSourcesN,
                                 sourcePointInfo.sourceIndex), sourcePointInfo.li),
                             cachedValues);
                     double globalReceiver = sumArray(wjReceiver);
@@ -372,7 +374,7 @@ public class NoiseMapInStack implements IComputePathsOut {
             }
             this.pathParameters.clear();
         }
-        NoiseEmissionMaker noiseEmissionMaker = noiseMapComputeRaysOut.noiseEmissionMaker;
+        LdenScene ldenScene = noiseMapComputeRaysOut.ldenScene;
         Map<Integer, LdenNoiseMapParameters.TimePeriodParameters> attenuationPerSource = receiverAttenuationPerSource;
 
         final int spectrumSize = noiseMapComputeRaysOut.inputData.profileBuilder.frequencyArray.size();
@@ -387,9 +389,9 @@ public class NoiseMapInStack implements IComputePathsOut {
             LdenNoiseMapParameters.TimePeriodParameters denAttenuation = timePeriodParametersEntry.getValue();
             // Apply attenuation to emission level
             double[] ldenSpectrum = computeLden(denAttenuation,
-                    getSpectrum(noiseEmissionMaker.wjSourcesD, sourceId),
-                    getSpectrum(noiseEmissionMaker.wjSourcesE, sourceId),
-                    getSpectrum(noiseEmissionMaker.wjSourcesN, sourceId),
+                    getSpectrum(ldenScene.wjSourcesD, sourceId),
+                    getSpectrum(ldenScene.wjSourcesE, sourceId),
+                    getSpectrum(ldenScene.wjSourcesN, sourceId),
                     denValues);
             // Store receiver level in appropriate stack
             if (ldenNoiseMapParameters.mergeSources) {

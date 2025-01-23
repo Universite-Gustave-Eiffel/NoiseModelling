@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Create SQL Tables from a stream of noise levels
  */
-public class NoiseMapMaker implements LdenNoiseMapLoader.PropagationProcessDataFactory, LdenNoiseMapLoader.IComputeRaysOutFactory, ProfilerThread.Metric {
+public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRaysOutFactory, ProfilerThread.Metric {
     LdenNoiseMapParameters ldenNoiseMapParameters;
     NoiseMapWriter noiseMapWriter;
     Thread tableWriterThread;
@@ -142,10 +142,10 @@ public class NoiseMapMaker implements LdenNoiseMapLoader.PropagationProcessDataF
      * @return A new instance of NoiseEmissionMaker initialized with the provided ProfileBuilder and NoiseMapParameters.
      */
     @Override
-    public NoiseEmissionMaker create(ProfileBuilder builder) {
-        NoiseEmissionMaker noiseEmissionMaker = new NoiseEmissionMaker(builder, ldenNoiseMapParameters);
-        noiseEmissionMaker.setDirectionAttributes(directionAttributes);
-        return noiseEmissionMaker;
+    public LdenScene create(ProfileBuilder builder) {
+        LdenScene ldenScene = new LdenScene(builder, ldenNoiseMapParameters);
+        ldenScene.setDirectionAttributes(directionAttributes);
+        return ldenScene;
     }
 
     /**
@@ -160,7 +160,7 @@ public class NoiseMapMaker implements LdenNoiseMapLoader.PropagationProcessDataF
     public IComputePathsOut create(Scene threadData, AttenuationCnossosParameters pathDataDay,
                                    AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight) {
         return new NoiseMap(pathDataDay, pathDataEvening, pathDataNight,
-                (NoiseEmissionMaker)threadData, AttenuatedPaths, ldenNoiseMapParameters);
+                (LdenScene)threadData, AttenuatedPaths, ldenNoiseMapParameters);
     }
 
 

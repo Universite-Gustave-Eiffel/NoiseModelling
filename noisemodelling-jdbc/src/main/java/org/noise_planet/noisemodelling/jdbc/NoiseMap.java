@@ -15,7 +15,7 @@ import org.noise_planet.noisemodelling.propagation.Attenuation;
 
 public class NoiseMap extends Attenuation {
     AttenuatedPaths attenuatedPaths;
-    NoiseEmissionMaker noiseEmissionMaker;
+    LdenScene ldenScene;
     public AttenuationCnossosParameters dayPathData;
     public AttenuationCnossosParameters eveningPathData;
     public AttenuationCnossosParameters nightPathData;
@@ -31,12 +31,12 @@ public class NoiseMap extends Attenuation {
      * @param ldenNoiseMapParameters
      */
     public NoiseMap(AttenuationCnossosParameters dayPathData, AttenuationCnossosParameters eveningPathData,
-                    AttenuationCnossosParameters nightPathData, NoiseEmissionMaker inputData,
+                    AttenuationCnossosParameters nightPathData, LdenScene inputData,
                     AttenuatedPaths attenuatedPaths, LdenNoiseMapParameters ldenNoiseMapParameters) {
         super(inputData.ldenNoiseMapParameters.exportRaysMethod != LdenNoiseMapParameters.ExportRaysMethods.NONE, null, inputData);
         this.exportAttenuationMatrix = inputData.ldenNoiseMapParameters.exportAttenuationMatrix;
         this.attenuatedPaths = attenuatedPaths;
-        this.noiseEmissionMaker = inputData;
+        this.ldenScene = inputData;
         this.dayPathData = dayPathData;
         this.eveningPathData = eveningPathData;
         this.nightPathData = nightPathData;
@@ -49,7 +49,7 @@ public class NoiseMap extends Attenuation {
      */
     @Override
     public IComputePathsOut subProcess() {
-        return new NoiseMapInStack(this);
+        return new LdenComputePathsOut(this);
     }
 
 

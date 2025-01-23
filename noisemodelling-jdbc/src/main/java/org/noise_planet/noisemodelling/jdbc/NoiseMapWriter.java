@@ -24,7 +24,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.stream.DoubleStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;

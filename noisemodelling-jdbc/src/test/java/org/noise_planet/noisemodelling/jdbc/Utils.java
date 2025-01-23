@@ -75,7 +75,7 @@ public class Utils {
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
-    public static class JDBCPropagationData implements LdenNoiseMapLoader.PropagationProcessDataFactory {
+    public static class JDBCPropagationData implements PropagationProcessDataFactory {
         @Override
         public Scene create(ProfileBuilder builder) {
             return new DirectPathsParameters(builder);
@@ -87,7 +87,7 @@ public class Utils {
         }
     }
 
-    public static class JDBCComputeRaysOut implements LdenNoiseMapLoader.IComputeRaysOutFactory {
+    public static class JDBCComputeRaysOut implements IComputeRaysOutFactory {
         boolean keepRays;
 
         public JDBCComputeRaysOut(boolean keepRays) {

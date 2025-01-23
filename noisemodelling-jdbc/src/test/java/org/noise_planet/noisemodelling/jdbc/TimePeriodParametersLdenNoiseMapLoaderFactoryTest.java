@@ -83,7 +83,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
         ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters());
         ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters());
         ldenNoiseMapParameters.setCoefficientVersion(1);
-        NoiseEmissionMaker process = new NoiseEmissionMaker(null, ldenNoiseMapParameters);
+        LdenScene process = new LdenScene(null, ldenNoiseMapParameters);
         try(Statement st = connection.createStatement()) {
             double lv_speed = 70;
             int lv_per_hour = 1000;
@@ -367,7 +367,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
         SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
-        NoiseEmissionMaker.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+        LdenScene.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
                 "LW_RAILWAY");
 
         // Get Class to compute LW
@@ -932,7 +932,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
                 IComputePathsOut ret = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 if(ret instanceof NoiseMap) {
                     NoiseMap out = (NoiseMap)ret;
-                    for(Coordinate v : out.noiseEmissionMaker.profileBuilder.getVertices()) {
+                    for(Coordinate v : out.ldenScene.profileBuilder.getVertices()) {
                         assertEquals(0.0, v.z, 1e-6);
                     }
                 }
