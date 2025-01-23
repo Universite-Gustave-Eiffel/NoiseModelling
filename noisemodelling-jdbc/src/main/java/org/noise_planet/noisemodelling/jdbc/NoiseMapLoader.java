@@ -45,9 +45,6 @@ import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 public abstract class NoiseMapLoader {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-    AttenuationCnossosParameters attenuationCnossosParametersDay = new AttenuationCnossosParameters();
-    AttenuationCnossosParameters attenuationCnossosParametersEvening = new AttenuationCnossosParameters();
-    AttenuationCnossosParameters attenuationCnossosParametersNight = new AttenuationCnossosParameters();
     Logger logger = LoggerFactory.getLogger(NoiseMapLoader.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -171,60 +168,6 @@ public abstract class NoiseMapLoader {
         return directionAttributes;
     }
 
-    /**
-     * Retrieves the propagation process path data for the specified time period.
-     * @param time_period the time period for which to retrieve the propagation process path data.
-     * @return the attenuation Cnossos parameters for the specified time period.
-     */
-    public AttenuationCnossosParameters getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD time_period) {
-        switch (time_period) {
-            case DAY:
-                return attenuationCnossosParametersDay;
-            case EVENING:
-                return attenuationCnossosParametersEvening;
-            default:
-                return attenuationCnossosParametersNight;
-        }
-    }
-
-    /**
-     * Sets the propagation process path data for the specified time period.
-     * @param time_period the time period for which to set the propagation process path data.
-     * @param attenuationCnossosParameters the attenuation Cnossos parameters to set.
-     */
-    public void setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
-        switch (time_period) {
-            case DAY:
-                attenuationCnossosParametersDay = attenuationCnossosParameters;
-            case EVENING:
-                attenuationCnossosParametersEvening = attenuationCnossosParameters;
-            default:
-                attenuationCnossosParametersNight = attenuationCnossosParameters;
-        }
-    }
-    public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
-        return attenuationCnossosParametersDay;
-    }
-
-    public void setPropagationProcessPathDataDay(AttenuationCnossosParameters attenuationCnossosParametersDay) {
-        this.attenuationCnossosParametersDay = attenuationCnossosParametersDay;
-    }
-
-    public AttenuationCnossosParameters getPropagationProcessPathDataEvening() {
-        return attenuationCnossosParametersEvening;
-    }
-
-    public void setPropagationProcessPathDataEvening(AttenuationCnossosParameters attenuationCnossosParametersEvening) {
-        this.attenuationCnossosParametersEvening = attenuationCnossosParametersEvening;
-    }
-
-    public AttenuationCnossosParameters getPropagationProcessPathDataNight() {
-        return attenuationCnossosParametersNight;
-    }
-
-    public void setPropagationProcessPathDataNight(AttenuationCnossosParameters attenuationCnossosParametersNight) {
-        this.attenuationCnossosParametersNight = attenuationCnossosParametersNight;
-    }
 
     public boolean isVerbose() {
         return verbose;
@@ -457,11 +400,7 @@ public abstract class NoiseMapLoader {
                 if(!pkBuilding.isEmpty()) {
                     columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
                 }
-                double oldAlpha = wallAbsorption;
-                List<Double> alphaList = new ArrayList<>(attenuationCnossosParametersDay.freq_lvl.size());
-                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
-                }
+                double recordGValue = this.wallAbsorption;
                 while (rs.next()) {
                     //if we don't have height of building
                     Geometry building = rs.getGeometry();
@@ -474,15 +413,9 @@ public abstract class NoiseMapLoader {
                             logger.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
-                            if(fetchAlpha && Double.compare(rs.getDouble(alphaFieldName), oldAlpha) != 0 ) {
-                                // Compute building absorption value
-                                alphaList.clear();
-                                oldAlpha = rs.getDouble(alphaFieldName);
-                                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
-                                }
+                            if(fetchAlpha) {
+                                recordGValue = rs.getDouble(alphaFieldName);
                             }
-
                             long pk = -1;
                             if(columnIndex != 0) {
                                 pk = rs.getLong(columnIndex);
@@ -492,7 +425,7 @@ public abstract class NoiseMapLoader {
                                 if(geometry instanceof Polygon && !geometry.isEmpty()) {
                                     Building poly = new Building((Polygon) geometry,
                                             heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                            alphaList, pk, iszBuildings());
+                                            recordGValue, pk, iszBuildings());
                                     buildings.add(poly);
                                 } else if (geometry instanceof LineString) {
                                     // decompose linestring into segments
@@ -501,7 +434,7 @@ public abstract class NoiseMapLoader {
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
-                                        wall.setAlpha(alphaList);
+                                        wall.setG(recordGValue);
                                         wall.setPrimaryKey(pk);
                                         wall.setHeight(heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField));
                                         walls.add(wall);
@@ -593,7 +526,7 @@ public abstract class NoiseMapLoader {
     abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
 
     /**
-     * Fetch scene attributes, compute best computation cell size.
+     * Fetch scene attributes, compute the best computation cell size.
      * @param connection Active connection
      * @throws java.sql.SQLException
      */

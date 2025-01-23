@@ -19,7 +19,7 @@ public class NoiseMap extends Attenuation {
     public AttenuationCnossosParameters dayPathData;
     public AttenuationCnossosParameters eveningPathData;
     public AttenuationCnossosParameters nightPathData;
-    public NoiseMapParameters noiseMapParameters;
+    public LdenNoiseMapParameters ldenNoiseMapParameters;
 
     /**
      * Create NoiseMap constructor
@@ -28,19 +28,19 @@ public class NoiseMap extends Attenuation {
      * @param nightPathData
      * @param inputData
      * @param attenuatedPaths
-     * @param noiseMapParameters
+     * @param ldenNoiseMapParameters
      */
     public NoiseMap(AttenuationCnossosParameters dayPathData, AttenuationCnossosParameters eveningPathData,
                     AttenuationCnossosParameters nightPathData, NoiseEmissionMaker inputData,
-                    AttenuatedPaths attenuatedPaths, NoiseMapParameters noiseMapParameters) {
-        super(inputData.noiseMapParameters.exportRaysMethod != NoiseMapParameters.ExportRaysMethods.NONE, null, inputData);
-        this.exportAttenuationMatrix = inputData.noiseMapParameters.exportAttenuationMatrix;
+                    AttenuatedPaths attenuatedPaths, LdenNoiseMapParameters ldenNoiseMapParameters) {
+        super(inputData.ldenNoiseMapParameters.exportRaysMethod != LdenNoiseMapParameters.ExportRaysMethods.NONE, null, inputData);
+        this.exportAttenuationMatrix = inputData.ldenNoiseMapParameters.exportAttenuationMatrix;
         this.attenuatedPaths = attenuatedPaths;
         this.noiseEmissionMaker = inputData;
         this.dayPathData = dayPathData;
         this.eveningPathData = eveningPathData;
         this.nightPathData = nightPathData;
-        this.noiseMapParameters = noiseMapParameters;
+        this.ldenNoiseMapParameters = ldenNoiseMapParameters;
     }
 
     /**

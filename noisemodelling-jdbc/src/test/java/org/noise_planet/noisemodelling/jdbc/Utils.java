@@ -71,23 +71,23 @@ public class Utils {
     }
 
     public static String getRunScriptRes(String fileName) throws URISyntaxException {
-        File resourceFile = new File(NoiseMapByReceiverMakerTest.class.getResource(fileName).toURI());
+        File resourceFile = new File(LdenNoiseMapLoaderTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
-    public static class JDBCPropagationData implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
+    public static class JDBCPropagationData implements LdenNoiseMapLoader.PropagationProcessDataFactory {
         @Override
         public Scene create(ProfileBuilder builder) {
             return new DirectPathsParameters(builder);
         }
 
         @Override
-        public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) {
+        public void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) {
 
         }
     }
 
-    public static class JDBCComputeRaysOut implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
+    public static class JDBCComputeRaysOut implements LdenNoiseMapLoader.IComputeRaysOutFactory {
         boolean keepRays;
 
         public JDBCComputeRaysOut(boolean keepRays) {

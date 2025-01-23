@@ -7,7 +7,6 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.utilities.GeometryMetaData;
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
@@ -15,9 +14,9 @@ import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters;
+import org.noise_planet.noisemodelling.jdbc.LdenNoiseMapParameters;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapMaker;
-import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
+import org.noise_planet.noisemodelling.jdbc.LdenNoiseMapLoader;
 import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
@@ -111,46 +110,46 @@ class Main {
                 ValueBoolean.TRUE);
 
         // Init NoiseModelling
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker(tableBuildings.toString(),
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader(tableBuildings.toString(),
                 tableLwRoads.toString(), "RECEIVERS");
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-        noiseMapByReceiverMaker.setThreadCount(1);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100.0);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setThreadCount(1);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
         // Building height field name
-        noiseMapByReceiverMaker.setHeightField(heightField);
+        ldenNoiseMapLoader.setHeightField(heightField);
         // Point cloud height above sea level POINT(X Y Z)
-        noiseMapByReceiverMaker.setDemTable(tableDemLorient.toString());
+        ldenNoiseMapLoader.setDemTable(tableDemLorient.toString());
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
-        NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        noiseMapParameters.setComputeLDay(true);
-        noiseMapParameters.setExportReceiverPosition(true);
-        noiseMapParameters.setComputeLEvening(true);
-        noiseMapParameters.setComputeLNight(true);
-        noiseMapParameters.setComputeLDEN(true);
-        noiseMapParameters.setExportRaysMethod(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
-        noiseMapParameters.setExportAttenuationMatrix(true);
+        ldenNoiseMapParameters.setComputeLDay(true);
+        ldenNoiseMapParameters.setExportReceiverPosition(true);
+        ldenNoiseMapParameters.setComputeLEvening(true);
+        ldenNoiseMapParameters.setComputeLNight(true);
+        ldenNoiseMapParameters.setComputeLDEN(true);
+        ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+        ldenNoiseMapParameters.setExportAttenuationMatrix(true);
 
-        NoiseMapMaker tableWriter = new NoiseMapMaker(connection, noiseMapParameters);
+        NoiseMapMaker tableWriter = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(tableWriter);
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(tableWriter);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(tableWriter);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(tableWriter);
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+        ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
-        noiseMapParameters.setMaximumRaysOutputCount(MAX_OUTPUT_PROPAGATION_PATHS); // do not export more than this number of rays per computation area
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
+        ldenNoiseMapParameters.setMaximumRaysOutputCount(MAX_OUTPUT_PROPAGATION_PATHS); // do not export more than this number of rays per computation area
 
-        noiseMapByReceiverMaker.setGridDim(1);
+        ldenNoiseMapLoader.setGridDim(1);
 
         LocalDateTime now = LocalDateTime.now();
         ProfilerThread profilerThread = new ProfilerThread(Paths.get(workingDir, String.format("profile_%d_%d_%d_%dh%d.csv",
@@ -161,7 +160,7 @@ class Main {
         profilerThread.addMetric(new ReceiverStatsMetric());
         profilerThread.setWriteInterval(60);
         profilerThread.setFlushInterval(60);
-        noiseMapByReceiverMaker.setProfilerThread(profilerThread);
+        ldenNoiseMapLoader.setProfilerThread(profilerThread);
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
@@ -173,11 +172,11 @@ class Main {
             tableWriter.start();
             new Thread(profilerThread).start();
             // Fetch cell identifiers with receivers
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
                 if (out instanceof Attenuation) {
                     Attenuation cellStorage = (Attenuation) out;
@@ -200,15 +199,15 @@ class Main {
         List<Double> isoLevels = IsoSurface.NF31_133_ISO; // default values
         IsoSurface isoSurface = new IsoSurface(isoLevels, srid);
         isoSurface.setSmoothCoefficient(0.5);
-        isoSurface.setPointTable(TableLocation.parse(noiseMapParameters.getlDenTable(), dbType).toString());
+        isoSurface.setPointTable(TableLocation.parse(ldenNoiseMapParameters.getlDenTable(), dbType).toString());
         isoSurface.createTable(connection);
         logger.info("Export iso contours");
         SHPWrite.exportTable(connection, Paths.get(workingDir, isoSurface.getOutputTable()+".shp").toString(),
                 isoSurface.getOutputTable(), ValueBoolean.TRUE);
-        if(JDBCUtilities.tableExists(connection,  noiseMapParameters.getRaysTable())) {
+        if(JDBCUtilities.tableExists(connection,  ldenNoiseMapParameters.getRaysTable())) {
             SHPWrite.exportTable(connection,
-                    Paths.get(workingDir, noiseMapParameters.getRaysTable() + ".shp").toString(),
-                    noiseMapParameters.getRaysTable(), ValueBoolean.TRUE);
+                    Paths.get(workingDir, ldenNoiseMapParameters.getRaysTable() + ".shp").toString(),
+                    ldenNoiseMapParameters.getRaysTable(), ValueBoolean.TRUE);
         }
     }
 

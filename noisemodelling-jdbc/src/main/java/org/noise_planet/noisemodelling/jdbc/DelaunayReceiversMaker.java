@@ -411,7 +411,7 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
-        Scene data = new Scene(null, attenuationCnossosParametersDay.freq_lvl);
+        Scene data = new Scene();
         if(!sourcesTableName.isEmpty()) {
             fetchCellSource(connection, cellEnvelope, data, false);
         }

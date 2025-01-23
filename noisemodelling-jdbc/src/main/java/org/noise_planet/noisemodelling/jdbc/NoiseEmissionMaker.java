@@ -51,16 +51,16 @@ public class NoiseEmissionMaker extends Scene {
      */
     public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
-    public NoiseMapParameters noiseMapParameters;
+    public LdenNoiseMapParameters ldenNoiseMapParameters;
 
     /**
      *  Create NoiseEmissionMaker constructor
      * @param builder
-     * @param noiseMapParameters
+     * @param ldenNoiseMapParameters
      */
-    public NoiseEmissionMaker(ProfileBuilder builder, NoiseMapParameters noiseMapParameters) {
-        super(builder, noiseMapParameters.attenuationCnossosParametersDay.freq_lvl);
-        this.noiseMapParameters = noiseMapParameters;
+    public NoiseEmissionMaker(ProfileBuilder builder, LdenNoiseMapParameters ldenNoiseMapParameters) {
+        super(builder, ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl);
+        this.ldenNoiseMapParameters = ldenNoiseMapParameters;
     }
 
     /**
@@ -222,7 +222,7 @@ public class NoiseEmissionMaker extends Scene {
         this.directionAttributes = directionAttributes;
         // Check if the directivities contain all required frequencies
         directionAttributes.forEach((integer, directivitySphere) -> {
-            freq_lvl.forEach(frequency->{
+            frequencyArray.forEach(frequency->{
                 if(!directivitySphere.coverFrequency(frequency)) {
                     throw new IllegalArgumentException(
                             String.format(Locale.ROOT,
@@ -244,13 +244,13 @@ public class NoiseEmissionMaker extends Scene {
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
         super.addSource(pk, geom, rs);
         double[][] res = computeLw(rs);
-        if(noiseMapParameters.computeLDay || noiseMapParameters.computeLDEN) {
+        if(ldenNoiseMapParameters.computeLDay || ldenNoiseMapParameters.computeLDEN) {
             wjSourcesD.add(res[0]);
         }
-        if(noiseMapParameters.computeLEvening || noiseMapParameters.computeLDEN) {
+        if(ldenNoiseMapParameters.computeLEvening || ldenNoiseMapParameters.computeLDEN) {
             wjSourcesE.add(res[1]);
         }
-        if(noiseMapParameters.computeLNight || noiseMapParameters.computeLDEN) {
+        if(ldenNoiseMapParameters.computeLNight || ldenNoiseMapParameters.computeLDEN) {
             wjSourcesN.add(res[2]);
         }
     }
@@ -310,7 +310,7 @@ public class NoiseEmissionMaker extends Scene {
                 sourceFields.put(fieldName.toUpperCase(), fieldId++);
             }
         }
-        double[] lvl = new double[noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+        double[] lvl = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
         // Set default values
         double tv = 0; // old format "total vehicles"
         double hv = 0; // old format "heavy vehicles"
@@ -412,13 +412,13 @@ public class NoiseEmissionMaker extends Scene {
         }
         // Compute emission
         int idFreq = 0;
-        for (int freq : noiseMapParameters.attenuationCnossosParametersDay.freq_lvl) {
+        for (int freq : ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl) {
             RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed,
                     wbv_speed,lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
                     roadSurface, tsStud, pmStud, junctionDistance, junctionType);
             rsParametersCnossos.setSlopePercentage(slope);
             rsParametersCnossos.setWay(way);
-            rsParametersCnossos.setFileVersion(noiseMapParameters.coefficientVersion);
+            rsParametersCnossos.setFileVersion(ldenNoiseMapParameters.coefficientVersion);
             lvl[idFreq++] = RoadCnossos.evaluate(rsParametersCnossos);
         }
         return lvl;
@@ -434,35 +434,35 @@ public class NoiseEmissionMaker extends Scene {
     public double[][] computeLw(SpatialResultSet rs) throws SQLException, IOException {
 
         // Compute day average level
-        double[] ld = new double[noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-        double[] le = new double[noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-        double[] ln = new double[noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+        double[] ld = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+        double[] le = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+        double[] ln = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
 
-        if (noiseMapParameters.input_mode == NoiseMapParameters.INPUT_MODE.INPUT_MODE_PROBA) {
+        if (ldenNoiseMapParameters.input_mode == LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_PROBA) {
             double val = dbaToW(90.0);
-            for(int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            for(int idfreq = 0; idfreq < ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 ld[idfreq] = dbaToW(val);
                 le[idfreq] = dbaToW(val);
                 ln[idfreq] = dbaToW(val);
             }
-        } else if (noiseMapParameters.input_mode == NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
+        } else if (ldenNoiseMapParameters.input_mode == LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
             // Read average 24h traffic
-            if(noiseMapParameters.computeLDay || noiseMapParameters.computeLDEN) {
-                for (int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
-                    ld[idfreq] = dbaToW(rs.getDouble(noiseMapParameters.lwFrequencyPrepend + "D" + noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
+            if(ldenNoiseMapParameters.computeLDay || ldenNoiseMapParameters.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+                    ld[idfreq] = dbaToW(rs.getDouble(ldenNoiseMapParameters.lwFrequencyPrepend + "D" + ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
                 }
             }
-            if(noiseMapParameters.computeLEvening || noiseMapParameters.computeLDEN) {
-                for (int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
-                    le[idfreq] = dbaToW(rs.getDouble(noiseMapParameters.lwFrequencyPrepend + "E" + noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
+            if(ldenNoiseMapParameters.computeLEvening || ldenNoiseMapParameters.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+                    le[idfreq] = dbaToW(rs.getDouble(ldenNoiseMapParameters.lwFrequencyPrepend + "E" + ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
                 }
             }
-            if(noiseMapParameters.computeLNight || noiseMapParameters.computeLDEN) {
-                for (int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
-                    ln[idfreq] = dbaToW(rs.getDouble(noiseMapParameters.lwFrequencyPrepend + "N" + noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
+            if(ldenNoiseMapParameters.computeLNight || ldenNoiseMapParameters.computeLDEN) {
+                for (int idfreq = 0; idfreq < ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+                    ln[idfreq] = dbaToW(rs.getDouble(ldenNoiseMapParameters.lwFrequencyPrepend + "N" + ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq)));
                 }
             }
-        } else if(noiseMapParameters.input_mode == NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
+        } else if(ldenNoiseMapParameters.input_mode == LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW) {
             // Extract road slope
             double slope = 0;
             try {
@@ -499,11 +499,11 @@ public class NoiseEmissionMaker extends Scene {
      * @return an array containing the maximal source power values for the specified source ID.
      */
     public double[] getMaximalSourcePower(int sourceId) {
-        if(noiseMapParameters.computeLDay && sourceId < wjSourcesD.size()) {
+        if(ldenNoiseMapParameters.computeLDay && sourceId < wjSourcesD.size()) {
             return wjSourcesD.get(sourceId);
-        } else if(noiseMapParameters.computeLEvening && sourceId < wjSourcesE.size()) {
+        } else if(ldenNoiseMapParameters.computeLEvening && sourceId < wjSourcesE.size()) {
             return wjSourcesE.get(sourceId);
-        } else if(noiseMapParameters.computeLNight && sourceId < wjSourcesN.size()) {
+        } else if(ldenNoiseMapParameters.computeLNight && sourceId < wjSourcesN.size()) {
             return wjSourcesN.get(sourceId);
         } else {
             return new double[0];

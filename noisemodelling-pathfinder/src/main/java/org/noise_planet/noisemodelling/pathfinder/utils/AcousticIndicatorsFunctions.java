@@ -212,4 +212,50 @@ public class AcousticIndicatorsFunctions {
         }
         return ret;
     }
+
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
+        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(int[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
 }

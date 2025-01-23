@@ -12,14 +12,12 @@ import java.util.List;
 
 
 
-public class Wall {
+public class Wall extends Obstruction {
     /** Type of the wall */
     public final ProfileBuilder.IntersectionType type;
     /** Id or index of the source building or topographic triangle. */
     public final int originId;
     public long primaryKey = -1;
-    /** Wall alpha value. */
-    public List<Double> alphas;
     /** Wall height, if -1, use z coordinate. */
     public double height;
     public Coordinate p0;
@@ -38,7 +36,6 @@ public class Wall {
         this.ls = line;
         this.originId = originId;
         this.type = type;
-        this.alphas = new ArrayList<>();
     }
 
     /**
@@ -53,7 +50,6 @@ public class Wall {
         this.ls = new LineSegment(p0, p1);
         this.originId = originId;
         this.type = type;
-        this.alphas = new ArrayList<>();
     }
 
     /**
@@ -82,14 +78,6 @@ public class Wall {
     }
 
     /**
-     * Sets the wall alphas.
-     * @param alphas Wall alphas.
-     */
-    public void setAlpha(List<Double> alphas) {
-        this.alphas = alphas;
-    }
-
-    /**
      * Sets the wall height.
      * @param height Wall height.
      */
@@ -107,14 +95,6 @@ public class Wall {
      */
     public int getOriginId() {
         return originId;
-    }
-
-    /**
-     * Retrieve the alphas of the wall.
-     * @return Alphas of the wall.
-     */
-    public List<Double> getAlphas() {
-        return alphas;
     }
 
     /**

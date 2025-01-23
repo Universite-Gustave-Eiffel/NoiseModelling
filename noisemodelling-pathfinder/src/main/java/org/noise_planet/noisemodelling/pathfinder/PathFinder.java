@@ -633,7 +633,7 @@ public class PathFinder {
      */
     private void insertReflectionPointAttributes(CutPoint sourceOrReceiverPoint, List<CutPoint> mainProfileCutPoints, MirrorReceiver mirrorReceiver) {
         CutPointReflection reflectionPoint = new CutPointReflection(sourceOrReceiverPoint,
-                mirrorReceiver.getWall().getLineSegment(), mirrorReceiver.getWall().getAlphas());
+                mirrorReceiver.getWall().getLineSegment(), mirrorReceiver.getWall().getAlphas(data.profileBuilder.exactFrequencyArray));
         if(mirrorReceiver.wall.primaryKey >= 0) {
             reflectionPoint.wallPk = mirrorReceiver.wall.primaryKey;
         }

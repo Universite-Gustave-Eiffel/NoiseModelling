@@ -12,7 +12,6 @@ package org.noise_planet.noisemodelling.jdbc;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.checkerframework.checker.units.qual.C;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -932,7 +931,7 @@ public class AttenuationCnossosTest {
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
 
-        for(int f : propDataOut.inputData.freq_lvl) {
+        for(int f : propDataOut.inputData.frequencyArray) {
             if(deltaD > -(340./f) / 20) {
                 res1.add(1);
             }
@@ -3454,7 +3453,7 @@ public class AttenuationCnossosTest {
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
 
-        for(int f : propDataOut.inputData.freq_lvl) {
+        for(int f : propDataOut.inputData.frequencyArray) {
             if(-deltaD > -(340./f) / 20) {
                 res1.add(1);
             }
@@ -4362,7 +4361,7 @@ public class AttenuationCnossosTest {
         List<Integer> res1 = new ArrayList<>(3) ;
         List<Integer> res2 = new ArrayList<>(3);
 
-        for(int f : propDataOut.inputData.freq_lvl) {
+        for(int f : propDataOut.inputData.frequencyArray) {
             if(deltaD > -(340./f) / 20) {
                 res1.add(1);
             }
@@ -6165,55 +6164,55 @@ public class AttenuationCnossosTest {
 
     private double testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
         // Init NoiseModelling
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS",
                 "LW_ROADS", "RECEIVERS");
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(5000.0);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(1);
-        noiseMapByReceiverMaker.setThreadCount(1);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(5000.0);
+        ldenNoiseMapLoader.setSoundReflectionOrder(1);
+        ldenNoiseMapLoader.setThreadCount(1);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(true);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
         // Building height field name
-        noiseMapByReceiverMaker.setHeightField("HEIGHT");
+        ldenNoiseMapLoader.setHeightField("HEIGHT");
 
 
         // Init custom input in order to compute more than just attenuation
         // LW_ROADS contain Day Evening Night emission spectrum
-        NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-        noiseMapParameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
 
-        noiseMapParameters.setComputeLDay(false);
-        noiseMapParameters.setComputeLEvening(false);
-        noiseMapParameters.setComputeLNight(false);
-        noiseMapParameters.setComputeLDEN(true);
-        noiseMapParameters.keepAbsorption = true;
-        noiseMapParameters.setMaximumError(maxError);
+        ldenNoiseMapParameters.setComputeLDay(false);
+        ldenNoiseMapParameters.setComputeLEvening(false);
+        ldenNoiseMapParameters.setComputeLNight(false);
+        ldenNoiseMapParameters.setComputeLDEN(true);
+        ldenNoiseMapParameters.keepAbsorption = true;
+        ldenNoiseMapParameters.setMaximumError(maxError);
 
-        NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
+        NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(noiseMapMaker);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(noiseMapMaker);
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+        ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
-        noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
+        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
 
-        noiseMapByReceiverMaker.setGridDim(1);
+        ldenNoiseMapLoader.setGridDim(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
         // Fetch cell identifiers with receivers
-        Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+        Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
         ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
         assertEquals(1, cells.size());
         for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
             // Run ray propagation
-            IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(),
+            IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(),
                     cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             assertInstanceOf(NoiseMap.class, out);
             NoiseMap rout = (NoiseMap) out;
@@ -6229,7 +6228,7 @@ public class AttenuationCnossosTest {
     }
 
     /**
-     * Test optimisation feature {@link NoiseMapParameters#maximumError}
+     * Test optimisation feature {@link LdenNoiseMapParameters#maximumError}
      * This feature is disabled and all sound sources are computed
      */
     @Test

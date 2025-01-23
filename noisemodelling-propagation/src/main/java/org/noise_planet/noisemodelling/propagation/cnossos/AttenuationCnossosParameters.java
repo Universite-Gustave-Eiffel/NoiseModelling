@@ -42,18 +42,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
 
 
     public AttenuationCnossosParameters(boolean thirdOctave) {
-        if(!thirdOctave) {
-            // Default frequencies are in octave bands
-            freq_lvl = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-            freq_lvl_exact = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
-            freq_lvl_a_weighting = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
-        } else {
-            // third octave bands
-            freq_lvl = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
-            freq_lvl_exact = Arrays.asList(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
-            freq_lvl_a_weighting = Arrays.asList(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
-        }
-        //init();
+        super(thirdOctave);
     }
 
     /**

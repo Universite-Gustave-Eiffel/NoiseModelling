@@ -72,7 +72,10 @@ inputs = [
                 description: '&#127968; Name of the Buildings table</br> </br>' +
                         'The table must contain: </br><ul>' +
                         '<li><b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
-                        '<li><b> HEIGHT </b>: the height of the building (FLOAT)</li></ul>',
+                        '<li><b> HEIGHT </b>: the height of the building (FLOAT)</li>' +
+                        '<li><b> G </b>: Optional, Wall absorption value if g is [0, 1] or wall surface impedance' +
+                        ' ([N.s.m-4] static air flow resistivity of material) if G is [20, 20000]' +
+                        ' (default is 0.1 if the column G does not exists) (FLOAT)</li></ul>',
                 type       : String.class
         ],
         tableSources            : [

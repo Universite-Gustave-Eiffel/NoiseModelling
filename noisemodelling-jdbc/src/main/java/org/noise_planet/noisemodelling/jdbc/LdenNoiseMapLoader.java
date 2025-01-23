@@ -19,7 +19,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
-import org.locationtech.jts.simplify.DouglasPeuckerSimplifier;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -39,20 +38,77 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- * Compute noise propagation at specified receiver points.
- * @author Nicolas Fortin
+ * Compute noise levels for Lden
  */
-public class NoiseMapByReceiverMaker extends NoiseMapLoader {
+public class LdenNoiseMapLoader extends NoiseMapLoader {
     private final String receiverTableName;
     private PropagationProcessDataFactory propagationProcessDataFactory;
     private IComputeRaysOutFactory computeRaysOutFactory;
-    private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
+    private Logger logger = LoggerFactory.getLogger(LdenNoiseMapLoader.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+    AttenuationCnossosParameters attenuationCnossosParametersDay = new AttenuationCnossosParameters();
+    AttenuationCnossosParameters attenuationCnossosParametersEvening = new AttenuationCnossosParameters();
+    AttenuationCnossosParameters attenuationCnossosParametersNight = new AttenuationCnossosParameters();
 
-    public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
+    public LdenNoiseMapLoader(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+    }
+
+    /**
+     * Sets the propagation process path data for the specified time period.
+     * @param time_period the time period for which to set the propagation process path data.
+     * @param attenuationCnossosParameters the attenuation Cnossos parameters to set.
+     */
+    public void setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
+        switch (time_period) {
+            case DAY:
+                attenuationCnossosParametersDay = attenuationCnossosParameters;
+            case EVENING:
+                attenuationCnossosParametersEvening = attenuationCnossosParameters;
+            default:
+                attenuationCnossosParametersNight = attenuationCnossosParameters;
+        }
+    }
+    public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
+        return attenuationCnossosParametersDay;
+    }
+
+    public void setPropagationProcessPathDataDay(AttenuationCnossosParameters attenuationCnossosParametersDay) {
+        this.attenuationCnossosParametersDay = attenuationCnossosParametersDay;
+    }
+
+    public AttenuationCnossosParameters getPropagationProcessPathDataEvening() {
+        return attenuationCnossosParametersEvening;
+    }
+
+    public void setPropagationProcessPathDataEvening(AttenuationCnossosParameters attenuationCnossosParametersEvening) {
+        this.attenuationCnossosParametersEvening = attenuationCnossosParametersEvening;
+    }
+
+    public AttenuationCnossosParameters getPropagationProcessPathDataNight() {
+        return attenuationCnossosParametersNight;
+    }
+
+    public void setPropagationProcessPathDataNight(AttenuationCnossosParameters attenuationCnossosParametersNight) {
+        this.attenuationCnossosParametersNight = attenuationCnossosParametersNight;
+    }
+
+    /**
+     * Retrieves the propagation process path data for the specified time period.
+     * @param time_period the time period for which to retrieve the propagation process path data.
+     * @return the attenuation Cnossos parameters for the specified time period.
+     */
+    public AttenuationCnossosParameters getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD time_period) {
+        switch (time_period) {
+            case DAY:
+                return attenuationCnossosParametersDay;
+            case EVENING:
+                return attenuationCnossosParametersEvening;
+            default:
+                return attenuationCnossosParametersNight;
+        }
     }
 
     /**
@@ -109,6 +165,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
                              ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         ProfileBuilder builder = new ProfileBuilder();
+        builder.setFrequencyArray(attenuationCnossosParametersDay.freq_lvl);
         int ij = cellI * gridDim + cellJ + 1;
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
@@ -137,24 +194,24 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         expandedCellEnvelop = new Envelope(cellEnvelope);
         expandedCellEnvelop.expandBy(maximumPropagationDistance);
 
-        Scene propagationProcessData;
+        Scene scene;
         if(propagationProcessDataFactory != null) {
-            propagationProcessData = propagationProcessDataFactory.create(builder);
+            scene = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new Scene(builder, attenuationCnossosParametersDay.freq_lvl);
+            scene = new Scene(builder);
         }
-        propagationProcessData.reflexionOrder = soundReflectionOrder;
-        propagationProcessData.setBodyBarrier(bodyBarrier);
-        propagationProcessData.maxRefDist = maximumReflectionDistance;
-        propagationProcessData.maxSrcDist = maximumPropagationDistance;
-        propagationProcessData.gS = getGs();
-        propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
-        propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
+        scene.reflexionOrder = soundReflectionOrder;
+        scene.setBodyBarrier(bodyBarrier);
+        scene.maxRefDist = maximumReflectionDistance;
+        scene.maxSrcDist = maximumPropagationDistance;
+        scene.gS = getGs();
+        scene.setComputeVerticalDiffraction(computeVerticalDiffraction);
+        scene.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, propagationProcessData, true);
+        fetchCellSource(connection, expandedCellEnvelop, scene, true);
 
-        propagationProcessData.cellId = ij;
+        scene.cellId = ij;
 
         // Fetch receivers
 
@@ -188,15 +245,15 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
-                        propagationProcessData.addReceiver(receiverPk, pt.getCoordinate(), rs);
+                        scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
                     }
                 }
             }
         }
         if(progression != null) {
-            propagationProcessData.cellProg = progression.subProcess(propagationProcessData.receivers.size());
+            scene.cellProg = progression.subProcess(scene.receivers.size());
         }
-        return propagationProcessData;
+        return scene;
     }
 
     /**
@@ -338,10 +395,10 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         /**
          * Initializes the propagation process data factory.
          * @param connection             the database connection to be used for initialization.
-         * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
+         * @param ldenNoiseMapLoader the noise map by receiver maker object associated with the computation process.
          * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
          */
-        void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException;
+        void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) throws SQLException;
     }
 
     /**

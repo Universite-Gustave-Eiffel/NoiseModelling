@@ -2,10 +2,13 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Data input for a propagation Path process.
@@ -50,14 +53,14 @@ public class AttenuationParameters {
     public AttenuationParameters(boolean thirdOctave) {
         if(!thirdOctave) {
             // Default frequencies are in octave bands
-            freq_lvl = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-            freq_lvl_exact = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
-            freq_lvl_a_weighting = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+            freq_lvl = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+            freq_lvl_exact = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+            freq_lvl_a_weighting = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
         } else {
             // third octave bands
-            freq_lvl = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
-            freq_lvl_exact = Arrays.asList(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
-            freq_lvl_a_weighting = Arrays.asList(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
+            freq_lvl = Arrays.stream(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE).boxed().collect(Collectors.toList());
+            freq_lvl_exact = Arrays.asList(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
+            freq_lvl_a_weighting = Arrays.asList(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
         }
         init();
     }
@@ -123,35 +126,6 @@ public class AttenuationParameters {
         this.freq_lvl_a_weighting = freq_lvl_a_weighting;
     }
 
-    /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
-        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
-
-    /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
-        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
     /**
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100

@@ -43,7 +43,7 @@ public class AttenuationVisitor implements IComputePathsOut {
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         final Scene scene = multiThreadParent.inputData;
         CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.freq_lvl, scene.gS);
+                scene.profileBuilder.exactFrequencyArray, scene.gS);
         if(cnossosPath != null) {
             addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }

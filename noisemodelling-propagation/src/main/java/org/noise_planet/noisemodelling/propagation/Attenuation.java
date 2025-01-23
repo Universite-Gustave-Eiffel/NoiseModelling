@@ -92,7 +92,7 @@ public class Attenuation implements IComputePathsOut {
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         final Scene scene = inputData;
         CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.freq_lvl, scene.gS);
+                scene.profileBuilder.exactFrequencyArray, scene.gS);
         if(cnossosPath != null) {
             double[] power = addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }
@@ -141,9 +141,9 @@ public class Attenuation implements IComputePathsOut {
         // cache frequencies
         double[] frequencies = new double[0];
         if(inputData != null) {
-            frequencies = new double[inputData.freq_lvl.size()];
+            frequencies = new double[inputData.profileBuilder.frequencyArray.size()];
             for (int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
-                frequencies[idFrequency] = inputData.freq_lvl.get(idFrequency);
+                frequencies[idFrequency] = inputData.profileBuilder.frequencyArray.get(idFrequency);
             }
         }
         // Compute receiver/source attenuation

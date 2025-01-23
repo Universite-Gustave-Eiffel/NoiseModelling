@@ -28,14 +28,12 @@ import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
 import org.noise_planet.noisemodelling.emission.utils.Utils;
-import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods;
-import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE;
+import org.noise_planet.noisemodelling.jdbc.LdenNoiseMapParameters.INPUT_MODE;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -57,9 +55,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
-public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
+public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
-    static Logger LOGGER = LoggerFactory.getLogger(TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class);
+    static Logger LOGGER = LoggerFactory.getLogger(TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class);
     RailwayCnossos railway = new RailwayCnossos();
 
 
@@ -67,7 +65,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @BeforeEach
     public void tearUp() throws Exception {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getSimpleName(), true, ""));
     }
 
     @AfterEach
@@ -79,13 +77,13 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmission() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("roads_traff.shp").getFile());
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
-        NoiseMapParameters.setPropagationProcessPathData(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters());
-        NoiseMapParameters.setPropagationProcessPathData(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters());
-        NoiseMapParameters.setPropagationProcessPathData(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters());
-        NoiseMapParameters.setCoefficientVersion(1);
-        NoiseEmissionMaker process = new NoiseEmissionMaker(null, NoiseMapParameters);
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters());
+        ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters());
+        ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters());
+        ldenNoiseMapParameters.setCoefficientVersion(1);
+        NoiseEmissionMaker process = new NoiseEmissionMaker(null, ldenNoiseMapParameters);
         try(Statement st = connection.createStatement()) {
             double lv_speed = 70;
             int lv_per_hour = 1000;
@@ -130,8 +128,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
         int expectedNumberOfRows;
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
             assertTrue(rs.next());
@@ -150,8 +148,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWayTwoGeoms() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 2)");
@@ -174,8 +172,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
@@ -198,8 +196,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
@@ -222,8 +220,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         RailWayLWGeom v = railWayLWIterator.next();
@@ -241,8 +239,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
     public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
 
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
@@ -302,8 +300,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
     public void testNoiseEmissionRailWay_Section556() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
 
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
@@ -366,8 +364,8 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
         NoiseEmissionMaker.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
                 "LW_RAILWAY");
@@ -379,9 +377,9 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertEquals(geometries.size(),2);
 
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
         connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
@@ -401,46 +399,46 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         //connection.createStatement().execute("UPDATE LW_RAILWAY SET THE_GEOM = ST_SETSRID(ST_UPDATEZ(THE_GEOM,0.5),2154);");
 
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(INPUT_MODE.INPUT_MODE_LW_DEN);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        NoiseMapParameters.setComputeLDay(true);
-        NoiseMapParameters.setComputeLEvening(false);
-        NoiseMapParameters.setComputeLNight(false);
-        NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setExportRaysMethod(ExportRaysMethods.TO_MEMORY);
+        ldenNoiseMapParameters.setComputeLDay(true);
+        ldenNoiseMapParameters.setComputeLEvening(false);
+        ldenNoiseMapParameters.setComputeLNight(false);
+        ldenNoiseMapParameters.setComputeLDEN(false);
+        ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
         factory.insertTrainDirectivity();
 
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("SCREENS", "LW_RAILWAY",
                 "RECEPTEURS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
         //pointNoiseMap.setDemTable("DEM");
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(250.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-        noiseMapByReceiverMaker.setThreadCount(1);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(250.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
 
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
             factory.start();
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 if (out instanceof Attenuation) {
                     Attenuation cellStorage = (Attenuation) out;
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
@@ -458,7 +456,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         assertEquals(nbReceivers, receivers.size());
 
         // ICI A MODIFIER
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ NoiseMapParameters.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT PK,PK2,laeq FROM "+ ldenNoiseMapParameters.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2 ORDER BY PK2")) {
             /*assertTrue(rs.next());
             assertEquals(47.60, rs.getDouble(1), 2.0);
             assertTrue(rs.next());
@@ -483,7 +481,7 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             assertEquals(56.58, rs.getDouble(1), 2.0);*/
         }
 
-        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ NoiseMapParameters.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
+        connection.createStatement().execute("CREATE TABLE RESULTS AS SELECT R.the_geom the_geom, R.PK pk, R.PK2 pk2,laeq laeq FROM "+ ldenNoiseMapParameters.lDayTable + " LVL, RECEPTEURS R WHERE LVL.IDRECEIVER = R.PK2");
         SHPDriverFunction shpDriver = new SHPDriverFunction();
         shpDriver.exportTable(connection, "RESULTS", new File("target/Results_railway_Propa_1.shp"), true, new EmptyProgressVisitor());
         shpDriver.exportTable(connection, "RECEPTEURS", new File("target/RECEPTEURS.shp"), true, new EmptyProgressVisitor());
@@ -497,35 +495,35 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testTableGenerationFromTraffic() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
-        NoiseMapParameters.setComputeLDay(true);
-        NoiseMapParameters.setComputeLEvening(true);
-        NoiseMapParameters.setComputeLNight(true);
-        NoiseMapParameters.setComputeLDEN(true);
-        NoiseMapParameters.setMergeSources(true); // No idsource column
+        ldenNoiseMapParameters.setComputeLDay(true);
+        ldenNoiseMapParameters.setComputeLEvening(true);
+        ldenNoiseMapParameters.setComputeLNight(true);
+        ldenNoiseMapParameters.setComputeLDEN(true);
+        ldenNoiseMapParameters.setMergeSources(true); // No idsource column
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_TRAFF",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_TRAFF",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -533,18 +531,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            noiseMapByReceiverMaker.setGridDim(4); // force grid size
+            ldenNoiseMapLoader.setGridDim(4); // force grid size
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             }
         }finally {
             factory.stop();
@@ -552,34 +550,34 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.commit();
 
         // Check table creation
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
         // Check table number of rows
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lDayTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lEveningTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lEveningTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lDenTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lDenTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
 
         // Check dB ranges of result
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ NoiseMapParameters.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenNoiseMapParameters.lDayTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-            for(int idfreq = 1; idfreq <= NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+            for(int idfreq = 1; idfreq <= ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(87, leqs[0], 2.0);
@@ -597,10 +595,10 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
 
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ NoiseMapParameters.lEveningTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenNoiseMapParameters.lEveningTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(82.0, leqs[0], 2.0);
@@ -617,10 +615,10 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         }
 
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(79, leqs[0], 2.0);
@@ -636,10 +634,10 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             assertEquals(78,rs.getDouble(10), 2.0);
         }
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ NoiseMapParameters.lDenTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenNoiseMapParameters.lDenTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(87.0, leqs[0], 2.0);
@@ -659,35 +657,35 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnly() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
-        NoiseMapParameters.setComputeLDay(false);
-        NoiseMapParameters.setComputeLEvening(false);
-        NoiseMapParameters.setComputeLNight(true);
-        NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setMergeSources(true); // No idsource column
+        ldenNoiseMapParameters.setComputeLDay(false);
+        ldenNoiseMapParameters.setComputeLEvening(false);
+        ldenNoiseMapParameters.setComputeLNight(true);
+        ldenNoiseMapParameters.setComputeLDEN(false);
+        ldenNoiseMapParameters.setMergeSources(true); // No idsource column
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_TRAFF",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_TRAFF",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -695,18 +693,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            noiseMapByReceiverMaker.setGridDim(4); // force grid size
+            ldenNoiseMapLoader.setGridDim(4); // force grid size
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             }
         }finally {
             factory.stop();
@@ -714,20 +712,20 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.commit();
 
         // Check table creation
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000), MAX(LEQ), MAX(LAEQ) FROM "+ ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
-            double[] leqs = new double[NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
-            for (int idfreq = 1; idfreq <= NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            double[] leqs = new double[ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size()];
+            for (int idfreq = 1; idfreq <= ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 leqs[idfreq - 1] = rs.getDouble(idfreq);
             }
             assertEquals(78, leqs[0], 2.0);
@@ -747,36 +745,36 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
-        NoiseMapParameters.setComputeLDay(false);
-        NoiseMapParameters.setComputeLEvening(false);
-        NoiseMapParameters.setComputeLNight(true);
-        NoiseMapParameters.setComputeLAEQOnly(true);
-        NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setMergeSources(true); // No idsource column
+        ldenNoiseMapParameters.setComputeLDay(false);
+        ldenNoiseMapParameters.setComputeLEvening(false);
+        ldenNoiseMapParameters.setComputeLNight(true);
+        ldenNoiseMapParameters.setComputeLAEQOnly(true);
+        ldenNoiseMapParameters.setComputeLDEN(false);
+        ldenNoiseMapParameters.setMergeSources(true); // No idsource column
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_TRAFF",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_TRAFF",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -784,18 +782,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            noiseMapByReceiverMaker.setGridDim(4); // force grid size
+            ldenNoiseMapLoader.setGridDim(4); // force grid size
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             }
         }finally {
             factory.stop();
@@ -803,17 +801,17 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.commit();
 
         // Check table creation
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lEveningTable));
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lNightTable));
-        assertFalse(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDenTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lEveningTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lNightTable));
+        assertFalse(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDenTable));
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
             assertEquals(830, rs.getInt(1));
         }
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(LAEQ) LAEQ FROM "+ NoiseMapParameters.lNightTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT MAX(LAEQ) LAEQ FROM "+ ldenNoiseMapParameters.lNightTable)) {
             assertTrue(rs.next());
             assertEquals(78, rs.getDouble("LAEQ"), 2.0);
         }
@@ -822,27 +820,27 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void testReadFrequencies() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "LW_ROADS",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "LW_ROADS",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+        ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
-        assertNotNull(NoiseMapParameters.attenuationCnossosParametersDay);
-        assertNotNull(NoiseMapParameters.attenuationCnossosParametersEvening);
-        assertNotNull(NoiseMapParameters.attenuationCnossosParametersNight);
+        assertNotNull(ldenNoiseMapParameters.attenuationCnossosParametersDay);
+        assertNotNull(ldenNoiseMapParameters.attenuationCnossosParametersEvening);
+        assertNotNull(ldenNoiseMapParameters.attenuationCnossosParametersNight);
 
-        assertEquals(8, NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size());
+        assertEquals(8, ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size());
 
         try(Statement st = connection.createStatement()) {
             // drop all columns except 1000 Hz
@@ -871,18 +869,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             st.execute("ALTER TABLE lw_roads drop column LWN8000");
         }
 
-        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+        ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
-        assertEquals(1, NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size());
+        assertEquals(1, ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size());
 
-        assertEquals(1000, (int) NoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(0));
+        assertEquals(1000, (int) ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(0));
     }
 
     @Test
     public void testNoDemBuildingsZ() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         try(Statement st = connection.createStatement()) {
             // Alter buildings polygons Z
@@ -896,20 +894,20 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             st.execute("DELETE FROM RECEIVERS WHERE ST_DISTANCE('SRID=2154;POINT (223940.83614225042 6757305.252751735)'::geometry, THE_GEOM) > 300");
         }
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS_Z", "LW_ROADS",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS_Z", "LW_ROADS",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
 
 
 
@@ -920,18 +918,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            noiseMapByReceiverMaker.setGridDim(1); // force grid size
+            ldenNoiseMapLoader.setGridDim(1); // force grid size
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                IComputePathsOut ret = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                IComputePathsOut ret = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 if(ret instanceof NoiseMap) {
                     NoiseMap out = (NoiseMap)ret;
                     for(Coordinate v : out.noiseEmissionMaker.profileBuilder.getVertices()) {
@@ -950,9 +948,9 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
     // Check regression of finding cell i,j that contains receivers
     @Test
     public void testRegression1() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("regression1/receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/receivers.shp").getFile());
 
         // Count receivers
         int nbReceivers = 0;
@@ -961,26 +959,26 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
             nbReceivers = rs.getInt(1);
         }
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
-        NoiseMapParameters.setComputeLDay(true);
-        NoiseMapParameters.setComputeLEvening(true);
-        NoiseMapParameters.setComputeLNight(true);
-        NoiseMapParameters.setComputeLDEN(true);
+        ldenNoiseMapParameters.setComputeLDay(true);
+        ldenNoiseMapParameters.setComputeLEvening(true);
+        ldenNoiseMapParameters.setComputeLNight(true);
+        ldenNoiseMapParameters.setComputeLDEN(true);
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BATI_FENCE", "LW_ROADS_FENCE",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BATI_FENCE", "LW_ROADS_FENCE",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
 
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(750.0);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-        noiseMapByReceiverMaker.setThreadCount(1);
+        ldenNoiseMapLoader.setMaximumPropagationDistance(750.0);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(true);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
+        ldenNoiseMapLoader.setSoundReflectionOrder(0);
+        ldenNoiseMapLoader.setThreadCount(1);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -988,17 +986,17 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, false, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
 
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             }
         }finally {
             factory.stop();
@@ -1013,28 +1011,28 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
 
     @Test
     public void TestPointSource() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/DEM_Fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/DEM_Fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
 
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/RCVSCircle.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/RCVSCircle.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
 
-        SHPRead.importTable(connection, TimePeriodParametersNoiseMapByReceiverMakerFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
 
         // PROPAGATION PART
         // --------------
 
-        NoiseMapParameters NoiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-        NoiseMapParameters.setComputeLDay(true);
-        NoiseMapParameters.setComputeLEvening(false);
-        NoiseMapParameters.setComputeLNight(false);
-        NoiseMapParameters.setComputeLDEN(false);
-        NoiseMapParameters.setMergeSources(true); // No idsource column
-        NoiseMapParameters.setExportReceiverPosition(true); // create geometry columns with receiver position
+        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+        ldenNoiseMapParameters.setComputeLDay(true);
+        ldenNoiseMapParameters.setComputeLEvening(false);
+        ldenNoiseMapParameters.setComputeLNight(false);
+        ldenNoiseMapParameters.setComputeLDEN(false);
+        ldenNoiseMapParameters.setMergeSources(true); // No idsource column
+        ldenNoiseMapParameters.setExportReceiverPosition(true); // create geometry columns with receiver position
 
-        NoiseMapMaker factory = new NoiseMapMaker(connection, NoiseMapParameters);
+        NoiseMapMaker factory = new NoiseMapMaker(connection, ldenNoiseMapParameters);
 
         // ICI HAUTEUR RECPTEUR
 
@@ -1052,18 +1050,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         //connection.createStatement().execute("UPDATE BUILD_GRID2 SET HEIGHT = 0;");
         String name_output = "real";
 
-        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILD_GRID2", "SOURCESI",
+        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILD_GRID2", "SOURCESI",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.setComputeRaysOutFactory(factory);
-        noiseMapByReceiverMaker.setPropagationProcessDataFactory(factory);
-        noiseMapByReceiverMaker.setHeightField("HEIGHT");
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
-        noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-        noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-        noiseMapByReceiverMaker.setSoundReflectionOrder(1);
-        noiseMapByReceiverMaker.setDemTable("DEM_FENCE");
-        noiseMapByReceiverMaker.setSoilTableName("LANDCOVER");
+        ldenNoiseMapLoader.setComputeRaysOutFactory(factory);
+        ldenNoiseMapLoader.setPropagationProcessDataFactory(factory);
+        ldenNoiseMapLoader.setHeightField("HEIGHT");
+        ldenNoiseMapLoader.setMaximumPropagationDistance(100);
+        ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
+        ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
+        ldenNoiseMapLoader.setSoundReflectionOrder(1);
+        ldenNoiseMapLoader.setDemTable("DEM_FENCE");
+        ldenNoiseMapLoader.setSoilTableName("LANDCOVER");
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();
@@ -1071,18 +1069,18 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         try {
             RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
 
             factory.start();
 
-            noiseMapByReceiverMaker.setGridDim(1); // force grid size
+            ldenNoiseMapLoader.setGridDim(1); // force grid size
 
-            Map<CellIndex, Integer> cells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             // Iterate over computation areas
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
                 if (out instanceof Attenuation) {
                     Attenuation cellStorage = (Attenuation) out;
@@ -1095,16 +1093,16 @@ public class TimePeriodParametersNoiseMapByReceiverMakerFactoryTest {
         connection.commit();
 
         // Check table creation
-        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapParameters.lDayTable));
+        assertTrue(JDBCUtilities.tableExists(connection, ldenNoiseMapParameters.lDayTable));
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + NoiseMapParameters.lDayTable)) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) CPT FROM " + ldenNoiseMapParameters.lDayTable)) {
             assertTrue(rs.next());
             assertEquals(4361, rs.getInt(1));
         }
 
-        assertEquals(2154, GeometryTableUtilities.getSRID(connection, NoiseMapParameters.lDayTable));
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, ldenNoiseMapParameters.lDayTable));
 
-        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ NoiseMapParameters.lDayTable+" ORDER BY IDRECEIVER")) {
+        try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "+ ldenNoiseMapParameters.lDayTable+" ORDER BY IDRECEIVER")) {
             assertTrue(rs.next());
             assertEquals(1, rs.getInt("IDRECEIVER"));
             Object geom = rs.getObject("THE_GEOM");
