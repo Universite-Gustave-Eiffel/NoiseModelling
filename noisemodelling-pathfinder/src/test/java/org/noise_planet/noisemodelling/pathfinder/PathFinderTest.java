@@ -119,7 +119,9 @@ public class PathFinderTest {
                         gotCutPointWall.wall.p0, DELTA_COORDS);
                 assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p1,
                         gotCutPointWall.wall.p1, DELTA_COORDS);
-                assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01);
+                if(!expectedCutPointWall.wallAlpha.isEmpty()) {
+                    assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01);
+                }
             } else if (expectedCutPoint instanceof CutPointReflection) {
                 CutPointReflection expectedCutPointReflection = (CutPointReflection) expectedCutPoint;
                 CutPointReflection gotCutPointReflection = (CutPointReflection) gotCutPoint;

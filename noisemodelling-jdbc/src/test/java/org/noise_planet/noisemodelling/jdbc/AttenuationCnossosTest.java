@@ -61,7 +61,6 @@ import java.util.stream.IntStream;
 import static java.lang.Double.NaN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.*;
-import static org.noise_planet.noisemodelling.pathfinder.path.Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.multiplicationArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
@@ -918,32 +917,6 @@ public class AttenuationCnossosTest {
 
         assertEquals(1, propDataOut.getPropagationPaths().size());
         assertEquals(2, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
-
-        // Test R-CRIT table 27
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
-
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d
-                + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d -
-                propDataOut.getPropagationPaths().get(0).getSRSegment().d;
-        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
-        List<Integer> res1 = new ArrayList<>(3) ;
-        List<Integer> res2 = new ArrayList<>(3);
-
-        for(int f : propDataOut.inputData.frequencyArray) {
-            if(deltaD > -(340./f) / 20) {
-                res1.add(1);
-            }
-            if (!(deltaD > (((340./f) / 4) - deltaDE))){
-                res2.add(0);
-            }
-        }
-        //computeRays.
-        //Expected values
-        double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {178.84, 10.0}, {194.16, 11.5}} //Path 1 : direct
-        };
 
         /* Table 23 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -3441,27 +3414,6 @@ public class AttenuationCnossosTest {
         assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0).
                 getSRSegment().getPoints2DGround()));
 
-        // Test R-CRIT table 179
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
-
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d
-                + propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).d -
-                propDataOut.getPropagationPaths().get(0).getSRSegment().d;
-        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
-        List<Integer> res1 = new ArrayList<>(3) ;
-        List<Integer> res2 = new ArrayList<>(3);
-
-        for(int f : propDataOut.inputData.frequencyArray) {
-            if(-deltaD > -(340./f) / 20) {
-                res1.add(1);
-            }
-            if (!(deltaD > (((340./f) / 4) - deltaDE))){
-                res2.add(0);
-            }
-        }
-
         //Expected values
         //Path0 : vertical plane
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, NaN, NaN, 0.53, 2.70, 12.70};
@@ -4348,28 +4300,6 @@ public class AttenuationCnossosTest {
         Attenuation propDataOut =  computeCnossosPath("TC21_Direct", "TC21_Right", "TC21_Left");
 
         assertEquals(3, propDataOut.getPropagationPaths().size());
-
-        // Test R-CRIT table 235
-        Coordinate D = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).r;
-        Coordinate Sp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate Rp = propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime ;
-
-        double deltaD = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).d +
-                D.distance(propDataOut.getPropagationPaths().get(0).getPointList().get(2).coordinate)
-                - propDataOut.getPropagationPaths().get(0).getSRSegment().d;
-        double deltaDE = Sp.distance(D) + D.distance(Rp) - Sp.distance(Rp);
-        List<Integer> res1 = new ArrayList<>(3) ;
-        List<Integer> res2 = new ArrayList<>(3);
-
-        for(int f : propDataOut.inputData.frequencyArray) {
-            if(deltaD > -(340./f) / 20) {
-                res1.add(1);
-            }
-            if (!(deltaD > (((340./f) / 4) - deltaDE))){
-                res2.add(0);
-            }
-        }
-        //Expected values
 
         /* Table 228 */
         List<Coordinate> expectedZProfileSR = Arrays.asList(
@@ -6374,8 +6304,8 @@ public class AttenuationCnossosTest {
     @Test
     public void testReflexionConvergence() {
         //Profile building
-        List<Integer> alphaWallFrequencies = Arrays.asList(AttenuationCnossosParameters.asOctaveBands(
-                DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+        List<Integer> alphaWallFrequencies = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(
+               ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
         List<Double> alphaWall = new ArrayList<>(alphaWallFrequencies.size());
         for(int frequency : alphaWallFrequencies) {
             alphaWall.add(WallAbsorption.getWallAlpha(100000, frequency));

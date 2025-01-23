@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.stream.DoubleStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;
@@ -40,7 +41,6 @@ public class NoiseMapWriter implements Runnable {
     private Connection connection;
     LdenNoiseMapParameters ldenNoiseMapParameters;
     AttenuatedPaths AttenuatedPaths;
-    double[] a_weighting;
     boolean started = false;
     Writer o;
     int srid;
@@ -157,6 +157,8 @@ public class NoiseMapWriter implements Runnable {
         }
         int batchSize = 0;
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
+        // Convert A weighting array to primitive type array
+        final double[] aWeighting = ldenNoiseMapParameters.aWeightingArray.stream().mapToDouble(Double::doubleValue).toArray();
         while(!stack.isEmpty()) {
             Attenuation.SourceReceiverAttenuation row = stack.pop();
             AttenuatedPaths.queueSize.decrementAndGet();
@@ -182,7 +184,7 @@ public class NoiseMapWriter implements Runnable {
 
             }
             // laeq value
-            double value = wToDba(sumArray(dbaToW(sumArray(row.value, a_weighting))));
+            double value = wToDba(sumArray(dbaToW(sumArray(row.value, aWeighting))));
             if(!Double.isFinite(value)) {
                 value = -99;
             }

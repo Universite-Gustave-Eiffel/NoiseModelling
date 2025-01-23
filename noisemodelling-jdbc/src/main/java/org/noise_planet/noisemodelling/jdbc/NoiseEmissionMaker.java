@@ -59,7 +59,7 @@ public class NoiseEmissionMaker extends Scene {
      * @param ldenNoiseMapParameters
      */
     public NoiseEmissionMaker(ProfileBuilder builder, LdenNoiseMapParameters ldenNoiseMapParameters) {
-        super(builder, ldenNoiseMapParameters.attenuationCnossosParametersDay.freq_lvl);
+        super(builder);
         this.ldenNoiseMapParameters = ldenNoiseMapParameters;
     }
 
@@ -82,7 +82,7 @@ public class NoiseEmissionMaker extends Scene {
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
                 " DIR_ID, GS");
         StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
-        for(int thirdOctave : DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWD");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
@@ -90,7 +90,7 @@ public class NoiseEmissionMaker extends Scene {
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWE");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
@@ -98,7 +98,7 @@ public class NoiseEmissionMaker extends Scene {
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
-        for(int thirdOctave : DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
+        for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", LWN");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
@@ -125,9 +125,9 @@ public class NoiseEmissionMaker extends Scene {
             List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
             int pk = railWayLWGeom.getPK();
-            double[] LWDay = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-            double[] LWEvening = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
-            double[] LWNight = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            double[] LWDay = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            double[] LWEvening = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+            double[] LWNight = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
             Arrays.fill(LWDay, -99.00);
             Arrays.fill(LWEvening, -99.00);
             Arrays.fill(LWNight, -99.00);
@@ -222,7 +222,7 @@ public class NoiseEmissionMaker extends Scene {
         this.directionAttributes = directionAttributes;
         // Check if the directivities contain all required frequencies
         directionAttributes.forEach((integer, directivitySphere) -> {
-            frequencyArray.forEach(frequency->{
+            profileBuilder.frequencyArray.forEach(frequency->{
                 if(!directivitySphere.coverFrequency(frequency)) {
                     throw new IllegalArgumentException(
                             String.format(Locale.ROOT,

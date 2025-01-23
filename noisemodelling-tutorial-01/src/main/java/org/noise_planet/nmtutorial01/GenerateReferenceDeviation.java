@@ -17,6 +17,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -33,7 +34,8 @@ import java.util.stream.IntStream;
 
 public class GenerateReferenceDeviation {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateReferenceDeviation.class);
-    private static final List<Integer> FREQ_LVL = Arrays.asList(Scene.asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    private static final List<Integer> FREQ_LVL = Arrays.asList(
+            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
     private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
 

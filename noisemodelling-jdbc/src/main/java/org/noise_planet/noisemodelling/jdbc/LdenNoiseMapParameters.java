@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 
+import org.checkerframework.checker.units.qual.A;
 import org.h2gis.utilities.JDBCUtilities;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -69,30 +70,36 @@ public class LdenNoiseMapParameters extends NoiseMapParameters {
                 period = "N";
             }
             String freqField = lwFrequencyPrepend + period;
+            frequencyArray = new ArrayList<>();
+            exactFrequencyArray = new ArrayList<>();
+            aWeightingArray = new ArrayList<>();
             if (!period.isEmpty()) {
                 for (String fieldName : sourceField) {
                     if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
                         int freq = Integer.parseInt(fieldName.substring(freqField.length()));
                         int index = Arrays.binarySearch(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
                         if (index >= 0) {
-                            freq_lvl.add(freq);
+                            frequencyArray.add(freq);
                         }
                     }
                 }
             }
-            if(freq_lvl.isEmpty()) {
+            if(frequencyArray.isEmpty()) {
                 throw new SQLException("Source table "+ ldenNoiseMapLoader.getSourcesTableName()+" does not contains any frequency bands");
             }
+
+            ProfileBuilder.initializeFrequencyArrayFromReference(frequencyArray, exactFrequencyArray, aWeightingArray);
+
             // Instance of PropagationProcessPathData maybe already set
             for(LdenNoiseMapParameters.TIME_PERIOD timePeriod : LdenNoiseMapParameters.TIME_PERIOD.values()) {
                 if (ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod) == null) {
-                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyValues, exactFrequencies, aWeighting);
+                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyArray, exactFrequencyArray, aWeightingArray);
                     setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
                     ldenNoiseMapLoader.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
                 } else {
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyValues);
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencies);
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesAWeighting(aWeighting);
+                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyArray);
+                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencyArray);
+                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesAWeighting(aWeightingArray);
                     setPropagationProcessPathData(timePeriod, ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod));
                 }
             }

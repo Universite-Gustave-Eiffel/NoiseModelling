@@ -107,36 +107,6 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
     }
 
     /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
-        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
-
-    /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
-        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
-
-    /**
      * Compute sound celerity in air ISO 9613-1:1993(F)
      * @param k Temperature in kelvin
      * @return Sound celerity in m/s

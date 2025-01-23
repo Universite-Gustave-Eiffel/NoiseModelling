@@ -165,8 +165,16 @@ public class ProfileBuilder {
      */
     public void setFrequencyArray(Collection<Integer> frequencyArray) {
         this.frequencyArray = new ArrayList<>(frequencyArray);
+        exactFrequencyArray = new ArrayList<>();
+        aWeightingArray = new ArrayList<>();
+        initializeFrequencyArrayFromReference(this.frequencyArray, exactFrequencyArray, aWeightingArray);
+    }
+
+    public static void initializeFrequencyArrayFromReference(List<Integer> frequencyArray,
+                                                             List<Double> exactFrequencyArray,
+                                                             List<Double> aWeightingArray) {
         // Sort frequencies values
-        Collections.sort(this.frequencyArray);
+        Collections.sort(frequencyArray);
         // Get associated values for each frequency
         for (int freq : frequencyArray) {
             int index = Arrays.binarySearch(DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);

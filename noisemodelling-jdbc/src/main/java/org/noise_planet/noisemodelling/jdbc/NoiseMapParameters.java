@@ -8,7 +8,11 @@
  */
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -18,7 +22,14 @@ public class NoiseMapParameters {
 
     boolean exportAttenuationMatrix;
     /** Frequency bands values, by octave or third octave */
-    public List<Integer> freq_lvl;
+    public List<Integer> frequencyArray = Arrays.asList(
+            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public List<Double> exactFrequencyArray = Arrays.asList(
+            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+    public List<Double> aWeightingArray = Arrays.asList(
+            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+
+
     boolean exportProfileInRays = false;
     boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
