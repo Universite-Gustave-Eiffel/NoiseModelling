@@ -28,8 +28,8 @@ import java.util.*;
 /**
  * Create SQL Tables from a stream of noise levels
  */
-public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRaysOutFactory, ProfilerThread.Metric {
-    LdenNoiseMapParameters ldenNoiseMapParameters;
+public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcessDataFactory, NoiseMapByReceiverMaker.IComputeRaysOutFactory, ProfilerThread.Metric {
+    NoiseMapParameters noiseMapParameters;
     NoiseMapWriter noiseMapWriter;
     Thread tableWriterThread;
     Connection connection;
@@ -37,12 +37,17 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
     static final int WRITER_CACHE = 65536;
     AttenuatedPaths AttenuatedPaths = new AttenuatedPaths();
     int srid;
+    List<String> noiseSource = Arrays.asList("ROLLING","TRACTIONA", "TRACTIONB","AERODYNAMICA","AERODYNAMICB","BRIDGE");
 
 
+    /**
+     * Attenuation and other attributes relative to direction on sphere
+     */
+    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
 
-    public NoiseMapMaker(Connection connection, LdenNoiseMapParameters LdenNoiseMapParameters) {
-        this.ldenNoiseMapParameters = LdenNoiseMapParameters;
+    public NoiseMapMaker(Connection connection, NoiseMapParameters NoiseMapParameters) {
+        this.noiseMapParameters = NoiseMapParameters;
         this.connection = connection;
     }
 
@@ -65,34 +70,109 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
         return AttenuatedPaths;
     }
 
+    /**
+     * Inserts directivity attributes for noise sources for trains into the directionAttributes map.
+     */
+
+    public void insertTrainDirectivity() {
+        directionAttributes.clear();
+        directionAttributes.put(0, new OmnidirectionalDirection());
+        int i=1;
+        for(String typeSource : noiseSource) {
+            directionAttributes.put(i, new RailwayCnossosDirectivitySphere(new LineSource(typeSource)));
+            i++;
+        }
+    }
 
     /**
      * Initializes the NoiseMap parameters and attenuation data based on the input mode specified in the NoiseMap parameters.
      * @param connection   the database connection to be used for initialization.
-     * @param ldenNoiseMapLoader the noise map by receiver maker object associated with the computation process.
+     * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
      * @throws SQLException
      */
 
     @Override
-    public void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) throws SQLException {
-        if(JDBCUtilities.tableExists(connection, ldenNoiseMapLoader.getSourcesTableName())) {
-            this.srid = GeometryTableUtilities.getSRID(connection, ldenNoiseMapLoader.getSourcesTableName());
+    public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
+        if(JDBCUtilities.tableExists(connection, noiseMapByReceiverMaker.getSourcesTableName())) {
+            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
         }
-        ldenNoiseMapParameters.initialize(connection, ldenNoiseMapLoader);
+        if(noiseMapParameters.input_mode == org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
+            // Fetch source fields
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
+            List<Integer> frequencyValues = new ArrayList<>();
+            List<Integer> allFrequencyValues = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
+            String period = "";
+            if (noiseMapParameters.computeLDay || noiseMapParameters.computeLDEN) {
+                period = "D";
+            } else if (noiseMapParameters.computeLEvening) {
+                period = "E";
+            } else if (noiseMapParameters.computeLNight) {
+                period = "N";
+            }
+            String freqField = noiseMapParameters.lwFrequencyPrepend + period;
+            if (!period.isEmpty()) {
+                for (String fieldName : sourceField) {
+                    if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
+                        int freq = Integer.parseInt(fieldName.substring(freqField.length()));
+                        int index = allFrequencyValues.indexOf(freq);
+                        if (index >= 0) {
+                            frequencyValues.add(freq);
+                        }
+                    }
+                }
+            }
+            // Sort frequencies values
+            Collections.sort(frequencyValues);
+            // Get associated values for each frequency
+            List<Double> exactFrequencies = new ArrayList<>();
+            List<Double> aWeighting = new ArrayList<>();
+            for (int freq : frequencyValues) {
+                int index = allFrequencyValues.indexOf(freq);
+                exactFrequencies.add(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
+                aWeighting.add(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
+            }
+            if(frequencyValues.isEmpty()) {
+                throw new SQLException("Source table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
+            }
+            // Instance of PropagationProcessPathData maybe already set
+            for(NoiseMapParameters.TIME_PERIOD timePeriod : NoiseMapParameters.TIME_PERIOD.values()) {
+                if (noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod) == null) {
+                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyValues, exactFrequencies, aWeighting);
+                    noiseMapParameters.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                    noiseMapByReceiverMaker.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                } else {
+                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyValues);
+                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencies);
+                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequenciesAWeighting(aWeighting);
+                    noiseMapParameters.setPropagationProcessPathData(timePeriod, noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod));
+                }
+            }
+        } else {
+            for(NoiseMapParameters.TIME_PERIOD timePeriod : NoiseMapParameters.TIME_PERIOD.values()) {
+                if (noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod) == null) {
+                    // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
+                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
+                    noiseMapParameters.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                    noiseMapByReceiverMaker.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
+                } else {
+                    noiseMapParameters.setPropagationProcessPathData(timePeriod, noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod));
+                }
+            }
+        }
     }
 
     /**
      * Start creating and filling database tables
      */
     public void start() {
-        if(ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY) == null) {
+        if(noiseMapParameters.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY) == null) {
             throw new IllegalStateException("start() function must be called after NoiseMapByReceiverMaker initialization call");
         }
-        noiseMapWriter = new NoiseMapWriter(connection, ldenNoiseMapParameters, AttenuatedPaths, srid);
-        ldenNoiseMapParameters.exitWhenDone = false;
+        noiseMapWriter = new NoiseMapWriter(connection, noiseMapParameters, AttenuatedPaths, srid);
+        noiseMapParameters.exitWhenDone = false;
         tableWriterThread = new Thread(noiseMapWriter);
         tableWriterThread.start();
-        while (!noiseMapWriter.started && !ldenNoiseMapParameters.aborted) {
+        while (!noiseMapWriter.started && !noiseMapParameters.aborted) {
             try {
                 Thread.sleep(150);
             } catch (InterruptedException e) {
@@ -106,7 +186,7 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
      * Write the last results and stop the sql writing thread
      */
     public void stop() {
-        ldenNoiseMapParameters.exitWhenDone = true;
+        noiseMapParameters.exitWhenDone = true;
         while (tableWriterThread != null && tableWriterThread.isAlive()) {
             try {
                 Thread.sleep(150);
@@ -124,10 +204,10 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
      * @return A new instance of NoiseEmissionMaker initialized with the provided ProfileBuilder and NoiseMapParameters.
      */
     @Override
-    public LdenScene create(ProfileBuilder builder) {
-        LdenScene ldenScene = new LdenScene(builder, ldenNoiseMapParameters);
-        ldenScene.setDirectionAttributes(directionAttributes);
-        return ldenScene;
+    public NoiseEmissionMaker create(ProfileBuilder builder) {
+        NoiseEmissionMaker noiseEmissionMaker = new NoiseEmissionMaker(builder, noiseMapParameters);
+        noiseEmissionMaker.setDirectionAttributes(directionAttributes);
+        return noiseEmissionMaker;
     }
 
     /**
@@ -141,8 +221,8 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
     @Override
     public IComputePathsOut create(Scene threadData, AttenuationCnossosParameters pathDataDay,
                                    AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight) {
-        return new NoiseMap(pathDataDay, pathDataEvening, pathDataNight,
-                (LdenScene)threadData, AttenuatedPaths, ldenNoiseMapParameters);
+        return new AttenuationOutputMultiThread(pathDataDay, pathDataEvening, pathDataNight,
+                (NoiseEmissionMaker)threadData, AttenuatedPaths, noiseMapParameters);
     }
 
 

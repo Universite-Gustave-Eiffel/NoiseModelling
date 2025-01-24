@@ -42,7 +42,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class Attenuation implements IComputePathsOut {
+public class AttenuationComputeOutput implements IComputePathsOut {
     public ConcurrentLinkedDeque<SourceReceiverAttenuation> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public Deque<CnossosPath> pathParameters = new ConcurrentLinkedDeque<>();
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
@@ -50,13 +50,13 @@ public class Attenuation implements IComputePathsOut {
     public AttenuationCnossosParameters genericMeteoData;
     public SceneWithAttenuation inputData;
 
-    public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
+    public AttenuationComputeOutput(boolean exportPaths, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
         this.exportPaths = exportPaths;
         this.genericMeteoData = pathData;
         this.inputData = inputData;
     }
 
-    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
+    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
         this.genericMeteoData = pathData;

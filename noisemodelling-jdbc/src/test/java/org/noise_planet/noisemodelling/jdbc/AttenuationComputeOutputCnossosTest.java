@@ -9,9 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
@@ -21,7 +19,6 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
@@ -29,6 +26,7 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
@@ -42,14 +40,12 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,9 +55,7 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static java.lang.Double.NaN;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.jdbc.Utils.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.multiplicationArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
@@ -71,7 +65,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 /**
  * Test class evaluation and testing attenuation values.
  */
-public class AttenuationCnossosTest {
+public class AttenuationComputeOutputCnossosTest {
 
     /**
      *  Error for planes values
@@ -88,7 +82,7 @@ public class AttenuationCnossosTest {
      */
     public static final double DELTA_G_PATH = 0.02;
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossosTest.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(AttenuationComputeOutputCnossosTest.class);
     public static final double ERROR_EPSILON_HIGHEST = 1e5;
     public static final double ERROR_EPSILON_VERY_HIGH = 15;
     public static final double ERROR_EPSILON_HIGH = 3;
@@ -169,7 +163,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Run computation
-        Attenuation propDataOut0 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays0 = new PathFinder(rayData);
         computeRays0.setThreadCount(1);
         computeRays0.run(propDataOut0);
@@ -177,7 +171,7 @@ public class AttenuationCnossosTest {
 
         // Barrier, no interaction
         rayData.setBodyBarrier(false);
-        Attenuation propDataOut1 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays1 = new PathFinder(rayData);
         computeRays1.setThreadCount(1);
         computeRays1.run(propDataOut1);
@@ -206,7 +200,7 @@ public class AttenuationCnossosTest {
         rayData2.setComputeVerticalDiffraction(true);
         rayData2.setBodyBarrier(true);
 
-        Attenuation propDataOut2 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut2 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays2 = new PathFinder(rayData2);
         computeRays2.run(propDataOut2);
         double[] values2 = propDataOut2.receiversAttenuationLevels.pop().value;
@@ -229,7 +223,7 @@ public class AttenuationCnossosTest {
         rayData3.setComputeHorizontalDiffraction(false);
         rayData3.setComputeVerticalDiffraction(true);
         rayData3.setBodyBarrier(false);
-        Attenuation propDataOut3 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut3 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays3 = new PathFinder(rayData3);
         computeRays3.run(propDataOut3);
         double[] values3 = propDataOut3.receiversAttenuationLevels.pop().value;
@@ -286,14 +280,14 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Run computation
-        Attenuation propDataOut0 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays0 = new PathFinder(rayData);
         computeRays0.setThreadCount(1);
         rayData.reflexionOrder=0;
         computeRays0.run(propDataOut0);
         double[] values0 = propDataOut0.receiversAttenuationLevels.pop().value;
 
-        Attenuation propDataOut1 = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays1 = new PathFinder(rayData);
         computeRays1.setThreadCount(1);
         rayData.reflexionOrder=1;
@@ -347,7 +341,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -398,7 +392,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -436,7 +430,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -468,7 +462,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -487,7 +481,7 @@ public class AttenuationCnossosTest {
         }
     }
 
-    private static Attenuation computeCnossosPath(String... utNames)
+    private static AttenuationComputeOutput computeCnossosPath(String... utNames)
             throws IOException {
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
@@ -503,7 +497,7 @@ public class AttenuationCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
 
         AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
@@ -576,14 +570,14 @@ public class AttenuationCnossosTest {
             attData.setWindRose(favorableConditionDirections);
 
             //Out and computation settings
-            Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+            AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
             PathFinder computeRays = new PathFinder(rayData);
             computeRays.setThreadCount(1);
             computeRays.run(propDataOut);
 
             int maxPowerReceiverIndex = -1;
             double maxGlobalValue = Double.NEGATIVE_INFINITY;
-            for (Attenuation.SourceReceiverAttenuation v : propDataOut.getVerticesSoundLevel()) {
+            for (AttenuationComputeOutput.SourceReceiverAttenuation v : propDataOut.getVerticesSoundLevel()) {
                 double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.value);
                 if (globalValue > maxGlobalValue) {
                     maxGlobalValue = globalValue;
@@ -647,10 +641,10 @@ public class AttenuationCnossosTest {
             // Run ray propagation
             IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(),
                     cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-            assertInstanceOf(NoiseMap.class, out);
-            NoiseMap rout = (NoiseMap) out;
+            assertInstanceOf(AttenuationOutputMultiThread.class, out);
+            AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
             assertEquals(1, rout.attenuatedPaths.lDenLevels.size());
-            Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+            AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
             return AcousticIndicatorsFunctions.sumDbArray(sl.value);
         }
         return 0;
@@ -759,7 +753,7 @@ public class AttenuationCnossosTest {
 
         // Merge levels for each receiver for point sources
         Map<Long, double[]> levelsPerReceiver = new HashMap<>();
-        for(Attenuation.SourceReceiverAttenuation lvl : propDataOut.receiversAttenuationLevels) {
+        for(AttenuationComputeOutput.SourceReceiverAttenuation lvl : propDataOut.receiversAttenuationLevels) {
             if(!levelsPerReceiver.containsKey(lvl.receiver.receiverPk)) {
                 levelsPerReceiver.put(lvl.receiver.receiverPk, lvl.value);
             } else {
@@ -772,7 +766,7 @@ public class AttenuationCnossosTest {
 
         // Merge levels for each receiver for lines sources
         Map<Long, double[]> levelsPerReceiverLines = new HashMap<>();
-        for(Attenuation.SourceReceiverAttenuation lvl : propDataOutTest.receiversAttenuationLevels) {
+        for(AttenuationComputeOutput.SourceReceiverAttenuation lvl : propDataOutTest.receiversAttenuationLevels) {
             if(!levelsPerReceiverLines.containsKey(lvl.receiver.receiverPk)) {
                 levelsPerReceiverLines.put(lvl.receiver.receiverPk, lvl.value);
             } else {
@@ -845,7 +839,7 @@ public class AttenuationCnossosTest {
         for(int i = 0; i < 100; i++) {
 
             //Out and computation settings
-            Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+            AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
             rayData.reflexionOrder = i;
             PathFinder computeRays = new PathFinder(rayData);
             computeRays.setThreadCount(1);
@@ -932,7 +926,7 @@ public class AttenuationCnossosTest {
         return max;
     }
 
-    private static final class RayOut extends Attenuation {
+    private static final class RayOut extends AttenuationComputeOutput {
         private DirectPropagationProcessData processData;
 
         public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPropagationProcessData processData) {

@@ -252,12 +252,12 @@ In this bonus step, we will manage with the directivity. To do so, we will apply
 Directivity
 -----------------------------------------------
 
-The directivity table aims at modeling a realistic directional noise source. To do so, we associate to each "Theta-Phi" pair an attenuation in dB.
+The directivity table aims at modeling a realistic directional noise source. To do so, we associate to each "Theta-Phi" pair an attenuationComputeOutput in dB.
 
 * ``DIR_ID`` : identifier of the directivity sphere
 * ``THETA`` : vertical angle in degrees, 0 (front), -90 (bottom), 90 (top), from -90 to 90
 * ``PHI``: horizontal angle in degrees, 0 (front) / 90 (right), from 0 to 360
-* ``LW500`` : attenuation levels in dB for 500 Hz
+* ``LW500`` : attenuationComputeOutput levels in dB for 500 Hz
 
 Each of the sound sources has its own directivity. For the exercise we will use the directivity of a train, which is provided in the file `Directivity.csv`_ and which you are invited to download.
 

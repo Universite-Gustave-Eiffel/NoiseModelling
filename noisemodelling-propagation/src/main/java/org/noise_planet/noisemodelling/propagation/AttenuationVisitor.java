@@ -11,7 +11,6 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -27,13 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Receive vertical cut plane, compute the attenuation corresponding to this plane
  */
 public class AttenuationVisitor implements IComputePathsOut {
-    public Attenuation multiThreadParent;
-    public List<Attenuation.SourceReceiverAttenuation> receiverAttenuationLevels = new ArrayList<>();
+    public AttenuationComputeOutput multiThreadParent;
+    public List<AttenuationComputeOutput.SourceReceiverAttenuation> receiverAttenuationLevels = new ArrayList<>();
     public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
     public AttenuationCnossosParameters attenuationCnossosParameters;
     public boolean keepRays = false;
 
-    public AttenuationVisitor(Attenuation multiThreadParent, AttenuationCnossosParameters attenuationCnossosParameters) {
+    public AttenuationVisitor(AttenuationComputeOutput multiThreadParent, AttenuationCnossosParameters attenuationCnossosParameters) {
         this.multiThreadParent = multiThreadParent;
         this.keepRays = multiThreadParent.exportPaths;
         this.attenuationCnossosParameters = attenuationCnossosParameters;
@@ -70,7 +69,7 @@ public class AttenuationVisitor implements IComputePathsOut {
             pathParameters.addAll(path);
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new Attenuation.SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
+            receiverAttenuationLevels.add(new AttenuationComputeOutput.SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
                     new PathFinder.SourcePointInfo(source), aGlobalMeteo));
             return aGlobalMeteo;
         } else {
@@ -95,7 +94,7 @@ public class AttenuationVisitor implements IComputePathsOut {
             // Push merged sources into multi-thread parent
             // Merge levels for each receiver for lines sources
             Map<PathFinder.SourcePointInfo, double[]> levelsPerSourceLines = new HashMap<>();
-            for (Attenuation.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
+            for (AttenuationComputeOutput.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
                 if (!levelsPerSourceLines.containsKey(lvl.source)) {
                     levelsPerSourceLines.put(lvl.source, lvl.value);
                 } else {
@@ -107,7 +106,7 @@ public class AttenuationVisitor implements IComputePathsOut {
             }
             for (Map.Entry<PathFinder.SourcePointInfo, double[]> entry : levelsPerSourceLines.entrySet()) {
                 multiThreadParent.receiversAttenuationLevels.add(
-                        new Attenuation.SourceReceiverAttenuation(receiver, entry.getKey(), entry.getValue()));
+                        new AttenuationComputeOutput.SourceReceiverAttenuation(receiver, entry.getKey(), entry.getValue()));
             }
         }
         receiverAttenuationLevels.clear();

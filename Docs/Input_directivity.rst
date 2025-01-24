@@ -29,26 +29,26 @@ Table definition
 	* Description: horizontal angle in degrees, 0 (front) / 90 (right), from 0 to 360
 	* Type: Double
 * ``LW63``
-	* Description: attenuation levels in dB for 63 Hz
+	* Description: attenuationComputeOutput levels in dB for 63 Hz
 	* Type: Double
 * ``LW125``
-	* Description: attenuation levels in dB for 125 Hz
+	* Description: attenuationComputeOutput levels in dB for 125 Hz
 	* Type: Double
 * ``LW250``
-	* Description: attenuation levels in dB for 250 Hz
+	* Description: attenuationComputeOutput levels in dB for 250 Hz
 	* Type: Double
 * ``LW500``
-	* Description: attenuation levels in dB for 500 Hz
+	* Description: attenuationComputeOutput levels in dB for 500 Hz
 	* Type: Double
 * ``LW1000``
-	* Description: attenuation levels in dB for 1000 Hz
+	* Description: attenuationComputeOutput levels in dB for 1000 Hz
 	* Type: Double
 * ``LW2000``
-	* Description: attenuation levels in dB for 2000 Hz
+	* Description: attenuationComputeOutput levels in dB for 2000 Hz
 	* Type: Double
 * ``LW4000``
-	* Description: attenuation levels in dB for 4000 Hz
+	* Description: attenuationComputeOutput levels in dB for 4000 Hz
 	* Type: Double
 * ``LW8000``
-	* Description: attenuation levels in dB for 8000 Hz
+	* Description: attenuationComputeOutput levels in dB for 8000 Hz
 	* Type: Double

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Test atmospheric attenuation with ISO 9313-1:1993 P.5-12 as reference values
  */
-public class AtmosphericAttenuationTest {
+public class AtmosphericAttenuationComputeOutputTest {
     private static final double EPSILON = 0.1;
     private static final List<Double> freq_lvl_exact = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(
             ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));

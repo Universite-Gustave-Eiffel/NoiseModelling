@@ -10,7 +10,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,9 +18,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AttenuatedPaths {
     public final AtomicLong queueSize = new AtomicLong(0);
     public final AtomicLong totalRaysInserted = new AtomicLong(0);
-    public final ConcurrentLinkedDeque<Attenuation.SourceReceiverAttenuation> lDayLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<Attenuation.SourceReceiverAttenuation> lEveningLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<Attenuation.SourceReceiverAttenuation> lNightLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<Attenuation.SourceReceiverAttenuation> lDenLevels = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationComputeOutput.SourceReceiverAttenuation> lDayLevels = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationComputeOutput.SourceReceiverAttenuation> lEveningLevels = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationComputeOutput.SourceReceiverAttenuation> lNightLevels = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationComputeOutput.SourceReceiverAttenuation> lDenLevels = new ConcurrentLinkedDeque<>();
     public final ConcurrentLinkedDeque<CnossosPath> rays = new ConcurrentLinkedDeque<>();
 }

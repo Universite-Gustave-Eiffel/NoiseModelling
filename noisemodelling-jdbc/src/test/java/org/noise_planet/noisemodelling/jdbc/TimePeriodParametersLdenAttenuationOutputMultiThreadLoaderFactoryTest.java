@@ -36,8 +36,8 @@ import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +55,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
-public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
+public class TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest {
 
-    static Logger LOGGER = LoggerFactory.getLogger(TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class);
+    static Logger LOGGER = LoggerFactory.getLogger(TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class);
     RailwayCnossos railway = new RailwayCnossos();
 
 
@@ -65,7 +65,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @BeforeEach
     public void tearUp() throws Exception {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getSimpleName(), true, ""));
     }
 
     @AfterEach
@@ -77,7 +77,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmission() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
         LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
         ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters());
         ldenNoiseMapParameters.setPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters());
@@ -128,8 +128,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWay() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
         int expectedNumberOfRows;
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM RAILTRACK")) {
             assertTrue(rs.next());
@@ -148,8 +148,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWayTwoGeoms() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 2)");
@@ -172,8 +172,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
@@ -196,8 +196,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("RailTrain.dbf").getFile());
 
         // Test with two track only
         connection.createStatement().execute("DELETE FROM RAILTRACK WHERE PK NOT IN (SELECT PK FROM RAILTRACK LIMIT 1)");
@@ -220,8 +220,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWay_OC5() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         RailWayLWGeom v = railWayLWIterator.next();
@@ -239,8 +239,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
     public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
 
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/BM/RailTrack.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
@@ -300,8 +300,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
     public void testNoiseEmissionRailWay_Section556() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
 
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
@@ -364,8 +364,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
-        DBFRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
         LdenScene.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
                 "LW_RAILWAY");
@@ -377,9 +377,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
         List<LineString> geometries = v.getRailWayLWGeometry();
         assertEquals(geometries.size(),2);
 
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PropaRail/Buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PropaRail/Rail_protect.shp").getFile());
 
         // ICI POUR CHANGER HAUTEUR ET G ECRAN
         connection.createStatement().execute("CREATE TABLE SCREENS AS SELECT ST_BUFFER(the_geom, 0.5, 'join=mitre endcap=flat') as the_geom, pk as pk, 3.0 as height, g as g FROM Rail_protect");
@@ -439,8 +439,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
                 IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-                if (out instanceof Attenuation) {
-                    Attenuation cellStorage = (Attenuation) out;
+                if (out instanceof AttenuationComputeOutput) {
+                    AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
                     exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }
@@ -495,9 +495,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testTableGenerationFromTraffic() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -657,9 +657,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnly() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -745,9 +745,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testTableGenerationFromTrafficNightOnlyLaeq() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("roads_traff.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW);
 
@@ -820,9 +820,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testReadFrequencies() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
 
@@ -878,9 +878,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void testNoDemBuildingsZ() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("buildings.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("lw_roads.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("buildings.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("receivers.shp").getFile());
 
         try(Statement st = connection.createStatement()) {
             // Alter buildings polygons Z
@@ -930,8 +930,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
                 IComputePathsOut ret = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-                if(ret instanceof NoiseMap) {
-                    NoiseMap out = (NoiseMap)ret;
+                if(ret instanceof AttenuationOutputMultiThread) {
+                    AttenuationOutputMultiThread out = (AttenuationOutputMultiThread)ret;
                     for(Coordinate v : out.ldenScene.profileBuilder.getVertices()) {
                         assertEquals(0.0, v.z, 1e-6);
                     }
@@ -948,9 +948,9 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
     // Check regression of finding cell i,j that contains receivers
     @Test
     public void testRegression1() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("regression1/receivers.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("regression1/lw_roads_fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("regression1/bati_fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("regression1/receivers.shp").getFile());
 
         // Count receivers
         int nbReceivers = 0;
@@ -1011,15 +1011,15 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
 
     @Test
     public void TestPointSource() throws SQLException, IOException {
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/DEM_Fence.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/DEM_Fence.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/LANDCOVER.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/RCVS20.shp").getFile());
 
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/RCVSCircle.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/RCVSCircle.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/NO_BUILD.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile());
 
-        SHPRead.importTable(connection, TimePeriodParametersLdenNoiseMapLoaderFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
+        SHPRead.importTable(connection, TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTest.class.getResource("PointSource/SourceSi.shp").getFile());
 
         // PROPAGATION PART
         // --------------
@@ -1082,8 +1082,8 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
                 // Run ray propagation
                 IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
-                if (out instanceof Attenuation) {
-                    Attenuation cellStorage = (Attenuation) out;
+                if (out instanceof AttenuationComputeOutput) {
+                    AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
                     exportScene(String.format(Locale.ROOT,"target/PtSource_scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
                 }
             }
@@ -1113,7 +1113,7 @@ public class TimePeriodParametersLdenNoiseMapLoaderFactoryTest {
         }
     }
 
-    public static void exportScene(String name, ProfileBuilder builder, Attenuation result) throws IOException {
+    public static void exportScene(String name, ProfileBuilder builder, AttenuationComputeOutput result) throws IOException {
         try {
             //List<PropagationPath> propagationPaths = new ArrayList<>();
             //propagationPaths.addAll(((LDENComputeRaysOut) result).ldenData.rays);

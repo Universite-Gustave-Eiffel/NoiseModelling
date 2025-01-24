@@ -26,7 +26,7 @@ public class RegressionTest {
 
     @BeforeEach
     public void tearUp() throws Exception {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LdenNoiseMapLoaderTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LdenAttenuationOutputMultiThreadLoaderTest.class.getSimpleName(), true, ""));
     }
 
     @AfterEach
@@ -106,7 +106,7 @@ public class RegressionTest {
             assertNotNull(noiseMapMaker.getLdenData().lDenLevels.peekFirst());
             assertEquals(36.77,
                     AcousticIndicatorsFunctions.sumDbArray(noiseMapMaker.getLdenData().lDenLevels.peekFirst().value),
-                    AttenuationCnossosTest.ERROR_EPSILON_LOWEST);
+                    AttenuationComputeOutputCnossosTest.ERROR_EPSILON_LOWEST);
         }
     }
 

@@ -20,7 +20,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class RayAttenuationTest {
+public class RayAttenuationComputeOutputTest {
 
 
 
@@ -40,7 +40,7 @@ public class RayAttenuationTest {
         /*PathParameters pathParameters = mapper.readValue(
                 RayAttenuationTest.class.getResourceAsStream("special_ray.json"), PathParameters.class);*/
         CnossosPath cnossosPath = mapper.readValue(
-                RayAttenuationTest.class.getResourceAsStream("special_ray.json"),
+                RayAttenuationComputeOutputTest.class.getResourceAsStream("special_ray.json"),
                 CnossosPath.class
         );
         AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);

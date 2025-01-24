@@ -135,7 +135,7 @@ public class SceneWithAttenuation extends Scene {
      * @return True if the source is omnidirectional and so does not have orientation dependant attenuation, false otherwise.
      */
     public boolean isOmnidirectional(int srcIndex) {
-        return srcIndex < 0  || sourcesPk.size() < srcIndex || !sourceEmissionAttenuation.containsKey(sourcesPk.get(srcIndex));
+        return srcIndex < 0  || sourcesPk.size() < srcIndex - 1 || !sourceEmissionAttenuation.containsKey(sourcesPk.get(srcIndex));
     }
 
     /**

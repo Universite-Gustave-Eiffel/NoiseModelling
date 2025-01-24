@@ -23,12 +23,12 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -38,13 +38,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
 
-public class LdenNoiseMapLoaderTest {
+public class LdenAttenuationOutputMultiThreadLoaderTest {
 
     private Connection connection;
 
     @BeforeEach
     public void tearUp() throws Exception {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LdenNoiseMapLoaderTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LdenAttenuationOutputMultiThreadLoaderTest.class.getSimpleName(), true, ""));
     }
 
     @AfterEach
@@ -57,7 +57,7 @@ public class LdenNoiseMapLoaderTest {
     @Test
     public void testGroundSurface() throws Exception {
         try(Statement st = connection.createStatement()) {
-            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenNoiseMapLoaderTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenAttenuationOutputMultiThreadLoaderTest.class.getResource("landcover2000.shp").getFile()));
             st.execute(getRunScriptRes("scene_with_landcover.sql"));
             LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             ldenNoiseMapLoader.setComputeHorizontalDiffraction(true);
@@ -80,8 +80,8 @@ public class LdenNoiseMapLoaderTest {
             for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
                 for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
                     IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof Attenuation) {
-                        Attenuation rout = (Attenuation) out;
+                    if(out instanceof AttenuationComputeOutput) {
+                        AttenuationComputeOutput rout = (AttenuationComputeOutput) out;
                         for(GroundAbsorption soil : rout.inputData.profileBuilder.getGroundEffects()) {
                             assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
                         }
@@ -95,7 +95,7 @@ public class LdenNoiseMapLoaderTest {
     @Test
     public void testNoiseMapBuilding() throws Exception {
         try(Statement st = connection.createStatement()) {
-            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenNoiseMapLoaderTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenAttenuationOutputMultiThreadLoaderTest.class.getResource("landcover2000.shp").getFile()));
             st.execute(getRunScriptRes("scene_with_landcover.sql"));
             DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
@@ -184,10 +184,10 @@ public class LdenNoiseMapLoaderTest {
             for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
                 for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
                     IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof NoiseMap) {
-                        NoiseMap rout = (NoiseMap) out;
+                    if(out instanceof AttenuationOutputMultiThread) {
+                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
 
-                        Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+                        AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
                         assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(73.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
@@ -265,12 +265,12 @@ public class LdenNoiseMapLoaderTest {
                 for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
                     //System.out.println("here");
                     IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof NoiseMap) {
-                        NoiseMap rout = (NoiseMap) out;
+                    if(out instanceof AttenuationOutputMultiThread) {
+                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
 
                         assertEquals(2, rout.attenuatedPaths.lDenLevels.size());
 
-                        Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+                        AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
                         assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(68.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
@@ -346,8 +346,8 @@ public class LdenNoiseMapLoaderTest {
             for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
                 for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
                     IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof NoiseMap) {
-                        NoiseMap rout = (NoiseMap) out;
+                    if(out instanceof AttenuationOutputMultiThread) {
+                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
                         List<CnossosPath> pathsParameters = rout.getPropagationPaths();
                         assertEquals(4 , pathsParameters.size());
                         CnossosPath pathParameters = pathsParameters.remove(0);

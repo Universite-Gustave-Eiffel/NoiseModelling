@@ -27,7 +27,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProgressMetric;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,8 +178,8 @@ class Main {
                 // Run ray propagation
                 IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
-                if (out instanceof Attenuation) {
-                    Attenuation cellStorage = (Attenuation) out;
+                if (out instanceof AttenuationComputeOutput) {
+                    AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
                     exportScene(Paths.get(workingDir, String.format(Locale.ROOT,"scene_%d_%d.kml",
                             cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex())).toString(),
                             cellStorage.inputData.profileBuilder, cellStorage);
@@ -239,7 +239,7 @@ class Main {
         mainWithConnection(connection, workingDir);
     }
 
-    public static void exportScene(String name, ProfileBuilder builder, Attenuation result) throws IOException {
+    public static void exportScene(String name, ProfileBuilder builder, AttenuationComputeOutput result) throws IOException {
         try {
             FileOutputStream outData = new FileOutputStream(name);
             KMLDocument kmlDocument = new KMLDocument(outData);

@@ -10,7 +10,7 @@ Get Started
     * ``noisemodelling-emission`` : to determine the noise emission from traffic (road vehicles, trains)
     * ``noisemodelling-jdbc`` : Fetch data from database, run computation then export results into the database
     * ``noisemodelling-pathfinder`` : create vertical profiles between receivers and point sources
-    * ``noisemodelling-propagation`` : convert vertical profiles into propagation rays and compute cnossos attenuation
+    * ``noisemodelling-propagation`` : convert vertical profiles into propagation rays and compute cnossos attenuationComputeOutput
 
 #. Enjoy & feel free to contact us!
 

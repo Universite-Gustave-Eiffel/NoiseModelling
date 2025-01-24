@@ -12,11 +12,11 @@ import org.h2.util.StringUtils;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ public class Utils {
 
 
     public static String getRunScriptRes(String fileName) throws URISyntaxException {
-        File resourceFile = new File(LdenNoiseMapLoaderTest.class.getResource(fileName).toURI());
+        File resourceFile = new File(LdenAttenuationOutputMultiThreadLoaderTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
@@ -63,7 +63,7 @@ public class Utils {
         }
     }
 
-    private static final class RayOut extends Attenuation {
+    private static final class RayOut extends AttenuationComputeOutput {
         private DirectPathsParameters processData;
 
         public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPathsParameters processData) {
