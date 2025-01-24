@@ -196,6 +196,8 @@ public class CnossosPathBuilder {
      * following Cnossos specification, or null if there is no valid path.
      * @param cutProfile Vertical cut of a domain
      * @param bodyBarrier
+     * @param exactFrequencyArray Expected frequencies
+     * @param gS Ground factor of the source area
      * @return The cnossos path or null
      */
     public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {

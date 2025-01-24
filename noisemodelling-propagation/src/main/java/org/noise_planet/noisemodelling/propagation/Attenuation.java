@@ -48,15 +48,15 @@ public class Attenuation implements IComputePathsOut {
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
 
     public AttenuationCnossosParameters genericMeteoData;
-    public Scene inputData;
+    public SceneWithAttenuation inputData;
 
-    public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData, Scene inputData) {
+    public Attenuation(boolean exportPaths, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
         this.exportPaths = exportPaths;
         this.genericMeteoData = pathData;
         this.inputData = inputData;
     }
 
-    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, Scene inputData) {
+    public Attenuation(boolean exportPaths, boolean exportAttenuationMatrix, AttenuationCnossosParameters pathData, SceneWithAttenuation inputData) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
         this.genericMeteoData = pathData;
@@ -90,9 +90,11 @@ public class Attenuation implements IComputePathsOut {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        final Scene scene = inputData;
+        final SceneWithAttenuation scene = inputData;
+        // Source surface reflectivity
+        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
         CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, scene.gS);
+                scene.profileBuilder.exactFrequencyArray, gs);
         if(cnossosPath != null) {
             double[] power = addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }

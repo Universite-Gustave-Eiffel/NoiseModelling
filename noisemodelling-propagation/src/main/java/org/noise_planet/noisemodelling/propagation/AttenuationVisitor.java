@@ -41,9 +41,11 @@ public class AttenuationVisitor implements IComputePathsOut {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        final Scene scene = multiThreadParent.inputData;
+        final SceneWithAttenuation scene = multiThreadParent.inputData;
+        // Source surface reflectivity
+        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
         CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, scene.gS);
+                scene.profileBuilder.exactFrequencyArray, gs);
         if(cnossosPath != null) {
             addPropagationPaths(cutProfile.getSource(), cutProfile.getReceiver(), Collections.singletonList(cnossosPath));
         }

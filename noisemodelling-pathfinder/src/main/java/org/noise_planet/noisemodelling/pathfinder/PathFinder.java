@@ -313,7 +313,7 @@ public class PathFinder {
 
         IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
 
-        CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.gS, !verticalDiffraction);
+        CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.defaultGroundAttenuation, !verticalDiffraction);
         if(cutProfile.getSource() != null) {
             cutProfile.getSource().id = src.getSourceIndex();
             cutProfile.getSource().li = src.li;
@@ -379,7 +379,7 @@ public class PathFinder {
         if(coordinates.size() > 2) {
             // Fetch vertical profile between each point of the diffraction path
             for(int i=0; i<coordinates.size()-1; i++) {
-                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS,
+                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.defaultGroundAttenuation,
                         false);
 
                 // Push new plane (except duplicate points for intermediate segments)
@@ -718,7 +718,7 @@ public class PathFinder {
             }
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
-                    data.gS, !data.computeVerticalDiffraction);
+                    data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
@@ -734,7 +734,7 @@ public class PathFinder {
                 MirrorReceiver firstPoint = rayPath.get(idPt);
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
                 cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
-                        secondPoint.getReflectionPosition(), data.gS, !data.computeVerticalDiffraction);
+                        secondPoint.getReflectionPosition(), data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
                 if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     continue;
@@ -753,7 +753,7 @@ public class PathFinder {
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
             cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
-                    rcv.position, data.gS, !data.computeVerticalDiffraction);
+                    rcv.position, data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;

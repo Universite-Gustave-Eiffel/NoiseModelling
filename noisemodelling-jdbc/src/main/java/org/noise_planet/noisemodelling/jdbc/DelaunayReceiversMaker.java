@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Create input receivers built from Delaunay for contructing a NoiseMap rendering.
+ * Splmit the domain according to a fdence then build multiple delaunay meshes to generate receivers position.
  * SQL syntax is compatible with H2 and PostGIS.
  * @author Nicolas Fortin
  * @author SU Qi

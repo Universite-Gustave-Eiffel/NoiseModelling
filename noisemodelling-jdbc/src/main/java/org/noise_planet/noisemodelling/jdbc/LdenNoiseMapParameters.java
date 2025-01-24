@@ -58,63 +58,6 @@ public class LdenNoiseMapParameters extends NoiseMapParameters {
      * @throws SQLException
      */
     public void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) throws SQLException {
-        if(input_mode == LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
-            // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getColumnNames(connection, ldenNoiseMapLoader.getSourcesTableName());
-            String period = "";
-            if (computeLDay || computeLDEN) {
-                period = "D";
-            } else if (computeLEvening) {
-                period = "E";
-            } else if (computeLNight) {
-                period = "N";
-            }
-            String freqField = lwFrequencyPrepend + period;
-            frequencyArray = new ArrayList<>();
-            exactFrequencyArray = new ArrayList<>();
-            aWeightingArray = new ArrayList<>();
-            if (!period.isEmpty()) {
-                for (String fieldName : sourceField) {
-                    if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
-                        int freq = Integer.parseInt(fieldName.substring(freqField.length()));
-                        int index = Arrays.binarySearch(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
-                        if (index >= 0) {
-                            frequencyArray.add(freq);
-                        }
-                    }
-                }
-            }
-            if(frequencyArray.isEmpty()) {
-                throw new SQLException("Source table "+ ldenNoiseMapLoader.getSourcesTableName()+" does not contains any frequency bands");
-            }
-
-            ProfileBuilder.initializeFrequencyArrayFromReference(frequencyArray, exactFrequencyArray, aWeightingArray);
-
-            // Instance of PropagationProcessPathData maybe already set
-            for(LdenNoiseMapParameters.TIME_PERIOD timePeriod : LdenNoiseMapParameters.TIME_PERIOD.values()) {
-                if (ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod) == null) {
-                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyArray, exactFrequencyArray, aWeightingArray);
-                    setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                    ldenNoiseMapLoader.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                } else {
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyArray);
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencyArray);
-                    ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod).setFrequenciesAWeighting(aWeightingArray);
-                    setPropagationProcessPathData(timePeriod, ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod));
-                }
-            }
-        } else {
-            for(LdenNoiseMapParameters.TIME_PERIOD timePeriod : LdenNoiseMapParameters.TIME_PERIOD.values()) {
-                if (ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod) == null) {
-                    // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
-                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
-                    setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                    ldenNoiseMapLoader.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                } else {
-                    setPropagationProcessPathData(timePeriod, ldenNoiseMapLoader.getPropagationProcessPathData(timePeriod));
-                }
-            }
-        }
     }
 
     public int getMaximumRaysOutputCount() {

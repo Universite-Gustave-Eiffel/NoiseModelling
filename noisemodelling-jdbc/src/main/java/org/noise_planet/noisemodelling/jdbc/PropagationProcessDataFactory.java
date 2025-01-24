@@ -19,12 +19,6 @@ import java.sql.SQLException;
  */
 public interface PropagationProcessDataFactory {
 
-    /**
-     * Creates a scene object with the given profile builder.
-     * @param builder the profile builder used to construct the scene.
-     * @return the created scene object.
-     */
-    Scene create(ProfileBuilder builder);
 
     /**
      * Initializes the propagation process data factory.

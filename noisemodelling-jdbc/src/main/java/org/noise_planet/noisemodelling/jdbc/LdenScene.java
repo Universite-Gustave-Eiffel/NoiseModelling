@@ -25,6 +25,7 @@ import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -38,7 +39,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
-public class LdenScene extends Scene {
+public class LdenScene extends SceneWithAttenuation {
     public Map<String, Integer> sourceFields = null;
 
     // Source value in energetic  e = pow(10, dbVal / 10.0)
@@ -46,10 +47,6 @@ public class LdenScene extends Scene {
     public List<double[]> wjSourcesE = new ArrayList<>();
     public List<double[]> wjSourcesN = new ArrayList<>();
 
-    /**
-     * Attenuation and other attributes relative to direction on sphere
-     */
-    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
     public LdenNoiseMapParameters ldenNoiseMapParameters;
 
@@ -214,23 +211,6 @@ public class LdenScene extends Scene {
         connection.createStatement().execute("ALTER TABLE "+outputTable+" ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
     }
 
-    /**
-     * Sets the direction attributes for the receiver.
-     * @param directionAttributes
-     */
-    public void setDirectionAttributes(Map<Integer, DirectivitySphere> directionAttributes) {
-        this.directionAttributes = directionAttributes;
-        // Check if the directivities contain all required frequencies
-        directionAttributes.forEach((integer, directivitySphere) -> {
-            profileBuilder.frequencyArray.forEach(frequency->{
-                if(!directivitySphere.coverFrequency(frequency)) {
-                    throw new IllegalArgumentException(
-                            String.format(Locale.ROOT,
-                                    "The provided DirectivitySphere does not handle %d Hertz", frequency));
-                }
-            });
-        });
-    }
 
     /**
      * Adds a noise source with its properties to the noise map.
@@ -253,45 +233,6 @@ public class LdenScene extends Scene {
         if(ldenNoiseMapParameters.computeLNight || ldenNoiseMapParameters.computeLDEN) {
             wjSourcesN.add(res[2]);
         }
-    }
-
-    /**
-     * Checks if the noise source at the specified index is omnidirectional.
-     * @param srcIndex Source index in the list sourceGeometries
-     * @return true if the noise source is omnidirectional, false otherwise.
-     */
-    @Override
-    public boolean isOmnidirectional(int srcIndex) {
-        return sourcesPk.size() > srcIndex && !sourceDirection.containsKey(sourcesPk.get(srcIndex));
-    }
-
-    /**
-     *
-     * @param srcIndex Source index in the list sourceGeometries
-     * @param frequencies Frequency in Hertz
-     * @param phi (0 2π) 0 is front
-     * @param theta (-π/2 π/2) 0 is horizontal π is top
-     * @return
-     */
-    @Override
-    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
-        int directivityIdentifier = sourceDirection.get(sourcesPk.get(srcIndex));
-        if(directionAttributes.containsKey(directivityIdentifier)) {
-            return directionAttributes.get(directivityIdentifier).getAttenuationArray(frequencies, phi, theta);
-        } else {
-            // This direction identifier has not been found
-            return new double[frequencies.length];
-        }
-    }
-
-    /**
-     * Retrieves the ground speed of the noise source at the specified index.
-     * @param srcIndex
-     * @return the ground speed of the noise source at the specified index.
-     */
-    @Override
-    public double getSourceGs(int srcIndex){
-        return sourceGs.get(sourcesPk.get(srcIndex));
     }
 
     /**

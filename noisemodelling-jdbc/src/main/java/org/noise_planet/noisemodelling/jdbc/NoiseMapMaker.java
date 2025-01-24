@@ -37,13 +37,8 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
     static final int WRITER_CACHE = 65536;
     AttenuatedPaths AttenuatedPaths = new AttenuatedPaths();
     int srid;
-    List<String> noiseSource = Arrays.asList("ROLLING","TRACTIONA", "TRACTIONB","AERODYNAMICA","AERODYNAMICB","BRIDGE");
 
 
-    /**
-     * Attenuation and other attributes relative to direction on sphere
-     */
-    public Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
 
 
     public NoiseMapMaker(Connection connection, LdenNoiseMapParameters LdenNoiseMapParameters) {
@@ -70,19 +65,6 @@ public class NoiseMapMaker implements PropagationProcessDataFactory, IComputeRay
         return AttenuatedPaths;
     }
 
-    /**
-     * Inserts directivity attributes for noise sources for trains into the directionAttributes map.
-     */
-
-    public void insertTrainDirectivity() {
-        directionAttributes.clear();
-        directionAttributes.put(0, new OmnidirectionalDirection());
-        int i=1;
-        for(String typeSource : noiseSource) {
-            directionAttributes.put(i, new RailwayCnossosDirectivitySphere(new LineSource(typeSource)));
-            i++;
-        }
-    }
 
     /**
      * Initializes the NoiseMap parameters and attenuation data based on the input mode specified in the NoiseMap parameters.

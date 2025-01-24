@@ -20,47 +20,57 @@ import java.util.List;
  */
 public class NoiseMapParameters {
 
-    boolean exportAttenuationMatrix;
-    /** Frequency bands values, by octave or third octave */
-    public List<Integer> frequencyArray = Arrays.asList(
-            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-    public List<Double> exactFrequencyArray = Arrays.asList(
-            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
-    public List<Double> aWeightingArray = Arrays.asList(
-            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+    public String buildingsTableName = "BUILDINGS";
+    public String sourcesTableName = "SOURCES";
+    public String receiverTableName = "RECEIVERS";
+    protected String soilTableName = "GROUND";
 
-
-    boolean exportProfileInRays = false;
-    boolean keepAbsorption = false; // in rays, keep store detailed absorption data
-    int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
+    public boolean exportAttenuationMatrix;
+    public boolean exportProfileInRays = false;
+    public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
+    public int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
     public enum ExportRaysMethods {TO_RAYS_TABLE, TO_MEMORY, NONE}
-    ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
+    public ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
+
     // Cnossos revisions have multiple coefficients for road emission formulae
     // this parameter will be removed when the final version of Cnossos will be published
-    int coefficientVersion = 2;
+    public int coefficientVersion = 2;
 
     // Process status
-    boolean exitWhenDone = false;
-    boolean aborted = false;
+    public boolean exitWhenDone = false;
+    public boolean aborted = false;
 
     public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
 
-    int outputMaximumQueue = 50000;
+    public int outputMaximumQueue = 50000;
+
+    /**
+     * Number of threads used for processing, 0 (default) is using all available cpu threads
+     */
+    private int threadCount = 0;
 
     public boolean mergeSources = true;
 
-    String raysTable = "RAYS";
+    public String raysTable = "RAYS";
 
-    String lwFrequencyPrepend = "LW";
+    public String lwFrequencyPrepend = "LW";
 
-    File sqlOutputFile;
-    Boolean sqlOutputFileCompression = true;
-    Boolean dropResultsTable = true;
+    public File sqlOutputFile;
+    public Boolean sqlOutputFileCompression = true;
+    public Boolean dropResultsTable = true;
     public boolean computeLAEQOnly = false;
 
     /**
      * If true the position of the receiver (with the altitude if available) will be exported into the results tables
      */
-    boolean exportReceiverPosition = false;
+    public boolean exportReceiverPosition = false;
+
+    public int getThreadCount() {
+        return threadCount;
+    }
+
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
+    }
 
 }

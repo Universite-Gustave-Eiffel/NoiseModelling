@@ -28,6 +28,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ import java.util.*;
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 /**
- * Common attributes for propagation of sound sources.
+ * Common attributes for subdivision of the domain
  * @author Nicolas Fortin
  */
 public abstract class NoiseMapLoader {
@@ -52,7 +53,6 @@ public abstract class NoiseMapLoader {
     private String alphaFieldName = "G";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
-    protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
@@ -78,6 +78,7 @@ public abstract class NoiseMapLoader {
 
     protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
+    protected ProfilerThread profilerThread;
 
     // Initialised attributes
     /**
@@ -90,6 +91,16 @@ public abstract class NoiseMapLoader {
         this.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
     }
+
+    /**
+     * Computation stacks and timing are collected by this class in order
+     * to profile the execution of the simulation
+     * @param profilerThread Instance of ProfilerThread
+     */
+    public void setProfilerThread(ProfilerThread profilerThread) {
+        this.profilerThread = profilerThread;
+    }
+
 
     /**
      * The table shall contain the following fields :
@@ -279,71 +290,6 @@ public abstract class NoiseMapLoader {
             }
         }
     }
-
-    /**
-     * Fetches soil areas data for the specified cell envelope and adds them to the profile builder.
-     * @param connection         the database connection to use for querying the soil areas data.
-     * @param fetchEnvelope      the envelope representing the cell to fetch soil areas data for.
-     * @param builder            the profile builder to which the soil areas data will be added.
-     * @throws SQLException      if an SQL exception occurs while fetching the soil areas data.
-     */
-    protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
-            throws SQLException {
-        if(!soilTableName.isEmpty()){
-            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-            double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
-            double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
-            String soilGeomName = getGeometryColumnNames(connection,
-                    TableLocation.parse(soilTableName, dbType)).get(0);
-            try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
-                            soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName, dbType) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                    while (rs.next()) {
-                        Geometry mainPolygon = rs.getGeometry();
-                        if(mainPolygon != null) {
-                            for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
-                                Geometry poly = mainPolygon.getGeometryN(idPoly);
-                                if (poly instanceof Polygon) {
-                                    PreparedPolygon preparedPolygon = new PreparedPolygon((Polygon) poly);
-                                    // Split soil by square
-                                    Envelope geoEnv = poly.getEnvelopeInternal();
-                                    double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                                    double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                                    double xCursor = startXGeo;
-                                    double g = rs.getDouble("G");
-                                    double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
-                                    double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
-                                    while (xCursor < maxX) {
-                                        double yCursor = startYGeo;
-                                        while (yCursor < maxY) {
-                                            Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor + groundSurfaceSplitSideLength);
-                                            Geometry envGeom = geometryFactory.toGeometry(cellEnv);
-                                            if(preparedPolygon.intersects(envGeom)) {
-                                                try {
-                                                    Geometry inters = poly.intersection(envGeom);
-                                                    if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
-                                                        builder.addGroundEffect(inters, g);
-                                                    }
-                                                } catch (TopologyException | IllegalArgumentException ex) {
-                                                    // Ignore
-                                                }
-                                            }
-                                            yCursor += groundSurfaceSplitSideLength;
-                                        }
-                                        xCursor += groundSurfaceSplitSideLength;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 
     /**
      * Fetches buildings data for the specified cell envelope and adds them to the profile builder.
@@ -601,20 +547,6 @@ public abstract class NoiseMapLoader {
     }
 
     /**
-     * Extracted from NMPB 2008-2 7.3.2
-     * Soil areas POLYGON, with a dimensionless coefficient G:
-     *  - Law, meadow, field of cereals G=1
-     *  - Undergrowth (resinous or decidious) G=1
-     *  - Compacted earth, track G=0.3
-     *  - Road surface G=0
-     *  - Smooth concrete G=0
-     * @return Table name of grounds properties
-     */
-    public String getSoilTableName() {
-        return soilTableName;
-    }
-
-    /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
     public boolean isReceiverHasAbsoluteZCoordinates() {
@@ -652,20 +584,6 @@ public abstract class NoiseMapLoader {
         this.zBuildings = zBuildings;
     }
 
-
-    /**
-     * Extracted from NMPB 2008-2 7.3.2
-     * Soil areas POLYGON, with a dimensionless coefficient G:
-     *  - Law, meadow, field of cereals G=1
-     *  - Undergrowth (resinous or decidious) G=1
-     *  - Compacted earth, track G=0.3
-     *  - Road surface G=0
-     *  - Smooth concrete G=0
-     * @param soilTableName Table name of grounds properties
-     */
-    public void setSoilTableName(String soilTableName) {
-        this.soilTableName = soilTableName;
-    }
 
     /**
      * Digital Elevation model table name. Currently only a table with POINTZ column is supported.

@@ -941,12 +941,12 @@ public class ProfileBuilder {
      * Retrieve the cutting profile following the line build from the given coordinates.
      * @param sourceCoordinate Starting point.
      * @param receiverCoordinate Ending point.
-     * @param gS Default source absorption ground effect value if no ground absorption value is found
+     * @param defaultGroundAttenuation Default absorption ground effect value if no ground absorption value is found
      * @param stopAtObstacleOverSourceReceiver If an obstacle is found higher than then segment sourceCoordinate
      *                                        receiverCoordinate, stop computing and a CutProfile with intersection information
      * @return Cutting profile.
      */
-    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double gS, boolean stopAtObstacleOverSourceReceiver) {
+    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double defaultGroundAttenuation, boolean stopAtObstacleOverSourceReceiver) {
         CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
         CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
 
@@ -957,7 +957,7 @@ public class ProfileBuilder {
         if(groundAbsorptionIndex >= 0) {
             sourcePoint.setGroundCoefficient(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
         } else {
-            sourcePoint.setGroundCoefficient(gS);
+            sourcePoint.setGroundCoefficient(defaultGroundAttenuation);
         }
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate

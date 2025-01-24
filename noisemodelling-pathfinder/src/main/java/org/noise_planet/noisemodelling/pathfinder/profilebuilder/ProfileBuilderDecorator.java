@@ -83,7 +83,7 @@ public class ProfileBuilderDecorator {
      * @return
      */
     public ProfileBuilderDecorator setGs(double gs) {
-        data.setGs(gs);
+        data.setDefaultGroundAttenuation(gs);
         return this;
     }
 
