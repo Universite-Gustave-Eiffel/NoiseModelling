@@ -175,38 +175,6 @@ public class Scene {
         this.defaultGroundAttenuation = gS;
     }
 
-    public boolean isComputeVEdgeDiffraction() {
-        return computeHorizontalDiffraction;
-    }
-
-    public boolean isComputeHEdgeDiffraction() {
-        return computeVerticalDiffraction;
-    }
-
-    public boolean isComputeDiffraction() {
-        return isComputeHEdgeDiffraction() || isComputeVEdgeDiffraction();
-    }
-
-    /**
-     * Return directivity attenuation. Default implementation define only omnidirectional sources.
-     * @param srcIndex Source index in the list sourceGeometries
-     * @param frequencies Frequency in Hertz
-     * @param phi (0 2π) 0 is front
-     * @param theta (-π/2 π/2) 0 is horizontal π is top
-     * @return Attenuation in dB
-     */
-    public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
-        return new double[frequencies.length];
-    }
-
-    /**
-     * @param srcIndex Source index in the list sourceGeometries
-     * @return True if the source is omnidirectional and so does not have orientation dependant attenuation.
-     */
-    public boolean isOmnidirectional(int srcIndex) {
-        return true;
-    }
-
 }
 
 

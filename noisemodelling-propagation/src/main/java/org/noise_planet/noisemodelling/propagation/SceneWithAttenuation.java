@@ -129,15 +129,13 @@ public class SceneWithAttenuation extends Scene {
         }
     }
 
-
     /**
      * Checks if the noise source at the specified index is omnidirectional.
      * @param srcIndex Source index in the list sourceGeometries
-     * @return true if the noise source is omnidirectional, false otherwise.
+     * @return True if the source is omnidirectional and so does not have orientation dependant attenuation, false otherwise.
      */
-    @Override
     public boolean isOmnidirectional(int srcIndex) {
-        return sourcesPk.size() > srcIndex && !sourceEmissionAttenuation.containsKey(sourcesPk.get(srcIndex));
+        return srcIndex < 0  || sourcesPk.size() < srcIndex || !sourceEmissionAttenuation.containsKey(sourcesPk.get(srcIndex));
     }
 
     /**
@@ -148,7 +146,6 @@ public class SceneWithAttenuation extends Scene {
      * @param theta (-π/2 π/2) 0 is horizontal π is top
      * @return
      */
-    @Override
     public double[] getSourceAttenuation(int srcIndex, double[] frequencies, double phi, double theta) {
         int directivityIdentifier = sourceEmissionAttenuation.get(sourcesPk.get(srcIndex));
         if (directionAttributes.containsKey(directivityIdentifier)) {

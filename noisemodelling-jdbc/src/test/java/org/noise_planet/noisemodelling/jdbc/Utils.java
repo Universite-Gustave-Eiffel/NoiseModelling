@@ -30,45 +30,6 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 
 public class Utils {
 
-    public static double [] diffArray(double[] array1, double[] array2) {
-        double[] difference = new double[array1.length];
-        if (array1.length == array2.length) {
-            for (int i = 0; i < array1.length; i++) {
-                difference[i] = array1[i] - array2[i];
-            }
-        }else {
-            throw new IllegalArgumentException("Arrays with different size");
-        }
-        return difference;
-
-    }
-    public static double[] addArray(double[] first, double[] second) {
-        int length = Math.min(first.length, second.length);
-        double[] result = new double[length];
-
-        for (int i = 0; i < length; i++) {
-            result[i] = first[i] + second[i];
-        }
-
-        return result;
-    }
-
-    public static double[] getMaxValeurAbsolue(double[] listes) {
-        if (listes == null || listes.length == 0) {
-            throw new IllegalArgumentException("La liste ne peut pas être vide ou nulle.");
-        }
-        double[] result = new double[] {0.0,0};
-        double maxAbsolue = Double.MIN_VALUE;
-        for (int i = 0; i < listes.length; i++) {
-            double valeurAbsolue = Math.abs(listes[i]);
-            if (valeurAbsolue > maxAbsolue) {
-                maxAbsolue = valeurAbsolue;
-                result = new double[] {maxAbsolue,i};
-            }
-        }
-        result[0] = Math.round(result[0] * 100.0) / 100.0;
-        return result;
-    }
 
     public static String getRunScriptRes(String fileName) throws URISyntaxException {
         File resourceFile = new File(LdenNoiseMapLoaderTest.class.getResource(fileName).toURI());
