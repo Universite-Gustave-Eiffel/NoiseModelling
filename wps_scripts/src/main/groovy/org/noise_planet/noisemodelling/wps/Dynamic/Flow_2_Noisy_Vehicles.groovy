@@ -15,7 +15,7 @@
  * @Author Valetin Le Bescond, Université Gustave Eiffel, Ghent University
  */
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -254,13 +254,10 @@ def exec(Connection connection, input) {
             }
         )
 
-
         sql.query("SELECT * FROM    "+sources_table_name+"   ;    ", { ResultSet result ->
 
             SpatialResultSet rs = result.unwrap(SpatialResultSet.class)
             int k=1
-
-// ...
 
             while (rs.next()) {
                 Road road = new Road()
@@ -277,7 +274,6 @@ def exec(Connection connection, input) {
                         rs.getDouble('HGV_SPD_D')
                 )
 
-
                 sql.query("SELECT * FROM SOURCES_0dB WHERE ROAD_ID = " + road.id, { ResultSet result2 ->
                     SpatialResultSet rs2 = result2.unwrap(SpatialResultSet.class)
                     while (rs2.next()) {
@@ -289,12 +285,8 @@ def exec(Connection connection, input) {
                 })
 
 
-
                 for (double time = 0; time < duration; time += timestep) {
-
                     road.move(time, duration)
-
-
 
                     for (SourcePoint source in road.source_points) {
                         if (source.levels[0]> 0.0){
@@ -316,8 +308,6 @@ def exec(Connection connection, input) {
                     }
 
                 }
-
-               // roads.add(road)
             }
         })
         sql.execute("CREATE INDEX IF NOT EXISTS ST_TID ON LW_DYNAMIC_GEOM(T, PK)")

@@ -11,9 +11,10 @@
  */
 /**
  * @Author Valentin Le Bescond, Université Gustave Eiffel
+ * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Geometric_Tools
+package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -29,17 +30,15 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-title = 'Create 0db Source From Roads'
-description = '&#10145;&#65039; Creates a SOURCE table from a ROAD table.' +
-              '<hr>' +
-              'The SOURCE table can then be used in the <b>Noise_level_from_source</b> WPS block with the "confExportSourceId" set to true. </br></br>' +
-              'The <b>Noise_level_from_source</b> output will contain a list of "source-receiver" attenuation matrix independent of the source absolute noise power levels.'
 
+title = 'Create Point Source From a network'
+description = ' <br><br> Creates a SOURCES_0DB point source table from a network linestring table. This table is useful to compute the attenuation matrix between sources and receivers.' +
+              'Create point sources from the network every "gridStep" meters. This point source will be used to compute the noise attenuation level from them to each receiver. </br></br>'
 inputs = [
-        tableRoads: [
+        tableNetwork: [
                 name: 'Input table name',
-                title: 'Intput table name',
-                description: 'Name of the Roads table. <br/> <br/>' +
+                title: 'Input table name',
+                description: 'Name of the network table. <br/> <br/>' +
                              'Must contain at least:</br>'+
                              '- <b>PK</b>: identifier with a Primary Key constraint</br>' +
                              '- <b>THE_GEOM</b>: geometric column',
@@ -47,8 +46,16 @@ inputs = [
         ],
         gridStep : [name : 'gridStep',
                     title : "gridStep",
-                    description : "Distance between location of vehicle along the network in meters.</br> <b> Default value : 10 </b>",
-                    type: Integer.class]
+                    description : "Distance between location of possible sources along the network in meters.</br> <b> Default value : 10 </b>",
+                    type: Integer.class,
+                    min : 0,
+                    max :1],
+        height : [name : 'Source height',
+                    title : "Source height",
+                    description : "Height of the source in meters. </br> <b> Default value : 0.05 </b>",
+                    type: Double.class,
+                    min : 0,
+                    max :1]
 ]
 
 outputs = [
@@ -85,7 +92,6 @@ def run(input) {
 
 def exec(connection, input) {
 
-    double h = 0.05 // height of the source (0.05 m)
 
     connection = new ConnectionWrapper(connection)
 
@@ -97,14 +103,17 @@ def exec(connection, input) {
     logger.info('Start : Create_0db_Source_From_Roads')
     logger.info("inputs {}", input)
 
-    int gridStep = 10
+    int gridStep = 10 // 10 meters is the default value
     if (input['gridStep']) {
         gridStep = Integer.valueOf(input['gridStep'] as String)
     }
 
+    double h =  0.05 // height of the source (0.05 m) for road traffic
+    if (input['height']) {
+        h = input['height'] as Double
+    }
 
-    String roadsTableName = input['tableRoads']
-
+    String roadsTableName = input['tableNetwork']
 
     sql.execute("DROP TABLE IF EXISTS SOURCESLines_0dB")
     sql.execute("CREATE TABLE SOURCESLines_0dB (ROAD_ID BIGINT, THE_GEOM GEOMETRY, HZ63 FLOAT, HZ125 FLOAT, HZ250 FLOAT, HZ500 FLOAT, HZ1000 FLOAT, HZ2000 FLOAT, HZ4000 FLOAT, HZ8000 FLOAT);");
@@ -114,6 +123,8 @@ def exec(connection, input) {
     sql.execute("ALTER TABLE SOURCES_0DB ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
     sql.execute("DROP TABLE IF EXISTS SOURCESLines_0dB")
     sql.execute("CREATE SPATIAL INDEX ON SOURCES_0DB(THE_GEOM);")
+
+
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(roadsTableName))
     table_name = "SOURCES_0DB"
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
@@ -125,8 +136,8 @@ def exec(connection, input) {
             TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM" , metaData.getSQL(),"THE_GEOM", h,srid))
 
 
-    logger.info('End : Create_0db_Source_From_Roads')
-    logger.info('Result : ' + resultString)
+    logger.info('End !')
+
     return resultString
 }
 

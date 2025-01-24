@@ -14,14 +14,12 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import groovy.sql.GroovyRowResult
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Geometry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -40,6 +38,14 @@ inputs = [
                         '<br/>The table must contain the following fields :' +
                         '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, T' +
                         '<br/> with PK, the IDSOURCE and T a timestring',
+                type: String.class
+        ],
+        lwTable_sourceId: [
+                name: 'LW(t) sourceId',
+                title: 'LW(t) sourceId',
+                description: 'LW(t)tring',
+                min        : 0,
+                max        : 1,
                 type: String.class
         ],
         attenuationTable : [
@@ -103,6 +109,13 @@ def exec(Connection connection, input) {
     logger.info("inputs {}", input)
 
 
+
+    String lwTable_sourceId = "PK"
+    if (input['lwTable_sourceId']) {
+        lwTable_sourceId = input['lwTable_sourceId']
+    }
+
+
     String outputTable = input['outputTable'].toString().toUpperCase()
     String attenuationTable = input['attenuationTable'].toString().toUpperCase()
     String lwTable = input['lwTable'].toString().toUpperCase()
@@ -129,8 +142,8 @@ def exec(Connection connection, input) {
     }
 
     if (!indexIDSOURCE) {
-        logger.info("index on Source Table PK, NOT found, creating one...")
-        sql.execute("CREATE INDEX ON " + lwTable + " (PK)");
+        logger.info("index on Source Table "+lwTable_sourceId+", NOT found, creating one...")
+        sql.execute("CREATE INDEX ON " + lwTable + " ("+lwTable_sourceId+")");
     }
     if (!indexGEOM) {
         logger.info("index on Source Table THE_GEOM, NOT found, creating one...")
@@ -195,7 +208,7 @@ def exec(Connection connection, input) {
             10 * LOG10( SUM(POWER(10,(mr.HZ4000 + lg.HZ4000) / 10))) AS HZ4000,
             10 * LOG10( SUM(POWER(10,(mr.HZ8000 + lg.HZ8000) / 10))) AS HZ8000,
             mr.T AS TIMESTRING
-        FROM ''' + attenuationTable + '''  lg , ''' + lwTable + ''' mr WHERE lg.IDSOURCE = mr.PK 
+        FROM ''' + attenuationTable + '''  lg , ''' + lwTable + ''' mr WHERE lg.IDSOURCE = mr.'''+lwTable_sourceId+''' 
         GROUP BY lg.IDRECEIVER, mr.T;
 
 drop TABLE if exists ''' + outputTable + ''';
