@@ -46,7 +46,7 @@ public class LdenTableGenerator {
      * @return Emission spectrum in dB
      *
      */
-    public double[] getEmissionFromResultSet(ResultSet rs, String period, double slope, int coefficientVersion) throws SQLException, IOException {
+    public double[] getEmissionFromTrafficTable(ResultSet rs, String period, double slope, int coefficientVersion) throws SQLException, IOException {
         if (sourceFields == null) {
             sourceFields = new HashMap<>();
             int fieldId = 1;
@@ -195,13 +195,13 @@ public class LdenTableGenerator {
             // ignore
         }
         // Day
-        double[] ld = dbaToW(getEmissionFromResultSet(rs, "D", slope, coefficientVersion));
+        double[] ld = dbaToW(getEmissionFromTrafficTable(rs, "D", slope, coefficientVersion));
 
         // Evening
-        double[] le = dbaToW(getEmissionFromResultSet(rs, "E", slope, coefficientVersion));
+        double[] le = dbaToW(getEmissionFromTrafficTable(rs, "E", slope, coefficientVersion));
 
         // Night
-        double[] ln = dbaToW(getEmissionFromResultSet(rs, "N", slope, coefficientVersion));
+        double[] ln = dbaToW(getEmissionFromTrafficTable(rs, "N", slope, coefficientVersion));
 
         double[] lden;
         lden = AcousticIndicatorsFunctions.multiplicationArray(ld, DAY_RATIO);

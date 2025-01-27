@@ -11,32 +11,21 @@ package org.noise_planet.noisemodelling.jdbc;
 
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Configuration of NoiseModelling computation based on database data using standard Lden outputs
+ * Global configuration of NoiseModelling computation based on database data
  */
-public class NoiseMapParameters {
+public class NoiseMapDatabaseParameters {
     public boolean exportAttenuationMatrix;
 
-    public NoiseMapParameters(INPUT_MODE inputMode) {
-        input_mode = inputMode;
+    public NoiseMapDatabaseParameters() {
     }
 
-    public enum INPUT_MODE { INPUT_MODE_TRAFFIC_FLOW, INPUT_MODE_LW_DEN, INPUT_MODE_PROBA}
-    public final INPUT_MODE input_mode;
     public boolean exportProfileInRays = false;
     public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     public int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
-    // Environmental propagation conditions for each time period
-    public Map<String, AttenuationCnossosParameters> attenuationCnossosParametersMap = new HashMap<>();
-    /**
-     * If a time period do not specify the propagation meteorological conditions, use this default settings
-     */
-    public AttenuationCnossosParameters defaultAttenuationCnossosParameters;
 
     public enum ExportRaysMethods {TO_RAYS_TABLE, TO_MEMORY, NONE}
     public ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
@@ -109,35 +98,6 @@ public class NoiseMapParameters {
         this.computeLAEQOnly = computeLAEQOnly;
     }
 
-    /**
-     * If a time period do not specify the propagation meteorological conditions, use this default settings
-     * @param defaultAttenuationCnossosParameters propagation meteorological conditions
-     */
-    public void setDefaultAttenuationCnossosParameters(AttenuationCnossosParameters defaultAttenuationCnossosParameters) {
-        this.defaultAttenuationCnossosParameters = defaultAttenuationCnossosParameters;
-    }
-
-    /**
-     * Retrieves the propagation process path data for the specified time period.
-     * @param timePeriod the time period for which to retrieve the propagation process path data.
-     * @return the attenuation Cnossos parameters for the specified time period.
-     */
-    public AttenuationCnossosParameters getPropagationProcessPathData(String timePeriod) {
-        if(attenuationCnossosParametersMap.containsKey(timePeriod)) {
-            return attenuationCnossosParametersMap.get(timePeriod);
-        } else {
-            return defaultAttenuationCnossosParameters;
-        }
-    }
-
-    /**
-     * Sets the propagation process path data for the specified time period.
-     * @param timePeriod the time period for which to set the propagation process path data.
-     * @param attenuationCnossosParameters the attenuation Cnossos parameters to set.
-     */
-    public void setPropagationProcessPathData(String timePeriod, AttenuationCnossosParameters attenuationCnossosParameters) {
-        attenuationCnossosParametersMap.put(timePeriod, attenuationCnossosParameters);
-    }
 
     public ExportRaysMethods getExportRaysMethod() {
         return exportRaysMethod;

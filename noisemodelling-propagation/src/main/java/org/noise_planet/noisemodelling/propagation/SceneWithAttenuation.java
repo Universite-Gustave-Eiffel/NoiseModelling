@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Scene is used by ProfileBuilder to construct profiles with only taking account of geometry information.
+ * This scene is adding information about attenuation and source power
+ */
 public class SceneWithAttenuation extends Scene {
     public static final double DEFAULT_GS = 0.0;
 

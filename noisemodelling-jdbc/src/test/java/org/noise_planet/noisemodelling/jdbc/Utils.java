@@ -13,6 +13,7 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -36,19 +37,25 @@ public class Utils {
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
     }
 
-    public static class JDBCPropagationData implements PropagationProcessDataFactory {
+    public static class JDBCPropagationData implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
         @Override
-        public Scene create(ProfileBuilder builder) {
+        public SceneWithAttenuation create(ProfileBuilder builder) {
             return new DirectPathsParameters(builder);
         }
 
         @Override
-        public void initialize(Connection connection, LdenNoiseMapLoader ldenNoiseMapLoader) {
+        public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
 
         }
+
+        @Override
+        public ProfileBuilder createProfileBuilder() {
+            return new ProfileBuilder();
+        }
+
     }
 
-    public static class JDBCComputeRaysOut implements IComputeRaysOutFactory {
+    public static class JDBCComputeRaysOut implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
         boolean keepRays;
 
         public JDBCComputeRaysOut(boolean keepRays) {
@@ -78,7 +85,7 @@ public class Utils {
         }
     }
 
-    private static class DirectPathsParameters extends Scene {
+    private static class DirectPathsParameters extends SceneWithAttenuation {
         List<double[]> wjSources = new ArrayList<>();
         private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
 

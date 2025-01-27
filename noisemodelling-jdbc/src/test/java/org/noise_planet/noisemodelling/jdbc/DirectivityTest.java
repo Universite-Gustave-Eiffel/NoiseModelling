@@ -16,6 +16,7 @@ import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivityS
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.TrainAttenuation;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class DirectivityTest {
         // DEBUG st.execute("UPDATE DIRECTIVITY SET LW500=-10 WHERE THETA=45 AND PHI=270 ");
         // Data is inserted now fetch it from the database
         Map<Integer, DiscreteDirectivitySphere> directivities =
-                NoiseMapLoader.fetchDirectivity(connection, "DIRECTIVITY", 1);
+                DefaultTableLoader.fetchDirectivity(connection, "DIRECTIVITY", 1);
 
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/cardioid_dir.html"))) {
             bw.write("<!DOCTYPE html>\n" +

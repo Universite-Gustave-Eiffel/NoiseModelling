@@ -9,27 +9,32 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 
+/**
+ * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance
+ * of AttenuationOutputSingleThread
+ */
 public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
-    AttenuatedPaths attenuatedPaths;
-    NoiseEmissionMaker noiseEmissionMaker;
-    public NoiseMapParameters noiseMapParameters;
+    public AttenuatedPaths attenuatedPaths;
+    public SceneWithEmission sceneWithEmission;
+    public NoiseMapDatabaseParameters noiseMapDatabaseParameters;
 
     /**
      * Create NoiseMap constructor
      * @param inputData
      * @param attenuatedPaths
-     * @param noiseMapParameters
+     * @param noiseMapDatabaseParameters
      */
-    public AttenuationOutputMultiThread(NoiseEmissionMaker inputData,
-                                        AttenuatedPaths attenuatedPaths, NoiseMapParameters noiseMapParameters) {
-        super(inputData.noiseMapParameters.exportRaysMethod != NoiseMapParameters.ExportRaysMethods.NONE, null, inputData);
-        this.exportAttenuationMatrix = inputData.noiseMapParameters.exportAttenuationMatrix;
+    public AttenuationOutputMultiThread(SceneWithEmission inputData,
+                                        AttenuatedPaths attenuatedPaths, NoiseMapDatabaseParameters noiseMapDatabaseParameters) {
+        super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, null, inputData);
+        this.exportAttenuationMatrix = noiseMapDatabaseParameters.exportAttenuationMatrix;
         this.attenuatedPaths = attenuatedPaths;
-        this.noiseEmissionMaker = inputData;
-        this.noiseMapParameters = noiseMapParameters;
+        this.sceneWithEmission = inputData;
+        this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
     }
 
     /**

@@ -16,7 +16,6 @@ import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
-import org.h2gis.utilities.wrapper.ConnectionWrapper;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
@@ -55,6 +54,7 @@ public abstract class NoiseMapLoader {
     private String alphaFieldName = "G";
     protected final String buildingsTableName;
     protected final String sourcesTableName;
+    protected String sourcesEmissionTableName = "";
     protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
@@ -94,89 +94,13 @@ public abstract class NoiseMapLoader {
         this.sourcesTableName = sourcesTableName;
     }
 
-    /**
-     * The table shall contain the following fields :
-     * DIR_ID : identifier of the directivity sphere (INTEGER)
-     * THETA : Horizontal angle in degree. 0° front and 90° right (0-360) (FLOAT)
-     * PHI : Vertical angle in degree. 0° front and 90° top -90° bottom (-90 - 90) (FLOAT)
-     * LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 : attenuation levels in dB for each octave or third octave (FLOAT)
-     * @param connection
-     * @param tableName
-     * @param defaultInterpolation
-     * @return
-     */
-    public static Map<Integer, DiscreteDirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
-        Map<Integer, DiscreteDirectivitySphere> directionAttributes = new HashMap<>();
-        List<String> fields = JDBCUtilities.getColumnNames(connection, tableName);
-        // fetch provided frequencies
-        List<String> frequenciesFields = new ArrayList<>();
-        for(String field : fields) {
-            if(field.toUpperCase(Locale.ROOT).startsWith("LW")) {
-                try {
-                    double frequency = Double.parseDouble(field.substring(2));
-                    if (frequency > 0) {
-                        frequenciesFields.add(field);
-                    }
-                } catch (NumberFormatException ex) {
-                    //ignore column
-                }
-            }
-        }
-        if(frequenciesFields.isEmpty()) {
-            return directionAttributes;
-        }
-        double[] frequencies = new double[frequenciesFields.size()];
-        for(int idFrequency = 0; idFrequency < frequencies.length; idFrequency++) {
-            frequencies[idFrequency] = Double.parseDouble(frequenciesFields.get(idFrequency).substring(2));
-        }
-        StringBuilder sb = new StringBuilder("SELECT DIR_ID, THETA, PHI");
-        for(String frequency : frequenciesFields) {
-            sb.append(", ");
-            sb.append(frequency);
-        }
-        sb.append(" FROM ");
-        sb.append(tableName);
-        sb.append(" ORDER BY DIR_ID");
-        try(Statement st = connection.createStatement()) {
-            try(ResultSet rs = st.executeQuery(sb.toString())) {
-                List<DirectivityRecord> rows = new ArrayList<>();
-                int lastDirId = Integer.MIN_VALUE;
-                while (rs.next()) {
-                    int dirId = rs.getInt(1);
-                    if(lastDirId != dirId && !rows.isEmpty()) {
-                        DiscreteDirectivitySphere attributes = new DiscreteDirectivitySphere(lastDirId, frequencies);
-                        attributes.setInterpolationMethod(defaultInterpolation);
-                        attributes.addDirectivityRecords(rows);
-                        directionAttributes.put(lastDirId, attributes);
-                        rows.clear();
-                    }
-                    lastDirId = dirId;
-                    double theta = Math.toRadians(rs.getDouble(2));
-                    double phi = Math.toRadians(rs.getDouble(3));
-                    double[] att = new double[frequencies.length];
-                    for(int freqColumn = 0; freqColumn < frequencies.length; freqColumn++) {
-                        att[freqColumn] = rs.getDouble(freqColumn + 4);
-                    }
-                    DirectivityRecord r = new DirectivityRecord(theta, phi, att);
-                    rows.add(r);
-                }
-                if(!rows.isEmpty()) {
-                    DiscreteDirectivitySphere attributes = new DiscreteDirectivitySphere(lastDirId, frequencies);
-                    attributes.setInterpolationMethod(defaultInterpolation);
-                    attributes.addDirectivityRecords(rows);
-                    directionAttributes.put(lastDirId, attributes);
-                }
-            }
-        }
-        return directionAttributes;
-    }
 
     /**
      * Retrieves the propagation process path data for the specified time period.
      * @param time_period the time period for which to retrieve the propagation process path data.
      * @return the attenuation Cnossos parameters for the specified time period.
      */
-    public AttenuationCnossosParameters getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD time_period) {
+    public AttenuationCnossosParameters getPropagationProcessPathData(NoiseMapDatabaseParameters.TIME_PERIOD time_period) {
         switch (time_period) {
             case DAY:
                 return attenuationCnossosParametersDay;
@@ -192,7 +116,7 @@ public abstract class NoiseMapLoader {
      * @param time_period the time period for which to set the propagation process path data.
      * @param attenuationCnossosParameters the attenuation Cnossos parameters to set.
      */
-    public void setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
+    public void setPropagationProcessPathData(NoiseMapDatabaseParameters.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
         switch (time_period) {
             case DAY:
                 attenuationCnossosParametersDay = attenuationCnossosParameters;
@@ -659,12 +583,31 @@ public abstract class NoiseMapLoader {
     }
 
     /**
-     * This table must contain a POINT or LINESTRING column, and spectrum in dB(A).
-     * Spectrum column name must be {@link #sound_lvl_field}HERTZ. Where HERTZ is a number [100-5000]
-     * @return Table name that contain linear and/or punctual sound sources.     *
+     * This table must contain a POINT or LINESTRING column
+     * @return Table name that contain linear and/or punctual sound sources.*
      */
     public String getSourcesTableName() {
         return sourcesTableName;
+    }
+
+    /**
+     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * and emission spectrum in dB(A).
+     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
+     * @return Source emission table name*
+     */
+    public String getSourcesEmissionTableName() {
+        return sourcesEmissionTableName;
+    }
+
+    /**
+     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * and emission spectrum in dB(A).
+     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
+     * @param sourcesEmissionTableName Source emission table name
+     */
+    public void setSourcesEmissionTableName(String sourcesEmissionTableName) {
+        this.sourcesEmissionTableName = sourcesEmissionTableName;
     }
 
     /**

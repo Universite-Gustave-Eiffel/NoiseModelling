@@ -7,11 +7,13 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.jdbc;
+package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.noise_planet.noisemodelling.jdbc.AttenuatedPaths;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
@@ -38,8 +40,8 @@ public class NoiseMapWriter implements Runnable {
     Logger LOGGER = LoggerFactory.getLogger(NoiseMapWriter.class);
     File sqlFilePath;
     private Connection connection;
-    NoiseMapParameters noiseMapParameters;
-    AttenuatedPaths AttenuatedPaths;
+    NoiseMapDatabaseParameters noiseMapDatabaseParameters;
+    org.noise_planet.noisemodelling.jdbc.AttenuatedPaths AttenuatedPaths;
     double[] a_weighting;
     boolean started = false;
     Writer o;
@@ -48,18 +50,18 @@ public class NoiseMapWriter implements Runnable {
     /**
      * Constructs a new NoiseMapWriter object with the specified parameters.
      * @param connection        the database connection used for writing data
-     * @param noiseMapParameters the parameters defining the noise map computation
+     * @param noiseMapDatabaseParameters the parameters defining the noise map computation
      * @param AttenuatedPaths   the attenuated paths containing computed noise data
      * @param srid the spatial reference identifier (SRID) for geometric data
      */
-    public NoiseMapWriter(Connection connection, NoiseMapParameters noiseMapParameters, AttenuatedPaths AttenuatedPaths, int srid) {
+    public NoiseMapWriter(Connection connection, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AttenuatedPaths AttenuatedPaths, int srid) {
         this.connection = connection;
-        this.sqlFilePath = noiseMapParameters.sqlOutputFile;
-        this.noiseMapParameters = noiseMapParameters;
+        this.sqlFilePath = noiseMapDatabaseParameters.sqlOutputFile;
+        this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.AttenuatedPaths = AttenuatedPaths;
-        a_weighting = new double[noiseMapParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.size()];
+        a_weighting = new double[noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.size()];
         for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
-            a_weighting[idfreq] = noiseMapParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.get(idfreq);
+            a_weighting[idfreq] = noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.get(idfreq);
         }
         this.srid = srid;
     }
@@ -70,19 +72,19 @@ public class NoiseMapWriter implements Runnable {
      * @throws SQLException if an SQL exception occurs while executing the INSERT query
      */
     void processRaysStack(ConcurrentLinkedDeque<CnossosPath> stack) throws SQLException {
-        StringBuilder query = new StringBuilder("INSERT INTO " + noiseMapParameters.raysTable +
+        StringBuilder query = new StringBuilder("INSERT INTO " + noiseMapDatabaseParameters.raysTable +
                 "(the_geom , IDRECEIVER , IDSOURCE");
-        if(noiseMapParameters.exportProfileInRays) {
+        if(noiseMapDatabaseParameters.exportProfileInRays) {
             query.append(", GEOJSON");
         }
-        if(noiseMapParameters.exportAttenuationMatrix) {
+        if(noiseMapDatabaseParameters.exportAttenuationMatrix) {
             query.append(", LEQ, PERIOD");
         }
         query.append(") VALUES (?, ?, ?");
-        if(noiseMapParameters.exportProfileInRays) {
+        if(noiseMapDatabaseParameters.exportProfileInRays) {
             query.append(", ?");
         }
-        if(noiseMapParameters.exportAttenuationMatrix) {
+        if(noiseMapDatabaseParameters.exportAttenuationMatrix) {
             query.append(", ?, ?");
         }
         query.append(");");
@@ -103,16 +105,16 @@ public class NoiseMapWriter implements Runnable {
             ps.setObject(parameterIndex++, lineString);
             ps.setLong(parameterIndex++, row.getIdReceiver());
             ps.setLong(parameterIndex++, row.getIdSource());
-            if(noiseMapParameters.exportProfileInRays) {
+            if(noiseMapDatabaseParameters.exportProfileInRays) {
                 String geojson = "";
                 try {
-                    geojson = row.profileAsJSON(noiseMapParameters.geojsonColumnSizeLimit);
+                    geojson = row.profileAsJSON(noiseMapDatabaseParameters.geojsonColumnSizeLimit);
                 } catch (IOException ex) {
                     //ignore
                 }
                 ps.setString(parameterIndex++, geojson);
             }
-            if(noiseMapParameters.exportAttenuationMatrix) {
+            if(noiseMapDatabaseParameters.exportAttenuationMatrix) {
                 double globalValue = sumDbArray(row.aGlobal);
                 ps.setDouble(parameterIndex++, globalValue);
                 ps.setString(parameterIndex++, row.getTimePeriod());
@@ -141,14 +143,14 @@ public class NoiseMapWriter implements Runnable {
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(tableName);
         query.append(" VALUES (? "); // ID_RECEIVER
-        if(!noiseMapParameters.mergeSources) {
+        if(!noiseMapDatabaseParameters.mergeSources) {
             query.append(", ?"); // ID_SOURCE
         }
-        if(noiseMapParameters.exportReceiverPosition) {
+        if(noiseMapDatabaseParameters.exportReceiverPosition) {
             query.append(", ?"); // THE_GEOM
         }
-        if (!noiseMapParameters.computeLAEQOnly) {
-            query.append(", ?".repeat(noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size())); // freq value
+        if (!noiseMapDatabaseParameters.computeLAEQOnly) {
+            query.append(", ?".repeat(noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl.size())); // freq value
             query.append(", ?, ?);"); // laeq, leq
         }else{
             query.append(", ?);"); // laeq, leq
@@ -166,16 +168,16 @@ public class NoiseMapWriter implements Runnable {
             AttenuatedPaths.queueSize.decrementAndGet();
             int parameterIndex = 1;
             ps.setLong(parameterIndex++, row.receiver.receiverPk);
-            if(!noiseMapParameters.mergeSources) {
+            if(!noiseMapDatabaseParameters.mergeSources) {
                 ps.setLong(parameterIndex++, row.source.sourcePk);
             }
-            if(noiseMapParameters.exportReceiverPosition) {
+            if(noiseMapDatabaseParameters.exportReceiverPosition) {
                 ps.setObject(parameterIndex++,  row.receiver.position != null ?
                         factory.createPoint(row.receiver.position):
                         factory.createPoint());
             }
-            if (!noiseMapParameters.computeLAEQOnly){
-                for(int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            if (!noiseMapDatabaseParameters.computeLAEQOnly){
+                for(int idfreq = 0; idfreq < noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                     double value = row.value[idfreq];
                     if(!Double.isFinite(value)) {
                         value = -99.0;
@@ -193,7 +195,7 @@ public class NoiseMapWriter implements Runnable {
             ps.setDouble(parameterIndex++, value);
 
             // leq value
-            if (!noiseMapParameters.computeLAEQOnly) {
+            if (!noiseMapDatabaseParameters.computeLAEQOnly) {
                 ps.setDouble(parameterIndex++, wToDba(sumArray(dbaToW(row.value))));
             }
 
@@ -218,24 +220,24 @@ public class NoiseMapWriter implements Runnable {
     private String forgeCreateTable(String tableName) {
         StringBuilder sb = new StringBuilder("create table ");
         sb.append(tableName);
-        if(!noiseMapParameters.mergeSources) {
+        if(!noiseMapDatabaseParameters.mergeSources) {
             sb.append(" (IDRECEIVER bigint NOT NULL");
             sb.append(", IDSOURCE bigint NOT NULL");
         } else {
             sb.append(" (IDRECEIVER bigint NOT NULL");
         }
-        if(noiseMapParameters.exportReceiverPosition) {
+        if(noiseMapDatabaseParameters.exportReceiverPosition) {
             sb.append(", THE_GEOM GEOMETRY(POINTZ,");
             sb.append(srid);
             sb.append(")");
         }
-        if (noiseMapParameters.computeLAEQOnly){
+        if (noiseMapDatabaseParameters.computeLAEQOnly){
             sb.append(", LAEQ REAL");
             sb.append(");");
         } else {
-            for (int idfreq = 0; idfreq < noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
+            for (int idfreq = 0; idfreq < noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl.size(); idfreq++) {
                 sb.append(", HZ");
-                sb.append(noiseMapParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq));
+                sb.append(noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl.get(idfreq));
                 sb.append(" REAL");
             }
             sb.append(", LAEQ REAL, LEQ REAL");
@@ -249,7 +251,7 @@ public class NoiseMapWriter implements Runnable {
      * @param tableName
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
-        if (noiseMapParameters.mergeSources) {
+        if (noiseMapDatabaseParameters.mergeSources) {
             return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
         } else {
             return "CREATE INDEX ON " + tableName + " (IDRECEIVER);";
@@ -278,54 +280,54 @@ public class NoiseMapWriter implements Runnable {
      * @throws IOException
      */
     public void init() throws SQLException, IOException {
-        if(noiseMapParameters.getExportRaysMethod() == org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE) {
-            if(noiseMapParameters.dropResultsTable) {
-                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapParameters.raysTable);
+        if(noiseMapDatabaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
+            if(noiseMapDatabaseParameters.dropResultsTable) {
+                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapDatabaseParameters.raysTable);
                 processQuery(q);
             }
-            StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS " + noiseMapParameters.raysTable + "(pk bigint auto_increment, the_geom " +
+            StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS " + noiseMapDatabaseParameters.raysTable + "(pk bigint auto_increment, the_geom " +
                     "geometry(LINESTRING Z,");
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
-            if(noiseMapParameters.exportProfileInRays) {
+            if(noiseMapDatabaseParameters.exportProfileInRays) {
                 sb.append(", GEOJSON VARCHAR");
             }
-            if(noiseMapParameters.exportAttenuationMatrix) {
+            if(noiseMapDatabaseParameters.exportAttenuationMatrix) {
                 sb.append(", LEQ DOUBLE, PERIOD VARCHAR");
             }
             sb.append(");");
             processQuery(sb.toString());
         }
-        if(noiseMapParameters.computeLDay) {
-            if(noiseMapParameters.dropResultsTable) {
-                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapParameters.lDayTable);
+        if(noiseMapDatabaseParameters.computeLDay) {
+            if(noiseMapDatabaseParameters.dropResultsTable) {
+                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapDatabaseParameters.lDayTable);
                 processQuery(q);
             }
-            String q = forgeCreateTable(noiseMapParameters.lDayTable);
+            String q = forgeCreateTable(noiseMapDatabaseParameters.lDayTable);
             processQuery(q);
         }
-        if(noiseMapParameters.computeLEvening) {
-            if(noiseMapParameters.dropResultsTable) {
-                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapParameters.lEveningTable);
+        if(noiseMapDatabaseParameters.computeLEvening) {
+            if(noiseMapDatabaseParameters.dropResultsTable) {
+                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapDatabaseParameters.lEveningTable);
                 processQuery(q);
             }
-            String q = forgeCreateTable(noiseMapParameters.lEveningTable);
+            String q = forgeCreateTable(noiseMapDatabaseParameters.lEveningTable);
             processQuery(q);
         }
-        if(noiseMapParameters.computeLNight) {
-            if(noiseMapParameters.dropResultsTable) {
-                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapParameters.lNightTable);
+        if(noiseMapDatabaseParameters.computeLNight) {
+            if(noiseMapDatabaseParameters.dropResultsTable) {
+                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapDatabaseParameters.lNightTable);
                 processQuery(q);
             }
-            String q = forgeCreateTable(noiseMapParameters.lNightTable);
+            String q = forgeCreateTable(noiseMapDatabaseParameters.lNightTable);
             processQuery(q);
         }
-        if(noiseMapParameters.computeLDEN) {
-            if(noiseMapParameters.dropResultsTable) {
-                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapParameters.lDenTable);
+        if(noiseMapDatabaseParameters.computeLDEN) {
+            if(noiseMapDatabaseParameters.dropResultsTable) {
+                String q = String.format("DROP TABLE IF EXISTS %s;", noiseMapDatabaseParameters.lDenTable);
                 processQuery(q);
             }
-            String q = forgeCreateTable(noiseMapParameters.lDenTable);
+            String q = forgeCreateTable(noiseMapDatabaseParameters.lDenTable);
             processQuery(q);
         }
     }
@@ -336,21 +338,21 @@ public class NoiseMapWriter implements Runnable {
      * @throws IOException
      */
     void mainLoop() throws SQLException, IOException {
-        while (!noiseMapParameters.aborted) {
+        while (!noiseMapDatabaseParameters.aborted) {
             started = true;
             try {
                 if(!AttenuatedPaths.lDayLevels.isEmpty()) {
-                    processStack(noiseMapParameters.lDayTable, AttenuatedPaths.lDayLevels);
+                    processStack(noiseMapDatabaseParameters.lDayTable, AttenuatedPaths.lDayLevels);
                 } else if(!AttenuatedPaths.lEveningLevels.isEmpty()) {
-                    processStack(noiseMapParameters.lEveningTable, AttenuatedPaths.lEveningLevels);
+                    processStack(noiseMapDatabaseParameters.lEveningTable, AttenuatedPaths.lEveningLevels);
                 } else if(!AttenuatedPaths.lNightLevels.isEmpty()) {
-                    processStack(noiseMapParameters.lNightTable, AttenuatedPaths.lNightLevels);
+                    processStack(noiseMapDatabaseParameters.lNightTable, AttenuatedPaths.lNightLevels);
                 } else if(!AttenuatedPaths.lDenLevels.isEmpty()) {
-                    processStack(noiseMapParameters.lDenTable, AttenuatedPaths.lDenLevels);
+                    processStack(noiseMapDatabaseParameters.lDenTable, AttenuatedPaths.lDenLevels);
                 } else if(!AttenuatedPaths.rays.isEmpty()) {
                     processRaysStack(AttenuatedPaths.rays);
                 } else {
-                    if(noiseMapParameters.exitWhenDone) {
+                    if(noiseMapDatabaseParameters.exitWhenDone) {
                         break;
                     } else {
                         Thread.sleep(50);
@@ -371,17 +373,17 @@ public class NoiseMapWriter implements Runnable {
     void createKeys()  throws SQLException, IOException {
         // Set primary keys
         LOGGER.info("Write done, apply primary keys");
-        if(noiseMapParameters.computeLDay) {
-            processQuery(forgePkTable(noiseMapParameters.lDayTable));
+        if(noiseMapDatabaseParameters.computeLDay) {
+            processQuery(forgePkTable(noiseMapDatabaseParameters.lDayTable));
         }
-        if(noiseMapParameters.computeLEvening) {
-            processQuery(forgePkTable(noiseMapParameters.lEveningTable));
+        if(noiseMapDatabaseParameters.computeLEvening) {
+            processQuery(forgePkTable(noiseMapDatabaseParameters.lEveningTable));
         }
-        if(noiseMapParameters.computeLNight) {
-            processQuery(forgePkTable(noiseMapParameters.lNightTable));
+        if(noiseMapDatabaseParameters.computeLNight) {
+            processQuery(forgePkTable(noiseMapDatabaseParameters.lNightTable));
         }
-        if(noiseMapParameters.computeLDEN) {
-            processQuery(forgePkTable(noiseMapParameters.lDenTable));
+        if(noiseMapDatabaseParameters.computeLDEN) {
+            processQuery(forgePkTable(noiseMapDatabaseParameters.lDenTable));
         }
     }
 
@@ -391,7 +393,7 @@ public class NoiseMapWriter implements Runnable {
      * @throws IOException if an I/O error occurs while creating the stream
      */
     OutputStreamWriter getStream() throws IOException {
-        if(noiseMapParameters.sqlOutputFileCompression) {
+        if(noiseMapDatabaseParameters.sqlOutputFileCompression) {
             return new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(sqlFilePath), WRITER_CACHE));
         } else {
             return new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(sqlFilePath), WRITER_CACHE));
@@ -412,10 +414,10 @@ public class NoiseMapWriter implements Runnable {
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);
                 LOGGER.error(e.getLocalizedMessage(), e.getNextException());
-                noiseMapParameters.aborted = true;
+                noiseMapDatabaseParameters.aborted = true;
             } catch (Throwable e) {
                 LOGGER.error("Got exception on result writer, cancel calculation", e);
-                noiseMapParameters.aborted = true;
+                noiseMapDatabaseParameters.aborted = true;
             }
         } else {
             try(OutputStreamWriter bw = getStream()) {
@@ -426,10 +428,10 @@ public class NoiseMapWriter implements Runnable {
             } catch (SQLException e) {
                 LOGGER.error("SQL Writer exception", e);
                 LOGGER.error(e.getLocalizedMessage(), e.getNextException());
-                noiseMapParameters.aborted = true;
+                noiseMapDatabaseParameters.aborted = true;
             } catch (Throwable e) {
                 LOGGER.error("Got exception on result writer, cancel calculation", e);
-                noiseMapParameters.aborted = true;
+                noiseMapDatabaseParameters.aborted = true;
             }
         }
         // LOGGER.info("Exit TableWriter");

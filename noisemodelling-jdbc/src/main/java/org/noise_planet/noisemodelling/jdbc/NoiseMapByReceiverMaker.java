@@ -19,6 +19,8 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
+import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
+import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -26,6 +28,7 @@ import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +47,7 @@ import java.util.*;
 public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     private final String receiverTableName;
     private PropagationProcessDataFactory propagationProcessDataFactory;
-    private IComputeRaysOutFactory computeRaysOutFactory;
+    private IComputeRaysOutFactory computeRaysOutFactory = new DefaultCutPlaneProcessing();
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
@@ -104,10 +107,16 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * @return Data input for cell evaluation
      * @throws SQLException
      */
-    public Scene prepareCell(Connection connection, int cellI, int cellJ,
-                             ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
+    public SceneWithAttenuation prepareCell(Connection connection, int cellI, int cellJ,
+                                            ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        ProfileBuilder builder = new ProfileBuilder();
+        ProfileBuilder builder;
+
+        if(propagationProcessDataFactory != null) {
+            builder = propagationProcessDataFactory.createProfileBuilder();
+        } else {
+            builder = new ProfileBuilder();
+        }
         int ij = cellI * gridDim + cellJ + 1;
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
@@ -136,17 +145,16 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         expandedCellEnvelop = new Envelope(cellEnvelope);
         expandedCellEnvelop.expandBy(maximumPropagationDistance);
 
-        Scene propagationProcessData;
+        SceneWithAttenuation propagationProcessData;
         if(propagationProcessDataFactory != null) {
             propagationProcessData = propagationProcessDataFactory.create(builder);
         } else {
-            propagationProcessData = new Scene(builder, attenuationCnossosParametersDay.freq_lvl);
+            propagationProcessData = new SceneWithAttenuation(builder);
         }
         propagationProcessData.reflexionOrder = soundReflectionOrder;
         propagationProcessData.setBodyBarrier(bodyBarrier);
         propagationProcessData.maxRefDist = maximumReflectionDistance;
         propagationProcessData.maxSrcDist = maximumPropagationDistance;
-        propagationProcessData.gS = getGs();
         propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
         propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 
@@ -270,7 +278,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public IComputePathsOut evaluateCell(Connection connection, int cellI, int cellJ,
                                          ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        Scene threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
+        SceneWithAttenuation threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
 
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
@@ -323,7 +331,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     }
 
     /**
-     * A factory interface for creating propagation process data for noise map computation.
+     * A factory interface for initializing input propagation process data for noise map computation.
      */
     public interface PropagationProcessDataFactory {
 
@@ -332,7 +340,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
          * @param builder the profile builder used to construct the scene.
          * @return the created scene object.
          */
-        Scene create(ProfileBuilder builder);
+        SceneWithAttenuation create(ProfileBuilder builder);
 
         /**
          * Initializes the propagation process data factory.
@@ -341,6 +349,12 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
          * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
          */
         void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException;
+
+        /**
+         * @return New instance of profile builder for this computation area
+         * It will be fed with input data later
+         */
+        ProfileBuilder createProfileBuilder();
     }
 
     /**
@@ -350,15 +364,10 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
         /**
          * Creates an object that computes paths out for noise map computation.
-         *
-         * @param threadData       the scene data for the current computation thread.
-         * @param pathDataDay      the attenuation parameters for daytime computation.
-         * @param pathDataEvening  the attenuation parameters for evening computation.
-         * @param pathDataNight    the attenuation parameters for nighttime computation.
+         * @param cellData the scene data for the current computation cell
          * @return an object that computes paths out for noise map computation.
          */
-        IComputePathsOut create(Scene threadData, AttenuationCnossosParameters pathDataDay,
-                                AttenuationCnossosParameters pathDataEvening, AttenuationCnossosParameters pathDataNight);
+        IComputePathsOut create(SceneWithEmission cellData);
     }
 
 

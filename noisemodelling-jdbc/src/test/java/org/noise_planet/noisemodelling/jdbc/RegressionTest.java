@@ -103,9 +103,9 @@ public class RegressionTest {
 
 
             NoiseMapMaker noiseMapMaker = runPropagation(connection, ldenNoiseMapLoader);
-            assertNotNull(noiseMapMaker.getLdenData().lDenLevels.peekFirst());
+            assertNotNull(noiseMapMaker.getOutputDataDeque().lDenLevels.peekFirst());
             assertEquals(36.77,
-                    AcousticIndicatorsFunctions.sumDbArray(noiseMapMaker.getLdenData().lDenLevels.peekFirst().value),
+                    AcousticIndicatorsFunctions.sumDbArray(noiseMapMaker.getOutputDataDeque().lDenLevels.peekFirst().value),
                     AttenuationComputeOutputCnossosTest.ERROR_EPSILON_LOWEST);
         }
     }

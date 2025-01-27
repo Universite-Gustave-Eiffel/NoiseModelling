@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorptio
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.noise_planet.noisemodelling.propagation.Attenuation;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -38,13 +39,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
 
-public class LdenAttenuationOutputMultiThreadLoaderTest {
+public class NoiseMapByReceiverMakerTest {
 
     private Connection connection;
 
     @BeforeEach
     public void tearUp() throws Exception {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(LdenAttenuationOutputMultiThreadLoaderTest.class.getSimpleName(), true, ""));
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(NoiseMapByReceiverMakerTest.class.getSimpleName(), true, ""));
     }
 
     @AfterEach
@@ -57,29 +58,29 @@ public class LdenAttenuationOutputMultiThreadLoaderTest {
     @Test
     public void testGroundSurface() throws Exception {
         try(Statement st = connection.createStatement()) {
-            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenAttenuationOutputMultiThreadLoaderTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
             st.execute(getRunScriptRes("scene_with_landcover.sql"));
-            LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-            ldenNoiseMapLoader.setComputeHorizontalDiffraction(true);
-            ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
-            ldenNoiseMapLoader.setSoundReflectionOrder(1);
-            ldenNoiseMapLoader.setReceiverHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setSourceHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setHeightField("HEIGHT");
-            ldenNoiseMapLoader.setSoilTableName("LAND_G");
-            ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
-            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(1);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setSoilTableName("LAND_G");
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
-            ldenNoiseMapLoader.setComputeRaysOutFactory(new JDBCComputeRaysOut(false));
-            ldenNoiseMapLoader.setPropagationProcessDataFactory(new JDBCPropagationData());
+            noiseMapByReceiverMaker.setComputeRaysOutFactory(new JDBCComputeRaysOut(false));
+            noiseMapByReceiverMaker.setPropagationProcessDataFactory(new JDBCPropagationData());
 
             Set<Long> receivers = new HashSet<>();
-            ldenNoiseMapLoader.setThreadCount(1);
-            RootProgressVisitor progressVisitor = new RootProgressVisitor(ldenNoiseMapLoader.getGridDim() * ldenNoiseMapLoader.getGridDim(), true, 5);
-            double expectedMaxArea = Math.pow(ldenNoiseMapLoader.getGroundSurfaceSplitSideLength(), 2);
-            for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
-                for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
-                    IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
+            noiseMapByReceiverMaker.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
+            double expectedMaxArea = Math.pow(noiseMapByReceiverMaker.getGroundSurfaceSplitSideLength(), 2);
+            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
+                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
+                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
                     if(out instanceof AttenuationComputeOutput) {
                         AttenuationComputeOutput rout = (AttenuationComputeOutput) out;
                         for(GroundAbsorption soil : rout.inputData.profileBuilder.getGroundEffects()) {
@@ -95,7 +96,7 @@ public class LdenAttenuationOutputMultiThreadLoaderTest {
     @Test
     public void testNoiseMapBuilding() throws Exception {
         try(Statement st = connection.createStatement()) {
-            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", LdenAttenuationOutputMultiThreadLoaderTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
             st.execute(getRunScriptRes("scene_with_landcover.sql"));
             DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
@@ -155,39 +156,39 @@ public class LdenAttenuationOutputMultiThreadLoaderTest {
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
                     "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
-            LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-            ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
-            ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
-            ldenNoiseMapLoader.setSoundReflectionOrder(0);
-            ldenNoiseMapLoader.setReceiverHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setMaximumPropagationDistance(1000);
-            ldenNoiseMapLoader.setSourceHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setHeightField("HEIGHT");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
 
-            ldenNoiseMapParameters.setCoefficientVersion(1);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, ldenNoiseMapParameters);
+            noiseMapDatabaseParameters.setCoefficientVersion(1);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
 
-            ldenNoiseMapLoader.setPropagationProcessDataFactory(noiseMapMaker);
-            ldenNoiseMapLoader.setComputeRaysOutFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
 
-            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
+            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
             Set<Long> receivers = new HashSet<>();
-            ldenNoiseMapLoader.setThreadCount(1);
-            ldenNoiseMapLoader.setGridDim(1);
-            RootProgressVisitor progressVisitor = new RootProgressVisitor((long) ldenNoiseMapLoader.getGridDim() * ldenNoiseMapLoader.getGridDim(), true, 5);
+            noiseMapByReceiverMaker.setThreadCount(1);
+            noiseMapByReceiverMaker.setGridDim(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor((long) noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
             //System.out.println("size = "+ noiseMapByReceiverMaker.getGridDim());
-            for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
-                for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
-                    IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof AttenuationOutputMultiThread) {
-                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
+            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
+                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
+                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof AttenuationComputeOutput) {
+                        AttenuationComputeOutput rout = (AttenuationComputeOutput) out;
 
-                        AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+                        Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
                         assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(73.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
@@ -224,53 +225,53 @@ public class LdenAttenuationOutputMultiThreadLoaderTest {
         try (Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE BUILDINGS(pk serial PRIMARY KEY, the_geom geometry, height real)");
             st.execute(createSource(new GeometryFactory().createLineString(
-                    new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
-                            new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
+                            new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
+                                    new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
                     new Orientation(0,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 4.0)');" +
                     "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 4.0)');");
-            LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-            ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
-            ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
-            ldenNoiseMapLoader.setSoundReflectionOrder(0);
-            ldenNoiseMapLoader.setReceiverHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setMaximumPropagationDistance(1000);
-            ldenNoiseMapLoader.setSourceHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setHeightField("HEIGHT");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenNoiseMapParameters.setCoefficientVersion(1);
-            ldenNoiseMapParameters.setExportAttenuationMatrix(false);
-            ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, ldenNoiseMapParameters);
+            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapDatabaseParameters.setCoefficientVersion(1);
+            noiseMapDatabaseParameters.setExportAttenuationMatrix(false);
+            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
-            ldenNoiseMapLoader.setPropagationProcessDataFactory(noiseMapMaker);
-            ldenNoiseMapLoader.setComputeRaysOutFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
 
             Set<Long> receivers = new HashSet<>();
-            ldenNoiseMapLoader.setThreadCount(1);
-            RootProgressVisitor progressVisitor = new RootProgressVisitor(ldenNoiseMapLoader.getGridDim() * ldenNoiseMapLoader.getGridDim(), true, 5);
+            noiseMapByReceiverMaker.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
 
-            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
+            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
             Envelope compEnv = new Envelope(new Coordinate(223915.72,6757480.22 ,5));
             compEnv.expandBy(500);
-            ldenNoiseMapLoader.setMainEnvelope(compEnv);
+            noiseMapByReceiverMaker.setMainEnvelope(compEnv);
 
-            ldenNoiseMapLoader.setGridDim(1);
+            noiseMapByReceiverMaker.setGridDim(1);
 
-            for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
-                for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
+            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
+                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
                     //System.out.println("here");
-                    IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof AttenuationOutputMultiThread) {
-                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
+                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof NoiseMap) {
+                        NoiseMap rout = (NoiseMap) out;
 
                         assertEquals(2, rout.attenuatedPaths.lDenLevels.size());
 
-                        AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+                        Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
                         assertEquals(1, sl.receiver.receiverPk);
                         assertEquals(68.3, sl.value[0], 1);
                         sl = rout.attenuatedPaths.lDenLevels.pop();
@@ -318,36 +319,36 @@ public class LdenAttenuationOutputMultiThreadLoaderTest {
                     "insert into receivers(the_geom) values ('POINTZ (2.5 3 1.0)');" + //behind
                     "insert into receivers(the_geom) values ('POINTZ (3.5 2 1.0)');" + //right
                     "insert into receivers(the_geom) values ('POINTZ (3.5 4 1.0)');"); //left
-            LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-            ldenNoiseMapLoader.setComputeHorizontalDiffraction(false);
-            ldenNoiseMapLoader.setComputeVerticalDiffraction(false);
-            ldenNoiseMapLoader.setSoundReflectionOrder(0);
-            ldenNoiseMapLoader.setReceiverHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setMaximumPropagationDistance(1000);
-            ldenNoiseMapLoader.setSourceHasAbsoluteZCoordinates(false);
-            ldenNoiseMapLoader.setHeightField("HEIGHT");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            ldenNoiseMapParameters.setCoefficientVersion(1);
-            ldenNoiseMapParameters.setExportAttenuationMatrix(false);
-            ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, ldenNoiseMapParameters);
+            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapDatabaseParameters.setCoefficientVersion(1);
+            noiseMapDatabaseParameters.setExportAttenuationMatrix(false);
+            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
 
-            ldenNoiseMapLoader.setPropagationProcessDataFactory(noiseMapMaker);
-            ldenNoiseMapLoader.setComputeRaysOutFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
+            noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
 
-            ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
+            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
             Set<Long> receivers = new HashSet<>();
-            ldenNoiseMapLoader.setThreadCount(1);
-            RootProgressVisitor progressVisitor = new RootProgressVisitor(ldenNoiseMapLoader.getGridDim() * ldenNoiseMapLoader.getGridDim(), true, 5);
-            for(int i = 0; i < ldenNoiseMapLoader.getGridDim(); i++) {
-                for(int j = 0; j < ldenNoiseMapLoader.getGridDim(); j++) {
-                    IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof AttenuationOutputMultiThread) {
-                        AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
+            noiseMapByReceiverMaker.setThreadCount(1);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
+            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
+                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
+                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
+                    if(out instanceof NoiseMap) {
+                        NoiseMap rout = (NoiseMap) out;
                         List<CnossosPath> pathsParameters = rout.getPropagationPaths();
                         assertEquals(4 , pathsParameters.size());
                         CnossosPath pathParameters = pathsParameters.remove(0);
