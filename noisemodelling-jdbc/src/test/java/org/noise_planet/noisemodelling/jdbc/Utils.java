@@ -9,106 +9,13 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2.util.StringUtils;
-import org.h2gis.utilities.SpatialResultSet;
-import org.locationtech.jts.geom.Geometry;
-import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 public class Utils {
-
-
     public static String getRunScriptRes(String fileName) throws URISyntaxException {
-        File resourceFile = new File(LdenAttenuationOutputMultiThreadLoaderTest.class.getResource(fileName).toURI());
+        File resourceFile = new File(NoiseMapByReceiverMakerTest.class.getResource(fileName).toURI());
         return "RUNSCRIPT FROM "+ StringUtils.quoteStringSQL(resourceFile.getPath());
-    }
-
-    public static class JDBCPropagationData implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
-        @Override
-        public SceneWithAttenuation create(ProfileBuilder builder) {
-            return new DirectPathsParameters(builder);
-        }
-
-        @Override
-        public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
-
-        }
-
-        @Override
-        public ProfileBuilder createProfileBuilder() {
-            return new ProfileBuilder();
-        }
-
-    }
-
-    public static class JDBCComputeRaysOut implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
-        boolean keepRays;
-
-        public JDBCComputeRaysOut(boolean keepRays) {
-            this.keepRays = keepRays;
-        }
-
-        @Override
-        public IComputePathsOut create(Scene threadData, AttenuationCnossosParameters pathDataDay,
-                                       AttenuationCnossosParameters pathDataEvening,
-                                       AttenuationCnossosParameters pathDataNight) {
-            return new RayOut(keepRays, pathDataDay, (DirectPathsParameters)threadData);
-        }
-    }
-
-    private static final class RayOut extends AttenuationComputeOutput {
-        private DirectPathsParameters processData;
-
-        public RayOut(boolean keepRays, AttenuationCnossosParameters pathData, DirectPathsParameters processData) {
-            super(keepRays, pathData, processData);
-            this.processData = processData;
-        }
-
-        @Override
-        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
-            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
-            return wToDba(multiplicationArray(processData.wjSources.get(sourceId), dbaToW(attenuation)));
-        }
-    }
-
-    private static class DirectPathsParameters extends SceneWithAttenuation {
-        List<double[]> wjSources = new ArrayList<>();
-        private final static String[] powerColumns = new String[]{"db_m63", "db_m125", "db_m250", "db_m500", "db_m1000", "db_m2000", "db_m4000", "db_m8000"};
-
-        public DirectPathsParameters(ProfileBuilder builder) {
-            super(builder);
-        }
-
-
-        @Override
-        public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
-            super.addSource(pk, geom, rs);
-            double sl[] = new double[powerColumns.length];
-            int i = 0;
-            for(String columnName : powerColumns) {
-                sl[i++] = dbaToW(rs.getDouble(columnName));
-            }
-            wjSources.add(sl);
-        }
-    }
-
-
-    public static double[] aWeighting(List<Double> lvls) {
-        return new double[] {lvls.get(0) - 26.2, lvls.get(1) - 16.1, lvls.get(2) - 8.6, lvls.get(3) - 3.2, lvls.get(4) ,
-                lvls.get(5) + 1.2, lvls.get(6) + 1, lvls.get(7)  - 1.1};
     }
 }

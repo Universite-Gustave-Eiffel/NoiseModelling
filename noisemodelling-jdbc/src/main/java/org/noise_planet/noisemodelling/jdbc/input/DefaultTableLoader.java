@@ -2,6 +2,12 @@ package org.noise_planet.noisemodelling.jdbc.input;
 
 import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.SpatialResultSet;
+import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
@@ -12,23 +18,34 @@ import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosPa
 import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
+
+import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 
 /**
  *  Default implementation for initializing input propagation process data for noise map computation.
  */
 public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultTableLoader.class);
     int srid = 0;
     NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
+
+    public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+    public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
 
 
     public enum INPUT_MODE {
@@ -72,89 +89,48 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
         if(JDBCUtilities.tableExists(connection, noiseMapByReceiverMaker.getSourcesTableName())) {
             this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
         }
-        if(noiseMapDatabaseParameters.input_mode == NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN) {
+        if(inputMode == INPUT_MODE.INPUT_MODE_LW) {
+            // Load expected frequencies used for computation
             // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
-            List<Integer> frequencyValues = new ArrayList<>();
-            List<Integer> allFrequencyValues = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
-            String period = "";
-            if (noiseMapDatabaseParameters.computeLDay || noiseMapDatabaseParameters.computeLDEN) {
-                period = "D";
-            } else if (noiseMapDatabaseParameters.computeLEvening) {
-                period = "E";
-            } else if (noiseMapDatabaseParameters.computeLNight) {
-                period = "N";
-            }
-            String freqField = noiseMapDatabaseParameters.lwFrequencyPrepend + period;
-            if (!period.isEmpty()) {
-                for (String fieldName : sourceField) {
-                    if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
-                        int freq = Integer.parseInt(fieldName.substring(freqField.length()));
-                        int index = allFrequencyValues.indexOf(freq);
-                        if (index >= 0) {
-                            frequencyValues.add(freq);
-                        }
-                    }
-                }
-            }
-            // Sort frequencies values
-            Collections.sort(frequencyValues);
-            // Get associated values for each frequency
-            List<Double> exactFrequencies = new ArrayList<>();
-            List<Double> aWeighting = new ArrayList<>();
-            for (int freq : frequencyValues) {
-                int index = allFrequencyValues.indexOf(freq);
-                exactFrequencies.add(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
-                aWeighting.add(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
-            }
-            if(frequencyValues.isEmpty()) {
-                throw new SQLException("Source table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
-            }
-            // Instance of PropagationProcessPathData maybe already set
-            for(NoiseMapDatabaseParameters.TIME_PERIOD timePeriod : NoiseMapDatabaseParameters.TIME_PERIOD.values()) {
-                if (noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod) == null) {
-                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(frequencyValues, exactFrequencies, aWeighting);
-                    noiseMapDatabaseParameters.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                    noiseMapByReceiverMaker.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                } else {
-                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequencies(frequencyValues);
-                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequenciesExact(exactFrequencies);
-                    noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod).setFrequenciesAWeighting(aWeighting);
-                    noiseMapDatabaseParameters.setPropagationProcessPathData(timePeriod, noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod));
-                }
-            }
-        } else {
-            for(NoiseMapDatabaseParameters.TIME_PERIOD timePeriod : NoiseMapDatabaseParameters.TIME_PERIOD.values()) {
-                if (noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod) == null) {
-                    // Traffic flow cnossos frequencies are octave bands from 63 to 8000 Hz
-                    AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
-                    noiseMapDatabaseParameters.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                    noiseMapByReceiverMaker.setPropagationProcessPathData(timePeriod, attenuationCnossosParameters);
-                } else {
-                    noiseMapDatabaseParameters.setPropagationProcessPathData(timePeriod, noiseMapByReceiverMaker.getPropagationProcessPathData(timePeriod));
-                }
-            }
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+            List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker, sourceField);
+            frequencyArray = new ArrayList<>(frequencyValues);
+            exactFrequencyArray = new ArrayList<>();
+            aWeightingArray = new ArrayList<>();
+            ProfileBuilder.initializeFrequencyArrayFromReference(frequencyValues, exactFrequencyArray, aWeightingArray);
         }
     }
 
+    private List<Integer> readFrequenciesFromLwTable(NoiseMapByReceiverMaker noiseMapByReceiverMaker, List<String> sourceField) throws SQLException {
+        List<Integer> frequencyValues = new ArrayList<>();
+        String freqField = noiseMapDatabaseParameters.lwFrequencyPrepend;
+        for (String fieldName : sourceField) {
+            if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
+                try {
+                    int freq = Integer.parseInt(fieldName.substring(freqField.length()));
+                    int index = Arrays.binarySearch(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
+                    if (index >= 0) {
+                        frequencyValues.add(freq);
+                    }
+                } catch (NumberFormatException ex) {
+                    // ignore
+                }
+            }
+        }
+        if(frequencyValues.isEmpty()) {
+            throw new SQLException("Source emission table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
+        }
+        return frequencyValues;
+    }
+
     @Override
-    public ProfileBuilder createProfileBuilder() {
+    public SceneWithEmission create(Connection connection, CellIndex cellIndex, Envelope expandedCellEnvelop) {
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.setFrequencyArray(fre);
+        profileBuilder.setFrequencyArray(frequencyArray);
+        SceneWithEmission scene = new SceneWithEmission(profileBuilder);
+        scene.setDirectionAttributes(directionAttributes);
+        return scene;
     }
-
-    /**
-     * Creates a new instance of NoiseEmissionMaker using the provided ProfileBuilder and NoiseMapParameters.
-     * @param builder the profile builder used to construct the scene.
-     * @return A new instance of NoiseEmissionMaker initialized with the provided ProfileBuilder and NoiseMapParameters.
-     */
-    @Override
-    public SceneWithAttenuation create(ProfileBuilder builder) {
-        SceneWithAttenuation noiseEmissionMaker = new SceneWithAttenuation(builder);
-        noiseEmissionMaker.setDirectionAttributes(directionAttributes);
-        return noiseEmissionMaker;
-    }
-
 
     /**
      * The table shall contain the following fields :
@@ -231,5 +207,173 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
             }
         }
         return directionAttributes;
+    }
+
+
+    /**
+     * Fetches buildings data for the specified cell envelope and adds them to the profile builder.
+     * @param connection     the database connection to use for querying the buildings data.
+     * @param buildingTableParameters Database settings for the building table
+     * @param fetchEnvelope  the envelope representing the cell to fetch buildings data for.
+     * @param builder        the profile builder to which the buildings data will be added.
+     * @param geometryFactory geometry factory instance with SRID set.
+     * @throws SQLException  if an SQL exception occurs while fetching the buildings data.
+     */
+    public static void fetchCellBuildings(Connection connection, BuildingTableParameters buildingTableParameters,
+                                          Envelope fetchEnvelope, ProfileBuilder builder,
+                                          GeometryFactory geometryFactory) throws SQLException {
+        List<Building> buildings = new LinkedList<>();
+        List<Wall> walls = new LinkedList<>();
+        fetchCellBuildings(connection,buildingTableParameters, fetchEnvelope, buildings, walls, geometryFactory);
+        for(Building building : buildings) {
+            builder.addBuilding(building);
+        }
+        for (Wall wall : walls) {
+            builder.addWall(wall);
+        }
+    }
+
+    /**
+     * Fetches building data for the specified cell envelope and adds them to the provided list of buildings.
+     * @param connection      the database connection to use for querying the building data.
+     * @param buildingTableParameters Database settings for the building table
+     * @param fetchEnvelope   the envelope representing the cell to fetch building data for.
+     * @param buildings       the list to which the fetched buildings will be added.
+     * @param walls Wall list to feed
+     * @param geometryFactory geometry factory instance with SRID set.
+     * @throws SQLException   if an SQL exception occurs while fetching the building data.
+     */
+    public static void fetchCellBuildings(Connection connection,
+                                          BuildingTableParameters buildingTableParameters,
+                                          Envelope fetchEnvelope,
+                                          List<Building> buildings,
+                                          List<Wall> walls,
+                                          GeometryFactory geometryFactory) throws SQLException {
+        Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
+        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
+                buildingTableParameters.alphaFieldName);
+        String additionalQuery = "";
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        if(!buildingTableParameters.heightField.isEmpty()) {
+            additionalQuery += ", " + TableLocation.quoteIdentifier(buildingTableParameters.heightField, dbType);
+        }
+        if(fetchAlpha) {
+            additionalQuery += ", " + buildingTableParameters.alphaFieldName;
+        }
+        String pkBuilding = "";
+        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class),
+                new TableLocation(buildingTableParameters.buildingsTableName, dbType));
+        if(indexPk > 0) {
+            pkBuilding = JDBCUtilities.getColumnName(connection, buildingTableParameters.buildingsTableName, indexPk);
+            additionalQuery += ", " + pkBuilding;
+        }
+        String buildingGeomName = getGeometryColumnNames(connection,
+                TableLocation.parse(buildingTableParameters.buildingsTableName, dbType)).get(0);
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
+                        buildingTableParameters.buildingsTableName + " WHERE " +
+                        TableLocation.quoteIdentifier(buildingGeomName, dbType) + " && ?::geometry")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                int columnIndex = 0;
+                if(!pkBuilding.isEmpty()) {
+                    columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
+                }
+                double oldAlpha = buildingTableParameters.defaultWallAbsorption;
+                while (rs.next()) {
+                    //if we don't have height of building
+                    Geometry building = rs.getGeometry();
+                    if(building != null) {
+                        Geometry intersectedGeometry = null;
+                        try {
+                            intersectedGeometry = building.intersection(envGeo);
+                        } catch (TopologyException ex) {
+                            WKTWriter wktWriter = new WKTWriter(3);
+                            LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
+                        }
+                        if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
+                            if(fetchAlpha) {
+                                oldAlpha = rs.getDouble(buildingTableParameters.alphaFieldName);
+                            }
+
+                            long pk = -1;
+                            if(columnIndex != 0) {
+                                pk = rs.getLong(columnIndex);
+                            }
+                            for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
+                                Geometry geometry = intersectedGeometry.getGeometryN(i);
+                                if(geometry instanceof Polygon && !geometry.isEmpty()) {
+                                    Building poly = new Building((Polygon) geometry,
+                                            buildingTableParameters.heightField.isEmpty() ?
+                                                    Double.MAX_VALUE :
+                                                    rs.getDouble(buildingTableParameters.heightField),
+                                            oldAlpha, pk, buildingTableParameters.zBuildings);
+                                    buildings.add(poly);
+                                } else if (geometry instanceof LineString) {
+                                    // decompose linestring into segments
+                                    LineString lineString = (LineString) geometry;
+                                    Coordinate[] coordinates = lineString.getCoordinates();
+                                    for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
+                                        Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
+                                                -1, ProfileBuilder.IntersectionType.WALL);
+                                        wall.setG(oldAlpha);
+                                        wall.setPrimaryKey(pk);
+                                        wall.setHeight(buildingTableParameters.heightField.isEmpty() ?
+                                                Double.MAX_VALUE : rs.getDouble(buildingTableParameters.heightField));
+                                        walls.add(wall);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static class BuildingTableParameters {
+        public String buildingsTableName;
+        public String heightField = "HEIGHT";
+        public String alphaFieldName = "G";
+        public double defaultWallAbsorption = 100000;
+        /** if true take into account z value on Buildings Polygons
+         * In this case, z represent the altitude (from the sea to the top of the wall) */
+        public boolean zBuildings = false;
+
+        public BuildingTableParameters() {
+        }
+
+
+        /**
+         * @return Get building absorption coefficient column name
+         */
+
+        public String getAlphaFieldName() {
+            return alphaFieldName;
+        }
+
+        /**
+         * @param alphaFieldName Set building absorption coefficient column name (default is ALPHA)
+         */
+
+        public void setAlphaFieldName(String alphaFieldName) {
+            this.alphaFieldName = alphaFieldName;
+        }
+
+
+        /**
+         * @return {@link #buildingsTableName} table field name for buildings height above the ground.
+         */
+        public String getHeightField() {
+            return heightField;
+        }
+
+        /**
+         * @param heightField {@link #buildingsTableName} table field name for buildings height above the ground.
+         */
+        public void setHeightField(String heightField) {
+            this.heightField = heightField;
+        }
+
     }
 }

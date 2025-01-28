@@ -61,7 +61,11 @@ public class Scene {
     public double defaultGroundAttenuation = 0;
 
     public Scene() {
+        this.profileBuilder = new ProfileBuilder();
+    }
 
+    public Scene(ProfileBuilder profileBuilder) {
+        this.profileBuilder = profileBuilder;
     }
 
     public boolean isBodyBarrier() {
@@ -86,15 +90,8 @@ public class Scene {
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
 
-    /** cellId only used in output data */
-    public int cellId;
     /** Progression information */
     public ProgressVisitor cellProg;
-    /** list Geometry of soil and the type of this soil */
-
-    public Scene(ProfileBuilder profileBuilder) {
-        this.profileBuilder = profileBuilder;
-    }
 
     /**
      * Add the geometry of the source

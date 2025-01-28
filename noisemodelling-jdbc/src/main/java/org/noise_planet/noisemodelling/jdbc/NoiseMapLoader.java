@@ -21,6 +21,8 @@ import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
+import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -44,15 +46,12 @@ import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 public abstract class NoiseMapLoader {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-    AttenuationCnossosParameters attenuationCnossosParametersDay = new AttenuationCnossosParameters();
-    AttenuationCnossosParameters attenuationCnossosParametersEvening = new AttenuationCnossosParameters();
-    AttenuationCnossosParameters attenuationCnossosParametersNight = new AttenuationCnossosParameters();
+
     Logger logger = LoggerFactory.getLogger(NoiseMapLoader.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
-    private String alphaFieldName = "G";
-    protected final String buildingsTableName;
+    protected DefaultTableLoader.BuildingTableParameters buildingTableParameters = new DefaultTableLoader.BuildingTableParameters();
     protected final String sourcesTableName;
     protected String sourcesEmissionTableName = "";
     protected String soilTableName = "";
@@ -65,9 +64,6 @@ public abstract class NoiseMapLoader {
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected double gs = 0;
-    /** if true take into account z value on Buildings Polygons
-     * In this case, z represent the altitude (from the sea to the top of the wall) */
-    protected boolean zBuildings = false;
     // Soil areas are splited by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
@@ -76,10 +72,7 @@ public abstract class NoiseMapLoader {
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
-    /** TODO missing reference to the SIGMA value of materials */
-    protected double wallAbsorption = 100000;
 
-    protected String heightField = "HEIGHT";
     protected GeometryFactory geometryFactory;
 
     // Initialised attributes
@@ -90,64 +83,8 @@ public abstract class NoiseMapLoader {
     protected Envelope mainEnvelope = new Envelope();
 
     public NoiseMapLoader(String buildingsTableName, String sourcesTableName) {
-        this.buildingsTableName = buildingsTableName;
+        this.buildingTableParameters.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
-    }
-
-
-    /**
-     * Retrieves the propagation process path data for the specified time period.
-     * @param time_period the time period for which to retrieve the propagation process path data.
-     * @return the attenuation Cnossos parameters for the specified time period.
-     */
-    public AttenuationCnossosParameters getPropagationProcessPathData(NoiseMapDatabaseParameters.TIME_PERIOD time_period) {
-        switch (time_period) {
-            case DAY:
-                return attenuationCnossosParametersDay;
-            case EVENING:
-                return attenuationCnossosParametersEvening;
-            default:
-                return attenuationCnossosParametersNight;
-        }
-    }
-
-    /**
-     * Sets the propagation process path data for the specified time period.
-     * @param time_period the time period for which to set the propagation process path data.
-     * @param attenuationCnossosParameters the attenuation Cnossos parameters to set.
-     */
-    public void setPropagationProcessPathData(NoiseMapDatabaseParameters.TIME_PERIOD time_period, AttenuationCnossosParameters attenuationCnossosParameters) {
-        switch (time_period) {
-            case DAY:
-                attenuationCnossosParametersDay = attenuationCnossosParameters;
-            case EVENING:
-                attenuationCnossosParametersEvening = attenuationCnossosParameters;
-            default:
-                attenuationCnossosParametersNight = attenuationCnossosParameters;
-        }
-    }
-    public AttenuationCnossosParameters getPropagationProcessPathDataDay() {
-        return attenuationCnossosParametersDay;
-    }
-
-    public void setPropagationProcessPathDataDay(AttenuationCnossosParameters attenuationCnossosParametersDay) {
-        this.attenuationCnossosParametersDay = attenuationCnossosParametersDay;
-    }
-
-    public AttenuationCnossosParameters getPropagationProcessPathDataEvening() {
-        return attenuationCnossosParametersEvening;
-    }
-
-    public void setPropagationProcessPathDataEvening(AttenuationCnossosParameters attenuationCnossosParametersEvening) {
-        this.attenuationCnossosParametersEvening = attenuationCnossosParametersEvening;
-    }
-
-    public AttenuationCnossosParameters getPropagationProcessPathDataNight() {
-        return attenuationCnossosParametersNight;
-    }
-
-    public void setPropagationProcessPathDataNight(AttenuationCnossosParameters attenuationCnossosParametersNight) {
-        this.attenuationCnossosParametersNight = attenuationCnossosParametersNight;
     }
 
     public boolean isVerbose() {
@@ -156,22 +93,6 @@ public abstract class NoiseMapLoader {
 
     public void setVerbose(boolean verbose) {
         this.verbose = verbose;
-    }
-
-    /**
-     * @return Get building absorption coefficient column name
-     */
-
-    public String getAlphaFieldName() {
-        return alphaFieldName;
-    }
-
-    /**
-     * @param alphaFieldName Set building absorption coefficient column name (default is ALPHA)
-     */
-
-    public void setAlphaFieldName(String alphaFieldName) {
-        this.alphaFieldName = alphaFieldName;
     }
 
     /**
@@ -325,121 +246,6 @@ public abstract class NoiseMapLoader {
         }
     }
 
-
-    /**
-     * Fetches buildings data for the specified cell envelope and adds them to the profile builder.
-     * @param connection     the database connection to use for querying the buildings data.
-     * @param fetchEnvelope  the envelope representing the cell to fetch buildings data for.
-     * @param builder        the profile builder to which the buildings data will be added.
-     * @throws SQLException  if an SQL exception occurs while fetching the buildings data.
-     */
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder) throws SQLException {
-        List<Building> buildings = new LinkedList<>();
-        List<Wall> walls = new LinkedList<>();
-        fetchCellBuildings(connection, fetchEnvelope, buildings, walls);
-        for(Building building : buildings) {
-            builder.addBuilding(building);
-        }
-        for (Wall wall : walls) {
-            builder.addWall(wall);
-        }
-    }
-
-    /**
-     * Fetches building data for the specified cell envelope and adds them to the provided list of buildings.
-     * @param connection      the database connection to use for querying the building data.
-     * @param fetchEnvelope   the envelope representing the cell to fetch building data for.
-     * @param buildings       the list to which the fetched buildings will be added.
-     * @throws SQLException   if an SQL exception occurs while fetching the building data.
-     */
-    void fetchCellBuildings(Connection connection, Envelope fetchEnvelope, List<Building> buildings, List<Wall> walls) throws SQLException {
-        Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
-        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingsTableName, alphaFieldName);
-        String additionalQuery = "";
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        if(!heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(heightField, dbType);
-        }
-        if(fetchAlpha) {
-            additionalQuery += ", " + alphaFieldName;
-        }
-        String pkBuilding = "";
-        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), new TableLocation(buildingsTableName, dbType));
-        if(indexPk > 0) {
-            pkBuilding = JDBCUtilities.getColumnName(connection, buildingsTableName, indexPk);
-            additionalQuery += ", " + pkBuilding;
-        }
-        String buildingGeomName = getGeometryColumnNames(connection,
-                TableLocation.parse(buildingsTableName, dbType)).get(0);
-        try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
-                        buildingsTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(buildingGeomName, dbType) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                int columnIndex = 0;
-                if(!pkBuilding.isEmpty()) {
-                    columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
-                }
-                double oldAlpha = wallAbsorption;
-                List<Double> alphaList = new ArrayList<>(attenuationCnossosParametersDay.freq_lvl.size());
-                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
-                }
-                while (rs.next()) {
-                    //if we don't have height of building
-                    Geometry building = rs.getGeometry();
-                    if(building != null) {
-                        Geometry intersectedGeometry = null;
-                        try {
-                            intersectedGeometry = building.intersection(envGeo);
-                        } catch (TopologyException ex) {
-                            WKTWriter wktWriter = new WKTWriter(3);
-                            logger.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
-                        }
-                        if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
-                            if(fetchAlpha && Double.compare(rs.getDouble(alphaFieldName), oldAlpha) != 0 ) {
-                                // Compute building absorption value
-                                alphaList.clear();
-                                oldAlpha = rs.getDouble(alphaFieldName);
-                                for(double freq : attenuationCnossosParametersDay.freq_lvl_exact) {
-                                    alphaList.add(WallAbsorption.getWallAlpha(oldAlpha, freq));
-                                }
-                            }
-
-                            long pk = -1;
-                            if(columnIndex != 0) {
-                                pk = rs.getLong(columnIndex);
-                            }
-                            for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
-                                Geometry geometry = intersectedGeometry.getGeometryN(i);
-                                if(geometry instanceof Polygon && !geometry.isEmpty()) {
-                                    Building poly = new Building((Polygon) geometry,
-                                            heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField),
-                                            alphaList, pk, iszBuildings());
-                                    buildings.add(poly);
-                                } else if (geometry instanceof LineString) {
-                                    // decompose linestring into segments
-                                    LineString lineString = (LineString) geometry;
-                                    Coordinate[] coordinates = lineString.getCoordinates();
-                                    for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
-                                        Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
-                                                -1, ProfileBuilder.IntersectionType.WALL);
-                                        wall.setAlpha(alphaList);
-                                        wall.setPrimaryKey(pk);
-                                        wall.setHeight(heightField.isEmpty() ? Double.MAX_VALUE : rs.getDouble(heightField));
-                                        walls.add(wall);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
     /**
      * Fetch source geometries and power
      * @param connection Active connection
@@ -447,7 +253,7 @@ public abstract class NoiseMapLoader {
      * @param propagationProcessData (Out) Propagation process input data
      * @throws SQLException
      */
-    public void fetchCellSource(Connection connection, Envelope fetchEnvelope, Scene propagationProcessData, boolean doIntersection)
+    public void fetchCellSource(Connection connection, Envelope fetchEnvelope, SceneWithEmission propagationProcessData, boolean doIntersection)
             throws SQLException, IOException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
@@ -532,7 +338,7 @@ public abstract class NoiseMapLoader {
             srid = getSRID(connection, TableLocation.parse(sourcesTableName, dbTypes));
         }
         if(srid == 0) {
-            srid = getSRID(connection, TableLocation.parse(buildingsTableName, dbTypes));
+            srid = getSRID(connection, TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes));
         }
         geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
 
@@ -579,7 +385,7 @@ public abstract class NoiseMapLoader {
      * @return Table name that contains buildings
      */
     public String getBuildingsTableName() {
-        return buildingsTableName;
+        return buildingTableParameters.buildingsTableName;
     }
 
     /**
@@ -653,15 +459,13 @@ public abstract class NoiseMapLoader {
         this.sourceHasAbsoluteZCoordinates = sourceHasAbsoluteZCoordinates;
     }
 
-
     public boolean iszBuildings() {
-        return zBuildings;
+        return buildingTableParameters.zBuildings;
     }
 
     public void setzBuildings(boolean zBuildings) {
-        this.zBuildings = zBuildings;
+        buildingTableParameters.zBuildings = zBuildings;
     }
-
 
     /**
      * Extracted from NMPB 2008-2 7.3.2
@@ -790,29 +594,29 @@ public abstract class NoiseMapLoader {
      * @return Global default wall absorption on sound reflection.
      */
     public double getWallAbsorption() {
-        return wallAbsorption;
+        return buildingTableParameters.defaultWallAbsorption;
     }
 
     /**
      * @param wallAbsorption Set default global wall absorption on sound reflection.
      */
     public void setWallAbsorption(double wallAbsorption) {
-        this.wallAbsorption = wallAbsorption;
+        buildingTableParameters.defaultWallAbsorption = wallAbsorption;
     }
 
     /**
-     * @return {@link #buildingsTableName} table field name for buildings height above the ground.
+     * @return {@link #getBuildingsTableName()} eName} table field name for buildings height above the ground.
      */
 
     public String getHeightField() {
-        return heightField;
+        return buildingTableParameters.heightField;
     }
 
     /**
-     * @param heightField {@link #buildingsTableName} table field name for buildings height above the ground.
+     * @param heightField {@link #getBuildingsTableName()}} table field name for buildings height above the ground.
      */
     public void setHeightField(String heightField) {
-        this.heightField = heightField;
+        buildingTableParameters.heightField = heightField;
     }
 
     /**

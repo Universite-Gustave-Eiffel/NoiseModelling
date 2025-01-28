@@ -22,14 +22,11 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,26 +98,19 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     /**
      * Initialisation of data structures needed for sound propagation.
      * @param connection JDBC Connection
-     * @param cellI Cell I [0-{@link #getGridDim()}]
-     * @param cellJ Cell J [0-{@link #getGridDim()}]
+     * @param cellIndex Computation area index
      * @param progression Progression info
      * @return Data input for cell evaluation
      * @throws SQLException
      */
-    public SceneWithAttenuation prepareCell(Connection connection, int cellI, int cellJ,
+    public SceneWithEmission prepareCell(Connection connection, CellIndex cellIndex,
                                             ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        ProfileBuilder builder;
 
-        if(propagationProcessDataFactory != null) {
-            builder = propagationProcessDataFactory.createProfileBuilder();
-        } else {
-            builder = new ProfileBuilder();
-        }
-        int ij = cellI * gridDim + cellJ + 1;
-        Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
-                cellJ, getCellWidth(), getCellHeight());
+        Envelope cellEnvelope = getCellEnv(cellIndex);
+
         if(verbose) {
+            int ij = cellIndex.getLatitudeIndex() * gridDim + cellIndex.getLongitudeIndex() + 1;
             WKTWriter roundWKTWriter = new WKTWriter();
             roundWKTWriter.setPrecisionModel(new PrecisionModel(1.0));
             logger.info("Begin processing of cell {}/{} Compute domain is:\n {}", ij, gridDim * gridDim,
@@ -129,39 +119,39 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
         expandedCellEnvelop.expandBy(maximumPropagationDistance + 2 * maximumReflectionDistance);
 
+        SceneWithEmission scene;
+        if(propagationProcessDataFactory != null) {
+            scene = propagationProcessDataFactory.create(connection, cellIndex, expandedCellEnvelop);
+        } else {
+            scene = new SceneWithEmission();
+        }
+
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
         // optimization
         // Fetch buildings in extendedEnvelope
-        fetchCellBuildings(connection, expandedCellEnvelop, builder);
+        fetchCellBuildings(connection, expandedCellEnvelop, scene.profileBuilder);
         //if we have topographic points data
-        fetchCellDem(connection, expandedCellEnvelop, builder);
+        fetchCellDem(connection, expandedCellEnvelop, scene.profileBuilder);
 
         // Fetch soil areas
-        fetchCellSoilAreas(connection, expandedCellEnvelop, builder);
+        fetchCellSoilAreas(connection, expandedCellEnvelop, scene.profileBuilder);
 
-        builder.finishFeeding();
+        scene.profileBuilder.finishFeeding();
 
         expandedCellEnvelop = new Envelope(cellEnvelope);
         expandedCellEnvelop.expandBy(maximumPropagationDistance);
 
-        SceneWithAttenuation propagationProcessData;
-        if(propagationProcessDataFactory != null) {
-            propagationProcessData = propagationProcessDataFactory.create(builder);
-        } else {
-            propagationProcessData = new SceneWithAttenuation(builder);
-        }
-        propagationProcessData.reflexionOrder = soundReflectionOrder;
-        propagationProcessData.setBodyBarrier(bodyBarrier);
-        propagationProcessData.maxRefDist = maximumReflectionDistance;
-        propagationProcessData.maxSrcDist = maximumPropagationDistance;
-        propagationProcessData.setComputeVerticalDiffraction(computeVerticalDiffraction);
-        propagationProcessData.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
+
+        scene.reflexionOrder = soundReflectionOrder;
+        scene.setBodyBarrier(bodyBarrier);
+        scene.maxRefDist = maximumReflectionDistance;
+        scene.maxSrcDist = maximumPropagationDistance;
+        scene.setComputeVerticalDiffraction(computeVerticalDiffraction);
+        scene.setComputeHorizontalDiffraction(computeHorizontalDiffraction);
 
         // Fetch all source located in expandedCellEnvelop
-        fetchCellSource(connection, expandedCellEnvelop, propagationProcessData, true);
-
-        propagationProcessData.cellId = ij;
+        fetchCellSource(connection, expandedCellEnvelop, scene, true);
 
         // Fetch receivers
 
@@ -195,15 +185,15 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
-                        propagationProcessData.addReceiver(receiverPk, pt.getCoordinate(), rs);
+                        scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
                     }
                 }
             }
         }
         if(progression != null) {
-            propagationProcessData.cellProg = progression.subProcess(propagationProcessData.receivers.size());
+            scene.cellProg = progression.subProcess(scene.receivers.size());
         }
-        return propagationProcessData;
+        return scene;
     }
 
     /**
@@ -336,14 +326,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     public interface PropagationProcessDataFactory {
 
         /**
-         * Creates a scene object with the given profile builder.
-         * @param builder the profile builder used to construct the scene.
-         * @return the created scene object.
-         */
-        SceneWithAttenuation create(ProfileBuilder builder);
-
-        /**
-         * Initializes the propagation process data factory.
+         * Called only once when the settings are set.
          * @param connection             the database connection to be used for initialization.
          * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
          * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
@@ -351,10 +334,14 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
         void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException;
 
         /**
-         * @return New instance of profile builder for this computation area
-         * It will be fed with input data later
+         * Called on each sub-domain in order to create cell input data.
+         *
+         * @param connection          Active connection
+         * @param cellIndex Active cell covering the computation
+         * @param expandedCellEnvelop Envelope expended envelope where to fetch the input data
+         * @return Scene to feed the data
          */
-        ProfileBuilder createProfileBuilder();
+        SceneWithEmission create(Connection connection, CellIndex cellIndex, Envelope expandedCellEnvelop);
     }
 
     /**

@@ -23,7 +23,6 @@ import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCComputeRaysOut;
 import org.noise_planet.noisemodelling.jdbc.Utils.JDBCPropagationData;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
@@ -31,7 +30,12 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVis
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.Attenuation;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,8 +85,8 @@ public class NoiseMapByReceiverMakerTest {
             for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
                 for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
                     IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof AttenuationComputeOutput) {
-                        AttenuationComputeOutput rout = (AttenuationComputeOutput) out;
+                    if(out instanceof Attenuation) {
+                        Attenuation rout = (Attenuation) out;
                         for(GroundAbsorption soil : rout.inputData.profileBuilder.getGroundEffects()) {
                             assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
                         }
@@ -165,11 +169,11 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapParameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
 
-            noiseMapDatabaseParameters.setCoefficientVersion(1);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
+            noiseMapParameters.setCoefficientVersion(1);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
 
@@ -185,8 +189,8 @@ public class NoiseMapByReceiverMakerTest {
             for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
                 for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
                     IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
-                    if(out instanceof AttenuationComputeOutput) {
-                        AttenuationComputeOutput rout = (AttenuationComputeOutput) out;
+                    if(out instanceof NoiseMap) {
+                        NoiseMap rout = (NoiseMap) out;
 
                         Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
                         assertEquals(1, sl.receiver.receiverPk);
@@ -225,8 +229,8 @@ public class NoiseMapByReceiverMakerTest {
         try (Statement st = connection.createStatement()) {
             st.execute("CREATE TABLE BUILDINGS(pk serial PRIMARY KEY, the_geom geometry, height real)");
             st.execute(createSource(new GeometryFactory().createLineString(
-                            new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
-                                    new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
+                    new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
+                            new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
                     new Orientation(0,0,0),4));
             st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
                     "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 4.0)');" +
@@ -240,11 +244,11 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapDatabaseParameters.setCoefficientVersion(1);
-            noiseMapDatabaseParameters.setExportAttenuationMatrix(false);
-            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
+            NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapParameters.setCoefficientVersion(1);
+            noiseMapParameters.setExportAttenuationMatrix(false);
+            noiseMapParameters.setExportRaysMethod(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
             noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
@@ -328,11 +332,11 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
 
-            NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters(NoiseMapDatabaseParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapDatabaseParameters.setCoefficientVersion(1);
-            noiseMapDatabaseParameters.setExportAttenuationMatrix(false);
-            noiseMapDatabaseParameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY);
-            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapDatabaseParameters);
+            NoiseMapParameters noiseMapParameters = new NoiseMapParameters(org.noise_planet.noisemodelling.jdbc.NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapParameters.setCoefficientVersion(1);
+            noiseMapParameters.setExportAttenuationMatrix(false);
+            noiseMapParameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
+            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
             // Use train directivity functions instead of discrete directivity
             noiseMapMaker.insertTrainDirectivity();
 
