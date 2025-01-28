@@ -318,8 +318,9 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
             computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
         }
-        if(!buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingsTableName) > 0) {
-            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(buildingsTableName, dbTypes)).getEnvelopeInternal());
+        if(!buildingTableParameters.buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingTableParameters.buildingsTableName) > 0) {
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection,
+                    TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes)).getEnvelopeInternal());
         }
         return computationEnvelope;
     }

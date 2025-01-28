@@ -276,7 +276,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
      * @param data receiver noise level in dB
      */
     public void pushInStack(ConcurrentLinkedDeque<AttenuationComputeOutput.SourceReceiverAttenuation> stack, AttenuationComputeOutput.SourceReceiverAttenuation data) {
-        while(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.queueSize.get() > noiseMapDatabaseParameters.outputMaximumQueue) {
+        while(attenuationOutputMultiThreadComputeRaysOut.resultsCache.queueSize.get() > noiseMapDatabaseParameters.outputMaximumQueue) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException ex) {
@@ -292,7 +292,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             }
         }
         stack.add(data);
-        attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.queueSize.incrementAndGet();
+        attenuationOutputMultiThreadComputeRaysOut.resultsCache.queueSize.incrementAndGet();
     }
 
     /**
@@ -310,7 +310,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
      * @param data rays
      */
     public void pushInStack(ConcurrentLinkedDeque<CnossosPath> stack, Collection<CnossosPath> data) {
-        while(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.queueSize.get() > noiseMapDatabaseParameters.outputMaximumQueue) {
+        while(attenuationOutputMultiThreadComputeRaysOut.resultsCache.queueSize.get() > noiseMapDatabaseParameters.outputMaximumQueue) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException ex) {
@@ -325,8 +325,8 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                 return;
             }
         }
-        if(noiseMapDatabaseParameters.getMaximumRaysOutputCount() == 0 || attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.totalRaysInserted.get() < noiseMapDatabaseParameters.getMaximumRaysOutputCount()) {
-            long newTotalRays = attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.totalRaysInserted.addAndGet(data.size());
+        if(noiseMapDatabaseParameters.getMaximumRaysOutputCount() == 0 || attenuationOutputMultiThreadComputeRaysOut.resultsCache.totalRaysInserted.get() < noiseMapDatabaseParameters.getMaximumRaysOutputCount()) {
+            long newTotalRays = attenuationOutputMultiThreadComputeRaysOut.resultsCache.totalRaysInserted.addAndGet(data.size());
             if(noiseMapDatabaseParameters.getMaximumRaysOutputCount() > 0 && newTotalRays > noiseMapDatabaseParameters.getMaximumRaysOutputCount()) {
                 // too many rays, remove unwanted rays
                 int newListSize = data.size() - (int)(newTotalRays - noiseMapDatabaseParameters.getMaximumRaysOutputCount());
@@ -340,7 +340,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                 data = subList;
             }
             stack.addAll(data);
-            attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.queueSize.addAndGet(data.size());
+            attenuationOutputMultiThreadComputeRaysOut.resultsCache.queueSize.addAndGet(data.size());
         }
     }
 
@@ -361,7 +361,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
         if(!this.pathParameters.isEmpty()) {
             if(noiseMapDatabaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
                 // Push propagation rays
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.rays, this.pathParameters);
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.rays, this.pathParameters);
             } else if(noiseMapDatabaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY
                     && (noiseMapDatabaseParameters.getMaximumRaysOutputCount() == 0 ||
                     attenuationOutputMultiThreadComputeRaysOut.propagationPathsSize.get() < noiseMapDatabaseParameters.getMaximumRaysOutputCount())){
@@ -403,28 +403,28 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                 mergedLden.nightLevels = sumArray(mergedLden.nightLevels, denValues.nightLevels);
             } else {
                 if (noiseMapDatabaseParameters.computeLDay) {
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lDayLevels,
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lDayLevels,
                         new AttenuationComputeOutput.SourceReceiverAttenuation(receiver,
                                 denAttenuation.source,
                                 wToDba(denValues.dayLevels)
                         ));
                 }
                 if (noiseMapDatabaseParameters.computeLEvening) {
-                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lEveningLevels,
+                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lEveningLevels,
                             new AttenuationComputeOutput.SourceReceiverAttenuation(denAttenuation.receiver,
                                     denAttenuation.source,
                                     wToDba(denValues.eveningLevels)
                             ));
                 }
                 if (noiseMapDatabaseParameters.computeLNight) {
-                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lNightLevels,
+                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lNightLevels,
                             new AttenuationComputeOutput.SourceReceiverAttenuation(denAttenuation.receiver,
                                     denAttenuation.source,
                                     wToDba(denValues.nightLevels)
                             ));
                 }
                 if (noiseMapDatabaseParameters.computeLDEN) {
-                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lDenLevels,
+                    pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lDenLevels,
                             new AttenuationComputeOutput.SourceReceiverAttenuation(denAttenuation.receiver,
                                     denAttenuation.source,
                                     wToDba(ldenSpectrum)
@@ -434,28 +434,28 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
         }
         if (noiseMapDatabaseParameters.mergeSources) {
             if (noiseMapDatabaseParameters.computeLDay) {
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lDayLevels,
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lDayLevels,
                         new AttenuationComputeOutput.SourceReceiverAttenuation(mergedLden.receiver,
                                 mergedLden.source,
                                 wToDba(mergedLden.dayLevels)
                         ));
             }
             if (noiseMapDatabaseParameters.computeLEvening) {
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lEveningLevels,
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lEveningLevels,
                         new AttenuationComputeOutput.SourceReceiverAttenuation(mergedLden.receiver,
                                 mergedLden.source,
                                 wToDba(mergedLden.eveningLevels)
                         ));
             }
             if (noiseMapDatabaseParameters.computeLNight) {
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lNightLevels,
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lNightLevels,
                         new AttenuationComputeOutput.SourceReceiverAttenuation(mergedLden.receiver,
                                 mergedLden.source,
                                 wToDba(mergedLden.nightLevels)
                         ));
             }
             if (noiseMapDatabaseParameters.computeLDEN) {
-                pushInStack(attenuationOutputMultiThreadComputeRaysOut.attenuatedPaths.lDenLevels,
+                pushInStack(attenuationOutputMultiThreadComputeRaysOut.resultsCache.lDenLevels,
                         new AttenuationComputeOutput.SourceReceiverAttenuation(mergedLden.receiver,
                                 mergedLden.source,
                                 wToDba(mergedLdenSpectrum)

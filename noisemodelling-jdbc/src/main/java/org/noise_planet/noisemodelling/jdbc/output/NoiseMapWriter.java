@@ -12,9 +12,12 @@ package org.noise_planet.noisemodelling.jdbc.output;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.PrecisionModel;
-import org.noise_planet.noisemodelling.jdbc.AttenuatedPaths;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
@@ -25,11 +28,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.zip.GZIPOutputStream;
 
-import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.BATCH_MAX_SIZE;
-import static org.noise_planet.noisemodelling.jdbc.NoiseMapMaker.WRITER_CACHE;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
 
@@ -37,12 +40,14 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * Process that run SQL query to feed tables
  */
 public class NoiseMapWriter implements Runnable {
+    static final int BATCH_MAX_SIZE = 500;
+    static final int WRITER_CACHE = 65536;
     Logger LOGGER = LoggerFactory.getLogger(NoiseMapWriter.class);
     File sqlFilePath;
     private Connection connection;
-    NoiseMapDatabaseParameters noiseMapDatabaseParameters;
-    org.noise_planet.noisemodelling.jdbc.AttenuatedPaths AttenuatedPaths;
-    double[] a_weighting;
+    NoiseMapByReceiverMaker noiseMapByReceiverMaker;
+    ResultsCache resultsCache;
+    public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
     boolean started = false;
     Writer o;
     int srid;
@@ -51,19 +56,17 @@ public class NoiseMapWriter implements Runnable {
      * Constructs a new NoiseMapWriter object with the specified parameters.
      * @param connection        the database connection used for writing data
      * @param noiseMapDatabaseParameters the parameters defining the noise map computation
-     * @param AttenuatedPaths   the attenuated paths containing computed noise data
+     * @param ResultsCache   the attenuated paths containing computed noise data
      * @param srid the spatial reference identifier (SRID) for geometric data
      */
-    public NoiseMapWriter(Connection connection, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AttenuatedPaths AttenuatedPaths, int srid) {
+    public NoiseMapWriter(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker, ResultsCache ResultsCache) {
         this.connection = connection;
-        this.sqlFilePath = noiseMapDatabaseParameters.sqlOutputFile;
-        this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
-        this.AttenuatedPaths = AttenuatedPaths;
-        a_weighting = new double[noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.size()];
-        for(int idfreq = 0; idfreq < a_weighting.length; idfreq++) {
-            a_weighting[idfreq] = noiseMapDatabaseParameters.attenuationCnossosParametersDay.freq_lvl_a_weighting.get(idfreq);
+        this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
+        this.resultsCache = ResultsCache;
+        this.srid = noiseMapByReceiverMaker.getGeometryFactory().getSRID();
+        if(noiseMapByReceiverMaker.getPropagationProcessDataFactory() instanceof DefaultCutPlaneProcessing) {
+            aWeightingArray = ((DefaultTableLoader)noiseMapByReceiverMaker.getPropagationProcessDataFactory()).aWeightingArray;
         }
-        this.srid = srid;
     }
 
     /**
@@ -98,7 +101,7 @@ public class NoiseMapWriter implements Runnable {
         int batchSize = 0;
         while(!stack.isEmpty()) {
             CnossosPath row = stack.pop();
-            AttenuatedPaths.queueSize.decrementAndGet();
+            resultsCache.queueSize.decrementAndGet();
             int parameterIndex = 1;
             LineString lineString = row.asGeom();
             lineString.setSRID(srid);
@@ -165,7 +168,7 @@ public class NoiseMapWriter implements Runnable {
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
         while(!stack.isEmpty()) {
             AttenuationComputeOutput.SourceReceiverAttenuation row = stack.pop();
-            AttenuatedPaths.queueSize.decrementAndGet();
+            resultsCache.queueSize.decrementAndGet();
             int parameterIndex = 1;
             ps.setLong(parameterIndex++, row.receiver.receiverPk);
             if(!noiseMapDatabaseParameters.mergeSources) {
@@ -341,16 +344,16 @@ public class NoiseMapWriter implements Runnable {
         while (!noiseMapDatabaseParameters.aborted) {
             started = true;
             try {
-                if(!AttenuatedPaths.lDayLevels.isEmpty()) {
-                    processStack(noiseMapDatabaseParameters.lDayTable, AttenuatedPaths.lDayLevels);
-                } else if(!AttenuatedPaths.lEveningLevels.isEmpty()) {
-                    processStack(noiseMapDatabaseParameters.lEveningTable, AttenuatedPaths.lEveningLevels);
-                } else if(!AttenuatedPaths.lNightLevels.isEmpty()) {
-                    processStack(noiseMapDatabaseParameters.lNightTable, AttenuatedPaths.lNightLevels);
-                } else if(!AttenuatedPaths.lDenLevels.isEmpty()) {
-                    processStack(noiseMapDatabaseParameters.lDenTable, AttenuatedPaths.lDenLevels);
-                } else if(!AttenuatedPaths.rays.isEmpty()) {
-                    processRaysStack(AttenuatedPaths.rays);
+                if(!resultsCache.lDayLevels.isEmpty()) {
+                    processStack(noiseMapDatabaseParameters.lDayTable, resultsCache.lDayLevels);
+                } else if(!resultsCache.lEveningLevels.isEmpty()) {
+                    processStack(noiseMapDatabaseParameters.lEveningTable, resultsCache.lEveningLevels);
+                } else if(!resultsCache.lNightLevels.isEmpty()) {
+                    processStack(noiseMapDatabaseParameters.lNightTable, resultsCache.lNightLevels);
+                } else if(!resultsCache.lDenLevels.isEmpty()) {
+                    processStack(noiseMapDatabaseParameters.lDenTable, resultsCache.lDenLevels);
+                } else if(!resultsCache.rays.isEmpty()) {
+                    processRaysStack(resultsCache.rays);
                 } else {
                     if(noiseMapDatabaseParameters.exitWhenDone) {
                         break;

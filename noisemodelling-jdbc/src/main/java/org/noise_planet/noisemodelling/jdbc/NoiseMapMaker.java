@@ -16,8 +16,8 @@ import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirec
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
+import org.noise_planet.noisemodelling.jdbc.output.ResultsCache;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
@@ -35,7 +35,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
     Connection connection;
     static final int BATCH_MAX_SIZE = 500;
     static final int WRITER_CACHE = 65536;
-    AttenuatedPaths AttenuatedPaths = new AttenuatedPaths();
+    org.noise_planet.noisemodelling.jdbc.output.ResultsCache ResultsCache = new ResultsCache();
     int srid;
 
     // Environmental propagation conditions for each time period
@@ -63,7 +63,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
 
     @Override
     public String[] getCurrentValues() {
-        return new String[] {Long.toString(AttenuatedPaths.queueSize.get())};
+        return new String[] {Long.toString(ResultsCache.queueSize.get())};
     }
 
     @Override
@@ -74,8 +74,8 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
     /**
      * @return Thread safe dequeue. It is a cache location of data waiting to be pushed into the database
      */
-    public AttenuatedPaths getOutputDataDeque() {
-        return AttenuatedPaths;
+    public ResultsCache getOutputDataDeque() {
+        return ResultsCache;
     }
 
     /**
@@ -99,7 +99,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
         if(noiseMapDatabaseParameters.getPropagationProcessPathData(NoiseMapDatabaseParameters.TIME_PERIOD.DAY) == null) {
             throw new IllegalStateException("start() function must be called after NoiseMapByReceiverMaker initialization call");
         }
-        noiseMapWriter = new NoiseMapWriter(connection, noiseMapDatabaseParameters, AttenuatedPaths, srid);
+        noiseMapWriter = new NoiseMapWriter(connection, noiseMapDatabaseParameters, ResultsCache, srid);
         noiseMapDatabaseParameters.exitWhenDone = false;
         tableWriterThread = new Thread(noiseMapWriter);
         tableWriterThread.start();
@@ -151,7 +151,7 @@ public class NoiseMapMaker implements NoiseMapByReceiverMaker.PropagationProcess
      */
     @Override
     public IComputePathsOut create(SceneWithEmission scene) {
-        return new AttenuationOutputMultiThread(scene, AttenuatedPaths, noiseMapDatabaseParameters);
+        return new AttenuationOutputMultiThread(scene, ResultsCache, noiseMapDatabaseParameters);
     }
 
 

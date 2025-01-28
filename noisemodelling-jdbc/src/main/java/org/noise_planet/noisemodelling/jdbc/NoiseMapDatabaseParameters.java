@@ -16,6 +16,7 @@ import java.io.File;
 
 /**
  * Global configuration of NoiseModelling computation based on database data
+ * This is input only, these settings are never updated by org.noise_planet.noisemodelling.jdbc class
  */
 public class NoiseMapDatabaseParameters {
     public boolean exportAttenuationMatrix;
@@ -33,10 +34,6 @@ public class NoiseMapDatabaseParameters {
      * this parameter will be removed when the final version of Cnossos will be published
      */
     public int coefficientVersion = 2;
-
-    // Process status
-    public boolean exitWhenDone = false;
-    public boolean aborted = false;
 
     // Output config
 
@@ -185,26 +182,4 @@ public class NoiseMapDatabaseParameters {
         return mergeSources;
     }
 
-    /**
-     * representing the noise levels for different time periods.
-     */
-    public static class TimePeriodParameters {
-        public PathFinder.SourcePointInfo source = null;
-        public PathFinder.ReceiverPointInfo receiver = null;
-        public String period = "";
-        public double [] levels = new double[0];
-
-        public TimePeriodParameters(PathFinder.SourcePointInfo source,
-                                    PathFinder.ReceiverPointInfo receiver,
-                                    String period,
-                                    double[] levels) {
-            this.levels = levels;
-            this.period = period;
-            this.receiver = receiver;
-            this.source = source;
-        }
-
-        public TimePeriodParameters() {
-        }
-    }
 }

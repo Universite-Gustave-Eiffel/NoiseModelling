@@ -43,7 +43,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * @author Pierre Aumond
  */
 public class AttenuationComputeOutput implements IComputePathsOut {
-    public ConcurrentLinkedDeque<SourceReceiverAttenuation> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
+    public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public Deque<CnossosPath> pathParameters = new ConcurrentLinkedDeque<>();
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
 
@@ -376,7 +376,7 @@ public class AttenuationComputeOutput implements IComputePathsOut {
      *
      * @return a list of SourceReceiverAttenuation
      */
-    public List<SourceReceiverAttenuation> getVerticesSoundLevel() {
+    public List<ReceiverNoiseLevel> getVerticesSoundLevel() {
         return new ArrayList<>(receiversAttenuationLevels);
     }
 
@@ -427,27 +427,4 @@ public class AttenuationComputeOutput implements IComputePathsOut {
     public synchronized long getCellComputed() {
         return cellComputed.get();
     }
-
-    /**
-     * Noise level or attenuation level for each source/receiver
-     */
-
-
-    public static class SourceReceiverAttenuation {
-        public final PathFinder.ReceiverPointInfo receiver;
-        public final PathFinder.SourcePointInfo source;
-
-        /**
-         * Attenuation in dB or Spl in dB or dB(A)
-         */
-        public final double[] value;
-
-        public SourceReceiverAttenuation(PathFinder.ReceiverPointInfo receiver, PathFinder.SourcePointInfo source, double[] value) {
-            this.receiver = receiver;
-            this.source = source;
-            this.value = value;
-        }
-    }
-
-
 }

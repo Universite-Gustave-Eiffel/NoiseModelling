@@ -64,7 +64,7 @@ public abstract class NoiseMapLoader {
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected double gs = 0;
-    // Soil areas are splited by the provided size in order to reduce the propagation time
+    // Soil areas are split by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
 
@@ -85,6 +85,14 @@ public abstract class NoiseMapLoader {
     public NoiseMapLoader(String buildingsTableName, String sourcesTableName) {
         this.buildingTableParameters.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
+    }
+
+    public DefaultTableLoader.BuildingTableParameters getBuildingTableParameters() {
+        return buildingTableParameters;
+    }
+
+    public GeometryFactory getGeometryFactory() {
+        return geometryFactory;
     }
 
     public boolean isVerbose() {

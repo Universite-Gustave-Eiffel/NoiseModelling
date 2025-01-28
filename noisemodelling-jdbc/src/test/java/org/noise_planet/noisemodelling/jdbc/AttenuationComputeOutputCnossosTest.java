@@ -643,8 +643,8 @@ public class AttenuationComputeOutputCnossosTest {
                     cellIndex.getLongitudeIndex(), progressVisitor, receivers);
             assertInstanceOf(AttenuationOutputMultiThread.class, out);
             AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
-            assertEquals(1, rout.attenuatedPaths.lDenLevels.size());
-            AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
+            assertEquals(1, rout.resultsCache.lDenLevels.size());
+            AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.resultsCache.lDenLevels.pop();
             return AcousticIndicatorsFunctions.sumDbArray(sl.value);
         }
         return 0;

@@ -7,6 +7,7 @@ import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
@@ -15,18 +16,13 @@ import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivityS
 import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirection;
 import org.noise_planet.noisemodelling.emission.directivity.cnossos.RailwayCnossosDirectivitySphere;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters;
-import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +36,10 @@ import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
  */
 public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultTableLoader.class);
-    int srid = 0;
+    NoiseMapByReceiverMaker noiseMapByReceiverMaker;
     NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
-
+    // Soil areas are split by the provided size in order to reduce the propagation time
+    protected double groundSurfaceSplitSideLength = 200;
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
     public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
@@ -86,9 +83,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
 
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
-        if(JDBCUtilities.tableExists(connection, noiseMapByReceiverMaker.getSourcesTableName())) {
-            this.srid = GeometryTableUtilities.getSRID(connection, noiseMapByReceiverMaker.getSourcesTableName());
-        }
+        this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
         if(inputMode == INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
@@ -124,11 +119,88 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
     }
 
     @Override
-    public SceneWithEmission create(Connection connection, CellIndex cellIndex, Envelope expandedCellEnvelop) {
+    public SceneWithEmission create(Connection connection, CellIndex cellIndex,
+                                    Set<Long> skipReceivers) throws SQLException {
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
+
+        Envelope cellEnvelope = noiseMapByReceiverMaker.getCellEnv(cellIndex);
+        Envelope expandedCellEnvelop = new Envelope(cellEnvelope);
+        double maximumPropagationDistance = noiseMapByReceiverMaker.getMaximumPropagationDistance();
+        double maximumReflectionDistance = noiseMapByReceiverMaker.getMaximumReflectionDistance();
+
+        // We have to fetch input data at least at this distance from the receivers in order to have continuity
+        // between subdomains
+        expandedCellEnvelop.expandBy(maximumPropagationDistance + 2 * maximumReflectionDistance);
+
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder.setFrequencyArray(frequencyArray);
         SceneWithEmission scene = new SceneWithEmission(profileBuilder);
         scene.setDirectionAttributes(directionAttributes);
+
+        // //////////////////////////////////////////////////////
+        // feed freeFieldFinder for fast intersection query
+        // optimization
+        // Fetch buildings in extendedEnvelope
+        fetchCellBuildings(connection, noiseMapByReceiverMaker.getBuildingTableParameters(), expandedCellEnvelop,
+                scene.profileBuilder, geometryFactory);
+
+        //if we have topographic points data
+        fetchCellDem(connection, expandedCellEnvelop, scene.profileBuilder);
+
+        // Fetch soil areas
+        fetchCellSoilAreas(connection, expandedCellEnvelop, scene.profileBuilder);
+
+        scene.profileBuilder.finishFeeding();
+
+        scene.reflexionOrder = noiseMapByReceiverMaker.getSoundReflectionOrder();
+        scene.setBodyBarrier(noiseMapByReceiverMaker.isBodyBarrier());
+        scene.maxRefDist = maximumReflectionDistance;
+        scene.maxSrcDist = maximumPropagationDistance;
+        scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());
+        scene.setComputeHorizontalDiffraction(noiseMapByReceiverMaker.isComputeHorizontalDiffraction());
+
+        // Fetch all source located in expandedCellEnvelop
+        fetchCellSource(connection, expandedCellEnvelop, scene, true);
+
+        // Fetch receivers
+        String receiverTableName = noiseMapByReceiverMaker.getReceiverTableName();
+        String receiverGeomName = GeometryTableUtilities.getGeometryColumnNames(connection,
+                TableLocation.parse(receiverTableName)).get(0);
+        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(receiverTableName, dbType));
+        String pkSelect = "";
+        if(intPk >= 1) {
+            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), dbType);
+        } else {
+            throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
+        }
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +
+                        receiverTableName + " WHERE " +
+                        TableLocation.quoteIdentifier(receiverGeomName, dbType) + " && ?::geometry")) {
+            st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    long receiverPk = rs.getLong(2);
+                    if(skipReceivers.contains(receiverPk)) {
+                        continue;
+                    } else {
+                        skipReceivers.add(receiverPk);
+                    }
+                    Geometry pt = rs.getGeometry();
+                    if(pt != null && !pt.isEmpty()) {
+                        // check z value
+                        if(pt.getCoordinate().getZ() == Coordinate.NULL_ORDINATE) {
+                            throw new IllegalArgumentException("The table " + receiverTableName +
+                                    " contain at least one receiver without Z ordinate." +
+                                    " You must specify X,Y,Z for each receiver");
+                        }
+                        scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
+                    }
+                }
+            }
+        }
+
         return scene;
     }
 
@@ -376,4 +448,126 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
         }
 
     }
+
+    /**
+     * Fetches digital elevation model (DEM) data for the specified cell envelope and adds it to the mesh.
+     * @param connection the database connection to use for querying the DEM data.
+     * @param fetchEnvelope  the envelope representing the cell to fetch DEM data for.
+     * @param profileBuilder the profile builder mesh to which the DEM data will be added.
+     * @throws SQLException if an SQL exception occurs while fetching the DEM data.
+     */
+    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder profileBuilder) throws SQLException {
+        String demTable = noiseMapByReceiverMaker.getDemTable();
+        if(!demTable.isEmpty()) {
+            GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
+            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+            List<String> geomFields = getGeometryColumnNames(connection,
+                    TableLocation.parse(demTable, dbType));
+            if(geomFields.isEmpty()) {
+                throw new SQLException("Digital elevation model table \""+ demTable +"\" must exist and contain a POINT field");
+            }
+            String topoGeomName = geomFields.get(0);
+            double sumZ = 0;
+            int topoCount = 0;
+            try (PreparedStatement st = connection.prepareStatement(
+                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
+                            demTable + " WHERE " +
+                            TableLocation.quoteIdentifier(topoGeomName, dbType) + " && ?::geometry")) {
+                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                    while (rs.next()) {
+                        Geometry pt = rs.getGeometry();
+                        if(pt != null) {
+                            Coordinate ptCoordinate = pt.getCoordinate();
+                            profileBuilder.addTopographicPoint(ptCoordinate);
+                            if(!Double.isNaN(ptCoordinate.z)) {
+                                sumZ+=ptCoordinate.z;
+                                topoCount+=1;
+                            }
+                        }
+                    }
+                }
+                double averageZ = 0;
+                if(topoCount > 0) {
+                    averageZ = sumZ / topoCount;
+                }
+                // add corners of envelope to guaranty topography continuity
+                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
+                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
+                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
+                for (int i = 0; i < coordinates.length - 1; i++) {
+                    Coordinate coordinate = coordinates[i];
+                    profileBuilder.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Fetches soil areas data for the specified cell envelope and adds them to the profile builder.
+     * @param connection         the database connection to use for querying the soil areas data.
+     * @param fetchEnvelope      the envelope representing the cell to fetch soil areas data for.
+     * @param builder            the profile builder to which the soil areas data will be added.
+     * @throws SQLException      if an SQL exception occurs while fetching the soil areas data.
+     */
+    protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
+            throws SQLException {
+        String soilTableName = noiseMapByReceiverMaker.getSoilTableName();
+        if(!soilTableName.isEmpty()){
+            GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
+            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+            double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
+            double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
+            String soilGeomName = getGeometryColumnNames(connection,
+                    TableLocation.parse(soilTableName, dbType)).get(0);
+            try (PreparedStatement st = connection.prepareStatement(
+                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
+                            soilTableName + " WHERE " +
+                            TableLocation.quoteIdentifier(soilGeomName, dbType) + " && ?::geometry")) {
+                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                    while (rs.next()) {
+                        Geometry mainPolygon = rs.getGeometry();
+                        if(mainPolygon != null) {
+                            for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
+                                Geometry poly = mainPolygon.getGeometryN(idPoly);
+                                if (poly instanceof Polygon) {
+                                    PreparedPolygon preparedPolygon = new PreparedPolygon((Polygon) poly);
+                                    // Split soil by square
+                                    Envelope geoEnv = poly.getEnvelopeInternal();
+                                    double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
+                                    double xCursor = startXGeo;
+                                    double g = rs.getDouble("G");
+                                    double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
+                                    double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
+                                    while (xCursor < maxX) {
+                                        double yCursor = startYGeo;
+                                        while (yCursor < maxY) {
+                                            Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor + groundSurfaceSplitSideLength);
+                                            Geometry envGeom = geometryFactory.toGeometry(cellEnv);
+                                            if(preparedPolygon.intersects(envGeom)) {
+                                                try {
+                                                    Geometry inters = poly.intersection(envGeom);
+                                                    if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
+                                                        builder.addGroundEffect(inters, g);
+                                                    }
+                                                } catch (TopologyException | IllegalArgumentException ex) {
+                                                    // Ignore
+                                                }
+                                            }
+                                            yCursor += groundSurfaceSplitSideLength;
+                                        }
+                                        xCursor += groundSurfaceSplitSideLength;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }

@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
+import org.noise_planet.noisemodelling.jdbc.output.ResultsCache;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 
@@ -18,21 +19,21 @@ import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
  * of AttenuationOutputSingleThread
  */
 public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
-    public AttenuatedPaths attenuatedPaths;
+    public ResultsCache resultsCache;
     public SceneWithEmission sceneWithEmission;
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters;
 
     /**
      * Create NoiseMap constructor
      * @param inputData
-     * @param attenuatedPaths
+     * @param resultsCache
      * @param noiseMapDatabaseParameters
      */
     public AttenuationOutputMultiThread(SceneWithEmission inputData,
-                                        AttenuatedPaths attenuatedPaths, NoiseMapDatabaseParameters noiseMapDatabaseParameters) {
+                                        ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters) {
         super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, null, inputData);
         this.exportAttenuationMatrix = noiseMapDatabaseParameters.exportAttenuationMatrix;
-        this.attenuatedPaths = attenuatedPaths;
+        this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
     }
