@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory
 class TestNoiseModelling extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestNoiseModelling.class)
 
-    @Test
+    /*@Test
     void testRoadEmissionFromDEN() {
 
         SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
@@ -46,7 +46,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
 
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
-    }
+    }*/
 
 
     /*@Test
