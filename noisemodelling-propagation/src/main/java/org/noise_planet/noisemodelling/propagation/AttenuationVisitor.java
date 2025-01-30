@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AttenuationVisitor implements IComputePathsOut {
     public AttenuationComputeOutput multiThreadParent;
-    public List<AttenuationComputeOutput.SourceReceiverAttenuation> receiverAttenuationLevels = new ArrayList<>();
+    public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
     public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
     public AttenuationCnossosParameters attenuationCnossosParameters;
     public boolean keepRays = false;
@@ -69,8 +69,8 @@ public class AttenuationVisitor implements IComputePathsOut {
             pathParameters.addAll(path);
         }
         if (aGlobalMeteo != null) {
-            receiverAttenuationLevels.add(new AttenuationComputeOutput.SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
-                    new PathFinder.SourcePointInfo(source), aGlobalMeteo));
+            receiverAttenuationLevels.add(new ReceiverNoiseLevel( new PathFinder.SourcePointInfo(source),
+                    new PathFinder.ReceiverPointInfo(receiver),"", aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];
@@ -94,19 +94,19 @@ public class AttenuationVisitor implements IComputePathsOut {
             // Push merged sources into multi-thread parent
             // Merge levels for each receiver for lines sources
             Map<PathFinder.SourcePointInfo, double[]> levelsPerSourceLines = new HashMap<>();
-            for (AttenuationComputeOutput.SourceReceiverAttenuation lvl : receiverAttenuationLevels) {
+            for (ReceiverNoiseLevel lvl : receiverAttenuationLevels) {
                 if (!levelsPerSourceLines.containsKey(lvl.source)) {
-                    levelsPerSourceLines.put(lvl.source, lvl.value);
+                    levelsPerSourceLines.put(lvl.source, lvl.levels);
                 } else {
                     // merge
                     levelsPerSourceLines.put(lvl.source,
                             AcousticIndicatorsFunctions.sumDbArray(levelsPerSourceLines.get(lvl.source),
-                            lvl.value));
+                            lvl.levels));
                 }
             }
             for (Map.Entry<PathFinder.SourcePointInfo, double[]> entry : levelsPerSourceLines.entrySet()) {
                 multiThreadParent.receiversAttenuationLevels.add(
-                        new AttenuationComputeOutput.SourceReceiverAttenuation(receiver, entry.getKey(), entry.getValue()));
+                        new ReceiverNoiseLevel(entry.getKey(), receiver , "", entry.getValue()));
             }
         }
         receiverAttenuationLevels.clear();

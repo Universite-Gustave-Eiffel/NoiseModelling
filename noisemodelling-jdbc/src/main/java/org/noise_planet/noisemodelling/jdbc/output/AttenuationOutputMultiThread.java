@@ -7,12 +7,14 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.jdbc;
+package org.noise_planet.noisemodelling.jdbc.output;
 
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.jdbc.output.ResultsCache;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance
@@ -22,6 +24,8 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
     public ResultsCache resultsCache;
     public SceneWithEmission sceneWithEmission;
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters;
+    AtomicBoolean exitWhenDone;
+    AtomicBoolean aborted;
 
     /**
      * Create NoiseMap constructor
@@ -30,12 +34,14 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
      * @param noiseMapDatabaseParameters
      */
     public AttenuationOutputMultiThread(SceneWithEmission inputData,
-                                        ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters) {
+                                        ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, null, inputData);
         this.exportAttenuationMatrix = noiseMapDatabaseParameters.exportAttenuationMatrix;
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
+        this.exitWhenDone = exitWhenDone;
+        this.aborted = aborted;
     }
 
     /**

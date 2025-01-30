@@ -1,6 +1,5 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
-import org.noise_planet.noisemodelling.jdbc.AttenuationOutputMultiThread;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -39,7 +38,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      */
     @Override
     public IComputePathsOut create(SceneWithEmission scene) {
-        return new AttenuationOutputMultiThread(scene, resultsCache, noiseMapDatabaseParameters);
+        return new AttenuationOutputMultiThread(scene, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     @Override

@@ -54,7 +54,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
     /**
      * @param pk Source primary key
-     * @param rs Emission source table PK_SOURCE, PERIOD, LV, HV ..
+     * @param rs Emission source table IDSOURCE, PERIOD, LV, HV ..
      * @throws SQLException
      */
     public void processTrafficFlow(Long pk, ResultSet rs) throws SQLException {
@@ -76,7 +76,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
     /**
      * @param pk Source primary key
-     * @param rs Emission source table PK_SOURCE, PERIOD, LV, HV ..
+     * @param rs Emission source table IDSOURCE, PERIOD, LV, HV ..
      * @throws SQLException
      */
     public void processEmission(Long pk, SpatialResultSet rs) throws SQLException {
@@ -128,8 +128,8 @@ public class SceneWithEmission extends SceneWithAttenuation {
     }
 
     public static class PeriodEmission {
-        final String period;
-        final int emissionHash;
+        public final String period;
+        public final int emissionHash;
 
         public PeriodEmission(String period, int emissionHash) {
             this.period = period;
@@ -153,7 +153,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
         INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_ATTENUATION;
         String sourcesEmissionTableName = "";
-        String sourceEmissionPrimaryKeyField = "PK_SOURCE";
+        String sourceEmissionPrimaryKeyField = "IDSOURCE";
         /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
         int coefficientVersion = 2;
         public String lwFrequencyPrepend = "LW";

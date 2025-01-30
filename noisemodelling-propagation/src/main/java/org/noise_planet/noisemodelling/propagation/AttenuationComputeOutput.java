@@ -120,8 +120,8 @@ public class AttenuationComputeOutput implements IComputePathsOut {
         }
         double[] aGlobalMeteo = computeCnossosAttenuation(genericMeteoData, source.id, source.li, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new SourceReceiverAttenuation(new PathFinder.ReceiverPointInfo(receiver),
-                    new PathFinder.SourcePointInfo(source), aGlobalMeteo));
+            receiversAttenuationLevels.add(new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
+                    new PathFinder.ReceiverPointInfo(receiver), "",aGlobalMeteo));
             return aGlobalMeteo;
         } else {
             return new double[0];

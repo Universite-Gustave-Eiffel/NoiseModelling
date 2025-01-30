@@ -73,7 +73,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
 
     /**
-     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * This table must contain a source identifier column named IDSOURCE, a **PERIOD** VARCHAR field,
      * and emission spectrum in dB(A).
      * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
      * @return Source emission table name*
@@ -116,7 +116,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     }
 
     /**
-     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * This table must contain a source identifier column named IDSOURCE, a **PERIOD** VARCHAR field,
      * and emission spectrum in dB(A) or road traffic information
      * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
      * @param sourcesEmissionTableName Source emission table name
@@ -286,22 +286,17 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public IComputePathsOut evaluateCell(Connection connection, CellIndex cellIndex,
                                          ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        SceneWithAttenuation threadData = prepareCell(connection, cellIndex, progression, skipReceivers);
+        SceneWithEmission scene = prepareCell(connection, cellIndex, progression, skipReceivers);
 
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
-                    threadData.receivers.size(), threadData.sourceGeometries.size(),
-                    threadData.profileBuilder.getBuildingCount()));
-        }
-        IComputePathsOut computeRaysOut;
-        if(computeRaysOutFactory == null) {
-            computeRaysOut = new AttenuationComputeOutput(false, attenuationCnossosParametersDay, threadData);
-        } else {
-            computeRaysOut = computeRaysOutFactory.create(threadData, attenuationCnossosParametersDay,
-                    attenuationCnossosParametersEvening, attenuationCnossosParametersNight);
+                    scene.receivers.size(), scene.sourceGeometries.size(),
+                    scene.profileBuilder.getBuildingCount()));
         }
 
-        PathFinder computeRays = new PathFinder(threadData);
+        IComputePathsOut computeRaysOut = computeRaysOutFactory.create(scene);
+
+        PathFinder computeRays = new PathFinder(scene);
 
         if(profilerThread != null) {
             computeRays.setProfilerThread(profilerThread);
