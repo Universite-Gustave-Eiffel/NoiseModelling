@@ -52,8 +52,6 @@ public class NoiseMapDatabaseParameters {
     public String receiversLevelTable = "RECEIVERS_LEVEL";
     public String raysTable = "RAYS";
 
-    public String lwFrequencyPrepend = "LW";
-
     public File sqlOutputFile;
     public Boolean sqlOutputFileCompression = true;
     public Boolean dropResultsTable = true;

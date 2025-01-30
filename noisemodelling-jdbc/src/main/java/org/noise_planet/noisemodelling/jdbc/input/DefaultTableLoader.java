@@ -1,9 +1,6 @@
 package org.noise_planet.noisemodelling.jdbc.input;
 
-import org.h2gis.utilities.GeometryTableUtilities;
-import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SpatialResultSet;
-import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
@@ -26,6 +23,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -44,17 +42,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
     public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
     public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
 
-
-    public enum INPUT_MODE {
-        /** Test */
-        INPUT_MODE_TRAFFIC_FLOW,
-        INPUT_MODE_LW,
-        INPUT_MODE_ATTENUATION }
-
-    /**
-     * When fetching tables data, expect the columns according to this mode
-     */
-    public INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_ATTENUATION;
+    private static final int DEFAULT_FETCH_SIZE = 300;
+    protected int fetchSize = DEFAULT_FETCH_SIZE;
 
     /**
      * Attenuation and other attributes relative to direction on sphere
@@ -80,11 +69,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
      * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
      * @throws SQLException
      */
-
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
-        if(inputMode == INPUT_MODE.INPUT_MODE_LW) {
+        if(noiseMapByReceiverMaker.getSceneInputSettings().inputMode == SceneWithEmission.SceneInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
@@ -98,11 +86,11 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
 
     private List<Integer> readFrequenciesFromLwTable(NoiseMapByReceiverMaker noiseMapByReceiverMaker, List<String> sourceField) throws SQLException {
         List<Integer> frequencyValues = new ArrayList<>();
-        String freqField = noiseMapDatabaseParameters.lwFrequencyPrepend;
+        String frequencyPrepend = noiseMapByReceiverMaker.getLwFrequencyPrepend();
         for (String fieldName : sourceField) {
-            if (fieldName.toUpperCase(Locale.ROOT).startsWith(freqField)) {
+            if (fieldName.toUpperCase(Locale.ROOT).startsWith(frequencyPrepend)) {
                 try {
-                    int freq = Integer.parseInt(fieldName.substring(freqField.length()));
+                    int freq = Integer.parseInt(fieldName.substring(frequencyPrepend.length()));
                     int index = Arrays.binarySearch(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
                     if (index >= 0) {
                         frequencyValues.add(freq);
@@ -135,7 +123,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
 
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder.setFrequencyArray(frequencyArray);
-        SceneWithEmission scene = new SceneWithEmission(profileBuilder);
+        SceneWithEmission scene = new SceneWithEmission(profileBuilder, noiseMapByReceiverMaker.getSceneInputSettings());
         scene.setDirectionAttributes(directionAttributes);
 
         // //////////////////////////////////////////////////////
@@ -570,4 +558,92 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
         }
     }
 
+    /**
+     * Fetch source geometries and power
+     * @param connection Active connection
+     * @param fetchEnvelope Fetch envelope
+     * @param scene (Out) Propagation process input data
+     * @throws SQLException
+     */
+    public void fetchCellSource(Connection connection, Envelope fetchEnvelope, SceneWithEmission scene, boolean doIntersection)
+            throws SQLException {
+        String sourcesTableName = noiseMapByReceiverMaker.getSourcesTableName();
+        GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
+        List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
+        if (geomFields.isEmpty()) {
+            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+        }
+        String sourceGeomName = geomFields.get(0);
+        Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
+        Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
+                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
+        int pkIndex = primaryKey.second();
+        if (pkIndex < 1) {
+            throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
+        }
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            st.setFetchSize(fetchSize);
+            boolean autoCommit = connection.getAutoCommit();
+            if (autoCommit) {
+                connection.setAutoCommit(false);
+            }
+            st.setFetchDirection(ResultSet.FETCH_FORWARD);
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geo = rs.getGeometry();
+                    if (geo != null) {
+                        if (doIntersection) {
+                            geo = domainConstraint.intersection(geo);
+                        }
+                        if (!geo.isEmpty()) {
+                            Coordinate[] coordinates = geo.getCoordinates();
+                            for (Coordinate coordinate : coordinates) {
+                                // check z value
+                                if (coordinate.getZ() == Coordinate.NULL_ORDINATE) {
+                                    throw new IllegalArgumentException("The table " + sourcesTableName +
+                                            " contain at least one source without Z ordinate." +
+                                            " You must specify X,Y,Z for each source");
+                                }
+                            }
+                            scene.addSource(rs.getLong(pkIndex), geo, rs);
+                        }
+                    }
+                }
+            } finally {
+                if (autoCommit) {
+                    connection.setAutoCommit(true);
+                }
+            }
+        }
+        // Fetch emission table data for the sources in this area
+        String emissionTableName = scene.sceneInputSettings.sourcesEmissionTableName;
+        if (!emissionTableName.isEmpty()) {
+            try (PreparedStatement st = connection.prepareStatement("SELECT E.* FROM " + sourcesTableName +
+                    " S INNER JOIN, "+emissionTableName+" E ON S."+primaryKey.first()+" = E." +
+                    scene.sceneInputSettings.sourceEmissionPrimaryKeyField+" WHERE S."
+                    + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
+                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+                st.setFetchSize(fetchSize);
+                boolean autoCommit = connection.getAutoCommit();
+                if (autoCommit) {
+                    connection.setAutoCommit(false);
+                }
+                st.setFetchDirection(ResultSet.FETCH_FORWARD);
+                try (ResultSet rs = st.executeQuery()) {
+                    while (rs.next()) {
+                        scene.addSourceEmission(rs.getLong(scene.sceneInputSettings.sourceEmissionPrimaryKeyField), rs);
+                    }
+                } finally {
+                    if (autoCommit) {
+                        connection.setAutoCommit(true);
+                    }
+                }
+            }
+
+        }
+    }
 }

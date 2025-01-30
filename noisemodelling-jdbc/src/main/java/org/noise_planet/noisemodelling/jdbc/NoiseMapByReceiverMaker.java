@@ -54,6 +54,9 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+
+    SceneWithEmission.SceneInputSettings sceneInputSettings = new SceneWithEmission.SceneInputSettings();
+
     /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
 
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
@@ -66,6 +69,60 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public NoiseMapDatabaseParameters getNoiseMapDatabaseParameters() {
         return noiseMapDatabaseParameters;
+    }
+
+
+    /**
+     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * and emission spectrum in dB(A).
+     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
+     * @return Source emission table name*
+     */
+    public String getSourcesEmissionTableName() {
+        return sceneInputSettings.getSourcesEmissionTableName();
+    }
+
+
+    public SceneWithEmission.SceneInputSettings.INPUT_MODE getInputMode() {
+        return sceneInputSettings.getInputMode();
+    }
+
+    public void setInputMode(SceneWithEmission.SceneInputSettings.INPUT_MODE inputMode) {
+        sceneInputSettings.setInputMode(inputMode);
+    }
+
+    public String getSourceEmissionPrimaryKeyField() {
+        return sceneInputSettings.getSourceEmissionPrimaryKeyField();
+    }
+
+    public void setSourceEmissionPrimaryKeyField(String sourceEmissionPrimaryKeyField) {
+        sceneInputSettings.setSourceEmissionPrimaryKeyField(sourceEmissionPrimaryKeyField);
+    }
+
+
+    public String getLwFrequencyPrepend() {
+        return sceneInputSettings.getLwFrequencyPrepend();
+    }
+
+    /**
+     * @param lwFrequencyPrepend Text preceding the frequency in source emission table (default LW)
+     */
+    public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
+        sceneInputSettings.setLwFrequencyPrepend(lwFrequencyPrepend);
+    }
+
+    public SceneWithEmission.SceneInputSettings getSceneInputSettings() {
+        return sceneInputSettings;
+    }
+
+    /**
+     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
+     * and emission spectrum in dB(A) or road traffic information
+     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
+     * @param sourcesEmissionTableName Source emission table name
+     */
+    public void setSourcesEmissionTableName(String sourcesEmissionTableName) {
+        sceneInputSettings.setSourcesEmissionTableName(sourcesEmissionTableName);
     }
 
     /**
@@ -220,16 +277,16 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
     /**
      * Launch sound propagation
-     * @param connection
-     * @param cellI
-     * @param cellJ
-     * @param progression
-     * @return
-     * @throws SQLException
+     * @param connection JDBC Connection
+     * @param cellIndex Computation area index
+     * @param progression Progression info
+     * @param skipReceivers Do not process the receivers primary keys in this set and once included add the new receivers primary in it
+     * @return Output data instance for this cell
+     * @throws SQLException Sql exception instance
      */
-    public IComputePathsOut evaluateCell(Connection connection, int cellI, int cellJ,
+    public IComputePathsOut evaluateCell(Connection connection, CellIndex cellIndex,
                                          ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        SceneWithAttenuation threadData = prepareCell(connection, cellI, cellJ, progression, skipReceivers);
+        SceneWithAttenuation threadData = prepareCell(connection, cellIndex, progression, skipReceivers);
 
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",

@@ -94,7 +94,7 @@ public class SceneWithAttenuation extends Scene {
      * @param geom Source geometry
      * @param rs Additional attributes fetched from database
      */
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         if(sourceFieldNames.isEmpty()) {
             List<String> fieldNames = JDBCUtilities.getColumnNames(rs.getMetaData());
             for(int idField = 0; idField < fieldNames.size(); idField++) {

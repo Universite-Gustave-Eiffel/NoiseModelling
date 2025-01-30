@@ -46,14 +46,11 @@ import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 public abstract class NoiseMapLoader {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-
     Logger logger = LoggerFactory.getLogger(NoiseMapLoader.class);
     private static final int DEFAULT_FETCH_SIZE = 300;
-    protected int fetchSize = DEFAULT_FETCH_SIZE;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
     protected DefaultTableLoader.BuildingTableParameters buildingTableParameters = new DefaultTableLoader.BuildingTableParameters();
     protected final String sourcesTableName;
-    protected String sourcesEmissionTableName = "";
     protected String soilTableName = "";
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
@@ -138,180 +135,6 @@ public abstract class NoiseMapLoader {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
     }
 
-    /**
-     * Fetches digital elevation model (DEM) data for the specified cell envelope and adds it to the mesh.
-     * @param connection the database connection to use for querying the DEM data.
-     * @param fetchEnvelope  the envelope representing the cell to fetch DEM data for.
-     * @param mesh the profile builder mesh to which the DEM data will be added.
-     * @throws SQLException if an SQL exception occurs while fetching the DEM data.
-     */
-    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder mesh) throws SQLException {
-        if(!demTable.isEmpty()) {
-            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-            List<String> geomFields = getGeometryColumnNames(connection,
-                    TableLocation.parse(demTable, dbType));
-            if(geomFields.isEmpty()) {
-                throw new SQLException("Digital elevation model table \""+demTable+"\" must exist and contain a POINT field");
-            }
-            String topoGeomName = geomFields.get(0);
-            double sumZ = 0;
-            int topoCount = 0;
-            try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
-                            demTable + " WHERE " +
-                            TableLocation.quoteIdentifier(topoGeomName, dbType) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                    while (rs.next()) {
-                        Geometry pt = rs.getGeometry();
-                        if(pt != null) {
-                            Coordinate ptCoordinate = pt.getCoordinate();
-                            mesh.addTopographicPoint(ptCoordinate);
-                            if(!Double.isNaN(ptCoordinate.z)) {
-                                sumZ+=ptCoordinate.z;
-                                topoCount+=1;
-                            }
-                        }
-                    }
-                }
-                double averageZ = 0;
-                if(topoCount > 0) {
-                    averageZ = sumZ / topoCount;
-                }
-                // add corners of envelope to guaranty topography continuity
-                Envelope extentedEnvelope = new Envelope(fetchEnvelope);
-                extentedEnvelope.expandBy(fetchEnvelope.getDiameter());
-                Coordinate[] coordinates = geometryFactory.toGeometry(extentedEnvelope).getCoordinates();
-                for (int i = 0; i < coordinates.length - 1; i++) {
-                    Coordinate coordinate = coordinates[i];
-                    mesh.addTopographicPoint(new Coordinate(coordinate.x, coordinate.y, averageZ));
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetches soil areas data for the specified cell envelope and adds them to the profile builder.
-     * @param connection         the database connection to use for querying the soil areas data.
-     * @param fetchEnvelope      the envelope representing the cell to fetch soil areas data for.
-     * @param builder            the profile builder to which the soil areas data will be added.
-     * @throws SQLException      if an SQL exception occurs while fetching the soil areas data.
-     */
-    protected void fetchCellSoilAreas(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
-            throws SQLException {
-        if(!soilTableName.isEmpty()){
-            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-            double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
-            double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
-            String soilGeomName = getGeometryColumnNames(connection,
-                    TableLocation.parse(soilTableName, dbType)).get(0);
-            try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
-                            soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName, dbType) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                    while (rs.next()) {
-                        Geometry mainPolygon = rs.getGeometry();
-                        if(mainPolygon != null) {
-                            for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
-                                Geometry poly = mainPolygon.getGeometryN(idPoly);
-                                if (poly instanceof Polygon) {
-                                    PreparedPolygon preparedPolygon = new PreparedPolygon((Polygon) poly);
-                                    // Split soil by square
-                                    Envelope geoEnv = poly.getEnvelopeInternal();
-                                    double startXGeo = Math.max(startX, Math.floor(geoEnv.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                                    double startYGeo = Math.max(startY, Math.floor(geoEnv.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength);
-                                    double xCursor = startXGeo;
-                                    double g = rs.getDouble("G");
-                                    double maxX = Math.min(fetchEnvelope.getMaxX(), geoEnv.getMaxX());
-                                    double maxY = Math.min(fetchEnvelope.getMaxY(), geoEnv.getMaxY());
-                                    while (xCursor < maxX) {
-                                        double yCursor = startYGeo;
-                                        while (yCursor < maxY) {
-                                            Envelope cellEnv = new Envelope(xCursor, xCursor + groundSurfaceSplitSideLength, yCursor, yCursor + groundSurfaceSplitSideLength);
-                                            Geometry envGeom = geometryFactory.toGeometry(cellEnv);
-                                            if(preparedPolygon.intersects(envGeom)) {
-                                                try {
-                                                    Geometry inters = poly.intersection(envGeom);
-                                                    if (!inters.isEmpty() && (inters instanceof Polygon || inters instanceof MultiPolygon)) {
-                                                        builder.addGroundEffect(inters, g);
-                                                    }
-                                                } catch (TopologyException | IllegalArgumentException ex) {
-                                                    // Ignore
-                                                }
-                                            }
-                                            yCursor += groundSurfaceSplitSideLength;
-                                        }
-                                        xCursor += groundSurfaceSplitSideLength;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetch source geometries and power
-     * @param connection Active connection
-     * @param fetchEnvelope Fetch envelope
-     * @param propagationProcessData (Out) Propagation process input data
-     * @throws SQLException
-     */
-    public void fetchCellSource(Connection connection, Envelope fetchEnvelope, SceneWithEmission propagationProcessData, boolean doIntersection)
-            throws SQLException, IOException {
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
-        List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
-        if(geomFields.isEmpty()) {
-            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
-        }
-        String sourceGeomName =  geomFields.get(0);
-        Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
-        int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
-        if(pkIndex < 1) {
-            throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
-        }
-        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-            st.setFetchSize(fetchSize);
-            boolean autoCommit = connection.getAutoCommit();
-            if(autoCommit) {
-                connection.setAutoCommit(false);
-            }
-            st.setFetchDirection(ResultSet.FETCH_FORWARD);
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
-                while (rs.next()) {
-                    Geometry geo = rs.getGeometry();
-                    if (geo != null) {
-                        if(doIntersection) {
-                            geo = domainConstraint.intersection(geo);
-                        }
-                        if(!geo.isEmpty()) {
-                            Coordinate[] coordinates = geo.getCoordinates();
-                            for(Coordinate coordinate : coordinates) {
-                                // check z value
-                                if(coordinate.getZ() == Coordinate.NULL_ORDINATE) {
-                                    throw new IllegalArgumentException("The table " + sourcesTableName +
-                                            " contain at least one source without Z ordinate." +
-                                            " You must specify X,Y,Z for each source");
-                                }
-                            }
-                            propagationProcessData.addSource(rs.getLong(pkIndex), geo, rs);
-                        }
-                    }
-                }
-            } finally {
-                if (autoCommit) {
-                    connection.setAutoCommit(true);
-                }
-            }
-        }
-    }
 
     /**
      * true if train propagation is computed (multiple reflection between the train and a screen)
@@ -398,30 +221,10 @@ public abstract class NoiseMapLoader {
 
     /**
      * This table must contain a POINT or LINESTRING column
-     * @return Table name that contain linear and/or punctual sound sources.*
+     * @return Table name that contain linear and/or punctual sound sources geometries.*
      */
     public String getSourcesTableName() {
         return sourcesTableName;
-    }
-
-    /**
-     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
-     * and emission spectrum in dB(A).
-     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
-     * @return Source emission table name*
-     */
-    public String getSourcesEmissionTableName() {
-        return sourcesEmissionTableName;
-    }
-
-    /**
-     * This table must contain a source identifier column named PK_SOURCE, a **PERIOD** VARCHAR field,
-     * and emission spectrum in dB(A).
-     * Spectrum column name must be LW{@link #sound_lvl_field}. Where HERTZ is a number
-     * @param sourcesEmissionTableName Source emission table name
-     */
-    public void setSourcesEmissionTableName(String sourcesEmissionTableName) {
-        this.sourcesEmissionTableName = sourcesEmissionTableName;
     }
 
     /**

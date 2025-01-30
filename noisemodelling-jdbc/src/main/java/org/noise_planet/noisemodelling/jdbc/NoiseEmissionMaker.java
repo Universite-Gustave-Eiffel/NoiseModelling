@@ -43,7 +43,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 /**
  * Read source database and compute the sound emission spectrum of roads sources
  */
-public class NoiseEmissionMaker extends SceneWithAttenuation {
+public class NoiseEmissionMaker {
 
     public static final double DAY_RATIO = 12. / 24.;
     public static final double EVENING_RATIO = 4. / 24. * dbaToW(5.0);
@@ -94,7 +94,7 @@ public class NoiseEmissionMaker extends SceneWithAttenuation {
      * @throws IOException
      */
     @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException, IOException {
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs);
         double[][] res = computeLw(rs);
         if(noiseMapParameters.computeLDay || noiseMapParameters.computeLDEN) {
