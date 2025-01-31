@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 /**
  * Test parsing of zip file using H2GIS database
  */
-class TestPoisson extends JdbcTestCase {
+class TestSUMO extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestNoiseModelling.class)
 
 
@@ -41,39 +41,49 @@ class TestPoisson extends JdbcTestCase {
     /**
      * as SUMO or SYMUVIA or Drone input
      */
-    void testDynamicFlowTutorial() {
+    void testDynamicIndividualVehiclesTutorial() {
 
-        // Import the road network (with predicted traffic flows) and buildings from an OSM file
-        new Import_OSM().exec(connection, [
-                "pathFile"      : TestImportExport.getResource("map.osm.gz").getPath(),
-                "targetSRID"    : 2154,
-                "ignoreGround"  : true,
-                "ignoreBuilding": false,
-                "ignoreRoads"   : false,
-                "removeTunnels" : true
-        ]);
+        // Import Buildings for your study area
+        new Import_File().exec(connection,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/buildings_nm_ready_pop_heights.shp").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "buildings"])
 
-        // Create a receiver grid
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "delta"            : 25])
+        // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
+        new Import_File().exec(connection,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/receivers_python_method0_50m_pop.shp").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "receivers"])
 
-        // Set a height to the receivers at 1.5 m
+        // Set the height of the receivers
         new Set_Height().exec(connection,
                 [ "tableName":"RECEIVERS",
                   "height": 1.5
                 ])
 
+        // Import the road network
+        new Import_File().exec(connection,
+                ["pathFile" :TestDatabaseManager.getResource("Dynamic/network_tartu_32635_.geojson").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "network_tartu"])
 
-        // From the network with traffic flow to individual trajectories with associated Lw using the Poisson method
-        // This method place the vehicles on the network according to the traffic flow following a poisson law
-        // It keeps a coherence in the time series of the noise level
-        new Flow_2_Noisy_Vehicles().exec(connection,
-                ["tableRoads": "ROADS",
-                 "method": "PROBA",
-                 "timestep": 1,
-                 "gridStep" : 10,
-                 "duration" : 60])
+        // (optional) Add a primary key to the road network
+        new Add_Primary_Key().exec(connection,
+                ["pkName" :"PK",
+                 "tableName": "network_tartu"])
+
+        // Import the vehicles trajectories
+        new Import_File().exec(connection,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/SUMO.geojson").getPath() ,
+                 "inputSRID": "32635",
+                 "tableName": "vehicle"])
+
+        // Create point sources from the network every 10 meters. This point source will be used to compute the noise attenuation level from them to each receiver.
+        // The created table will be named SOURCES_0DB
+        new Point_Source_0dB_From_Network().exec(connection,
+                ["tableNetwork": "network_tartu",
+                 "gridStep" : 10
+                ])
 
         // Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers
         new Noise_level_from_source().exec(connection,
@@ -90,6 +100,12 @@ class TestPoisson extends JdbcTestCase {
                  "confSkipLden":true
                 ])
 
+        // Create a table with the noise level from the vehicles and snap the vehicles to the discretized network
+        new Ind_Vehicles_2_Noisy_Vehicles().exec(connection,
+                ["tableVehicles": "vehicle",
+                 "distance2snap" : 30,
+                 "tableFormat" : "SUMO"])
+
         // Compute the noise level from the moving vehicles to the receivers
         // the output table is called here LT_GEOM and contains the time series of the noise level at each receiver
         new Noise_From_Attenuation_Matrix().exec(connection,
@@ -99,7 +115,7 @@ class TestPoisson extends JdbcTestCase {
                 ])
 
         // This step is optional, it compute the LEQA, LEQ, L10, L50 and L90 at each receiver from the table LT_GEOM
-        String res =new DynamicIndicators().exec(connection,
+        String res = new DynamicIndicators().exec(connection,
                 ["tableName"   : "LT_GEOM",
                  "columnName"   : "LEQA"
                 ])
