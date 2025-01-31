@@ -41,18 +41,18 @@ public class SceneWithAttenuation extends Scene {
     /**
      * Cached source table fields
      */
-    Map<String, Integer> sourceFieldNames = new HashMap<>();
+    public Map<String, Integer> sourceFieldNames = new HashMap<>();
 
     /**
      * If {@link #cnossosParametersPerPeriod} is empty, attenuation visitor will use this default settings and output
      * empty period
      */
-    AttenuationCnossosParameters defaultCnossosParameters = new AttenuationCnossosParameters();
+    public AttenuationCnossosParameters defaultCnossosParameters = new AttenuationCnossosParameters();
 
     /**
      * Define attenuation settings to apply for each period
      */
-    Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
+    public Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
 
     public SceneWithAttenuation(ProfileBuilder profileBuilder) {
         super(profileBuilder);

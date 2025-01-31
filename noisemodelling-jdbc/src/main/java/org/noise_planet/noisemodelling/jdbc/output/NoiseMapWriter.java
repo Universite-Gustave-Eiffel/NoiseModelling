@@ -117,8 +117,8 @@ public class NoiseMapWriter implements Runnable {
             LineString lineString = row.asGeom();
             lineString.setSRID(srid);
             ps.setObject(parameterIndex++, lineString);
-            ps.setLong(parameterIndex++, row.getIdReceiver());
-            ps.setLong(parameterIndex++, row.getIdSource());
+            ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
+            ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
             if(databaseParameters.exportProfileInRays) {
                 String geojson = "";
                 try {

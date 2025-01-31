@@ -51,7 +51,7 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
      */
     @Override
     public IComputePathsOut subProcess(ProgressVisitor visitor) {
-        return new AttenuationOutputSingleThread(this);
+        return new AttenuationOutputSingleThread(this, visitor);
     }
 
 }
