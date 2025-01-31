@@ -219,15 +219,12 @@ public class CnossosPathBuilder {
         srPath.setPoints2DGround(pts2DGround);
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
-        CnossosPath pathParameters = new CnossosPath();
-        pathParameters.setCutProfile(cutProfile);
-        pathParameters.setSourceOrientation(cutProfile.getSource().orientation);
+        CnossosPath pathParameters = new CnossosPath(cutProfile);
         pathParameters.setFavorable(true);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
         pathParameters.setSRSegment(srPath);
         pathParameters.init(exactFrequencyArray.size());
-        pathParameters.angle = Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
         Coordinate lastPt = pts2D.get(pts2D.size() - 1);

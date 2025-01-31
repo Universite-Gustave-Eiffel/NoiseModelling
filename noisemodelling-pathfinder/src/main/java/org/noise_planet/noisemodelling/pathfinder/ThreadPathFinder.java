@@ -46,7 +46,7 @@ public final class ThreadPathFinder implements Callable<Boolean> {
         this.endReceiver = endReceiver;
         this.propagationProcess = propagationProcess;
         this.visitor = visitor;
-        this.dataOut = dataOut.subProcess();
+        this.dataOut = dataOut.subProcess(visitor);
         this.data = data;
     }
 

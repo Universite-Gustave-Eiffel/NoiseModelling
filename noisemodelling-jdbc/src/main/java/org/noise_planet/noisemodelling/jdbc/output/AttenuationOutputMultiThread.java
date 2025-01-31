@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc.output;
 
+import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
@@ -35,7 +36,7 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
      */
     public AttenuationOutputMultiThread(SceneWithEmission inputData,
                                         ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
-        super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, null, inputData);
+        super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, inputData);
         this.exportAttenuationMatrix = noiseMapDatabaseParameters.exportAttenuationMatrix;
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
@@ -49,7 +50,7 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public IComputePathsOut subProcess() {
+    public IComputePathsOut subProcess(ProgressVisitor visitor) {
         return new AttenuationOutputSingleThread(this);
     }
 

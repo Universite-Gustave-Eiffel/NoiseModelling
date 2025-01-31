@@ -52,7 +52,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      * This method is blocked until the computation is completed or if there is an issue
      */
     public void start() {
-        noiseMapWriter = new NoiseMapWriter(connection, noiseMapByReceiverMaker, resultsCache);
+        noiseMapWriter = new NoiseMapWriter(connection, noiseMapByReceiverMaker, resultsCache, exitWhenDone, aborted);
         exitWhenDone.set(false);
         tableWriterThread = new Thread(noiseMapWriter);
         tableWriterThread.start();

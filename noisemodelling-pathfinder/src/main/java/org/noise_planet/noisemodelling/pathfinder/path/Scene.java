@@ -90,8 +90,6 @@ public class Scene {
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
 
-    /** Progression information */
-    public ProgressVisitor cellProg;
 
     /**
      * Add the geometry of the source

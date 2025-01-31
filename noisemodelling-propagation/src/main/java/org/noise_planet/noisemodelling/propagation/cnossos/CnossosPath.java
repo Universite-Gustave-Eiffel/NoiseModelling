@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
 
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+
 /**
  * All the datas Path of Cnossos
  */
@@ -59,6 +61,10 @@ public class CnossosPath extends Path {
     }
 
     public CnossosPath() {
+    }
+
+    public CnossosPath(CutProfile cutProfile) {
+        super(cutProfile);
     }
 
     public CnossosPath(CnossosPath other) {

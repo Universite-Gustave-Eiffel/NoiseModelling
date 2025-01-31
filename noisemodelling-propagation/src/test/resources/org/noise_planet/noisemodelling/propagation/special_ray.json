@@ -214,14 +214,11 @@
     "deltaPrime" : 0.0
   } ],
   "favorable" : false,
-  "idSource" : 1169,
-  "idReceiver" : 1,
   "sourceOrientation" : {
     "yaw" : 155.2555,
     "pitch" : -2.3588793,
     "roll" : 0.0
   },
-  "angle" : 0.0,
   "gs" : 0.0,
   "keepAbsorption" : true,
   "groundAttenuation" : {

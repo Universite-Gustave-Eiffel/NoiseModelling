@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
@@ -52,6 +53,8 @@ public class PathFinder {
     private static final double epsilon = 1e-7;
     private static final double MAX_RATIO_HULL_DIRECT_PATH = 4;
     public static final Logger LOGGER = LoggerFactory.getLogger(PathFinder.class);
+    /** Progression information */
+    public ProgressVisitor progressVisitor;
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
@@ -69,9 +72,20 @@ public class PathFinder {
      * Create new instance from the propagation data.
      * @param data Propagation data used for ray computation.
      */
+    public PathFinder(Scene data, ProgressVisitor progressVisitor) {
+        this.data = data;
+        this.threadCount = Runtime.getRuntime().availableProcessors();
+        this.progressVisitor = progressVisitor;
+    }
+
+    /**
+     * Create new instance from the propagation data.
+     * @param data Propagation data used for ray computation.
+     */
     public PathFinder(Scene data) {
         this.data = data;
         this.threadCount = Runtime.getRuntime().availableProcessors();
+        this.progressVisitor = new EmptyProgressVisitor();
     }
 
     /**
@@ -105,7 +119,6 @@ public class PathFinder {
      * @param computeRaysOut Result output.
      */
     public void run(IComputePathsOut computeRaysOut) {
-        ProgressVisitor visitor = data.cellProg;
         ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
         int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
         int endReceiverRange = 0;
@@ -113,12 +126,12 @@ public class PathFinder {
         List<Future<Boolean>> tasks = new ArrayList<>();
         while (endReceiverRange < data.receivers.size()) {
             //Break if the progress visitor is cancelled
-            if (visitor != null && visitor.isCanceled()) {
+            if (progressVisitor != null && progressVisitor.isCanceled()) {
                 break;
             }
             int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, visitor, computeRaysOut, data);
+                    this, progressVisitor, computeRaysOut, data);
             if (threadCount != 1) {
                 tasks.add(threadManager.submitBlocking(batchThread));
             } else {

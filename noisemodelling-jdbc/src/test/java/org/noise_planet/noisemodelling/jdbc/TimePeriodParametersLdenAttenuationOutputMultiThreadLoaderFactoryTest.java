@@ -442,7 +442,7 @@ public class TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTe
                 IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 if (out instanceof AttenuationComputeOutput) {
                     AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
-                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                    exportScene(String.format(Locale.ROOT,"target/scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.scene.profileBuilder, cellStorage);
                 }
             }
         }finally {
@@ -1085,7 +1085,7 @@ public class TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTe
                 // Export as a Google Earth 3d scene
                 if (out instanceof AttenuationComputeOutput) {
                     AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
-                    exportScene(String.format(Locale.ROOT,"target/PtSource_scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.inputData.profileBuilder, cellStorage);
+                    exportScene(String.format(Locale.ROOT,"target/PtSource_scene_%d_%d.kml", cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex()), cellStorage.scene.profileBuilder, cellStorage);
                 }
             }
         }finally {
@@ -1131,8 +1131,8 @@ public class TimePeriodParametersLdenAttenuationOutputMultiThreadLoaderFactoryTe
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
             }
-            if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty())  {
-                kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+            if(result != null && !result.getScene().sourceGeometries.isEmpty() && !result.getScene().receivers.isEmpty())  {
+                kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getScene().sourceGeometries.get(0).getCoordinate(),result.getScene().receivers.get(0)));
             }
 
             kmlDocument.writeFooter();

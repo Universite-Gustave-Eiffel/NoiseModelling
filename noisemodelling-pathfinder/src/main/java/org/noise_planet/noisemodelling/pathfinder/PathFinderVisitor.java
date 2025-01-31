@@ -8,6 +8,7 @@
  */
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
@@ -75,7 +76,7 @@ public class PathFinderVisitor implements IComputePathsOut {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public IComputePathsOut subProcess() {
+    public IComputePathsOut subProcess(ProgressVisitor visitor) {
         return this;
     }
 

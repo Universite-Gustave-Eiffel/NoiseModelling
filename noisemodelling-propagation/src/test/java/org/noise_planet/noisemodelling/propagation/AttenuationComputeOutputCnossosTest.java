@@ -111,14 +111,14 @@ public class AttenuationComputeOutputCnossosTest {
         SceneWithAttenuation sceneWithAttenuation = new SceneWithAttenuation(profileBuilder);
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
-        attData.setHumidity(HUMIDITY);
-        attData.setTemperature(TEMPERATURE);
+        sceneWithAttenuation.defaultCnossosParameters.setHumidity(HUMIDITY);
+        sceneWithAttenuation.defaultCnossosParameters.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, sceneWithAttenuation);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true,
+                sceneWithAttenuation);
 
-        AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
+        AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut);
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
@@ -181,7 +181,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
         double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
         double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
         double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
@@ -256,7 +256,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
         double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
         double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
         double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
@@ -330,7 +330,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
         double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
         double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
         double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
@@ -404,7 +404,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
         double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
         double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
         double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
@@ -486,7 +486,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
         double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
         double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
         double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
@@ -608,7 +608,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -785,7 +785,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -945,7 +945,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -1015,7 +1015,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1068,7 +1068,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1095,7 +1095,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - left lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -1235,7 +1235,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -1311,7 +1311,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1363,7 +1363,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1389,7 +1389,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - left lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(  new double[]{6.41,14.50,19.52,22.09,22.16,19.28,11.62,-9.31},L, ERROR_EPSILON_VERY_LOW);
     }
@@ -1488,7 +1488,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -1557,7 +1557,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1617,7 +1617,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93,93,93,93,93,93,93,93});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93,93,93,93,93,93,93,93});
         assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_LOWEST);
     }
 
@@ -1748,7 +1748,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -1816,7 +1816,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -1864,7 +1864,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, sumArray(SOUND_POWER_LEVELS, A_WEIGHTING));
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, sumArray(SOUND_POWER_LEVELS, A_WEIGHTING));
         assertArrayEquals(  new double[]{21.28,28.39,32.47,34.51,34.54,33.37,32.14,27.73},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -1979,7 +1979,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -2057,7 +2057,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2116,7 +2116,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("CfF - left lateral", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundF - left lateral", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, sumArray(SOUND_POWER_LEVELS, A_WEIGHTING));
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, sumArray(SOUND_POWER_LEVELS, A_WEIGHTING));
         assertArrayEquals(new double[]{21.81, 29.66, 34.31, 36.14, 35.57, 33.72, 31.12, 25.37},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -2214,7 +2214,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -2283,7 +2283,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2329,7 +2329,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2351,7 +2351,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaDiffSRH - right lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{5.14,12.29,16.39,18.47,18.31,15.97,9.72,-9.92},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -2450,7 +2450,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -2517,7 +2517,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2570,7 +2570,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2596,7 +2596,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - right lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - right lateral", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{25.61,34.06,39.39,42.04,41.86,39.42,35.26,27.57},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -2680,7 +2680,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
         double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -2746,7 +2746,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2794,7 +2794,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
@@ -2816,7 +2816,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaDiffSRH - left lateral", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LH - left lateral", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(new double[]{10.75,16.57,20.81,24.51,26.55,26.78,25.04,18.50},L, ERROR_EPSILON_VERY_LOW);
     }
 
@@ -2907,7 +2907,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -2970,7 +2970,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualABoundaryH = proPath.double_aBoundaryH;
@@ -3075,7 +3075,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundOR = proPath.aBoundaryH.deltaGroundOR;
         double[] actualADiff = proPath.aBoundaryH.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -3254,7 +3254,7 @@ public class AttenuationComputeOutputCnossosTest {
         assert3DCoordinateEquals("Reflection position TC18 ",
                 new Coordinate(129.75,12), reflectionPoint.coordinate, DELTA_COORDS);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         // Table 195
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.58, 2.94, 13.68};
@@ -3285,7 +3285,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -3581,7 +3581,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -3648,7 +3648,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualADiffH = proPath.aDifH;
@@ -3703,7 +3703,7 @@ public class AttenuationComputeOutputCnossosTest {
         //actualCfF = proPath.groundAttenuation.cfF;
         //actualAGroundF = proPath.groundAttenuation.aGroundF;
         //
-        //actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        //actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         //actualAAtm = proPath.aAtm;
         //actualADiv = proPath.aDiv;
         //actualABoundaryH = proPath.double_aBoundaryF;
@@ -3793,7 +3793,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -3825,7 +3825,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] valL = getMaxValeurAbsolue(diffL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(  new double[]{11.21,21.25,28.63,33.86,36.73,36.79,32.17,14},L, ERROR_EPSILON_VERY_LOW);
     }
@@ -3976,7 +3976,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -4046,7 +4046,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
@@ -4088,7 +4088,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
@@ -4107,7 +4107,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         //assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        double[] LA = addArray(addArray(propDataOut.receiversAttenuationLevels.getFirst().value, SOUND_POWER_LEVELS),
+        double[] LA = addArray(addArray(propDataOut.receiversAttenuationLevels.getFirst().levels, SOUND_POWER_LEVELS),
                 A_WEIGHTING);
         assertArrayEquals(new double[]{10.44, 20.58, 27.78, 33.09, 35.84, 35.73, 30.91, 12.48},LA, ERROR_EPSILON_MEDIUM);
     }
@@ -4257,7 +4257,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -4325,7 +4325,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
@@ -4367,7 +4367,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualCfF = proPath.groundAttenuation.cfF;
         actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
@@ -4386,7 +4386,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
         assertArrayEquals(  new double[]{-2.96,3.56,6.73,11.17,13.85,13.86,9.48,-7.64},L, ERROR_EPSILON_VERY_LOW);
 
     }
@@ -4556,7 +4556,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -4696,7 +4696,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -4786,7 +4786,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         actualADiffF = proPath.aBoundaryF.aDiff;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualABoundaryH = proPath.double_aBoundaryH;
@@ -4963,7 +4963,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         double[] actualADiffF = proPath.aBoundaryF.aDiff;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -5013,7 +5013,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         proPath = propDataOut.getPropagationPaths().get(1);
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
@@ -5033,7 +5033,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         proPath = propDataOut.getPropagationPaths().get(2);
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualAGroundH = proPath.groundAttenuation.aGroundH;
@@ -5098,7 +5098,7 @@ public class AttenuationComputeOutputCnossosTest {
         actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
         actualADiffF = proPath.aBoundaryF.aDiff;
 
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualABoundaryH = proPath.double_aBoundaryH;
@@ -5136,7 +5136,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(new double[]{17.96, 25.65, 30.56, 33.22, 33.48, 31.52, 27.51, 17.80}, L, ERROR_EPSILON_LOWEST);
     }
@@ -5181,7 +5181,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualCfF = proPath.groundAttenuation.cfF;
         double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -5231,7 +5231,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         actualWH = proPath.groundAttenuation.wH;
         actualCfH = proPath.groundAttenuation.cfH;
-        actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         actualAAtm = proPath.aAtm;
         actualADiv = proPath.aDiv;
         actualABoundaryH = proPath.double_aBoundaryH;
@@ -5250,7 +5250,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_HIGH);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(  new double[]{17.50,27.52,34.89,40.14,43.10,43.59,40.55,29.15},L, ERROR_EPSILON_LOW);
     }
@@ -5324,7 +5324,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -5386,7 +5386,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] valLR = getMaxValeurAbsolue(diffReflexionL);
         double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
 
         assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_LOW);
     }
@@ -5523,7 +5523,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
 
-        double[] actualAlphaAtm = propDataOut.genericMeteoData.getAlpha_atmo();
+        double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = proPath.aAtm;
         double[] actualADiv = proPath.aDiv;
         double[] actualABoundaryH = proPath.double_aBoundaryH;
@@ -5551,7 +5551,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).value, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
 
         assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_VERY_HIGH);
 

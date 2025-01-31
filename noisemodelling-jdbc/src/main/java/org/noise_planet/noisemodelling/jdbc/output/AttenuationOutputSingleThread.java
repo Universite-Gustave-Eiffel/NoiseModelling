@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc.output;
 
+import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -33,7 +34,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 
 /**
  * Managed by a single thread, process all incoming vertical profile, compute attenuation and push on appropriate stack
- * for exporting result values in a thread safe way
+ * for exporting result values in a thread safe way. It processes the receiver one at a time.
  */
 public class AttenuationOutputSingleThread implements IComputePathsOut {
     AttenuationOutputMultiThread multiThread;
@@ -41,9 +42,9 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
     public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
 
     /**
-     * Collected attenuation per receiver/period
+     * Collected attenuation/noise level on the current receiver
      */
-    Map<Integer, TimePeriodParameters> receiverAttenuationPerSource = new HashMap<>();
+    List<ReceiverNoiseLevel> receiverAttenuationList = new LinkedList<>();
 
     /**
      * MaxError DB Processing variable
@@ -244,7 +245,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             }
             // apply attenuation to global attenuation
             // push or merge attenuation level
-            receiverAttenuationPerSource.merge(source.id, denWAttenuation,
+            receiverAttenuationList.merge(source.id, denWAttenuation,
                     (timePeriodParameters, timePeriodParameters2) ->
                             new NoiseMapDatabaseParameters.TimePeriodParameters( timePeriodParameters.source, timePeriodParameters.receiver,
                                     sumArray(timePeriodParameters.dayLevels, timePeriodParameters2.dayLevels),
@@ -291,13 +292,13 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException ex) {
-                aborted = true;
+                multiThread.aborted.set(true);
                 break;
             }
-            if(noiseMapDatabaseParameters.aborted) {
-                if(multiThread != null && this.multiThread.inputData != null &&
-                        this.multiThread.inputData.cellProg != null) {
-                    this.multiThread.inputData.cellProg.cancel();
+            if(multiThread.aborted.get()) {
+                if(multiThread != null && this.multiThread.scene != null &&
+                        this.multiThread.p != null) {
+                    this.multiThread.scene.cellProg.cancel();
                 }
                 return;
             }
@@ -311,7 +312,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public IComputePathsOut subProcess() {
+    public IComputePathsOut subProcess(ProgressVisitor visitor) {
         return null;
     }
 
@@ -325,13 +326,13 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException ex) {
-                noiseMapDatabaseParameters.aborted = true;
+                multiThread.aborted.set(true);
                 break;
             }
-            if(noiseMapDatabaseParameters.aborted) {
-                if(multiThread != null && this.multiThread.inputData != null &&
-                        this.multiThread.inputData.cellProg != null) {
-                    this.multiThread.inputData.cellProg.cancel();
+            if(multiThread.aborted.get()) {
+                if(multiThread != null && this.multiThread.scene != null &&
+                        this.multiThread.scene.cellProg != null) {
+                    this.multiThread.scene.cellProg.cancel();
                 }
                 return;
             }
@@ -388,9 +389,9 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             this.pathParameters.clear();
         }
         NoiseEmissionMaker noiseEmissionMaker = multiThread.sceneWithEmission;
-        Map<Integer, NoiseMapDatabaseParameters.TimePeriodParameters> attenuationPerSource = receiverAttenuationPerSource;
+        Map<Integer, NoiseMapDatabaseParameters.TimePeriodParameters> attenuationPerSource = receiverAttenuationList;
 
-        final int spectrumSize = multiThread.inputData.freq_lvl.size();
+        final int spectrumSize = multiThread.scene.freq_lvl.size();
         double[] mergedLdenSpectrum = new double[spectrumSize];
         NoiseMapDatabaseParameters.TimePeriodParameters mergedLden = new NoiseMapDatabaseParameters.TimePeriodParameters(
                 new PathFinder.SourcePointInfo(), receiver, new double[spectrumSize], new double[spectrumSize],
@@ -473,7 +474,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                         ));
             }
         }
-        receiverAttenuationPerSource.clear();
+        receiverAttenuationList.clear();
         maximumWjExpectedSplAtReceiver.clear();
         sumMaximumRemainingWjExpectedSplAtReceiver = 0;
         wjAtReceiver = new double[0];

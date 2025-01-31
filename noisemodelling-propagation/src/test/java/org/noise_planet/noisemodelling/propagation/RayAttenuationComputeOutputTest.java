@@ -28,24 +28,20 @@ public class RayAttenuationComputeOutputTest {
     public void testPropagationPathReceiverUnder() throws IOException {
         JsonMapper.Builder builder = JsonMapper.builder();
         JsonMapper mapper = builder.build();
-        /*ObjectMapper mapper = JsonMapper.builder()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .build();*/
+
         mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
                 .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        /*PathParameters pathParameters = mapper.readValue(
-                RayAttenuationTest.class.getResourceAsStream("special_ray.json"), PathParameters.class);*/
+
         CnossosPath cnossosPath = mapper.readValue(
                 RayAttenuationComputeOutputTest.class.getResourceAsStream("special_ray.json"),
                 CnossosPath.class
         );
         AttenuationCnossosParameters attenuationCnossosParameters = new AttenuationCnossosParameters(false);
         double[] aBoundary = AttenuationCnossos.aBoundary(cnossosPath,attenuationCnossosParameters);
-        System.out.println(Arrays.toString(aBoundary));
         for(double value : aBoundary) {
             assertFalse(Double.isNaN(value));
         }

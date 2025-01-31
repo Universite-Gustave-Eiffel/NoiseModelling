@@ -936,9 +936,10 @@ public class AttenuationComputeOutputCnossosTest {
         }
 
         @Override
-        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, int sourceId, double sourceLi, List<CnossosPath> pathParameters) {
-            double[] attenuation = super.computeCnossosAttenuation(data, sourceId, sourceLi, pathParameters);
-            return wToDba(multiplicationArray(processData.wjSources.get((int)sourceId), dbaToW(attenuation)));
+        public double[] computeCnossosAttenuation(AttenuationCnossosParameters data, CnossosPath pathParameter) {
+            double[] attenuation = super.computeCnossosAttenuation(data, pathParameter);
+            return wToDba(multiplicationArray(processData.wjSources.get(pathParameter.getCutProfile().getSource().id),
+                    dbaToW(attenuation)));
         }
     }
 

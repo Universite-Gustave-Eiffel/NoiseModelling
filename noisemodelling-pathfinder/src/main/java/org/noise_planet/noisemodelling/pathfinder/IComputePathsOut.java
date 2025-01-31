@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.pathfinder;
 
+import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 import java.util.Collection;
@@ -69,5 +70,5 @@ public interface IComputePathsOut {
      * If the implementation does not support thread concurrency, this method is called to return an instance
      * @return
      */
-    IComputePathsOut subProcess();
+    IComputePathsOut subProcess(ProgressVisitor visitor);
 }

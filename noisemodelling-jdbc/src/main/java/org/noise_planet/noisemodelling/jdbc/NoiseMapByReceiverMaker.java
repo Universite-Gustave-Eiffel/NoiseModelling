@@ -188,13 +188,12 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * Initialisation of data structures needed for sound propagation.
      * @param connection JDBC Connection
      * @param cellIndex Computation area index
-     * @param progression Progression info
      * @param skipReceivers Do not process the receivers primary keys in this set and once included add the new receivers primary in it
      * @return Data input for cell evaluation
      * @throws SQLException
      */
     public SceneWithEmission prepareCell(Connection connection, CellIndex cellIndex,
-                                            ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
+                                         Set<Long> skipReceivers) throws SQLException, IOException {
 
         Envelope cellEnvelope = getCellEnv(cellIndex);
 
@@ -206,12 +205,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
                     roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
         }
 
-        SceneWithEmission scene = propagationProcessDataFactory.create(connection, cellIndex, skipReceivers);
-
-        if(progression != null) {
-            scene.cellProg = progression.subProcess(scene.receivers.size());
-        }
-        return scene;
+        return propagationProcessDataFactory.create(connection, cellIndex, skipReceivers);
     }
 
     /**
@@ -286,7 +280,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      */
     public IComputePathsOut evaluateCell(Connection connection, CellIndex cellIndex,
                                          ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
-        SceneWithEmission scene = prepareCell(connection, cellIndex, progression, skipReceivers);
+        SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
 
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
@@ -296,7 +290,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
 
         IComputePathsOut computeRaysOut = computeRaysOutFactory.create(scene);
 
-        PathFinder computeRays = new PathFinder(scene);
+        PathFinder computeRays = new PathFinder(scene, progression);
 
         if(profilerThread != null) {
             computeRays.setProfilerThread(profilerThread);

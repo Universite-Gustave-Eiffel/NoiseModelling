@@ -7,6 +7,7 @@ import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -41,6 +42,17 @@ public class SceneWithAttenuation extends Scene {
      * Cached source table fields
      */
     Map<String, Integer> sourceFieldNames = new HashMap<>();
+
+    /**
+     * If {@link #cnossosParametersPerPeriod} is empty, attenuation visitor will use this default settings and output
+     * empty period
+     */
+    AttenuationCnossosParameters defaultCnossosParameters = new AttenuationCnossosParameters();
+
+    /**
+     * Define attenuation settings to apply for each period
+     */
+    Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
 
     public SceneWithAttenuation(ProfileBuilder profileBuilder) {
         super(profileBuilder);

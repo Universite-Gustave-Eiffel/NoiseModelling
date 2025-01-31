@@ -182,7 +182,7 @@ class Main {
                     AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;
                     exportScene(Paths.get(workingDir, String.format(Locale.ROOT,"scene_%d_%d.kml",
                             cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex())).toString(),
-                            cellStorage.inputData.profileBuilder, cellStorage);
+                            cellStorage.scene.profileBuilder, cellStorage);
                 }
             }
         } finally {
@@ -250,10 +250,10 @@ class Main {
             }
             if(builder != null) {
                 kmlDocument.writeBuildings(builder);
-                if(result != null && !result.getInputData().sourceGeometries.isEmpty() && !result.getInputData().receivers.isEmpty()) {
-                    String layerName = "S:"+result.getInputData().sourcesPk.get(0)+" R:" + result.getInputData().receiversPk.get(0);
-                    kmlDocument.writeProfile(layerName, builder.getProfile(result.getInputData().
-                            sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
+                if(result != null && !result.getScene().sourceGeometries.isEmpty() && !result.getScene().receivers.isEmpty()) {
+                    String layerName = "S:"+result.getScene().sourcesPk.get(0)+" R:" + result.getScene().receiversPk.get(0);
+                    kmlDocument.writeProfile(layerName, builder.getProfile(result.getScene().
+                            sourceGeometries.get(0).getCoordinate(),result.getScene().receivers.get(0)));
                 }
             }
 
