@@ -408,6 +408,9 @@ public class CnossosPathBuilder {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
+                if(cutPt1 instanceof CutPointWall) {
+                    pt.alphaWall = ((CutPointWall) cutPt1).wallAlpha;
+                }
             }
         }
 

@@ -169,7 +169,8 @@ public class AttenuationComputeOutputCnossosTest {
         double[] values2 = propDataOut2.receiversAttenuationLevels.pop().levels;
 
         // No barrier
-        scene.profileBuilder.processedWalls.get(0).height = 0;
+        scene.profileBuilder.processedWalls.get(0).p0.z = 0;
+        scene.profileBuilder.processedWalls.get(0).p1.z = 0;
         scene.reflexionOrder=1;
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
