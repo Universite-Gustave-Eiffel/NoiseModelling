@@ -28,11 +28,15 @@ public class SceneWithEmission extends SceneWithAttenuation {
     //  For each source primary key give the map between period and source power spectrum hash value
     public Map<Long, ArrayList<PeriodEmission>> wjSources = new HashMap<>();
 
-    public SceneInputSettings sceneInputSettings = new SceneInputSettings();
+    public SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
-    public SceneWithEmission(ProfileBuilder profileBuilder, SceneInputSettings sceneInputSettings) {
+    public SceneWithEmission(ProfileBuilder profileBuilder, SceneDatabaseInputSettings sceneDatabaseInputSettings) {
         super(profileBuilder);
-        this.sceneInputSettings = sceneInputSettings;
+        this.sceneDatabaseInputSettings = sceneDatabaseInputSettings;
+    }
+
+    public SceneWithEmission(ProfileBuilder profileBuilder) {
+        super(profileBuilder);
     }
 
     public SceneWithEmission() {
@@ -46,7 +50,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
     public void processTrafficFlowDEN(Long pk, SpatialResultSet rs) throws SQLException {
         // Source table PK, GEOM, LV_D, LV_E, LV_N ...
-        double[][] lw = EmissionTableGenerator.computeLw(rs, sceneInputSettings.coefficientVersion, sourceFieldsCache);
+        double[][] lw = EmissionTableGenerator.computeLw(rs, sceneDatabaseInputSettings.coefficientVersion, sourceFieldsCache);
         for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
             addSourceEmission(pk, EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()], lw[period.ordinal()]);
         }
@@ -70,7 +74,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
         double[] lw = AcousticIndicatorsFunctions.dbaToW(
                 EmissionTableGenerator.getEmissionFromTrafficTable(rs, "",
                         defaultSlope,
-                        sceneInputSettings.coefficientVersion, sourceEmissionFieldsCache));
+                        sceneDatabaseInputSettings.coefficientVersion, sourceEmissionFieldsCache));
         addSourceEmission(pk, period, lw);
     }
 
@@ -79,12 +83,12 @@ public class SceneWithEmission extends SceneWithAttenuation {
      * @param rs Emission source table IDSOURCE, PERIOD, LV, HV ..
      * @throws SQLException
      */
-    public void processEmission(Long pk, SpatialResultSet rs) throws SQLException {
+    public void processEmission(Long pk, ResultSet rs) throws SQLException {
         double[] lw = new double[profileBuilder.frequencyArray.size()];
         List<Integer> frequencyArray = profileBuilder.frequencyArray;
         for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
             Integer frequency = frequencyArray.get(i);
-            lw[i] = AcousticIndicatorsFunctions.dbaToW(rs.getDouble(sceneInputSettings.lwFrequencyPrepend+frequency));
+            lw[i] = AcousticIndicatorsFunctions.dbaToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend+frequency));
         }
         String period = rs.getString("PERIOD");
         addSourceEmission(pk, period, lw);
@@ -93,18 +97,18 @@ public class SceneWithEmission extends SceneWithAttenuation {
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs);
-        if (Objects.requireNonNull(sceneInputSettings.inputMode) == SceneInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) {
+        if (Objects.requireNonNull(sceneDatabaseInputSettings.inputMode) == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) {
             processTrafficFlowDEN(pk, rs);
         }
     }
 
     public void addSourceEmission(Long pk, ResultSet rs) throws SQLException {
-        switch (sceneInputSettings.inputMode) {
+        switch (sceneDatabaseInputSettings.inputMode) {
             case INPUT_MODE_TRAFFIC_FLOW:
                 processTrafficFlow(pk, rs);
                 break;
             case INPUT_MODE_LW:
-
+                processEmission(pk, rs);
                 break;
         }
     }
@@ -140,7 +144,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
     /**
      * SceneWithEmission will read table according to this settings
      */
-    public static class SceneInputSettings {
+    public static class SceneDatabaseInputSettings {
         public enum INPUT_MODE {
             /** Read traffic from geometry source table */
             INPUT_MODE_TRAFFIC_FLOW_DEN,
@@ -158,11 +162,11 @@ public class SceneWithEmission extends SceneWithAttenuation {
         int coefficientVersion = 2;
         public String lwFrequencyPrepend = "LW";
 
-        public SceneInputSettings() {
+        public SceneDatabaseInputSettings() {
 
         }
 
-        public SceneInputSettings(INPUT_MODE inputMode, String sourcesEmissionTableName) {
+        public SceneDatabaseInputSettings(INPUT_MODE inputMode, String sourcesEmissionTableName) {
             this.inputMode = inputMode;
             this.sourcesEmissionTableName = sourcesEmissionTableName;
         }
@@ -171,7 +175,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
             return coefficientVersion;
         }
 
-        public SceneInputSettings setCoefficientVersion(int coefficientVersion) {
+        public SceneDatabaseInputSettings setCoefficientVersion(int coefficientVersion) {
             this.coefficientVersion = coefficientVersion;
             return this;
         }

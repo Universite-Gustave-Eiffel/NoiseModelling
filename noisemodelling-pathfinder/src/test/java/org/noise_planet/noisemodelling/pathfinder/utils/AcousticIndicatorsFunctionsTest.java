@@ -23,7 +23,7 @@ class AcousticIndicatorsFunctionsTest {
 
         double[] sumAbs = AcousticIndicatorsFunctions.sumArray(AcousticIndicatorsFunctions.dbaToW(absOne),
                 AcousticIndicatorsFunctions.dbaToW(absTwo));
-        double[] noiseResult = AcousticIndicatorsFunctions.wToDba(
+        double[] noiseResult = AcousticIndicatorsFunctions.wToDb(
                 AcousticIndicatorsFunctions.multiplicationArray(sumAbs, AcousticIndicatorsFunctions.dbaToW(power)));
 
         double[] wSum = AcousticIndicatorsFunctions.dbaToW(AcousticIndicatorsFunctions.sumArray(power,
@@ -31,6 +31,6 @@ class AcousticIndicatorsFunctionsTest {
         wSum = AcousticIndicatorsFunctions.sumArray( wSum,AcousticIndicatorsFunctions.dbaToW(AcousticIndicatorsFunctions.sumArray(power,
                 absTwo)));
 
-        assertArrayEquals(noiseResult, AcousticIndicatorsFunctions.wToDba(wSum), 0.01);
+        assertArrayEquals(noiseResult, AcousticIndicatorsFunctions.wToDb(wSum), 0.01);
     }
 }

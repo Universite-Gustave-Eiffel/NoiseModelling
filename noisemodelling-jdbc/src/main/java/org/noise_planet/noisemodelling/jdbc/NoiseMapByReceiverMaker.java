@@ -26,8 +26,6 @@ import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
-import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     private int threadCount = 0;
     private ProfilerThread profilerThread;
 
-    SceneWithEmission.SceneInputSettings sceneInputSettings = new SceneWithEmission.SceneInputSettings();
+    SceneWithEmission.SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneWithEmission.SceneDatabaseInputSettings();
 
     /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
 
@@ -79,40 +77,40 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * @return Source emission table name*
      */
     public String getSourcesEmissionTableName() {
-        return sceneInputSettings.getSourcesEmissionTableName();
+        return sceneDatabaseInputSettings.getSourcesEmissionTableName();
     }
 
 
-    public SceneWithEmission.SceneInputSettings.INPUT_MODE getInputMode() {
-        return sceneInputSettings.getInputMode();
+    public SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE getInputMode() {
+        return sceneDatabaseInputSettings.getInputMode();
     }
 
-    public void setInputMode(SceneWithEmission.SceneInputSettings.INPUT_MODE inputMode) {
-        sceneInputSettings.setInputMode(inputMode);
+    public void setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE inputMode) {
+        sceneDatabaseInputSettings.setInputMode(inputMode);
     }
 
     public String getSourceEmissionPrimaryKeyField() {
-        return sceneInputSettings.getSourceEmissionPrimaryKeyField();
+        return sceneDatabaseInputSettings.getSourceEmissionPrimaryKeyField();
     }
 
     public void setSourceEmissionPrimaryKeyField(String sourceEmissionPrimaryKeyField) {
-        sceneInputSettings.setSourceEmissionPrimaryKeyField(sourceEmissionPrimaryKeyField);
+        sceneDatabaseInputSettings.setSourceEmissionPrimaryKeyField(sourceEmissionPrimaryKeyField);
     }
 
 
     public String getLwFrequencyPrepend() {
-        return sceneInputSettings.getLwFrequencyPrepend();
+        return sceneDatabaseInputSettings.getLwFrequencyPrepend();
     }
 
     /**
      * @param lwFrequencyPrepend Text preceding the frequency in source emission table (default LW)
      */
     public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
-        sceneInputSettings.setLwFrequencyPrepend(lwFrequencyPrepend);
+        sceneDatabaseInputSettings.setLwFrequencyPrepend(lwFrequencyPrepend);
     }
 
-    public SceneWithEmission.SceneInputSettings getSceneInputSettings() {
-        return sceneInputSettings;
+    public SceneWithEmission.SceneDatabaseInputSettings getSceneInputSettings() {
+        return sceneDatabaseInputSettings;
     }
 
     /**
@@ -122,7 +120,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * @param sourcesEmissionTableName Source emission table name
      */
     public void setSourcesEmissionTableName(String sourcesEmissionTableName) {
-        sceneInputSettings.setSourcesEmissionTableName(sourcesEmissionTableName);
+        sceneDatabaseInputSettings.setSourcesEmissionTableName(sourcesEmissionTableName);
     }
 
     /**

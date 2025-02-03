@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDba;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDb;
 
 
 /**
@@ -217,7 +217,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             }
             if(dbSettings.maximumError > 0 && !scene.wjSources.isEmpty()) {
                 // power at receiver using minimal emission of all periods
-                double minimalCurrentLevelAtReceiver = wToDba(sumArray(wjAtReceiver));
+                double minimalCurrentLevelAtReceiver = AcousticIndicatorsFunctions.wToDb(sumArray(wjAtReceiver));
 
                 // replace unknown value of expected power for this source
                 int sourceHashCode = source.coordinate.hashCode();
@@ -225,7 +225,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                     sumMaximumRemainingWjExpectedSplAtReceiver -= maximumWjExpectedSplAtReceiver.get(sourceHashCode);
                     maximumWjExpectedSplAtReceiver.remove(sourceHashCode);
                 }
-                double maximumExpectedLevelInDb = wToDba(sumArray(wjAtReceiver) + sumMaximumRemainingWjExpectedSplAtReceiver);
+                double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(sumArray(wjAtReceiver) + sumMaximumRemainingWjExpectedSplAtReceiver);
                 double dBDiff = maximumExpectedLevelInDb - minimalCurrentLevelAtReceiver;
                 if (dBDiff < dbSettings.maximumError) {
                     strategy = PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER;
@@ -367,12 +367,13 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
                 multiThread.pathParameters.addAll(this.cnossosPaths);
             }
         }
-        // Pushed cached entries for this receiver into multi-thread instance
+        // Convert to dB then pushed cached entries for this receiver into multi-thread instance
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
             TimePeriodParameters periodParameters = periodParametersEntry.getValue();
             for (Map.Entry<String, double[]> levelsAtPeriod : periodParameters.levelsPerPeriod.entrySet()) {
                 pushInStack(multiThread.receiversAttenuationLevels, new ReceiverNoiseLevel(periodParameters.source,
-                        receiver, levelsAtPeriod.getKey(), levelsAtPeriod.getValue()));
+                        receiver, levelsAtPeriod.getKey(),
+                        AcousticIndicatorsFunctions.wToDb(levelsAtPeriod.getValue())));
             }
         }
         receiverAttenuationList.clear();

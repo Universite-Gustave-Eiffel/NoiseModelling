@@ -159,7 +159,7 @@ public class NoiseMapWriter implements Runnable {
         }
         // If we compute attenuation only there is no period field
         boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
-                        equals(SceneWithEmission.SceneInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+                        equals(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(tableName);
         query.append(" VALUES (? "); // ID_RECEIVER
@@ -213,7 +213,7 @@ public class NoiseMapWriter implements Runnable {
                 }
             }
             // laeq value
-            double value = wToDba(sumArray(dbaToW(sumArray(row.levels, aWeightingArray))));
+            double value = wToDb(sumArray(dbaToW(sumArray(row.levels, aWeightingArray))));
             if(!Double.isFinite(value)) {
                 value = -99;
             }
@@ -221,7 +221,7 @@ public class NoiseMapWriter implements Runnable {
 
             // leq value
             if (!databaseParameters.computeLAEQOnly) {
-                ps.setDouble(parameterIndex++, wToDba(sumArray(dbaToW(row.levels))));
+                ps.setDouble(parameterIndex++, wToDb(sumArray(dbaToW(row.levels))));
             }
 
             ps.addBatch();
@@ -245,7 +245,7 @@ public class NoiseMapWriter implements Runnable {
     private String forgeCreateTable(String tableName) {
         // If we compute attenuation only there is no period field
         boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
-                equals(SceneWithEmission.SceneInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+                equals(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         StringBuilder sb = new StringBuilder("create table ");
         sb.append(tableName);
         if(!databaseParameters.mergeSources) {

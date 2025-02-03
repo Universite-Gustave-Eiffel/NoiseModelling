@@ -18,7 +18,6 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
@@ -264,7 +263,7 @@ public class AttenuationComputeOutput implements IComputePathsOut {
                             }
                         }
                     }
-                    deltaBodyScreen = wToDba(deltaL);
+                    deltaBodyScreen = wToDb(deltaL);
                 }
             }
 
@@ -337,7 +336,7 @@ public class AttenuationComputeOutput implements IComputePathsOut {
         // For line source, take account of li coefficient
         if(sourceLi > 1.0) {
             for (int i = 0; i < aGlobalMeteoRay.length; i++) {
-                aGlobalMeteoRay[i] = wToDba(dbaToW(aGlobalMeteoRay[i]) * sourceLi);
+                aGlobalMeteoRay[i] = wToDb(dbaToW(aGlobalMeteoRay[i]) * sourceLi);
             }
         }
         // Keep global attenuation

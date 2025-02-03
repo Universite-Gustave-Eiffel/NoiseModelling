@@ -828,6 +828,8 @@ public class ProfileBuilder {
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
+        this.buildings.clear();
+        this.walls.clear();
         //Process the ground effects
         groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundAbsorptions.size(); j++) {

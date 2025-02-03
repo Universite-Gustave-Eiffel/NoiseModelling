@@ -40,7 +40,7 @@ public class AcousticIndicatorsFunctions {
      * @param w
      * @return Decibel value
      */
-    public static double wToDba(double w) {
+    public static double wToDb(double w) {
         return 10 * Math.log10(w);
     }
 
@@ -50,10 +50,10 @@ public class AcousticIndicatorsFunctions {
      * @param w
      * @return Decibel value
      */
-    public static double[] wToDba(double[] w) {
+    public static double[] wToDb(double[] w) {
         double[] ret = new double[w.length];
         for (int i = 0; i < w.length; i++) {
-            ret[i] = wToDba(w[i]);
+            ret[i] = wToDb(w[i]);
         }
         return ret;
     }
@@ -83,7 +83,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(p * dbaToW(array1[i]) + (1 - p) * dbaToW(array2[i]));
+            sum[i] = wToDb(p * dbaToW(array1[i]) + (1 - p) * dbaToW(array2[i]));
         }
         return sum;
     }
@@ -101,7 +101,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(dbaToW(array1[i]) + dbaToW(array2[i]));
+            sum[i] = wToDb(dbaToW(array1[i]) + dbaToW(array2[i]));
         }
         return sum;
     }
@@ -118,7 +118,7 @@ public class AcousticIndicatorsFunctions {
             sum =dbaToW(array1[i]) + sum;
         }
 
-        return wToDba(sum);
+        return wToDb(sum);
     }
 
     /**

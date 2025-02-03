@@ -23,7 +23,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -72,7 +71,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
-        if(noiseMapByReceiverMaker.getSceneInputSettings().inputMode == SceneWithEmission.SceneInputSettings.INPUT_MODE.INPUT_MODE_LW) {
+        if(noiseMapByReceiverMaker.getSceneInputSettings().inputMode == SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
@@ -620,11 +619,11 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
             }
         }
         // Fetch emission table data for the sources in this area
-        String emissionTableName = scene.sceneInputSettings.sourcesEmissionTableName;
+        String emissionTableName = scene.sceneDatabaseInputSettings.sourcesEmissionTableName;
         if (!emissionTableName.isEmpty()) {
             try (PreparedStatement st = connection.prepareStatement("SELECT E.* FROM " + sourcesTableName +
                     " S INNER JOIN, "+emissionTableName+" E ON S."+primaryKey.first()+" = E." +
-                    scene.sceneInputSettings.sourceEmissionPrimaryKeyField+" WHERE S."
+                    scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField+" WHERE S."
                     + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
                 st.setFetchSize(fetchSize);
@@ -635,7 +634,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
                 st.setFetchDirection(ResultSet.FETCH_FORWARD);
                 try (ResultSet rs = st.executeQuery()) {
                     while (rs.next()) {
-                        scene.addSourceEmission(rs.getLong(scene.sceneInputSettings.sourceEmissionPrimaryKeyField), rs);
+                        scene.addSourceEmission(rs.getLong(scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField), rs);
                     }
                 } finally {
                     if (autoCommit) {
