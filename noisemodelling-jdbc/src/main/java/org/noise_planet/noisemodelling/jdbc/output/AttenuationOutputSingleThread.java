@@ -40,7 +40,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
     private static final int UNKNOWN_SOURCE_ID = -1;
     AttenuationOutputMultiThread multiThread;
     NoiseMapDatabaseParameters dbSettings;
-    public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
+    public List<CnossosPath> cnossosPaths = new ArrayList<>();
 
     /**
      * Collected attenuation/noise level on the current receiver
@@ -111,7 +111,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
     private double[] processAndStoreAttenuation(AttenuationCnossosParameters data, CnossosPath proPathParameters) {
         double[] attenuation = multiThread.computeCnossosAttenuation(data, proPathParameters);
         if(multiThread.exportPaths && multiThread.exportAttenuationMatrix) {
-            pathParameters.add(new CnossosPath(proPathParameters));
+            cnossosPaths.add(new CnossosPath(proPathParameters));
         }
         return attenuation;
     }
@@ -151,7 +151,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
             if(multiThread.exportPaths && !multiThread.exportAttenuationMatrix) {
                 // Use only one ray as the ray is the same if we not keep absorption values
                 // Copy path content in order to keep original ids for other method calls
-                this.pathParameters.add(cnossosPath);
+                this.cnossosPaths.add(cnossosPath);
             }
             Map<String, double[]> attenuationPerPeriod = new HashMap<>();
             double[] defaultAttenuation = new double[0];
@@ -350,23 +350,22 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
-        if(!this.pathParameters.isEmpty()) {
+        if(!this.cnossosPaths.isEmpty()) {
             if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
                 // Push propagation rays
-                pushInStack(multiThread.resultsCache.rays, this.pathParameters);
+                pushInStack(multiThread.resultsCache.rays, this.cnossosPaths);
             } else if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY
                     && (dbSettings.getMaximumRaysOutputCount() == 0 ||
                     multiThread.propagationPathsSize.get() < dbSettings.getMaximumRaysOutputCount())){
-                int newRaysSize = multiThread.propagationPathsSize.addAndGet(this.pathParameters.size());
+                int newRaysSize = multiThread.propagationPathsSize.addAndGet(this.cnossosPaths.size());
                 if(dbSettings.getMaximumRaysOutputCount() > 0 && newRaysSize > dbSettings.getMaximumRaysOutputCount()) {
                     // remove exceeded elements of the array
-                    this.pathParameters = this.pathParameters.subList(0,
-                            this.pathParameters.size() - Math.min( this.pathParameters.size(),
+                    this.cnossosPaths = this.cnossosPaths.subList(0,
+                            this.cnossosPaths.size() - Math.min( this.cnossosPaths.size(),
                                     newRaysSize - dbSettings.getMaximumRaysOutputCount()));
                 }
-                multiThread.pathParameters.addAll(this.pathParameters);
+                multiThread.pathParameters.addAll(this.cnossosPaths);
             }
-            this.pathParameters.clear();
         }
         // Pushed cached entries for this receiver into multi-thread instance
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
@@ -380,6 +379,7 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
         maximumWjExpectedSplAtReceiver.clear();
         sumMaximumRemainingWjExpectedSplAtReceiver = 0;
         wjAtReceiver = new double[0];
+        this.cnossosPaths.clear();
     }
 
 
