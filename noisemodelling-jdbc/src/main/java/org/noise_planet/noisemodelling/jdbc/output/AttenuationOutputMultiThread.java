@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * of AttenuationOutputSingleThread
  */
 public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
-    public ResultsCache resultsCache;
+    public ResultsCache resultsCache = new ResultsCache();
     public SceneWithEmission sceneWithEmission;
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);

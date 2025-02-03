@@ -11,6 +11,7 @@ package org.noise_planet.nmtutorial01;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -20,6 +21,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderD
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
@@ -89,18 +91,19 @@ public class GenerateReferenceDeviation {
                 .finishFeeding();
 
         //Propagation data building
-        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-                .build();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
 
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
-        //Out and computation settings
-        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, attData, rayData);
+        scene.defaultCnossosParameters = attData;
 
-        AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+
+        AttenuationVisitor attenuationVisitor = (AttenuationVisitor)propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);

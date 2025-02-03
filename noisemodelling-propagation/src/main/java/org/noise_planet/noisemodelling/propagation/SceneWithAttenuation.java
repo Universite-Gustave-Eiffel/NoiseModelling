@@ -4,6 +4,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.locationtech.jts.geom.Geometry;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
+import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirection;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
@@ -151,7 +152,14 @@ public class SceneWithAttenuation extends Scene {
      * @return True if the source is omnidirectional and so does not have orientation dependant attenuation, false otherwise.
      */
     public boolean isOmnidirectional(int srcIndex) {
-        return srcIndex < 0  || sourcesPk.size() < srcIndex - 1 || !sourceEmissionAttenuation.containsKey(sourcesPk.get(srcIndex));
+        if (srcIndex < 0 || !(srcIndex < sourcesPk.size())) {
+            return true;
+        }
+        long sourcePk = sourcesPk.get(srcIndex);
+        if(!sourceEmissionAttenuation.containsKey(sourcePk)) {
+            return true;
+        }
+        return directionAttributes.get(sourceEmissionAttenuation.get(sourcePk)) instanceof OmnidirectionalDirection;
     }
 
     /**

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
-import org.noise_planet.noisemodelling.jdbc.output.ResultsCache;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
@@ -28,10 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.multiplicationArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
@@ -187,10 +185,10 @@ public class AttenuationComputeOutputCnossosTest {
         double[] values1A = sumArray(values1, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
         double[] values2A = sumArray(values2, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
         double[] values3A = sumArray(values3, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
-        double r0A = AcousticIndicatorsFunctions.wToDb(sumArray(dbaToW(values0A)));
-        double r1A = AcousticIndicatorsFunctions.wToDb(sumArray(dbaToW(values1A)));
-        double r2A = AcousticIndicatorsFunctions.wToDb(sumArray(dbaToW(values2A)));
-        double r3A = AcousticIndicatorsFunctions.wToDb(sumArray(dbaToW(values3A)));
+        double r0A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values0A)));
+        double r1A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values1A)));
+        double r2A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values2A)));
+        double r3A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values3A)));
 
         assertEquals(19.2,r3A-r1A,0.5);
         assertEquals(11.7,r0A-r1A,1);
@@ -224,7 +222,6 @@ public class AttenuationComputeOutputCnossosTest {
         scene.addSource(f.createPoint(new Coordinate(30, -10, 2)));
         scene.addReceiver(new Coordinate(30, 20, 2));
         scene.setDefaultGroundAttenuation(0.0);
-        scene.reflexionOrder=0;
 
         //Propagation process path data building
         AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
@@ -246,14 +243,9 @@ public class AttenuationComputeOutputCnossosTest {
         scene.reflexionOrder=1;
         computeRays1.run(propDataOut1);
         double[] values1 = propDataOut1.receiversAttenuationLevels.pop().levels;
-        assertNotEquals(values0[0], values1[0]);
-        assertNotEquals(values0[1], values1[1]);
-        assertNotEquals(values0[2], values1[2]);
-        assertNotEquals(values0[3], values1[3]);
-        assertNotEquals(values0[4], values1[4]);
-        assertNotEquals(values0[5], values1[5]);
-        assertNotEquals(values0[6], values1[6]);
-        assertNotEquals(values0[7], values1[7]);
+        for (int i = 0; i < values0.length; i++) {
+            assertNotEquals(values0[i], values1[i], 0.01);
+        }
     }
 
     /**
@@ -734,7 +726,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         double[] sourcePower = new double[profileBuilder.frequencyArray.size()];
-        Arrays.fill(sourcePower, 70.0);
+        Arrays.fill(sourcePower,  AcousticIndicatorsFunctions.dBToW(70.0));
 
         //Propagation data building
         SceneWithEmission scene = new SceneWithEmission(profileBuilder);
@@ -765,9 +757,9 @@ public class AttenuationComputeOutputCnossosTest {
 
             //Actual values
             // number of propagation paths between two walls = reflectionOrder * 2 + 1
-            assertEquals(i * 2 + 1, propDataOut.rayCount.get());
+            assertEquals(i * 2 + 1, propDataOut.cnossosPathCount.get());
 
-            double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumArray(propDataOut.receiversAttenuationLevels.pop().levels);
+            double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.receiversAttenuationLevels.pop().levels);
             if(i == 0) {
                 firstPowerAtReceiver = globalPowerAtReceiver;
             } else {

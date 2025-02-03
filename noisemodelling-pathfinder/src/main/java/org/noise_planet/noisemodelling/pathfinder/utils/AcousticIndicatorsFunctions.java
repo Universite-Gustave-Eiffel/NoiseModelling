@@ -15,22 +15,22 @@ public class AcousticIndicatorsFunctions {
 
     /**
      * Convert Decbiel to Watt
-     * @param dBA
+     * @param dB Sound power spectrum in dB (or dBa , no weighting is done here)
      * @return Watt value
      */
-    public static double dbaToW(double dBA) {
-        return Math.pow(10., dBA / 10.);
+    public static double dBToW(double dB) {
+        return Math.pow(10., dB / 10.);
     }
 
     /**
      * Convert Decibel to Watt
-     * @param dBA
+     * @param dB Sound power spectrum in dB (or dBa , no weighting is done here)
      * @return Watt value
      */
-    public static double[] dbaToW(double[] dBA) {
-        double[] ret = new double[dBA.length];
-        for (int i = 0; i < dBA.length; i++) {
-            ret[i] = dbaToW(dBA[i]);
+    public static double[] dBToW(double[] dB) {
+        double[] ret = new double[dB.length];
+        for (int i = 0; i < dB.length; i++) {
+            ret[i] = dBToW(dB[i]);
         }
         return ret;
     }
@@ -83,7 +83,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDb(p * dbaToW(array1[i]) + (1 - p) * dbaToW(array2[i]));
+            sum[i] = wToDb(p * dBToW(array1[i]) + (1 - p) * dBToW(array2[i]));
         }
         return sum;
     }
@@ -101,7 +101,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDb(dbaToW(array1[i]) + dbaToW(array2[i]));
+            sum[i] = wToDb(dBToW(array1[i]) + dBToW(array2[i]));
         }
         return sum;
     }
@@ -113,9 +113,9 @@ public class AcousticIndicatorsFunctions {
      */
     public static double sumDbArray(double[] array1) {
 
-        double sum = dbaToW(array1[0]);
+        double sum = dBToW(array1[0]);
         for (int i = 1; i < array1.length; i++) {
-            sum =dbaToW(array1[i]) + sum;
+            sum = dBToW(array1[i]) + sum;
         }
 
         return wToDb(sum);

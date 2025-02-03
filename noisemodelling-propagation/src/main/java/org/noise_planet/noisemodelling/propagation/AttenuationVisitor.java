@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
-import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -56,7 +55,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     private void processPath(String period, AttenuationCnossosParameters attenuationCnossosParameters, CnossosPath path) {
         double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, path);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            multiThreadParent.rayCount.addAndGet(1);
+            multiThreadParent.cnossosPathCount.addAndGet(1);
             if(keepRays) {
                 pathParameters.add(path);
             }

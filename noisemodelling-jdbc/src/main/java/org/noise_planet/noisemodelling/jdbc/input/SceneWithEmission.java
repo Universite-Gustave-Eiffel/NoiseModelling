@@ -71,7 +71,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
                 defaultSlope = EmissionTableGenerator.getSlope(sourceGeometries.get(sourceIndex));
             }
         }
-        double[] lw = AcousticIndicatorsFunctions.dbaToW(
+        double[] lw = AcousticIndicatorsFunctions.dBToW(
                 EmissionTableGenerator.getEmissionFromTrafficTable(rs, "",
                         defaultSlope,
                         sceneDatabaseInputSettings.coefficientVersion, sourceEmissionFieldsCache));
@@ -88,7 +88,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
         List<Integer> frequencyArray = profileBuilder.frequencyArray;
         for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
             Integer frequency = frequencyArray.get(i);
-            lw[i] = AcousticIndicatorsFunctions.dbaToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend+frequency));
+            lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend+frequency));
         }
         String period = rs.getString("PERIOD");
         addSourceEmission(pk, period, lw);

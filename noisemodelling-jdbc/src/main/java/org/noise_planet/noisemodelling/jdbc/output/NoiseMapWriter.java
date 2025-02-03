@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
 
 /**
  * Process that run SQL query to feed tables
@@ -213,7 +213,7 @@ public class NoiseMapWriter implements Runnable {
                 }
             }
             // laeq value
-            double value = wToDb(sumArray(dbaToW(sumArray(row.levels, aWeightingArray))));
+            double value = wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(sumArray(row.levels, aWeightingArray))));
             if(!Double.isFinite(value)) {
                 value = -99;
             }
@@ -221,7 +221,7 @@ public class NoiseMapWriter implements Runnable {
 
             // leq value
             if (!databaseParameters.computeLAEQOnly) {
-                ps.setDouble(parameterIndex++, wToDb(sumArray(dbaToW(row.levels))));
+                ps.setDouble(parameterIndex++, wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(row.levels))));
             }
 
             ps.addBatch();

@@ -44,7 +44,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
     public boolean exportPaths;
     public boolean exportAttenuationMatrix;
-    public AtomicLong rayCount = new AtomicLong();
+    public AtomicLong cnossosPathCount = new AtomicLong();
     public AtomicLong nb_couple_receiver_src = new AtomicLong();
     public AtomicLong nb_obstr_test = new AtomicLong();
     public AtomicLong nb_image_receiver = new AtomicLong();
@@ -127,7 +127,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
                 double[][] deltaRetroDifi = new double[n+1][data.freq_lvl.size()];
                 double[][] deltaRetroDif = new double[n+1][data.freq_lvl.size()];
                 double[] deltaL = new double[data.freq_lvl.size()];
-                Arrays.fill(deltaL,dbaToW(0.0));
+                Arrays.fill(deltaL, dBToW(0.0));
 
                 double db = pDif.coordinate.x;
                 double hb = pDif.coordinate.y;
@@ -202,7 +202,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
                             }
                             // Compute deltaL
                             for (int i = 0; i <= n; i++) {
-                                deltaL[idfreq] = deltaL[idfreq] + dbaToW(deltaGeo[i][idfreq] + deltaDif[i][idfreq] + deltaAbs[i][idfreq] + deltaRef[i][idfreq] + deltaRetroDif[i][idfreq]);
+                                deltaL[idfreq] = deltaL[idfreq] + dBToW(deltaGeo[i][idfreq] + deltaDif[i][idfreq] + deltaAbs[i][idfreq] + deltaRef[i][idfreq] + deltaRetroDif[i][idfreq]);
                             }
                         }
                     }
@@ -279,7 +279,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
         // For line source, take account of li coefficient
         if(sourceLi > 1.0) {
             for (int i = 0; i < aGlobalMeteoRay.length; i++) {
-                aGlobalMeteoRay[i] = wToDb(dbaToW(aGlobalMeteoRay[i]) * sourceLi);
+                aGlobalMeteoRay[i] = wToDb(dBToW(aGlobalMeteoRay[i]) * sourceLi);
             }
         }
         // Keep global attenuation

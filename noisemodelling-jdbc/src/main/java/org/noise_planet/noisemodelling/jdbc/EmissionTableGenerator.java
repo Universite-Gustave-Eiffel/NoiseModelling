@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 
 /**
@@ -37,8 +37,8 @@ public class EmissionTableGenerator {
     public static final String[] STANDARD_PERIOD_VALUE = new String[] {"D", "E", "N", "DEN"};
 
     public static final double DAY_RATIO = 12. / 24.;
-    public static final double EVENING_RATIO = 4. / 24. * dbaToW(5.0);
-    public static final double NIGHT_RATIO = 8. / 24. * dbaToW(10.0);
+    public static final double EVENING_RATIO = 4. / 24. * dBToW(5.0);
+    public static final double NIGHT_RATIO = 8. / 24. * dBToW(10.0);
 
     /**
      * Cache table fields in upper case in Map
@@ -193,13 +193,13 @@ public class EmissionTableGenerator {
     public static double[][] computeLw(SpatialResultSet rs, int coefficientVersion, Map<String, Integer> sourceFieldsCache) throws SQLException {
         double slope = getSlope(rs);
         // Day
-        double[] ld = dbaToW(getEmissionFromTrafficTable(rs, "_D", slope, coefficientVersion, sourceFieldsCache));
+        double[] ld = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_D", slope, coefficientVersion, sourceFieldsCache));
 
         // Evening
-        double[] le = dbaToW(getEmissionFromTrafficTable(rs, "_E", slope, coefficientVersion, sourceFieldsCache));
+        double[] le = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_E", slope, coefficientVersion, sourceFieldsCache));
 
         // Night
-        double[] ln = dbaToW(getEmissionFromTrafficTable(rs, "_N", slope, coefficientVersion, sourceFieldsCache));
+        double[] ln = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_N", slope, coefficientVersion, sourceFieldsCache));
 
         double[] lden;
         lden = AcousticIndicatorsFunctions.multiplicationArray(ld, DAY_RATIO);

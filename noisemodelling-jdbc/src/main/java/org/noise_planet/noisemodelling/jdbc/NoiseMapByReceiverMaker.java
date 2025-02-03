@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.slf4j.Logger;
@@ -276,7 +277,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
      * @return Output data instance for this cell
      * @throws SQLException Sql exception instance
      */
-    public CutPlaneVisitor evaluateCell(Connection connection, CellIndex cellIndex,
+    public CutPlaneVisitorFactory evaluateCell(Connection connection, CellIndex cellIndex,
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
 
@@ -286,7 +287,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
                     scene.profileBuilder.getBuildingCount()));
         }
 
-        CutPlaneVisitor computeRaysOut = computeRaysOutFactory.create(scene);
+        CutPlaneVisitorFactory computeRaysOut = computeRaysOutFactory.create(scene);
 
         PathFinder computeRays = new PathFinder(scene, progression);
 
@@ -366,7 +367,7 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
          * @param cellData the scene data for the current computation cell
          * @return an object that computes paths out for noise map computation.
          */
-        CutPlaneVisitor create(SceneWithEmission cellData);
+        CutPlaneVisitorFactory create(SceneWithEmission cellData);
     }
 
 
