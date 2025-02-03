@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Instead of feeding a list and returning all vertical cut planes.
  * A visitor instance that implement this interface can skip planes and intervene in the search of cut planes.
  */
-public interface IComputePathsOut {
+public interface CutPlaneVisitor {
 
     /**
      * A new vertical profile between a receiver and a source has been found
@@ -66,9 +66,4 @@ public interface IComputePathsOut {
      */
     void finalizeReceiver(PathFinder.ReceiverPointInfo receiver);
 
-    /**
-     * If the implementation does not support thread concurrency, this method is called to return an instance
-     * @return
-     */
-    IComputePathsOut subProcess(ProgressVisitor visitor);
 }

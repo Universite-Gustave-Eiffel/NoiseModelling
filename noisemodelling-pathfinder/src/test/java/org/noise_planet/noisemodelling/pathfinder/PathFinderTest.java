@@ -152,7 +152,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -178,7 +178,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -206,7 +206,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -239,7 +239,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -388,7 +388,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -419,7 +419,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -463,7 +463,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -507,7 +507,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -550,7 +550,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -594,7 +594,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -638,7 +638,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -685,7 +685,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -736,7 +736,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -781,7 +781,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -836,7 +836,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -875,7 +875,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -922,7 +922,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=1;
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -970,7 +970,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=1;
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1018,7 +1018,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=1;
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1086,7 +1086,7 @@ public class PathFinderTest {
 
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1126,7 +1126,7 @@ public class PathFinderTest {
                 .build();
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1176,7 +1176,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=0;
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1234,7 +1234,7 @@ public class PathFinderTest {
                 .setGs(0.9)
                 .build();
 
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1299,7 +1299,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=0;
 
 
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1365,7 +1365,7 @@ public class PathFinderTest {
         rayData.computeHorizontalDiffraction=false;
         rayData.computeVerticalDiffraction=true;
 
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1416,7 +1416,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=1;
 
 
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1462,7 +1462,7 @@ public class PathFinderTest {
                 .build();
         rayData.reflexionOrder=1;
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1519,7 +1519,7 @@ public class PathFinderTest {
         rayData.reflexionOrder=1;
 
         //Out and computation settings
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
 
@@ -1609,7 +1609,7 @@ public class PathFinderTest {
                 .setMaximumPropagationDistance(5000) // Left and right path further away than default 1200m maximum distance
                 .build();
         rayData.reflexionOrder=1;
-        PathFinderVisitor propDataOut = new PathFinderVisitor(true);
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
         PathFinder computeRays = new PathFinder(rayData);
         computeRays.setThreadCount(1);
         computeRays.run(propDataOut);

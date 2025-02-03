@@ -12,6 +12,8 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
+import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
+import org.noise_planet.noisemodelling.jdbc.output.ResultsCache;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dbaToW;
@@ -752,7 +755,7 @@ public class AttenuationComputeOutputCnossosTest {
         for(int i = 0; i < 100; i++) {
 
             //Out and computation settings
-            AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(false, false, scene);
+            AttenuationComputeOutput propDataOut = new AttenuationOutputMultiThread(false, false, scene);
             scene.reflexionOrder = i;
             PathFinder computeRays = new PathFinder(scene);
             computeRays.setThreadCount(1);

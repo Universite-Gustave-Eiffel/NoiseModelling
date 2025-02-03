@@ -11,15 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
@@ -76,9 +68,9 @@ public class ProfileBuilder {
      */
     private double maxLineLength = 60;
     /** List of buildings. */
-    private final List<Building> buildings = new ArrayList<>();
+    private List<Building> buildings = new ArrayList<>();
     /** List of walls. */
-    private final List<Wall> walls = new ArrayList<>();
+    private List<Wall> walls = new ArrayList<>();
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
@@ -802,7 +794,7 @@ public class ProfileBuilder {
         for (int j = 0; j < buildings.size(); j++) {
             Building building = buildings.get(j);
             buildingsWideAnglePoints.put(j + 1,
-                    getWideAnglePointsByBuilding(j + 1, 0, 2 * Math.PI));
+                    getWideAnglePointsOnPolygon(building.poly.getExteriorRing(), 0, 2 * Math.PI));
             List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
@@ -828,8 +820,9 @@ public class ProfileBuilder {
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
-        this.buildings.clear();
-        this.walls.clear();
+        // Set buildings and walls unmodifiable
+        this.buildings = Collections.unmodifiableList(this.buildings);
+        this.walls = Collections.unmodifiableList(this.walls);
         //Process the ground effects
         groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundAbsorptions.size(); j++) {
@@ -1075,7 +1068,7 @@ public class ProfileBuilder {
                                  LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
-                buildings.get(facetLine.getOriginId()).getAlphas(exactFrequencyArray));
+                facetLine.getAlphas(exactFrequencyArray));
         if(facetLine.primaryKey >= 0) {
             wallCutPoint.setPk(facetLine.primaryKey);
         }
@@ -1596,15 +1589,13 @@ public class ProfileBuilder {
     }
 
     /**
-     *
-     * @param build
+     * @param linearRing Coordinates loop
      * @param minAngle
      * @param maxAngle
      * @return
      */
-    public ArrayList<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        ArrayList <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates().clone();
+    public ArrayList<Coordinate> getWideAnglePointsOnPolygon(LinearRing linearRing, double minAngle, double maxAngle) {
+        Coordinate[] ring = linearRing.getCoordinates().clone();
         if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
@@ -1612,6 +1603,7 @@ public class ProfileBuilder {
                 ring[ring.length - 1 - i] = temp;
             }
         }
+        ArrayList <Coordinate> verticesBuilding = new ArrayList<>(ring.length);
         for(int i=0; i < ring.length - 1; i++) {
             int i1 = i > 0 ? i-1 : ring.length - 2;
             int i3 = i + 1;
@@ -1632,7 +1624,7 @@ public class ProfileBuilder {
                 Coordinate offsetPt = new Coordinate(
                         ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
                         ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        buildings.get(build - 1).getGeometry().getCoordinate().z + wideAngleTranslationEpsilon);
+                        ring[i].z + wideAngleTranslationEpsilon);
                 verticesBuilding.add(offsetPt);
             }
         }

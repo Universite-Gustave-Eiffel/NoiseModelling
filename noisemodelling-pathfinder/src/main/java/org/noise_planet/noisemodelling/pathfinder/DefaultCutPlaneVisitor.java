@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class PathFinderVisitor implements IComputePathsOut {
+public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorFactory {
     /** This list is thread safe so can be used in a multi-thread environment */
     public ConcurrentLinkedDeque<CutProfile> cutProfiles = new ConcurrentLinkedDeque<>();
     public Scene inputData;
@@ -33,12 +33,12 @@ public class PathFinderVisitor implements IComputePathsOut {
     public boolean keepCutPlanes = true;
     public AtomicLong pathCount = new AtomicLong();
 
-    public PathFinderVisitor(boolean keepCutPlanes, Scene inputData) {
+    public DefaultCutPlaneVisitor(boolean keepCutPlanes, Scene inputData) {
         this.keepCutPlanes = keepCutPlanes;
         this.inputData = inputData;
     }
 
-    public PathFinderVisitor(boolean keepCutPlanes) {
+    public DefaultCutPlaneVisitor(boolean keepCutPlanes) {
         this.keepCutPlanes = keepCutPlanes;
     }
 
@@ -76,7 +76,7 @@ public class PathFinderVisitor implements IComputePathsOut {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public IComputePathsOut subProcess(ProgressVisitor visitor) {
+    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
         return this;
     }
 

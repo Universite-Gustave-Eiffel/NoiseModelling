@@ -12,7 +12,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
     public ResultsCache resultsCache;
     public SceneWithEmission sceneWithEmission;
-    public NoiseMapDatabaseParameters noiseMapDatabaseParameters;
-    AtomicBoolean exitWhenDone;
-    AtomicBoolean aborted;
+    public NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
+    public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
+    public AtomicBoolean aborted = new AtomicBoolean(false);
 
     /**
      * Create NoiseMap constructor
@@ -45,12 +45,17 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
         this.aborted = aborted;
     }
 
+    public AttenuationOutputMultiThread(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithEmission sceneWithEmission) {
+        super(exportPaths, exportAttenuationMatrix, sceneWithEmission);
+        this.sceneWithEmission = sceneWithEmission;
+    }
+
     /**
      * Create a collector of Vertical Cut that will be processed by a single thread (an interval of receivers points)
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public IComputePathsOut subProcess(ProgressVisitor visitor) {
+    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
         return new AttenuationOutputSingleThread(this, visitor);
     }
 

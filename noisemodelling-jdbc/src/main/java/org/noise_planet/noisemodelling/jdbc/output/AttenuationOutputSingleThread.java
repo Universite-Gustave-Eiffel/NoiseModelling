@@ -12,7 +12,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
@@ -36,7 +36,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * Managed by a single thread, process all incoming vertical profile, compute attenuation and push on appropriate stack
  * for exporting result values in a thread safe way. It processes the receiver one at a time.
  */
-public class AttenuationOutputSingleThread implements IComputePathsOut {
+public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private static final int UNKNOWN_SOURCE_ID = -1;
     AttenuationOutputMultiThread multiThread;
     NoiseMapDatabaseParameters dbSettings;
@@ -284,15 +284,6 @@ public class AttenuationOutputSingleThread implements IComputePathsOut {
         }
         stack.add(data);
         multiThread.resultsCache.queueSize.incrementAndGet();
-    }
-
-    /**
-     *
-     * @return an instance of the interface IComputePathsOut
-     */
-    @Override
-    public IComputePathsOut subProcess(ProgressVisitor visitor) {
-        return null;
     }
 
     /**

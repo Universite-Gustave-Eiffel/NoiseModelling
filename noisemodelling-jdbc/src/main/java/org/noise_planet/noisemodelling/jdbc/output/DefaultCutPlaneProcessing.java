@@ -3,7 +3,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -37,7 +37,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      * @return A new instance of IComputePathsOut initialized with the provided parameters.
      */
     @Override
-    public IComputePathsOut create(SceneWithEmission scene) {
+    public CutPlaneVisitor create(SceneWithEmission scene) {
         return new AttenuationOutputMultiThread(scene, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 

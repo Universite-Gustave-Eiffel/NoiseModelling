@@ -18,7 +18,7 @@ import org.noise_planet.noisemodelling.jdbc.LdenNoiseMapParameters;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapMaker;
 import org.noise_planet.noisemodelling.jdbc.LdenNoiseMapLoader;
 import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker;
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
@@ -176,7 +176,7 @@ class Main {
             ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
             for(CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
-                IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
+                CutPlaneVisitor out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers);
                 // Export as a Google Earth 3d scene
                 if (out instanceof AttenuationComputeOutput) {
                     AttenuationComputeOutput cellStorage = (AttenuationComputeOutput) out;

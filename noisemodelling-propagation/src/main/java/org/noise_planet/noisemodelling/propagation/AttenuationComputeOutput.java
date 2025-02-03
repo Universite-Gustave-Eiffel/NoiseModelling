@@ -14,8 +14,6 @@ import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
@@ -40,7 +38,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
-public class AttenuationComputeOutput implements IComputePathsOut {
+public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public Deque<CnossosPath> pathParameters = new ConcurrentLinkedDeque<>();
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
@@ -67,63 +65,8 @@ public class AttenuationComputeOutput implements IComputePathsOut {
         this.scene = scene;
     }
 
-    /**
-     * No more propagation paths will be pushed for this receiver identifier
-     *
-     * @param receiver
-     */
-    @Override
-    public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
-
-    }
-
     public Scene getScene() {
         return scene;
-    }
-
-
-    @Override
-    public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        return PathSearchStrategy.CONTINUE;
-    }
-
-    @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
-
-    }
-
-    private double[] processPath(String period, AttenuationCnossosParameters attenuationCnossosParameters, CnossosPath path) {
-        double[] aGlobalMeteo = computeCnossosAttenuation(attenuationCnossosParameters, path);
-        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            receiversAttenuationLevels.add(new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(path.getCutProfile().getSource()),
-                    new PathFinder.ReceiverPointInfo(path.getCutProfile().getReceiver()), period,aGlobalMeteo));
-            return aGlobalMeteo;
-        } else {
-            return new double[0];
-        }
-    }
-
-    /**
-     * Get propagation path result
-     * @param path Propagation path result
-     */
-    public double[] addPropagationPaths(CnossosPath path) {
-        rayCount.addAndGet(1);
-        if(exportPaths) {
-            pathParameters.add(path);
-            propagationPathsSize.addAndGet(1);
-        }
-        if(!scene.cnossosParametersPerPeriod.isEmpty()) {
-            double[] globalAttenuation = new double[0];
-            for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
-                    scene.cnossosParametersPerPeriod.entrySet()) {
-                AcousticIndicatorsFunctions.sumDbArray(globalAttenuation,
-                        processPath(cnossosParametersEntry.getKey(), cnossosParametersEntry.getValue(), path));
-            }
-            return globalAttenuation;
-        } else {
-            return processPath("", scene.defaultCnossosParameters, path);
-        }
     }
 
     /**
@@ -346,12 +289,12 @@ public class AttenuationComputeOutput implements IComputePathsOut {
         return aGlobalMeteoRay;
     }
 
-
     /**
      *
      * @return an instance of the interface IComputePathsOut
      */
-    public IComputePathsOut subProcess(ProgressVisitor visitor) {
+    @Override
+    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
         return new AttenuationVisitor(this);
     }
 

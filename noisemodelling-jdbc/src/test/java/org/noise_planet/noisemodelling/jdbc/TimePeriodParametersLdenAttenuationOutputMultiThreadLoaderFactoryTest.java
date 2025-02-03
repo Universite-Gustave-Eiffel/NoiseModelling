@@ -8,50 +8,16 @@
  */
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.cts.crs.CRSException;
-import org.cts.op.CoordinateOperationException;
-import org.h2gis.api.EmptyProgressVisitor;
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
-import org.h2gis.functions.io.dbf.DBFRead;
-import org.h2gis.functions.io.shp.SHPDriverFunction;
-import org.h2gis.functions.io.shp.SHPRead;
-import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Point;
-import org.noise_planet.noisemodelling.emission.LineSource;
-import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos;
-import org.noise_planet.noisemodelling.emission.utils.Utils;
-import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
-import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
-import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
-import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
-import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
-import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.stream.XMLStreamException;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
