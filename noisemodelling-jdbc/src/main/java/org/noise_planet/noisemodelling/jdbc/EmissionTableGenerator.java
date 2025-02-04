@@ -39,6 +39,7 @@ public class EmissionTableGenerator {
     public static final double DAY_RATIO = 12. / 24.;
     public static final double EVENING_RATIO = 4. / 24. * dBToW(5.0);
     public static final double NIGHT_RATIO = 8. / 24. * dBToW(10.0);
+    public static final double[] RATIOS = new double[] {DAY_RATIO, EVENING_RATIO, NIGHT_RATIO};
 
     /**
      * Cache table fields in upper case in Map

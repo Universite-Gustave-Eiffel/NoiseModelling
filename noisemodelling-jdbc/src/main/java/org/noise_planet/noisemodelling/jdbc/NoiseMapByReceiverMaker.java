@@ -23,7 +23,6 @@ import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
@@ -41,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Compute noise propagation at specified receiver points.
  * @author Nicolas Fortin
  */
-public class NoiseMapByReceiverMaker extends NoiseMapLoader {
+public class NoiseMapByReceiverMaker extends GridMapMaker {
     private final String receiverTableName;
     private PropagationProcessDataFactory propagationProcessDataFactory = new DefaultTableLoader();
     /** Tell table writer thread to empty current stacks then stop waiting for new data */
@@ -326,6 +325,34 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
     }
 
     /**
+     * Run NoiseModelling with provided parameters, return when computation is done
+     */
+    public void run(Connection connection, ProgressVisitor progressLogger) throws SQLException {
+        initialize(connection, progressLogger);
+
+        // Set of already processed receivers
+        Set<Long> receivers = new HashSet<>();
+
+        // Fetch cell identifiers with receivers
+        Map<CellIndex, Integer> cells = searchPopulatedCells(connection);
+        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
+
+        try {
+            computeRaysOutFactory.start(progressLogger);
+            for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
+                // Run ray propagation
+                try {
+                    evaluateCell(connection, cellIndex, progressVisitor, receivers);
+                } catch (IOException ex) {
+                    throw new SQLException(ex);
+                }
+            }
+        } finally {
+            computeRaysOutFactory.stop();
+        }
+    }
+
+    /**
      * A factory interface for initializing input propagation process data for noise map computation.
      */
     public interface PropagationProcessDataFactory {
@@ -361,6 +388,19 @@ public class NoiseMapByReceiverMaker extends NoiseMapLoader {
          * @throws SQLException if an SQL exception occurs while initializing the propagation process data factory.
          */
         void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException;
+
+        /**
+         * Called before the first sub cell is being computed
+         * @param progressLogger Main progression information, this method will not update the progression
+         * @throws SQLException
+         */
+        void start(ProgressVisitor progressLogger) throws SQLException;
+
+        /**
+         * Called when all sub-cells have been processed
+         * @throws SQLException
+         */
+        void stop() throws SQLException;
 
         /**
          * Creates an object that computes paths out for noise map computation.

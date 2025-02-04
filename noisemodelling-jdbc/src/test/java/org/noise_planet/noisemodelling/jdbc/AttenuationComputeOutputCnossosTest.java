@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.api.EmptyProgressVisitor;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -500,91 +503,52 @@ public class AttenuationComputeOutputCnossosTest {
 //    }
 //
 //
-//    private double testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
-//        // Init NoiseModelling
-//        LdenNoiseMapLoader ldenNoiseMapLoader = new LdenNoiseMapLoader("BUILDINGS",
-//                "LW_ROADS", "RECEIVERS");
-//
-//        ldenNoiseMapLoader.setMaximumPropagationDistance(5000.0);
-//        ldenNoiseMapLoader.setSoundReflectionOrder(1);
-//        ldenNoiseMapLoader.setThreadCount(1);
-//        ldenNoiseMapLoader.setComputeHorizontalDiffraction(true);
-//        ldenNoiseMapLoader.setComputeVerticalDiffraction(true);
-//        // Building height field name
-//        ldenNoiseMapLoader.setHeightField("HEIGHT");
-//
-//
-//        // Init custom input in order to compute more than just attenuation
-//        // LW_ROADS contain Day Evening Night emission spectrum
-//        LdenNoiseMapParameters ldenNoiseMapParameters = new LdenNoiseMapParameters(LdenNoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-//        ldenNoiseMapParameters.setExportRaysMethod(LdenNoiseMapParameters.ExportRaysMethods.TO_MEMORY);
-//
-//        ldenNoiseMapParameters.setComputeLDay(false);
-//        ldenNoiseMapParameters.setComputeLEvening(false);
-//        ldenNoiseMapParameters.setComputeLNight(false);
-//        ldenNoiseMapParameters.setComputeLDEN(true);
-//        ldenNoiseMapParameters.keepAbsorption = true;
-//        ldenNoiseMapParameters.setMaximumError(maxError);
-//
-//        NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, ldenNoiseMapParameters);
-//
-//        ldenNoiseMapLoader.setPropagationProcessDataFactory(noiseMapMaker);
-//        ldenNoiseMapLoader.setComputeRaysOutFactory(noiseMapMaker);
-//
-//        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
-//
-//        ldenNoiseMapLoader.initialize(connection, new EmptyProgressVisitor());
-//
-//        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.DAY).setTemperature(20);
-//        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.EVENING).setTemperature(16);
-//        ldenNoiseMapParameters.getPropagationProcessPathData(LdenNoiseMapParameters.TIME_PERIOD.NIGHT).setTemperature(10);
-//
-//        ldenNoiseMapLoader.setGridDim(1);
-//
-//        // Set of already processed receivers
-//        Set<Long> receivers = new HashSet<>();
-//
-//        // Fetch cell identifiers with receivers
-//        Map<CellIndex, Integer> cells = ldenNoiseMapLoader.searchPopulatedCells(connection);
-//        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
-//        assertEquals(1, cells.size());
-//        for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
-//            // Run ray propagation
-//            IComputePathsOut out = ldenNoiseMapLoader.evaluateCell(connection, cellIndex.getLatitudeIndex(),
-//                    cellIndex.getLongitudeIndex(), progressVisitor, receivers);
-//            assertInstanceOf(AttenuationOutputMultiThread.class, out);
-//            AttenuationOutputMultiThread rout = (AttenuationOutputMultiThread) out;
-//            assertEquals(1, rout.resultsCache.lDenLevels.size());
-//            AttenuationComputeOutput.SourceReceiverAttenuation sl = rout.resultsCache.lDenLevels.pop();
-//            return AcousticIndicatorsFunctions.sumDbArray(sl.value);
-//        }
-//        return 0;
-//    }
+    private double testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
+        // Init NoiseModelling
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_ROADS", "RECEIVERS");
+
+        noiseMap.setMaximumPropagationDistance(5000.0);
+        noiseMap.setSoundReflectionOrder(1);
+        noiseMap.setThreadCount(1);
+        noiseMap.setComputeHorizontalDiffraction(true);
+        noiseMap.setComputeVerticalDiffraction(true);
+        noiseMap.getNoiseMapDatabaseParameters().maximumError = maxError;
+
+        // Building height field name
+        noiseMap.setHeightField("HEIGHT");
+
+        noiseMap.setGridDim(1);
+
+        noiseMap.run(connection, new EmptyProgressVisitor());
+
+        return 0;
+    }
 
     static public void assertInferiorThan(double expected, double actual) {
         assertTrue(expected < actual, String.format(Locale.ROOT, "Expected %f < %f", expected, actual));
     }
-//
-//    /**
-//     * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
-//     * This feature is disabled and all sound sources are computed
-//     */
-//    @Test
-//    public void testIgnoreNonSignificantSources() throws Exception {
-//        final double maxError = 0.5;
-//        try (Connection connection =
-//                     JDBCUtilities.wrapConnection(
-//                             H2GISDBFactory.createSpatialDataBase(
-//                                     "testReceiverOverBuilding", true, ""))) {
-//            try (Statement st = connection.createStatement()) {
-//                st.execute(Utils.getRunScriptRes("scenario_skip_far_source.sql"));
-//                double levelAllSources = testIgnoreNonSignificantSourcesParam(connection, 0.);
-//                double levelIgnoreFarSources = testIgnoreNonSignificantSourcesParam(connection, maxError);
-//                assertNotEquals(levelAllSources, levelIgnoreFarSources, 0.0001);
-//                assertInferiorThan(Math.abs(levelAllSources - levelIgnoreFarSources), maxError);
-//            }
-//        }
-//    }
+
+    /**
+     * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
+     * This feature is disabled and all sound sources are computed
+     */
+    @Test
+    public void testIgnoreNonSignificantSources() throws Exception {
+        final double maxError = 0.5;
+        try (Connection connection =
+                     JDBCUtilities.wrapConnection(
+                             H2GISDBFactory.createSpatialDataBase(
+                                     "testReceiverOverBuilding", true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute(Utils.getRunScriptRes("scenario_skip_far_source.sql"));
+                double levelAllSources = testIgnoreNonSignificantSourcesParam(connection, 0.);
+                double levelIgnoreFarSources = testIgnoreNonSignificantSourcesParam(connection, maxError);
+                assertNotEquals(levelAllSources, levelIgnoreFarSources, 0.0001);
+                assertInferiorThan(Math.abs(levelAllSources - levelIgnoreFarSources), maxError);
+            }
+        }
+    }
 
     @Test
     public void testRoseIndex() {

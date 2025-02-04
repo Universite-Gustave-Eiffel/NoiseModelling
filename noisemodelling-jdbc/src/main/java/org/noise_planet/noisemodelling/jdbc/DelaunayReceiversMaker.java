@@ -20,9 +20,7 @@ import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
-import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
@@ -47,7 +45,7 @@ import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
  * @author Nicolas Fortin
  * @author SU Qi
  */
-public class DelaunayReceiversMaker extends NoiseMapLoader {
+public class DelaunayReceiversMaker extends GridMapMaker {
     private static final int BATCH_MAX_SIZE = 100;
     private Logger logger = LoggerFactory.getLogger(DelaunayReceiversMaker.class);
     private double roadWidth = 2;

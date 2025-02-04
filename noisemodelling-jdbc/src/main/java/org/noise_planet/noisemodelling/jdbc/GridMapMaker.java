@@ -11,43 +11,26 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.ProgressVisitor;
-import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.SpatialResultSet;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.geom.prep.PreparedPolygon;
-import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
-import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
-import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.*;
-import java.util.*;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 /**
- * Common attributes for propagation of sound sources.
+ * Common attributes and functions across DelaunayGrid and NoiseMap receiver computation
  * @author Nicolas Fortin
  */
-public abstract class NoiseMapLoader {
+public abstract class GridMapMaker {
     // When computing cell size, try to keep propagation distance away from the cell
     // inferior to this ratio (in comparison with cell width)
-    Logger logger = LoggerFactory.getLogger(NoiseMapLoader.class);
-    private static final int DEFAULT_FETCH_SIZE = 300;
     protected static final double MINIMAL_BUFFER_RATIO = 0.3;
     protected DefaultTableLoader.BuildingTableParameters buildingTableParameters = new DefaultTableLoader.BuildingTableParameters();
     protected final String sourcesTableName;
@@ -79,7 +62,7 @@ public abstract class NoiseMapLoader {
     protected int gridDim = 0;
     protected Envelope mainEnvelope = new Envelope();
 
-    public NoiseMapLoader(String buildingsTableName, String sourcesTableName) {
+    public GridMapMaker(String buildingsTableName, String sourcesTableName) {
         this.buildingTableParameters.buildingsTableName = buildingsTableName;
         this.sourcesTableName = sourcesTableName;
     }

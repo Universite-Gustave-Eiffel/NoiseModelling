@@ -78,6 +78,8 @@ public class NoiseMapWriter implements Runnable {
                     aWeightingArray.stream().mapToDouble(value -> value).toArray();
             frequencyArray = ((DefaultTableLoader)noiseMapByReceiverMaker.getPropagationProcessDataFactory()).frequencyArray;
         }
+        this.exitWhenDone = exitWhenDone;
+        this.aborted = aborted;
     }
 
     /**

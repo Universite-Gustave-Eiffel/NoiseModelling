@@ -11,6 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
+
 /**
  * Add emission information for each source in the computation scene
  * This is input data, not thread safe, never update anything here during propagation
@@ -51,6 +53,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
     public void processTrafficFlowDEN(Long pk, SpatialResultSet rs) throws SQLException {
         // Source table PK, GEOM, LV_D, LV_E, LV_N ...
         double[][] lw = EmissionTableGenerator.computeLw(rs, sceneDatabaseInputSettings.coefficientVersion, sourceFieldsCache);
+        // Will generate D E N and DEN emission
         for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
             addSourceEmission(pk, EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()], lw[period.ordinal()]);
         }
@@ -97,9 +100,31 @@ public class SceneWithEmission extends SceneWithAttenuation {
     @Override
     public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
         super.addSource(pk, geom, rs);
-        if (Objects.requireNonNull(sceneDatabaseInputSettings.inputMode) == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) {
-            processTrafficFlowDEN(pk, rs);
+        switch (Objects.requireNonNull(sceneDatabaseInputSettings.inputMode)) {
+            case INPUT_MODE_TRAFFIC_FLOW_DEN:
+                processTrafficFlowDEN(pk, rs);
+                break;
+            case INPUT_MODE_LW_DEN:
+                processEmissionDEN(pk, rs);
+                break;
         }
+    }
+
+    private void processEmissionDEN(Long pk, SpatialResultSet rs) throws SQLException {
+        List<Integer> frequencyArray = profileBuilder.frequencyArray;
+        double[] lden = new double[0];
+        for (EmissionTableGenerator.STANDARD_PERIOD period :
+                Arrays.copyOfRange(EmissionTableGenerator.STANDARD_PERIOD.values(),0,3)) {
+            double[] lw = new double[profileBuilder.frequencyArray.size()];
+            String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
+            for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
+                Integer frequency = frequencyArray.get(i);
+                lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend + periodFieldName + frequency));
+            }
+            addSourceEmission(pk, periodFieldName, lw);
+            lden = sumArray(lden, AcousticIndicatorsFunctions.multiplicationArray(lw, EmissionTableGenerator.RATIOS[period.ordinal()]));
+        }
+        addSourceEmission(pk, EmissionTableGenerator.STANDARD_PERIOD_VALUE[3], lden);
     }
 
     public void addSourceEmission(Long pk, ResultSet rs) throws SQLException {
@@ -148,6 +173,8 @@ public class SceneWithEmission extends SceneWithAttenuation {
         public enum INPUT_MODE {
             /** Read traffic from geometry source table */
             INPUT_MODE_TRAFFIC_FLOW_DEN,
+            /** Read source emission noise level limited to DEN periods from source geometry table */
+            INPUT_MODE_LW_DEN,
             /** Read traffic from emission source table for each period */
             INPUT_MODE_TRAFFIC_FLOW,
             /** Read source emission noise level from source emission table for each period */

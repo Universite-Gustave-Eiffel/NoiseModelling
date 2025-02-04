@@ -10,8 +10,6 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 
-import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-
 import java.io.File;
 
 /**
@@ -23,6 +21,15 @@ public class NoiseMapDatabaseParameters {
 
     public NoiseMapDatabaseParameters() {
     }
+
+    /**
+     * Path to write the computation time and other statistics in a csv file
+     */
+    public File CSVProfilerOutputPath = null;
+    /**
+     * Create a new csv line after this time in seconds
+     */
+    public int CSVProfilerWriteInterval = 60;
 
     public boolean exportProfileInRays = false;
     public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
