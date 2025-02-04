@@ -168,7 +168,7 @@ public class NoiseMapWriter implements Runnable {
         if(!databaseParameters.mergeSources) {
             query.append(", ?"); // ID_SOURCE
         }
-        if(!exportPeriod) {
+        if(exportPeriod) {
             query.append(", ?"); // PERIOD
         }
         if(databaseParameters.exportReceiverPosition) {

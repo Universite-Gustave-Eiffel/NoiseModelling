@@ -180,7 +180,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         defaultAttenuation = dBToW(multiThread.computeCnossosAttenuation(scene.defaultCnossosParameters, cnossosPath));
                         attenuation = defaultAttenuation;
                     }
-                    double[] levels = multiplicationArray(attenuation, scene.powerSpectrum.get(periodEmission.emissionHash));
+                    double[] levels = multiplicationArray(attenuation, periodEmission.emission);
                     ReceiverNoiseLevel receiverNoiseLevel =
                             new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
                                     new PathFinder.ReceiverPointInfo(receiver), period, levels);
@@ -251,7 +251,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 if(scene.wjSources.containsKey(sourcePointInfo.sourcePk)) {
                     ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePointInfo.sourcePk);
                     for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
-                        double[] wjAtReceiver = multiplicationArray(attenuation, scene.powerSpectrum.get(periodEmission.emissionHash));
+                        double[] wjAtReceiver = multiplicationArray(attenuation, periodEmission.emission);
                         double sumPower = sumArray(wjAtReceiver);
                         double previousPowerAtLocation = maximumWjExpectedSplAtReceiver.getOrDefault(sourceHashCode, 0.0);
                         if(sumPower > previousPowerAtLocation) {
@@ -363,7 +363,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
             TimePeriodParameters periodParameters = periodParametersEntry.getValue();
             for (Map.Entry<String, double[]> levelsAtPeriod : periodParameters.levelsPerPeriod.entrySet()) {
-                pushInStack(multiThread.receiversAttenuationLevels, new ReceiverNoiseLevel(periodParameters.source,
+                pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
                         receiver, levelsAtPeriod.getKey(),
                         AcousticIndicatorsFunctions.wToDb(levelsAtPeriod.getValue())));
             }

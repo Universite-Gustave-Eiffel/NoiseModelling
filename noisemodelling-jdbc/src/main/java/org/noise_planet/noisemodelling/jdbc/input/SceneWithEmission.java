@@ -22,11 +22,6 @@ public class SceneWithEmission extends SceneWithAttenuation {
     Map<String, Integer> sourceFieldsCache = new HashMap<>();
     Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
 
-    /**
-     * Set of unique power spectrum. Key is the hash of the spectrum. Power spectrum in energetic e = pow(10, dbVal / 10.0)
-     */
-    public Map<Integer, double[]> powerSpectrum = new HashMap<>();
-
     //  For each source primary key give the map between period and source power spectrum hash value
     public Map<Long, ArrayList<PeriodEmission>> wjSources = new HashMap<>();
 
@@ -42,12 +37,6 @@ public class SceneWithEmission extends SceneWithAttenuation {
     }
 
     public SceneWithEmission() {
-    }
-
-    int updatePowerSpectrumSet(double[] wj) {
-        int hashCode = Arrays.hashCode(wj);
-        powerSpectrum.putIfAbsent(hashCode, wj);
-        return hashCode;
     }
 
     public void processTrafficFlowDEN(Long pk, SpatialResultSet rs) throws SQLException {
@@ -119,7 +108,9 @@ public class SceneWithEmission extends SceneWithAttenuation {
             String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
             for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
                 Integer frequency = frequencyArray.get(i);
-                lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend + periodFieldName + frequency));
+                final String tableFieldName = sceneDatabaseInputSettings.lwFrequencyPrepend + periodFieldName + frequency;
+                lw[i] = AcousticIndicatorsFunctions.dBToW(
+                        rs.getDouble(tableFieldName));
             }
             addSourceEmission(pk, periodFieldName, lw);
             lden = sumArray(lden, AcousticIndicatorsFunctions.multiplicationArray(lw, EmissionTableGenerator.RATIOS[period.ordinal()]));
@@ -145,7 +136,6 @@ public class SceneWithEmission extends SceneWithAttenuation {
      * @param wj
      */
     public void addSourceEmission(Long sourcePrimaryKey, String period, double[] wj) {
-        int powerSpectrumHash = updatePowerSpectrumSet(wj);
         ArrayList<PeriodEmission> sourceEmissions;
         if(wjSources.containsKey(sourcePrimaryKey)) {
             sourceEmissions = wjSources.get(sourcePrimaryKey);
@@ -153,16 +143,16 @@ public class SceneWithEmission extends SceneWithAttenuation {
             sourceEmissions = new ArrayList<>();
             wjSources.put(sourcePrimaryKey, sourceEmissions);
         }
-        sourceEmissions.add(new PeriodEmission(period, powerSpectrumHash));
+        sourceEmissions.add(new PeriodEmission(period, wj));
     }
 
     public static class PeriodEmission {
         public final String period;
-        public final int emissionHash;
+        public final double[] emission;
 
-        public PeriodEmission(String period, int emissionHash) {
+        public PeriodEmission(String period, double[] emission) {
             this.period = period;
-            this.emissionHash = emissionHash;
+            this.emission = emission;
         }
     }
 

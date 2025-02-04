@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -28,7 +30,9 @@ import org.slf4j.LoggerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -503,7 +507,7 @@ public class AttenuationComputeOutputCnossosTest {
 //    }
 //
 //
-    private double testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
+    private List<Long> testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
         // Init NoiseModelling
         NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS",
                 "LW_ROADS", "RECEIVERS");
@@ -513,16 +517,27 @@ public class AttenuationComputeOutputCnossosTest {
         noiseMap.setThreadCount(1);
         noiseMap.setComputeHorizontalDiffraction(true);
         noiseMap.setComputeVerticalDiffraction(true);
-        noiseMap.getNoiseMapDatabaseParameters().maximumError = maxError;
+        NoiseMapDatabaseParameters parameters = noiseMap.getNoiseMapDatabaseParameters();
+        parameters.mergeSources = false;
+        parameters.maximumError = maxError;
+        noiseMap.setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         // Building height field name
         noiseMap.setHeightField("HEIGHT");
+
 
         noiseMap.setGridDim(1);
 
         noiseMap.run(connection, new EmptyProgressVisitor());
 
-        return 0;
+        Statement st = connection.createStatement();
+        List<Long> sourcePks = new LinkedList<>();
+        try(ResultSet rs = st.executeQuery("SELECT DISTINCT IDSOURCE FROM " + parameters.receiversLevelTable)) {
+            while (rs.next()) {
+                sourcePks.add(rs.getLong(1));
+            }
+        }
+        return sourcePks;
     }
 
     static public void assertInferiorThan(double expected, double actual) {
@@ -542,10 +557,10 @@ public class AttenuationComputeOutputCnossosTest {
                                      "testReceiverOverBuilding", true, ""))) {
             try (Statement st = connection.createStatement()) {
                 st.execute(Utils.getRunScriptRes("scenario_skip_far_source.sql"));
-                double levelAllSources = testIgnoreNonSignificantSourcesParam(connection, 0.);
-                double levelIgnoreFarSources = testIgnoreNonSignificantSourcesParam(connection, maxError);
-                assertNotEquals(levelAllSources, levelIgnoreFarSources, 0.0001);
-                assertInferiorThan(Math.abs(levelAllSources - levelIgnoreFarSources), maxError);
+                List<Long> allSourcesPk = testIgnoreNonSignificantSourcesParam(connection, 0.);
+                List<Long> ignoreFarSourcesPk = testIgnoreNonSignificantSourcesParam(connection, maxError);
+                assertEquals(2, allSourcesPk.size());
+                assertEquals(1, ignoreFarSourcesPk.size());
             }
         }
     }
