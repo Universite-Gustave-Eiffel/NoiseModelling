@@ -158,69 +158,62 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 // Copy path content in order to keep original ids for other method calls
                 this.cnossosPaths.add(cnossosPath);
             }
-            Map<String, double[]> attenuationPerPeriod = new HashMap<>();
-            double[] defaultAttenuation = new double[0];
-            if(!scene.cnossosParametersPerPeriod.isEmpty()) {
-                for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
-                        scene.cnossosParametersPerPeriod.entrySet()) {
-                    double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(),
-                            cnossosPath, cnossosParametersEntry.getKey()));
-                    attenuationPerPeriod.put(cnossosParametersEntry.getKey(), attenuation);
-                }
-            } else {
-                defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters, cnossosPath, ""));
-            }
-            // Apply period attenuation to emission for each time period
-            if(scene.wjSources.containsKey(sourcePk)) {
-                ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                double[] minimalPowerForAllPeriods = new double[0];
-                double minimalPowerSum = Double.MAX_VALUE;
-                for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
-                    String period = periodEmission.period;
-                    double [] attenuation = defaultAttenuation;
-                    if(attenuationPerPeriod.containsKey(period)) {
-                        attenuation = attenuationPerPeriod.get(period);
-                    }
-                    if(attenuation.length == 0) {
-                        defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
-                                cnossosPath, ""));
-                        attenuation = defaultAttenuation;
-                    }
-                    double[] levels = multiplicationArray(attenuation, periodEmission.emission);
-                    ReceiverNoiseLevel receiverNoiseLevel =
-                            new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
-                                    new PathFinder.ReceiverPointInfo(receiver), period, levels);
-                    processNoiseLevel(receiverNoiseLevel);
-                    if(dbSettings.maximumError > 0) {
-                        double powerSum = sumArray(levels);
-                        if(powerSum < minimalPowerSum) {
-                            minimalPowerSum = powerSum;
-                            minimalPowerForAllPeriods = levels;
-                        }
-                    }
-                }
-                if(dbSettings.maximumError > 0) {
-                    // Add minimal power
-                    addGlobalReceiverLevel(minimalPowerForAllPeriods);
-                }
-            } else {
-                if(!attenuationPerPeriod.isEmpty()) {
-                    for (Map.Entry<String, double[]> attenuation : attenuationPerPeriod.entrySet()) {
+            if(scene.wjSources.isEmpty()) {
+                // No emission push only attenuation for each period
+                if(!scene.cnossosParametersPerPeriod.isEmpty()) {
+                    for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
+                            scene.cnossosParametersPerPeriod.entrySet()) {
+                        double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(),
+                                cnossosPath, cnossosParametersEntry.getKey()));
                         ReceiverNoiseLevel receiverNoiseLevel =
                                 new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
-                                        new PathFinder.ReceiverPointInfo(receiver), attenuation.getKey(), attenuation.getValue());
+                                        new PathFinder.ReceiverPointInfo(receiver), cnossosParametersEntry.getKey(),
+                                        attenuation);
                         processNoiseLevel(receiverNoiseLevel);
                     }
                 } else {
-                    if(defaultAttenuation.length == 0) {
-                        defaultAttenuation = dBToW(AttenuationCnossos.computeCnossosAttenuation(
-                                scene.defaultCnossosParameters, cnossosPath, scene,
-                                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix));
-                    }
+                    double[] attenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters, cnossosPath, ""));
                     ReceiverNoiseLevel receiverNoiseLevel =
                             new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
-                                    new PathFinder.ReceiverPointInfo(receiver), "", defaultAttenuation);
+                                    new PathFinder.ReceiverPointInfo(receiver), "",
+                                    attenuation);
                     processNoiseLevel(receiverNoiseLevel);
+                }
+            } else {
+                // Apply period attenuation to emission for each time period covered by the source emission
+                if(scene.wjSources.containsKey(sourcePk)) {
+                    ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
+                    double[] minimalPowerForAllPeriods = new double[0];
+                    double minimalPowerSum = Double.MAX_VALUE;
+                    for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
+                        String period = periodEmission.period;
+                        double [] attenuation = new double[0];
+                        // look for specific atmospheric settings for this period
+                        if(scene.cnossosParametersPerPeriod.containsKey(period)) {
+                            attenuation = dBToW(processAndStoreAttenuation(scene.cnossosParametersPerPeriod.get(period),
+                                    cnossosPath, period));
+                        } else {
+                            // None ? ok fallback to default settings
+                            attenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
+                                    cnossosPath, ""));
+                        }
+                        double[] levels = multiplicationArray(attenuation, periodEmission.emission);
+                        ReceiverNoiseLevel receiverNoiseLevel =
+                                new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
+                                        new PathFinder.ReceiverPointInfo(receiver), period, levels);
+                        processNoiseLevel(receiverNoiseLevel);
+                        if(dbSettings.maximumError > 0) {
+                            double powerSum = sumArray(levels);
+                            if(powerSum < minimalPowerSum) {
+                                minimalPowerSum = powerSum;
+                                minimalPowerForAllPeriods = levels;
+                            }
+                        }
+                    }
+                    if(dbSettings.maximumError > 0) {
+                        // Add minimal power
+                        addGlobalReceiverLevel(minimalPowerForAllPeriods);
+                    }
                 }
             }
             if(dbSettings.maximumError > 0 && !scene.wjSources.isEmpty()) {
