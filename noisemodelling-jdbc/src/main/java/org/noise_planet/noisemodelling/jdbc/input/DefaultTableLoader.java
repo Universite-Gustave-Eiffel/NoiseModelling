@@ -20,6 +20,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +35,15 @@ import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationProcessDataFactory {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultTableLoader.class);
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;
-    NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
     // Soil areas are split by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
     public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+    /**
+     * Define attenuation settings to apply for each period
+     */
+    public Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
 
     public static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -124,6 +128,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
         profileBuilder.setFrequencyArray(frequencyArray);
         SceneWithEmission scene = new SceneWithEmission(profileBuilder, noiseMapByReceiverMaker.getSceneInputSettings());
         scene.setDirectionAttributes(directionAttributes);
+        scene.cnossosParametersPerPeriod = cnossosParametersPerPeriod;
 
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query

@@ -9,16 +9,20 @@
 
 package org.noise_planet.noisemodelling.jdbc.output;
 
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.PrecisionModel;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
@@ -54,6 +58,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
     NoiseMapDatabaseParameters databaseParameters;
     ResultsCache resultsCache;
     Writer writer;
+    ObjectWriter jsonWriter;
     int srid;
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public double[] aWeightingArray = Arrays.stream(
@@ -80,6 +85,21 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
+        if(databaseParameters.exportCnossosPathWithAttenuation) {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+            mapper.addMixIn(LineSegment.class, LineSegmentMixin.class);
+            jsonWriter = mapper.writer();
+        }
+    }
+
+    public String propagationPathAsJSON(CnossosPath path) throws JsonProcessingException {
+        return jsonWriter.writeValueAsString(path);
+    }
+
+    public static CnossosPath jsonToPropagationPath(String json) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(json, CnossosPath.class);
     }
 
     /**
@@ -88,20 +108,28 @@ public class NoiseMapWriter implements Callable<Boolean> {
      * @throws SQLException if an SQL exception occurs while executing the INSERT query
      */
     void processRaysStack(ConcurrentLinkedDeque<CnossosPath> stack) throws SQLException {
+        boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
+                equals(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         StringBuilder query = new StringBuilder("INSERT INTO " + databaseParameters.raysTable +
                 "(the_geom , IDRECEIVER , IDSOURCE");
         if(databaseParameters.exportCnossosPathWithAttenuation) {
-            query.append(", GEOJSON");
+            query.append(", PATH");
         }
         if(databaseParameters.exportAttenuationMatrix) {
-            query.append(", LEQ, PERIOD");
+            query.append(", LEQ");
+        }
+        if(exportPeriod) {
+            query.append(", PERIOD");
         }
         query.append(") VALUES (?, ?, ?");
         if(databaseParameters.exportCnossosPathWithAttenuation) {
             query.append(", ?");
         }
         if(databaseParameters.exportAttenuationMatrix) {
-            query.append(", ?, ?");
+            query.append(", ?");
+        }
+        if(exportPeriod) {
+            query.append(", ?");
         }
         query.append(");");
         // PK, GEOM, ID_RECEIVER, ID_SOURCE
@@ -122,17 +150,19 @@ public class NoiseMapWriter implements Callable<Boolean> {
             ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
             ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
             if(databaseParameters.exportCnossosPathWithAttenuation) {
-                String geojson = "";
+                String json = "";
                 try {
-                    geojson = row.profileAsJSON(databaseParameters.geojsonColumnSizeLimit);
+                    json = propagationPathAsJSON(row);
                 } catch (IOException ex) {
                     //ignore
                 }
-                ps.setString(parameterIndex++, geojson);
+                ps.setString(parameterIndex++, json);
             }
             if(databaseParameters.exportAttenuationMatrix) {
                 double globalValue = sumDbArray(row.aGlobal);
                 ps.setDouble(parameterIndex++, globalValue);
+            }
+            if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
             ps.addBatch();
@@ -324,6 +354,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
      */
     public void init() throws SQLException, IOException {
         if(databaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
+            boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
+                    equals(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
             if(databaseParameters.dropResultsTable) {
                 String q = String.format("DROP TABLE IF EXISTS %s;", databaseParameters.raysTable);
                 processQuery(q);
@@ -333,10 +365,13 @@ public class NoiseMapWriter implements Callable<Boolean> {
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
             if(databaseParameters.exportCnossosPathWithAttenuation) {
-                sb.append(", GEOJSON VARCHAR");
+                sb.append(", PATH VARCHAR");
             }
             if(databaseParameters.exportAttenuationMatrix) {
-                sb.append(", LEQ DOUBLE, PERIOD VARCHAR");
+                sb.append(", LEQ DOUBLE");
+            }
+            if(exportPeriod) {
+                sb.append(", PERIOD VARCHAR");
             }
             sb.append(");");
             processQuery(sb.toString());

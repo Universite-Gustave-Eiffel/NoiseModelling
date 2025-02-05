@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 
@@ -16,6 +17,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+@JsonAutoDetect(isGetterVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE)
 public class SegmentPath {
     // debug/unit test purpose data
     /**

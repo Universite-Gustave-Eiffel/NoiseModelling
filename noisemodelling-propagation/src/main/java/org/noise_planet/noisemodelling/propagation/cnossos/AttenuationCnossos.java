@@ -64,7 +64,7 @@ public class AttenuationCnossos {
             }
 
             //(7.11) NMP2008 P.32
-            double testForm = 40 / freq_lambda[idfreq]* cprime * srpath.getDelta();
+            double testForm = 40 / freq_lambda[idfreq]* cprime * srpath.delta;
 
             double deltaDif = 0.;
             if (testForm >= -2.) {
@@ -280,11 +280,11 @@ public class AttenuationCnossos {
 
         // Set Gm and Gw for AGround SR - Table 2.5.b
         if (pathParameters.isFavorable()) {
-            srPath.setGw(srPath.gPath);
+            srPath.gw = srPath.gPath;
         } else {
-            srPath.setGw(srPath.gPathPrime);
+            srPath.gw = srPath.gPathPrime;
         }
-        srPath.setGm(srPath.gPathPrime);
+        srPath.gm = srPath.gPathPrime;
 
         List<Integer> difBands = new ArrayList<>();
         List<Integer> noDifBands = new ArrayList<>();
@@ -316,16 +316,16 @@ public class AttenuationCnossos {
 
         // Set Gm and Gw for AGround SO - Table 2.5.b
         if (pathParameters.isFavorable()) {
-            segmentPath.get(0).setGw(segmentPath.get(0).gPath);
+            segmentPath.get(0).gw = segmentPath.get(0).gPath;
         } else {
-            segmentPath.get(0).setGw(segmentPath.get(0).gPathPrime);
+            segmentPath.get(0).gw = segmentPath.get(0).gPathPrime;
         }
-        segmentPath.get(0).setGm(segmentPath.get(0).gPathPrime);
+        segmentPath.get(0).gm = segmentPath.get(0).gPathPrime;
         aGroundSO = aGround(segmentPath.get(0), pathParameters, data);
 
         // Set Gm and Gw for AGround OR - Table 2.5.b
-        segmentPath.get(segmentPath.size() - 1).setGw(segmentPath.get(segmentPath.size() - 1).gPath);
-        segmentPath.get(segmentPath.size() - 1).setGm(segmentPath.get(segmentPath.size() - 1).gPath);
+        segmentPath.get(segmentPath.size() - 1).gw = segmentPath.get(segmentPath.size() - 1).gPath;
+        segmentPath.get(segmentPath.size() - 1).gm = segmentPath.get(segmentPath.size() - 1).gPath;
         aGroundOR = aGround(segmentPath.get(segmentPath.size() - 1), pathParameters, data);
 
         double[] deltaGroundSO = new double[data.freq_lvl.size()];

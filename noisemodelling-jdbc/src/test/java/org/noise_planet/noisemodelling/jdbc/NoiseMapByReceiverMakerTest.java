@@ -20,7 +20,9 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.WKTWriter;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
+import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
@@ -34,6 +36,7 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
@@ -86,132 +89,172 @@ public class NoiseMapByReceiverMakerTest {
         }
     }
 
-//    @Test
-//    public void testNoiseMapBuilding() throws Exception {
-//        try(Statement st = connection.createStatement()) {
-//            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
-//            st.execute(getRunScriptRes("scene_with_landcover.sql"));
-//            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
-//            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-//            noisemap.setSourceHasAbsoluteZCoordinates(false);
-//            noisemap.setHeightField("HEIGHT");
-//            noisemap.initialize(connection, new EmptyProgressVisitor());
-//
-//            AtomicInteger pk = new AtomicInteger(0);
-//            for(int i=0; i < noisemap.getGridDim(); i++) {
-//                for(int j=0; j < noisemap.getGridDim(); j++) {
-//                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
-//                }
-//            }
-//            assertNotSame(0, pk.get());
-//        }
-//    }
-//
-//    private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
-//        StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
-//        StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");
-//        values.append(new WKTWriter(3).write(source));
-//        values.append("', 2154) THE_GEOM, ");
-//        values.append(sourceOrientation.yaw);
-//        values.append(" YAW, ");
-//        values.append(sourceOrientation.pitch);
-//        values.append(" PITCH, ");
-//        values.append(sourceOrientation.roll);
-//        values.append(" ROLL, ");
-//        values.append(directivityId);
-//        values.append(" DIR_ID");
-//        AttenuationCnossosParameters data = new AttenuationCnossosParameters(false);
-//        for(String period : new String[] {"D", "E", "N"}) {
-//            for (int freq : data.freq_lvl) {
-//                String fieldName = "LW" + period + freq;
-//                sb.append(", ");
-//                sb.append(fieldName);
-//                sb.append(" real");
-//                values.append(", ");
-//                values.append(String.format(Locale.ROOT, "%.2f", lvl));
-//                values.append(" ");
-//                values.append(fieldName);
-//            }
-//        }
-//        sb.append(") AS select ");
-//        sb.append(values.toString());
-//        return sb.toString();
-//    }
-//
-//
-//    @Test
-//    public void testPointDirectivity() throws Exception {
-//        try (Statement st = connection.createStatement()) {
-//            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
-//            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
-//                    91, new Orientation(90,15,0),
-//                    4));
-//            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
-//                    "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
-//                    "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
-//            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-//            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
-//            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
-//            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-//            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
-//            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
-//            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-//            noiseMapByReceiverMaker.setHeightField("HEIGHT");
-//
-//            NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_LW_DEN);
-//            noiseMapParameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY);
-//
-//            noiseMapParameters.setCoefficientVersion(1);
-//            NoiseMapMaker noiseMapMaker = new NoiseMapMaker(connection, noiseMapParameters);
-//            // Use train directivity functions instead of discrete directivity
-//            noiseMapMaker.insertTrainDirectivity();
-//
-//            noiseMapByReceiverMaker.setPropagationProcessDataFactory(noiseMapMaker);
-//            noiseMapByReceiverMaker.setComputeRaysOutFactory(noiseMapMaker);
-//
-//            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
-//            Set<Long> receivers = new HashSet<>();
-//            noiseMapByReceiverMaker.setThreadCount(1);
-//            noiseMapByReceiverMaker.setGridDim(1);
-//            RootProgressVisitor progressVisitor = new RootProgressVisitor((long) noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
-//            //System.out.println("size = "+ noiseMapByReceiverMaker.getGridDim());
-//            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
-//                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
-//                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
-//                    if(out instanceof NoiseMap) {
-//                        NoiseMap rout = (NoiseMap) out;
-//
-//                        Attenuation.SourceReceiverAttenuation sl = rout.attenuatedPaths.lDenLevels.pop();
-//                        assertEquals(1, sl.receiver.receiverPk);
-//                        assertEquals(73.3, sl.value[0], 1);
-//                        sl = rout.attenuatedPaths.lDenLevels.pop();
-//                        assertEquals(2, sl.receiver.receiverPk);
-//                        assertEquals(53.3, sl.value[0], 1);
-//                        assertTrue(rout.attenuatedPaths.lDenLevels.isEmpty());
-//
-//                        List<CnossosPath> pathsParameters = rout.getPropagationPaths();
-//                        assertEquals(2 , pathsParameters.size());
-//
-//                        CnossosPath pathParameters = pathsParameters.remove(0);
-//                        assertEquals(1, pathParameters.getIdReceiver());
-//                        assertEquals(new Orientation(90, 15, 0), pathParameters.getSourceOrientation());
-//                        pathParameters = pathsParameters.remove(0);
-//                        assertEquals(2, pathParameters.getIdReceiver());
-//                        assertEquals(new Orientation(90, 15, 0), pathParameters.getSourceOrientation());
-//
-//                    } else {
-//                        throw new IllegalStateException();
-//                    }
-//                }
-//            }
-//        }
-//    }
-//
-//    public static void assertOrientationEquals(Orientation orientationA, Orientation orientationB, double epsilon) {
-//        assertArrayEquals(new double[]{orientationA.yaw, orientationA.pitch, orientationA.roll},
-//                new double[]{orientationB.yaw, orientationB.pitch, orientationB.roll}, epsilon, orientationA+" != "+orientationB);
-//    }
-//
+    @Test
+    public void testNoiseMapBuilding() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
+            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+            noisemap.setSourceHasAbsoluteZCoordinates(false);
+            noisemap.setHeightField("HEIGHT");
+            noisemap.initialize(connection, new EmptyProgressVisitor());
+
+            AtomicInteger pk = new AtomicInteger(0);
+            for(int i=0; i < noisemap.getGridDim(); i++) {
+                for(int j=0; j < noisemap.getGridDim(); j++) {
+                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+                }
+            }
+            assertNotSame(0, pk.get());
+        }
+    }
+
+    private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
+        StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
+        StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");
+        values.append(new WKTWriter(3).write(source));
+        values.append("', 2154) THE_GEOM, ");
+        values.append(sourceOrientation.yaw);
+        values.append(" YAW, ");
+        values.append(sourceOrientation.pitch);
+        values.append(" PITCH, ");
+        values.append(sourceOrientation.roll);
+        values.append(" ROLL, ");
+        values.append(directivityId);
+        values.append(" DIR_ID");
+        AttenuationCnossosParameters data = new AttenuationCnossosParameters(false);
+        for(String period : new String[] {"D", "E", "N"}) {
+            for (int freq : data.freq_lvl) {
+                String fieldName = "LW" + period + freq;
+                sb.append(", ");
+                sb.append(fieldName);
+                sb.append(" real");
+                values.append(", ");
+                values.append(String.format(Locale.ROOT, "%.2f", lvl));
+                values.append(" ");
+                values.append(fieldName);
+            }
+        }
+        sb.append(") AS select ");
+        sb.append(values.toString());
+        return sb.toString();
+    }
+
+
+    @Test
+    public void testPointDirectivity() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createPoint(new Coordinate(223915.72,6757480.22,0.0 )),
+                    91,
+                    new Orientation(90,15,0),
+                    4));
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223915.72 6757490.22 0.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223925.72 6757480.22 0.0)');");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
+
+            // Use train directivity functions instead of discrete directivity
+            ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory()).insertTrainDirectivity();
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+            try(ResultSet rs = st.executeQuery("SELECT HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+                assertTrue(rs.next());
+                assertEquals(73.3, rs.getDouble(1), 0.1);
+                assertTrue(rs.next());
+                assertEquals(53.3, rs.getDouble(1), 0.1);
+                assertFalse(rs.next());
+            }
+        }
+    }
+
+
+
+    @Test
+    public void testLineDirectivity() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(pk serial  PRIMARY KEY, the_geom geometry, height real)");
+            st.execute(createSource(new GeometryFactory().createLineString(
+                    new Coordinate[]{new Coordinate(223915.72,6757480.22 ,5),
+                            new Coordinate(223920.72,6757485.22, 5.1 )}), 91,
+                    new Orientation(0,0,0),4));
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(pointZ));\n" +
+                    "insert into receivers(the_geom) values ('POINTZ (223922.55 6757495.27 4.0)');" +
+                    "insert into receivers(the_geom) values ('POINTZ (223936.42 6757471.91 4.0)');");
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
+            noiseMapByReceiverMaker.setBodyBarrier(true);
+
+            // Use train directivity functions instead of discrete directivity
+            DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
+            defaultTableLoader.insertTrainDirectivity();
+            AttenuationCnossosParameters daySettings = new AttenuationCnossosParameters();
+            daySettings.setTemperature(20);
+            AttenuationCnossosParameters eveningSettings = new AttenuationCnossosParameters();
+            eveningSettings.setTemperature(18);
+            AttenuationCnossosParameters nightSettings = new AttenuationCnossosParameters();
+            nightSettings.setTemperature(16);
+            defaultTableLoader.cnossosParametersPerPeriod.put("D", daySettings);
+            defaultTableLoader.cnossosParametersPerPeriod.put("E", eveningSettings);
+            defaultTableLoader.cnossosParametersPerPeriod.put("N", nightSettings);
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+                assertTrue(rs.next());
+                assertEquals(1, rs.getInt(1));
+                assertEquals(68.3, rs.getDouble(2), 1);
+                assertTrue(rs.next());
+                assertEquals(2, rs.getInt(1));
+                assertEquals(70.8, rs.getDouble(2), 1);
+                assertFalse(rs.next());
+            }
+
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+                assertTrue(rs.next());
+                assertEquals(1, rs.getInt(1));
+                String json = rs.getString(2);
+                CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(json);
+                // This is source orientation, not relevant to receiver position
+                assertOrientationEquals(new Orientation(45, 0.81, 0), cnossosPath.getSourceOrientation(), 0.01);
+                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), cnossosPath.raySourceReceiverDirectivity, 0.01);
+                assertTrue(rs.next());
+                assertEquals(2, rs.getInt(1));
+                assertFalse(rs.next());
+            }
+        }
+    }
+
+
+    public static void assertOrientationEquals(Orientation orientationA, Orientation orientationB, double epsilon) {
+        assertArrayEquals(new double[]{orientationA.yaw, orientationA.pitch, orientationA.roll},
+                new double[]{orientationB.yaw, orientationB.pitch, orientationB.roll}, epsilon, orientationA+" != "+orientationB);
+    }
+
 //
 //    @Test
 //    public void testLineDirectivity() throws Exception {

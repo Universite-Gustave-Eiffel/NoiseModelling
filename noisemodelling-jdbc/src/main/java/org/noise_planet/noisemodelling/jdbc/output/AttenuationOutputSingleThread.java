@@ -181,6 +181,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 }
             } else {
                 // Apply period attenuation to emission for each time period covered by the source emission
+                double[] defaultAttenuation = new double[0];
                 if(scene.wjSources.containsKey(sourcePk)) {
                     ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
                     double[] minimalPowerForAllPeriods = new double[0];
@@ -193,9 +194,12 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                             attenuation = dBToW(processAndStoreAttenuation(scene.cnossosParametersPerPeriod.get(period),
                                     cnossosPath, period));
                         } else {
-                            // None ? ok fallback to default settings
-                            attenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
-                                    cnossosPath, ""));
+                            if(defaultAttenuation.length == 0) {
+                                // None ? ok fallback to default settings
+                                defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
+                                        cnossosPath, ""));
+                            }
+                            attenuation = defaultAttenuation;
                         }
                         double[] levels = multiplicationArray(attenuation, periodEmission.emission);
                         ReceiverNoiseLevel receiverNoiseLevel =

@@ -17,6 +17,8 @@ import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -181,27 +183,6 @@ public class Path {
             coordinates[i++] = new Coordinate(rayPoint);
         }
         return geometryFactory.createLineString(coordinates);
-    }
-
-
-    /**
-     *
-     * @param sizeLimitation
-     * @return
-     * @throws IOException
-     */
-    public String profileAsJSON(int sizeLimitation) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        GeoJSONDocument geoJSONDocument = new GeoJSONDocument(byteArrayOutputStream);
-        geoJSONDocument.writeHeader();
-        for (CutPoint cutPoint : getCutPoints()) {
-            if(sizeLimitation > 0 && byteArrayOutputStream.size() + FOOTER_RESERVED_SIZE > sizeLimitation) {
-                break;
-            }
-            geoJSONDocument.writeCutPoint(cutPoint);
-        }
-        geoJSONDocument.writeFooter();
-        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
     }
 
     public List<PointPath> getPointList() {return pointList;}
