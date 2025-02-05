@@ -108,10 +108,14 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     attenuationDivGeom), -1);
     }
 
-    private double[] processAndStoreAttenuation(AttenuationCnossosParameters data, CnossosPath proPathParameters) {
-        double[] attenuation = multiThread.computeCnossosAttenuation(data, proPathParameters);
-        if(multiThread.exportPaths && multiThread.exportAttenuationMatrix) {
-            cnossosPaths.add(new CnossosPath(proPathParameters));
+    private double[] processAndStoreAttenuation(AttenuationCnossosParameters data, CnossosPath proPathParameters, String period) {
+        double[] attenuation = AttenuationCnossos.computeCnossosAttenuation(data, proPathParameters, multiThread.sceneWithEmission,
+                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
+        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
+                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
+            CnossosPath cnossosPath = new CnossosPath(proPathParameters);
+            cnossosPath.setTimePeriod(period);
+            cnossosPaths.add(cnossosPath);
         }
         return attenuation;
     }
@@ -130,8 +134,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 noiseLevel.period, noiseLevel.levels);
 
         receiverAttenuationList.merge(keyToUpdate, periodParameters,
-                (timePeriodParameters, timePeriodParameters2)
-                        -> timePeriodParameters.update(timePeriodParameters2));
+                TimePeriodParameters::update);
     }
 
     @Override
@@ -149,7 +152,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
 
             // export path if required
-            if(multiThread.exportPaths && !multiThread.exportAttenuationMatrix) {
+            if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
+                    .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
                 // Use only one ray as the ray is the same if we not keep absorption values
                 // Copy path content in order to keep original ids for other method calls
                 this.cnossosPaths.add(cnossosPath);
@@ -159,11 +163,12 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             if(!scene.cnossosParametersPerPeriod.isEmpty()) {
                 for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
                         scene.cnossosParametersPerPeriod.entrySet()) {
-                    double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(), cnossosPath));
+                    double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(),
+                            cnossosPath, cnossosParametersEntry.getKey()));
                     attenuationPerPeriod.put(cnossosParametersEntry.getKey(), attenuation);
                 }
             } else {
-                defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters, cnossosPath));
+                defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters, cnossosPath, ""));
             }
             // Apply period attenuation to emission for each time period
             if(scene.wjSources.containsKey(sourcePk)) {
@@ -177,7 +182,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         attenuation = attenuationPerPeriod.get(period);
                     }
                     if(attenuation.length == 0) {
-                        defaultAttenuation = dBToW(multiThread.computeCnossosAttenuation(scene.defaultCnossosParameters, cnossosPath));
+                        defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
+                                cnossosPath, ""));
                         attenuation = defaultAttenuation;
                     }
                     double[] levels = multiplicationArray(attenuation, periodEmission.emission);
@@ -207,8 +213,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     }
                 } else {
                     if(defaultAttenuation.length == 0) {
-                        defaultAttenuation = dBToW(multiThread.computeCnossosAttenuation(
-                                scene.defaultCnossosParameters, cnossosPath));
+                        defaultAttenuation = dBToW(AttenuationCnossos.computeCnossosAttenuation(
+                                scene.defaultCnossosParameters, cnossosPath, scene,
+                                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix));
                     }
                     ReceiverNoiseLevel receiverNoiseLevel =
                             new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
@@ -345,18 +352,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         if(!this.cnossosPaths.isEmpty()) {
             if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
                 // Push propagation rays
-                pushInStack(multiThread.resultsCache.rays, this.cnossosPaths);
-            } else if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_MEMORY
-                    && (dbSettings.getMaximumRaysOutputCount() == 0 ||
-                    multiThread.propagationPathsSize.get() < dbSettings.getMaximumRaysOutputCount())){
-                int newRaysSize = multiThread.propagationPathsSize.addAndGet(this.cnossosPaths.size());
-                if(dbSettings.getMaximumRaysOutputCount() > 0 && newRaysSize > dbSettings.getMaximumRaysOutputCount()) {
-                    // remove exceeded elements of the array
-                    this.cnossosPaths = this.cnossosPaths.subList(0,
-                            this.cnossosPaths.size() - Math.min( this.cnossosPaths.size(),
-                                    newRaysSize - dbSettings.getMaximumRaysOutputCount()));
-                }
-                multiThread.pathParameters.addAll(this.cnossosPaths);
+                pushInStack(multiThread.resultsCache.cnossosPaths, this.cnossosPaths);
             }
         }
         // Convert to dB then pushed cached entries for this receiver into multi-thread instance

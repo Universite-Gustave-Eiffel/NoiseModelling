@@ -22,7 +22,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
     Map<String, Integer> sourceFieldsCache = new HashMap<>();
     Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
 
-    //  For each source primary key give the map between period and source power spectrum hash value
+    //  For each source primary key give the map between period and source power spectrum values
     public Map<Long, ArrayList<PeriodEmission>> wjSources = new HashMap<>();
 
     public SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();

@@ -90,14 +90,14 @@ public class NoiseMapWriter implements Runnable {
     void processRaysStack(ConcurrentLinkedDeque<CnossosPath> stack) throws SQLException {
         StringBuilder query = new StringBuilder("INSERT INTO " + databaseParameters.raysTable +
                 "(the_geom , IDRECEIVER , IDSOURCE");
-        if(databaseParameters.exportProfileInRays) {
+        if(databaseParameters.exportCnossosPathWithAttenuation) {
             query.append(", GEOJSON");
         }
         if(databaseParameters.exportAttenuationMatrix) {
             query.append(", LEQ, PERIOD");
         }
         query.append(") VALUES (?, ?, ?");
-        if(databaseParameters.exportProfileInRays) {
+        if(databaseParameters.exportCnossosPathWithAttenuation) {
             query.append(", ?");
         }
         if(databaseParameters.exportAttenuationMatrix) {
@@ -121,7 +121,7 @@ public class NoiseMapWriter implements Runnable {
             ps.setObject(parameterIndex++, lineString);
             ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
             ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
-            if(databaseParameters.exportProfileInRays) {
+            if(databaseParameters.exportCnossosPathWithAttenuation) {
                 String geojson = "";
                 try {
                     geojson = row.profileAsJSON(databaseParameters.geojsonColumnSizeLimit);
@@ -322,7 +322,7 @@ public class NoiseMapWriter implements Runnable {
                     "geometry(LINESTRING Z,");
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
-            if(databaseParameters.exportProfileInRays) {
+            if(databaseParameters.exportCnossosPathWithAttenuation) {
                 sb.append(", GEOJSON VARCHAR");
             }
             if(databaseParameters.exportAttenuationMatrix) {
@@ -350,8 +350,8 @@ public class NoiseMapWriter implements Runnable {
             try {
                 if(!resultsCache.receiverLevels.isEmpty()) {
                     processStack(databaseParameters.receiversLevelTable, resultsCache.receiverLevels);
-                } else if(!resultsCache.rays.isEmpty()) {
-                    processRaysStack(resultsCache.rays);
+                } else if(!resultsCache.cnossosPaths.isEmpty()) {
+                    processRaysStack(resultsCache.cnossosPaths);
                 } else {
                     if(exitWhenDone.get()) {
                         break;

@@ -727,7 +727,7 @@ public class AttenuationComputeOutputCnossosTest {
         for(int i = 0; i < 100; i++) {
 
             //Out and computation settings
-            AttenuationComputeOutput propDataOut = new AttenuationOutputMultiThread(false, false, scene);
+            AttenuationOutputMultiThread propDataOut = new AttenuationOutputMultiThread(scene);
             scene.reflexionOrder = i;
             PathFinder computeRays = new PathFinder(scene);
             computeRays.setThreadCount(1);
@@ -739,7 +739,7 @@ public class AttenuationComputeOutputCnossosTest {
             // number of propagation paths between two walls = reflectionOrder * 2 + 1
             assertEquals(i * 2 + 1, propDataOut.cnossosPathCount.get());
 
-            double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.receiversAttenuationLevels.pop().levels);
+            double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.resultsCache.receiverLevels.pop().levels);
             if(i == 0) {
                 firstPowerAtReceiver = globalPowerAtReceiver;
             } else {

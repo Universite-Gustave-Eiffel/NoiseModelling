@@ -13,6 +13,7 @@ import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
@@ -53,7 +54,8 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     }
 
     private void processPath(String period, AttenuationCnossosParameters attenuationCnossosParameters, CnossosPath path) {
-        double[] aGlobalMeteo = multiThreadParent.computeCnossosAttenuation(attenuationCnossosParameters, path);
+        double[] aGlobalMeteo = AttenuationCnossos.computeCnossosAttenuation(attenuationCnossosParameters, path,
+                multiThreadParent.scene, multiThreadParent.exportAttenuationMatrix);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
             multiThreadParent.cnossosPathCount.addAndGet(1);
             if(keepRays) {

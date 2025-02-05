@@ -13,20 +13,23 @@ import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class is built on each new computation cell area. It will create for each thread (range of receivers) an instance
  * of AttenuationOutputSingleThread
  */
-public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
+public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public ResultsCache resultsCache = new ResultsCache();
     public SceneWithEmission sceneWithEmission;
     public NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
+    public AtomicLong cnossosPathCount = new AtomicLong();
 
     /**
      * Create NoiseMap constructor
@@ -36,8 +39,6 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
      */
     public AttenuationOutputMultiThread(SceneWithEmission inputData,
                                         ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
-        super(noiseMapDatabaseParameters.exportRaysMethod != NoiseMapDatabaseParameters.ExportRaysMethods.NONE, inputData);
-        this.exportAttenuationMatrix = noiseMapDatabaseParameters.exportAttenuationMatrix;
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
@@ -45,8 +46,7 @@ public class AttenuationOutputMultiThread extends AttenuationComputeOutput {
         this.aborted = aborted;
     }
 
-    public AttenuationOutputMultiThread(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithEmission sceneWithEmission) {
-        super(exportPaths, exportAttenuationMatrix, sceneWithEmission);
+    public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {
         this.sceneWithEmission = sceneWithEmission;
     }
 

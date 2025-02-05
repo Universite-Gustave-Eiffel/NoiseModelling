@@ -31,11 +31,14 @@ public class NoiseMapDatabaseParameters {
      */
     public int CSVProfilerWriteInterval = 60;
 
-    public boolean exportProfileInRays = false;
+    /**
+     * With attenuation export also the json of the related cnossos path, for debugging purpose
+     */
+    public boolean exportCnossosPathWithAttenuation = false;
     public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     public int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
 
-    public enum ExportRaysMethods {TO_RAYS_TABLE, TO_MEMORY, NONE}
+    public enum ExportRaysMethods {TO_RAYS_TABLE, NONE}
     public ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
     /** Cnossos revisions have multiple coefficients for road emission formulae
      * this parameter will be removed when the final version of Cnossos will be published
@@ -114,8 +117,8 @@ public class NoiseMapDatabaseParameters {
     }
 
 
-    public void setExportProfileInRays(boolean exportProfileInRays) {
-        this.exportProfileInRays = exportProfileInRays;
+    public void setExportCnossosPathWithAttenuation(boolean exportCnossosPathWithAttenuation) {
+        this.exportCnossosPathWithAttenuation = exportCnossosPathWithAttenuation;
     }
 
     public boolean isKeepAbsorption() {

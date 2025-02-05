@@ -60,6 +60,19 @@ public class Path {
         setSourceOrientation(cutProfile.getSource().orientation);
     }
 
+    public Path(Path other) {
+        this.cutProfile = other.cutProfile;
+        this.srSegment = other.srSegment;
+        this.pointList = other.pointList;
+        this.segmentList = other.segmentList;
+        this.favorable = other.favorable;
+        this.timePeriod = other.timePeriod;
+        this.sourceOrientation = other.sourceOrientation;
+        this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
+        this.gs = other.gs;
+        this.keepAbsorption = other.keepAbsorption;
+    }
+
     /**
      * 3D intersections points of the ray
      * @return
