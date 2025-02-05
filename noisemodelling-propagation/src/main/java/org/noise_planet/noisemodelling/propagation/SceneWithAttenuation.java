@@ -180,4 +180,12 @@ public class SceneWithAttenuation extends Scene {
         }
     }
 
+    @Override
+    public void clearSources() {
+        super.clearSources();
+        sourceEmissionAttenuation.clear();
+        sourceFieldNames.clear();
+        sourceGs.clear();
+        directionAttributes.clear();
+    }
 }

@@ -20,6 +20,8 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.io.WKTWriter;
+import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
@@ -55,45 +57,35 @@ public class NoiseMapByReceiverMakerTest {
             connection.close();
         }
     }
-//
-//    @Test
-//    public void testGroundSurface() throws Exception {
-//        try(Statement st = connection.createStatement()) {
-//            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
-//            st.execute(getRunScriptRes("scene_with_landcover.sql"));
-//            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
-//            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
-//            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-//            noiseMapByReceiverMaker.setSoundReflectionOrder(1);
-//            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
-//            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-//            noiseMapByReceiverMaker.setHeightField("HEIGHT");
-//            noiseMapByReceiverMaker.setSoilTableName("LAND_G");
-//            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-//            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
-//
-//            noiseMapByReceiverMaker.setComputeRaysOutFactory(new JDBCComputeRaysOut(false));
-//            noiseMapByReceiverMaker.setPropagationProcessDataFactory(new JDBCPropagationData());
-//
-//            Set<Long> receivers = new HashSet<>();
-//            noiseMapByReceiverMaker.setThreadCount(1);
-//            RootProgressVisitor progressVisitor = new RootProgressVisitor(noiseMapByReceiverMaker.getGridDim() * noiseMapByReceiverMaker.getGridDim(), true, 5);
-//            double expectedMaxArea = Math.pow(noiseMapByReceiverMaker.getGroundSurfaceSplitSideLength(), 2);
-//            for(int i=0; i < noiseMapByReceiverMaker.getGridDim(); i++) {
-//                for(int j=0; j < noiseMapByReceiverMaker.getGridDim(); j++) {
-//                    IComputePathsOut out = noiseMapByReceiverMaker.evaluateCell(connection, i, j, progressVisitor, receivers);
-//                    if(out instanceof Attenuation) {
-//                        Attenuation rout = (Attenuation) out;
-//                        for(GroundAbsorption soil : rout.inputData.profileBuilder.getGroundEffects()) {
-//                            assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
-//                        }
-//                    }
-//                }
-//            }
-//
-//        }
-//    }
-//
+
+    /**
+     * Check if ground surface are split according to {@link GridMapMaker#groundSurfaceSplitSideLength}
+     * @throws Exception
+     */
+    @Test
+    public void testGroundSurface() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.setSoilTableName("LAND_G");
+            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+
+            Set<Long> processedReceivers = new HashSet<>();
+            Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
+            double expectedMaxArea = Math.pow(noiseMapByReceiverMaker.getGroundSurfaceSplitSideLength(), 2);
+            assertFalse(populatedCells.isEmpty());
+            for (Map.Entry<CellIndex, Integer> indexIntegerEntry : populatedCells.entrySet()) {
+                SceneWithEmission scene = noiseMapByReceiverMaker.prepareCell(connection, indexIntegerEntry.getKey(), processedReceivers);
+                assertFalse(scene.profileBuilder.getGroundEffects().isEmpty());
+                for(GroundAbsorption soil : scene.profileBuilder.getGroundEffects()) {
+                    assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
+                }
+            }
+        }
+    }
+
 //    @Test
 //    public void testNoiseMapBuilding() throws Exception {
 //        try(Statement st = connection.createStatement()) {

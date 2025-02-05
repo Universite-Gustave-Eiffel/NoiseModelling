@@ -31,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
@@ -41,7 +42,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 /**
  * Process that run SQL query to feed tables
  */
-public class NoiseMapWriter implements Runnable {
+public class NoiseMapWriter implements Callable<Boolean> {
     static final int BATCH_MAX_SIZE = 500;
     static final int WRITER_CACHE = 65536;
     AtomicBoolean exitWhenDone;
@@ -52,7 +53,6 @@ public class NoiseMapWriter implements Runnable {
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;
     NoiseMapDatabaseParameters databaseParameters;
     ResultsCache resultsCache;
-    boolean started = false;
     Writer writer;
     int srid;
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
@@ -257,7 +257,7 @@ public class NoiseMapWriter implements Runnable {
             sb.append(" (IDRECEIVER bigint NOT NULL");
         }
         if(exportPeriod) {
-            sb.append(", PERIOD VARCHAR");
+            sb.append(", PERIOD VARCHAR NOT NULL");
         }
         if(databaseParameters.exportReceiverPosition) {
             sb.append(", THE_GEOM GEOMETRY(POINTZ,");
@@ -284,10 +284,20 @@ public class NoiseMapWriter implements Runnable {
      * @param tableName
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
+        boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
+                equals(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         if (databaseParameters.mergeSources) {
-            return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
+            if(!exportPeriod) {
+                return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER);";
+            } else {
+                return "ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER, PERIOD);";
+            }
         } else {
-            return "CREATE INDEX ON " + tableName + " (IDRECEIVER);";
+            if(!exportPeriod) {
+                return "CREATE INDEX ON " + tableName + " (IDRECEIVER, IDSOURCE);";
+            } else {
+                return "CREATE INDEX ON " + tableName + " (IDRECEIVER, IDSOURCE, PERIOD);";
+            }
         }
     }
 
@@ -346,7 +356,6 @@ public class NoiseMapWriter implements Runnable {
      */
     void mainLoop() throws SQLException, IOException {
         while (!aborted.get()) {
-            started = true;
             try {
                 if(!resultsCache.receiverLevels.isEmpty()) {
                     processStack(databaseParameters.receiversLevelTable, resultsCache.receiverLevels);
@@ -394,36 +403,26 @@ public class NoiseMapWriter implements Runnable {
      * Executes the SQL writing process.
      */
     @Override
-    public void run() {
+    public Boolean call() throws Exception {
         // Drop and create tables
         if(sqlFilePath == null) {
             try {
-                init();
                 mainLoop();
                 createKeys();
-            } catch (SQLException e) {
-                LOGGER.error("SQL Writer exception", e);
-                LOGGER.error(e.getLocalizedMessage(), e.getNextException());
+            } catch (Exception e) {
                 aborted.set(true);
-            } catch (Throwable e) {
-                LOGGER.error("Got exception on result writer, cancel calculation", e);
-                aborted.set(true);
+                throw e;
             }
         } else {
             try(OutputStreamWriter bw = getStream()) {
                 writer = bw;
-                init();
                 mainLoop();
                 createKeys();
-            } catch (SQLException e) {
-                LOGGER.error("SQL Writer exception", e);
-                LOGGER.error(e.getLocalizedMessage(), e.getNextException());
+            } catch (Exception e) {
                 aborted.set(true);
-            } catch (Throwable e) {
-                LOGGER.error("Got exception on result writer, cancel calculation", e);
-                aborted.set(true);
+                throw e;
             }
         }
-        // LOGGER.info("Exit TableWriter");
+        return true;
     }
 }

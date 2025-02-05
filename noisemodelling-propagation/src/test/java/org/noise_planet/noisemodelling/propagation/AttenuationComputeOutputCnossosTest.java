@@ -20,12 +20,15 @@ import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
 import static org.junit.jupiter.api.Assertions.*;
@@ -5572,6 +5575,409 @@ public class AttenuationComputeOutputCnossosTest {
             assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
             index = AttenuationCnossosParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);
+        }
+    }
+
+    /**
+     * Test identic rays : to the east, to the west
+     */
+    @Test
+    public void eastWestTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(10, -5),
+                        new Coordinate(20, -5),
+                        new Coordinate(20, 5),
+                        new Coordinate(10, 5)
+                }, 0.0)
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-10, -5),
+                        new Coordinate(-20, -5),
+                        new Coordinate(-20, 5),
+                        new Coordinate(-10, 5)
+                }, 0.0)
+                .finishFeeding();
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 2)));
+        scene.addReceiver(new Coordinate(30, 0, 2));
+        scene.addReceiver(new Coordinate(-30, 0, 2));
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        scene.defaultCnossosParameters = attData;
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+        SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
+    }
+
+    /**
+     * Test identic rays : to the east, to the west
+     */
+    @Test
+    public void northSouthTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, 10),
+                        new Coordinate(-5, 20),
+                        new Coordinate(5, 20),
+                        new Coordinate(5, 10)
+                }, 1.0)
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, -10 ),
+                        new Coordinate(-5, -20 ),
+                        new Coordinate(5, -20),
+                        new Coordinate(5, -10)
+                }, 1.0)
+                .finishFeeding();
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 2)));
+        scene.addReceiver(new Coordinate(0, 30, 2));
+        scene.addReceiver(new Coordinate(0, -30, 2));
+
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
+        SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
+    }
+
+    /**
+     * Test body-barrier effect
+     * NMPB08 – Railway Emission Model
+     * Programmers Guide
+     */
+    @Test
+    public void testBodyBarrier() {
+
+        GeometryFactory f = new GeometryFactory();
+
+        // Hard barrier
+        List<Double> alphas = Arrays.asList(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addWall(new Coordinate[]{
+                        new Coordinate(3, -100, 0),
+                        new Coordinate(3, 100, 0)
+                }, 2.5,alphas,1)
+                .finishFeeding();
+
+        //Propagation data building
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+
+        scene.addSource(f.createPoint(new Coordinate(0.5, 0, 0.)));
+        scene.addReceiver(new Coordinate(25, 0, 4));
+        scene.defaultGroundAttenuation = 1.0;
+        scene.reflexionOrder=1;
+        scene.maxSrcDist = 1000;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(true);
+        scene.setBodyBarrier(true);
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        scene.defaultCnossosParameters = attData;
+
+        //Run computation
+        AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true,
+                scene);
+
+        PathFinder computeRays0 = new PathFinder(scene);
+        computeRays0.setThreadCount(1);
+        computeRays0.run(propDataOut0);
+        double[] values0 = propDataOut0.receiversAttenuationLevels.pop().levels;
+
+        // Barrier, no interaction
+        scene.setBodyBarrier(false);
+        AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays1 = new PathFinder(scene);
+        computeRays1.setThreadCount(1);
+        computeRays1.run(propDataOut1);
+        double[] values1 = propDataOut1.receiversAttenuationLevels.pop().levels;
+
+        // Soft barrier (a=0.5)
+
+        alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+        scene.profileBuilder.processedWalls.get(0).setAlpha(alphas);
+        scene.reflexionOrder=1;
+        scene.maxSrcDist = 1000;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(true);
+        scene.setBodyBarrier(true);
+
+        AttenuationComputeOutput propDataOut2 = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays2 = new PathFinder(scene);
+        computeRays2.run(propDataOut2);
+        double[] values2 = propDataOut2.receiversAttenuationLevels.pop().levels;
+
+        // No barrier
+        scene.profileBuilder.processedWalls.get(0).p0.z = 0;
+        scene.profileBuilder.processedWalls.get(0).p1.z = 0;
+        scene.reflexionOrder=1;
+        scene.maxSrcDist = 1000;
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(true);
+        scene.setBodyBarrier(false);
+        AttenuationComputeOutput propDataOut3 = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays3 = new PathFinder(scene);
+        computeRays3.run(propDataOut3);
+        double[] values3 = propDataOut3.receiversAttenuationLevels.pop().levels;
+
+
+        double[] values0A = sumArray(values0, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values1A = sumArray(values1, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values2A = sumArray(values2, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double[] values3A = sumArray(values3, new double[]{-26.2,-16.1,-8.6,3.2,0,1.2,1.0,-1.1});
+        double r0A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values0A)));
+        double r1A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values1A)));
+        double r2A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values2A)));
+        double r3A = AcousticIndicatorsFunctions.wToDb(sumArray(AcousticIndicatorsFunctions.dBToW(values3A)));
+
+        assertEquals(19.2,r3A-r1A,0.5);
+        assertEquals(11.7,r0A-r1A,1);
+        assertEquals(6.6,r2A-r1A,1);
+    }
+
+    /**
+     * Test reflexion ray has contribution :
+     *
+     *   ------------------------------
+     *               /\
+     *              | R
+     *              | |
+     *              |/
+     *              S
+     */
+    @Test
+    public void testSimpleReflexion() {
+        //Profile building
+        GeometryFactory f = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addWall(new Coordinate[]{
+                        new Coordinate(-100, 40, 10),
+                        new Coordinate(100, 40, 10)
+                }, -1)
+                .finishFeeding();
+
+        //Propagation data building
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(30, -10, 2)));
+        scene.addReceiver(new Coordinate(30, 20, 2));
+        scene.setDefaultGroundAttenuation(0.0);
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        scene.defaultCnossosParameters = attData;
+
+        //Run computation
+        AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true, scene);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        scene.reflexionOrder=0;
+        pathFinder.run(propDataOut0);
+        double[] values0 = propDataOut0.receiversAttenuationLevels.pop().levels;
+
+        AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays1 = new PathFinder(scene);
+        computeRays1.setThreadCount(1);
+        scene.reflexionOrder=1;
+        computeRays1.run(propDataOut1);
+        double[] values1 = propDataOut1.receiversAttenuationLevels.pop().levels;
+        for (int i = 0; i < values0.length; i++) {
+            assertNotEquals(values0[i], values1[i], 0.01);
+        }
+    }
+
+    @Test
+    public void northSouthGroundTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addGroundEffect(-50, 50, -5, 5, 0.5)
+                .finishFeeding();
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 2)));
+        scene.addReceiver(new Coordinate(0, 30, 2));
+        scene.addReceiver(new Coordinate(0, -30, 2));
+
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
+        SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
+    }
+
+    @Test
+    public void eastWestGroundTest() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder
+                .addGroundEffect(-5, 5, -50, 50, 0.5)
+                .finishFeeding();
+
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 2)));
+        scene.addReceiver(new Coordinate(30, 0, 2));
+        scene.addReceiver(new Coordinate(-30, 0, 2));
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        scene.defaultCnossosParameters = attData;
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+        SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        assertEquals(s0.dp, s1.dp);
+        assertEquals(s0.testFormH, s1.testFormH);
+        assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
+    }
+
+    /**
+     * Check if favorable propagation condition is well processed on each direction provided in the wind rose
+     */
+    @Test
+    public void TestFavorableConditionAttenuationRose() {
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder();
+
+        builder.finishFeeding();
+
+        //Propagation data building
+        Vector3D northReceiver = new Vector3D(0, 100, 4);
+        List<Vector3D> receivers = new ArrayList<>();
+        receivers.add(northReceiver);
+        receivers.add(Orientation.rotate(new Orientation(45, 0, 0), northReceiver)); // NW
+        receivers.add(Orientation.rotate(new Orientation(90, 0, 0), northReceiver)); // W
+        receivers.add(Orientation.rotate(new Orientation(135, 0, 0), northReceiver)); // SW
+        receivers.add(Orientation.rotate(new Orientation(180, 0, 0), northReceiver)); // S
+        receivers.add(Orientation.rotate(new Orientation(225, 0, 0), northReceiver)); // SE
+        receivers.add(Orientation.rotate(new Orientation(270, 0, 0), northReceiver)); // E
+        receivers.add(Orientation.rotate(new Orientation(315, 0, 0), northReceiver)); // NE
+        GeometryFactory gf = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(builder);
+        scene.addSource(gf.createPoint(new Coordinate(0, 0, 4)));
+        scene.setDefaultGroundAttenuation(0.5);
+        scene.setComputeHorizontalDiffraction(true);
+        scene.reflexionOrder=1;
+        scene.maxSrcDist = 1500;
+        for(Vector3D receiver : receivers) {
+            scene.addReceiver(new Coordinate(receiver.getX(), receiver.getY(), receiver.getZ()));
+        }
+
+        double[][] windRoseTest = new double[receivers.size()][];
+        // generate favorable condition for each direction
+        for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
+            windRoseTest[idReceiver] = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length];
+            double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
+            Arrays.fill(windRoseTest[idReceiver], 1);
+            int roseIndex = AttenuationCnossosParameters.getRoseIndex(angle);
+            windRoseTest[idReceiver][roseIndex] = 0.5;
+        }
+        for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
+            double[] favorableConditionDirections = windRoseTest[idReceiver];
+            //Propagation process path data building
+            AttenuationCnossosParameters attData = scene.defaultCnossosParameters;
+            attData.setHumidity(HUMIDITY);
+            attData.setTemperature(TEMPERATURE);
+            attData.setWindRose(favorableConditionDirections);
+
+            //Out and computation settings
+            AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+            PathFinder pathFinder = new PathFinder(scene);
+            pathFinder.setThreadCount(1);
+            pathFinder.run(propDataOut);
+
+            int maxPowerReceiverIndex = -1;
+            double maxGlobalValue = Double.NEGATIVE_INFINITY;
+            for (ReceiverNoiseLevel v : propDataOut.getVerticesSoundLevel()) {
+                double globalValue = AcousticIndicatorsFunctions.sumDbArray(v.levels);
+                if (globalValue > maxGlobalValue) {
+                    maxGlobalValue = globalValue;
+                    maxPowerReceiverIndex = v.receiver.receiverIndex;
+                }
+            }
+            assertEquals(idReceiver, maxPowerReceiverIndex);
         }
     }
 

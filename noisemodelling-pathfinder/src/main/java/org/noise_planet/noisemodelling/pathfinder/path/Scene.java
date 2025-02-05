@@ -170,6 +170,12 @@ public class Scene {
         this.defaultGroundAttenuation = gS;
     }
 
+    public void clearSources() {
+        sourceGeometries.clear();
+        sourceOrientation.clear();
+        sourcesPk.clear();
+        sourcesIndex = new QueryRTree();
+    }
 }
 
 

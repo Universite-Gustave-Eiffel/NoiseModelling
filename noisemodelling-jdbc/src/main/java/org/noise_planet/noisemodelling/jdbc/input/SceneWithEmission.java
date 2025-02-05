@@ -19,7 +19,6 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  */
 public class SceneWithEmission extends SceneWithAttenuation {
     /** Old style DEN columns traffic period  */
-    Map<String, Integer> sourceFieldsCache = new HashMap<>();
     Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
 
     //  For each source primary key give the map between period and source power spectrum values
@@ -41,7 +40,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
     public void processTrafficFlowDEN(Long pk, SpatialResultSet rs) throws SQLException {
         // Source table PK, GEOM, LV_D, LV_E, LV_N ...
-        double[][] lw = EmissionTableGenerator.computeLw(rs, sceneDatabaseInputSettings.coefficientVersion, sourceFieldsCache);
+        double[][] lw = EmissionTableGenerator.computeLw(rs, sceneDatabaseInputSettings.coefficientVersion, sourceFieldNames);
         // Will generate D E N and DEN emission
         for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
             addSourceEmission(pk, EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()], lw[period.ordinal()]);
@@ -144,6 +143,13 @@ public class SceneWithEmission extends SceneWithAttenuation {
             wjSources.put(sourcePrimaryKey, sourceEmissions);
         }
         sourceEmissions.add(new PeriodEmission(period, wj));
+    }
+
+    @Override
+    public void clearSources() {
+        super.clearSources();
+        sourceEmissionFieldsCache.clear();
+        wjSources.clear();
     }
 
     public static class PeriodEmission {
