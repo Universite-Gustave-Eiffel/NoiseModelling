@@ -13,6 +13,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
@@ -57,7 +58,7 @@ public class RegressionTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
                     "LW_ROADS", "RECEIVERS");
 
-            noiseMapByReceiverMaker.sceneDatabaseInputSettings.setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+            noiseMapByReceiverMaker.sceneDatabaseInputSettings.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
 
             noiseMapByReceiverMaker.setMaximumPropagationDistance(500.0);
             noiseMapByReceiverMaker.setSoundReflectionOrder(1);

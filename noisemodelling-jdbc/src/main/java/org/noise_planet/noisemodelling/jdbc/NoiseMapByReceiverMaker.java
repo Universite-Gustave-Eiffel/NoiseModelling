@@ -20,6 +20,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
+import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
@@ -53,7 +54,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     private int threadCount = 0;
     private ProfilerThread profilerThread;
 
-    SceneWithEmission.SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneWithEmission.SceneDatabaseInputSettings();
+    SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
     /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
 
@@ -81,11 +82,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
 
-    public SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE getInputMode() {
+    public SceneDatabaseInputSettings.INPUT_MODE getInputMode() {
         return sceneDatabaseInputSettings.getInputMode();
     }
 
-    public void setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE inputMode) {
+    public void setInputMode(SceneDatabaseInputSettings.INPUT_MODE inputMode) {
         sceneDatabaseInputSettings.setInputMode(inputMode);
     }
 
@@ -109,7 +110,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         sceneDatabaseInputSettings.setLwFrequencyPrepend(lwFrequencyPrepend);
     }
 
-    public SceneWithEmission.SceneDatabaseInputSettings getSceneInputSettings() {
+    public SceneDatabaseInputSettings getSceneInputSettings() {
         return sceneDatabaseInputSettings;
     }
 

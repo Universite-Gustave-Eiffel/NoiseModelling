@@ -33,8 +33,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  */
 public class EmissionTableGenerator {
     public static final List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-    public enum STANDARD_PERIOD {DAY, EVENING, NIGHT, DAY_EVENING_NIGHT}
-    public static final String[] STANDARD_PERIOD_VALUE = new String[] {"D", "E", "N", "DEN"};
+    public enum STANDARD_PERIOD {DAY, EVENING, NIGHT}
+    public static final String[] STANDARD_PERIOD_VALUE = new String[] {"D", "E", "N"};
 
     public static final double DAY_RATIO = 12. / 24.;
     public static final double EVENING_RATIO = 4. / 24. * dBToW(5.0);
@@ -188,7 +188,7 @@ public class EmissionTableGenerator {
      * @param rs Result set on a road record
      * @param coefficientVersion Cnossos coefficient version  (1 = 2015, 2 = 2020)
      * @param sourceFieldsCache SQL Fields cache
-     * @return a two-dimensional array containing the sound levels (Ld, Le, Ln, Lden) for each frequency level.
+     * @return a two-dimensional array containing the sound levels (Ld, Le, Ln) for each frequency level.
      * @throws SQLException Exception while evaluating the lw
      */
     public static double[][] computeLw(SpatialResultSet rs, int coefficientVersion, Map<String, Integer> sourceFieldsCache) throws SQLException {
@@ -202,11 +202,7 @@ public class EmissionTableGenerator {
         // Night
         double[] ln = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_N", slope, coefficientVersion, sourceFieldsCache));
 
-        double[] lden;
-        lden = AcousticIndicatorsFunctions.multiplicationArray(ld, DAY_RATIO);
-        lden = sumArray(lden, AcousticIndicatorsFunctions.multiplicationArray(le, EVENING_RATIO));
-        lden = sumArray(lden,AcousticIndicatorsFunctions.multiplicationArray(ln, NIGHT_RATIO));
-        return new double[][] {ld, le, ln, lden};
+        return new double[][] {ld, le, ln};
     }
 
     public static double getSlope(SpatialResultSet rs) {

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -60,7 +61,7 @@ public class SceneWithEmissionTest {
         NoiseMapDatabaseParameters parameters = noiseMap.getNoiseMapDatabaseParameters();
         parameters.mergeSources = false;
         parameters.maximumError = maxError;
-        noiseMap.setInputMode(SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         // Building height field name
         noiseMap.setHeightField("HEIGHT");

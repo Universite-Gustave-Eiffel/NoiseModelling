@@ -1,3 +1,11 @@
+/**
+ * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and education, as well as by experts in a professional use.
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ * <p>
+ * Official webpage : http://noise-planet.org/noisemodelling.html
+ * Contact: contact@noise-planet.org
+ */
 package org.noise_planet.noisemodelling.jdbc.input;
 
 import org.h2gis.utilities.*;
@@ -75,7 +83,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.PropagationPr
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
-        if(noiseMapByReceiverMaker.getSceneInputSettings().inputMode == SceneWithEmission.SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
+        if(noiseMapByReceiverMaker.getSceneInputSettings().inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());

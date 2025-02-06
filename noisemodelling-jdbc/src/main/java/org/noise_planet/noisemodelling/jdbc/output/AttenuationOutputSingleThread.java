@@ -10,7 +10,9 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
+import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
+import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
@@ -353,12 +355,30 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
         }
         // Convert to dB then pushed cached entries for this receiver into multi-thread instance
+        SceneDatabaseInputSettings.INPUT_MODE inputMode =
+                multiThread.sceneWithEmission.sceneDatabaseInputSettings.getInputMode();
+        boolean computeLden = inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) ||
+                inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
             TimePeriodParameters periodParameters = periodParametersEntry.getValue();
             for (Map.Entry<String, double[]> levelsAtPeriod : periodParameters.levelsPerPeriod.entrySet()) {
                 pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
                         receiver, levelsAtPeriod.getKey(),
                         AcousticIndicatorsFunctions.wToDb(levelsAtPeriod.getValue())));
+            }
+            if(computeLden) {
+                double[] lden = new double[0];
+                for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
+                    double[] levels = periodParameters.levelsPerPeriod.getOrDefault(
+                            EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()], new double[0]);
+                    // Apply period gain
+                    lden = AcousticIndicatorsFunctions.sumArray(lden,
+                            AcousticIndicatorsFunctions.multiplicationArray(levels,
+                                    EmissionTableGenerator.RATIOS[period.ordinal()]));
+                }
+                pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
+                        receiver, "DEN",
+                        AcousticIndicatorsFunctions.wToDb(lden)));
             }
         }
         receiverAttenuationList.clear();
