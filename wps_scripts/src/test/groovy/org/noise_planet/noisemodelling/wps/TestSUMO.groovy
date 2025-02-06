@@ -45,14 +45,14 @@ class TestSUMO extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/buildings_nm_ready_pop_heights.shp").getPath() ,
-                 "inputSRID": "32635",
+                ["pathFile" :  TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/buildings_nm_ready.shp").getPath() ,
+                 "inputSRID": "32633",
                  "tableName": "buildings"])
 
         // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("Dynamic/receivers_python_method0_50m_pop.shp").getPath() ,
-                 "inputSRID": "32635",
+                ["pathFile" : TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/receivers_python_method1_5m.shp").getPath() ,
+                 "inputSRID": "32633",
                  "tableName": "receivers"])
 
         // Set the height of the receivers
@@ -63,25 +63,25 @@ class TestSUMO extends JdbcTestCase {
 
         // Import the road network
         new Import_File().exec(connection,
-                ["pathFile" :TestDatabaseManager.getResource("Dynamic/network_tartu_32635_.geojson").getPath() ,
-                 "inputSRID": "32635",
-                 "tableName": "network_tartu"])
+                ["pathFile" :TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/roads_merged.geojson").getPath() ,
+                 "inputSRID": "32633",
+                 "tableName": "network_stockholm"])
 
         // (optional) Add a primary key to the road network
         new Add_Primary_Key().exec(connection,
                 ["pkName" :"PK",
-                 "tableName": "network_tartu"])
+                 "tableName": "network_stockholm"])
 
         // Import the vehicles trajectories
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("Dynamic/SUMO.geojson").getPath() ,
-                 "inputSRID": "32635",
+                ["pathFile" : TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/Hornsgatan/synthetic_traffic_SUMO/syntatic/high/fcd_output_32633.geojson").getPath() ,
+                 "inputSRID": "32633",
                  "tableName": "vehicle"])
 
         // Create point sources from the network every 10 meters. This point source will be used to compute the noise attenuation level from them to each receiver.
         // The created table will be named SOURCES_0DB
         new Point_Source_0dB_From_Network().exec(connection,
-                ["tableNetwork": "network_tartu",
+                ["tableNetwork": "network_stockholm",
                  "gridStep" : 10
                 ])
 
