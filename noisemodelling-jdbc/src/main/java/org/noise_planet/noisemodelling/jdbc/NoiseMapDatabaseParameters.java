@@ -18,6 +18,7 @@ import java.io.File;
  */
 public class NoiseMapDatabaseParameters {
     public boolean exportAttenuationMatrix;
+    public static final String DEFAULT_RECEIVERS_LEVEL_TABLE_NAME = "RECEIVERS_LEVEL";
 
     public NoiseMapDatabaseParameters() {
     }
@@ -59,7 +60,7 @@ public class NoiseMapDatabaseParameters {
 
     public boolean mergeSources = true;
 
-    public String receiversLevelTable = "RECEIVERS_LEVEL";
+    public String receiversLevelTable = DEFAULT_RECEIVERS_LEVEL_TABLE_NAME;
     public String raysTable = "RAYS";
 
     public File sqlOutputFile;
