@@ -126,7 +126,7 @@ public class NoiseMapByReceiverMakerTest {
         values.append(" DIR_ID");
         AttenuationCnossosParameters data = new AttenuationCnossosParameters(false);
         for(String period : new String[] {"D", "E", "N"}) {
-            for (int freq : data.freq_lvl) {
+            for (int freq : data.getFrequencies()) {
                 String fieldName = "LW" + period + freq;
                 sb.append(", ");
                 sb.append(fieldName);
@@ -171,7 +171,7 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            try(ResultSet rs = st.executeQuery("SELECT HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT LW63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
                 assertTrue(rs.next());
                 assertEquals(73.3, rs.getDouble(1), 0.1);
                 assertTrue(rs.next());
@@ -226,7 +226,7 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, LW63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 assertEquals(68.3, rs.getDouble(2), 1);

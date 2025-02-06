@@ -57,6 +57,7 @@ public class SceneWithAttenuation extends Scene {
 
     public SceneWithAttenuation(ProfileBuilder profileBuilder) {
         super(profileBuilder);
+        defaultCnossosParameters.setFrequencies(profileBuilder.frequencyArray);
     }
 
     public SceneWithAttenuation() {

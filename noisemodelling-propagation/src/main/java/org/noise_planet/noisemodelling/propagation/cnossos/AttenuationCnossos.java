@@ -51,10 +51,10 @@ public class AttenuationCnossos {
      * @return double list with the value of DeltaDif
      */
     public static double[] getDeltaDif(SegmentPath srpath, AttenuationCnossosParameters data) {
-        double[] DeltaDif = new double[data.freq_lvl.size()];
+        double[] DeltaDif = new double[data.getFrequencies().size()];
         double cprime;
 
-        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+        for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
             double Ch = 1; // Eq 2.5.21
             if (srpath.eLength > 0.3) {
                 double gammaPart = pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
@@ -108,12 +108,12 @@ public class AttenuationCnossos {
      */
     public static double[] getAGroundCore(CnossosPath pathParameters, SegmentPath segmentPath, AttenuationCnossosParameters data) {
 
-        double[] aGround = new double[data.freq_lvl.size()];
+        double[] aGround = new double[data.getFrequencies().size()];
         double aGroundMin;
         double AGround;
 
-        for(int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
-            int fm = data.freq_lvl.get(idfreq);
+        for(int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
+            int fm = data.getFrequencies().get(idfreq);
             double gw = segmentPath.gw;
             double dp = segmentPath.dp;
 
@@ -199,11 +199,11 @@ public class AttenuationCnossos {
      * @return list double with the values of ARef
      */
     private static double[] getARef(CnossosPath pathParameters, AttenuationCnossosParameters data) {
-        double[] aRef = new double[data.freq_lvl.size()];
+        double[] aRef = new double[data.getFrequencies().size()];
         Arrays.fill(aRef, 0.0);
         for (PointPath pointPath : pathParameters.getPointList()) {
             if(pointPath.type.equals(REFL)) {
-                for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
+                for (int idf = 0; idf < data.getFrequencies().size(); idf++) {
                     List<Double> alpha = pointPath.alphaWall;
                     if (alpha != null && !alpha.isEmpty()) {
                         aRef[idf] += 10 * log10(1 - alpha.get(idf));
@@ -245,7 +245,7 @@ public class AttenuationCnossos {
                 aGroundMin = -3;
             }
 
-            double[] aGround = new double[data.freq_lvl.size()];
+            double[] aGround = new double[data.getFrequencies().size()];
             Arrays.fill(aGround, aGroundMin);
 
             //For testing purpose
@@ -274,7 +274,7 @@ public class AttenuationCnossos {
         List<SegmentPath> segments = pathParameters.getSegmentList();
 
         double[] aGround;
-        double[] aDif = new double[data.freq_lvl.size()];
+        double[] aDif = new double[data.getFrequencies().size()];
 
         double[] aBoundary;
 
@@ -290,13 +290,13 @@ public class AttenuationCnossos {
         List<Integer> noDifBands = new ArrayList<>();
         double deltaD = srPath.d - (segments.get(0).d + segments.get(1).dp);
         double deltaDPrime = -srPath.dPrime + segments.get(0).dPrime + segments.get(1).dPrime;
-        for (int freq : data.freq_lvl) {
+        for (int freq : data.getFrequencies()) {
             double lambda = 340.0 / freq;
             if (deltaD > -lambda / 20) {
                 if (deltaD > (lambda / 4 - deltaDPrime)) {
-                    difBands.add(data.freq_lvl.indexOf(freq));
+                    difBands.add(data.getFrequencies().indexOf(freq));
                 } else {
-                    noDifBands.add(data.freq_lvl.indexOf(freq));
+                    noDifBands.add(data.getFrequencies().indexOf(freq));
                 }
             }
         }
@@ -328,8 +328,8 @@ public class AttenuationCnossos {
         segmentPath.get(segmentPath.size() - 1).gm = segmentPath.get(segmentPath.size() - 1).gPath;
         aGroundOR = aGround(segmentPath.get(segmentPath.size() - 1), pathParameters, data);
 
-        double[] deltaGroundSO = new double[data.freq_lvl.size()];
-        double[] deltaGroundOR = new double[data.freq_lvl.size()];
+        double[] deltaGroundSO = new double[data.getFrequencies().size()];
+        double[] deltaGroundOR = new double[data.getFrequencies().size()];
         // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
         for (int idf : difBands) {
             // if Deltadif > 25: Deltadif = 25 dB for a diffraction on a horizontal edge and only on the term Deltadif which figures in the calculation of Adif. This upper bound shall not be applied in the Deltadif terms that intervene in the calculation of Deltaground, or for a diffraction on a vertical edge (lateral diffraction) in the case of industrial noise mapping
@@ -366,13 +366,13 @@ public class AttenuationCnossos {
      */
     public static void init(AttenuationCnossosParameters data) {
         // init
-        aGlobal = new double[data.freq_lvl.size()];
+        aGlobal = new double[data.getFrequencies().size()];
 
         // Init wave length for each frequency
-        freq_lambda = new double[data.freq_lvl.size()];
-        for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
-            if (data.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
+        freq_lambda = new double[data.getFrequencies().size()];
+        for (int idf = 0; idf < data.getFrequencies().size(); idf++) {
+            if (data.getFrequencies().get(idf) > 0) {
+                freq_lambda[idf] = data.getCelerity() / data.getFrequencies().get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }
@@ -386,7 +386,7 @@ public class AttenuationCnossos {
      * @return list double with the values of ADiv
      */
     public static double[] aDiv(CnossosPath pathParameters, AttenuationCnossosParameters data) {
-        double[] aDiv = new double[data.freq_lvl.size()];
+        double[] aDiv = new double[data.getFrequencies().size()];
         long difVPointCount = pathParameters.getPointList().stream().
                 filter(pointPath -> pointPath.type.equals(DIFV)).count();
         Arrays.fill(aDiv, getADiv(difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc));
@@ -428,15 +428,15 @@ public class AttenuationCnossos {
      */
     public static double[] evaluate(CnossosPath pathParameters, AttenuationCnossosParameters data) {
         // init
-        aGlobal = new double[data.freq_lvl.size()];
+        aGlobal = new double[data.getFrequencies().size()];
         double[] aBoundary;
         double[] aRef;
 
         // Init wave length for each frequency
-        freq_lambda = new double[data.freq_lvl.size()];
-        for (int idf = 0; idf < data.freq_lvl.size(); idf++) {
-            if (data.freq_lvl.get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / data.freq_lvl.get(idf);
+        freq_lambda = new double[data.getFrequencies().size()];
+        for (int idf = 0; idf < data.getFrequencies().size(); idf++) {
+            if (data.getFrequencies().get(idf) > 0) {
+                freq_lambda[idf] = data.getCelerity() / data.getFrequencies().get(idf);
             } else {
                 freq_lambda[idf] = 1;
             }
@@ -462,7 +462,7 @@ public class AttenuationCnossos {
         // reflections
         aRef = getARef(pathParameters, data);
 
-        for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+        for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
             // atm
             double aAtm;
 
@@ -501,17 +501,17 @@ public class AttenuationCnossos {
      * @return
      */
     public static double[] aBoundary(CnossosPath path, AttenuationCnossosParameters data) {
-        double[] aGround = new double[data.freq_lvl.size()];
-        double[] aDif = new double[data.freq_lvl.size()];
+        double[] aGround = new double[data.getFrequencies().size()];
+        double[] aDif = new double[data.getFrequencies().size()];
         List<PointPath> diffPts = path.getPointList().stream().
                 filter(pointPath -> pointPath.type.equals(DIFH_RCRIT) || pointPath.type.equals(DIFH)
                         || pointPath.type.equals(DIFV)).collect(Collectors.toList());
-        path.aBoundaryH.init(data.freq_lvl.size());
-        path.aBoundaryF.init(data.freq_lvl.size());
+        path.aBoundaryH.init(data.getFrequencies().size());
+        path.aBoundaryF.init(data.getFrequencies().size());
         // Without diff
-        for(int i=0; i<data.freq_lvl.size(); i++) {
+        for(int i=0; i<data.getFrequencies().size(); i++) {
             int finalI = i;
-            boolean isValidRCriterion = isValidRcrit(path, data.freq_lvl.get(finalI), path.isFavorable());
+            boolean isValidRCriterion = isValidRcrit(path, data.getFrequencies().get(finalI), path.isFavorable());
             PointPath first = diffPts.stream()
                     .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
                             (pp.type.equals(DIFH_RCRIT) && isValidRCriterion ))
@@ -544,8 +544,8 @@ public class AttenuationCnossos {
                 path.aDifH = aDif;
             }
         }
-        double[] aBoundary = new double[data.freq_lvl.size()];
-        for(int i=0; i<data.freq_lvl.size(); i++) {
+        double[] aBoundary = new double[data.getFrequencies().size()];
+        for(int i=0; i<data.getFrequencies().size(); i++) {
             aBoundary[i] = aGround[i] + aDif[i];
         }
         return aBoundary;
@@ -560,7 +560,7 @@ public class AttenuationCnossos {
      * @return list double with the values of deltaRetrodif
      */
     public static double[] deltaRetrodif(CnossosPath reflect, AttenuationCnossosParameters data) {
-        double[] retroDiff = new double[data.freq_lvl.size()];
+        double[] retroDiff = new double[data.getFrequencies().size()];
         Arrays.fill(retroDiff, 0.);
         final Coordinate originalS = reflect.getSRSegment().s;
         final Coordinate originalR = reflect.getSRSegment().r;
@@ -595,15 +595,15 @@ public class AttenuationCnossos {
                     double SpR = gamma * asin(s.distance(r) / gamma);
                     double deltaPrime = -(SpO + OpR - SpR);
                     if (e < 0.3) {
-                        for (int i = 0; i < data.freq_lvl.size(); i++) {
-                            double lambda = 340.0 / data.freq_lvl.get(i);
+                        for (int i = 0; i < data.getFrequencies().size(); i++) {
+                            double lambda = 340.0 / data.getFrequencies().get(i);
                             double testForm = 40.0 / lambda * deltaPrime;
                             double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
                             retroDiff[i] = dLRetro;
                         }
                     } else {
-                        for (int i = 0; i < data.freq_lvl.size(); i++) {
-                            double lambda = 340.0 / data.freq_lvl.get(i);
+                        for (int i = 0; i < data.getFrequencies().size(); i++) {
+                            double lambda = 340.0 / data.getFrequencies().get(i);
                             double Csecond = 1 + (5 * lambda / e * 5 * lambda / e) / 1 / 3 + (5 * lambda / e * 5 * lambda / e);
                             double testForm = 40.0 / lambda * Csecond * deltaPrime;
                             double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
@@ -614,8 +614,8 @@ public class AttenuationCnossos {
                 } else {
                     //2.5.36 altered with ISO/TR 17534-4:2020-11 Chapter  5.15
                     double deltaPrime = s.distance(r) - s.distance(p) - p.distance(r);
-                    for (int i = 0; i < data.freq_lvl.size(); i++) {
-                        double lambda = 340.0 / data.freq_lvl.get(i);
+                    for (int i = 0; i < data.getFrequencies().size(); i++) {
+                        double lambda = 340.0 / data.getFrequencies().get(i);
                         double testForm = 40.0 / lambda * deltaPrime;
                         double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
                         retroDiff[i] = dLRetro;
@@ -639,7 +639,7 @@ public class AttenuationCnossos {
         SegmentPath last = proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1);
 
         double ch = 1.;
-        double lambda = 340.0 / data.freq_lvl.get(i);
+        double lambda = 340.0 / data.getFrequencies().get(i);
         long difHCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFH)).count();
         long difVCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFV)).count();
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && difHCount <= 1) || (type.equals(DIFV) && difVCount <= 1) || proPathParameters.e <= 0.3 ? 1. :
@@ -742,7 +742,7 @@ public class AttenuationCnossos {
      * @return
      */
     private static double[] computeCfKValues(CnossosPath proPathParameters, SegmentPath path, AttenuationCnossosParameters data, int idFreq, boolean forceGPath) {
-        int fm = data.freq_lvl.get(idFreq);
+        int fm = data.getFrequencies().get(idFreq);
         double c = data.getCelerity();
         double dp = path.dp;
         double k = 2*PI*fm/c;
@@ -857,8 +857,8 @@ public class AttenuationCnossos {
         // Compute receiver/source attenuation
         if(exportAttenuationMatrix) {
             proPathParameters.keepAbsorption = true;
-            proPathParameters.groundAttenuation.init(data.freq_lvl.size());
-            proPathParameters.init(data.freq_lvl.size());
+            proPathParameters.groundAttenuation.init(data.getFrequencies().size());
+            proPathParameters.init(data.getFrequencies().size());
         }
         AttenuationCnossos.init(data);
         //ADiv computation
@@ -874,9 +874,9 @@ public class AttenuationCnossos {
         double[] aRetroDiff;
         //ABoundary computation
         double[] aBoundary;
-        double[] aGlobalMeteoHom = new double[data.freq_lvl.size()];
-        double[] aGlobalMeteoFav = new double[data.freq_lvl.size()];
-        double[] deltaBodyScreen = new double[data.freq_lvl.size()];
+        double[] aGlobalMeteoHom = new double[data.getFrequencies().size()];
+        double[] aGlobalMeteoFav = new double[data.getFrequencies().size()];
+        double[] deltaBodyScreen = new double[data.getFrequencies().size()];
 
         List<PointPath> ptList = proPathParameters.getPointList();
 
@@ -890,13 +890,13 @@ public class AttenuationCnossos {
 
                 int n = 3;
                 Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
-                double[][] deltaGeo = new double[n+1][data.freq_lvl.size()];
-                double[][] deltaAbs = new double[n+1][data.freq_lvl.size()];
-                double[][] deltaDif = new double[n+1][data.freq_lvl.size()];
-                double[][] deltaRef = new double[n+1][data.freq_lvl.size()];
-                double[][] deltaRetroDifi = new double[n+1][data.freq_lvl.size()];
-                double[][] deltaRetroDif = new double[n+1][data.freq_lvl.size()];
-                double[] deltaL = new double[data.freq_lvl.size()];
+                double[][] deltaGeo = new double[n+1][data.getFrequencies().size()];
+                double[][] deltaAbs = new double[n+1][data.getFrequencies().size()];
+                double[][] deltaDif = new double[n+1][data.getFrequencies().size()];
+                double[][] deltaRef = new double[n+1][data.getFrequencies().size()];
+                double[][] deltaRetroDifi = new double[n+1][data.getFrequencies().size()];
+                double[][] deltaRetroDif = new double[n+1][data.getFrequencies().size()];
+                double[] deltaL = new double[data.getFrequencies().size()];
                 Arrays.fill(deltaL, dBToW(0.0));
 
                 double db = pDif.coordinate.x;
@@ -910,12 +910,12 @@ public class AttenuationCnossos {
                 double hr = ptList.get(ptList.size()-1).altitude + ptList.get(ptList.size()-1).coordinate.y-h0;
                 double[] r = new double[4];
                 if (db<5*hb) {
-                    for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+                    for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
                         if (pDif.alphaWall.get(idfreq)<0.8){
 
                             double dif0 =0 ;
                             double ch = 1.;
-                            double lambda = 340.0 / data.freq_lvl.get(idfreq);
+                            double lambda = 340.0 / data.getFrequencies().get(idfreq);
                             double hi = hs;
                             double cSecond = 1;
 
@@ -995,7 +995,7 @@ public class AttenuationCnossos {
 
             aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
             aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
-            for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+            for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
                 aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
             }
             //For testing purpose
@@ -1010,7 +1010,7 @@ public class AttenuationCnossos {
             proPathParameters.setFavorable(true);
             aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
             aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
-            for (int idfreq = 0; idfreq < data.freq_lvl.size(); idfreq++) {
+            for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
                 aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
             }
             //For testing purpose

@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class NoiseMapByReceiverMaker extends GridMapMaker {
     private final String receiverTableName;
-    private PropagationProcessDataFactory propagationProcessDataFactory = new DefaultTableLoader();
+    private TableLoader tableLoader = new DefaultTableLoader();
     /** Tell table writer thread to empty current stacks then stop waiting for new data */
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     /** If true, all processing are aborted and all threads will be shutdown */
@@ -162,17 +162,17 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
 
     /**
      * Do not call this method after {@link #initialize(Connection, ProgressVisitor)} has been called
-     * @param propagationProcessDataFactory Object that generate scene for each sub-cell using database data
+     * @param tableLoader Object that generate scene for each sub-cell using database data
      */
-    public void setPropagationProcessDataFactory(PropagationProcessDataFactory propagationProcessDataFactory) {
-        this.propagationProcessDataFactory = propagationProcessDataFactory;
+    public void setPropagationProcessDataFactory(TableLoader tableLoader) {
+        this.tableLoader = tableLoader;
     }
 
     /**
      * @return Object that generate scene for each sub-cell using database data
      */
-    public PropagationProcessDataFactory getPropagationProcessDataFactory() {
-        return propagationProcessDataFactory;
+    public TableLoader getPropagationProcessDataFactory() {
+        return tableLoader;
     }
 
     public int getThreadCount() {
@@ -204,7 +204,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                     roundWKTWriter.write(geometryFactory.toGeometry(cellEnvelope)));
         }
 
-        return propagationProcessDataFactory.create(connection, cellIndex, skipReceivers);
+        return tableLoader.create(connection, cellIndex, skipReceivers);
     }
 
     /**
@@ -313,6 +313,13 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
+     * @return Class used to load tables for input data
+     */
+    public TableLoader getTableLoader() {
+        return tableLoader;
+    }
+
+    /**
      * Initializes the noise map computation process.
      * @param connection Active connection
      * @param progression
@@ -321,7 +328,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     @Override
     public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
         super.initialize(connection, progression);
-        propagationProcessDataFactory.initialize(connection, this);
+        tableLoader.initialize(connection, this);
         computeRaysOutFactory.initialize(connection, this);
     }
 
@@ -356,7 +363,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /**
      * A factory interface for initializing input propagation process data for noise map computation.
      */
-    public interface PropagationProcessDataFactory {
+    public interface TableLoader {
 
         /**
          * Called only once when the settings are set.

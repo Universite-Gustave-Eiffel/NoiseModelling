@@ -8,11 +8,17 @@
  */
 package org.noise_planet.noisemodelling.jdbc.input;
 
+import org.h2gis.api.ProgressVisitor;
+
+import java.sql.Connection;
+
 /**
  * SceneWithEmission will read table according to this settings
  */
 public class SceneDatabaseInputSettings {
     public enum INPUT_MODE {
+        /** Guess input mode at {@link org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker.TableLoader#initialize(Connection, ProgressVisitor)} step */
+        INPUT_MODE_GUESS,
         /** Read traffic from geometry source table */
         INPUT_MODE_TRAFFIC_FLOW_DEN,
         /** Read source emission noise level limited to DEN periods from source geometry table */
@@ -24,7 +30,7 @@ public class SceneDatabaseInputSettings {
         /** Compute only attenuation */
         INPUT_MODE_ATTENUATION }
 
-    INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_ATTENUATION;
+    INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_GUESS;
     String sourcesEmissionTableName = "";
     String sourceEmissionPrimaryKeyField = "IDSOURCE";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */

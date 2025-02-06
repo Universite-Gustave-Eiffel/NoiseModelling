@@ -206,7 +206,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             query.append(", ?"); // THE_GEOM
         }
         if (!databaseParameters.computeLAEQOnly) {
-            query.append(", ?".repeat(aWeightingArray.length)); // freq value
+            query.append(", ?".repeat(aWeightingArray.length)); // freq value LWXX
             query.append(", ?, ?);"); // laeq, leq
         }else{
             query.append(", ?);"); // laeq, leq
@@ -300,7 +300,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             sb.append(");");
         } else {
             for (int idfreq = 0; idfreq < aWeightingArray.length; idfreq++) {
-                sb.append(", HZ");
+                sb.append(", " + noiseMapByReceiverMaker.getLwFrequencyPrepend());
                 sb.append(frequencyArray.get(idfreq));
                 sb.append(" REAL");
             }

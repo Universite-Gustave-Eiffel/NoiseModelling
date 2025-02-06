@@ -5,6 +5,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -27,9 +28,9 @@ public class AttenuationParameters {
     public static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     public static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
     /** Frequency bands values, by third octave */
-    public List<Integer> freq_lvl;
-    public List<Double> freq_lvl_exact;
-    public List<Double> freq_lvl_a_weighting;
+    protected List<Integer> freq_lvl;
+    protected List<Double> freq_lvl_exact;
+    protected List<Double> freq_lvl_a_weighting;
     // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
@@ -97,7 +98,7 @@ public class AttenuationParameters {
         init();
     }
 
-    void init() {
+    protected void init() {
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
     }
 
@@ -107,23 +108,18 @@ public class AttenuationParameters {
 
     public void setFrequencies(List<Integer> freq_lvl) {
         this.freq_lvl = freq_lvl;
+        freq_lvl_exact = new ArrayList<>();
+        freq_lvl_a_weighting = new ArrayList<>();
+        ProfileBuilder.initializeFrequencyArrayFromReference(freq_lvl, freq_lvl_exact, freq_lvl_a_weighting);
+        init();
     }
 
     public List<Double> getFrequenciesExact() {
         return freq_lvl_exact;
     }
 
-    public void setFrequenciesExact(List<Double> freq_lvl_exact) {
-        this.freq_lvl_exact = freq_lvl_exact;
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
-    }
-
     public List<Double> getFrequenciesAWeighting() {
         return freq_lvl_a_weighting;
-    }
-
-    public void setFrequenciesAWeighting(List<Double> freq_lvl_a_weighting) {
-        this.freq_lvl_a_weighting = freq_lvl_a_weighting;
     }
 
     /**
