@@ -45,13 +45,13 @@ class TestSUMO extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/buildings_nm_ready.shp").getPath() ,
+                ["pathFile" :  "/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/buildings_nm_ready.shp",
                  "inputSRID": "32633",
                  "tableName": "buildings"])
 
         // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/receivers_python_method1_5m.shp").getPath() ,
+                ["pathFile" : "/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/receivers_python_method1_5m.shp",
                  "inputSRID": "32633",
                  "tableName": "receivers"])
 
@@ -63,7 +63,7 @@ class TestSUMO extends JdbcTestCase {
 
         // Import the road network
         new Import_File().exec(connection,
-                ["pathFile" :TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/roads_merged.geojson").getPath() ,
+                ["pathFile" :"/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/roads_merged.shp",
                  "inputSRID": "32633",
                  "tableName": "network_stockholm"])
 
@@ -74,7 +74,7 @@ class TestSUMO extends JdbcTestCase {
 
         // Import the vehicles trajectories
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/Hornsgatan/synthetic_traffic_SUMO/syntatic/high/fcd_output_32633.geojson").getPath() ,
+                ["pathFile" : "/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/Hornsgatan/synthetic_traffic_SUMO/syntatic/high/fcd_output_32633_selected.geojson" ,
                  "inputSRID": "32633",
                  "tableName": "vehicle"])
 
