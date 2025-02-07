@@ -13,6 +13,7 @@ import org.h2gis.functions.spatial.convert.ST_Force2D;
 import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
+import org.h2gis.utilities.TableUtilities;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.h2gis.utilities.jts_utils.Contouring;
@@ -42,14 +43,10 @@ public class IsoSurface {
     String pointTable = NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME;
     String triangleTable = "TRIANGLES";
     String outputTable = "CONTOURING_NOISE_MAP";
-    String pointTableField = "RECEIVERS";
+    String pointTableField = "LAEQ";
     List<Double> isoLevels;
     List<String> isoLabels;
     boolean smooth = true;
-    /**
-     * Value table has a PERIOD field. Produce one iso-surface map per PERIOD distinct values.
-     */
-    boolean aggregateByPeriod = false;
 
     boolean mergeTriangles = true;
     double smoothCoefficient = 1.0;
@@ -75,11 +72,11 @@ public class IsoSurface {
             // Symbols ( and [ are used for ordering legend in application
             // in ascii ( is 40 and [ is 91, numbers are between the two
             if (idiso == 0) {
-                this.isoLabels.add(String.format(Locale.ROOT, "%s)", format.format(lvl)));
+                this.isoLabels.add(String.format(Locale.ROOT, "-%s", format.format(lvl)));
             } else if(idiso < isoLevels.size() - 1){
                 this.isoLabels.add(String.format(Locale.ROOT, "%s-%s", format.format(isoLevels.get(idiso - 1)), format.format(lvl)));
             } else {
-                this.isoLabels.add(String.format(Locale.ROOT, "[%s", format.format(isoLevels.get(idiso - 1))));
+                this.isoLabels.add(String.format(Locale.ROOT, "%s+", format.format(isoLevels.get(idiso - 1))));
             }
         }
     }
@@ -371,8 +368,10 @@ public class IsoSurface {
      * @param connection jdbc connection (h2gis or postgis)
      * @param cellId area id (aggregate polygons by large area in order to avoid memory overloading)
      * @param polys Polygons by isolevel
+     * @param period Time period to output
+     * @param aggregateByPeriod Output time period in the fields
      */
-    void processCell(Connection connection, int cellId, Map<Short, ArrayList<Geometry>> polys, String period) throws SQLException {
+    void processCell(Connection connection, int cellId, Map<Short, ArrayList<Geometry>> polys, String period, boolean aggregateByPeriod) throws SQLException {
         // First step
         // Smoothing of polygons
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
@@ -519,7 +518,18 @@ public class IsoSurface {
             throw new SQLException(pointTable+" does not contain a primary key");
         }
         String pkField = fields.get(pk - 1);
+        createTable(connection, pkField);
+    }
+
+    /**
+     * @param connection
+     * @param pkField Field name in point table to join with Triangle table and point table
+     * @throws SQLException
+     */
+    public void createTable(Connection connection, String pkField) throws SQLException {
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
+        boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, "PERIOD");
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
@@ -534,7 +544,7 @@ public class IsoSurface {
             createTableQuery.append("CREATE TABLE ").append(TableLocation.parse(outputTable, dbType))
                     .append("(PK SERIAL");
             if(aggregateByPeriod) {
-                createTableQuery.append(", PERIOD");
+                createTableQuery.append(", PERIOD VARCHAR");
             }
             createTableQuery.append(", CELL_ID INTEGER, THE_GEOM ")
                     .append(geometryType).append(", ISOLVL INTEGER, ISOLABEL VARCHAR);");
@@ -550,7 +560,7 @@ public class IsoSurface {
                     .append(pointTable).append(" p3 WHERE t.PK_1 = p1.").append(pkField).append(" and t.PK_2 = p2.")
                     .append(pkField).append(" AND t.PK_3 = p3.").append(pkField);
             if(aggregateByPeriod) {
-                selectQuery.append(" AND PERIOD = ?");
+                selectQuery.append(" AND p1.PERIOD = ? AND p1.PERIOD=p2.period AND p1.period = p3.period");
             }
             selectQuery.append(" order by cell_id;");
 
@@ -563,6 +573,9 @@ public class IsoSurface {
                 periods.addAll(JDBCUtilities.getUniqueFieldValues(connection, pointTable, "PERIOD"));
             }
             for (String period : periods) {
+                if(aggregateByPeriod) {
+                    statement.setString(1, period);
+                }
                 // Cache iso for the current processing cell
                 Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
                 try (ResultSet rs = statement.executeQuery()) {
@@ -621,7 +634,7 @@ public class IsoSurface {
                         int cellId = rs.getInt(cell_id);
                         // Process polygons of last cell
                         if (cellId != lastCellId && lastCellId != -1) {
-                            processCell(connection, cellId, polyMap);
+                            processCell(connection, cellId, polyMap, period, aggregateByPeriod);
                             polyMap.clear();
                         }
                         lastCellId = cellId;
@@ -648,7 +661,7 @@ public class IsoSurface {
                     }
                 }
                 if (!polyMap.isEmpty()) {
-                    processCell(connection, lastCellId, polyMap);
+                    processCell(connection, lastCellId, polyMap, period, aggregateByPeriod);
                 }
             }
         }

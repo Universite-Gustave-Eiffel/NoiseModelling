@@ -11,10 +11,15 @@ package org.noise_planet.noisemodelling.pathfinder.utils;
 import java.util.Arrays;
 import java.util.Locale;
 
+/**
+ * A utility class providing acoustic indicator functions for computations,
+ * including conversions between decibels and energy, summation and multiplication of arrays,
+ * and operations specific to octave bands.
+ */
 public class AcousticIndicatorsFunctions {
 
     /**
-     * Convert Decbiel to Watt
+     * Convert Decibel to Watt
      * @param dB Sound power spectrum in dB (or dBa , no weighting is done here)
      * @return Watt value
      */
@@ -205,6 +210,7 @@ public class AcousticIndicatorsFunctions {
         return ret;
     }
 
+    
     public static double[] sumArray(double[] array, double number) {
         double[] ret = new double[array.length];
         for (int idfreq = 0; idfreq < array.length; idfreq++) {

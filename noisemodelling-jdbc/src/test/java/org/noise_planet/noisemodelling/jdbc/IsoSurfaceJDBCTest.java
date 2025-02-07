@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.utilities.JDBCUtilities;
@@ -18,9 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -34,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class IsoSurfaceJDBCTest {
 
     private Connection connection;
+    private static Logger LOGGER = LoggerFactory.getLogger(IsoSurfaceJDBCTest.class);
 
     @BeforeEach
     public void tearUp() throws Exception {
@@ -173,5 +179,53 @@ public class IsoSurfaceJDBCTest {
                 assertEquals(-1.37, rs.getDouble("MINZ"), 0.01);
             }
         }
+    }
+
+    @Test
+    public void testGenerateReceiversAndPeriodIsoCountours() throws SQLException {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'ROADS_TRAFF')", NoiseMapByReceiverMakerTest.class.getResource("roads_traff.shp").getFile()));
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("buildings.shp").getFile()));
+
+            int srid = org.h2gis.utilities.GeometryTableUtilities.getSRID(connection, "BUILDINGS");
+            IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
+            // Generate delaunay triangulation
+            DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
+            delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable());
+
+            // Create noise map for 4 periods
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_TRAFF", "RECEIVERS");
+
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
+
+            noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            LOGGER.info("Create iso surface");
+            // Create contouring noise map
+            isoSurface.setPointTable(noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
+            isoSurface.setPointTableField("LAEQ");
+            isoSurface.setSmooth(false);
+            isoSurface.setMergeTriangles(false);
+            isoSurface.createTable(connection, "IDRECEIVER");
+
+            List<String> columnNames = JDBCUtilities.getColumnNames(connection, isoSurface.getOutputTable());
+            assertTrue(columnNames.contains("PERIOD"));
+
+            List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, isoSurface.getOutputTable(),
+                    "PERIOD");
+            assertTrue(periods.contains("D"));
+            assertTrue(periods.contains("E"));
+            assertTrue(periods.contains("N"));
+            assertTrue(periods.contains("DEN"));
+        }
+
     }
 }

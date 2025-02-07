@@ -426,14 +426,16 @@ public abstract class GridMapMaker {
      */
     public void setMainEnvelope(Envelope mainEnvelope) {
         this.mainEnvelope = mainEnvelope;
-        // Split domain into 4^subdiv cells
-        // Compute subdivision level using envelope and maximum propagation distance
-        double greatestSideLength = mainEnvelope.maxExtent();
-        int subdivisionLevel = 0;
-        while(maximumPropagationDistance / (greatestSideLength / Math.pow(2, subdivisionLevel)) < MINIMAL_BUFFER_RATIO) {
-            subdivisionLevel++;
+        if(gridDim == 0) {
+            // Split domain into 4^subdiv cells
+            // Compute subdivision level using envelope and maximum propagation distance
+            double greatestSideLength = mainEnvelope.maxExtent();
+            int subdivisionLevel = 0;
+            while(maximumPropagationDistance / (greatestSideLength / Math.pow(2, subdivisionLevel)) < MINIMAL_BUFFER_RATIO) {
+                subdivisionLevel++;
+            }
+            gridDim = (int) Math.pow(2, subdivisionLevel);
         }
-        gridDim = (int) Math.pow(2, subdivisionLevel);
     }
 
     /**

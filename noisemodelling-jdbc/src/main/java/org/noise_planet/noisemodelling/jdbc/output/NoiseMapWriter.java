@@ -420,6 +420,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         // Set primary keys
         LOGGER.info("Write done, apply primary keys");
         processQuery(forgePkTable(databaseParameters.receiversLevelTable));
+        LOGGER.info("Primary keys applied");
     }
 
     /**

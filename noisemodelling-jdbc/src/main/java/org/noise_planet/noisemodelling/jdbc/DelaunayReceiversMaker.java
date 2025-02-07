@@ -10,6 +10,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -81,6 +82,31 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
+    /**
+     * Executes the Delaunay triangulation process for a grid of subdomains.
+     * Each subdomain is handled independently and includes the generation
+     * of receivers and triangles based on the given configuration.
+     *
+     * @param connection The database connection used to interact with the data.
+     * @param verticesTableName The name of the database table where the vertices will be stored.
+     * @param triangleTableName The name of the database table where the triangles will be stored.
+     * @throws SQLException Thrown if a database access error or other SQL-related error occurs.
+     */
+    public void run(Connection connection, String verticesTableName, String triangleTableName) throws SQLException {
+        initialize(connection, new EmptyProgressVisitor());
+
+        AtomicInteger pk = new AtomicInteger(0);
+        for(int i=0; i < getGridDim(); i++) {
+            for(int j=0; j < getGridDim(); j++) {
+                try {
+                    generateReceivers(connection, i, j, verticesTableName,
+                            triangleTableName, pk);
+                } catch (IOException | LayerDelaunayError ex) {
+                    throw new SQLException(ex);
+                }
+            }
+        }
+    }
     /**
      * @return When an exception occur, this folder with receiver the input data
      */
