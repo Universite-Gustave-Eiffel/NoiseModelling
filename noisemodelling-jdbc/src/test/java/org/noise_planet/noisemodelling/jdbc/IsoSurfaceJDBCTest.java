@@ -212,8 +212,8 @@ public class IsoSurfaceJDBCTest {
             // Create contouring noise map
             isoSurface.setPointTable(noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
             isoSurface.setPointTableField("LAEQ");
-            isoSurface.setSmooth(false);
-            isoSurface.setMergeTriangles(false);
+            isoSurface.setSmooth(false); // faster
+            isoSurface.setMergeTriangles(false); // faster
             isoSurface.createTable(connection, "IDRECEIVER");
 
             List<String> columnNames = JDBCUtilities.getColumnNames(connection, isoSurface.getOutputTable());

@@ -146,10 +146,10 @@ public class GenerateReferenceDeviation {
     private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, AttenuationComputeOutput actual, AttenuationComputeOutput actualWithoutLateral, double[] powerLevel) {
         double[] expectedLA = asArray(expectedValues.get("LA"));
         double[] expectedLAWithoutLateral = asArray(expectedValues.get("LA_WL"));
-        double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().value,
+        double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().levels,
                 A_WEIGHTING));
         double[] actualLAWithoutLateral = addArray(powerLevel,
-                addArray(actualWithoutLateral.receiversAttenuationLevels.getFirst().value,
+                addArray(actualWithoutLateral.receiversAttenuationLevels.getFirst().levels,
                 A_WEIGHTING));
         DeviationResult lADeviation = computeDeviation(expectedLA, actualLA);
         DeviationResult lADeviationWithoutLateral = computeDeviation(expectedLAWithoutLateral, actualLAWithoutLateral);
