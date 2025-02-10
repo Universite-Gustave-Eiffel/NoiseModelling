@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
 
 public class IsoSurfaceJDBCTest {
 
@@ -181,6 +182,28 @@ public class IsoSurfaceJDBCTest {
         }
     }
 
+
+    @Test
+    public void testNoiseMapBuilding() throws Exception {
+        try(Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
+            st.execute(getRunScriptRes("scene_with_landcover.sql"));
+            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
+            noisemap.setReceiverHasAbsoluteZCoordinates(false);
+            noisemap.setSourceHasAbsoluteZCoordinates(false);
+            noisemap.setHeightField("HEIGHT");
+            noisemap.initialize(connection, new EmptyProgressVisitor());
+
+            AtomicInteger pk = new AtomicInteger(0);
+            for(int i=0; i < noisemap.getGridDim(); i++) {
+                for(int j=0; j < noisemap.getGridDim(); j++) {
+                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
+                }
+            }
+            assertNotSame(0, pk.get());
+        }
+    }
+
     @Test
     public void testGenerateReceiversAndPeriodIsoCountours() throws SQLException {
         try(Statement st = connection.createStatement()) {
@@ -207,6 +230,14 @@ public class IsoSurfaceJDBCTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
 
             noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            int receiversRowCount = JDBCUtilities.getRowCount(connection, "RECEIVERS");
+
+            int resultRowCount = JDBCUtilities.getRowCount(connection,
+                    noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
+
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
 
             LOGGER.info("Create iso surface");
             // Create contouring noise map

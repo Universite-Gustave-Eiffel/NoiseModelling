@@ -178,6 +178,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         SceneWithEmission scene = new SceneWithEmission(profileBuilder, noiseMapByReceiverMaker.getSceneInputSettings());
         scene.setDirectionAttributes(directionAttributes);
         scene.cnossosParametersPerPeriod = cnossosParametersPerPeriod;
+        scene.periodSet.addAll(cnossosParametersPerPeriod.keySet());
+
 
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query

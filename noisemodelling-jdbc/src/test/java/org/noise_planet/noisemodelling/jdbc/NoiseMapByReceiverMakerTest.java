@@ -82,27 +82,6 @@ public class NoiseMapByReceiverMakerTest {
         }
     }
 
-    @Test
-    public void testNoiseMapBuilding() throws Exception {
-        try(Statement st = connection.createStatement()) {
-            st.execute(String.format("CALL SHPREAD('%s', 'LANDCOVER2000')", NoiseMapByReceiverMakerTest.class.getResource("landcover2000.shp").getFile()));
-            st.execute(getRunScriptRes("scene_with_landcover.sql"));
-            DelaunayReceiversMaker noisemap = new DelaunayReceiversMaker("BUILDINGS", "ROADS_GEOM");
-            noisemap.setReceiverHasAbsoluteZCoordinates(false);
-            noisemap.setSourceHasAbsoluteZCoordinates(false);
-            noisemap.setHeightField("HEIGHT");
-            noisemap.initialize(connection, new EmptyProgressVisitor());
-
-            AtomicInteger pk = new AtomicInteger(0);
-            for(int i=0; i < noisemap.getGridDim(); i++) {
-                for(int j=0; j < noisemap.getGridDim(); j++) {
-                    noisemap.generateReceivers(connection, i, j, "NM_RECEIVERS", "TRIANGLES", pk);
-                }
-            }
-            assertNotSame(0, pk.get());
-        }
-    }
-
     private static String createSource(Geometry source, double lvl, Orientation sourceOrientation, int directivityId) {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
         StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");

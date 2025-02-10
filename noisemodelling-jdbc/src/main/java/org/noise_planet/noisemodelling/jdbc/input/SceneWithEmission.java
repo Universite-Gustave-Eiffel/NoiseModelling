@@ -147,6 +147,9 @@ public class SceneWithEmission extends SceneWithAttenuation {
             wjSources.put(sourcePrimaryKey, sourceEmissions);
         }
         sourceEmissions.add(new PeriodEmission(period, wj));
+        if(!period.isEmpty()) {
+            periodSet.add(period);
+        }
     }
 
     @Override

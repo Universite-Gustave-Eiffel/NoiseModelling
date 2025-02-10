@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.DoubleStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDb;
@@ -355,16 +356,18 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
         }
         // Convert to dB then pushed cached entries for this receiver into multi-thread instance
-        SceneDatabaseInputSettings.INPUT_MODE inputMode =
-                multiThread.sceneWithEmission.sceneDatabaseInputSettings.getInputMode();
-        boolean computeLden = inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) ||
-                inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+
+        boolean computeLden = isComputeLden();
+        Set<String> collectedPeriod = new HashSet<>();
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
             TimePeriodParameters periodParameters = periodParametersEntry.getValue();
             for (Map.Entry<String, double[]> levelsAtPeriod : periodParameters.levelsPerPeriod.entrySet()) {
                 pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
                         receiver, levelsAtPeriod.getKey(),
                         AcousticIndicatorsFunctions.wToDb(levelsAtPeriod.getValue())));
+                if(dbSettings.isMergeSources()) {
+                    collectedPeriod.add(levelsAtPeriod.getKey());
+                }
             }
             if(computeLden) {
                 double[] lden = new double[0];
@@ -379,6 +382,23 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
                         receiver, "DEN",
                         AcousticIndicatorsFunctions.wToDb(lden)));
+                if(dbSettings.isMergeSources()) {
+                    collectedPeriod.add("DEN");
+                }
+            }
+        }
+        if (dbSettings.isMergeSources()) {
+            Set<String> difference = new HashSet<>(multiThread.sceneWithEmission.periodSet);
+            if(computeLden) {
+                difference.add("DEN");
+            }
+            difference.removeAll(collectedPeriod);
+            // add missing periods levels for this receiver
+            double[] levels = new double[multiThread.sceneWithEmission.profileBuilder.frequencyArray.size()];
+            Arrays.fill(levels, dbSettings.noSourceNoiseLevel);
+            for (String period : difference) {
+                pushInStack(multiThread.resultsCache.receiverLevels,
+                        new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(), receiver, period, levels));
             }
         }
         receiverAttenuationList.clear();
@@ -386,6 +406,16 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         sumMaximumRemainingWjExpectedSplAtReceiver = 0;
         wjAtReceiver = new double[0];
         this.cnossosPaths.clear();
+    }
+
+    private boolean isComputeLden() {
+        SceneDatabaseInputSettings.INPUT_MODE inputMode =
+                multiThread.sceneWithEmission.sceneDatabaseInputSettings.getInputMode();
+
+        // Some input use convention source Day Evening and Night, and the expected result must also include
+        // DEN which is a special mix of the three periods
+        return inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN) ||
+                inputMode.equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
     }
 
 

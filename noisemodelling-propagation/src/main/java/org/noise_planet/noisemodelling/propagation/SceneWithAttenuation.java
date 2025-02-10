@@ -12,10 +12,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosPar
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Scene is used by ProfileBuilder to construct profiles with only taking account of geometry information.
@@ -54,6 +51,12 @@ public class SceneWithAttenuation extends Scene {
      * Define attenuation settings to apply for each period
      */
     public Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
+
+    /**
+     * Keep a known set of all periods of the simulation
+     * This set is used to output a default value when there is no sound source found for a specific period
+     */
+    public Set<String> periodSet = new HashSet<>();
 
     public SceneWithAttenuation(ProfileBuilder profileBuilder) {
         super(profileBuilder);

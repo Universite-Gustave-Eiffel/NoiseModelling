@@ -19,6 +19,10 @@ import java.io.File;
 public class NoiseMapDatabaseParameters {
     public boolean exportAttenuationMatrix;
     public static final String DEFAULT_RECEIVERS_LEVEL_TABLE_NAME = "RECEIVERS_LEVEL";
+    /**
+     * Noise level on the receiver for each period if mergeSources is true and no sound source were found
+     */
+    public double noSourceNoiseLevel = -99;
 
     public NoiseMapDatabaseParameters() {
     }
