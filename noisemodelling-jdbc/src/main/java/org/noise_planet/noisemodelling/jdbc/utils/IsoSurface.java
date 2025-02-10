@@ -528,8 +528,9 @@ public class IsoSurface {
      */
     public void createTable(Connection connection, String pkField) throws SQLException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        final String periodField = TableLocation.capsIdentifier("PERIOD", dbType);
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
-        boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, "PERIOD");
+        boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, periodField);
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
@@ -570,7 +571,7 @@ public class IsoSurface {
             if(!aggregateByPeriod) {
                 periods.add("");
             } else {
-                periods.addAll(JDBCUtilities.getUniqueFieldValues(connection, pointTable, "PERIOD"));
+                periods.addAll(JDBCUtilities.getUniqueFieldValues(connection, pointTable, periodField));
             }
             for (String period : periods) {
                 if(aggregateByPeriod) {

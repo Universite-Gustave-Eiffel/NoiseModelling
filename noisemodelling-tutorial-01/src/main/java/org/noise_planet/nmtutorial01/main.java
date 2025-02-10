@@ -102,6 +102,8 @@ class Main {
         noiseMapByReceiverMaker.setThreadCount(1);
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+        noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
+
         // Building height field name
         noiseMapByReceiverMaker.setHeightField(heightField);
         // Point cloud height above sea level POINT(X Y Z)

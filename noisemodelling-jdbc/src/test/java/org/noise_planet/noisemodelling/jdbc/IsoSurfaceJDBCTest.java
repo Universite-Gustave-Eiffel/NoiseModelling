@@ -255,7 +255,7 @@ public class IsoSurfaceJDBCTest {
             assertTrue(periods.contains("D"));
             assertTrue(periods.contains("E"));
             assertTrue(periods.contains("N"));
-            assertTrue(periods.contains("DEN"));
+            assertTrue(periods.contains(EmissionTableGenerator.DEN_PERIOD));
         }
 
     }

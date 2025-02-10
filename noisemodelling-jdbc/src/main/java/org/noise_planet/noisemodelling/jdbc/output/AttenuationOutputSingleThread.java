@@ -380,17 +380,17 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                     EmissionTableGenerator.RATIOS[period.ordinal()]));
                 }
                 pushInStack(multiThread.resultsCache.receiverLevels, new ReceiverNoiseLevel(periodParameters.source,
-                        receiver, "DEN",
+                        receiver, EmissionTableGenerator.DEN_PERIOD,
                         AcousticIndicatorsFunctions.wToDb(lden)));
                 if(dbSettings.isMergeSources()) {
-                    collectedPeriod.add("DEN");
+                    collectedPeriod.add(EmissionTableGenerator.DEN_PERIOD);
                 }
             }
         }
         if (dbSettings.isMergeSources()) {
             Set<String> difference = new HashSet<>(multiThread.sceneWithEmission.periodSet);
             if(computeLden) {
-                difference.add("DEN");
+                difference.add(EmissionTableGenerator.DEN_PERIOD);
             }
             difference.removeAll(collectedPeriod);
             // add missing periods levels for this receiver

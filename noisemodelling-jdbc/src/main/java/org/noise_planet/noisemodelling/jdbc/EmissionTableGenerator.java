@@ -33,6 +33,8 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  */
 public class EmissionTableGenerator {
     public static final List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public static final String DEN_PERIOD = "DEN";
+
     public enum STANDARD_PERIOD {DAY, EVENING, NIGHT}
     public static final String[] STANDARD_PERIOD_VALUE = new String[] {"D", "E", "N"};
 
