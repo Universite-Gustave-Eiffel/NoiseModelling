@@ -11,12 +11,17 @@ package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Data input for a propagation Path process.
@@ -28,11 +33,10 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
     // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     private static final double angle_section = (2 * Math.PI) / DEFAULT_WIND_ROSE.length;
-    /** Temperature in celsius */
     private double defaultOccurance = 0.5;
-
     private boolean gDisc = true;     // choose between accept G discontinuity or not
     private boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
+
     /** probability occurrence favourable condition */
     private double[] windRose  = DEFAULT_WIND_ROSE;
 
@@ -50,6 +54,7 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
      * @param other
      */
     public AttenuationCnossosParameters(AttenuationCnossosParameters other) {
+        super(other);
         this.freq_lvl = other.freq_lvl;
         this.freq_lvl_exact = other.freq_lvl_exact;
         this.freq_lvl_a_weighting = other.freq_lvl_a_weighting;
@@ -227,5 +232,95 @@ public class AttenuationCnossosParameters extends AttenuationParameters {
      */
     public static double getAlpha(double frequency, double temperature, double pressure, double humidity) {
         return getCoefAttAtmos(frequency, humidity, pressure, temperature + K_0);
+    }
+
+    /**
+     * Writes the attenuation parameters to an H2 database table. If the specified table does not exist,
+     * it will create the table. Then it inserts or merges the data into the table for the given period.
+     *
+     * @param connection the database connection to the H2 instance
+     * @param tableName the name of the table in the database
+     * @param period the time period for which the parameters are being saved
+     * @throws SQLException if a database access error occurs
+     */
+    public void writeToDatabase(Connection connection, String tableName, String period) throws SQLException {
+        String createTableSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+                "PERIOD VARCHAR PRIMARY KEY," +
+                "WINDROSE REAL ARRAY," +
+                "PRESSURE REAL," +
+                "HUMIDITY REAL," +
+                "GDISC BOOLEAN," +
+                "PRIME2520 BOOLEAN," +
+                "TEMPERATURE REAL)";
+
+        try (var stmt = connection.createStatement()) {
+            stmt.execute(createTableSQL);
+        }
+
+        String insertSQL = "INSERT INTO " + tableName +
+                " (PERIOD, WINDROSE, PRESSURE, HUMIDITY, GDISC, PRIME2520, TEMPERATURE) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (var pstmt = connection.prepareStatement(insertSQL)) {
+            Array sqlWindRose = connection.createArrayOf("DOUBLE", Arrays.stream(windRose).boxed().toArray());
+            pstmt.setString(1, period);
+            pstmt.setArray(2, sqlWindRose);
+            pstmt.setDouble(3, pressure);
+            pstmt.setDouble(4, humidity);
+            pstmt.setBoolean(5, gDisc);
+            pstmt.setBoolean(6, prime2520);
+            pstmt.setDouble(7, getTemperature());
+            pstmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Reads attenuation parameters from a database ResultSet and populates a map
+     * with these parameters for different periods.
+     *
+     * @param rs the ResultSet object containing the query results with attenuation parameters
+     * @param cnossosParametersPerPeriod a map to store the attenuation parameters
+     *                                   indexed by the corresponding period
+     * @throws SQLException if a database access error occurs or if the wind rose array
+     *                      length does not match the expected default length
+     */
+    public static void readFromDatabase(ResultSet rs, Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod) throws SQLException {
+        AttenuationCnossosParameters params = new AttenuationCnossosParameters();
+        Array windrose = rs.getArray("WINDROSE");
+        params.windRose = convertSqlArrayToDoubleArray(windrose);
+        if(params.windRose.length != DEFAULT_WIND_ROSE.length) {
+            throw new SQLException("Wind rose array length is not " + DEFAULT_WIND_ROSE.length);
+        }
+        params.pressure = rs.getDouble("PRESSURE");
+        params.humidity = rs.getDouble("HUMIDITY");
+        params.gDisc = rs.getBoolean("GDISC");
+        params.prime2520 = rs.getBoolean("PRIME2520");
+        // Use the method as it will initialize the other parameters
+        params.setTemperature(rs.getDouble("TEMPERATURE"));
+        cnossosParametersPerPeriod.put(rs.getString("PERIOD"), params);
+    }
+    
+    
+
+    /**
+     * Converts a java.sql.Array to a double[] array.
+     *
+     * @param array the SQL Array containing double values
+     * @return a double[] array or an empty array if the input is null
+     * @throws SQLException if a database access error occurs
+     */
+    public static double[] convertSqlArrayToDoubleArray(Array array) throws SQLException {
+        if (array == null) {
+            return new double[0];
+        }
+        Object arrayObj = array.getArray();
+        if (arrayObj instanceof Double[]) {
+            return Arrays.stream((Double[]) arrayObj).mapToDouble(Double::doubleValue).toArray();
+        } else if (arrayObj instanceof Object[]) {
+            return Arrays.stream((Object[]) arrayObj)
+                    .mapToDouble(o -> o instanceof Number ? ((Number) o).doubleValue() : 0.0)
+                    .toArray();
+        }
+        return new double[0];
     }
 }

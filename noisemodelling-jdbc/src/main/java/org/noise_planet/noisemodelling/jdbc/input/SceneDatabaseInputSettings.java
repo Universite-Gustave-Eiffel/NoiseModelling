@@ -11,6 +11,8 @@ package org.noise_planet.noisemodelling.jdbc.input;
 import org.h2gis.api.ProgressVisitor;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.Map;
 
 /**
  * SceneWithEmission will read table according to this settings
@@ -33,6 +35,10 @@ public class SceneDatabaseInputSettings {
     INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_GUESS;
     String sourcesEmissionTableName = "";
     String sourceEmissionPrimaryKeyField = "IDSOURCE";
+    /**
+     * Read {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters} values from this table
+     */
+    String periodAtmosphericSettingsTableName = "";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
     int coefficientVersion = 2;
     public String lwFrequencyPrepend = "LW";
@@ -77,6 +83,26 @@ public class SceneDatabaseInputSettings {
 
     public void setSourceEmissionPrimaryKeyField(String sourceEmissionPrimaryKeyField) {
         this.sourceEmissionPrimaryKeyField = sourceEmissionPrimaryKeyField;
+    }
+
+    /**
+     * Gets the name of the table that contains the period-specific atmospheric settings.
+     *
+     * @return The table name storing the period atmospheric settings used for computations.
+     */
+    public String getPeriodAtmosphericSettingsTableName() {
+        return periodAtmosphericSettingsTableName;
+    }
+
+    /**
+     * Sets the name of the table that contains the period-specific atmospheric settings.
+     *
+     * @param periodAtmosphericSettingsTableName The table name storing the period atmospheric settings
+     *                                           to be used for computations.
+     *                                           See {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters#readFromDatabase(ResultSet, Map)}
+     */
+    public void setPeriodAtmosphericSettingsTableName(String periodAtmosphericSettingsTableName) {
+        this.periodAtmosphericSettingsTableName = periodAtmosphericSettingsTableName;
     }
 
     public String getLwFrequencyPrepend() {

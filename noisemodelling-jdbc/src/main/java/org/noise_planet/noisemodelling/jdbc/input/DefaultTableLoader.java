@@ -138,6 +138,67 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             aWeightingArray = new ArrayList<>();
             ProfileBuilder.initializeFrequencyArrayFromReference(frequencyArray, exactFrequencyArray, aWeightingArray);
         }
+        if(!inputSettings.periodAtmosphericSettingsTableName.isEmpty()) {
+            loadAtmosphericTableSettings(connection, inputSettings.periodAtmosphericSettingsTableName);
+        }
+    }
+
+    private void loadAtmosphericTableSettings(Connection connection, String atmosphericSettingsTableName) throws SQLException {
+        String query = "SELECT * FROM " + atmosphericSettingsTableName;
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(query)) {
+            while (resultSet.next()) {
+                // Placeholder for processing the results
+                AttenuationCnossosParameters.readFromDatabase(resultSet, cnossosParametersPerPeriod);
+            }
+        }
+    }
+
+    /**
+     * Retrieves the frequency array used within the class.
+     *
+     * @return a list of integers representing the frequency values in the array.
+     */
+    public List<Integer> getFrequencyArray() {
+        return frequencyArray;
+    }
+
+    /**
+     * Retrieves the exact frequency array used within the class.
+     *
+     * @return a list of doubles representing the exact frequency values in the array.
+     */
+    public List<Double> getExactFrequencyArray() {
+        return exactFrequencyArray;
+    }
+
+    /**
+     * Retrieves the A-weighting correction array used within the class.
+     * A-weighting is applied to account for the varying sensitivity of
+     * human hearing to different frequencies, commonly used in acoustic measurements.
+     *
+     * @return a list of doubles representing the A-weighting correction values.
+     */
+    public List<Double> getaWeightingArray() {
+        return aWeightingArray;
+    }
+
+    /**
+     * Retrieves the parameters defined for different time periods.
+     *
+     * @return a map where the keys represent the time periods (e.g., "D", "E", "N") as strings,
+     *         and the values are instances of {@link AttenuationCnossosParameters} representing the corresponding parameters.
+     */
+    public Map<String, AttenuationCnossosParameters> getCnossosParametersPerPeriod() {
+        return cnossosParametersPerPeriod;
+    }
+
+    public int getFetchSize() {
+        return fetchSize;
+    }
+
+    public Map<Integer, DirectivitySphere> getDirectionAttributes() {
+        return directionAttributes;
     }
 
     private static List<Integer> readFrequenciesFromLwTable(String frequencyPrepend, List<String> sourceField) throws SQLException {

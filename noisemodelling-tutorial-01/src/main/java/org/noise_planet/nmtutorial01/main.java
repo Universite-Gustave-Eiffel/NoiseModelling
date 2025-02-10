@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class Main {
     public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
-    public static void mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
+    public static NoiseMapByReceiverMaker mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
 
         TableLocation tableLwRoads = TableLocation.parse("LW_ROADS", dbType);
@@ -113,18 +113,20 @@ class Main {
 
         DefaultTableLoader tableLoader = (DefaultTableLoader) noiseMapByReceiverMaker.getTableLoader();
 
-        AttenuationCnossosParameters dayParameters = new AttenuationCnossosParameters();
-        dayParameters.setTemperature(10);
-        AttenuationCnossosParameters eveningParameters = new AttenuationCnossosParameters();
-        eveningParameters.setTemperature(16);
-        AttenuationCnossosParameters nightParameters = new AttenuationCnossosParameters();
-        nightParameters.setTemperature(20);
+        String atmosphericSettingsTableName = "ATMOSPHERIC_SETTINGS";
 
-        tableLoader.cnossosParametersPerPeriod.put("D", dayParameters);
-        tableLoader.cnossosParametersPerPeriod.put("E", eveningParameters);
-        tableLoader.cnossosParametersPerPeriod.put("N", nightParameters);
+        sql.execute("DROP TABLE IF EXISTS " + atmosphericSettingsTableName + ";");
+
+        AttenuationCnossosParameters defaultParameters = new AttenuationCnossosParameters();
+        defaultParameters.setTemperature(20);
+        defaultParameters.writeToDatabase(connection, atmosphericSettingsTableName, "D");
+        defaultParameters.setTemperature(16);
+        defaultParameters.writeToDatabase(connection, atmosphericSettingsTableName, "E");
+        defaultParameters.setTemperature(10);
+        defaultParameters.writeToDatabase(connection, atmosphericSettingsTableName, "N");
 
         noiseMapByReceiverMaker.setGridDim(1);
+        noiseMapByReceiverMaker.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(atmosphericSettingsTableName);
 
         noiseMapByReceiverMaker.run(connection, progressLogger);
 
@@ -138,6 +140,8 @@ class Main {
         logger.info("Export iso contours");
         SHPWrite.exportTable(connection, Paths.get(workingDir, isoSurface.getOutputTable()+".shp").toString(),
                 isoSurface.getOutputTable(), ValueBoolean.TRUE);
+
+        return noiseMapByReceiverMaker;
     }
 
     public static void main(String[] args) throws SQLException, IOException, LayerDelaunayError {

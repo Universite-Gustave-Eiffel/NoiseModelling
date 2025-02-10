@@ -5,6 +5,9 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -99,7 +102,7 @@ public class AttenuationParameters {
     }
 
     protected void init() {
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
+        this.setTemperature(temperature);
     }
 
     public List<Integer> getFrequencies() {
@@ -356,6 +359,5 @@ public class AttenuationParameters {
     public double[] getAlpha_atmo() {
         return alpha_atmo;
     }
-
 
 }
