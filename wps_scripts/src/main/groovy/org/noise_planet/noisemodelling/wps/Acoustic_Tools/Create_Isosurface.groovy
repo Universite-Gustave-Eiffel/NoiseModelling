@@ -140,7 +140,7 @@ def exec(Connection connection, input) {
         isoSurface.setSmoothCoefficient(0.5)
     }
 
-    isoSurface.createTable(connection)
+    isoSurface.createTable(connection, "IDRECEIVER")
 
     resultString = "Table " + isoSurface.getOutputTable() + " created"
 

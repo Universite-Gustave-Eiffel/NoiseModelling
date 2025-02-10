@@ -52,6 +52,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * Define attenuation settings to apply for each period
      */
     public Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
+    public AttenuationCnossosParameters defaultParameters = new AttenuationCnossosParameters();
 
     public static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -140,6 +141,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         }
         if(!inputSettings.periodAtmosphericSettingsTableName.isEmpty()) {
             loadAtmosphericTableSettings(connection, inputSettings.periodAtmosphericSettingsTableName);
+        }
+        defaultParameters.setFrequencies(frequencyArray);
+        for(AttenuationCnossosParameters parameters : cnossosParametersPerPeriod.values()) {
+            parameters.setFrequencies(frequencyArray);
         }
     }
 
@@ -239,6 +244,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         SceneWithEmission scene = new SceneWithEmission(profileBuilder, noiseMapByReceiverMaker.getSceneInputSettings());
         scene.setDirectionAttributes(directionAttributes);
         scene.cnossosParametersPerPeriod = cnossosParametersPerPeriod;
+        scene.defaultCnossosParameters = defaultParameters;
         scene.periodSet.addAll(cnossosParametersPerPeriod.keySet());
 
 

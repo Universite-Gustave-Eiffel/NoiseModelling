@@ -26,8 +26,8 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
 import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker
-import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 import org.slf4j.Logger
@@ -174,14 +174,7 @@ def exec(Connection connection, input) {
     // Start calculation and fill the table
     // --------------------------------------
 
-    // Get Class to compute LW
-    NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
-    noiseMapParameters.setCoefficientVersion(2)
-    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters(false));
-    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters(false));
-    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters(false));
-
-    NoiseEmissionMaker noiseEmissionMaker = new NoiseEmissionMaker(null, noiseMapParameters)
+    EmissionTableGenerator noiseEmissionMaker = new EmissionTableGenerator()
 
 
     // Get size of the table (number of road segments
@@ -192,7 +185,7 @@ def exec(Connection connection, input) {
         nbRoads = rs1.getInt("total")
         logger.info('The table Roads has ' + nbRoads + ' road segments.')
     }
-
+Double.parseDouble()
     int k = 0
     sql.withBatch(100, qry) { ps ->
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
@@ -204,7 +197,7 @@ def exec(Connection connection, input) {
             Geometry geo = rs.getGeometry()
 
             // Compute emission sound level for each road segment
-            def results = noiseEmissionMaker.computeLw(rs)
+            double[][] results = noiseEmissionMaker.computeLw(rs)
             def lday = AcousticIndicatorsFunctions.wToDba(results[0])
             def levening = AcousticIndicatorsFunctions.wToDba(results[1])
             def lnight = AcousticIndicatorsFunctions.wToDba(results[2])
