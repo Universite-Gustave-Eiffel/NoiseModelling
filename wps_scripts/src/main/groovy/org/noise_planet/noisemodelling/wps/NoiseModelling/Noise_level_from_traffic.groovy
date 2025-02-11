@@ -25,11 +25,13 @@ import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 
 import org.slf4j.Logger
@@ -298,7 +300,7 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
     int maximumRaysToExport = 5000
 
     DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
@@ -484,7 +486,7 @@ def exec(Connection connection, input) {
 
     if (input.containsKey('confFavorableOccurrencesDefault')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        double[] favOccurrences = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length]
         for (int i = 0; i < favOccurrences.length; i++) {
             favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
         }

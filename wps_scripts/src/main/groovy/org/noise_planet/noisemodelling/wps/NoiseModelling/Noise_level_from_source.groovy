@@ -344,7 +344,7 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
     long startCompute = System.currentTimeMillis()
 
     int maximumRaysToExport = 5000
@@ -550,7 +550,7 @@ def exec(Connection connection, input) {
 
     if (input.containsKey('confFavorableOccurrencesDefault')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        double[] favOccurrences = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length]
         for (int i = 0; i < favOccurrences.length; i++) {
             favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
         }

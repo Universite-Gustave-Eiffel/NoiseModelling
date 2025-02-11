@@ -66,7 +66,15 @@ inputs = [
                         "<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>" +
                         "<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>" +
                         "</ul></br><b> This table can be generated from the WPS Block 'Import_OSM'. </b>.",
-                type       : String.class
+                type       : String.class,
+                coefficientVersion            : [
+                        name       : 'Coefficient version',
+                        title      : 'Coefficient version',
+                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020) </br> </br>' +
+                                '&#128736; Default value: <b>2</b>',
+                        min        : 0, max: 1,
+                        type       : Double.class
+                ],
         ]
 ]
 
@@ -105,6 +113,11 @@ def run(input) {
 
 // main function of the script
 def exec(Connection connection, input) {
+
+    int coefficientVersion = 2
+    if (input.containsKey('coefficientVersion')) {
+        coefficientVersion = Integer.parseInt(input['confHumidity'] as String)
+    }
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -188,16 +201,17 @@ def exec(Connection connection, input) {
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
         SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
 
+        Map<String, Integer> sourceFieldsCache = new HashMap<>()
         while (rs.next()) {
             k++
             //logger.info(rs)
             Geometry geo = rs.getGeometry()
 
             // Compute emission sound level for each road segment
-            double[][] results = EmissionTableGenerator.computeLw(rs, )
-            def lday = AcousticIndicatorsFunctions.wToDba(results[0])
-            def levening = AcousticIndicatorsFunctions.wToDba(results[1])
-            def lnight = AcousticIndicatorsFunctions.wToDba(results[2])
+            double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+            def lday = AcousticIndicatorsFunctions.wToDb(results[0])
+            def levening = AcousticIndicatorsFunctions.wToDb(results[1])
+            def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
             // fill the LW_ROADS table
             ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
                     lday[0] as Double, lday[1] as Double, lday[2] as Double,

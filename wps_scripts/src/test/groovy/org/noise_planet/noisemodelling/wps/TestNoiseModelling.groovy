@@ -18,6 +18,7 @@ import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
@@ -99,13 +100,14 @@ class TestNoiseModelling extends JdbcTestCase {
                 "confMaxSrcDist" : 500,
                 "confMaxError" : 5.0])
 
-        assertTrue(JDBCUtilities.tableExists(connection, "LDAY_GEOM"))
+        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
-        def receiversCount = sql.rows("SELECT COUNT(*) CPT FROM LDAY_GEOM")
+        def receiversCount = sql.rows("SELECT COUNT(*) CPT FROM "+
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+" WHERE PERIOD = 'D'")
 
         new Export_Table().exec(connection,
                 ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
-                 "tableToExport": "LDAY_GEOM"])
+                 "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         assertEquals(688, receiversCount[0]["CPT"] as Integer)
     }
@@ -130,11 +132,14 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRoads"   : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
 
-        assertTrue(res.contains("LDAY_GEOM"))
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
         def sql = new Sql(connection)
 
-        def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
+
+        def leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'D'")
 
         assertEquals(87, leqs[0] as Double, 2.0)
         assertEquals(78, leqs[1] as Double, 2.0)
@@ -145,22 +150,22 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(71, leqs[6] as Double, 2.0)
         assertEquals(62, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LEVENING_GEOM"))
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'E'")
 
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
+        assertEquals(81, leqs[0] as Double, 2.0)
+        assertEquals(74, leqs[1] as Double, 2.0)
+        assertEquals(73, leqs[2] as Double, 2.0)
+        assertEquals(75, leqs[3] as Double, 2.0)
+        assertEquals(77, leqs[4] as Double, 2.0)
+        assertEquals(75, leqs[5] as Double, 2.0)
+        assertEquals(66, leqs[6] as Double, 2.0)
+        assertEquals(57, leqs[7] as Double, 2.0)
 
-        assertEquals(81.0, leqs[0] as Double, 2.0)
-        assertEquals(74.0, leqs[1] as Double, 2.0)
-        assertEquals(73.0, leqs[2] as Double, 2.0)
-        assertEquals(75.0, leqs[3] as Double, 2.0)
-        assertEquals(77.0, leqs[4] as Double, 2.0)
-        assertEquals(75.0, leqs[5] as Double, 2.0)
-        assertEquals(66.0, leqs[6] as Double, 2.0)
-        assertEquals(57.0, leqs[7] as Double, 2.0)
-
-        assertTrue(res.contains("LNIGHT_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'N'")
 
         assertEquals(78, leqs[0] as Double, 2.0)
         assertEquals(71, leqs[1] as Double, 2.0)
@@ -171,9 +176,9 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(63, leqs[6] as Double, 2.0)
         assertEquals(54, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LDEN_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'DEN'")
 
         assertEquals(87, leqs[0] as Double, 2.0)
         assertEquals(79, leqs[1] as Double, 2.0)
@@ -214,11 +219,13 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableRoads"   : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
 
-        assertTrue(res.contains("LDAY_GEOM"))
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
 
 
-        def leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDAY_GEOM")
+        def leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'D'")
 
         assertEquals(87, leqs[0] as Double, 2.0)
         assertEquals(78, leqs[1] as Double, 2.0)
@@ -229,9 +236,9 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(71, leqs[6] as Double, 2.0)
         assertEquals(62, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LEVENING_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LEVENING_GEOM")
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'E'")
 
         assertEquals(81, leqs[0] as Double, 2.0)
         assertEquals(74, leqs[1] as Double, 2.0)
@@ -242,9 +249,9 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(66, leqs[6] as Double, 2.0)
         assertEquals(57, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LNIGHT_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LNIGHT_GEOM")
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'N'")
 
         assertEquals(78, leqs[0] as Double, 2.0)
         assertEquals(71, leqs[1] as Double, 2.0)
@@ -255,9 +262,9 @@ class TestNoiseModelling extends JdbcTestCase {
         assertEquals(63, leqs[6] as Double, 2.0)
         assertEquals(54, leqs[7] as Double, 2.0)
 
-        assertTrue(res.contains("LDEN_GEOM"))
-
-        leqs = sql.firstRow("SELECT MAX(HZ63) , MAX(HZ125), MAX(HZ250), MAX(HZ500), MAX(HZ1000), MAX(HZ2000), MAX(HZ4000), MAX(HZ8000) FROM LDEN_GEOM")
+        leqs = sql.firstRow("SELECT MAX(LW63) , MAX(LW125), MAX(LW250), MAX(LW500), MAX(LW1000)," +
+                " MAX(LW2000), MAX(LW4000), MAX(LW8000) FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'DEN'")
 
         assertEquals(87, leqs[0] as Double, 2.0)
         assertEquals(79, leqs[1] as Double, 2.0)
@@ -293,10 +300,7 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableSources"   : "LW_ROADS",
                  "tableReceivers": "RECEIVERS"])
 
-        assertTrue(res.contains("LDAY_GEOM"))
-        assertTrue(res.contains("LEVENING_GEOM"))
-        assertTrue(res.contains("LNIGHT_GEOM"))
-        assertTrue(res.contains("LDEN_GEOM"))
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
     }
 
     void testLdenFromEmission1khz() {
@@ -330,11 +334,11 @@ class TestNoiseModelling extends JdbcTestCase {
                 "confSkipLnight": true,
                 "confSkipLden": true])
 
-        assertTrue(res.contains("LDAY_GEOM"))
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
         // fetch columns
-        def fields = JDBCUtilities.getColumnNames(connection, "LDAY_GEOM")
+        def fields = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
 
-        assertArrayEquals(["IDRECEIVER","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
+        assertArrayEquals(["IDRECEIVER","PERIOD","THE_GEOM", "LW1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
     }
 }
