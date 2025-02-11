@@ -35,6 +35,10 @@ public class SceneDatabaseInputSettings {
     INPUT_MODE inputMode = INPUT_MODE.INPUT_MODE_GUESS;
     String sourcesEmissionTableName = "";
     String sourceEmissionPrimaryKeyField = "IDSOURCE";
+
+    String directivityTableName = "";
+    boolean useTrainDirectivity = false;
+
     /**
      * Read {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters} values from this table
      */
@@ -50,6 +54,22 @@ public class SceneDatabaseInputSettings {
     public SceneDatabaseInputSettings(INPUT_MODE inputMode, String sourcesEmissionTableName) {
         this.inputMode = inputMode;
         this.sourcesEmissionTableName = sourcesEmissionTableName;
+    }
+
+    public String getDirectivityTableName() {
+        return directivityTableName;
+    }
+
+    public void setDirectivityTableName(String directivityTableName) {
+        this.directivityTableName = directivityTableName;
+    }
+
+    public boolean isUseTrainDirectivity() {
+        return useTrainDirectivity;
+    }
+
+    public void setUseTrainDirectivity(boolean useTrainDirectivity) {
+        this.useTrainDirectivity = useTrainDirectivity;
     }
 
     public int getCoefficientVersion() {

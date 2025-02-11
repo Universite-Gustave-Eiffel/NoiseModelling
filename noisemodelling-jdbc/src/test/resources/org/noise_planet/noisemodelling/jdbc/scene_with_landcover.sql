@@ -7,7 +7,7 @@ insert into receivers(the_geom) values ('POINTZ (183935.5265151515 2429052.68939
 
 -- Make roads table (just geometries and road type)
 drop table if exists roads_geom;
-create table roads_geom ( id serial PRIMARY KEY, the_geom GEOMETRY(LINESTRINGZ), db_m63 double,db_m125 double,db_m250 double,db_m500 double, db_m1000 double,db_m2000 double, db_m4000 double,db_m8000 double);
+create table roads_geom ( id serial PRIMARY KEY, the_geom GEOMETRY(LINESTRINGZ), db_md63 double,db_md125 double,db_md250 double,db_md500 double, db_md1000 double,db_md2000 double, db_md4000 double,db_md8000 double);
 INSERT INTO roads_geom VALUES (DEFAULT,ST_GeomFromText('LINESTRINGZ (183817 2429175 0, 183810 2429142 0,183827 2429103 0,183822 2429055 0)'), 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
 INSERT INTO roads_geom VALUES (DEFAULT, ST_GeomFromText('LINESTRINGZ (183822 2429055 0,183841 2429054 0,183872 2429072 0,183892 2429073 0, 184013 2428992 0,184062 2428974 0)'), 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);
 INSERT INTO roads_geom VALUES (DEFAULT, ST_GeomFromText('LINESTRINGZ (183822 2429055 0, 183805 2429031 0, 183792 2428986 0, 183783 2428945 0, 183789 2428889 0)'), 25.65, 38.15, 54.35, 60.35, 74.65, 66.75, 59.25, 53.95);

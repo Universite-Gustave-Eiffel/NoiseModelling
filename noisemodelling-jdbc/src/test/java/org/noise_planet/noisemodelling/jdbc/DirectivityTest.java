@@ -12,6 +12,7 @@ package org.noise_planet.noisemodelling.jdbc;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters;
@@ -54,7 +55,7 @@ public class DirectivityTest {
         pst.execute();
         // DEBUG st.execute("UPDATE DIRECTIVITY SET LW500=-10 WHERE THETA=45 AND PHI=270 ");
         // Data is inserted now fetch it from the database
-        Map<Integer, DiscreteDirectivitySphere> directivities =
+        Map<Integer, DirectivitySphere> directivities =
                 DefaultTableLoader.fetchDirectivity(connection, "DIRECTIVITY", 1);
 
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/cardioid_dir.html"))) {
@@ -83,7 +84,7 @@ public class DirectivityTest {
                     "</style>" +
                     "<head><body><h1>500 Hz</h1>\n");
             Logger logger = LoggerFactory.getLogger(DirectivityTest.class);
-            for (Map.Entry<Integer, DiscreteDirectivitySphere> entry : directivities.entrySet()) {
+            for (Map.Entry<Integer, DirectivitySphere> entry : directivities.entrySet()) {
                 // DEBUG logger.info(String.format("phi 0 theta 0 %f",
                 //       entry.getValue().getAttenuation(500, Math.toRadians(0), Math.toRadians(0))));
                 bw.write("<div class=\"wrapper\">");

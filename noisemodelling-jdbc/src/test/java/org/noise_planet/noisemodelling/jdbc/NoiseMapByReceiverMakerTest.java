@@ -66,6 +66,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setSoilTableName("LAND_G");
+            noiseMapByReceiverMaker.setLwFrequencyPrepend("DB_M");
             noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
             Set<Long> processedReceivers = new HashSet<>();
@@ -78,6 +79,9 @@ public class NoiseMapByReceiverMakerTest {
                 for(GroundAbsorption soil : scene.profileBuilder.getGroundEffects()) {
                     assertTrue(soil.getGeometry().getArea() < expectedMaxArea);
                 }
+                assertEquals(3, scene.wjSources.size());
+                assertEquals(1, scene.wjSources.get(1L).size());
+                assertEquals("D", scene.wjSources.get(1L).get(0).period);
             }
         }
     }
@@ -136,7 +140,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
 
             // Use train directivity functions instead of discrete directivity
-            ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory()).insertTrainDirectivity();
+            noiseMapByReceiverMaker.getSceneInputSettings().setUseTrainDirectivity(true);
 
             noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
 

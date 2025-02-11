@@ -146,6 +146,14 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         for(AttenuationCnossosParameters parameters : cnossosParametersPerPeriod.values()) {
             parameters.setFrequencies(frequencyArray);
         }
+        if(inputSettings.useTrainDirectivity) {
+            insertTrainDirectivity();
+        } else if (!inputSettings.directivityTableName.isEmpty()) {
+            directionAttributes = fetchDirectivity(connection, inputSettings.directivityTableName, 1);
+            if(noiseMapByReceiverMaker.isVerbose()) {
+                LOGGER.info("Loaded {} directivities from the database", directionAttributes.size());
+            }
+        }
     }
 
     private void loadAtmosphericTableSettings(Connection connection, String atmosphericSettingsTableName) throws SQLException {
@@ -325,8 +333,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param defaultInterpolation
      * @return
      */
-    public static Map<Integer, DiscreteDirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
-        Map<Integer, DiscreteDirectivitySphere> directionAttributes = new HashMap<>();
+    public static Map<Integer, DirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
+        Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
         List<String> fields = JDBCUtilities.getColumnNames(connection, tableName);
         // fetch provided frequencies
         List<String> frequenciesFields = new ArrayList<>();

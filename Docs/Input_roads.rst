@@ -60,9 +60,6 @@ Table definition
 * ``PVMT``
 	* Description: `CNOSSOS road pavement identifier`_ *(Default* ``DEF`` *)* (`See NM possible values`_)
 	* Type: Varchar
-* ``TEMP_D``, ``TEMP_E``, ``TEMP_N``
-	* Description: Average Day, Evening and Night Celsius temperature (°C) *(Default 20)*
-	* Type: Double
 * ``TS_STUD``
 	* Description: A limited period (``Ts``) (in months) over the year where a average proportion (``pm``) of light vehicles are equipped with studded tyres [0-12]
 	* Type: Double

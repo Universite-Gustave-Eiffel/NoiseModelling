@@ -27,9 +27,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
-import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -61,7 +59,6 @@ inputs = [
                         "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>" +
-                        "<li><b> TEMP_D </b><b> TEMP_E </b><b> TEMP_N </b> : Average day, evening, night temperature (default 20&#x2103;) (6-18h)(18-22h)(22-6h)(DOUBLE)</li>" +
                         "<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>" +
                         "<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>" +
                         "<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>" +
@@ -185,7 +182,7 @@ def exec(Connection connection, input) {
         nbRoads = rs1.getInt("total")
         logger.info('The table Roads has ' + nbRoads + ' road segments.')
     }
-Double.parseDouble()
+
     int k = 0
     sql.withBatch(100, qry) { ps ->
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
@@ -197,7 +194,7 @@ Double.parseDouble()
             Geometry geo = rs.getGeometry()
 
             // Compute emission sound level for each road segment
-            double[][] results = noiseEmissionMaker.computeLw(rs)
+            double[][] results = EmissionTableGenerator.computeLw(rs, )
             def lday = AcousticIndicatorsFunctions.wToDba(results[0])
             def levening = AcousticIndicatorsFunctions.wToDba(results[1])
             def lnight = AcousticIndicatorsFunctions.wToDba(results[2])

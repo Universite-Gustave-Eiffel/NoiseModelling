@@ -19,37 +19,37 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import org.cts.crs.CRSException
-import org.cts.op.CoordinateOperationException
+
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder
-import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.xml.stream.XMLStreamException
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
 
-title = 'Compute LDay,Levening,LNight,Lden from road traffic'
-description = '&#10145;&#65039; Computes Lden, LDay, LEvening, LNight noise map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details).' +
-        '<hr>' +
+title = 'Compute noise level directly from road traffic data'
+description = '&#10145;&#65039; Computes Noise map from each period from the traffic flow rate and speed estimates' +
+        ' (specific format, see input details). <hr>' +
         '&#127757; Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.</br> </br>' +
-        '&#x2705; The output table are called: <b> LDEN_GEOM, LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM </b> </br></br>' +
-        'These tables contain: </br> <ul>' +
+        '&#x2705; The output table is <b> RECEIVERS_LEVEL </b> </br></br>' +
+        'The output tables contain: </br> <ul>' +
         '<li><b> IDRECEIVER</b>: an identifier (INTEGER, PRIMARY KEY)</li>' +
+        '<li><b> IDSOURCE</b>: an identifier of the source (INTEGER) if keepSource is true</li>' +
         '<li><b> THE_GEOM </b>: the 3D geometry of the receivers (POINT)</li>' +
-        '<li><b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b>: 8 columns giving the day (evening, night or den) emission sound level for each octave band (FLOAT)</li> </ul>'
+        '<li><b> PERIOD </b>: time period ex. D, E, N, DEN (Varchar)</li>' +
+        '<li><b> Lw63, Lw125, Lw250, Lw500, Lw1000, Lw2000, Lw4000, Lw8000, Laeq, Leq</b>: noise level at receiver (REAL)</li> </ul>'
 
 inputs = [
         tableBuilding           : [
@@ -88,6 +88,33 @@ inputs = [
                         '</ul></br>'+
                         '&#128161; This table can be generated from the WPS Block "Import_OSM"',
                 type       : String.class
+        ],
+        tableRoadsTraffic              : [
+                name       : 'Roads table name',
+                title      : 'Roads table name',
+                description: '&#128739; Name of the Roads table </br> </br>' +
+                        'This function recognize the following columns (* mandatory): </br> <ul>' +
+                        '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
+                        '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +
+                        '<li><b> LV </b>  : Hourly average light vehicle count (DOUBLE)</li>' +
+                        '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
+                        '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
+                        '<li><b> WAV </b>:  Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
+                        '<li><b> WBV </b>:  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
+                        '<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>' +
+                        '<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>' +
+                        '<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>' +
+                        '<li><b> JUNC_TYPE </b> : Type of junction (k=0 none, k = 1 for a crossing with traffic lights ; k = 2 for a roundabout) (INTEGER)</li>' +
+                        '<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>' +
+                        '<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>' +
+                        '</ul></br>',
+                min        : 0, max: 1, type: String.class
         ],
         tableReceivers          : [
                 name       : 'Receivers table name',
@@ -193,17 +220,29 @@ inputs = [
                 name       : 'Relative humidity',
                 title      : 'Relative humidity',
                 description: '&#127783; Humidity for noise propagation. </br> </br>' +
-                        '&#128736; Default value: <b> 70</b>',
+                        '&#128736; Default humidity value: <b> 70</b>',
                 min        : 0, max: 1,
                 type: Double.class
         ],
         confTemperature         : [
                 name       : 'Temperature',
                 title      : 'Air temperature',
-                description: '&#127777; Air temperature in degree celsius. </br> </br>' +
+                description: '&#127777; Default Air temperature in degree celsius. </br> </br>' +
                         '&#128736; Default value: <b> 15</b>',
                 min        : 0, max: 1,
                 type: Double.class
+        ],
+        confFavorableOccurrencesDefault: [
+                name       : 'Probability of occurrences',
+                title      : 'Probability of occurrences',
+                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
+                        'The north slice is the last array index not the first one <br/>' +
+                        'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
+                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
+                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176; </li> </ul>' +
+                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
+                min        : 0, max: 1,
+                type       : String.class
         ],
         confRaysName            : [
                 name       : '',
@@ -258,38 +297,17 @@ def run(input) {
     }
 }
 
-static void exportScene(String name, ProfileBuilder builder, AttenuationCnossosParameters result, int crs) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name);
-        KMLDocument kmlDocument = new KMLDocument(outData);
-        kmlDocument.setInputCRS("EPSG:" + crs);
-        kmlDocument.writeHeader();
-        if(builder != null) {
-            kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
-        }
-        if(result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths());
-        }
-        if(builder != null) {
-            kmlDocument.writeBuildings(builder);
-        }
-        kmlDocument.writeFooter();
-    } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-        throw new IOException(ex);
-    }
-}
-
-
 // main function of the script
 def exec(Connection connection, input) {
+    int maximumRaysToExport = 5000
+
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
-
-    // output string, the information given back to the user
-    String resultString = null
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -366,7 +384,6 @@ def exec(Connection connection, input) {
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
     }
 
-
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
@@ -379,34 +396,34 @@ def exec(Connection connection, input) {
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
 
-    boolean recordProfile = false;
+    boolean recordProfile = false
     if (input['confRecordProfile']) {
         recordProfile = input['confRecordProfile']
     }
 
     int reflexion_order = 0
     if (input['confReflOrder']) {
-        reflexion_order = Integer.valueOf(input['confReflOrder'])
+        reflexion_order = Integer.valueOf(input['confReflOrder'] as String)
     }
 
     double max_src_dist = 150
     if (input['confMaxSrcDist']) {
-        max_src_dist = Double.valueOf(input['confMaxSrcDist'])
+        max_src_dist = Double.valueOf(input['confMaxSrcDist'] as String)
     }
 
     double max_ref_dist = 50
     if (input['confMaxReflDist']) {
-        max_ref_dist = Double.valueOf(input['confMaxReflDist'])
+        max_ref_dist = Double.valueOf(input['confMaxReflDist'] as String)
     }
 
     double wall_alpha = 0.1
     if (input['paramWallAlpha']) {
-        wall_alpha = Double.valueOf(input['paramWallAlpha'])
+        wall_alpha = Double.valueOf(input['paramWallAlpha'] as String)
     }
 
     int n_thread = 0
     if (input['confThreadNumber']) {
-        n_thread = Integer.valueOf(input['confThreadNumber'])
+        n_thread = Integer.valueOf(input['confThreadNumber'] as String)
     }
 
     boolean compute_vertical_diffraction = false
@@ -419,14 +436,14 @@ def exec(Connection connection, input) {
         compute_horizontal_diffraction = input['confDiffHorizontal']
     }
 
-    boolean confExportSourceId = false;
+    boolean confExportSourceId = false
     if (input['confExportSourceId']) {
         confExportSourceId = input['confExportSourceId']
     }
 
-    double confMaxError = 0.1;
+    double confMaxError = 0.1
     if (input['confMaxError']) {
-        confMaxError = Double.valueOf(input['confMaxError'])
+        confMaxError = Double.valueOf(input['confMaxError'] as String)
     }
 
     // --------------------------------------------
@@ -440,14 +457,20 @@ def exec(Connection connection, input) {
     parameters.setMergeSources(!confExportSourceId)
     parameters.exportReceiverPosition = true
 
+    if (input['tableRoadsTraffic']) {
+        // Use the right default database caps according to db type
+        String tableRoadsTraffic = TableLocation.capsIdentifier(input['tableRoadsTraffic'] as String, dbType)
+        pointNoiseMap.setSourcesEmissionTableName(tableRoadsTraffic)
+    }
+
     sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable))
 
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
         parameters.setRaysTable(input['confRaysName'] as String)
-        parameters.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE)
+        parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
         parameters.setRaysTable(input['confRaysName'] as String)
-        parameters.setKeepAbsorption(true);
-        parameters.setMaximumRaysOutputCount(maximumRaysToExport);
+        parameters.keepAbsorption = true
+        parameters.setMaximumRaysOutputCount(maximumRaysToExport)
     }
 
     pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)
@@ -459,6 +482,14 @@ def exec(Connection connection, input) {
     DefaultTableLoader defaultTableLoader = (DefaultTableLoader)pointNoiseMap.tableLoader
     AttenuationCnossosParameters environmentalData = defaultTableLoader.defaultParameters
 
+    if (input.containsKey('confFavorableOccurrencesDefault')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
+        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
+        for (int i = 0; i < favOccurrences.length; i++) {
+            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
+        }
+        environmentalData.setWindRose(favOccurrences)
+    }
     if (input.containsKey('confHumidity')) {
         environmentalData.setHumidity(input['confHumidity'] as Double)
     }
@@ -484,9 +515,9 @@ def exec(Connection connection, input) {
 
 
     if(recordProfile) {
-        LocalDateTime now = LocalDateTime.now();
-        pointNoiseMap.noiseMapDatabaseParameters.CSVProfilerOutputPath = String.format("profile_%d_%d_%d_%dh%d.csv",
-                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())
+        LocalDateTime now = LocalDateTime.now()
+        pointNoiseMap.noiseMapDatabaseParameters.CSVProfilerOutputPath = new File(String.format("profile_%d_%d_%d_%dh%d.csv",
+                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute()))
         pointNoiseMap.noiseMapDatabaseParameters.CSVProfilerWriteInterval = 120 // delay write csv line in seconds
     }
 
@@ -507,13 +538,6 @@ def exec(Connection connection, input) {
 
     resultString = "Calculation Done ! " + pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable + " table have been created."
 
-    // print to command window
-    logger.info('Result : ' + resultString)
-    logger.info('End : NoiseMap from Traffic')
-
-    // print to WPS Builder
-    return resultString
-
-
+    return pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable
 }
 
