@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -149,6 +150,8 @@ public class Main {
         options.addOption(databaseNameOption);
         Option printVersionOption = new Option("v", false,"Print version of all libraries");
         options.addOption(printVersionOption);
+        Option shutdownOption = new Option("c", "shutdown" ,false,"Do not shutdown compact the database at the end of the execution");
+        options.addOption(shutdownOption);
         Logger logger = LoggerFactory.getLogger("org.noise_planet");
         try {
             // Read parameters
@@ -156,7 +159,7 @@ public class Main {
             String scriptPath = "";
             String databaseName = "h2gisdb";
             Map<String, String> customParameters = new HashMap<>();
-            boolean printVersion = false;
+            boolean printVersion = true;
 
             CommandLineParser commandLineParser = new DefaultParser();
             HelpFormatter helpFormatter = new HelpFormatter();
@@ -172,6 +175,7 @@ public class Main {
             workingDir = commandLine.getOptionValue(workingDirOption.getOpt());
             scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
             printVersion = commandLine.hasOption(printVersionOption.getOpt());
+            boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
             if(printVersion) {
                 printBuildIdentifiers(logger);
@@ -219,6 +223,13 @@ public class Main {
                 Object result = script.invokeMethod("exec", new Object[] {connection, inputs});
                 if(result != null) {
                     logger.info(result.toString());
+                }
+                if(shutdown) {
+                    try (Statement st = connection.createStatement()) {
+                        logger.info("Shutdown compact the database..");
+                        st.execute("SHUTDOWN COMPACT");
+                        logger.info("done");
+                    }
                 }
             } catch (SQLException ex) {
                 while (ex != null) {
