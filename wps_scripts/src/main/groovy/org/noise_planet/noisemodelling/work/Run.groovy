@@ -28,10 +28,8 @@ import java.sql.ResultSet
 class Run {
 
     public static void main(String[] args) {
-        //runLyonEdgt100p()
-        //RunMatSim(args)
-        RunSUMO("fcd_output_32633",20)
-        //RunStutorial()
+        //RunSUMO("fcd_output_32633",20)
+        RunFlow("roads_merged_traffic_0","Speed")
         //export_table("Remove", 5800, 5900)
     }
 
@@ -126,6 +124,41 @@ class Run {
                 "exportPath"    : String.format('/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/Hornsgatan/synthetic_traffic_SUMO/syntatic/high/output/%s_%d.csv',File_name, gridStep),
                 "tableToExport" : "LT_GEOM"
         ])
+
+        connection.close();
+    }
+
+    static void RunFlow(String File_name, String Speed){
+        String dbName = "file:///home/gao/noise_modeling_database"
+        Connection connection;
+        File dbFile = new File(URI.create(dbName));
+        String databasePath = "jdbc:h2:" + dbFile.getAbsolutePath() + ";AUTO_SERVER=TRUE";
+        Driver.load();
+        connection = DriverManager.getConnection(databasePath, "", "");
+        H2GISFunctions.load(connection);
+
+        // Import Buildings for your study area
+        new Import_File().exec(connection,
+                ["pathFile" :  "/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/buildings_nm_ready.shp",
+                 "inputSRID": "32633",
+                 "tableName": "buildings"])
+
+        // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
+        new Import_File().exec(connection,
+                ["pathFile" : "/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/receivers_python_method1_5m.shp",
+                 "inputSRID": "32633",
+                 "tableName": "receivers"])
+
+        // Set the height of the receivers
+        new Set_Height().exec(connection,
+                [ "tableName":"RECEIVERS",
+                  "height": 1.5
+                ])
+
+        new Import_File().exec(connection,
+                ["pathFile" : String.format('/home/gao/Downloads/Noise/SUMO/Files_for_Yu/Sodermalm/%s.shp',File_name),
+                 "inputSRID": "32633",
+                 "tableName" : "traffic_flow"])
 
         connection.close();
     }
