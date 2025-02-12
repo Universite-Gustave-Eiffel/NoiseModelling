@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +35,7 @@ public class AtmosphericAttenuationComputeOutputTest {
         final double[] expected = new double[] {0.173,0.514,1.73,5.29,11.5,16.6,20.2,27.8};
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
             double freq = freq_lvl_exact.get(idfreq);
-            double coefAttAtmos = AttenuationCnossosParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationCnossosParameters.K_0);
+            double coefAttAtmos = AttenuationParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+AttenuationParameters.K_0);
             assertEquals(expected[idfreq], coefAttAtmos, EPSILON);
         }
     }
@@ -49,7 +48,7 @@ public class AtmosphericAttenuationComputeOutputTest {
         final double[] expected = new double[] {0.188,0.532,1.76,5.61,13.2,20.5,25.2,33.2};
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
             double freq = freq_lvl_exact.get(idfreq);
-            double coefAttAtmos = AttenuationCnossosParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationCnossosParameters.K_0);
+            double coefAttAtmos = AttenuationParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationParameters.K_0);
             assertEquals(expected[idfreq], coefAttAtmos, EPSILON);
         }
     }
@@ -62,7 +61,7 @@ public class AtmosphericAttenuationComputeOutputTest {
         final double[] expected = new double[] {0.165,0.401,0.779,1.78,5.5,19.3,63.3,154.4};
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
             double freq = freq_lvl_exact.get(idfreq);
-            double coefAttAtmos = AttenuationCnossosParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationCnossosParameters.K_0);
+            double coefAttAtmos = AttenuationParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationParameters.K_0);
             assertEquals(expected[idfreq], coefAttAtmos, EPSILON);
         }
     }
@@ -75,7 +74,7 @@ public class AtmosphericAttenuationComputeOutputTest {
         final double[] expected = new double[] {0.079,0.302,1.04,2.77,5.15,8.98,21.3,68.6};
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
             double freq = freq_lvl_exact.get(idfreq);
-            double coefAttAtmos = AttenuationCnossosParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationCnossosParameters.K_0);
+            double coefAttAtmos = AttenuationParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationParameters.K_0);
             assertEquals(expected[idfreq], coefAttAtmos, EPSILON);
         }
     }
@@ -89,7 +88,7 @@ public class AtmosphericAttenuationComputeOutputTest {
         final double[] expected = new double[] {0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
         for(int idfreq=0;idfreq< expected.length;idfreq++) {
             double freq = freq_lvl_exact.get(idfreq);
-            double coefAttAtmos = AttenuationCnossosParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationCnossosParameters.K_0);
+            double coefAttAtmos = AttenuationParameters.getCoefAttAtmos(freq, humidity,pressure,temperature+ AttenuationParameters.K_0);
             assertEquals(expected[idfreq], coefAttAtmos, EPSILON);
         }
     }

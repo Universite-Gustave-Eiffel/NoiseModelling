@@ -32,7 +32,7 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -482,11 +482,11 @@ def exec(Connection connection, Map input) {
 
     // Set environmental parameters
     DefaultTableLoader defaultTableLoader = (DefaultTableLoader)pointNoiseMap.tableLoader
-    AttenuationCnossosParameters environmentalData = defaultTableLoader.defaultParameters
+    AttenuationParameters environmentalData = defaultTableLoader.defaultParameters
 
     if (input.containsKey('confFavorableOccurrencesDefault')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length]
+        double[] favOccurrences = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]
         for (int i = 0; i < favOccurrences.length; i++) {
             favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
         }

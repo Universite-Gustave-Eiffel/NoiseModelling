@@ -40,7 +40,7 @@ public class SceneDatabaseInputSettings {
     boolean useTrainDirectivity = false;
 
     /**
-     * Read {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters} values from this table
+     * Read {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters} values from this table
      */
     String periodAtmosphericSettingsTableName = "";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
@@ -119,7 +119,7 @@ public class SceneDatabaseInputSettings {
      *
      * @param periodAtmosphericSettingsTableName The table name storing the period atmospheric settings
      *                                           to be used for computations.
-     *                                           See {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters#readFromDatabase(ResultSet, Map)}
+     *                                           See {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters#readFromDatabase(ResultSet, Map)}
      */
     public void setPeriodAtmosphericSettingsTableName(String periodAtmosphericSettingsTableName) {
         this.periodAtmosphericSettingsTableName = periodAtmosphericSettingsTableName;

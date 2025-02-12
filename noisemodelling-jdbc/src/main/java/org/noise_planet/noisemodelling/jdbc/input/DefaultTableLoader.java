@@ -28,7 +28,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +51,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     /**
      * Define attenuation settings to apply for each period
      */
-    public Map<String, AttenuationCnossosParameters> cnossosParametersPerPeriod = new HashMap<>();
-    public AttenuationCnossosParameters defaultParameters = new AttenuationCnossosParameters();
+    public Map<String, AttenuationParameters> cnossosParametersPerPeriod = new HashMap<>();
+    public AttenuationParameters defaultParameters = new AttenuationParameters();
 
     public static final int DEFAULT_FETCH_SIZE = 300;
     protected int fetchSize = DEFAULT_FETCH_SIZE;
@@ -139,13 +139,16 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             aWeightingArray = new ArrayList<>();
             ProfileBuilder.initializeFrequencyArrayFromReference(frequencyArray, exactFrequencyArray, aWeightingArray);
         }
+        defaultParameters.setFrequencies(frequencyArray);
+        // Load atmospheric data from database
         if(!inputSettings.periodAtmosphericSettingsTableName.isEmpty()) {
             loadAtmosphericTableSettings(connection, inputSettings.periodAtmosphericSettingsTableName);
         }
-        defaultParameters.setFrequencies(frequencyArray);
-        for(AttenuationCnossosParameters parameters : cnossosParametersPerPeriod.values()) {
+        // apply expected frequency to each atmospheric data
+        for(AttenuationParameters parameters : cnossosParametersPerPeriod.values()) {
             parameters.setFrequencies(frequencyArray);
         }
+        // Load source directivity
         if(inputSettings.useTrainDirectivity) {
             insertTrainDirectivity();
         } else if (!inputSettings.directivityTableName.isEmpty()) {
@@ -162,7 +165,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
              ResultSet resultSet = statement.executeQuery(query)) {
             while (resultSet.next()) {
                 // Placeholder for processing the results
-                AttenuationCnossosParameters.readFromDatabase(resultSet, cnossosParametersPerPeriod);
+                AttenuationParameters.readFromDatabase(resultSet, cnossosParametersPerPeriod);
             }
         }
     }
@@ -200,9 +203,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * Retrieves the parameters defined for different time periods.
      *
      * @return a map where the keys represent the time periods (e.g., "D", "E", "N") as strings,
-     *         and the values are instances of {@link AttenuationCnossosParameters} representing the corresponding parameters.
+     *         and the values are instances of {@link AttenuationParameters} representing the corresponding parameters.
      */
-    public Map<String, AttenuationCnossosParameters> getCnossosParametersPerPeriod() {
+    public Map<String, AttenuationParameters> getCnossosParametersPerPeriod() {
         return cnossosParametersPerPeriod;
     }
 

@@ -24,10 +24,10 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -99,7 +99,7 @@ public class NoiseMapByReceiverMakerTest {
         values.append(" ROLL, ");
         values.append(directivityId);
         values.append(" DIR_ID");
-        AttenuationCnossosParameters data = new AttenuationCnossosParameters(false);
+        AttenuationParameters data = new AttenuationParameters(false);
         for(String period : new String[] {"D", "E", "N"}) {
             for (int freq : data.getFrequencies()) {
                 String fieldName = "LW" + period + freq;
@@ -187,11 +187,11 @@ public class NoiseMapByReceiverMakerTest {
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
             defaultTableLoader.insertTrainDirectivity();
-            AttenuationCnossosParameters daySettings = new AttenuationCnossosParameters();
+            AttenuationParameters daySettings = new AttenuationParameters();
             daySettings.setTemperature(20);
-            AttenuationCnossosParameters eveningSettings = new AttenuationCnossosParameters();
+            AttenuationParameters eveningSettings = new AttenuationParameters();
             eveningSettings.setTemperature(18);
-            AttenuationCnossosParameters nightSettings = new AttenuationCnossosParameters();
+            AttenuationParameters nightSettings = new AttenuationParameters();
             nightSettings.setTemperature(16);
             defaultTableLoader.cnossosParametersPerPeriod.put("D", daySettings);
             defaultTableLoader.cnossosParametersPerPeriod.put("E", eveningSettings);
@@ -263,11 +263,11 @@ public class NoiseMapByReceiverMakerTest {
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
             defaultTableLoader.insertTrainDirectivity();
-            AttenuationCnossosParameters daySettings = new AttenuationCnossosParameters();
+            AttenuationParameters daySettings = new AttenuationParameters();
             daySettings.setTemperature(20);
-            AttenuationCnossosParameters eveningSettings = new AttenuationCnossosParameters();
+            AttenuationParameters eveningSettings = new AttenuationParameters();
             eveningSettings.setTemperature(18);
-            AttenuationCnossosParameters nightSettings = new AttenuationCnossosParameters();
+            AttenuationParameters nightSettings = new AttenuationParameters();
             nightSettings.setTemperature(16);
             defaultTableLoader.cnossosParametersPerPeriod.put("D", daySettings);
             defaultTableLoader.cnossosParametersPerPeriod.put("E", eveningSettings);

@@ -24,8 +24,8 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -145,7 +145,7 @@ public class SceneWithEmissionTest {
         scene.setComputeVerticalDiffraction(true);
         scene.maxSrcDist = 2000;
 
-        AttenuationCnossosParameters attData = scene.defaultCnossosParameters;
+        AttenuationParameters attData = scene.defaultCnossosParameters;
         attData.setHumidity(70);
         attData.setTemperature(10);
 
@@ -221,7 +221,7 @@ public class SceneWithEmissionTest {
         scene.maxSrcDist = 100*800;
         scene.maxRefDist = 100*800;
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 

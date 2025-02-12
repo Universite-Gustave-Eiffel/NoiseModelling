@@ -22,7 +22,7 @@ IComputePathsOut = autoclass('org.noise_planet.noisemodelling.pathfinder.CutPlan
 ProfileBuilder = autoclass('org.noise_planet.noisemodelling.pathfinder.ProfileBuilder')
 ProfilerThread = autoclass('org.noise_planet.noisemodelling.pathfinder.utils.ProfilerThread')
 ComputeRaysOutAttenuation = autoclass('org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation')
-PropagationProcessPathData = autoclass('org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters')
+PropagationProcessPathData = autoclass('org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters')
 Coordinate = autoclass('org.locationtech.jts.geom.Coordinate')
 Array = autoclass('java.lang.reflect.Array')
 

@@ -43,7 +43,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     }
 
     /**
-     *  Creates a new instance of IComputePathsOut using the provided Scene data and AttenuationCnossosParameters for different time periods.
+     *  Creates a new instance of IComputePathsOut using the provided Scene data and AttenuationParameters for different time periods.
      * @param scene       the scene data for the current computation thread.
      * @return A new instance of IComputePathsOut initialized with the provided parameters.
      */

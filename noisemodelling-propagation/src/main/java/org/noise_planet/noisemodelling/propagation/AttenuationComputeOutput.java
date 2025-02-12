@@ -11,25 +11,15 @@ package org.noise_planet.noisemodelling.propagation;
 
 
 import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static java.lang.Math.*;
-import static java.lang.Math.log10;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * Way to store data computed by threads.

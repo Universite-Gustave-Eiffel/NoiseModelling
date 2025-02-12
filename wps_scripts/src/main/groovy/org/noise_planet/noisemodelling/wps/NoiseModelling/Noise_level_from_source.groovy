@@ -48,7 +48,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVis
 
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
+import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

@@ -5567,13 +5567,13 @@ public class AttenuationComputeOutputCnossosTest {
 
     @Test
     public void testRoseIndex() {
-        double angle_section = (2 * Math.PI) / AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length;
+        double angle_section = (2 * Math.PI) / AttenuationParameters.DEFAULT_WIND_ROSE.length;
         double angleStart = Math.PI / 2 - angle_section / 2;
-        for(int i = 0; i < AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length; i++) {
+        for(int i = 0; i < AttenuationParameters.DEFAULT_WIND_ROSE.length; i++) {
             double angle = angleStart - angle_section * i - angle_section / 3;
-            int index = AttenuationCnossosParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            int index = AttenuationParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
-            index = AttenuationCnossosParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            index = AttenuationParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);
         }
     }
@@ -5610,7 +5610,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.reflexionOrder = 0;
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5662,7 +5662,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.reflexionOrder = 0;
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5717,7 +5717,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.setBodyBarrier(true);
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
@@ -5811,7 +5811,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.setDefaultGroundAttenuation(0.0);
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
@@ -5853,7 +5853,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.reflexionOrder = 0;
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5893,7 +5893,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.reflexionOrder = 0;
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
@@ -5948,16 +5948,16 @@ public class AttenuationComputeOutputCnossosTest {
         double[][] windRoseTest = new double[receivers.size()][];
         // generate favorable condition for each direction
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
-            windRoseTest[idReceiver] = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length];
+            windRoseTest[idReceiver] = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length];
             double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
             Arrays.fill(windRoseTest[idReceiver], 1);
-            int roseIndex = AttenuationCnossosParameters.getRoseIndex(angle);
+            int roseIndex = AttenuationParameters.getRoseIndex(angle);
             windRoseTest[idReceiver][roseIndex] = 0.5;
         }
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
             double[] favorableConditionDirections = windRoseTest[idReceiver];
             //Propagation process path data building
-            AttenuationCnossosParameters attData = scene.defaultCnossosParameters;
+            AttenuationParameters attData = scene.defaultCnossosParameters;
             attData.setHumidity(HUMIDITY);
             attData.setTemperature(TEMPERATURE);
             attData.setWindRose(favorableConditionDirections);

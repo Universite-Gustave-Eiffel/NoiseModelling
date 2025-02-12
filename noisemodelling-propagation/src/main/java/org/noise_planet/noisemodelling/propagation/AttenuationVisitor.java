@@ -14,7 +14,6 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
@@ -53,8 +52,8 @@ public class AttenuationVisitor implements CutPlaneVisitor {
 
     }
 
-    private void processPath(String period, AttenuationCnossosParameters attenuationCnossosParameters, CnossosPath path) {
-        double[] aGlobalMeteo = AttenuationCnossos.computeCnossosAttenuation(attenuationCnossosParameters, path,
+    private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
+        double[] aGlobalMeteo = AttenuationCnossos.computeCnossosAttenuation(AttenuationParameters, path,
                 multiThreadParent.scene, multiThreadParent.exportAttenuationMatrix);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
             multiThreadParent.cnossosPathCount.addAndGet(1);
@@ -74,7 +73,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      */
     public void addPropagationPath(CnossosPath path) {
         if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
-            for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
+            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
                     multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
                 processPath(cnossosParametersEntry.getKey(), cnossosParametersEntry.getValue(), path);
             }

@@ -19,9 +19,9 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
 import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
@@ -100,7 +100,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      * @return Attenuation in dB
      */
     private static double[] computeFastAttenuation(PathFinder.SourcePointInfo sourceInfo,
-                                                   PathFinder.ReceiverPointInfo receiverInfo, AttenuationCnossosParameters cnossosParameters) {
+                                                   PathFinder.ReceiverPointInfo receiverInfo, AttenuationParameters cnossosParameters) {
         // For the quick attenuation evaluation
         // only take account of geometric dispersion and atmospheric attenuation
         double distance = Math.max(1.0, sourceInfo.position.distance3D(receiverInfo.position));
@@ -111,7 +111,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     attenuationDivGeom), -1);
     }
 
-    private double[] processAndStoreAttenuation(AttenuationCnossosParameters data, CnossosPath proPathParameters, String period) {
+    private double[] processAndStoreAttenuation(AttenuationParameters data, CnossosPath proPathParameters, String period) {
         double[] attenuation = AttenuationCnossos.computeCnossosAttenuation(data, proPathParameters, multiThread.sceneWithEmission,
                 multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
         if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
@@ -164,7 +164,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             if(scene.wjSources.isEmpty()) {
                 // No emission push only attenuation for each period
                 if(!scene.cnossosParametersPerPeriod.isEmpty()) {
-                    for (Map.Entry<String, AttenuationCnossosParameters> cnossosParametersEntry :
+                    for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
                             scene.cnossosParametersPerPeriod.entrySet()) {
                         double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(),
                                 cnossosPath, cnossosParametersEntry.getKey()));

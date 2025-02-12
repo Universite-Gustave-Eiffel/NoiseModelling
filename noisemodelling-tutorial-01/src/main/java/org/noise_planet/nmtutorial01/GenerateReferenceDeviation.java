@@ -20,9 +20,10 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +95,7 @@ public class GenerateReferenceDeviation {
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 

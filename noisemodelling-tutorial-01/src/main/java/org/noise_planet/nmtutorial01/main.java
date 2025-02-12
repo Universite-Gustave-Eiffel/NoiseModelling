@@ -15,7 +15,8 @@ import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
 import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +118,7 @@ class Main {
 
         sql.execute("DROP TABLE IF EXISTS " + atmosphericSettingsTableName + ";");
 
-        AttenuationCnossosParameters defaultParameters = new AttenuationCnossosParameters();
+        AttenuationParameters defaultParameters = new AttenuationParameters();
         defaultParameters.setTemperature(20);
         defaultParameters.writeToDatabase(connection, atmosphericSettingsTableName, "D");
         defaultParameters.setTemperature(16);
