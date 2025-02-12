@@ -712,10 +712,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
                 connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
-        int pkIndex = primaryKey.second();
-        if (pkIndex < 1) {
+        if (primaryKey == null) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
+        int pkIndex = primaryKey.second();
         try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
                 + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
             st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
@@ -756,7 +756,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String emissionTableName = scene.sceneDatabaseInputSettings.sourcesEmissionTableName;
         if (!emissionTableName.isEmpty()) {
             try (PreparedStatement st = connection.prepareStatement("SELECT E.* FROM " + sourcesTableName +
-                    " S INNER JOIN, "+emissionTableName+" E ON S."+primaryKey.first()+" = E." +
+                    " S INNER JOIN "+emissionTableName+" E ON S."+primaryKey.first()+" = E." +
                     scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField+" WHERE S."
                     + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
                 st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));

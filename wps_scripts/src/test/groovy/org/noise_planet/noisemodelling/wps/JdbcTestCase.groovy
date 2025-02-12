@@ -19,18 +19,21 @@ import org.junit.Before
 import org.junit.Ignore
 
 import java.sql.Connection
+import java.sql.SQLException
+import java.sql.Statement
 
 @Ignore
 class JdbcTestCase  extends GroovyTestCase {
-    Connection connection;
-
+    Connection connection
+    File dbFile = new File(new File("build/tmp"), UUID.randomUUID().toString().replace("-", "")+".mv.db")
     @Before
     void setUp() {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(UUID.randomUUID().toString().replace("-", ""), true))
+        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(dbFile.toURI().toString().replace(".mv.db", ""), true))
     }
 
     @After
-    void tearDown() {
+    void tearDown() throws SQLException {
         connection.close()
+        dbFile.delete()
     }
 }

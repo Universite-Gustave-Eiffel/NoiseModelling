@@ -24,6 +24,8 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
@@ -31,6 +33,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -302,6 +305,97 @@ public class NoiseMapByReceiverMakerTest {
             // receiver is on the left of the source
             assertEquals(new Orientation(360-90, 0, 0), pathParameters.getRaySourceReceiverDirectivity());
 
+        }
+    }
+
+
+
+    @Test
+    public void testEmissionTrafficTable() throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'ROADS_TRAFF')", NoiseMapByReceiverMakerTest.class.getResource("roads_traff.shp").getFile()));
+            st.execute("CREATE TABLE SOURCES_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT PK, THE_GEOM FROM ROADS_TRAFF");
+            st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR, IDSOURCE INT, TV REAL, HV REAL, LV_SPD REAL, HV_SPD REAL, PVMT VARCHAR)");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'D', PK, TV_D, HV_D, LV_SPD_D, HV_SPD_D, PVMT FROM ROADS_TRAFF");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'E', PK, TV_E, HV_E, LV_SPD_E, HV_SPD_E, PVMT FROM ROADS_TRAFF");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'N', PK, TV_N, HV_N, LV_SPD_N, HV_SPD_N, PVMT FROM ROADS_TRAFF");
+
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("buildings.shp").getFile()));
+
+            int srid = org.h2gis.utilities.GeometryTableUtilities.getSRID(connection, "BUILDINGS");
+            IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
+            // Generate delaunay triangulation
+            DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
+            delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+
+            // Create noise map for 4 periods
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "SOURCES_GEOM", "RECEIVERS");
+
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
+
+            noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            int receiversRowCount = JDBCUtilities.getRowCount(connection, "RECEIVERS");
+
+            int resultRowCount = JDBCUtilities.getRowCount(connection,
+                    noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
+
+            // D E N, should be 3 more rows than receivers
+            assertEquals(receiversRowCount * 3, resultRowCount);
+        }
+    }
+
+
+    @Test
+    public void testEmissionLwTable() throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("lw_roads.shp").getFile()));
+            st.execute("CREATE TABLE SOURCES_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT PK, THE_GEOM FROM LW_ROADS");
+            st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR, IDSOURCE INT, LW63 REAL, LW125 REAL, LW250 REAL, LW500 REAL, LW1000 REAL, LW2000 REAL, LW4000 REAL, LW8000 REAL)");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'D', PK, LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 FROM LW_ROADS");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'E', PK, LWE63, LWE125, LWE250, LWE500, LWE1000, LWE2000, LWE4000, LWE8000 FROM LW_ROADS");
+            st.execute("INSERT INTO SOURCES_EMISSION SELECT 'N', PK, LWN63, LWN125, LWN250, LWN500, LWN1000, LWN2000, LWN4000, LWN8000 FROM LW_ROADS");
+
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("buildings.shp").getFile()));
+
+            int srid = org.h2gis.utilities.GeometryTableUtilities.getSRID(connection, "BUILDINGS");
+            IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
+            // Generate delaunay triangulation
+            DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES_GEOM");
+            delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setGridDim(1);
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+
+            // Create noise map for 4 periods
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "SOURCES_GEOM", "RECEIVERS");
+
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
+            noiseMapByReceiverMaker.setGridDim(1);
+            noiseMapByReceiverMaker.setSourcesEmissionTableName("SOURCES_EMISSION");
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
+
+            noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
+
+            int receiversRowCount = JDBCUtilities.getRowCount(connection, "RECEIVERS");
+
+            int resultRowCount = JDBCUtilities.getRowCount(connection,
+                    noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
+
+            // D E N, should be 3 more rows than receivers
+            assertEquals(receiversRowCount * 3, resultRowCount);
         }
     }
 }
