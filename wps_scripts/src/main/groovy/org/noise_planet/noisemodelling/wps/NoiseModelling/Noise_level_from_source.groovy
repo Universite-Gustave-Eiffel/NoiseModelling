@@ -48,7 +48,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVis
 
 import org.noise_planet.noisemodelling.propagation.*
 import org.noise_planet.noisemodelling.jdbc.*
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -149,6 +149,20 @@ inputs = [
                         '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
                 min        : 0, max: 1, type: String.class
         ],
+        tablePeriodAtmosphericSettings          : [
+                name       : 'Atmospheric settings table name for each time period',
+                title      : 'Atmospheric settings table name for each time period',
+                description: 'Name of the Atmospheric settings table </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
+                        '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
+                        '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
+                        '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
+                        '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
+                        '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
+                        '</ul>' ,
+                min        : 0, max: 1, type: String.class
+        ],
         paramWallAlpha          : [
                 name       : 'wallAlpha',
                 title      : 'Wall absorption coefficient',
@@ -204,34 +218,6 @@ inputs = [
                         '&#128736; Default value: <b>false </b>',
                 min        : 0, max: 1, type: Boolean.class
         ],
-        confSkipLday            : [
-                name       : 'Skip LDAY_GEOM table',
-                title      : 'Do not compute LDAY_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
-        ],
-        confSkipLevening        : [
-                name       : 'Skip LEVENING_GEOM table',
-                title      : 'Do not compute LEVENING_GEOM table',
-                description: 'Skip the creation of this table. </br> </br> ' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
-        ],
-        confSkipLnight          : [
-                name       : 'Skip LNIGHT_GEOM table',
-                title      : 'Do not compute LNIGHT_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
-        ],
-        confSkipLden            : [
-                name       : 'Skip LDEN_GEOM table',
-                title      : 'Do not compute LDEN_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
-        ],
         confExportSourceId      : [
                 name       : 'Keep source id',
                 title      : 'Separate receiver level by source identifier',
@@ -256,34 +242,10 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-        confFavorableOccurrencesDay: [
-                name       : 'Probability of occurrences (Day)',
-                title      : 'Probability of occurrences (Day)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
-                        'The north slice is the last array index not the first one <br/>' +
-                        'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
-                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
-                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176; </li> </ul>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
-                min        : 0, max: 1,
-                type       : String.class
-        ],
-        confFavorableOccurrencesEvening: [
-                name       : 'Probability of occurrences (Evening)',
-                title      : 'Probability of occurrences (Evening)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
-                        'The north slice is the last array index not the first one <br/>' +
-                        'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
-                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
-                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176; </li> </ul>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
-                min        : 0, max: 1,
-                type       : String.class
-        ],
-        confFavorableOccurrencesNight: [
-                name       : 'Probability of occurrences (Night)',
-                title      : 'Probability of occurrences (Night)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
+        confFavorableOccurrencesDefault: [
+                name       : 'Probability of occurrences',
+                title      : 'Probability of occurrences',
+                description: 'Comma-delimited string containing the default probability of occurrences of favourable propagation conditions. </br> </br>' +
                         'The north slice is the last array index not the first one <br/>' +
                         'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
                         '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
@@ -513,6 +475,12 @@ def exec(Connection connection, Map input) {
     parameters.setMergeSources(!confExportSourceId)
     parameters.exportReceiverPosition = true
 
+    if (input['tableSourcesEmission']) {
+        // Use the right default database caps according to db type
+        String tableSourcesEmission = TableLocation.capsIdentifier(input['tableSourcesEmission'] as String, dbType)
+        pointNoiseMap.setSourcesEmissionTableName(tableSourcesEmission)
+    }
+
     // add optional discrete directivity table name
     if(tableSourceDirectivity.isEmpty()) {
         // Use train directivity functions instead of discrete directivity
@@ -546,7 +514,7 @@ def exec(Connection connection, Map input) {
 
     // Set environmental parameters
     DefaultTableLoader defaultTableLoader = (DefaultTableLoader)pointNoiseMap.tableLoader
-    AttenuationCnossosParameters environmentalData = defaultTableLoader.defaultParameters
+    AttenuationParameters environmentalData = defaultTableLoader.defaultParameters
 
     if (input.containsKey('confFavorableOccurrencesDefault')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
@@ -561,6 +529,9 @@ def exec(Connection connection, Map input) {
     }
     if (input.containsKey('confTemperature')) {
         environmentalData.setTemperature(input['confTemperature'] as Double)
+    }
+    if(input.containsKey("tablePeriodAtmosphericSettings")) {
+        pointNoiseMap.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(input.get("tablePeriodAtmosphericSettings") as String)
     }
 
     // Building height field name

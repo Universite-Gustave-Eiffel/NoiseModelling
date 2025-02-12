@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
@@ -31,9 +30,7 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters
-
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -116,6 +113,32 @@ inputs = [
                         '<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>' +
                         '<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>' +
                         '</ul></br>',
+                min        : 0, max: 1, type: String.class
+        ],
+        tableSourceDirectivity          : [
+                name       : 'Source directivity table name',
+                title      : 'Source directivity table name',
+                description: 'Name of the emission directivity table </br> </br>' +
+                        'If not specified the default is train directivity of CNOSSOS-EU</b> </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> DIR_ID </b>: identifier of the directivity sphere (INTEGER) </li> ' +
+                        '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
+                        '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
+                        '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
+                min        : 0, max: 1, type: String.class
+        ],
+        tablePeriodAtmosphericSettings          : [
+                name       : 'Atmospheric settings table name for each time period',
+                title      : 'Atmospheric settings table name for each time period',
+                description: 'Name of the Atmospheric settings table </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
+                        '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
+                        '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
+                        '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
+                        '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
+                        '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
+                        '</ul>' ,
                 min        : 0, max: 1, type: String.class
         ],
         tableReceivers          : [
@@ -237,7 +260,7 @@ inputs = [
         confFavorableOccurrencesDefault: [
                 name       : 'Probability of occurrences',
                 title      : 'Probability of occurrences',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
+                description: 'Comma-delimited string containing the default probability of occurrences of favourable propagation conditions. </br> </br>' +
                         'The north slice is the last array index not the first one <br/>' +
                         'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
                         '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
@@ -398,6 +421,13 @@ def exec(Connection connection, Map input) {
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
 
+    String tableSourceDirectivity = ""
+    if (input['tableSourceDirectivity']) {
+        tableSourceDirectivity = input['tableSourceDirectivity']
+        // do it case-insensitive
+        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
+    }
+
     boolean recordProfile = false
     if (input['confRecordProfile']) {
         recordProfile = input['confRecordProfile']
@@ -465,6 +495,16 @@ def exec(Connection connection, Map input) {
         pointNoiseMap.setSourcesEmissionTableName(tableRoadsTraffic)
     }
 
+    // add optional discrete directivity table name
+    if(tableSourceDirectivity.isEmpty()) {
+        // Use train directivity functions instead of discrete directivity
+        pointNoiseMap.sceneInputSettings.setUseTrainDirectivity(true)
+    } else {
+        // Load table into specialized class
+        pointNoiseMap.sceneInputSettings.setDirectivityTableName(tableSourceDirectivity)
+        logger.info(String.format(Locale.ROOT, "Loaded directivity from %s table", tableSourceDirectivity))
+    }
+
     sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable))
 
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
@@ -497,6 +537,9 @@ def exec(Connection connection, Map input) {
     }
     if (input.containsKey('confTemperature')) {
         environmentalData.setTemperature(input['confTemperature'] as Double)
+    }
+    if(input.containsKey("tablePeriodAtmosphericSettings")) {
+        pointNoiseMap.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(input.get("tablePeriodAtmosphericSettings") as String)
     }
 
     // Building height field name

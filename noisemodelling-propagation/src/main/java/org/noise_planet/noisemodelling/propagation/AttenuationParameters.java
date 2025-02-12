@@ -35,8 +35,21 @@ public class AttenuationParameters {
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     public double temperature = 15;
+    /**
+     * Represents the default speed of sound in air under standard conditions, measured in meters per second.
+     * The value is typically used as a constant for computations requiring the speed of sound.
+     * Standard conditions assume a temperature of 15°C at sea level atmospheric pressure.
+     */
     public double celerity = 340;
+    /**
+     * Represents the relative humidity in percentage, ranging from 0 to 100.
+     * This variable is utilized in various calculations related to atmospheric
+     * attenuation and sound propagation.
+     */
     public double humidity = 70;
+    /**
+     * Standard atmosphere atm (Pa)
+     */
     public double pressure = Pref;
     public double[] alpha_atmo;
     public double defaultOccurance = 0.5;
