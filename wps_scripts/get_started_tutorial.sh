@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Run the get started turorial
+# Run the get started tutorial
 # https://noisemodelling.readthedocs.io/en/latest/Get_Started_Tutorial.html
 
 # Step 4: Upload files to database
