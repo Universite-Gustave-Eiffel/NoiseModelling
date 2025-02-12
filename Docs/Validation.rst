@@ -27,7 +27,7 @@ Some limits are given in the CNOSSOS-EU documents below:
 .. note::
     Source : https://circabc.europa.eu/sd/a/9566c5b9-8607-4118-8427-906dab7632e2/Directive_2015_996_EN.pdfde
 
-    This document specifies a method for calculating the attenuationComputeOutput of noise during its outdoor propagation.
+    This document specifies a method for calculating the attenuation of noise during its outdoor propagation. 
     Knowing the characteristics of the source, this method predicts the equivalent continuous sound pressure level at a receiver point corresponding to two particular types of atmospheric conditions: 
 
     * downward-refraction propagation conditions (positive vertical gradient of effective sound celerity) from the source to the receiver
@@ -39,7 +39,7 @@ Some limits are given in the CNOSSOS-EU documents below:
 
     The method of calculation does not provide results in upward-refraction propagation conditions (negative vertical gradient of effective sound speed) but these conditions are approximated by homogeneous conditions when computing Lden.
 
-    To calculate the attenuationComputeOutput due to atmospheric absorption in the case of transport infrastructure, the temperature and humidity conditions are calculated according to ISO 9613-1:1996.
+    To calculate the attenuation due to atmospheric absorption in the case of transport infrastructure, the temperature and humidity conditions are calculated according to ISO 9613-1:1996.
 
     The method provides results per octave band, from 63 Hz to 8 000 Hz. The calculations are made for each of the centre frequencies.
 

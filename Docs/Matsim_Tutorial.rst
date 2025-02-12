@@ -165,9 +165,9 @@ So the process is as follows :
 1. we generate a SOURCE table, using the ``MATSIM_ROADS`` table, where all levels are set to 0 dB.
 2. We use that table as input of the ``Noise_level_from_source`` WPS bloc and setting the ``confExportSourceId`` input paramter.
 
-The ``confExportSourceId`` parameter will actually ouput, for every recevier, the list of sources that contribute to the resulting levels, with the source-receiver noise attenuationComputeOutput.
+The ``confExportSourceId`` parameter will actually ouput, for every recevier, the list of sources that contribute to the resulting levels, with the source-receiver noise attenuation.
 
-We'll then use this attenuationComputeOutput matrix in the next steps to get the 96 noise maps.
+We'll then use this attenuation matrix in the next steps to get the 96 noise maps.
 
 Create the 0dB Source table
 ---------------------------------
@@ -177,7 +177,7 @@ Here we'll use the ``ZerodB_Source_From_Roads`` WPS bloc. It's 2 inputs paramete
 - Input table name: ``MATSIM_ROADS``
 - Output table name: ``SOURCES_0DB``
 
-Calculate the attenuationComputeOutput matrix
+Calculate the attenuation matrix
 ----------------------------------
 
 Let's use the previously generated table to launch our propagation calculation.
@@ -204,7 +204,7 @@ The parameters we will use are the following :
 .. figure:: images/matsim/noise_from_source_wps.png
    :align: center
 
-We should end up with a table called ``LDAY_GEOM`` that contains a list of contributing source attenuationComputeOutput for every receiver.
+We should end up with a table called ``LDAY_GEOM`` that contains a list of contributing source attenuation for every receiver.
 We can see such a list for the receiver n°1 in the figure below:
 
 .. figure:: images/matsim/lday_geom_table.png
@@ -214,7 +214,7 @@ We can see such a list for the receiver n°1 in the figure below:
 Step 6 : Calculate Noise Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We have noise power levels every 15 minutes in the ``MATSIM_ROADS_LW`` table, and a source-receiver noise attenuationComputeOutput matrix in the ``LDAY_GEOM`` table.
+We have noise power levels every 15 minutes in the ``MATSIM_ROADS_LW`` table, and a source-receiver noise attenuation matrix in the ``LDAY_GEOM`` table.
 We just need to combine the two to get receivers noise levels, noise maps, every 15 minutes.
 
 This is the purpose of the ``Noise_From_Attenuation_Matrix`` WPS bloc.
