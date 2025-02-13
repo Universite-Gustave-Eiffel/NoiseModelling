@@ -23,7 +23,11 @@ import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.Tuple
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
@@ -32,7 +36,7 @@ import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnoss
 import java.sql.Connection
 import java.sql.SQLException
 
-title = 'Convert Individual Vehicles to Noisy Vehicles and Snap them to the network point sources.'
+title = 'Convert Individual Vehicles traffic to emission noise level and Snap them to the network point sources.'
 description = 'Calculating dynamic road emissions based on vehicles trajectories and snap them to the network (table SOURCES_0DB should exists).' +
         '</br> </br> <b> The output table is called : LW_DYNAMIC_GEOM </b> ' +
         'and contain : </br>' +
@@ -46,6 +50,13 @@ inputs = [
                   title : "table of the individual Vehicles",
                   description : "it should contain timestep, geometry (POINT), speed, acceleration, veh_type...",
                   type: String.class],
+        tableSourceGeom : [name : 'table of network points source geometry, the output emission will be reattached to the' +
+                ' index of this table according to the snap distance',
+                           title : "table of the individual Vehicles",
+                           description : "table of points source geometry, the output emission will be reattached to" +
+                                   " the index of this table according to the snap distance." +
+                                   " See Point_Source_From_Network to convert lines to points",
+                           type: String.class],
         distance2snap : [name : 'Maximum distance to snap on the network point sources',
                   title : "Maximum distance to snap on the network point sources",
                   description : "Maximum distance to snap on the network point sources",
@@ -94,10 +105,12 @@ def run(input) {
 
 
 // main function of the script
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
+
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
 
     // Open sql connection to communicate with the database
     Sql sql = new Sql(connection)
@@ -114,6 +127,8 @@ def exec(Connection connection, input) {
     // -------------------
 
     String vehicles_table_name = input['tableVehicles']
+    
+    String tableSourceGeom = input["tableSourceGeom"] as String
 
     String tableFormat = input['tableFormat']
 
@@ -128,31 +143,30 @@ def exec(Connection connection, input) {
 
     System.out.println('Start  time : ' + TimeCategory.minus(new Date(), start))
 
+    def nameAndIndex = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection, TableLocation.parse(tableSourceGeom, dbType))
+    if(nameAndIndex == null) {
+        throw new SQLException("Table table $nameAndIndex does not contain a primary key")
+    }
+    String primaryKeyColumnName = nameAndIndex.first()
 
     VehicleEmissionProcessData vehicleEmissionProcessData = new VehicleEmissionProcessData();
     vehicleEmissionProcessData.setDynamicEmissionTable(vehicles_table_name, sql, tableFormat)
 
-    sql.execute("CREATE SPATIAL INDEX ON LW_VEHICLE(the_geom);")
-    sql.execute("CREATE SPATIAL INDEX ON SOURCES_0dB(the_geom);")
+    sql.execute("drop table if exists SOURCES_EMISSION;")
 
-    sql.execute("drop table if exists LW_DYNAMIC_NEW;")
-    // Associate Geometry column to the table LDEN
-    sql.execute("create table LW_DYNAMIC_NEW as SELECT b.IT as T ,b.Hz63, b.Hz125, b.Hz250, b.Hz500, b.Hz1000, b.Hz2000, b.Hz4000, b.Hz8000, (SELECT a.PK FROM SOURCES_0dB a WHERE ST_EXPAND(b.the_geom,"+distance2snap+","+distance2snap+") && a.the_geom  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) PK FROM LW_VEHICLE b ;")
-    sql.execute("DROP TABLE IF EXISTS LW_DYNAMIC_GEOM;")
-    sql.execute("CREATE TABLE LW_DYNAMIC_GEOM AS SELECT a.*, b.THE_GEOM FROM LW_DYNAMIC_NEW a,SOURCES_0dB b WHERE a.PK = b.PK ;")
-    sql.execute("DROP TABLE IF EXISTS LW_DYNAMIC_NEW;")
-
-    sql.execute("CREATE SPATIAL INDEX ON LW_DYNAMIC_GEOM(the_geom);")
-
-   // sql.execute("DROP TABLE IF EXISTS ROAD_POINTS")
+    // Associate vehicles position to the closest source point
+    sql.execute("create table SOURCES_EMISSION as SELECT b.PERIOD ," +
+            "b.Lw63, b.Lw125, b.Lw250, b.Lw500, b.Lw1000, b.Lw2000, b.Lw4000, b.Lw8000," +
+            " (SELECT a.$primaryKeyColumnName FROM $tableSourceGeom a " +
+            "WHERE ST_EXPAND(b.the_geom,$distance2snap, $distance2snap) && a.the_geom" +
+            "  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) IDSOURCE FROM LW_VEHICLE b ;")
+        
     sql.execute("DROP TABLE IF EXISTS LW_VEHICLE")
-    sql.execute("drop table LW_DYNAMIC if exists;")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
     System.out.println("Export data to table")
 
-
-    resultString = "Calculation Done ! The table LW_DYNAMIC_GEOM has been created."
+    resultString = "Calculation Done ! The table SOURCES_EMISSION has been created."
 
     // print to command window
     System.out.println('Result : ' + resultString)
@@ -176,8 +190,8 @@ class VehicleEmissionProcessData {
         //////////////////////
 
         sql.execute("drop table if exists LW_DYNAMIC;")
-        sql.execute("create table LW_VEHICLE(IT integer, THE_GEOM geometry, Hz63 double precision, Hz125 double precision, Hz250 double precision, Hz500 double precision, Hz1000 double precision, Hz2000 double precision, Hz4000 double precision, Hz8000 double precision);")
-        def qry = 'INSERT INTO LW_VEHICLE(IT , THE_GEOM,Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
+        sql.execute("create table LW_VEHICLE(PERIOD varchar, THE_GEOM geometry, Lw63 double precision, Lw125 double precision, Lw250 double precision, Lw500 double precision, Lw1000 double precision, Lw2000 double precision, Lw4000 double precision, Lw8000 double precision);")
+        def qry = 'INSERT INTO LW_VEHICLE(PERIOD , THE_GEOM,Lw63, Lw125, Lw250, Lw500, Lw1000,Lw2000, Lw4000, Lw8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         if (tableFormat.equals("SUMO")){
                 // Remplissage des variables avec le contenu du fichier SUMO
@@ -200,7 +214,7 @@ class VehicleEmissionProcessData {
                     // in SUMO, the speed is in m.s-1, we need to convert it in km.h-1
                     double[] carLevel = getCarsLevel(speed*3.6, id_veh)
                     sql.withBatch(100, qry) { ps ->
-                        ps.addBatch(timestep as Integer, the_geom as Geometry,
+                        ps.addBatch(timestep as String, the_geom as Geometry,
                                 carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
                                 carLevel[3] as Double, carLevel[4] as Double, carLevel[5] as Double,
                                 carLevel[6] as Double, carLevel[7] as Double)
@@ -231,7 +245,7 @@ class VehicleEmissionProcessData {
                 // in SYMUVIA, the speed is in km.h-1
                 double[] carLevel = getCarsLevel(speed, id_veh)
                 sql.withBatch(100, qry) { ps ->
-                    ps.addBatch(timestep as Integer, the_geom as Geometry,
+                    ps.addBatch(timestep as String, the_geom as Geometry,
                             carLevel[0] as Double, carLevel[1] as Double, carLevel[2] as Double,
                             carLevel[3] as Double, carLevel[4] as Double, carLevel[5] as Double,
                             carLevel[6] as Double, carLevel[7] as Double)

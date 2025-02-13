@@ -38,8 +38,15 @@ inputs = [
         tableName: [
                 title      : 'Name of the table',
                 name       : 'Name of the table',
-                description: 'Name of the table on which to perform the calculation. The table must contain multiple sound level values for a single receiver. (STRING) </br> For example : LDAY_GEOM',
+                description: 'Name of the table on which to perform the calculation. The table must contain multiple sound level values for a single receiver. (STRING) </br> For example : RECEIVERS_LEVEL',
                 type       : String.class
+        ],
+        outputTableName: [
+                title      : 'Name of the output table',
+                name       : 'Name of the output table',
+                description: 'Name of the output table default to tableName+_DYN_IND',
+                min        : 0, max: 1,
+                type       : String.class,
         ]
 ]
 
@@ -62,7 +69,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -90,8 +97,13 @@ def exec(Connection connection, input) {
     // do it case-insensitive
     table = table.toUpperCase()
 
-    sql.execute("DROP TABLE " + table + "_DYN_IND IF EXISTS;")
-    sql.execute("CREATE TABLE " + table + "_DYN_IND AS SELECT THE_GEOM, " +
+    String outputTableName =  table + "_DYN_IND";
+    if(input.containsKey("outputTableName")) {
+        outputTableName = input["outputTableName"] as String
+    }
+
+    sql.execute("DROP TABLE " + outputTableName + " IF EXISTS;")
+    sql.execute("CREATE TABLE " + outputTableName + " AS SELECT THE_GEOM, " +
             "ROUND(MEDIAN(" + columnName + "), 1) L50, " +
             "ROUND(percentile_cont(0.9) WITHIN GROUP (ORDER BY " + columnName + "), 1) L10," +
             "ROUND(percentile_cont(0.1) WITHIN GROUP (ORDER BY " + columnName + "), 1) L90 FROM " + table + " GROUP BY THE_GEOM;")

@@ -32,7 +32,7 @@ import java.sql.Connection
 
 
 title = 'Create Point Source From a network'
-description = ' <br><br> Creates a SOURCES_0DB point source table from a network linestring table. This table is useful to compute the attenuation matrix between sources and receivers.' +
+description = ' <br><br> Creates a SOURCES_GEOM point source table from a network linestring table. This table is useful to compute the attenuation matrix between sources and receivers.' +
               'Create point sources from the network every "gridStep" meters. This point source will be used to compute the noise attenuation level from them to each receiver. </br></br>'
 inputs = [
         tableNetwork: [
@@ -90,7 +90,7 @@ def run(input) {
 }
 
 
-def exec(connection, input) {
+def exec(connection, Map input) {
 
 
     connection = new ConnectionWrapper(connection)
@@ -100,7 +100,7 @@ def exec(connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Create_0db_Source_From_Roads')
+    logger.info('Start : Point_Source_From_Network.groovy')
     logger.info("inputs {}", input)
 
     int gridStep = 10 // 10 meters is the default value
@@ -115,18 +115,19 @@ def exec(connection, input) {
 
     String roadsTableName = input['tableNetwork']
 
-    sql.execute("DROP TABLE IF EXISTS SOURCESLines_0dB")
-    sql.execute("CREATE TABLE SOURCESLines_0dB (ROAD_ID BIGINT, THE_GEOM GEOMETRY, HZ63 FLOAT, HZ125 FLOAT, HZ250 FLOAT, HZ500 FLOAT, HZ1000 FLOAT, HZ2000 FLOAT, HZ4000 FLOAT, HZ8000 FLOAT);");
-    sql.execute("INSERT INTO SOURCESLines_0dB (ROAD_ID, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000) SELECT r.PK AS ROAD_ID, ST_TOMULTIPOINT(ST_Densify(r.THE_GEOM, "+gridStep+"))AS THE_GEOM, 0.0 AS HZ63, 0.0 AS HZ125, 0.0 AS HZ250, 0.0 AS HZ500, 0.0 AS HZ1000, 0.0 AS HZ2000, 0.0 AS HZ4000, 0.0 AS HZ8000 FROM "+roadsTableName+" r;");
-    sql.execute("DROP TABLE IF EXISTS SOURCES_0dB")
-    sql.execute("CREATE TABLE SOURCES_0DB AS SELECT * FROM ST_EXPLODE('SOURCESLines_0dB');");
-    sql.execute("ALTER TABLE SOURCES_0DB ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
-    sql.execute("DROP TABLE IF EXISTS SOURCESLines_0dB")
-    sql.execute("CREATE SPATIAL INDEX ON SOURCES_0DB(THE_GEOM);")
+    sql.execute("DROP TABLE IF EXISTS SOURCES_POINTS")
+    sql.execute("CREATE TABLE SOURCES_POINTS (ROAD_ID BIGINT, THE_GEOM GEOMETRY);");
+    sql.execute("INSERT INTO SOURCES_POINTS (ROAD_ID, THE_GEOM) SELECT r.PK AS ROAD_ID," +
+            " ST_TOMULTIPOINT(ST_Densify(r.THE_GEOM, "+gridStep+"))AS THE_GEOM FROM "+roadsTableName+" r;");
+    sql.execute("DROP TABLE IF EXISTS SOURCES_GEOM")
+    sql.execute("CREATE TABLE SOURCES_GEOM AS SELECT * FROM ST_EXPLODE('SOURCES_POINTS');");
+    sql.execute("ALTER TABLE SOURCES_GEOM ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("DROP TABLE IF EXISTS SOURCES_POINTS")
+    sql.execute("CREATE SPATIAL INDEX ON SOURCES_GEOM(THE_GEOM);")
 
 
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(roadsTableName))
-    table_name = "SOURCES_0DB"
+    def table_name = "SOURCES_GEOM"
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
     metaData.setSRID(srid)
     metaData.setHasZ(true)

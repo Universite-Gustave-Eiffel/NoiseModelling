@@ -154,9 +154,9 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    double duration = 60
+    int duration = 60
     if (input['duration']) {
-        duration = Double.valueOf(input['duration'] as String)
+        duration = Integer.valueOf(input['duration'] as String)
     }
 
     int timestep = 1

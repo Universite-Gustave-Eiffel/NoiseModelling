@@ -19,6 +19,10 @@ package org.noise_planet.noisemodelling.wps.Dynamic
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -98,6 +102,8 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+
     connection = new ConnectionWrapper(connection)
 
     Sql sql = new Sql(connection)
@@ -110,7 +116,7 @@ def exec(Connection connection, input) {
 
 
 
-    String lwTable_sourceId = "PK"
+    String lwTable_sourceId = "IDSOURCE"
     if (input['lwTable_sourceId']) {
         lwTable_sourceId = input['lwTable_sourceId']
     }
@@ -119,253 +125,32 @@ def exec(Connection connection, input) {
     String outputTable = input['outputTable'].toString().toUpperCase()
     String attenuationTable = input['attenuationTable'].toString().toUpperCase()
     String lwTable = input['lwTable'].toString().toUpperCase()
-    String timeString = "IT"
+    String timeString = "PERIOD"
+    String prefix = "LW"
 
-    DatabaseMetaData dbMeta = connection.getMetaData();
-    ResultSet rs = dbMeta.getIndexInfo(null, null, lwTable, false, false);
+    // Groovy Dollar slashy string that contain the queries
 
-    logger.info("searching indexes on Source Table ... ")
-    boolean indexIDSOURCE = false;
-    boolean indexGEOM = false;
-    while (rs.next()) {
-        String column = rs.getString("COLUMN_NAME");
-        String pos = rs.getString("ORDINAL_POSITION");
+    def query2 = $/CREATE TABLE $outputTable AS SELECT lg.IDRECEIVER, lg.the_geom,
+            10 * LOG10( SUM(POWER(10,(mr.LW63 + lg.LW63) / 10))) AS LW63,
+            10 * LOG10( SUM(POWER(10,(mr.LW125 + lg.LW125) / 10))) AS LW125,
+            10 * LOG10( SUM(POWER(10,(mr.LW250 + lg.LW250) / 10))) AS LW250,
+            10 * LOG10( SUM(POWER(10,(mr.LW500 + lg.LW500) / 10))) AS LW500,
+            10 * LOG10( SUM(POWER(10,(mr.LW1000 + lg.LW1000) / 10))) AS LW1000,
+            10 * LOG10( SUM(POWER(10,(mr.LW2000 + lg.LW2000) / 10))) AS LW2000,
+            10 * LOG10( SUM(POWER(10,(mr.LW4000 + lg.LW4000) / 10))) AS LW4000,
+            10 * LOG10( SUM(POWER(10,(mr.LW8000 + lg.LW8000) / 10))) AS LW8000,
+            mr.$timeString AS $timeString
+        FROM $attenuationTable  lg , $lwTable mr WHERE lg.IDSOURCE = mr.$lwTable_sourceId 
+        GROUP BY lg.IDRECEIVER, mr.$timeString;
+        
+        ALTER TABLE  $outputTable ADD COLUMN LAEQ float as 10*log10((power(10,(${prefix}63-26.2)/10)+power(10,(${prefix}125-16.1)/10)+power(10,(${prefix}250-8.6)/10)+power(10,(${prefix}500-3.2)/10)+power(10,(${prefix}1000)/10)+power(10,(${prefix}2000+1.2)/10)+power(10,(${prefix}4000+1)/10)+power(10,(${prefix}8000-1.1)/10)));
+        ALTER TABLE $outputTable ADD COLUMN LEQ float as 10*log10((power(10,(${prefix}63)/10)+power(10,(${prefix}125)/10)+power(10,(${prefix}250)/10)+power(10,(${prefix}500)/10)+power(10,(${prefix}1000)/10)+power(10,(${prefix}2000)/10)+power(10,(${prefix}4000)/10)+power(10,(${prefix}8000)/10)));
+    /$
 
-        if (column == "PK" && pos == "1") {
-            indexIDSOURCE = true;
-            logger.info("index on Source Table -  PK found")
-        }
-        if (column == "THE_GEOM" && pos == "1") {
-            indexGEOM = true;
-            logger.info("index on Source Table - THE_GEOM found")
-        }
-    }
-
-    if (!indexIDSOURCE) {
-        logger.info("index on Source Table "+lwTable_sourceId+", NOT found, creating one...")
-        sql.execute("CREATE INDEX ON " + lwTable + " ("+lwTable_sourceId+")");
-    }
-    if (!indexGEOM) {
-        logger.info("index on Source Table THE_GEOM, NOT found, creating one...")
-        sql.execute("CREATE SPATIAL INDEX ON " + lwTable + " (THE_GEOM)");
-    }
-
-    rs = dbMeta.getIndexInfo(null, null, attenuationTable, false, false);
-
-    logger.info("searching indexes on Attenuation Matrix ... ")
-    indexIDSOURCE = false;
-    boolean indexIDRECEIVER = false;
-    while (rs.next()) {
-        String column = rs.getString("COLUMN_NAME");
-        String pos = rs.getString("ORDINAL_POSITION");
-
-        if (column == "IDSOURCE" && pos == "1") {
-            indexIDSOURCE = true;
-            logger.info("index on Attenuation Matrix -  IDSOURCE found")
-        }
-        if (column == "IDRECEIVER" && pos == "1") {
-            indexIDRECEIVER = true;
-            logger.info("index on Attenuation Matrix - IDRECEIVER found")
-        }
-    }
-
-    if (!indexIDSOURCE) {
-        logger.info("index on Attenuation Matrix IDSOURCE, NOT found, creating one...")
-        sql.execute("CREATE INDEX ON " + attenuationTable + " (IDSOURCE)");
-    }
-    if (!indexIDRECEIVER) {
-        logger.info("index on Attenuation Matrix IDRECEIVER, NOT found, creating one...")
-        sql.execute("CREATE SPATIAL INDEX ON " + attenuationTable + " (IDRECEIVER)");
-    }
-
-    rs = dbMeta.getIndexInfo(null, null, "RECEIVERS", false, false);
-
-    logger.info("searching indexes on RECEIVERS ... ")
-    indexIDRECEIVER = false;
-    while (rs.next()) {
-        String column = rs.getString("COLUMN_NAME");
-        String pos = rs.getString("ORDINAL_POSITION");
-
-        if (column == "PK" && pos == "1") {
-            indexIDRECEIVER = true;
-            logger.info("index on RECEIVERS - PK found")
-        }
-    }
-
-    if (!indexIDRECEIVER) {
-        logger.info("index on RECEIVERS PK, NOT found, creating one...")
-        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(PK)");
-    }
-
-    String query2 = '''CREATE TABLE step1 AS SELECT lg.IDRECEIVER,
-            10 * LOG10( SUM(POWER(10,(mr.HZ63 + lg.HZ63) / 10))) AS HZ63,
-            10 * LOG10( SUM(POWER(10,(mr.HZ125 + lg.HZ125) / 10))) AS HZ125,
-            10 * LOG10( SUM(POWER(10,(mr.HZ250 + lg.HZ250) / 10))) AS HZ250,
-            10 * LOG10( SUM(POWER(10,(mr.HZ500 + lg.HZ500) / 10))) AS HZ500,
-            10 * LOG10( SUM(POWER(10,(mr.HZ1000 + lg.HZ1000) / 10))) AS HZ1000,
-            10 * LOG10( SUM(POWER(10,(mr.HZ2000 + lg.HZ2000) / 10))) AS HZ2000,
-            10 * LOG10( SUM(POWER(10,(mr.HZ4000 + lg.HZ4000) / 10))) AS HZ4000,
-            10 * LOG10( SUM(POWER(10,(mr.HZ8000 + lg.HZ8000) / 10))) AS HZ8000,
-            mr.T AS TIMESTRING
-        FROM ''' + attenuationTable + '''  lg , ''' + lwTable + ''' mr WHERE lg.IDSOURCE = mr.'''+lwTable_sourceId+''' 
-        GROUP BY lg.IDRECEIVER, mr.T;
-
-
-CREATE TABLE ''' + outputTable + ''' AS SELECT 
-    a.IDRECEIVER, r.the_geom,
-    a.HZ63, a.HZ125, a.HZ250, a.HZ500, a.HZ1000, a.HZ2000, a.HZ4000, a.HZ8000,
-    a.TIMESTRING
-FROM step1 a, RECEIVERS r WHERE a.IDRECEIVER = r.PK;
-
-DROP TABLE IF EXISTS step1;
-    '''
-
-
-
-
-   long start = System.currentTimeMillis();
-
-   /* int timeBinSize = 3600
-    if (input["timeBinSize"]) {
-        timeBinSize = input["timeBinSize"] as int;
-    }
-
-
-    sql.execute(String.format("DROP TABLE %s IF EXISTS", outputTable))
-    String query3 = "CREATE TABLE " + outputTable + '''(
-                        PK integer PRIMARY KEY AUTO_INCREMENT,
-                        IDRECEIVER integer,
-                        THE_GEOM geometry,
-                        HZ63 double precision,
-                        HZ125 double precision,
-                        HZ250 double precision,
-                        HZ500 double precision,
-                        HZ1000 double precision,
-                        HZ2000 double precision,
-                        HZ4000 double precision,
-                        HZ8000 double precision,
-                        TIME int
-                    )
-                '''
-    sql.execute(query3)
-    PreparedStatement insert_stmt = connection.prepareStatement(
-            "INSERT INTO " + outputTable + " VALUES(DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
-
-    logger.info("searching indexes on attenuation matrix ... ")
-    ensureIndex(connection, attenuationTable, "IDSOURCE", false)
-    ensureIndex(connection, attenuationTable, "IDRECEIVER", false)
-    logger.info("searching indexes on traffic tables ... ")
-    ensureIndex(connection, "LW_DYNAMIC_GEOM", "PK", false)
-
-    List<String> mrs_freqs = ["HZ63", "HZ125", "HZ250", "HZ500", "HZ1000", "HZ2000", "HZ4000", "HZ8000"]
-
-    long count = 0, do_print = 1
-    List<GroovyRowResult> receivers_res = sql.rows("SELECT * FROM RECEIVERS;" );
-    long nb_receivers = receivers_res.size()
-
-    for (GroovyRowResult receiver: receivers_res) {
-        long receiver_id = receiver["PK"] as long;
-        Geometry receiver_geom = receiver["THE_GEOM"] as Geometry;
-        Map<Integer, List<Double>> levels = new HashMap<Integer, List<Double>>();
-        List<GroovyRowResult> sources_att_res = sql.rows(String.format("SELECT lg.* FROM %s lg WHERE lg.IDRECEIVER = %d", attenuationTable, receiver_id));
-        long nb_sources = sources_att_res.size();
-        if (nb_sources == 0) {
-            count++
-            continue
-        }
-        for (GroovyRowResult sources_att: sources_att_res) {
-            long source_id = sources_att["IDSOURCE"] as long;
-            List<Double> attenuation = [
-                    sources_att["HZ63"] as double,
-                    sources_att["HZ125"] as double,
-                    sources_att["HZ250"] as double,
-                    sources_att["HZ500"] as double,
-                    sources_att["HZ1000"] as double,
-                    sources_att["HZ2000"] as double,
-                    sources_att["HZ4000"] as double,
-                    sources_att["HZ8000"] as double,
-            ];
-            List<GroovyRowResult> roads_stats_res = sql.rows(String.format("SELECT * FROM LW_DYNAMIC_GEOM"));
-            for (GroovyRowResult roads_stats: roads_stats_res) {
-                int timeBin = roads_stats["T"] as int
-                if (!levels.containsKey(timeBin)) {
-                    levels[timeBin] = [-99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0] as List<Double>
-                }
-                for (i in 0..<8) {
-                    double new_level = (roads_stats[mrs_freqs[i]] as double) + attenuation[i];
-                    levels[timeBin][i] = 10 * Math.log10( Math.pow(10, levels[timeBin][i] / 10) + Math.pow(10, new_level / 10))
-                }
-            }
-        }
-
-        for (int timeBin = 0; timeBin < 86400; timeBin += timeBinSize) {
-            if (!levels.containsKey(timeBin)) {
-                levels[timeBin] = [-99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0, -99.0] as List<Double>
-            }
-            List<Double> ts_levels = levels[timeBin]
-            insert_stmt.setLong(1, receiver_id)
-            insert_stmt.setString(2, receiver_geom.toText())
-            for (i in 0..<8) {
-                insert_stmt.setDouble(i+3, ts_levels[i])
-            }
-            insert_stmt.setInt(11, timeBin)
-            insert_stmt.execute()
-        }
-        if (count >= do_print) {
-            double elapsed = (System.currentTimeMillis() - start + 1) / 1000
-            logger.info(String.format("Processing Receiver %d (max:%d) - elapsed : %ss (%.1fit/s)",
-                    count, nb_receivers, elapsed, count/elapsed))
-            do_print *= 2
-        }
-        count ++
-    }
-*/
-
-    long stop = System.currentTimeMillis();
-
-    println(stop-start)
-
-
-
-     start = System.currentTimeMillis();
-
-    //logger.info(query2)
-    sql.execute(query2)
-    stop = System.currentTimeMillis();
-    println(stop-start)
-
-
-
-
-
-    String prefix = "HZ"
-    sql.execute("ALTER TABLE  "+outputTable+" ADD COLUMN LEQA float as 10*log10((power(10,(" + prefix + "63-26.2)/10)+power(10,(" + prefix + "125-16.1)/10)+power(10,(" + prefix + "250-8.6)/10)+power(10,(" + prefix + "500-3.2)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000+1.2)/10)+power(10,(" + prefix + "4000+1)/10)+power(10,(" + prefix + "8000-1.1)/10)))")
-    sql.execute("ALTER TABLE "+outputTable+" ADD COLUMN LEQ float as 10*log10((power(10,(" + prefix + "63)/10)+power(10,(" + prefix + "125)/10)+power(10,(" + prefix + "250)/10)+power(10,(" + prefix + "500)/10)+power(10,(" + prefix + "1000)/10)+power(10,(" + prefix + "2000)/10)+power(10,(" + prefix + "4000)/10)+power(10,(" + prefix + "8000)/10)))")
+    sql.execute(query2.toString())
 
     logger.info('End : Noise_From_Attenuation_Matrix_MatSim')
     resultString = "Process done. Table of receivers LT_GEOM created !"
     logger.info('Result : ' + resultString)
     return resultString
-}
-
-
-static boolean indexExists(Connection connection, String table, String column_name) {
-    DatabaseMetaData dbMeta = connection.getMetaData();
-    ResultSet rs = dbMeta.getIndexInfo(null, null, table, false, false);
-    boolean index_found = false;
-    while (rs.next()) {
-        String column = rs.getString("COLUMN_NAME");
-        String pos = rs.getString("ORDINAL_POSITION");
-        if (column == column_name && pos == "1") {
-            index_found = true;
-        }
-    }
-    return index_found
-}
-static void ensureIndex(Connection connection, String table, String column_name, boolean spatial) {
-    if (!indexExists(connection, table, column_name)) {
-        Sql sql = new Sql(connection)
-        sql.execute("CREATE " + (spatial ? "SPATIAL " : "") + "INDEX ON " + table + " (" + column_name + ")");
-    }
 }
