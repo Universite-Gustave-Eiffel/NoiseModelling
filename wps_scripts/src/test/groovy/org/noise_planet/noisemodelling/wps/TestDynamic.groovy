@@ -95,6 +95,9 @@ class TestDynamic extends JdbcTestCase {
                 "lwTable_sourceId" : "IDSOURCE"
                 ])
 
+        def columnNames = JDBCUtilities.getColumnNames(connection, "LT_GEOM")
+        assertTrue(columnNames.containsAll(Arrays.asList("PERIOD", "THE_GEOM")))
+
         // This step is optional, it compute the LEQA, LEQ, L10, L50 and L90 at each receiver from the table LT_GEOM
         String res = new DynamicIndicators().exec(connection,
                 ["tableName"   : "LT_GEOM",
@@ -102,7 +105,7 @@ class TestDynamic extends JdbcTestCase {
                 "outputTableName" : "INDICATORS"
                 ])
 
-        def columnNames = JDBCUtilities.getColumnNames(connection, "INDICATORS")
+        columnNames = JDBCUtilities.getColumnNames(connection, "INDICATORS")
         assertTrue(columnNames.containsAll(Arrays.asList("L90", "L50", "L10")))
     }
 

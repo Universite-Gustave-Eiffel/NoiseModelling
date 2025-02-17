@@ -130,7 +130,9 @@ def exec(Connection connection, input) {
 
     // Groovy Dollar slashy string that contain the queries
 
-    def query2 = $/CREATE TABLE $outputTable AS SELECT lg.IDRECEIVER, lg.the_geom,
+    def query2 = $/CREATE TABLE $outputTable AS SELECT lg.IDRECEIVER,
+            mr.$timeString AS $timeString,
+            lg.the_geom,
             10 * LOG10( SUM(POWER(10,(mr.LW63 + lg.LW63) / 10))) AS LW63,
             10 * LOG10( SUM(POWER(10,(mr.LW125 + lg.LW125) / 10))) AS LW125,
             10 * LOG10( SUM(POWER(10,(mr.LW250 + lg.LW250) / 10))) AS LW250,
@@ -138,13 +140,13 @@ def exec(Connection connection, input) {
             10 * LOG10( SUM(POWER(10,(mr.LW1000 + lg.LW1000) / 10))) AS LW1000,
             10 * LOG10( SUM(POWER(10,(mr.LW2000 + lg.LW2000) / 10))) AS LW2000,
             10 * LOG10( SUM(POWER(10,(mr.LW4000 + lg.LW4000) / 10))) AS LW4000,
-            10 * LOG10( SUM(POWER(10,(mr.LW8000 + lg.LW8000) / 10))) AS LW8000,
-            mr.$timeString AS $timeString
+            10 * LOG10( SUM(POWER(10,(mr.LW8000 + lg.LW8000) / 10))) AS LW8000
         FROM $attenuationTable  lg , $lwTable mr WHERE lg.IDSOURCE = mr.$lwTable_sourceId 
         GROUP BY lg.IDRECEIVER, mr.$timeString;
         
         ALTER TABLE  $outputTable ADD COLUMN LAEQ float as 10*log10((power(10,(${prefix}63-26.2)/10)+power(10,(${prefix}125-16.1)/10)+power(10,(${prefix}250-8.6)/10)+power(10,(${prefix}500-3.2)/10)+power(10,(${prefix}1000)/10)+power(10,(${prefix}2000+1.2)/10)+power(10,(${prefix}4000+1)/10)+power(10,(${prefix}8000-1.1)/10)));
         ALTER TABLE $outputTable ADD COLUMN LEQ float as 10*log10((power(10,(${prefix}63)/10)+power(10,(${prefix}125)/10)+power(10,(${prefix}250)/10)+power(10,(${prefix}500)/10)+power(10,(${prefix}1000)/10)+power(10,(${prefix}2000)/10)+power(10,(${prefix}4000)/10)+power(10,(${prefix}8000)/10)));
+        CREATE UNIQUE INDEX ON $outputTable (IDRECEIVER, $timeString);
     /$
 
     sql.execute(query2.toString())

@@ -152,16 +152,55 @@ def exec(Connection connection, Map input) {
     VehicleEmissionProcessData vehicleEmissionProcessData = new VehicleEmissionProcessData();
     vehicleEmissionProcessData.setDynamicEmissionTable(vehicles_table_name, sql, tableFormat)
 
-    sql.execute("drop table if exists SOURCES_EMISSION;")
+    sql.execute("drop table if exists SOURCES_EMISSION_DUPLICATES;")
 
     // Associate vehicles position to the closest source point
-    sql.execute("create table SOURCES_EMISSION as SELECT b.PERIOD ," +
+    sql.execute("create table SOURCES_EMISSION_DUPLICATES as SELECT b.PERIOD ," +
             "b.Lw63, b.Lw125, b.Lw250, b.Lw500, b.Lw1000, b.Lw2000, b.Lw4000, b.Lw8000," +
             " (SELECT a.$primaryKeyColumnName FROM $tableSourceGeom a " +
             "WHERE ST_EXPAND(b.the_geom,$distance2snap, $distance2snap) && a.the_geom" +
-            "  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) IDSOURCE FROM LW_VEHICLE b ;")
-        
+            "  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) IDSOURCE FROM LW_VEHICLE b;")
     sql.execute("DROP TABLE IF EXISTS LW_VEHICLE")
+    sql.execute("DELETE FROM SOURCES_EMISSION_DUPLICATES WHERE IDSOURCE IS NULL")
+
+    sql.execute("drop table if exists SOURCES_EMISSION;")
+
+    // Two vehicles may be associated with the same source point location
+    // do an energetic sum of the vehicles emission at each location
+    def mergeIdSource = $/
+            CREATE TABLE SOURCES_EMISSION(  IDSOURCE INTEGER NOT NULL,
+                                            PERIOD VARCHAR NOT NULL,
+                                            LW63 REAL,
+                                            LW125 REAL,
+                                            LW250 REAL,
+                                            LW500 REAL,
+                                            LW1000 REAL,
+                                            LW2000 REAL,
+                                            LW4000 REAL,
+                                            LW8000 REAL);
+            INSERT INTO SOURCES_EMISSION SELECT IDSOURCE, PERIOD,
+            10 * LOG10( SUM(POWER(10, LW63 / 10))) AS LW63,
+            10 * LOG10( SUM(POWER(10, LW125 / 10))) AS LW125,
+            10 * LOG10( SUM(POWER(10, LW250 / 10))) AS LW250,
+            10 * LOG10( SUM(POWER(10, LW500 / 10))) AS LW500,
+            10 * LOG10( SUM(POWER(10, LW1000 / 10))) AS LW1000,
+            10 * LOG10( SUM(POWER(10, LW2000 / 10))) AS LW2000,
+            10 * LOG10( SUM(POWER(10, LW4000 / 10))) AS LW4000,
+            10 * LOG10( SUM(POWER(10, LW8000 / 10))) AS LW8000
+            FROM SOURCES_EMISSION_DUPLICATES
+            GROUP BY IDSOURCE, PERIOD;
+    /$
+
+    sql.execute(mergeIdSource)
+
+    sql.execute("drop table if exists SOURCES_EMISSION_DUPLICATES;")
+
+    sql.execute("ALTER TABLE SOURCES_EMISSION ADD PRIMARY KEY (IDSOURCE, PERIOD)")
+
+
+    // remove source point without associated emission values
+    def cpt = sql.executeUpdate("DELETE FROM $tableSourceGeom WHERE NOT EXISTS (SELECT FROM SOURCES_EMISSION WHERE IDSOURCE = $primaryKeyColumnName) ".toString())
+    System.out.println("$cpt geometry sources deleted")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
     System.out.println("Export data to table")
