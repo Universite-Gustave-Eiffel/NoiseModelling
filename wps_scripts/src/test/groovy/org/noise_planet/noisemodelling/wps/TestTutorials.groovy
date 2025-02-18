@@ -56,9 +56,10 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("SOURCES"))
         assertTrue(res.contains("BUILDINGS"))
 
-        new Regular_Grid().exec(connection, ["sourcesTableName": "SOURCES",
-                                             delta             : 0.2,
-                                               "buildingTableName"   : "BUILDINGS"])
+        // generate a grid of receivers using the buildings as envelope
+        logger.info(new Delaunay_Grid().exec(connection, [maxArea: 600, tableBuilding: "BUILDINGS",
+                                                          sourcesTableName : "POINT_SOURCE" , height: 1.6]));
+
 
         // Check database
         res = new Display_Database().exec(connection, [])

@@ -124,14 +124,15 @@ public class PathFinder {
         int endReceiverRange = 0;
         //Launch execution of computation by batch
         List<Future<Boolean>> tasks = new ArrayList<>();
+        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
         while (endReceiverRange < data.receivers.size()) {
             //Break if the progress visitor is cancelled
-            if (progressVisitor != null && progressVisitor.isCanceled()) {
+            if (cellProgress.isCanceled()) {
                 break;
             }
             int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, progressVisitor, computeRaysOut.subProcess(progressVisitor), data);
+                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
             if (threadCount != 1) {
                 tasks.add(threadManager.submitBlocking(batchThread));
             } else {

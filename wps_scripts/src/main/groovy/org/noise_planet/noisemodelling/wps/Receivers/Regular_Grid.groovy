@@ -158,8 +158,8 @@ def exec(connection, Map input) {
     String resultString = null
 
 
-    if (!input.containsKey('fenceTableName')) {
-        throw new SQLException("Fence table name must be provided, could be the buildings table or source table.")
+    if (!input.containsKey('fenceTableName') && !input.containsKey('fence')) {
+        throw new SQLException("Fence geometry or fence table name must be provided, could be the buildings table or source table.")
     }
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
@@ -204,7 +204,10 @@ def exec(connection, Map input) {
     building_table_name = building_table_name.toUpperCase()
 
     // Try to find the best SRID for receivers table
-    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
+    int srid = 0
+    if(input['fenceTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
+    }
     if(srid == 0 && input['buildingTableName']) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name) as String)
     }

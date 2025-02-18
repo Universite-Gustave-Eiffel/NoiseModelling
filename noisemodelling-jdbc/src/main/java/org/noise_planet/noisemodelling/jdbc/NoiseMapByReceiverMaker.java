@@ -346,7 +346,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size());
 
         try {
-            computeRaysOutFactory.start(progressLogger);
+            computeRaysOutFactory.start(progressVisitor);
             for (CellIndex cellIndex : new TreeSet<>(cells.keySet())) {
                 // Run ray propagation
                 try {
