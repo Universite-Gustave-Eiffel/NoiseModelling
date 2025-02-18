@@ -102,7 +102,7 @@ inputs = [
         tableSourcesEmission            : [
                 name       : 'Sources emission table name',
                 title      : 'Sources emission table name',
-                description: 'Name of the Sources table </br> </br>' +
+                description: 'Name of the Sources table (ex. SOURCES_EMISSION) </br> </br>' +
                         'The table must contain: </br> <ul>' +
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +

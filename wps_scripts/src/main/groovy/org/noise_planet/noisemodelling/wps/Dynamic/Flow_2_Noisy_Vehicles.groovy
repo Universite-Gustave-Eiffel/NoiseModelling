@@ -50,21 +50,6 @@ description = 'Calculating individual vehicle position and noise_level based on 
         '-  <b> IDSOURCE  </b> : link to the source point (INTEGER). </br>' +
         '-  <b> PERIOD  </b> : The TIMESTAMP iteration (VARCHAR).</br>' +
         '-  <b> LW63, LW125, LW250, LW500, LW1000,LW2000, LW4000, LW8000 </b> : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).'
-//
-//description = 'Calculating individual vehicle position and noise_level based on average traffic flows.' +
-//        '</br> </br> <b> A first output table is called : SOURCES_0dB </b> which is needed to compute the Noise Attenuation Matrix' +
-//        'and contain : </br>' +
-//        '-  <b> PK  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-//        '-  <b> ROAD_ID  </b> : id link to the road segment (INTEGER). </br>' +
-//        '-  <b> THE_GEOM </b> : the 3D geometry of the sources (POINT). </br> ' +
-//        '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000 </b> : 0dB for each octave band (FLOAT).' +
-//        '</br> </br> <b> The output table is called : LW_DYNAMIC_GEOM </b> ' +
-//        'and contain : </br>' +
-//        '-  <b> PK  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-//        '-  <b> T  </b> : The TIMESTAMP iteration (STRING).</br>' +
-//        '-  <b> ROAD_ID  </b> : id link to the road segment (INTEGER). </br>' +
-//        '-  <b> THE_GEOM </b> : the 3D geometry of the sources (POINT). </br> ' +
-//        '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).'
 
 inputs = [
         tableRoads    : [name : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
@@ -190,7 +175,7 @@ def exec(Connection connection, input) {
     sql.execute("CREATE TABLE ROAD_POINTS(ROAD_ID serial, THE_GEOM geometry, LV int, LV_SPD real, HV int, HV_SPD real) AS SELECT r.PK, ST_Tomultipoint(ST_Densify(the_geom, "+gridStep+")), r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D FROM  "+sources_table_name+" r WHERE NOT ST_IsEmpty(r.THE_GEOM) ;")
 
     sql.execute("drop table SOURCES_GEOM if exists;" +
-            "create table SOURCES_GEOM as SELECT ST_AddZ(ST_FORCE3D(the_geom),0.05) the_geom,ROAD_ID, LV , LV_SPD , HV , HV_SPD from ST_Explode('ROAD_POINTS');" +
+            "create table SOURCES_GEOM as SELECT ST_UpdateZ(the_geom,0.05) the_geom,ROAD_ID, LV , LV_SPD , HV , HV_SPD from ST_Explode('ROAD_POINTS');" +
             "alter table SOURCES_GEOM add PK INT AUTO_INCREMENT  PRIMARY KEY;")
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS")
 
@@ -241,7 +226,7 @@ def exec(Connection connection, input) {
     } else {
 
         sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
-        sql.execute("CREATE TABLE SOURCES_EMISSION(PERIOD real, IDSOURCE int, LW63 real, LW125 real, LW250 real, LW500 real, LW1000 real, LW2000 real, LW4000 real, LW8000 real)")
+        sql.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR NOT NULL, IDSOURCE int not null, LW63 real, LW125 real, LW250 real, LW500 real, LW1000 real, LW2000 real, LW4000 real, LW8000 real)")
 
         String insert = "INSERT INTO SOURCES_EMISSION VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
@@ -310,7 +295,7 @@ def exec(Connection connection, input) {
     System.out.println("Export data to table")
 
 
-    resultString = "Calculation Done ! The table SOURCES_EMISSION has been created."
+    resultString = "Calculation Done ! The table SOURCES_EMISSION and SOURCES_GEOM has been created."
 
     // print to command window
     System.out.println('Result : ' + resultString)

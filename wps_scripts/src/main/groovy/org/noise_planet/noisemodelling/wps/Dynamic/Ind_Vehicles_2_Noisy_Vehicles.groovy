@@ -67,6 +67,10 @@ inputs = [
                   title : 'Format of the individual Vehicles table',
                   description :'Format of the individual Vehicles table. Can be for the moment SUMO or Matsim. See in the code to understand the different format.',
                   type: String.class],
+        keepNoEmissionGeoms : [name : 'Keep source geometries without emission value',
+                       title : 'Keep source geometries without emission value',
+                       description :'Do not delete source geometries that does not contain any emission value. Default to true, it reduce the computation time when evaluating the attenuation',
+                       min : 0, max: 1, type: Boolean.class]
 ]
 
 outputs = [
@@ -134,6 +138,12 @@ def exec(Connection connection, Map input) {
 
     double distance2snap = input['distance2snap']
 
+    boolean removeGeomsNoEmission = true
+    if (input['keepNoEmissionGeoms']) {
+        removeGeomsNoEmission = !input['keepNoEmissionGeoms']
+    }
+
+
     // do it case-insensitive
     vehicles_table_name = vehicles_table_name.toUpperCase()
     // Check if srid are in metric projection.
@@ -197,10 +207,12 @@ def exec(Connection connection, Map input) {
 
     sql.execute("ALTER TABLE SOURCES_EMISSION ADD PRIMARY KEY (IDSOURCE, PERIOD)")
 
+    if(removeGeomsNoEmission) {
+        // remove source point without associated emission values
+        def cpt = sql.executeUpdate("DELETE FROM $tableSourceGeom WHERE NOT EXISTS (SELECT FROM SOURCES_EMISSION WHERE IDSOURCE = $primaryKeyColumnName) ".toString())
+        System.out.println("$cpt geometry sources deleted")
+    }
 
-    // remove source point without associated emission values
-    def cpt = sql.executeUpdate("DELETE FROM $tableSourceGeom WHERE NOT EXISTS (SELECT FROM SOURCES_EMISSION WHERE IDSOURCE = $primaryKeyColumnName) ".toString())
-    System.out.println("$cpt geometry sources deleted")
 
     System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
     System.out.println("Export data to table")

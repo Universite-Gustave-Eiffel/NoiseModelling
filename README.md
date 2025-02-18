@@ -23,7 +23,7 @@ A general overview of the model (v3.4.5 - September 2020) can be found in [this 
 Stable release
 ---------------------------
 
-The current stable version is v4.0.0 (see [latest release](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest) page)
+The current stable version is v5.0.0 (see [latest release](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest) page)
 
 
 Documentation
