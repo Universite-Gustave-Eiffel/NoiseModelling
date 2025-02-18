@@ -126,9 +126,9 @@ class TestDynamic extends JdbcTestCase {
         ]);
 
         // Create a receiver grid
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "delta"            : 25])
+        new Regular_Grid().exec(connection,  [
+                "fenceTableName": "ROADS",
+                "delta"            : 25])
 
         // Set a height to the receivers at 1.5 m
         new Set_Height().exec(connection,
@@ -193,8 +193,8 @@ class TestDynamic extends JdbcTestCase {
         ]);
 
         // Create a receiver grid
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                "sourcesTableName" : "ROADS",
+        new Regular_Grid().exec(connection,  [
+                "fenceTableName": "ROADS",
                 "delta"            : 25])
 
         // Set a height to the receivers at 1.5 m
@@ -261,9 +261,9 @@ class TestDynamic extends JdbcTestCase {
         ]);
 
         // Create a receiver grid
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "delta"            : 25])
+        new Regular_Grid().exec(connection,  [
+                "fenceTableName": "ROADS",
+                "delta"            : 25])
 
         // Set a height to the receivers at 1.5 m
         new Set_Height().exec(connection,
@@ -333,8 +333,8 @@ class TestDynamic extends JdbcTestCase {
                 "tableName": "ROADS"])
 
         // Create a receiver grid
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                "sourcesTableName" : "ROADS",
+        new Regular_Grid().exec(connection,  [
+                "fenceTableName": "ROADS",
                 "delta"            : 25])
 
         // Set a height to the receivers at 1.5 m
