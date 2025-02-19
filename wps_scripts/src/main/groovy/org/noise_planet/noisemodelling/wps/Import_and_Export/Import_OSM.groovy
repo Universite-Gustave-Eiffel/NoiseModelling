@@ -393,6 +393,7 @@ public class OsmHandler implements Sink {
     boolean ignoreRoads
     boolean ignoreGround
     boolean removeTunnels
+    Object parametersMap
 
     OsmHandler(Logger logger, boolean ignoreBuildings, boolean ignoreRoads, boolean ignoreGround, boolean removeTunnels) {
         this.logger = logger
@@ -400,26 +401,9 @@ public class OsmHandler implements Sink {
         this.ignoreRoads = ignoreRoads
         this.ignoreGround = ignoreGround
         this.removeTunnels = removeTunnels
-    }
 
-    @Override
-    public void initialize(Map<String, Object> arg0) {
-    }
-
-    @Override
-    public void process(EntityContainer entityContainer) {
-
-
-
-        if (entityContainer instanceof NodeContainer) {
-            nb_nodes++;
-            Node node = ((NodeContainer) entityContainer).getEntity();
-            nodes.put(node.getId(), node);
-        } else if (entityContainer instanceof WayContainer) {
-
-
-            // This is a copy of the GeoClimate file : buildingsParams.json (https://github.com/orbisgis/geoclimate/tree/master/osm/src/main/resources/org/orbisgis/geoclimate/osm)
-            String buildingParams = """{
+        // This is a copy of the GeoClimate file : buildingsParams.json (https://github.com/orbisgis/geoclimate/tree/master/osm/src/main/resources/org/orbisgis/geoclimate/osm)
+        String buildingParams = """{
                   "tags": {
                     "building": [],
                     "railway": [
@@ -1081,8 +1065,21 @@ public class OsmHandler implements Sink {
                     }
                   }
                 }"""
+        this.parametersMap = new JsonSlurper().parseText(buildingParams)
 
-            def parametersMap = new JsonSlurper().parseText(buildingParams)
+    }
+
+    @Override
+    public void initialize(Map<String, Object> arg0) {
+    }
+
+    @Override
+    public void process(EntityContainer entityContainer) {
+        if (entityContainer instanceof NodeContainer) {
+            nb_nodes++;
+            Node node = ((NodeContainer) entityContainer).getEntity();
+            nodes.put(node.getId(), node);
+        } else if (entityContainer instanceof WayContainer) {
             def tags = parametersMap.get("tags")
             def columnsToKeep = parametersMap.get("columns")
             def typeBuildings = parametersMap.get("type")
@@ -1105,15 +1102,17 @@ public class OsmHandler implements Sink {
                     }
                 }
 
-                if ( closedWay && columnsToKeep.any{ (it == tag.getKey()) }) {
-                    for (typeHighLevel in typeBuildings) {
-                        for (typeLowLevel in typeHighLevel.getValue()) {
-                            if (typeLowLevel.getKey() == (tag.getKey())) {
-                                if (typeLowLevel.getValue().any { it == (tag.getValue()) }) {
-                                    isBuilding = true;
+                if(!isBuilding) {
+                    if (closedWay && columnsToKeep.any { (it == tag.getKey()) }) {
+                        for (typeHighLevel in typeBuildings) {
+                            for (typeLowLevel in typeHighLevel.getValue()) {
+                                if (typeLowLevel.getKey() == (tag.getKey())) {
+                                    if (typeLowLevel.getValue().any { it == (tag.getValue()) }) {
+                                        // some amenity designate an area but this it not a building
+                                        isBuilding = way.getTags().any({ Tag it -> (it.key.startsWith("building")) })
+                                    }
                                 }
                             }
-
                         }
                     }
                 }
