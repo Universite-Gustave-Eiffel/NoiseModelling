@@ -80,7 +80,7 @@ inputs = [
                     type: Integer.class],
 
         duration       : [name   : 'duration', title: 'duration in sec.',
-                             description: 'Number of the iterations to compute (INTEGER). </br> </br> <b> Default value : 60 </b>',
+                             description: 'Number of seconds to compute (INTEGER). </br> </br> <b> Default value : 60 </b>',
                              type: Integer.class],
 ]
 
