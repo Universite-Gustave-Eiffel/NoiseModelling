@@ -169,14 +169,14 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the three fo
 
 Once ready, click on ``Run Process`` button.
 
-You should then have this message: ``Calculation Done ! LDAY_GEOM table(s) have been created.``
+You should then have this message: ``Calculation Done ! RECEIVERS_LEVEL table(s) have been created.``
 
 Generate noise level isosurfaces
 ----------------------------------
 
 Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following mandatory parameter *(in orange)* and click on ``Run Process`` button:
 
-* ``Sound levels table`` : ``LDAY_GEOM``
+* ``Sound levels table`` : ``RECEIVERS_LEVEL``
 
 You should have this message: ``Table CONTOURING_NOISE_MAP created``
 
@@ -186,6 +186,15 @@ You can then visualize this file into QGIS *(just load the file as seen before)*
 
 .. figure:: images/Noise_Map_From_Point_Source/table_contouring.png
    :align: center
+
+Filter the table according to a single period (ex. DEN):
+
+.. figure:: images/tutorial/Tutorial1_FilterMenu.png
+   :align: center
+
+.. figure:: images/tutorial/Tutorial1_FilterWindow.png
+   :align: center
+
 
 Apply a color palette adapted to acoustics
 -----------------------------------------------
@@ -372,9 +381,6 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the followin
 * ``Ground absorption table name`` : ``GROUND_TYPE``
 * ``Source directivity table name`` : ``DIRECTIVITY``
 * ``Maximum source-receiver distance`` : ``800``
-* ``Do not compute LDEN_GEOM table`` : ``true``
-* ``Do not compute LNIGHT_GEOM table`` : ``true``
-* ``Do not compute LEVENING_GEOM table`` : ``true``
 * ``DEM table name`` : ``DEM``
 
 
@@ -383,7 +389,7 @@ Create isosurface
 
 Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following parameters and click on ``Run Process`` button:
 
-* ``Sound levels table`` : ``LDAY_GEOM``
+* ``Sound levels table`` : ``RECEIVERS_LEVEL``
 * ``Polygon smoothing coefficient`` : 0.4
 
 Export and visualize resulting tables
@@ -391,7 +397,7 @@ Export and visualize resulting tables
 
 Use the ``Import_and_Export:Export_Table`` WPS script to export the ``CONTOURING_NOISE_MAP`` table into a shapefile called ``CONTOURING_NOISE_MAP_DIRECTIVITY``.
 
-Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
+Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS and filter the period to ``DEN``. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
 
 .. figure:: images/Noise_Map_From_Point_Source/contouring_directivity_compare.png
    :align: center

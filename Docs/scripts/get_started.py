@@ -58,4 +58,4 @@ call_geoserver(import_file.substitute({"path": "data_dir/data/wpsdata/dem.geojso
 call_geoserver(get_lday.substitute({"table_receivers": "RECEIVERS", "table_buildings": "BUILDINGS"
                                        , "table_roads": "ROADS", "table_dem": "DEM"}))
 
-call_geoserver(export_table.substitute({"table_to_export": "LDAY_GEOM", "export_path" : "lday_geom.shp"}))
+call_geoserver(export_table.substitute({"table_to_export": "RECEIVERS_LEVEL", "export_path" : "RECEIVERS_LEVEL.shp"}))
