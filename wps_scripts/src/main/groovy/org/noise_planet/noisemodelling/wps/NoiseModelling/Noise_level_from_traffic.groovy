@@ -63,7 +63,7 @@ inputs = [
         tableRoads              : [
                 name       : 'Roads table name',
                 title      : 'Roads table name',
-                description: '&#128739; Name of the Roads table </br> </br>' +
+                description: '&#128739; Name of the Roads table, traffic can be provided here but are limited to DAY EVENING NIGHT periods </br> </br>' +
                         'This function recognize the following columns (* mandatory): </br> <ul>' +
                         '<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>' +
                         '<li><b> LV_D </b><b>TV_E </b><b> TV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
@@ -89,9 +89,9 @@ inputs = [
                 type       : String.class
         ],
         tableRoadsTraffic              : [
-                name       : 'Roads table name',
-                title      : 'Roads table name',
-                description: '&#128739; Name of the Roads table </br> </br>' +
+                name       : 'Roads traffic table name',
+                title      : 'Roads traffic table name',
+                description: '&#128739; Name of the Roads traffic table per period </br> </br>' +
                         'This function recognize the following columns (* mandatory): </br> <ul>' +
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +

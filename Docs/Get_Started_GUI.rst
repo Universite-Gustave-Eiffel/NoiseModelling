@@ -123,15 +123,17 @@ Then, select the orange blocks and indicate the name of the corresponding table 
 - Building table name : ``BUILDINGS``
 - Sources table name : ``ROADS2``
 - Receivers table name : ``RECEIVERS``
+- DEM table name : ``DEM``
+- Ground absorption table : ``GROUND_TYPE``
 
-The beige blocks correspond to optionnal parameters (e.g ``DEM table name``, ``Ground absorption table name``, ``Diffraction on vertical edges``, ...).
+The beige blocks correspond to optional parameters (e.g ``DEM table name``, ``Ground absorption table name``, ``Diffraction on vertical edges``, ...).
 
 When ready, you can press ``Run Process``.
 
 .. figure:: images/tutorial/Tutorial1_Image2bis.PNG
    :align: center
 
-As a result, the tables ``LDAY_GEOM``, ``LEVENING_GEOM``, ``LNIGHT_GEOM`` and ``LDEN_GEOM`` will be created in your database. These tables correspond to the noise levels, based on receiver points, for the 4 different period of the day.
+As a result, the table ``RECEIVERS_LEVEL`` will be created in your database. This table correspond to the noise levels, based on receiver points, the column PERIOD correspond to the 4 different period of the day (D E N and DEN).
 
 
 Step 6: Export (& see) the results
@@ -140,7 +142,7 @@ Step 6: Export (& see) the results
 You can now export the output tables *(one by one)* in your favorite export format using ``Export_Table`` block, giving the path of the file you want to create.
 
 .. warning::
-    Dont' forget to add the file extension (*e.g* ``c:/home/receivers.geojson`` or ``c:/home/lday_geom.shp``) (Read more info about file extensions here: :doc:`Tutorials_FAQ`)
+    Dont' forget to add the file extension (*e.g* ``c:/home/receivers_level.geojson`` or ``c:/home/receivers_level.shp``) (Read more info about file extensions here: :doc:`Tutorials_FAQ`)
 
 .. figure:: images/tutorial/Tutorial1_Image3.PNG
    :align: center
@@ -155,9 +157,17 @@ For example, you can choose to export the tables in ``.shp`` format. This format
 
 .. _this tutorial : https://docs.qgis.org/3.22/en/docs/training_manual/basic_map/index.html
 
-To obtain the following image, use the syling vector options in your GIS and assign a color gradient to ``LAEQ`` column of your exported ``LDAY_GEOM`` table.
+To obtain the following image, filter use the styling vector options in your GIS and assign a color gradient to ``LAEQ`` column of your exported ``RECEIVERS_LEVEL`` table.
 
 .. figure:: images/tutorial/Tutorial1_Image4.PNG
+   :align: center
+
+To display the result for a period you have to filter the rendering by the field PERIOD in QGIS.
+
+.. figure:: images/tutorial/Tutorial1_FilterMenu.png
+   :align: center
+
+.. figure:: images/tutorial/Tutorial1_FilterWindow.png
    :align: center
 
 .. tip::
