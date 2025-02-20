@@ -14,10 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
@@ -204,8 +202,8 @@ public class GenerateReferenceDeviation {
     /**
      * For each cnossos test case, compute the attenuation and compare with the expected value, generate the result
      * report in rst format.
-     * @param args
-     * @throws IOException
+     * @param args var args
+     * @throws IOException exception
      */
     public static void main(String[] args) throws IOException {
         // Read working directory argument

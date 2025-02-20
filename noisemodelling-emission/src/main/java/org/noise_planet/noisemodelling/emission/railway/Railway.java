@@ -141,6 +141,7 @@ public class Railway {
      * constant speed
      *
      * @return LWRoll / LWTraction A and B / LWAerodynamic A and B / LWBridge level in dB
+     * @throws IOException io exception
      **/
     public RailWayParameters evaluate(RailwayVehicleParameters vehicleParameters, RailwayTrackParameters trackParameters) throws IOException {
 
