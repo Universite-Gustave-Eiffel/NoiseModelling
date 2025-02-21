@@ -55,9 +55,8 @@ Create a receiver grid using 25 meters step in a grid pattern
 
 Use Regular_Grid WPS block
 
-#. ``Buildings``: Enter ``BUILDINGS``
-#. ``Sources``: Enter ``ROADS``
-#. ``Offset``: Enter ``25`` for 25 meters distance
+#. ``Table bounding box name``: Enter ``ROADS`` The receivers will use  the envelope of the ROADS table.
+#. ``Offset``: Enter ``15`` for 15 meters distance
 #. ``Output triangle table``: Check it in order to be able to generate the iso contours
 
 .. figure:: images/tutorial/dynamic/RegularGrid.png
@@ -77,17 +76,17 @@ Convert traffic to dynamic traffic flow
 
 From the network with traffic flow to individual trajectories with associated Lw
 
-1. The Probabilistic method, this method place randomly the vehicles on the network according to the traffic flow
-1. The Poisson method place the vehicles on the network according to the traffic flow following a poisson law,
+#. The Probabilistic method, this method place randomly the vehicles on the network according to the traffic flow
+#. The Poisson method place the vehicles on the network according to the traffic flow following a poisson law,
  it keeps a coherence in the time series of the noise level
 
-Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block
+Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block:
 
-#. ``Method``: Enter ``PROBA``
+#. ``Method``: Enter ``TNP`` Use the Poisson method
 #. ``Roads table name``: Enter ``ROADS``
-#. ``timestep``: Enter ``1`` (default)
-#. ``duration``: Enter ``60`` (default)
-#. ``gridStep``: Enter ``10`` (default)
+#. ``timestep``: Enter ``1``
+#. ``duration``: Enter ``60``
+#. ``gridStep``: Enter ``10``
 
 Compute the attenuation for each receiver-source points
 ------------------------------------------------------------------------------------------------
@@ -95,24 +94,14 @@ Compute the attenuation for each receiver-source points
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
 #. ``Buildings table name``: Enter ``BUILDINGS``
-#. ``Source geometry table name``: Enter ``SOURCES_GEOM``
+#. ``Source geometry table name``: Enter ``SOURCES_GEOM`` Contain only the geometries of the sources (points)
+#. ``Source emission table name``: Enter ``SOURCES_EMISSION`` Contain for each source index and period the noise emission
 #. ``Receivers table name``: Enter ``RECEIVERS``
+#. ``Max Error (dB)``: Enter ``3`` Will skip further sources, reduce the computation time for this tutorial
 #. ``Maximum source receiver distance``: Enter ``150``
 #. ``Diffraction on horizontal edges``: Check it
 #. ``Order of reflexion``: Enter ``0``
 #. ``Separate receiver level by source identifier``: Check it to have the SOURCEID column on the output
-
-Apply the source noise level to the attenuation table
-------------------------------------------------------------------------------------------------
-
-Compute the noise level from the moving vehicles to the receivers
-the output table is called here LT_GEOM and contains the time series of the noise level at each receiver
-
-Use the ``Dynamic:Noise_From_Attenuation_Matrix`` wps block
-
-#. ``Attenuation Matrix Table name``: Enter ``RECEIVERS_LEVEL``
-#. ``LW(t)``: Enter ``SOURCES_EMISSION``
-#. ``outputTable``: Enter ``LT_GEOM``
 
 Compute noise indicators
 ------------------------------------------------------------------------------------------------
@@ -121,7 +110,7 @@ This step is optional, it compute the LA10, LA50 and LA90 at each receiver from 
 
 Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
-#. ``tableName``: Enter ``LT_GEOM``
+#. ``tableName``: Enter ``RECEIVERS_LEVEL``
 #. ``columnName``: Enter ``LAEQ``
 
 
@@ -132,7 +121,9 @@ Generate a dynamic iso-contour map for each time period based on the LAEQ of the
 
 Use the ``Acoustic_Tools:Create_Isosurface`` wps block
 
-#. ``Sound levels table``: Enter ``LT_GEOM``
+#. ``Sound levels table``: Enter ``RECEIVERS_LEVEL``
+
+In QGis in time window
 
 ``datetime_from_epoch(to_real("PERIOD")*1000+1739869220000)``
 

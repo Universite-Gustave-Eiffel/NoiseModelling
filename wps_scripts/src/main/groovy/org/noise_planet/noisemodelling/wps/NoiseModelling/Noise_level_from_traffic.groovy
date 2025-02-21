@@ -581,8 +581,6 @@ def exec(Connection connection, Map input) {
 
     pointNoiseMap.run(connection, progressLogger)
 
-    resultString = "Calculation Done ! " + pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable + " table have been created."
-
-    return pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable
+    return "Calculation Done ! The table $pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable have been created."
 }
 

@@ -573,8 +573,6 @@ def exec(Connection connection, Map input) {
 
     pointNoiseMap.run(connection, progressLogger)
 
-    resultString = "Calculation Done ! " + pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable + " table have been created."
-
     long elapsed = System.currentTimeMillis() - startCompute;
     long hours = TimeUnit.MILLISECONDS.toHours(elapsed)
     elapsed -= TimeUnit.HOURS.toMillis(hours)
@@ -582,7 +580,7 @@ def exec(Connection connection, Map input) {
     elapsed -= TimeUnit.MINUTES.toMillis(minutes)
     long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsed)
     String timeString = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
-    resultString = "Calculation Done in "+timeString+" ! "
+    logger.info( "Calculation Done in $timeString ! ")
 
-    return pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable
+    return "Calculation Done ! The table $pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable have been created."
 }

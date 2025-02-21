@@ -121,10 +121,13 @@ To run Calculation you have to drag the block ``Noise_level_from_traffic`` into 
 Then, select the orange blocks and indicate the name of the corresponding table in your database:
 
 - Building table name : ``BUILDINGS``
-- Sources table name : ``ROADS2``
-- Receivers table name : ``RECEIVERS``
-- DEM table name : ``DEM``
-- Ground absorption table : ``GROUND_TYPE``
+- Sources table name : ``ROADS2`` This table contain geometry of roads with traffic for day, evening and night
+- Receivers table name : ``RECEIVERS`` Location where to evaluate noise level
+- DEM table name : ``DEM`` Digital elevation model
+- Ground absorption table : ``GROUND_TYPE`` Nature of the ground
+- Diffraction on horizontal edges : Check it (Sound propagation go over buildings)
+- Maximum source-receiver distance: Set ``2000`` meters (do not look for sound sources further than 2km)
+- Order of reflexion: Set ``0`` to disable it (faster but less accurate)
 
 The beige blocks correspond to optional parameters (e.g ``DEM table name``, ``Ground absorption table name``, ``Diffraction on vertical edges``, ...).
 

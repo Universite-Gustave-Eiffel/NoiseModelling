@@ -36,18 +36,18 @@ description = 'Noise Map From Attenuation Matrix.' +
 
 inputs = [
         lwTable : [
-                name: 'LW(t)',
-                title: 'LW(t)',
-                description: 'LW(t)' +
+                name: 'LW(PERIOD)',
+                title: 'LW(PERIOD)',
+                description: 'LW(PERIOD) ex. SOURCES_EMISSION' +
                         '<br/>The table must contain the following fields :' +
-                        '<br/>PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, T' +
-                        '<br/> with PK, the IDSOURCE and T a timestring',
+                        '<br/>IDSOURCE, PERIOD, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000' +
+                        '<br/> IDSOURCE link to primary key of attenuation table and PERIOD a varchar',
                 type: String.class
         ],
         lwTable_sourceId: [
-                name: 'LW(t) sourceId',
-                title: 'LW(t) sourceId',
-                description: 'LW(t)tring',
+                name: 'LW(PERIOD) source index field',
+                title: 'LW(PERIOD) source index field',
+                description: 'LW(PERIOD) source index field. Default is IDSOURCE',
                 min        : 0,
                 max        : 1,
                 type: String.class
@@ -55,9 +55,9 @@ inputs = [
         attenuationTable : [
         name: 'Attenuation Matrix Table name',
         title: 'Attenuation Matrix Table name',
-        description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
+        description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled. Should be RECEIVERS_LEVEL' +
                 '<br/>The table must contain the following fields :' +
-                '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
+                '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000',
         type: String.class
     ],
         outputTable : [
