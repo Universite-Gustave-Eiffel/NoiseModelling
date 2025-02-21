@@ -106,7 +106,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+" WHERE PERIOD = 'D'")
 
         new Export_Table().exec(connection,
-                ["exportPath"   : "target/LDAY_GEOM_rail.geojson",
+                ["exportPath"   : "build/tmp/RECEIVERS_LEVEL.geojson",
                  "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         assertEquals(688, receiversCount[0]["CPT"] as Integer)

@@ -138,14 +138,14 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(output.contains("PERIOD"))
 
         // Check export geojson
-        File testPath = new File("target/tutoPointSource.geojson")
+        File testPath = new File("build/tmp/tutoPointSource.geojson")
 
         if(testPath.exists()) {
             testPath.delete()
         }
 
         new Export_Table().exec(connection,
-                ["exportPath"   : "target/tutoPointSource.geojson",
+                ["exportPath"   : "build/tmp/tutoPointSource.geojson",
                  "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
 
@@ -196,8 +196,8 @@ class TestTutorials extends JdbcTestCase {
                                                           sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
 
-        new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
-        new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/receivers.shp", tableToExport: "RECEIVERS"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
@@ -211,10 +211,10 @@ class TestTutorials extends JdbcTestCase {
                 [resultTable: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
                  smoothCoefficient : 0.4])
 
-        new Export_Table().exec(connection, [exportPath:"target/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
 
         new Export_Table().exec(connection,
-                [exportPath:"target/TUTO_DIR_RECEIVERS_LEVEL.shp",
+                [exportPath:"build/tmp/TUTO_DIR_RECEIVERS_LEVEL.shp",
                  tableToExport: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
