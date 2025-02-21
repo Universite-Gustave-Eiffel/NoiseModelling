@@ -35,6 +35,11 @@ class Main {
     public final static int MAX_OUTPUT_PROPAGATION_PATHS = 50000;
 
     public static NoiseMapByReceiverMaker mainWithConnection(Connection connection, String workingDir)  throws SQLException, IOException, LayerDelaunayError {
+
+        if(!new File(workingDir).exists()) {
+            new File(workingDir).mkdir();
+        }
+
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
 
         TableLocation tableLwRoads = TableLocation.parse("LW_ROADS", dbType);
@@ -63,7 +68,6 @@ class Main {
         // Set primary key
         sql.execute("ALTER TABLE "+tableLwRoads+" ALTER COLUMN PK SET NOT NULL");
         sql.execute("ALTER TABLE "+tableLwRoads+" ADD PRIMARY KEY (PK)");
-        sql.execute("DELETE FROM "+tableLwRoads+" WHERE PK != 102");
 
         // Import BUILDINGS
 
@@ -72,21 +76,15 @@ class Main {
         DelaunayReceiversMaker noiseMap = new DelaunayReceiversMaker(tableBuildings.toString(),
                 tableLwRoads.toString());
 
-        AtomicInteger pk = new AtomicInteger(0);
-        noiseMap.initialize(connection, new EmptyProgressVisitor());
         noiseMap.setGridDim(1);
         noiseMap.setMaximumArea(0);
         noiseMap.setIsoSurfaceInBuildings(false);
         noiseMap.setHeightField(heightField);
-
         sql.execute("DROP TABLE IF EXISTS RECEIVERS;");
         sql.execute("DROP TABLE IF EXISTS TRIANGLES;");
-        for (int i = 0; i < noiseMap.getGridDim(); i++) {
-            for (int j = 0; j < noiseMap.getGridDim(); j++) {
-                logger.info("Compute cell " + (i * noiseMap.getGridDim() + j + 1) + " of " + noiseMap.getGridDim() * noiseMap.getGridDim());
-                noiseMap.generateReceivers(connection, i, j, "RECEIVERS", "TRIANGLES", pk);
-            }
-        }
+
+        noiseMap.run(connection, "RECEIVERS", "TRIANGLES");
+
         // Import MNT
 
         logger.info("Import digital elevation model");
@@ -98,11 +96,12 @@ class Main {
         // Init NoiseModelling
         NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker(tableBuildings.toString(),
                 tableLwRoads.toString(), "RECEIVERS");
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
+        noiseMapByReceiverMaker.setMaximumPropagationDistance(800.0);
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
-        noiseMapByReceiverMaker.setThreadCount(1);
+        //noiseMapByReceiverMaker.setThreadCount(1);
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
         noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+        noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3.0);
         noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
 
         // Building height field name
@@ -111,8 +110,6 @@ class Main {
         noiseMapByReceiverMaker.setDemTable(tableDemLorient.toString());
 
         RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
-
-        DefaultTableLoader tableLoader = (DefaultTableLoader) noiseMapByReceiverMaker.getTableLoader();
 
         String atmosphericSettingsTableName = "ATMOSPHERIC_SETTINGS";
 
@@ -139,8 +136,15 @@ class Main {
         isoSurface.setPointTable(TableLocation.parse(noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable, dbType).toString());
         isoSurface.createTable(connection, "IDRECEIVER");
         logger.info("Export iso contours");
+
         SHPWrite.exportTable(connection, Paths.get(workingDir, isoSurface.getOutputTable()+".shp").toString(),
                 isoSurface.getOutputTable(), ValueBoolean.TRUE);
+
+        SHPWrite.exportTable(connection, Paths.get(workingDir, noiseMapByReceiverMaker.getSourcesTableName()+".shp").toString(),
+                noiseMapByReceiverMaker.getSourcesTableName(), ValueBoolean.TRUE);
+
+        SHPWrite.exportTable(connection, Paths.get(workingDir, noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().getReceiversLevelTable()+".shp").toString(),
+                noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().getReceiversLevelTable(), ValueBoolean.TRUE);
 
         return noiseMapByReceiverMaker;
     }

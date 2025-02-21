@@ -130,7 +130,7 @@ The beige blocks correspond to optional parameters (e.g ``DEM table name``, ``Gr
 
 When ready, you can press ``Run Process``.
 
-.. figure:: images/tutorial/Tutorial1_Image2bis.PNG
+.. figure:: images/tutorial/Tutorial1_Image2bis.png
    :align: center
 
 As a result, the table ``RECEIVERS_LEVEL`` will be created in your database. This table correspond to the noise levels, based on receiver points, the column PERIOD correspond to the 4 different period of the day (D E N and DEN).
@@ -167,8 +167,12 @@ To display the result for a period you have to filter the rendering by the field
 .. figure:: images/tutorial/Tutorial1_FilterMenu.png
    :align: center
 
+   Popup menu
+
 .. figure:: images/tutorial/Tutorial1_FilterWindow.png
    :align: center
+
+   Filter window
 
 .. tip::
     Now that you have made your first noise map (congratulations!), you can try again, adding / changing optional parameters to see the differeneces.

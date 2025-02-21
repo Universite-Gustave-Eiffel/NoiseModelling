@@ -154,7 +154,7 @@ You can then export the output table ``CONTOURING_NOISE_MAP`` via ``Export_Table
 
 View
 --------------
-You can view this layer in your favorite GIS. Drop the file in QGIS then filter by the period column (ex. ``DEN``).
+You can view this layer in your favorite GIS. Drop the file in QGIS then filter by the `period` column (ex. ``DEN``).
  You can then apply a (revert) color gradient on ``ISOLABEL`` field.
 
 

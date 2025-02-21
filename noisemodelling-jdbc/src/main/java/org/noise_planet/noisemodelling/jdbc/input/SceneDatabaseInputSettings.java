@@ -119,7 +119,7 @@ public class SceneDatabaseInputSettings {
      *
      * @param periodAtmosphericSettingsTableName The table name storing the period atmospheric settings
      *                                           to be used for computations.
-     *                                           See {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters#readFromDatabase(ResultSet, Map)}
+     *                                           See {@link org.noise_planet.noisemodelling.propagation.AttenuationParameters#readFromDatabase(ResultSet, Map)}
      */
     public void setPeriodAtmosphericSettingsTableName(String periodAtmosphericSettingsTableName) {
         this.periodAtmosphericSettingsTableName = periodAtmosphericSettingsTableName;

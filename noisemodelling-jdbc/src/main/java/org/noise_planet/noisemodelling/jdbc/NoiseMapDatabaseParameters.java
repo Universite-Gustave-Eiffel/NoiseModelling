@@ -195,4 +195,17 @@ public class NoiseMapDatabaseParameters {
         return mergeSources;
     }
 
+    /**
+     * @return Output table with noise level per receiver/source
+     */
+    public String getReceiversLevelTable() {
+        return receiversLevelTable;
+    }
+
+    /**
+     * @param receiversLevelTable Output table with noise level per receiver/source
+     */
+    public void setReceiversLevelTable(String receiversLevelTable) {
+        this.receiversLevelTable = receiversLevelTable;
+    }
 }

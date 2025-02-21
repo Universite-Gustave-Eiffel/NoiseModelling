@@ -12,23 +12,25 @@
 
 package org.noise_planet.noisemodelling.wps
 
-import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
+import org.noisemodelling.runner.Main
 
+import javax.sql.DataSource
 import java.sql.Connection
 import java.sql.SQLException
-import java.sql.Statement
 
 @Ignore
 class JdbcTestCase  extends GroovyTestCase {
     Connection connection
     File dbFile = new File(new File("build/tmp"), UUID.randomUUID().toString().replace("-", "")+".mv.db")
+
     @Before
     void setUp() {
-        connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(dbFile.toURI().toString().replace(".mv.db", ""), true))
+        DataSource dataSource = Main.createDataSource("sa", "sa", dbFile.getParent(), dbFile.getName().replace(".mv.db", ""), false)
+        connection = JDBCUtilities.wrapConnection(dataSource.getConnection())
     }
 
     @After

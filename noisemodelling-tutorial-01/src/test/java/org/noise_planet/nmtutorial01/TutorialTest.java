@@ -36,7 +36,7 @@ public class TutorialTest {
         try(Connection connection = JDBCUtilities.wrapConnection(dataSourceFactory.createDataSource(p).getConnection())) {
             connection.createStatement().execute("DROP TABLE IF EXISTS receivers_level");
             connection.createStatement().execute("DROP TABLE IF EXISTS contouring_noise_map");
-            NoiseMapByReceiverMaker map = Main.mainWithConnection(connection, "target");
+            NoiseMapByReceiverMaker map = Main.mainWithConnection(connection, "target/postgis");
             String receiverTable = TableLocation.capsIdentifier(
                     NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME, DBTypes.POSTGIS);
             assertTrue(JDBCUtilities.tableExists(connection.unwrap(Connection.class), receiverTable));
@@ -73,7 +73,7 @@ public class TutorialTest {
         try(Connection connection = JDBCUtilities.wrapConnection(
                 H2GISDBFactory.createSpatialDataBase(TutorialTest.class.getSimpleName(),
                         true, ""));) {
-            NoiseMapByReceiverMaker map = Main.mainWithConnection(connection, "target");
+            NoiseMapByReceiverMaker map = Main.mainWithConnection(connection, "target/h2gis");
 
             String receiverTable = TableLocation.capsIdentifier(
                     NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME, DBTypes.H2GIS);

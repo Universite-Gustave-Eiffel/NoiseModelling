@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
+import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -24,6 +25,7 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
@@ -33,6 +35,58 @@ import org.slf4j.LoggerFactory
  */
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
+
+
+    void testTutorialGetStarted() {
+        Sql sql = new Sql(connection)
+
+        // Check empty database
+        Object res = new Display_Database().exec(connection, [])
+        assertEquals("", res)
+
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ground_type.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("dem.geojson").getPath(),
+                 "inputSRID": "2154"])
+
+
+        new Noise_level_from_traffic().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableRoads"   : "ROADS2",
+                 "tableReceivers": "RECEIVERS",
+                 "tableGroundAbs": "ground_type",
+                 "tableDEM": "dem",
+                 "confDiffHorizontal": true,
+                 "confMaxSrcDist": 2000.0,
+                 "confReflOrder": 0,
+                 "confMaxError": 3.0])
+
+        def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
+        def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
+
+        assertEquals(4*countReceivers, countResult)
+
+        def minLevel = sql.firstRow("SELECT MIN(LW1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
+
+        assertNotSame(-99.0, minLevel)
+    }
+
 
 
     void testTutorialPointSource() {
