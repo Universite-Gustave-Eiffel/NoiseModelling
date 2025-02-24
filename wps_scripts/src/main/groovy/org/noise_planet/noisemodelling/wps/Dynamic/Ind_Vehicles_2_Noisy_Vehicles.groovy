@@ -37,33 +37,31 @@ import java.sql.Connection
 import java.sql.SQLException
 
 title = 'Convert Individual Vehicles traffic to emission noise level and Snap them to the network point sources.'
-description = 'Calculating dynamic road emissions based on vehicles trajectories and snap them to the network (table SOURCES_0DB should exists).' +
-        '</br> </br> <b> The output table is called : LW_DYNAMIC_GEOM </b> ' +
+description = 'Calculating dynamic road emissions based on vehicles trajectories and snap them to the network' +
+        '</br> </br> <b> The output table is called : SOURCES_EMISSION </b> ' +
         'and contain : </br>' +
-        '-  <b> T  </b> : The TIMESTAMP iteration (STRING).</br>' +
-        '-  <b> IDRECEIVER  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
-        '- <b> THE_GEOM </b> : the 3D geometry of the receivers (POINT). </br> ' +
-        '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT).'
+        '-  <b> IDSOURCE  </b> : an identifier (INTEGER). </br>' +
+        '-  <b> PERIOD </b> : The TIMESTAMP iteration (STRING).</br>' +
+        '-  <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : 8 columns giving the emission sound level for each octave band (FLOAT).'
 
 inputs = [
-        tableVehicles : [name : 'table of the individual Vehicles',
+        tableVehicles : [name : 'Individual Vehicles table',
                   title : "table of the individual Vehicles",
                   description : "it should contain timestep, geometry (POINT), speed, acceleration, veh_type...",
                   type: String.class],
-        tableSourceGeom : [name : 'table of network points source geometry, the output emission will be reattached to the' +
-                ' index of this table according to the snap distance',
+        tableSourceGeom : [name : 'Source geometry table',
                            title : "table of the individual Vehicles",
                            description : "table of points source geometry, the output emission will be reattached to" +
-                                   " the index of this table according to the snap distance." +
+                                   " the index of this table according to the snap distance. Should be SOURCES_GEOM" +
                                    " See Point_Source_From_Network to convert lines to points",
                            type: String.class],
-        distance2snap : [name : 'Maximum distance to snap on the network point sources',
+        distance2snap : [name : 'Snap distance',
                   title : "Maximum distance to snap on the network point sources",
                   description : "Maximum distance to snap on the network point sources",
                          min        : 0,
                          max        : 1,
                   type: Double.class],
-        tableFormat : [name : 'Format of the individual Vehicles table',
+        tableFormat : [name : 'Vehicles table format',
                   title : 'Format of the individual Vehicles table',
                   description :'Format of the individual Vehicles table. Can be for the moment SUMO or Matsim. See in the code to understand the different format.',
                   type: String.class],
