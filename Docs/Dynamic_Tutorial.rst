@@ -134,7 +134,6 @@ Load the style for contouring noise map:
 
 .. figure:: images/tutorial/dynamic/loadstyle.png
    :align: center
-   :scale: 50 %
    :alt: Load style menu in QGis
 
 Load the style located in the NoiseModelling folder ``Docs/styles/style_beate_tomio.sld``
@@ -146,7 +145,6 @@ In QGis in time window paste the following formulae:
 
 .. figure:: images/tutorial/dynamic/temporal_settings.png
    :align: center
-   :scale: 50 %
    :alt: Layer setting, temporal tab in QGis
 
 Epoch is in millisecond, so we multiply by 1000 and add any base epoch time. The step end 1000 milliseconds after the start period.
@@ -155,7 +153,6 @@ With the navigation bar of QGis you can select the period to display.
 
 .. figure:: images/tutorial/dynamic/temporal_bar_nav.png
    :align: center
-   :scale: 50 %
    :alt: Layer setting, temporal tab in QGis
 
 Case 2: A Road Network with Traffic Flows at Regular Intervals
@@ -347,3 +344,6 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
 The result table LT_GEOM can be displayed into QGis, if you filter by PERIOD.
 
+
+.. note::
+    All this tutorial done with Groovy is written on this unit test source code: `Github source <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/main/wps_scripts/src/test/groovy/org/noise_planet/noisemodelling/wps/TestDynamic.groovy>`_
