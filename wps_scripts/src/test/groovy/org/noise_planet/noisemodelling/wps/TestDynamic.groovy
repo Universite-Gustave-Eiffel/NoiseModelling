@@ -2,7 +2,8 @@ package org.noise_planet.noisemodelling.wps
 
 
 import org.h2gis.utilities.JDBCUtilities
-import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
+import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface;
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators;
 import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key;
 import org.noise_planet.noisemodelling.wps.Dynamic.Flow_2_Noisy_Vehicles;
@@ -10,7 +11,8 @@ import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles
 import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix;
 import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_From_Network
 import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period;
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height;
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM;
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
@@ -91,8 +93,7 @@ class TestDynamic extends JdbcTestCase {
         new Noise_From_Attenuation_Matrix().exec(connection,
                 ["lwTable"   : "SOURCES_EMISSION",
                 "attenuationTable"   : "RECEIVERS_LEVEL",
-                "outputTable"   : "LT_GEOM",
-                "lwTable_sourceId" : "IDSOURCE"
+                "outputTable"   : "LT_GEOM"
                 ])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, "LT_GEOM")
@@ -263,7 +264,8 @@ class TestDynamic extends JdbcTestCase {
         // Create a receiver grid
         new Regular_Grid().exec(connection,  [
                 "fenceTableName": "ROADS",
-                "delta"            : 25])
+                "delta" : 25,
+                "outputTriangleTable" : true])
 
         // Set a height to the receivers at 1.5 m
         new Set_Height().exec(connection,
@@ -276,23 +278,27 @@ class TestDynamic extends JdbcTestCase {
         // It keeps a coherence in the time series of the noise level
         new Flow_2_Noisy_Vehicles().exec(connection,
                 ["tableRoads": "ROADS",
-                "method": "POISSON",
-                "timestep": 1,
-                "gridStep" : 10,
-                "duration" : 60])
+                 "method"    : "POISSON",
+                 "timestep"  : 1,
+                 "duration"  : 60,
+                 "gridStep"  : 8])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_EMISSION"))
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_GEOM"))
 
         def expected = JDBCUtilities.getUniqueFieldValues(connection,
                 "SOURCES_EMISSION", "PERIOD")
 
         // Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers
         new Noise_level_from_source().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableSources"   : "SOURCES_GEOM",
-                 "tableSourcesEmission" : "SOURCES_EMISSION",
-                 "tableReceivers": "RECEIVERS",
-                 "maxError" : 2.0,
-                 "confMaxSrcDist" : 800,
-                 "confDiffHorizontal" : false
+                ["tableBuilding"       : "BUILDINGS",
+                 "tableSources"        : "SOURCES_GEOM",
+                 "tableSourcesEmission": "SOURCES_EMISSION",
+                 "tableReceivers"      : "RECEIVERS",
+                 "maxError"            : 3.0,
+                 "confMaxSrcDist"      : 800,
+                 "confDiffHorizontal"  : true,
+                 "confReflOrder"       : 0
                 ])
 
         def periods = JDBCUtilities.getUniqueFieldValues(connection,
@@ -302,15 +308,44 @@ class TestDynamic extends JdbcTestCase {
         assertEquals(expected.size(), periods.size())
         assertTrue(periods.containsAll(expected))
 
-        // This step is optional, it compute the LEQA, LEQ, L10, L50 and L90 at each receiver from the table LT_GEOM
-        String res =new DynamicIndicators().exec(connection,
-                ["tableName"   : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
-                 "columnName"   : "LAEQ",
-                 "outputTableName" : "INDICATORS"
+        // This step is optional, it compute the L10, L50 and L90 at each receiver from the table RECEIVERS_LEVEL
+        String res = new DynamicIndicators().exec(connection,
+                ["tableName"      : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
+                 "columnName"     : "LAEQ",
+                 "outputTableName": "INDICATORS"
                 ])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, "INDICATORS")
         assertTrue(columnNames.containsAll(Arrays.asList("L90", "L50", "L10")))
+
+        // Compute contouring noise map
+        new Create_Isosurface().exec(connection,
+                ["resultTable"      : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
+                 "smoothCoefficient": 0])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"))
+
+        File tutorialOutputFolder = new File("build/tmp/TUTO_DYNAMIC_POISSON/")
+
+        if(!tutorialOutputFolder.exists()) {
+            assertTrue(tutorialOutputFolder.mkdir())
+        }
+
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, "CONTOURING_NOISE_MAP.shp").absolutePath,
+                 tableToExport: "CONTOURING_NOISE_MAP"])
+
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, "BUILDINGS.shp").absolutePath,
+                 tableToExport: "BUILDINGS"])
+
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, "ROADS.shp").absolutePath,
+                 tableToExport: "ROADS"])
+
     }
 
 
@@ -335,13 +370,8 @@ class TestDynamic extends JdbcTestCase {
         // Create a receiver grid
         new Regular_Grid().exec(connection,  [
                 "fenceTableName": "ROADS",
-                "delta"            : 25])
-
-        // Set a height to the receivers at 1.5 m
-        new Set_Height().exec(connection,
-                [ "tableName":"RECEIVERS",
-                "height": 1.5
-                ])
+                "delta"            : 25,
+                "height": 1.5])
 
         // From the network with traffic flow to individual trajectories with associated Lw using the Probabilistic method
         // This method place randomly the vehicles on the network according to the traffic flow
@@ -356,10 +386,8 @@ class TestDynamic extends JdbcTestCase {
                 "tableSources"   : "SOURCES_GEOM",
                 "tableEmission"   : "SOURCES_EMISSION",
                 "tableReceivers": "RECEIVERS",
-                "maxError" : 0.0,
-                "confMaxSrcDist" : 150,
-                "confDiffHorizontal" : false,
-                "confExportSourceId": true
+                "confDiffHorizontal" : true,
+                "confReflOrder"       : 0
                 ])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, "RECEIVERS_LEVEL")
