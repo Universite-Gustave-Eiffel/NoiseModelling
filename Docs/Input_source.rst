@@ -60,5 +60,5 @@ SOURCES_EMISSION Table definition
 	* Type: Double
 
 .. note::
-	You can define partially the bands. We defined here only octave bands but NoiseModelling is supporting third-octaves from 50Hz to 10000Hz.
+	You can define partially the bands. We defined here only octave bands but NoiseModelling is supporting third-octaves ``LW50,LW63,LW80,LW100,LW125,LW160,LW200,LW250,LW315,LW400,LW500,LW630,LW800,LW1000,LW1250,LW1600,LW2000,LW2500,LW3150,LW4000,LW5000,LW6300,LW8000,LW10000LW50, LW63, LW80, LW100, LW125, LW160, LW200, LW250, LW315, LW400, LW500, LW630, LW800, LW1000, LW1250, LW1600, LW2000, LW2500, LW3150, LW4000, LW5000, LW6300, LW8000, LW10000``.
 
