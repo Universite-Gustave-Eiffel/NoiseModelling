@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.NoiseModelling.GenerateAtmosphericSettingsTemplate
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
@@ -91,14 +92,11 @@ class TestNoiseModelling extends JdbcTestCase {
         sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
 
         new Noise_level_from_source().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableSources"   : "LW_RAILWAY",
+                ["tableBuilding" : "BUILDINGS",
+                 "tableSources"  : "LW_RAILWAY",
                  "tableReceivers": "RECEIVERS",
-                 "confSkipLevening": false,
-                 "confSkipLnight": false,
-                 "confSkipLden": false,
-                "confMaxSrcDist" : 500,
-                "confMaxError" : 5.0])
+                 "confMaxSrcDist": 500,
+                 "confMaxError"  : 5.0])
 
         assertTrue(JDBCUtilities.tableExists(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
@@ -127,9 +125,9 @@ class TestNoiseModelling extends JdbcTestCase {
                  "tableName": "receivers"])
 
 
-       String res = new Noise_level_from_traffic().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableRoads"   : "ROADS2",
+        String res = new Noise_level_from_traffic().exec(connection,
+                ["tableBuilding" : "BUILDINGS",
+                 "tableRoads"    : "ROADS2",
                  "tableReceivers": "RECEIVERS"])
 
         assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
@@ -329,10 +327,7 @@ class TestNoiseModelling extends JdbcTestCase {
         String res = new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
                  "tableSources"   : "LW_ROADS2",
-                 "tableReceivers": "RECEIVERS",
-                "confSkipLevening": true,
-                "confSkipLnight": true,
-                "confSkipLden": true])
+                 "tableReceivers": "RECEIVERS"])
 
         assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
@@ -340,5 +335,30 @@ class TestNoiseModelling extends JdbcTestCase {
         def fields = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
 
         assertArrayEquals(["IDRECEIVER","PERIOD","THE_GEOM", "LW1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
+    }
+
+    void testAtmosphericSettings() {
+
+        Sql sql = new Sql(connection)
+
+        sql.execute(
+                $/CREATE TABLE SOURCES_EMISSION(
+                      IDSOURCE INTEGER NOT NULL,
+                      PERIOD VARCHAR,
+                      LW500 DOUBLE);    
+        /$)
+
+        sql.executeInsert("INSERT INTO SOURCES_EMISSION VALUES (1, 'D', 90.0), (1, 'E', 92.0), (1, 'N', 93.0);");
+
+        new GenerateAtmosphericSettingsTemplate().exec(connection, ["tableSourcesEmission" : "SOURCES_EMISSION"])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+
+        List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, "SOURCES_ATMOSPHERIC", "PERIOD")
+
+        ["D", "E", "N"].forEach {
+            assertTrue(periods.contains(it))
+        }
     }
 }

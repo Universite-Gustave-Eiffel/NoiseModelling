@@ -105,7 +105,7 @@ def exec(Connection connection, Map input) {
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
-    def tableSourcesEmission = input.get("tablePeriodAtmosphericSettings") as String
+    String tableSourcesEmission = input.get("tableSourcesEmission") as String
 
     def tablePeriodAtmosphericSettings = "SOURCES_ATMOSPHERIC"
 
