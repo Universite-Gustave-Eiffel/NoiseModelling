@@ -8,8 +8,8 @@ Step 1: Download NoiseModelling
 
 Download the latest realease of NoiseModelling on `Github`_. 
 
-* Windows: you can directly download and execute the ``NoiseModelling_4.x.x_install.exe`` installer file *(or you can also follow Linux / Mac instructions below)*
-* Linux or Mac: download the ``NoiseModelling_4.x.x.zip`` file and unzip it into a chosen directory
+* Windows: you can directly download and execute the ``NoiseModelling_5.x.x_install.exe`` installer file *(or you can also follow Linux / Mac instructions below)*
+* Linux or Mac: download the ``NoiseModelling_5.x.x.zip`` file and unzip it into a chosen directory
 
 .. warning::
     The chosen directory can be anywhere, but be sure that you have write access. If you are using the computer of your company, the Program Files folder is probably not a good idea.

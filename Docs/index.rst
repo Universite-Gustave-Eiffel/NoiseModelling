@@ -51,9 +51,9 @@ Packaging
 
 On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
 
-* ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
-* ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
+* ``NoiseModelling_5.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
+* ``NoiseModelling_5.0.0_install.exe`` : windows installer, with GUI
+* ``NoiseModelling_5.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
 
 
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest

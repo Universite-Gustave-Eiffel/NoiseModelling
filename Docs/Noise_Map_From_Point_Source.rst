@@ -28,7 +28,7 @@ To create the source point, we will use the free and opensource GIS software `QG
 Load data into QGIS
 -------------------------
 
-Once installed, launch QGIS and load the three ``buildings.shp``, ``roads.shp`` and ``ground_type.shp`` files (that are in the folder ``../NoiseModelling_4.0.0/data_dir/data/wpsdata/``). To do so, you can just drag & drop these files into the ``Layers`` menu (bottom left of the user interface). Or you can also select them thanks to the dedicated panel opened via the ``Layer / Add a layer / Add a vectorial layer... /`` menu (or use ``Ctrl+Maj+V`` shortcut)
+Once installed, launch QGIS and load the three ``buildings.shp``, ``roads.shp`` and ``ground_type.shp`` files (that are in the folder ``../NoiseModelling_5.0.0/data_dir/data/wpsdata/``). To do so, you can just drag & drop these files into the ``Layers`` menu (bottom left of the user interface). Or you can also select them thanks to the dedicated panel opened via the ``Layer / Add a layer / Add a vectorial layer... /`` menu (or use ``Ctrl+Maj+V`` shortcut)
 
 You should see your input data in the map as below:
 
@@ -354,7 +354,7 @@ Now, in NoiseModelling we have to:
 
 * Import the ``Directivy.csv`` file
 * Reimport the ``Point_Source.geojson`` file in order to take into account the changes
-* Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling_4.0.0/data_dir/data/wpsdata/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
+* Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling_5.0.0/data_dir/data/wpsdata/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
 
 To do so, just use the ``Import_and_Export:Import_Table`` WPS script.
 

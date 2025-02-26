@@ -155,6 +155,7 @@ inputs = [
                 description: 'Name of the Atmospheric settings table </br> </br>' +
                         'The table must contain the following columns: </br> <ul>' +
                         '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
+                        '<li> <b> WINDROSE </b>: probability of occurrences of favourable propagation conditions (ARRAY(16)) </li> ' +
                         '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
                         '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
