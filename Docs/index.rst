@@ -144,6 +144,7 @@ Fundings
 
     Input_buildings
     Input_roads
+    Input_source
     Input_railways
     Input_ground
     Input_dem
