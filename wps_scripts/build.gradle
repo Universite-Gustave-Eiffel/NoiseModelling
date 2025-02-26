@@ -126,7 +126,7 @@ dependencies {
 
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.16'
-    testCompileOnly 'junit:junit:4.12'
+    testCompileOnly 'junit:junit:4.13.1'
 }
 
 

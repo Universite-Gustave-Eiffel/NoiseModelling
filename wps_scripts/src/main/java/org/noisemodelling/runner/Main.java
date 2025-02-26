@@ -155,7 +155,7 @@ public class Main {
             // Read parameters
             String workingDir = "";
             String scriptPath = "";
-            String databaseName = "h2gisdb";
+            String databaseName = "";
             Map<String, Object> customParameters = new HashMap<>();
             boolean printVersion = false;
 
@@ -173,6 +173,7 @@ public class Main {
             workingDir = commandLine.getOptionValue(workingDirOption.getOpt());
             scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
             printVersion = commandLine.hasOption(printVersionOption.getOpt());
+            databaseName = commandLine.getOptionValue(databaseNameOption.getOpt(), "h2gisdb");
 
             if(printVersion) {
                 printBuildIdentifiers(logger);
