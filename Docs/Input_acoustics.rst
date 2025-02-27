@@ -139,7 +139,9 @@ In order to reduce computation time, we can ignore far away sound source that wi
 
 Before looking for propagation path, all sound sources are fetched in the radius of ``confMaxSrcDist`` then sorted by distance from the receiver position.
 
-After each propagation path is found, we evaluate if we need to
+After each propagation path is found, we evaluate if the difference between the accumulated noise level of all previous sound sources with the expected maximum noise level at the receiver with all sound sources is greater than the maximum error parameter.
+
+If the next sound sources contribution is negligible we move to the next receiver point.
 
 Minimal and maximal values are over all emission periods specified on the sound sources. The maximal expected noise level value is updated after each sound source is processed.
 
