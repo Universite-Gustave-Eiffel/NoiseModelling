@@ -120,7 +120,7 @@ public class PathFinderTest {
                 assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p1,
                         gotCutPointWall.wall.p1, DELTA_COORDS);
                 if(!expectedCutPointWall.wallAlpha.isEmpty()) {
-                    assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01);
+                    assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01, "expectedCutPointWall.alpha");
                 }
             } else if (expectedCutPoint instanceof CutPointReflection) {
                 CutPointReflection expectedCutPointReflection = (CutPointReflection) expectedCutPoint;
@@ -129,7 +129,7 @@ public class PathFinderTest {
                         expectedCutPointReflection.wall.p0, gotCutPointReflection.wall.p0, DELTA_COORDS);
                 assert3DCoordinateEquals(expectedCutPointReflection+"!="+gotCutPointReflection,
                         expectedCutPointReflection.wall.p1, gotCutPointReflection.wall.p1, DELTA_COORDS);
-                assertArrayEquals(expectedCutPointReflection.alphaAsArray(), gotCutPointReflection.alphaAsArray(), 0.01);
+                assertArrayEquals(expectedCutPointReflection.alphaAsArray(), gotCutPointReflection.alphaAsArray(), 0.01, "expectedCutPointReflection.alphaAsArray");
             }
         }
 

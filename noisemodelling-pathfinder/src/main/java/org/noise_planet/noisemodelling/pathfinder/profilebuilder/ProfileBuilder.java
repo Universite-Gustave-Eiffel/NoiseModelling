@@ -160,6 +160,16 @@ public class ProfileBuilder {
         exactFrequencyArray = new ArrayList<>();
         aWeightingArray = new ArrayList<>();
         initializeFrequencyArrayFromReference(this.frequencyArray, exactFrequencyArray, aWeightingArray);
+        for (Wall wall : processedWalls) {
+            wall.initialize(exactFrequencyArray);
+        }
+        for (Building building : buildings) {
+            building.initialize(exactFrequencyArray);
+        }
+        for (Wall wall : walls) {
+            wall.initialize(exactFrequencyArray);
+        }
+
     }
 
     public static void initializeFrequencyArrayFromReference(List<Integer> frequencyArray,
@@ -849,6 +859,8 @@ public class ProfileBuilder {
         }
         rtree.build();
         groundEffectsRtree.build();
+        // initialize with default frequencies
+        setFrequencyArray(frequencyArray);
         return this;
     }
 
@@ -1047,7 +1059,7 @@ public class ProfileBuilder {
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
 
         CutPointWall cutPointWall = new CutPointWall(processedWallIndex,
-                intersection, facetLine.getLineSegment(), facetLine.getAlphas(exactFrequencyArray));
+                intersection, facetLine.getLineSegment(), facetLine.getAlphas());
         cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT;
         if(facetLine.primaryKey >= 0) {
             cutPointWall.setPk(facetLine.primaryKey);
@@ -1068,7 +1080,7 @@ public class ProfileBuilder {
                                  LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
-                facetLine.getAlphas(exactFrequencyArray));
+                facetLine.getAlphas());
         if(facetLine.primaryKey >= 0) {
             wallCutPoint.setPk(facetLine.primaryKey);
         }

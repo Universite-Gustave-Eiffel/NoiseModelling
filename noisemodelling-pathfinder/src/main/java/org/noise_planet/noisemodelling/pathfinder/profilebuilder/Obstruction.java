@@ -14,6 +14,19 @@ public class Obstruction {
     /** Obstruction global alpha or impedance */
     private double g = DEFAULT_G;
 
+    /**
+     * Initialize alpha values for each frequency
+     * @param frequencyExact Exact frequency values
+     */
+    public void initialize(List<Double> frequencyExact) {
+        if(alphas.size() != frequencyExact.size()) {
+            alphas = new ArrayList<>();
+            for (double freq : frequencyExact) {
+                alphas.add(WallAbsorption.getWallAlpha(g, freq));
+            }
+        }
+    }
+
     public void copyAlphas(Obstruction obstructionSource) {
         if(!obstructionSource.alphas.isEmpty()) {
             this.alphas = new ArrayList<>(obstructionSource.alphas);
@@ -26,12 +39,7 @@ public class Obstruction {
      * Retrieve the absorption coefficients.
      * @return The absorption coefficients.
      */
-    public List<Double> getAlphas(List<Double> frequencyExact) {
-        if(alphas.isEmpty()) {
-            for(double freq : frequencyExact) {
-                alphas.add(WallAbsorption.getWallAlpha(g, freq));
-            }
-        }
+    public List<Double> getAlphas() {
         return alphas;
     }
 
