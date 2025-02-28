@@ -108,7 +108,7 @@ def exec(Connection connection, Map input) {
             "ROUND(percentile_cont(0.9) WITHIN GROUP (ORDER BY " + columnName + "), 1) L10," +
             "ROUND(percentile_cont(0.1) WITHIN GROUP (ORDER BY " + columnName + "), 1) L90 FROM " + table + " GROUP BY THE_GEOM;")
 
-    resultString = "The columns LEQA and LEQ have been added to the table: " + table + "."
+    resultString = "L10,L50 and L90 have been computed in the table: " + outputTableName + "."
 
     // print to command window
     logger.info('End : Add Dynamic Indicator')
