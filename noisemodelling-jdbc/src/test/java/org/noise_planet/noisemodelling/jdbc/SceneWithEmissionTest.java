@@ -114,6 +114,18 @@ public class SceneWithEmissionTest {
         }
     }
 
+    private static Map<String, Double> fetchReceiverLevel(Connection connection) throws SQLException {
+        Map<String, Double> allSourcesReceiverLevel = new HashMap<>();
+        try (Statement st = connection.createStatement()) {
+            try (ResultSet rs = st.executeQuery("SELECT PERIOD, LEQ FROM RECEIVERS_LEVEL")) {
+                // Sum contribution of all sources
+                while (rs.next()) {
+                    allSourcesReceiverLevel.merge(rs.getString("PERIOD"), dBToW(rs.getDouble("LEQ")), Double::sum);
+                }
+            }
+        }
+        return allSourcesReceiverLevel;
+    }
 
     /**
      * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
@@ -132,31 +144,21 @@ public class SceneWithEmissionTest {
                 List<Long> allSourcesPk = testIgnoreNonSignificantSourcesParam(connection, 0.,
                         "BUILDINGS", "SOURCES_GEOM",
                         "RECEIVERS", "SOURCES_EMISSION");
-                double allSourcesReceiverLevel = 0;
-                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 634 AND PERIOD = '8'")) {
-                    // Sum contribution of all sources
-                    while (rs.next()) {
-                        allSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
-                    }
-                }
+                Map<String, Double> allSourcesReceiverLevel = fetchReceiverLevel(connection);
                 List<Long> ignoreFarSourcesPk = testIgnoreNonSignificantSourcesParam(connection, maxError,
                         "BUILDINGS", "SOURCES_GEOM",
                         "RECEIVERS", "SOURCES_EMISSION");
 
-                double someSourcesReceiverLevel = 0;
+                Map<String, Double> someSourcesReceiverLevel = fetchReceiverLevel(connection);
                 // The noise level error should be in the expected range
-                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 634 AND PERIOD = '8'")) {
-                    // Sum contribution of all sources
-                    while (rs.next()) {
-                        someSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
-                    }
+                for (Map.Entry<String, Double> entry : allSourcesReceiverLevel.entrySet()) {
+                    String period = entry.getKey();
+                    double levelAllSources = wToDb(entry.getValue());
+                    assertTrue(someSourcesReceiverLevel.containsKey(period));
+                    double levelLimitedSources = wToDb(someSourcesReceiverLevel.get(period));
+                    assertTrue(Math.abs(levelAllSources - levelLimitedSources) < maxError);
                 }
-                allSourcesReceiverLevel = wToDb(allSourcesReceiverLevel);
-                someSourcesReceiverLevel = wToDb(someSourcesReceiverLevel);
-
-                assertTrue(Math.abs(allSourcesReceiverLevel - someSourcesReceiverLevel) < maxError);
-
-                // Some sources should be skipped
+                // Some sources should be skipped or maxDbError not doing its job
                 assertNotEquals( allSourcesPk.size(), ignoreFarSourcesPk.size());
             }
         }
