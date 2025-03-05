@@ -133,7 +133,7 @@ public class SceneWithEmissionTest {
                         "BUILDINGS", "SOURCES_GEOM",
                         "RECEIVERS", "SOURCES_EMISSION");
                 double allSourcesReceiverLevel = 0;
-                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 295 AND PERIOD = '6'")) {
+                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 634 AND PERIOD = '8'")) {
                     // Sum contribution of all sources
                     while (rs.next()) {
                         allSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
@@ -142,12 +142,10 @@ public class SceneWithEmissionTest {
                 List<Long> ignoreFarSourcesPk = testIgnoreNonSignificantSourcesParam(connection, maxError,
                         "BUILDINGS", "SOURCES_GEOM",
                         "RECEIVERS", "SOURCES_EMISSION");
-                // Some sources should be skipped
-                assertNotEquals( allSourcesPk.size(), ignoreFarSourcesPk.size());
 
                 double someSourcesReceiverLevel = 0;
                 // The noise level error should be in the expected range
-                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 295 AND PERIOD = '6'")) {
+                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 634 AND PERIOD = '8'")) {
                     // Sum contribution of all sources
                     while (rs.next()) {
                         someSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
@@ -157,6 +155,9 @@ public class SceneWithEmissionTest {
                 someSourcesReceiverLevel = wToDb(someSourcesReceiverLevel);
 
                 assertTrue(Math.abs(allSourcesReceiverLevel - someSourcesReceiverLevel) < maxError);
+
+                // Some sources should be skipped
+                assertNotEquals( allSourcesPk.size(), ignoreFarSourcesPk.size());
             }
         }
     }
