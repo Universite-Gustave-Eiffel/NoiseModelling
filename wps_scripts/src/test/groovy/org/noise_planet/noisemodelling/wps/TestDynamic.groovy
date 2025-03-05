@@ -305,15 +305,6 @@ class TestDynamic extends JdbcTestCase {
         def expected = JDBCUtilities.getUniqueFieldValues(connection,
                 "SOURCES_EMISSION", "PERIOD")
 
-
-        def sql = new Sql(connection)
-
-//        sql.execute("DELETE FROM RECEIVERS WHERE PK != (SELECT PK FROM RECEIVERS R ORDER BY ST_DISTANCE(R.the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry)  LIMIT 1)")
-        //sql.execute("DELETE FROM SOURCES_GEOM WHERE ST_DISTANCE(the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry) > 170")
-        //sql.execute("DELETE FROM SOURCES_EMISSION WHERE NOT EXISTS (SELECT PK FROM SOURCES_GEOM WHERE IDSOURCE=PK)")
-        //sql.execute("DELETE FROM SOURCES_GEOM WHERE NOT EXISTS (SELECT IDSOURCE FROM SOURCES_EMISSION WHERE IDSOURCE=PK)")
-        sql.execute("SCRIPT TO '/Users/fortin/github/NoiseModelling/wps_scripts/build/tmp/TUTO_DYNAMIC_POISSON/export.sql' TABLE RECEIVERS, SOURCES_GEOM, SOURCES_EMISSION")
-
         // Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers
         new Noise_level_from_source().exec(connection,
                 ["tableBuilding"       : "BUILDINGS",
