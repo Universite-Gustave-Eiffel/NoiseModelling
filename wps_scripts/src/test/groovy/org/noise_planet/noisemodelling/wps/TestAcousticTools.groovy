@@ -58,7 +58,7 @@ class TestAcousticTools extends JdbcTestCase {
                 ["tableRoads": "ROADS2"])
 
         String res = new Add_Laeq_Leq_columns().exec(connection,
-                ["prefix": "LWD",
+                ["prefix": "HZD",
                  "tableName": "LW_ROADS"])
 
         List<String> fields = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
