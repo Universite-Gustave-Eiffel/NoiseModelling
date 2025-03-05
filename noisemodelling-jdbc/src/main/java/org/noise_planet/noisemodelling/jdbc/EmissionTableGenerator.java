@@ -250,7 +250,7 @@ public class EmissionTableGenerator {
      * @param outputTable
      * @throws SQLException
      */
-    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable) throws SQLException {
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
@@ -262,26 +262,26 @@ public class EmissionTableGenerator {
                 " DIR_ID, GS");
         StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWD");
+            createTableQuery.append(", ").append(frequencyPrepend).append("D");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWD");
+            insertIntoQuery.append(", ").append(frequencyPrepend).append("D");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWE");
+            createTableQuery.append(", ").append(frequencyPrepend).append("E");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWE");
+            insertIntoQuery.append(", ").append(frequencyPrepend).append("E");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
-            createTableQuery.append(", LWN");
+            createTableQuery.append(", ").append(frequencyPrepend).append("N");
             createTableQuery.append(thirdOctave);
             createTableQuery.append(" double precision");
-            insertIntoQuery.append(", LWN");
+            insertIntoQuery.append(", ").append(frequencyPrepend).append("N");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
         }
@@ -292,7 +292,7 @@ public class EmissionTableGenerator {
         insertIntoQuery.append(")");
         connection.createStatement().execute(createTableQuery.toString());
 
-        // Get Class to compute LW
+        // Get Class to compute HZ
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName);
 
         while (railWayLWIterator.hasNext()) {

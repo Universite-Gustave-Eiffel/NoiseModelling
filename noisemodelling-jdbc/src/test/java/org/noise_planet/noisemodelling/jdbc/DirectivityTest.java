@@ -56,7 +56,7 @@ public class DirectivityTest {
         // DEBUG st.execute("UPDATE DIRECTIVITY SET LW500=-10 WHERE THETA=45 AND PHI=270 ");
         // Data is inserted now fetch it from the database
         Map<Integer, DirectivitySphere> directivities =
-                DefaultTableLoader.fetchDirectivity(connection, "DIRECTIVITY", 1);
+                DefaultTableLoader.fetchDirectivity(connection, "DIRECTIVITY", 1, "LW");
 
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/cardioid_dir.html"))) {
             bw.write("<!DOCTYPE html>\n" +

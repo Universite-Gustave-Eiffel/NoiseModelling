@@ -286,6 +286,13 @@ inputs = [
                 description: 'Threshold for excluding negligible sound sources in calculations. Default value: <b>0.1</b>',
                 min        : 0, max: 1,
                 type       : Double.class
+        ],
+        frequencyFieldPrepend            : [
+                name       : 'Frequency field name',
+                title      : 'Frequency field name',
+                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.' +
+                        '&#128736; Default value: <b>HZ</b>',
+                min        : 0, max: 1, type: String.class
         ]
 ]
 
@@ -479,6 +486,11 @@ def exec(Connection connection, Map input) {
         confMaxError = Double.valueOf(input['confMaxError'] as String)
     }
 
+    String frequencyFieldPrepend = "HZ"
+    if (input['frequencyFieldPrepend']) {
+        frequencyFieldPrepend = input['frequencyFieldPrepend'] as String
+    }
+
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
@@ -519,6 +531,7 @@ def exec(Connection connection, Map input) {
     pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
+    pointNoiseMap.setFrequencyFieldPrepend(frequencyFieldPrepend)
 
 
     // Set environmental parameters

@@ -293,7 +293,7 @@ public class TableLoaderTest {
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
         EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
-                "LW_RAILWAY");
+                "LW_RAILWAY", "HZ");
 
         // Get Class to compute LW
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
@@ -333,7 +333,7 @@ public class TableLoaderTest {
         DefaultTableLoader loader = (DefaultTableLoader) noiseMapByReceiverMaker.getTableLoader();
 
         List<String> frequenciesFields = loader.frequencyArray.stream()
-                .map(frequency -> noiseMapByReceiverMaker.getLwFrequencyPrepend()+frequency)
+                .map(frequency -> noiseMapByReceiverMaker.getFrequencyFieldPrepend()+frequency)
                 .collect(Collectors.toList());
         double[] expected = new double[]{20.58, 22.12, 27.88, 26.74, 29.35, 31.23, 33.66, 31.61, 31.11, 32.4, 34.65,
                 38.23, 40.41, 40.55, 39.36, 33.4, 29.58, 26.43, 24.06, 17.67, 8.04, -6.12, -23.11, -47.51};
@@ -389,6 +389,8 @@ public class TableLoaderTest {
 
         NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS",
                 "LW_ROADS", "RECEIVERS");
+
+        noiseMap.setFrequencyFieldPrepend("LW");
 
         noiseMap.initialize(connection, new EmptyProgressVisitor());
 

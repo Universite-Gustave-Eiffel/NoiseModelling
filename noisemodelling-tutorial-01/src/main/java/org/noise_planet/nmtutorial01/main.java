@@ -96,7 +96,8 @@ class Main {
         // Init NoiseModelling
         NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker(tableBuildings.toString(),
                 tableLwRoads.toString(), "RECEIVERS");
-        noiseMapByReceiverMaker.setMaximumPropagationDistance(800.0);
+        noiseMapByReceiverMaker.setMaximumPropagationDistance(100.0);
+        noiseMapByReceiverMaker.setFrequencyFieldPrepend("LW");
         noiseMapByReceiverMaker.setSoundReflectionOrder(0);
         //noiseMapByReceiverMaker.setThreadCount(1);
         noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);

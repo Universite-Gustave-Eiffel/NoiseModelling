@@ -157,7 +157,7 @@ def exec(Connection connection, input) {
     }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY")
+            "LW_RAILWAY", "HZ")
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

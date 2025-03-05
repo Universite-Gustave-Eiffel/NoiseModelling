@@ -45,7 +45,7 @@ public class SceneDatabaseInputSettings {
     String periodAtmosphericSettingsTableName = "";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
     int coefficientVersion = 2;
-    public String lwFrequencyPrepend = "LW";
+    public String frequencyFieldPrepend = "HZ";
 
     public SceneDatabaseInputSettings() {
 
@@ -125,11 +125,11 @@ public class SceneDatabaseInputSettings {
         this.periodAtmosphericSettingsTableName = periodAtmosphericSettingsTableName;
     }
 
-    public String getLwFrequencyPrepend() {
-        return lwFrequencyPrepend;
+    public String getFrequencyFieldPrepend() {
+        return frequencyFieldPrepend;
     }
 
-    public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
-        this.lwFrequencyPrepend = lwFrequencyPrepend;
+    public void setFrequencyFieldPrepend(String frequencyFieldPrepend) {
+        this.frequencyFieldPrepend = frequencyFieldPrepend;
     }
 }

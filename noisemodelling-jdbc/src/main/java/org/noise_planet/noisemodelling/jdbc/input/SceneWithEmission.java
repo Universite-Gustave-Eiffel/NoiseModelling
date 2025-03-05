@@ -87,7 +87,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
         List<Integer> frequencyArray = profileBuilder.frequencyArray;
         for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
             Integer frequency = frequencyArray.get(i);
-            lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.lwFrequencyPrepend+frequency));
+            lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.frequencyFieldPrepend +frequency));
         }
         String period = rs.getString("PERIOD");
         addSourceEmission(pk, period, lw);
@@ -114,7 +114,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
             String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
             for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
                 Integer frequency = frequencyArray.get(i);
-                final String tableFieldName = sceneDatabaseInputSettings.lwFrequencyPrepend + periodFieldName + frequency;
+                final String tableFieldName = sceneDatabaseInputSettings.frequencyFieldPrepend + periodFieldName + frequency;
                 if(sourceFieldNames.containsKey(tableFieldName)) {
                     lw[i] = AcousticIndicatorsFunctions.dBToW(
                             rs.getDouble(tableFieldName));

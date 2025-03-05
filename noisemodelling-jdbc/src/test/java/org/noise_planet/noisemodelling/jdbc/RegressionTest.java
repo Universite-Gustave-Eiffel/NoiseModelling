@@ -48,6 +48,7 @@ public class RegressionTest {
             noiseMapByReceiverMaker.setMaximumPropagationDistance(500.0);
             noiseMapByReceiverMaker.setSoundReflectionOrder(1);
             noiseMapByReceiverMaker.setThreadCount(1);
+            noiseMapByReceiverMaker.setFrequencyFieldPrepend("LW");
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(true);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
 

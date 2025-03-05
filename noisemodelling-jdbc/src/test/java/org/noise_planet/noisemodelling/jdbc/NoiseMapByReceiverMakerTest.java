@@ -36,7 +36,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
@@ -69,7 +68,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "ROADS_GEOM", "RECEIVERS");
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setSoilTableName("LAND_G");
-            noiseMapByReceiverMaker.setLwFrequencyPrepend("DB_M");
+            noiseMapByReceiverMaker.setFrequencyFieldPrepend("DB_M");
             noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
             Set<Long> processedReceivers = new HashSet<>();
@@ -105,7 +104,7 @@ public class NoiseMapByReceiverMakerTest {
         AttenuationParameters data = new AttenuationParameters(false);
         for(String period : new String[] {"D", "E", "N"}) {
             for (int freq : data.getFrequencies()) {
-                String fieldName = "LW" + period + freq;
+                String fieldName = "HZ" + period + freq;
                 sb.append(", ");
                 sb.append(fieldName);
                 sb.append(" real");
@@ -149,7 +148,7 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            try(ResultSet rs = st.executeQuery("SELECT LW63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
                 assertTrue(rs.next());
                 assertEquals(73.3, rs.getDouble(1), 0.1);
                 assertTrue(rs.next());
@@ -204,7 +203,7 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, LW63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, HZ63 FROM " + parameters.receiversLevelTable + " WHERE PERIOD='DEN' ORDER BY IDRECEIVER")) {
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 assertEquals(68.3, rs.getDouble(2), 1);
@@ -360,7 +359,7 @@ public class NoiseMapByReceiverMakerTest {
         try (Statement st = connection.createStatement()) {
             st.execute(String.format("CALL SHPREAD('%s', 'LW_ROADS')", NoiseMapByReceiverMakerTest.class.getResource("lw_roads.shp").getFile()));
             st.execute("CREATE TABLE SOURCES_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY) AS SELECT PK, THE_GEOM FROM LW_ROADS");
-            st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR, IDSOURCE INT, LW63 REAL, LW125 REAL, LW250 REAL, LW500 REAL, LW1000 REAL, LW2000 REAL, LW4000 REAL, LW8000 REAL)");
+            st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR, IDSOURCE INT, HZ63 REAL, LW125 REAL, LW250 REAL, LW500 REAL, LW1000 REAL, LW2000 REAL, LW4000 REAL, LW8000 REAL)");
             st.execute("INSERT INTO SOURCES_EMISSION SELECT 'D', PK, LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 FROM LW_ROADS");
             st.execute("INSERT INTO SOURCES_EMISSION SELECT 'E', PK, LWE63, LWE125, LWE250, LWE500, LWE1000, LWE2000, LWE4000, LWE8000 FROM LW_ROADS");
             st.execute("INSERT INTO SOURCES_EMISSION SELECT 'N', PK, LWN63, LWN125, LWN250, LWN500, LWN1000, LWN2000, LWN4000, LWN8000 FROM LW_ROADS");
@@ -379,6 +378,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
                     "SOURCES_GEOM", "RECEIVERS");
 
+            noiseMapByReceiverMaker.setFrequencyFieldPrepend("LW");
             noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);

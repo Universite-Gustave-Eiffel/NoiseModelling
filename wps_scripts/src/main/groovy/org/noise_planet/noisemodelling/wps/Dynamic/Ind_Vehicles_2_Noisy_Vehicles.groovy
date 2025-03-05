@@ -42,7 +42,7 @@ description = 'Calculating dynamic road emissions based on vehicles trajectories
         'and contain : </br>' +
         '-  <b> IDSOURCE  </b> : an identifier (INTEGER). </br>' +
         '-  <b> PERIOD </b> : The TIMESTAMP iteration (STRING).</br>' +
-        '-  <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : 8 columns giving the emission sound level for each octave band (FLOAT).'
+        '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the emission sound level for each octave band (FLOAT).'
 
 inputs = [
         tableVehicles : [name : 'Individual Vehicles table',
@@ -164,7 +164,7 @@ def exec(Connection connection, Map input) {
 
     // Associate vehicles position to the closest source point
     sql.execute("create table SOURCES_EMISSION_DUPLICATES as SELECT b.PERIOD ," +
-            "b.Lw63, b.Lw125, b.Lw250, b.Lw500, b.Lw1000, b.Lw2000, b.Lw4000, b.Lw8000," +
+            "b.HZ63, b.HZ125, b.HZ250, b.HZ500, b.HZ1000, b.HZ2000, b.HZ4000, b.HZ8000," +
             " (SELECT a.$primaryKeyColumnName FROM $tableSourceGeom a " +
             "WHERE ST_EXPAND(b.the_geom,$distance2snap, $distance2snap) && a.the_geom" +
             "  ORDER BY ST_Distance(a.the_geom, b.the_geom) ASC LIMIT 1) IDSOURCE FROM LW_VEHICLE b;")
@@ -178,23 +178,23 @@ def exec(Connection connection, Map input) {
     def mergeIdSource = $/
             CREATE TABLE SOURCES_EMISSION(  IDSOURCE INTEGER NOT NULL,
                                             PERIOD VARCHAR NOT NULL,
-                                            LW63 REAL,
-                                            LW125 REAL,
-                                            LW250 REAL,
-                                            LW500 REAL,
-                                            LW1000 REAL,
-                                            LW2000 REAL,
-                                            LW4000 REAL,
-                                            LW8000 REAL);
+                                            HZ63 REAL,
+                                            HZ125 REAL,
+                                            HZ250 REAL,
+                                            HZ500 REAL,
+                                            HZ1000 REAL,
+                                            HZ2000 REAL,
+                                            HZ4000 REAL,
+                                            HZ8000 REAL);
             INSERT INTO SOURCES_EMISSION SELECT IDSOURCE, PERIOD,
-            10 * LOG10( SUM(POWER(10, LW63 / 10))) AS LW63,
-            10 * LOG10( SUM(POWER(10, LW125 / 10))) AS LW125,
-            10 * LOG10( SUM(POWER(10, LW250 / 10))) AS LW250,
-            10 * LOG10( SUM(POWER(10, LW500 / 10))) AS LW500,
-            10 * LOG10( SUM(POWER(10, LW1000 / 10))) AS LW1000,
-            10 * LOG10( SUM(POWER(10, LW2000 / 10))) AS LW2000,
-            10 * LOG10( SUM(POWER(10, LW4000 / 10))) AS LW4000,
-            10 * LOG10( SUM(POWER(10, LW8000 / 10))) AS LW8000
+            10 * LOG10( SUM(POWER(10, HZ63 / 10))) AS HZ63,
+            10 * LOG10( SUM(POWER(10, HZ125 / 10))) AS HZ125,
+            10 * LOG10( SUM(POWER(10, HZ250 / 10))) AS HZ250,
+            10 * LOG10( SUM(POWER(10, HZ500 / 10))) AS HZ500,
+            10 * LOG10( SUM(POWER(10, HZ1000 / 10))) AS HZ1000,
+            10 * LOG10( SUM(POWER(10, HZ2000 / 10))) AS HZ2000,
+            10 * LOG10( SUM(POWER(10, HZ4000 / 10))) AS HZ4000,
+            10 * LOG10( SUM(POWER(10, HZ8000 / 10))) AS HZ8000
             FROM SOURCES_EMISSION_DUPLICATES
             GROUP BY IDSOURCE, PERIOD;
     /$
@@ -239,8 +239,8 @@ class VehicleEmissionProcessData {
         //////////////////////
 
         sql.execute("drop table if exists LW_DYNAMIC;")
-        sql.execute("create table LW_VEHICLE(PERIOD varchar, THE_GEOM geometry, Lw63 double precision, Lw125 double precision, Lw250 double precision, Lw500 double precision, Lw1000 double precision, Lw2000 double precision, Lw4000 double precision, Lw8000 double precision);")
-        def qry = 'INSERT INTO LW_VEHICLE(PERIOD , THE_GEOM,Lw63, Lw125, Lw250, Lw500, Lw1000,Lw2000, Lw4000, Lw8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
+        sql.execute("create table LW_VEHICLE(PERIOD varchar, THE_GEOM geometry, HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision);")
+        def qry = 'INSERT INTO LW_VEHICLE(PERIOD , THE_GEOM,HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         if (tableFormat.equals("SUMO")){
                 // Remplissage des variables avec le contenu du fichier SUMO

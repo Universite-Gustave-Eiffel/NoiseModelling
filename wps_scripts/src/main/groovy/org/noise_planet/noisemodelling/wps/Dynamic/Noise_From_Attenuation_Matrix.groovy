@@ -40,7 +40,7 @@ inputs = [
                 title: 'LW(PERIOD)',
                 description: 'LW(PERIOD) ex. SOURCES_EMISSION' +
                         '<br/>The table must contain the following fields :' +
-                        '<br/>IDSOURCE, PERIOD, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000' +
+                        '<br/>IDSOURCE, PERIOD, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000' +
                         '<br/> IDSOURCE link to primary key of attenuation table and PERIOD a varchar',
                 type: String.class
         ],
@@ -57,7 +57,7 @@ inputs = [
         title: 'Attenuation Matrix Table name',
         description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled. Should be RECEIVERS_LEVEL' +
                 '<br/>The table must contain the following fields :' +
-                '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000',
+                '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
         type: String.class
     ],
         outputTable : [
@@ -126,21 +126,21 @@ def exec(Connection connection, input) {
     String attenuationTable = input['attenuationTable'].toString().toUpperCase()
     String lwTable = input['lwTable'].toString().toUpperCase()
     String timeString = "PERIOD"
-    String prefix = "LW"
+    String prefix = "HZ"
 
     // Groovy Dollar slashy string that contain the queries
 
     def query2 = $/CREATE TABLE $outputTable AS SELECT lg.IDRECEIVER,
             mr.$timeString AS $timeString,
             lg.the_geom,
-            10 * LOG10( SUM(POWER(10,(mr.LW63 + lg.LW63) / 10))) AS LW63,
-            10 * LOG10( SUM(POWER(10,(mr.LW125 + lg.LW125) / 10))) AS LW125,
-            10 * LOG10( SUM(POWER(10,(mr.LW250 + lg.LW250) / 10))) AS LW250,
-            10 * LOG10( SUM(POWER(10,(mr.LW500 + lg.LW500) / 10))) AS LW500,
-            10 * LOG10( SUM(POWER(10,(mr.LW1000 + lg.LW1000) / 10))) AS LW1000,
-            10 * LOG10( SUM(POWER(10,(mr.LW2000 + lg.LW2000) / 10))) AS LW2000,
-            10 * LOG10( SUM(POWER(10,(mr.LW4000 + lg.LW4000) / 10))) AS LW4000,
-            10 * LOG10( SUM(POWER(10,(mr.LW8000 + lg.LW8000) / 10))) AS LW8000
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}63 + lg.${prefix}63) / 10))) AS ${prefix}63,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}125 + lg.${prefix}125) / 10))) AS ${prefix}125,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}250 + lg.${prefix}250) / 10))) AS ${prefix}250,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}500 + lg.${prefix}500) / 10))) AS ${prefix}500,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}1000 + lg.${prefix}1000) / 10))) AS ${prefix}1000,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}2000 + lg.${prefix}2000) / 10))) AS ${prefix}2000,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}4000 + lg.${prefix}4000) / 10))) AS ${prefix}4000,
+            10 * LOG10( SUM(POWER(10,(mr.${prefix}8000 + lg.${prefix}8000) / 10))) AS ${prefix}8000
         FROM $attenuationTable  lg , $lwTable mr WHERE lg.IDSOURCE = mr.$lwTable_sourceId 
         GROUP BY lg.IDRECEIVER, mr.$timeString;
         

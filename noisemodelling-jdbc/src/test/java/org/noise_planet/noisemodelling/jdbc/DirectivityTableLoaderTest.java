@@ -82,7 +82,7 @@ public class DirectivityTableLoaderTest {
 
         // Data is inserted now fetch it from the database
         Map<Integer, DirectivitySphere> directivities = DefaultTableLoader.fetchDirectivity(connection,
-                "DIRTEST", 1);
+                "DIRTEST", 1, "LW");
 
         assertEquals(1, directivities.size());
 

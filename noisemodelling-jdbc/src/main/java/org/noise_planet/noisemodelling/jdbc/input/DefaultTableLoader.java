@@ -100,7 +100,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                     String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                     List<Integer> frequencyValues = readFrequenciesFromLwTable(
-                            noiseMapByReceiverMaker.getLwFrequencyPrepend()+
+                            noiseMapByReceiverMaker.getFrequencyFieldPrepend()+
                                     periodFieldName, sourceFields);
                     if(!frequencyValues.isEmpty()) {
                         inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN;
@@ -119,7 +119,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             // Load expected frequencies used for computation
             // Fetch source fields
             List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
-            List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker.getLwFrequencyPrepend(), sourceField);
+            List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceField);
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source emission table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
             }
@@ -132,7 +132,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             Set<Integer> frequencySet = new HashSet<>();
             for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                 String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
-                frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getLwFrequencyPrepend()+periodFieldName, sourceFields));
+                frequencySet.addAll(readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend()+periodFieldName, sourceFields));
             }
             frequencyArray = new ArrayList<>(frequencySet);
             exactFrequencyArray = new ArrayList<>();
@@ -152,7 +152,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         if(inputSettings.useTrainDirectivity) {
             insertTrainDirectivity();
         } else if (!inputSettings.directivityTableName.isEmpty()) {
-            directionAttributes = fetchDirectivity(connection, inputSettings.directivityTableName, 1);
+            directionAttributes = fetchDirectivity(connection, inputSettings.directivityTableName, 1, noiseMapByReceiverMaker.getFrequencyFieldPrepend());
             if(noiseMapByReceiverMaker.isVerbose()) {
                 LOGGER.info("Loaded {} directivities from the database", directionAttributes.size());
             }
@@ -330,21 +330,22 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * DIR_ID : identifier of the directivity sphere (INTEGER)
      * THETA : Horizontal angle in degree. 0° front and 90° right (0-360) (FLOAT)
      * PHI : Vertical angle in degree. 0° front and 90° top -90° bottom (-90 - 90) (FLOAT)
-     * LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 : attenuation levels in dB for each octave or third octave (FLOAT)
-     * @param connection
-     * @param tableName
-     * @param defaultInterpolation
+     * HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 : attenuation levels in dB for each octave or third octave (FLOAT)
+     * @param connection Connection
+     * @param tableName Table name
+     * @param defaultInterpolation Interpolation if applicable
+     * @param frequencyFieldPrepend Frequency field name ex. HZ for HZ1000
      * @return
      */
-    public static Map<Integer, DirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation) throws SQLException {
+    public static Map<Integer, DirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation, String frequencyFieldPrepend) throws SQLException {
         Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
         List<String> fields = JDBCUtilities.getColumnNames(connection, tableName);
         // fetch provided frequencies
         List<String> frequenciesFields = new ArrayList<>();
         for(String field : fields) {
-            if(field.toUpperCase(Locale.ROOT).startsWith("LW")) {
+            if(field.toUpperCase(Locale.ROOT).startsWith(frequencyFieldPrepend)) {
                 try {
-                    double frequency = Double.parseDouble(field.substring(2));
+                    double frequency = Double.parseDouble(field.substring(frequencyFieldPrepend.length()));
                     if (frequency > 0) {
                         frequenciesFields.add(field);
                     }

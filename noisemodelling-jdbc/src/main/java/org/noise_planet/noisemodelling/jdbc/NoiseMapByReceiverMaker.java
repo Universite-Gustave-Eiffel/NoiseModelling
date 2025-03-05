@@ -99,15 +99,15 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
 
-    public String getLwFrequencyPrepend() {
-        return sceneDatabaseInputSettings.getLwFrequencyPrepend();
+    public String getFrequencyFieldPrepend() {
+        return sceneDatabaseInputSettings.getFrequencyFieldPrepend();
     }
 
     /**
-     * @param lwFrequencyPrepend Text preceding the frequency in source emission table (default LW)
+     * @param frequencyFieldPrepend Text preceding the frequency in source emission table (default LW)
      */
-    public void setLwFrequencyPrepend(String lwFrequencyPrepend) {
-        sceneDatabaseInputSettings.setLwFrequencyPrepend(lwFrequencyPrepend);
+    public void setFrequencyFieldPrepend(String frequencyFieldPrepend) {
+        sceneDatabaseInputSettings.setFrequencyFieldPrepend(frequencyFieldPrepend);
     }
 
     public SceneDatabaseInputSettings getSceneInputSettings() {

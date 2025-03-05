@@ -49,7 +49,7 @@ description = 'Calculating individual vehicle position and noise_level based on 
         '-  <b> PK  </b> : an identifier (INTEGER, PRIMARY KEY). </br>' +
         '-  <b> IDSOURCE  </b> : link to the source point (INTEGER). </br>' +
         '-  <b> PERIOD  </b> : The TIMESTAMP iteration (VARCHAR).</br>' +
-        '-  <b> LW63, LW125, LW250, LW500, LW1000,LW2000, LW4000, LW8000 </b> : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).'
+        '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).'
 
 inputs = [
         tableRoads    : [name : 'Roads table name', title: 'Roads table name', description: "<b>Name of the Roads table.</b>  </br>  " +
@@ -196,8 +196,8 @@ def exec(Connection connection, input) {
         // random number > Vehicle or not / Light of Heavy
         //
         sql.execute("drop table if exists SOURCES_EMISSION;")
-        sql.execute("create table SOURCES_EMISSION(PERIOD varchar, IDSOURCE integer, LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision);")
-        def qry = 'INSERT INTO SOURCES_EMISSION(PERIOD, IDSOURCE, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
+        sql.execute("create table SOURCES_EMISSION(PERIOD varchar, IDSOURCE integer, HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision);")
+        def qry = 'INSERT INTO SOURCES_EMISSION(PERIOD, IDSOURCE, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000) VALUES (?,?,?,?,?,?,?,?,?,?);'
 
         int nCarsPos = probabilisticProcessData.getCarsPositions()
         k = 0
@@ -226,7 +226,7 @@ def exec(Connection connection, input) {
     } else {
 
         sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
-        sql.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR NOT NULL, IDSOURCE int not null, LW63 real, LW125 real, LW250 real, LW500 real, LW1000 real, LW2000 real, LW4000 real, LW8000 real)")
+        sql.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR NOT NULL, IDSOURCE int not null, HZ63 real, HZ125 real, HZ250 real, HZ500 real, HZ1000 real, HZ2000 real, HZ4000 real, HZ8000 real)")
 
         String insert = "INSERT INTO SOURCES_EMISSION VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 

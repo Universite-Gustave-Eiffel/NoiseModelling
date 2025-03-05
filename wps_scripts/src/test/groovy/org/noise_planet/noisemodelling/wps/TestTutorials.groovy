@@ -67,15 +67,16 @@ class TestTutorials extends JdbcTestCase {
 
 
         new Noise_level_from_traffic().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableRoads"   : "ROADS2",
-                 "tableReceivers": "RECEIVERS",
-                 "tableGroundAbs": "ground_type",
-                 "tableDEM": "dem",
-                 "confDiffHorizontal": true,
-                 "confMaxSrcDist": 2000.0,
-                 "confReflOrder": 0,
-                 "confMaxError": 3.0])
+                ["tableBuilding"        : "BUILDINGS",
+                 "tableRoads"           : "ROADS2",
+                 "tableReceivers"       : "RECEIVERS",
+                 "tableGroundAbs"       : "ground_type",
+                 "tableDEM"             : "dem",
+                 "confDiffHorizontal"   : true,
+                 "confMaxSrcDist"       : 2000.0,
+                 "confReflOrder"        : 0,
+                 "confMaxError"         : 3.0,
+                 "frequencyFieldPrepend": "LW"])
 
         def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
         def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
@@ -121,12 +122,13 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("RECEIVERS"))
 
 
-        res = new Noise_level_from_source().exec(connection, ["tableSources"  : "SOURCES",
-                                                              "tableBuilding" : "BUILDINGS",
-                                                              "tableReceivers": "RECEIVERS",
-                                                              "confReflOrder" : 1,
-                                                              "confDiffVertical" : true,
-                                                              "confDiffHorizontal" : true])
+        res = new Noise_level_from_source().exec(connection, ["tableSources"         : "SOURCES",
+                                                              "tableBuilding"        : "BUILDINGS",
+                                                              "tableReceivers"       : "RECEIVERS",
+                                                              "confReflOrder"        : 1,
+                                                              "confDiffVertical"     : true,
+                                                              "confDiffHorizontal"   : true,
+                                                              "frequencyFieldPrepend": "LW"])
 
         res =  new Display_Database().exec(connection, [])
 
@@ -204,7 +206,8 @@ class TestTutorials extends JdbcTestCase {
                                                         tableGroundAbs: "GROUND_TYPE",
                                                         tableSourceDirectivity: "DIRECTIVITY",
                                                         confMaxSrcDist : 800,
-                                                        tableDEM: "DEM"
+                                                        tableDEM: "DEM",
+                                                        "frequencyFieldPrepend": "LW"
                                                         ])
 
         new Create_Isosurface().exec(connection,

@@ -17,9 +17,7 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
-import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
@@ -300,7 +298,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             sb.append(");");
         } else {
             for (int idfreq = 0; idfreq < aWeightingArray.length; idfreq++) {
-                sb.append(", " + noiseMapByReceiverMaker.getLwFrequencyPrepend());
+                sb.append(", " + noiseMapByReceiverMaker.getFrequencyFieldPrepend());
                 sb.append(frequencyArray.get(idfreq));
                 sb.append(" REAL");
             }
