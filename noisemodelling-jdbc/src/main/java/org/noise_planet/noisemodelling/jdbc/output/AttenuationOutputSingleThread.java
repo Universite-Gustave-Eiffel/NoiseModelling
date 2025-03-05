@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
@@ -52,9 +53,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * MaxError DB Processing variable
-     * Current, minimal power at receiver (minimal among time periods), only used to stop looking for far sources
+     * Current, power at receiver, only used to stop looking for far sources
      */
-    double[] wjAtReceiver = new double[0];
+    Map<String, Double> wjAtReceiver = new HashMap<>();
 
     /**
      * MaxError DB Processing variable
@@ -62,12 +63,14 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      * Key source index
      * Value maximum expected noise level in w
      */
-    Map<Integer, Double> maximumWjExpectedSplAtReceiver = new HashMap<>();
+    Map<String, HashMap<Coordinate, Double>> maximumWjExpectedSplAtReceiver = new HashMap<>();
+
+
     /**
      * MaxError DB Processing variable
      * Next Free Field cumulated global power at receiver, only used to stop looking for far sources
      */
-    double sumMaximumRemainingWjExpectedSplAtReceiver = 0;
+    Map<String, Double> sumMaximumRemainingWjExpectedSplAtReceiver = new HashMap<>();
 
     public AtomicInteger cutProfileCount = new AtomicInteger(0);
 
@@ -82,14 +85,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         this.multiThread = multiThreadParent;
         this.dbSettings = multiThreadParent.noiseMapDatabaseParameters;
         this.progressVisitor = progressVisitor;
-    }
-
-    private void addGlobalReceiverLevel(double[] wjLevel) {
-        if(wjAtReceiver.length != wjLevel.length) {
-            wjAtReceiver = wjLevel.clone();
-        } else {
-            wjAtReceiver = AcousticIndicatorsFunctions.sumArray(wjAtReceiver, wjLevel);
-        }
     }
 
     /**
@@ -187,8 +182,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 double[] defaultAttenuation = new double[0];
                 if(scene.wjSources.containsKey(sourcePk)) {
                     ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                    double[] minimalPowerForAllPeriods = new double[0];
-                    double minimalPowerSum = Double.MAX_VALUE;
                     for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                         String period = periodEmission.period;
                         double [] attenuation = new double[0];
@@ -211,31 +204,48 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         processNoiseLevel(receiverNoiseLevel);
                         if(dbSettings.maximumError > 0) {
                             double powerSum = sumArray(levels);
-                            if(powerSum < minimalPowerSum) {
-                                minimalPowerSum = powerSum;
-                                minimalPowerForAllPeriods = levels;
-                            }
+                            wjAtReceiver.merge(period, powerSum, Double::sum);
                         }
-                    }
-                    if(dbSettings.maximumError > 0) {
-                        // Add minimal power
-                        addGlobalReceiverLevel(minimalPowerForAllPeriods);
                     }
                 }
             }
             if(dbSettings.maximumError > 0 && !scene.wjSources.isEmpty()) {
-                // power at receiver using minimal emission of all periods
-                double minimalCurrentLevelAtReceiver = AcousticIndicatorsFunctions.wToDb(sumArray(wjAtReceiver));
+                boolean keepRunning = false;
+                for (Map.Entry<String, Double> entry : wjAtReceiver.entrySet()) {
+                    final String period = entry.getKey();
+                    final double levelAtReceiver = entry.getValue();
 
-                // replace unknown value of expected power for this source
-                int sourceHashCode = source.coordinate.hashCode();
-                if(maximumWjExpectedSplAtReceiver.containsKey(sourceHashCode)) {
-                    sumMaximumRemainingWjExpectedSplAtReceiver -= maximumWjExpectedSplAtReceiver.get(sourceHashCode);
-                    maximumWjExpectedSplAtReceiver.remove(sourceHashCode);
+                    if(!sumMaximumRemainingWjExpectedSplAtReceiver.containsKey(period) ||
+                            sumMaximumRemainingWjExpectedSplAtReceiver.get(period) == 0) {
+                        // nothing to evaluate here, as there is no expected further power for this period
+                        continue;
+                    }
+
+                    // replace unknown value (evaluated on startReceiver) of expected power for this source point
+                    if(maximumWjExpectedSplAtReceiver.containsKey(period) &&
+                            sumMaximumRemainingWjExpectedSplAtReceiver.containsKey(period)) {
+                        HashMap<Coordinate, Double> coordinateDoubleHashMap = maximumWjExpectedSplAtReceiver.get(period);
+                        if (coordinateDoubleHashMap.containsKey(source.coordinate)) {
+                            sumMaximumRemainingWjExpectedSplAtReceiver.merge(period,
+                                    coordinateDoubleHashMap.get(source.coordinate),
+                                    (aDouble, aDouble2) -> Math.max(0, aDouble - aDouble2));
+                            //                        sumMaximumRemainingWjExpectedSplAtReceiver.put(period,
+                            //                                coordinateDoubleHashMap.values().stream().reduce(Double::sum).orElse(0.0));
+                            coordinateDoubleHashMap.remove(source.coordinate);
+                        }
+                    }
+                    // Evaluate the current noise level at receiver compared to the final
+                    // expected noise level at the receiver
+                    double nonProcessedPower = sumMaximumRemainingWjExpectedSplAtReceiver.getOrDefault(period, 0.0);
+                    double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(levelAtReceiver
+                            + nonProcessedPower);
+                    double dBDiff = maximumExpectedLevelInDb - wToDb(levelAtReceiver);
+                    if (dBDiff > dbSettings.maximumError) {
+                        keepRunning = true;
+                        break;
+                    }
                 }
-                double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(sumArray(wjAtReceiver) + sumMaximumRemainingWjExpectedSplAtReceiver);
-                double dBDiff = maximumExpectedLevelInDb - minimalCurrentLevelAtReceiver;
-                if (dBDiff < dbSettings.maximumError) {
+                if(!keepRunning) {
                     strategy = PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER;
                 }
             }
@@ -246,29 +256,36 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     @Override
     public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
         this.cutProfileCount = cutProfileCount;
-        wjAtReceiver = new double[0];
         // Quickly evaluate the maximum expected power level at receiver location
         // using all nearby sources maximum emission in reflective direct field
         if(dbSettings.getMaximumError() > 0 && !multiThread.sceneWithEmission.wjSources.isEmpty()) {
+            wjAtReceiver = new HashMap<>(multiThread.sceneWithEmission.periodSet.size());
+            for (String period : multiThread.sceneWithEmission.periodSet) {
+                wjAtReceiver.put(period, 0.0);
+            }
             maximumWjExpectedSplAtReceiver.clear();
+            sumMaximumRemainingWjExpectedSplAtReceiver.clear();
+
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
-                int sourceHashCode = sourcePointInfo.getCoord().hashCode();
                 double[] attenuation = dBToW(computeFastAttenuation(sourcePointInfo, receiver, scene.defaultCnossosParameters));
                 if(scene.wjSources.containsKey(sourcePointInfo.sourcePk)) {
                     ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePointInfo.sourcePk);
                     for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                         double[] wjAtReceiver = multiplicationArray(attenuation, periodEmission.emission);
                         double sumPower = sumArray(wjAtReceiver);
-                        double previousPowerAtLocation = maximumWjExpectedSplAtReceiver.getOrDefault(sourceHashCode, 0.0);
-                        if(sumPower > previousPowerAtLocation) {
-                            maximumWjExpectedSplAtReceiver.put(sourceHashCode, sumPower);
+                        HashMap<Coordinate, Double> sourceLevel;
+                        if(!maximumWjExpectedSplAtReceiver.containsKey(periodEmission.period)) {
+                            sourceLevel = new HashMap<>();
+                            maximumWjExpectedSplAtReceiver.put(periodEmission.period, sourceLevel);
+                        } else {
+                            sourceLevel = maximumWjExpectedSplAtReceiver.get(periodEmission.period);
                         }
+                        sumMaximumRemainingWjExpectedSplAtReceiver.merge(periodEmission.period, sumPower, Double::sum);
+                        sourceLevel.merge(sourcePointInfo.getCoord(), sumPower, Double::sum);
                     }
                 }
             }
-            sumMaximumRemainingWjExpectedSplAtReceiver = maximumWjExpectedSplAtReceiver.values()
-                    .stream().reduce(Double::sum).orElse(0.0);
         }
     }
 
@@ -403,8 +420,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         }
         receiverAttenuationList.clear();
         maximumWjExpectedSplAtReceiver.clear();
-        sumMaximumRemainingWjExpectedSplAtReceiver = 0;
-        wjAtReceiver = new double[0];
+        sumMaximumRemainingWjExpectedSplAtReceiver.clear();
+        wjAtReceiver.clear();
         this.cnossosPaths.clear();
     }
 

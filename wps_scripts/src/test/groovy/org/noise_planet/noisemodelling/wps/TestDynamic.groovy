@@ -251,6 +251,12 @@ class TestDynamic extends JdbcTestCase {
      */
     void testDynamicFlowTutorialPoisson() {
 
+        File tutorialOutputFolder = new File("build/tmp/TUTO_DYNAMIC_POISSON/")
+
+        if(!tutorialOutputFolder.exists()) {
+            assertTrue(tutorialOutputFolder.mkdir())
+        }
+
         // Import the road network (with predicted traffic flows) and buildings from an OSM file
         new Import_OSM().exec(connection, [
                 "pathFile"      : TestImportExport.getResource("map.osm.gz").getPath(),
@@ -260,6 +266,16 @@ class TestDynamic extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ]);
+
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, "BUILDINGS.shp").absolutePath,
+                 tableToExport: "BUILDINGS"])
+
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, "ROADS.shp").absolutePath,
+                 tableToExport: "ROADS"])
 
         // Create a receiver grid
         new Regular_Grid().exec(connection,  [
@@ -292,9 +308,10 @@ class TestDynamic extends JdbcTestCase {
 
         def sql = new Sql(connection)
 
-        sql.execute("DELETE FROM RECEIVERS WHERE PK != (SELECT PK FROM RECEIVERS R ORDER BY ST_DISTANCE(R.the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry)  LIMIT 1)")
-        sql.execute("DELETE FROM SOURCES_GEOM WHERE ST_DISTANCE(the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry) > 170")
-        sql.execute("DELETE FROM SOURCES_EMISSION WHERE NOT EXISTS (SELECT PK FROM SOURCES_GEOM WHERE IDSOURCE=PK)")
+//        sql.execute("DELETE FROM RECEIVERS WHERE PK != (SELECT PK FROM RECEIVERS R ORDER BY ST_DISTANCE(R.the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry)  LIMIT 1)")
+        //sql.execute("DELETE FROM SOURCES_GEOM WHERE ST_DISTANCE(the_geom, 'SRID=2154 ;POINT(491403.00 6771412.00)'::geometry) > 170")
+        //sql.execute("DELETE FROM SOURCES_EMISSION WHERE NOT EXISTS (SELECT PK FROM SOURCES_GEOM WHERE IDSOURCE=PK)")
+        //sql.execute("DELETE FROM SOURCES_GEOM WHERE NOT EXISTS (SELECT IDSOURCE FROM SOURCES_EMISSION WHERE IDSOURCE=PK)")
         sql.execute("SCRIPT TO '/Users/fortin/github/NoiseModelling/wps_scripts/build/tmp/TUTO_DYNAMIC_POISSON/export.sql' TABLE RECEIVERS, SOURCES_GEOM, SOURCES_EMISSION")
 
         // Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers
@@ -312,9 +329,10 @@ class TestDynamic extends JdbcTestCase {
         def periods = JDBCUtilities.getUniqueFieldValues(connection,
                 NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME, "PERIOD")
 
-
-        assertEquals(expected.size(), periods.size())
-        assertTrue(periods.containsAll(expected))
+        // Export result table
+        new Export_Table().exec(connection,
+                [exportPath: new File(tutorialOutputFolder, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+".shp").absolutePath,
+                 tableToExport: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         // This step is optional, it compute the L10, L50 and L90 at each receiver from the table RECEIVERS_LEVEL
         String res = new DynamicIndicators().exec(connection,
@@ -333,26 +351,13 @@ class TestDynamic extends JdbcTestCase {
 
         assertTrue(JDBCUtilities.tableExists(connection, "CONTOURING_NOISE_MAP"))
 
-        File tutorialOutputFolder = new File("build/tmp/TUTO_DYNAMIC_POISSON/")
-
-        if(!tutorialOutputFolder.exists()) {
-            assertTrue(tutorialOutputFolder.mkdir())
-        }
-
         // Export result table
         new Export_Table().exec(connection,
                 [exportPath: new File(tutorialOutputFolder, "CONTOURING_NOISE_MAP.shp").absolutePath,
                  tableToExport: "CONTOURING_NOISE_MAP"])
 
-        // Export result table
-        new Export_Table().exec(connection,
-                [exportPath: new File(tutorialOutputFolder, "BUILDINGS.shp").absolutePath,
-                 tableToExport: "BUILDINGS"])
-
-        // Export result table
-        new Export_Table().exec(connection,
-                [exportPath: new File(tutorialOutputFolder, "ROADS.shp").absolutePath,
-                 tableToExport: "ROADS"])
+        assertEquals(expected.size(), periods.size())
+        assertTrue(periods.containsAll(expected))
 
     }
 

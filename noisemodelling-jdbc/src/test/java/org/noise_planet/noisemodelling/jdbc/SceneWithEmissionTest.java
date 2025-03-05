@@ -35,7 +35,7 @@ import java.sql.Statement;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 /**
  * Test class evaluation and testing attenuation values.
@@ -43,21 +43,30 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
 public class SceneWithEmissionTest {
     private static final double HUMIDITY = 70;
     private static final double TEMPERATURE = 10;
-
     private List<Long> testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
+        return testIgnoreNonSignificantSourcesParam(connection, maxError, "BUILDINGS",
+                "LW_ROADS", "RECEIVERS", "");
+    }
+
+    private List<Long> testIgnoreNonSignificantSourcesParam(
+            Connection connection, double maxError, String buildingsTableName, String sourcesTableName,
+            String receiverTableName, String sourcesEmissionTableName) throws SQLException, IOException {
+
         // Init NoiseModelling
-        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS",
-                "LW_ROADS", "RECEIVERS");
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker(buildingsTableName,
+                sourcesTableName, receiverTableName);
 
         noiseMap.setMaximumPropagationDistance(5000.0);
         noiseMap.setSoundReflectionOrder(1);
         noiseMap.setThreadCount(1);
         noiseMap.setComputeHorizontalDiffraction(true);
         noiseMap.setComputeVerticalDiffraction(true);
+        if(!sourcesEmissionTableName.isEmpty()) {
+            noiseMap.setSourcesEmissionTableName(sourcesEmissionTableName);
+        }
         NoiseMapDatabaseParameters parameters = noiseMap.getNoiseMapDatabaseParameters();
         parameters.mergeSources = false;
         parameters.maximumError = maxError;
-        noiseMap.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
 
         // Building height field name
         noiseMap.setHeightField("HEIGHT");
@@ -94,6 +103,9 @@ public class SceneWithEmissionTest {
                                      "testReceiverOverBuilding", true, ""))) {
             try (Statement st = connection.createStatement()) {
                 st.execute(Utils.getRunScriptRes("scenario_skip_far_source.sql"));
+
+
+
                 List<Long> allSourcesPk = testIgnoreNonSignificantSourcesParam(connection, 0.);
                 List<Long> ignoreFarSourcesPk = testIgnoreNonSignificantSourcesParam(connection, maxError);
                 assertEquals(2, allSourcesPk.size());
@@ -102,6 +114,52 @@ public class SceneWithEmissionTest {
         }
     }
 
+
+    /**
+     * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
+     * This feature is disabled and all sound sources are computed
+     */
+    @Test
+    public void testIgnoreNonSignificantSources2() throws Exception {
+        final double maxError = 3.0;
+
+        try (Connection connection =
+                     JDBCUtilities.wrapConnection(
+                             H2GISDBFactory.createSpatialDataBase(
+                                     "testIgnoreNonSignificantSources2", true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute(Utils.getRunScriptRes("skip_far_source2.sql"));
+                List<Long> allSourcesPk = testIgnoreNonSignificantSourcesParam(connection, 0.,
+                        "BUILDINGS", "SOURCES_GEOM",
+                        "RECEIVERS", "SOURCES_EMISSION");
+                double allSourcesReceiverLevel = 0;
+                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 295 AND PERIOD = '6'")) {
+                    // Sum contribution of all sources
+                    while (rs.next()) {
+                        allSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
+                    }
+                }
+                List<Long> ignoreFarSourcesPk = testIgnoreNonSignificantSourcesParam(connection, maxError,
+                        "BUILDINGS", "SOURCES_GEOM",
+                        "RECEIVERS", "SOURCES_EMISSION");
+                // Some sources should be skipped
+                assertNotEquals( allSourcesPk.size(), ignoreFarSourcesPk.size());
+
+                double someSourcesReceiverLevel = 0;
+                // The noise level error should be in the expected range
+                try(ResultSet rs = st.executeQuery("SELECT * FROM RECEIVERS_LEVEL WHERE IDRECEIVER = 295 AND PERIOD = '6'")) {
+                    // Sum contribution of all sources
+                    while (rs.next()) {
+                        someSourcesReceiverLevel += dBToW(rs.getDouble("LAEQ"));
+                    }
+                }
+                allSourcesReceiverLevel = wToDb(allSourcesReceiverLevel);
+                someSourcesReceiverLevel = wToDb(someSourcesReceiverLevel);
+
+                assertTrue(Math.abs(allSourcesReceiverLevel - someSourcesReceiverLevel) < maxError);
+            }
+        }
+    }
 
     /**
      * Check if Li coefficient computation and line source subdivision are correctly done
