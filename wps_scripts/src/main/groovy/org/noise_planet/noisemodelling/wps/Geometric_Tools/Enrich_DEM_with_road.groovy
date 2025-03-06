@@ -1,3 +1,5 @@
+package org.noise_planet.noisemodelling.wps.Geometric_Tools
+
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
@@ -17,20 +19,19 @@
  */
 
 
+
 import geoserver.GeoServer
 import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
-
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.CompileStatic
+import org.geotools.jdbc.JDBCDataStore
 import org.h2.util.ScriptReader
 import org.h2gis.api.ProgressVisitor
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -49,9 +50,9 @@ description = '&#10145;&#65039; Insert altimetric points coming from roads into 
               'And four parameters:</br>' +
               ' <ul>' +
                 '<li>Roads right-of-way (roadWidth): Name of column where the road right-of-way is stored (Mandatory)</li>' +
-                '<li>Road platform height (hRoad): Roads platform height (Optionnal). Default value = 0.0m</li>' +
-                '<li>Input SRID (inputSRID): SRID of the input tables (Optionnal)</li>' +
-                '<li>Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied</li>' +
+                '<li>Road platform height (hRoad): Roads platform height (Optional). Default value = 0.0m</li>' +
+                '<li>Input SRID (inputSRID): SRID of the input tables (Optional)</li>' +
+                '<li>Output suffix (outputSuffix): Suffix applied at the end of the resulting table name (Optional). If not specified, "ENRICHED" is applied</li>' +
               '</ul>'
 
 
@@ -85,15 +86,15 @@ inputs = [
         hRoad : [
                 name       : 'Roads platform height',
                 title      : 'Roads platform height',
-                description: 'Roads platform height (in meters) (Optionnal)  </br> </br>'+
+                description: 'Roads platform height (in meters) (Optional)  </br> </br>'+
                              '&#128736; Default value = <b>0</b>',
                 min        : 0, max: 1,
                 type       : double.class
         ],
-        outputSuffixe : [
-                name       : 'Output suffixe',
-                title      : 'Output suffixe',
-                description: 'Suffixe applied at the end of the resuling table name </br> </br>'+
+        outputSuffix : [
+                name       : 'Output suffix',
+                title      : 'Output suffix',
+                description: 'Suffix applied at the end of the resulting table name </br> </br>'+
                              '&#128736; If not specified, "ENRICHED" is applied',
                 min        : 0, max: 1,
                 type       : String.class
@@ -175,42 +176,8 @@ def run(input) {
 
 def exec(Connection connection, input) {
 
-
-    //------------------------------------------------------
-    // Clean the database before starting the importation
-
-    List<String> ignorelst = ["SPATIAL_REF_SYS", "GEOMETRY_COLUMNS"]
-
-    // Build the result string with every tables
-    StringBuilder sb = new StringBuilder()
-
-    // Get every table names
-    List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
-
-    // Loop over the tables
-    tables.each { t ->
-        TableLocation tab = TableLocation.parse(t)
-        if (!ignorelst.contains(tab.getTable())) {
-            // Add the name of the table in the string builder
-            if (sb.size() > 0) {
-                sb.append(" || ")
-            }
-            sb.append(tab.getTable())
-            // Create a connection statement to interact with the database in SQL
-            Statement stmt = connection.createStatement()
-            // Drop the table
-            //stmt.execute("drop table if exists " + tab)
-        }
-    }
-
-    //------------------------------------------------------
-
-
-    // output string, the information given back to the user
-    String resultString = null
-
     // Create a logger to display messages in the geoserver logs and in the command prompt.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+    Logger logger = LoggerFactory.getLogger("Enrich_DEM_with_road")
 
     ProgressVisitor progressVisitor
 
@@ -225,7 +192,6 @@ def exec(Connection connection, input) {
     // Get provided parameters
     
     String inputDEM = input["inputDEM"]
-    //String enrichedDEM = input["inputDEM"] += "_ENRICHED"
     String inputRoad = input["inputRoad"]
     String roadWidth = input["roadWidth"]
 
@@ -244,12 +210,12 @@ def exec(Connection connection, input) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(inputDEM))
     }
 
-    // If no output table name (outputSuffixe) provided, ENRICHED is applied
-    String outputSuffixe = 'ENRICHED'
-    if ('outputSuffixe' in input) {
-        outputSuffixe = input["outputSuffixe"] as String
+    // If no output table name (outputSuffix) provided, ENRICHED is applied
+    String outputSuffix = 'ENRICHED'
+    if (input["outputSuffix"]) {
+        outputSuffix = input["outputSuffix"] as String
     }
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputSuffixe"] as String
+    String enrichedDEM = input["inputDEM"] + "_" + outputSuffix
 
     // print to command window
     logger.info('List of the input parameters:')
@@ -259,31 +225,21 @@ def exec(Connection connection, input) {
     logger.info('# Roads network table: ' + inputRoad)
     logger.info('# Roads width column: ' + roadWidth)
     logger.info('# Roads platform height: ' + hRoad)
-    logger.info('# Output suffixe: ' + outputSuffixe)
+    logger.info('# Output suffix: ' + outputSuffix)
     logger.info('--------------------------------------------')
 
     logger.info('Start enrich the DEM')
 
     def sql = new Sql(connection)
 
-    def import_dem = """
-    ------------
-    -- Import DEM
-
-    DROP TABLE IF EXISTS dem_to_enrich;
-    CREATE TABLE dem_to_enrich AS SELECT THE_GEOM, 'DEM' as SOURCE FROM $inputDEM;
-    
-    -- DEM: layer $inputDEM imported
-    """
-
     def import_roads = """
     ------------
-    -- Import roads (that are on the floor --> POS_SOL=0)
+    -- Import roads
     -- Road width is precalculated into WIDTH column. When largeur < 3, then 3m
 
     DROP TABLE IF EXISTS dem_roads;
-    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
-        FROM $inputRoad WHERE POS_SOL = '0' AND st_zmin(THE_GEOM) > 0;
+    CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth IS NOT NULL AND $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
+        FROM $inputRoad WHERE st_zmin(THE_GEOM) > 0;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
     ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
     ALTER TABLE dem_roads add primary key(PK_LINE);
@@ -296,7 +252,7 @@ def exec(Connection connection, input) {
     -- Insert roads platform into $enrichedDEM
 
     DROP TABLE DEM_WITHOUT_PTLINE IF EXISTS;
-    CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), SOURCE FROM dem_to_enrich;
+    CREATE TABLE DEM_WITHOUT_PTLINE(THE_GEOM geometry(POINTZ, $srid), source varchar) AS SELECT st_setsrid(THE_GEOM, $srid), 'DEM' FROM $inputDEM;
     -- Remove DEM points that are less than $roadWidth far FROM roads
     DELETE FROM DEM_WITHOUT_PTLINE WHERE EXISTS (SELECT 1 FROM dem_roads b 
         WHERE ST_EXPAND(DEM_WITHOUT_PTLINE.THE_GEOM, 20) && b.THE_GEOM 
@@ -323,7 +279,7 @@ def exec(Connection connection, input) {
     ----------------------------------
     -- Remove non needed tables
     
-    DROP TABLE IF EXISTS DEM_ORO, DEM_HYDRO, DEM_RAIL, DEM_ROADS, BUFFERED_D2, BUFFERED_D3, BUFFERED_D4, BUFFERED_PTLINE, dem_to_enrich;
+    DROP TABLE IF EXISTS DEM_ROADS, BUFFERED_PTLINE;
 
     -- DEM successfully enriched in the table $enrichedDEM
     """
@@ -332,12 +288,11 @@ def exec(Connection connection, input) {
     // print to command window
     def engine = new SimpleTemplateEngine()
 
-    stringBuilder.append(import_dem)
     stringBuilder.append(import_roads)
     stringBuilder.append(enrich_roads)
     stringBuilder.append(enrich_final)
 
-    def binding = ["inputDEM": inputDEM, "inputRoad": inputRoad, "roadWidth": roadWidth, "outputSuffixe": outputSuffixe, "srid": srid, "hRoad": hRoad]
+    def binding = ["inputDEM": inputDEM, "inputRoad": inputRoad, "roadWidth": roadWidth, "outputSuffix": outputSuffix, "srid": srid, "hRoad": hRoad]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
     parseScript(template.toString(), sql, progress, logger)
 

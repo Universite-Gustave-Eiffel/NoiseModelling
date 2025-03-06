@@ -14,14 +14,18 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -128,4 +132,30 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(30, sql.firstRow("select AVG(POP) FROM buildings")[0] as Integer, 1e-3)
     }
 
+    void testEnrichRoad() {
+
+        new Import_Asc_File().exec(connection,
+                ["pathFile" : TestGeometricTools.getResource("testDem/dem.asc.gz").getPath(),
+                 "inputSRID": 2154])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestGeometricTools.getResource("testDem/test_roads.geojson").getPath(),
+                 "inputSRID": 2154,
+                 "tableName": "ROADS"])
+
+        new Enrich_DEM_with_road().exec(connection,
+                ["inputDEM" : "DEM",
+                "inputRoad" : "ROADS",
+                "roadWidth" : "WIDTH"])
+
+        Sql sql = new Sql(connection)
+
+        def countBefore = sql.firstRow("SELECT COUNT(*) FROM DEM")[0] as Integer
+
+        assertTrue(JDBCUtilities.tableExists(connection, "DEM_ENRICHED"))
+
+        def countAfter = sql.firstRow("SELECT COUNT(*) FROM DEM_ENRICHED")[0] as Integer
+
+        assertTrue(countBefore < countAfter)
+    }
 }
