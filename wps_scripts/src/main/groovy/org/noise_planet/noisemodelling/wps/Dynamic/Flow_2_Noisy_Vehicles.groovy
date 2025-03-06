@@ -180,7 +180,7 @@ def exec(Connection connection, input) {
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS")
 
 
-    if (method == "PROBA"){
+    if (method.equalsIgnoreCase("PROBA")){
         System.println("Create the random road traffic table over the number of iterations... ")
 
         sql.execute("drop table VEHICLES_PROBA IF EXISTS;" +

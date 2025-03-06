@@ -1,4 +1,4 @@
-Dynamic Maps
+Dynamic Tutorial - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Many publications have emerged showcasing the use of **NoiseModelling** to create dynamic maps (see `scientific production`_).
@@ -31,14 +31,11 @@ Dynamic mapping has its subtleties, and it's important to be aware of them to av
 
 Assumptions are freely made, specific formats are expected, and so on. To understand the required data formats and check the expected structure of the input tables, please refer also to the example input tables and spatial layers!
 
-Study Cases
----------------
-
 Case 1: A Road Network with a Single Traffic Flow
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------------------
 
 Import the road network (with arbitrary traffic flows) and buildings from an OSM file
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use Import_OSM WPS block
 
@@ -51,7 +48,7 @@ Use Import_OSM WPS block
    :align: center
 
 Create a receiver grid using 25 meters step in a grid pattern
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use Regular_Grid WPS block
 
@@ -64,7 +61,7 @@ Use Regular_Grid WPS block
    :align: center
 
 Convert traffic to dynamic traffic flow
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 From the network with traffic flow to individual trajectories with associated Lw
 
@@ -81,7 +78,7 @@ Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block:
 #. ``gridStep``: Enter ``10``
 
 Compute noise level at receivers points for each receiver-period
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -95,7 +92,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 #. ``Order of reflexion``: Enter ``0``
 
 Compute noise indicators
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This step is optional, it compute the LA10, LA50 and LA90 at each receiver from the table RECEIVERS_LEVEL
 
@@ -106,7 +103,7 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
 
 Compute iso-surfaces for each time period
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generate a dynamic iso-contour map for each time period based on the LAEQ of the receivers.
 
@@ -116,7 +113,7 @@ Use the ``Acoustic_Tools:Create_Isosurface`` wps block
 #. ``Smooth coefficient``: Enter ``0``
 
 Export Map to QGis
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Using ``Export_Table`` block export the following tables as files in any folder.
 
@@ -125,7 +122,7 @@ Using ``Export_Table`` block export the following tables as files in any folder.
 #. ``ROADS``
 
 Configure QGis to display time dependant map
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Load the 3 files in QGIS. ``Contouring_noise_map`` must be ordered as the last layer (rendered in the bottom)
 
@@ -156,14 +153,14 @@ With the navigation bar of QGis you can select the period to display.
    :alt: Layer setting, temporal tab in QGis
 
 Case 2: A Road Network with Traffic Flows at Regular Intervals
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------------------
 
 This case is similar to the **MATSim** use case (`here <Matsim_Tutorial.rst>`_), but this tutorial generalizes the approach to fit other datasets.
 
 This sample dataset used in this example was kindly provided by Valentin Lebescond from Université Gustave Eiffel.
 
 Import Buildings for your study area
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -172,7 +169,7 @@ Use ``Import File`` WPS block
 #. ``Output table name``: Enter ``buildings``
 
 Import the road network
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -181,7 +178,7 @@ Use ``Import File`` WPS block
 #. ``Output table name``: Enter ``roads``
 
 Create a receiver grid using 25 meters step in a grid pattern
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Regular_Grid`` WPS block
 
@@ -190,7 +187,7 @@ Use ``Regular_Grid`` WPS block
 #. ``height``: Enter ``1.5``
 
 Split geometry and traffic periods
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the table ROADS, the traffic information is given for each period in the TIME column.
 
@@ -207,7 +204,7 @@ Two output table is created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
 
 
 Compute noise level at receivers points for each receiver-period
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -220,7 +217,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
 
 Compute noise indicators
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This step is optional, it compute the LA10, LA50 and LA90 at each receiver from the table LT_GEOM
 
@@ -232,12 +229,12 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 The result table LT_GEOM can be displayed into QGis, if you filter by PERIOD.
 
 Case 3: Spatio-Temporal Data of Moving Sources
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------------------
 
 This sample dataset was kindly provided by Sacha Baclet from KTH (0000-0003-2114-8680).
 
 Import Buildings for your study area
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -246,7 +243,7 @@ Use ``Import File`` WPS block
 #. ``Output table name``: Enter ``buildings``
 
 Import the receivers (or generate your set of receivers using Regular_Grid script for example)
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -257,7 +254,7 @@ Use ``Import File`` WPS block
 
 
 Import the road network
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -266,7 +263,7 @@ Use ``Import File`` WPS block
 #. ``Output table name``: Enter ``network_tartu``
 
 Add primary key column to the road network (Optional)
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Add_Primary_Key`` WPS block
 
@@ -274,7 +271,7 @@ Use ``Add_Primary_Key`` WPS block
 #. ``Name of the table``: Enter SRID ``network_tartu``
 
 Import the vehicles trajectories
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Import File`` WPS block
 
@@ -283,7 +280,7 @@ Use ``Import File`` WPS block
 #. ``Output table name``: Enter ``vehicle``
 
 Create point sources from the network every 10 meters
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This point source will be used to compute the noise attenuation level from them to each receiver.
 The created table will be named SOURCES_GEOM.
@@ -294,7 +291,7 @@ Use ``Point_Source_From_Network`` WPS block
 #. ``gridStep``: Enter SRID ``10``
 
 Create a table with the noise level from the vehicles and snap the vehicles to the point sources
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``Ind_Vehicles_2_Noisy_Vehicles`` WPS block
 
@@ -304,7 +301,7 @@ Use ``Ind_Vehicles_2_Noisy_Vehicles`` WPS block
 #. ``Vehicles table format``: Enter ``SUMO``
 
 Compute noise attenuation for each receiver-source pairs
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Unlike the previous tutorial we will use an alternative approach here by storing the attenuation between all sources and receivers first.
 The applying later this attenuation to the emission level for each period.
@@ -320,7 +317,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 #. ``Separate receiver level by source identifier``: Check it to have the SOURCEID column on the output
 
 Apply attenuation on emission levels
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Compute the noise level from the moving vehicles to the receivers.
 The output table is called here LT_GEOM and contains the time series of the noise level at each receiver.
@@ -333,7 +330,7 @@ Use the ``Dynamic:Noise_From_Attenuation_Matrix`` WPS block
 
 
 Compute noise indicators
-------------------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This step is optional, it compute the LA10, LA50 and LA90 at each receiver from the table LT_GEOM
 
