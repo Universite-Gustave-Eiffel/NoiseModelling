@@ -22,7 +22,7 @@ SOURCES_GEOM Table definition
     * If there is no DEM, the altitude will be equal to geometry Z attribute
 
 .. note::
-    For backward compatibility in this table you can define here the noise level for Day Evening and Night, for 500 Hz the expected field is ``LWD500`` ``LWE500`` ``LWN500``. NoiseModelling will output the level for this periods and also compute the global ``DEN`` period levels according to standard.
+    For backward compatibility in this table you can define here the noise level for Day Evening and Night, for 500 Hz the expected field is ``HZD500`` ``HZE500`` ``HZN500``. NoiseModelling will output the level for this periods and also compute the global ``DEN`` period levels according to standard.
 
 If you provide only the geometry NoiseModelling will compute only the attenuation on the output table ``RECEIVERS_LEVEL``.
 
@@ -37,31 +37,31 @@ SOURCES_EMISSION Table definition
 * ``PERIOD`` *
     * Description: Identifier of the time. ex. `8h00-9h00`
     * Type:  String
-* ``LW63``
+* ``HZ63``
     * Description: emission levels in dB for 63 Hz
     * Type: Double
-* ``LW125``
+* ``HZ125``
     * Description: emission levels in dB for 125 Hz
     * Type: Double
-* ``LW250``
+* ``HZ250``
     * Description: emission levels in dB for 250 Hz
     * Type: Double
-* ``LW500``
+* ``HZ500``
     * Description: emission levels in dB for 500 Hz
     * Type: Double
-* ``LW1000``
+* ``HZ1000``
     * Description: emission levels in dB for 1000 Hz
     * Type: Double
-* ``LW2000``
+* ``HZ2000``
     * Description: emission levels in dB for 2000 Hz
     * Type: Double
-* ``LW4000``
+* ``HZ4000``
     * Description: emission levels in dB for 4000 Hz
     * Type: Double
-* ``LW8000``
+* ``HZ8000``
     * Description: emission levels in dB for 8000 Hz
     * Type: Double
 
 .. note::
-    You can define partially the bands. We defined here only octave bands but NoiseModelling is supporting third-octaves ``LW50, LW63, LW80, LW100, LW125, LW160, LW200, LW250, LW315, LW400, LW500, LW630, LW800, LW1000, LW1250, LW1600, LW2000, LW2500, LW3150, LW4000, LW5000, LW6300, LW8000, LW10000``.
+    You can define partially the bands. We defined here only octave bands but NoiseModelling is supporting third-octaves ``HZ50, HZ63, HZ80, HZ100, HZ125, HZ160, HZ200, HZ250, HZ315, HZ400, HZ500, HZ630, HZ800, HZ1000, HZ1250, HZ1600, HZ2000, HZ2500, HZ3150, HZ4000, HZ5000, HZ6300, HZ8000, HZ10000``.
 

@@ -55,7 +55,7 @@ In the ``New field`` part, fill the information below:
 
 Once done, click on ``Add to Fields List``. Then redo this step with the following informations:
 
-* ``Name`` : LWD500 . Source noise level (LW) during the day (D) at a frequency of 500 Hz
+* ``Name`` : HZD500 . Source noise level during the day (D) at a frequency of 500 Hz
 * ``Type`` : Decimal number
 * ``Length`` : 5
 * ``Precision`` : 2
@@ -91,7 +91,7 @@ To have an interesting resulting noise map, choose to place your source point ne
 Click on the map where you want to create the source point. Once clicked, a new dialog appears and you are invited to fill the following attributes:
 
 * ``PK``: 1
-* ``LWD500`` : 90
+* ``HZD500`` : 90
 
 .. figure:: images/Noise_Map_From_Point_Source/fill_attributes.png
    :align: center
@@ -121,7 +121,7 @@ For your information, you can open ``.geojson`` files in most of text editor. If
    "type": "FeatureCollection",
    "name": "Point_Source",
    "crs": {"type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
-   "features": [{"type": "Feature", "properties": { "PK": 1, "LWD500": 90.0 }, 
+   "features": [{"type": "Feature", "properties": { "PK": 1, "HZD500": 90.0 },
                  "geometry": {"type": "Point", "coordinates": [223771.0727, 6757583.2983, 0.0]} 
                 }]
    }
@@ -263,7 +263,7 @@ The directivity table aims at modeling a realistic directional noise source. To 
 * ``DIR_ID`` : identifier of the directivity sphere
 * ``THETA`` : vertical angle in degrees, 0 (front), -90 (bottom), 90 (top), from -90 to 90
 * ``PHI``: horizontal angle in degrees, 0 (front) / 90 (right), from 0 to 360
-* ``LW500`` : attenuation levels in dB for 500 Hz
+* ``HZ500`` : attenuation levels in dB for 500 Hz
 
 Each of the sound sources has its own directivity. For the exercise we will use the directivity of a train, which is provided in the file `Directivity.csv`_ and which you are invited to download.
 
@@ -320,13 +320,13 @@ In our example, we will update the ``Point_Source.geojson`` file to add these co
 
 ::
 
-   { "PK": 1, "LWD500": 100.0}
+   { "PK": 1, "HZD500": 100.0}
 
 by
 
 ::
 
-   { "PK": 1, "LWD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }
+   { "PK": 1, "HZD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }
 
 Here we can see that the Yaw is setted to 45°. Pitch and Roll are equal to 0, and the directivity is defined as ``1``  and will refer to the directivy table (see below).
 
@@ -338,7 +338,7 @@ So your final .geojson file should look like this
    "type": "FeatureCollection",
    "name": "Point_Source",
    "crs": {"type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
-   "features": [{"type": "Feature", "properties": { "PK": 1, "LWD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }, 
+   "features": [{"type": "Feature", "properties": { "PK": 1, "HZD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 },
                  "geometry": {"type": "Point", "coordinates": [223771.0727, 6757583.2983, 0.0]} 
                 }]
    }
