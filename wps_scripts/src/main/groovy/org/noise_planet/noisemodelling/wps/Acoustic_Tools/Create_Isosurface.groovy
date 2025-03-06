@@ -49,7 +49,7 @@ inputs = [
         isoClass         : [
                 name       : 'Iso levels in dB',
                 title      : 'Iso levels in dB',
-                description: 'Separation of sound levels for isosurfaces. </br> </br>' +
+                description: 'Separation of sound levels for isosurfaces. First range is from -&#8734; to first value excluded. The first value included to next value excluded..</br> </br>' +
                              'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes. </br> </br>' +
                              '&#128736; Default value: <b>35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0 </b>',
                 min        : 0, max: 1,

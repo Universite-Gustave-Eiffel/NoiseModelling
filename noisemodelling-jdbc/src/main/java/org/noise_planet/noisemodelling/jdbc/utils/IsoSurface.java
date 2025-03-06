@@ -59,7 +59,7 @@ public class IsoSurface {
     private int exportDimension = 2;
 
     /**
-     * @param isoLevels Iso levels in dB
+     * @param isoLevels Iso levels in dB. First range start with -Infinity then first level excluded.
      */
     public IsoSurface(List<Double> isoLevels, int srid) {
         this.isoLevels = new ArrayList<>(isoLevels.size());
