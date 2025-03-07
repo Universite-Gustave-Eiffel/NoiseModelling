@@ -2,6 +2,16 @@ Conformity to ISO 17534-1:2015
 ==============================
 .. This document has been generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
 
+Clarifications on the ISO Standard and Identified Issues
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is important to note that the ISO standard provides recommendations rather than regulatory obligations. While it serves as a reference framework, its application is not mandatory from a legal standpoint.
+
+During our analysis, we identified several issues within the standard that hinder a complete and reliable comparison. Notably, we observed inconsistencies between 2D and 3D visualizations, preventing us from achieving a coherent assessment. Additionally, discrepancies exist between the geometric description of the scene and the corresponding acoustic response, raising concerns about the accuracy and reliability of the standard’s methodology.
+
+Furthermore, with respect to favorable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.
+
+
 Conformity table
 ^^^^^^^^^^^^^^^^
 | Conform - Do not the deviate more than ±0,1 dB 
