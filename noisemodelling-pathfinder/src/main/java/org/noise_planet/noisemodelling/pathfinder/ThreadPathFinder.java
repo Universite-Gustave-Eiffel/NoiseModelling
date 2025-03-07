@@ -11,7 +11,6 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 
 import java.util.concurrent.Callable;
 
@@ -26,7 +25,7 @@ public final class ThreadPathFinder implements Callable<Boolean> {
     int endReceiver; // Excluded
     PathFinder propagationProcess;
     ProgressVisitor visitor;
-    IComputePathsOut dataOut;
+    CutPlaneVisitor dataOut;
     Scene data;
 
 
@@ -40,13 +39,13 @@ public final class ThreadPathFinder implements Callable<Boolean> {
      * @param data
      */
     public ThreadPathFinder(int startReceiver, int endReceiver, PathFinder propagationProcess,
-                            ProgressVisitor visitor, IComputePathsOut dataOut,
+                            ProgressVisitor visitor, CutPlaneVisitor dataOut,
                             Scene data) {
         this.startReceiver = startReceiver;
         this.endReceiver = endReceiver;
         this.propagationProcess = propagationProcess;
         this.visitor = visitor;
-        this.dataOut = dataOut.subProcess();
+        this.dataOut = dataOut;
         this.data = data;
     }
 

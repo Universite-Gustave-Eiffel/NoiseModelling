@@ -18,6 +18,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.junit.Test
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
@@ -57,7 +58,7 @@ class TestAcousticTools extends JdbcTestCase {
                 ["tableRoads": "ROADS2"])
 
         String res = new Add_Laeq_Leq_columns().exec(connection,
-                ["prefix": "LWD",
+                ["prefix": "HZD",
                  "tableName": "LW_ROADS"])
 
         List<String> fields = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
@@ -79,16 +80,15 @@ class TestAcousticTools extends JdbcTestCase {
 
 
         new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
-                                                         tableReceivers: "RECEIVERS", confSkipLday: true,
-                                                         confSkipLnight: true, confSkipLevening: true,
+                                                         tableReceivers: "RECEIVERS",
                                                          confMaxSrcDist:100, confTemperature:20, confHumidity:50,
-                                                         confFavorableOccurrences: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                         confFavorableOccurrencesDefault: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
                                                                  " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
 
-        new Create_Isosurface().exec(connection, [resultTable : "LDEN_GEOM"])
+        new Create_Isosurface().exec(connection, [resultTable : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS2")))
-        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("LDEN_GEOM")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)))
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("CONTOURING_NOISE_MAP")))
 
 

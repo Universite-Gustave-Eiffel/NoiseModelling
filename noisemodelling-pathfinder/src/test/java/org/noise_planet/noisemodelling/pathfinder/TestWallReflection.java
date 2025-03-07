@@ -92,13 +92,13 @@ public class TestWallReflection {
 
         assertEquals(4, mirrorResults.size());
 
-        PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
+        DefaultCutPlaneVisitor defaultCutPlaneVisitor = new DefaultCutPlaneVisitor(true, inputData);
 
         computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
                 new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
-                new Orientation()), receiverMirrorIndex, pathFinderVisitor, IComputePathsOut.PathSearchStrategy.CONTINUE);
+                new Orientation()), receiverMirrorIndex, defaultCutPlaneVisitor, CutPlaneVisitor.PathSearchStrategy.CONTINUE);
 
-        List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
+        List<CutProfile> profiles = new ArrayList<>(defaultCutPlaneVisitor.cutProfiles);
         // Only one second order reflexion propagation path must be found
         assertEquals(1, profiles.size());
 
@@ -174,13 +174,13 @@ public class TestWallReflection {
 
         assertEquals(4, mirrorResults.size());
 
-        PathFinderVisitor pathFinderVisitor = new PathFinderVisitor(true, inputData);
+        DefaultCutPlaneVisitor defaultCutPlaneVisitor = new DefaultCutPlaneVisitor(true, inputData);
 
         computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
                 new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
-                        new Orientation()), receiverMirrorIndex, pathFinderVisitor, IComputePathsOut.PathSearchStrategy.CONTINUE);
+                        new Orientation()), receiverMirrorIndex, defaultCutPlaneVisitor, CutPlaneVisitor.PathSearchStrategy.CONTINUE);
 
-        List<CutProfile> profiles = new ArrayList<>(pathFinderVisitor.cutProfiles);
+        List<CutProfile> profiles = new ArrayList<>(defaultCutPlaneVisitor.cutProfiles);
         // Only one second order reflexion propagation path must be found
         assertEquals(1, profiles.size());
 

@@ -28,27 +28,27 @@ Table definition
 * ``PHI``
 	* Description: horizontal angle in degrees, 0 (front) / 90 (right), from 0 to 360
 	* Type: Double
-* ``LW63``
+* ``HZ63``
 	* Description: attenuation levels in dB for 63 Hz
 	* Type: Double
-* ``LW125``
+* ``HZ125``
 	* Description: attenuation levels in dB for 125 Hz
 	* Type: Double
-* ``LW250``
+* ``HZ250``
 	* Description: attenuation levels in dB for 250 Hz
 	* Type: Double
-* ``LW500``
+* ``HZ500``
 	* Description: attenuation levels in dB for 500 Hz
 	* Type: Double
-* ``LW1000``
+* ``HZ1000``
 	* Description: attenuation levels in dB for 1000 Hz
 	* Type: Double
-* ``LW2000``
+* ``HZ2000``
 	* Description: attenuation levels in dB for 2000 Hz
 	* Type: Double
-* ``LW4000``
+* ``HZ4000``
 	* Description: attenuation levels in dB for 4000 Hz
 	* Type: Double
-* ``LW8000``
+* ``HZ8000``
 	* Description: attenuation levels in dB for 8000 Hz
 	* Type: Double

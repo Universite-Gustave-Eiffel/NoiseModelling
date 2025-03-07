@@ -11,15 +11,17 @@ package org.noise_planet.nmtutorial01;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
-import org.noise_planet.noisemodelling.propagation.Attenuation;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters;
+import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
+
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,8 @@ import java.util.stream.IntStream;
 
 public class GenerateReferenceDeviation {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenerateReferenceDeviation.class);
-    private static final List<Integer> FREQ_LVL = Arrays.asList(Scene.asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    private static final List<Integer> FREQ_LVL = Arrays.asList(
+            AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
     private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
 
@@ -80,25 +83,26 @@ public class GenerateReferenceDeviation {
         return result;
     }
 
-    private static Attenuation computeCnossosPath(String... utNames)
+    private static AttenuationComputeOutput computeCnossosPath(String... utNames)
             throws IOException {
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
                 .finishFeeding();
 
         //Propagation data building
-        Scene rayData = new ProfileBuilderDecorator(profileBuilder)
-                .build();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
 
         //Propagation process path data building
-        AttenuationCnossosParameters attData = new AttenuationCnossosParameters();
+        AttenuationParameters attData = new AttenuationParameters();
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
 
-        //Out and computation settings
-        Attenuation propDataOut = new Attenuation(true, true, attData, rayData);
+        scene.defaultCnossosParameters = attData;
 
-        AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut, propDataOut.genericMeteoData);
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+
+        AttenuationVisitor attenuationVisitor = (AttenuationVisitor)propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
@@ -138,13 +142,13 @@ public class GenerateReferenceDeviation {
         }
     }
 
-    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, Attenuation actual, Attenuation actualWithoutLateral, double[] powerLevel) {
+    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, AttenuationComputeOutput actual, AttenuationComputeOutput actualWithoutLateral, double[] powerLevel) {
         double[] expectedLA = asArray(expectedValues.get("LA"));
         double[] expectedLAWithoutLateral = asArray(expectedValues.get("LA_WL"));
-        double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().value,
+        double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().levels,
                 A_WEIGHTING));
         double[] actualLAWithoutLateral = addArray(powerLevel,
-                addArray(actualWithoutLateral.receiversAttenuationLevels.getFirst().value,
+                addArray(actualWithoutLateral.receiversAttenuationLevels.getFirst().levels,
                 A_WEIGHTING));
         DeviationResult lADeviation = computeDeviation(expectedLA, actualLA);
         DeviationResult lADeviationWithoutLateral = computeDeviation(expectedLAWithoutLateral, actualLAWithoutLateral);
@@ -198,8 +202,8 @@ public class GenerateReferenceDeviation {
     /**
      * For each cnossos test case, compute the attenuation and compare with the expected value, generate the result
      * report in rst format.
-     * @param args
-     * @throws IOException
+     * @param args var args
+     * @throws IOException exception
      */
     public static void main(String[] args) throws IOException {
         // Read working directory argument
@@ -241,22 +245,22 @@ public class GenerateReferenceDeviation {
                         verticalCutFileNames.add(utName+"_Reflection");
                         verticalCutFileNamesWithoutLateral.add(utName+"_Reflection");
                     }
-                    Attenuation attenuation = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
-                    Attenuation attenuationWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
-                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuation, attenuationWithoutLateral, powerLevel);
+                    AttenuationComputeOutput attenuationComputeOutput = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
+                    AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
+                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel);
                     fileWriter.write(stringBuilder.toString());
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
-                    addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuation.getPropagationPaths().get(0), powerLevel);
+                    addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths().get(0), powerLevel);
                     int index = 1;
                     if(pathsExpected.has("Right")) {
-                        addUTDeviationDetails("Right Lateral", stringBuilderDetail, pathsExpected.get("Right"), attenuation.getPropagationPaths().get(index++), powerLevel);
+                        addUTDeviationDetails("Right Lateral", stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getPropagationPaths().get(index++), powerLevel);
                     }
                     if(pathsExpected.has("Left")) {
-                        addUTDeviationDetails("Left Lateral", stringBuilderDetail, pathsExpected.get("Left"), attenuation.getPropagationPaths().get(index++), powerLevel);
+                        addUTDeviationDetails("Left Lateral", stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getPropagationPaths().get(index++), powerLevel);
                     }
                     if(pathsExpected.has("Reflection")) {
-                        addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuation.getPropagationPaths().get(index), powerLevel);
+                        addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths().get(index), powerLevel);
                     }
                 }
                 fileWriter.write(stringBuilderDetail.toString());

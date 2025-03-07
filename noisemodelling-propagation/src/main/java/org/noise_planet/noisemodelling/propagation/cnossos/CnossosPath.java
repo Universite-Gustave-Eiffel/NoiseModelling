@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
 
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+
 /**
  * All the datas Path of Cnossos
  */
@@ -61,21 +63,25 @@ public class CnossosPath extends Path {
     public CnossosPath() {
     }
 
+    public CnossosPath(CutProfile cutProfile) {
+        super(cutProfile);
+    }
+
     public CnossosPath(CnossosPath other) {
-        this.aAtm = other.aAtm.clone();
-        this.aDiv = aDiv.clone();
-        this.aRef = aRef.clone();
-        this.double_aBoundaryH = double_aBoundaryH.clone();
-        this.double_aBoundaryF = double_aBoundaryF.clone();
-        this.aGlobalH = aGlobalH.clone();
-        this.aGlobalF = aGlobalF.clone();
-        this.aDifH = aDifH.clone();
-        this.aDifF = aDifF.clone();
-        this.aGlobal = aGlobal.clone();
-        this.aSource = aSource.clone();
-        this.deltaRetroH = other.deltaRetroH;
-        this.deltaRetroF = other.deltaRetroF;
-        this.groundAttenuation = new GroundAttenuation(other.groundAttenuation);
+        super(other);
+        this.aAtm = other.aAtm;
+        this.aDiv = other.aDiv;
+        this.aRef = other.aRef;
+        this.double_aBoundaryH = other.double_aBoundaryH;
+        this.double_aBoundaryF = other.double_aBoundaryF;
+        this.aRetroDiffH = other.aRetroDiffH;
+        this.aRetroDiffF = other.aRetroDiffF;
+        this.aGlobalH = other.aGlobalH;
+        this.aGlobalF = other.aGlobalF;
+        this.aDifH = other.aDifH;
+        this.aDifF = other.aDifF;
+        this.aGlobal = other.aGlobal;
+        this.aSource = other.aSource;
         this.deltaH = other.deltaH;
         this.deltaF = other.deltaF;
         this.deltaPrimeH = other.deltaPrimeH;
@@ -84,12 +90,14 @@ public class CnossosPath extends Path {
         this.deltaSRPrimeH = other.deltaSRPrimeH;
         this.aBoundaryH = other.aBoundaryH;
         this.aBoundaryF = other.aBoundaryF;
+        this.groundAttenuation = other.groundAttenuation;
         this.deltaSPrimeRF = other.deltaSPrimeRF;
         this.deltaSRPrimeF = other.deltaSRPrimeF;
         this.e = other.e;
-        this.aRetroDiffF = other.aRetroDiffF.clone();
-        this.aRetroDiffH = other.aRetroDiffH.clone();
+        this.deltaRetroH = other.deltaRetroH;
+        this.deltaRetroF = other.deltaRetroF;
     }
+
     public static class ABoundary {
         public double[] deltaDiffSR;
         public double[] aGroundSO;

@@ -1,11 +1,15 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
+import org.locationtech.jts.algorithm.Angle;
+import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Data input for a propagation Path process.
@@ -24,15 +28,28 @@ public class AttenuationParameters {
     public static final  double K01 = 273.16;  // Isothermal temperature at the triple point (K)
     public static final double a8 = (2 * Math.PI / 35.0) * 10 * Math.log10(Math.pow(Math.exp(1),2));
     /** Frequency bands values, by third octave */
-    public List<Integer> freq_lvl;
-    public List<Double> freq_lvl_exact;
-    public List<Double> freq_lvl_a_weighting;
+    protected List<Integer> freq_lvl;
+    protected List<Double> freq_lvl_exact;
+    protected List<Double> freq_lvl_a_weighting;
     // Wind rose for each directions
     public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     public double temperature = 15;
+    /**
+     * Represents the default speed of sound in air under standard conditions, measured in meters per second.
+     * The value is typically used as a constant for computations requiring the speed of sound.
+     * Standard conditions assume a temperature of 15°C at sea level atmospheric pressure.
+     */
     public double celerity = 340;
+    /**
+     * Represents the relative humidity in percentage, ranging from 0 to 100.
+     * This variable is utilized in various calculations related to atmospheric
+     * attenuation and sound propagation.
+     */
     public double humidity = 70;
+    /**
+     * Standard atmosphere atm (Pa)
+     */
     public double pressure = Pref;
     public double[] alpha_atmo;
     public double defaultOccurance = 0.5;
@@ -41,6 +58,8 @@ public class AttenuationParameters {
     public boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
     /** probability occurrence favourable condition */
     public double[] windRose  = DEFAULT_WIND_ROSE;
+    // Wind rose for each directions
+    private static final double angle_section = (2 * Math.PI) / DEFAULT_WIND_ROSE.length;
 
     public AttenuationParameters() {
         this(false);
@@ -50,14 +69,14 @@ public class AttenuationParameters {
     public AttenuationParameters(boolean thirdOctave) {
         if(!thirdOctave) {
             // Default frequencies are in octave bands
-            freq_lvl = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-            freq_lvl_exact = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
-            freq_lvl_a_weighting = Arrays.asList(asOctaveBands(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
+            freq_lvl = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+            freq_lvl_exact = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+            freq_lvl_a_weighting = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
         } else {
             // third octave bands
-            freq_lvl = Arrays.asList(Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE);
-            freq_lvl_exact = Arrays.asList(Scene.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
-            freq_lvl_a_weighting = Arrays.asList(Scene.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
+            freq_lvl = Arrays.stream(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE).boxed().collect(Collectors.toList());
+            freq_lvl_exact = Arrays.asList(ProfileBuilder.DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE);
+            freq_lvl_a_weighting = Arrays.asList(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE);
         }
         init();
     }
@@ -94,8 +113,8 @@ public class AttenuationParameters {
         init();
     }
 
-    void init() {
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
+    protected void init() {
+        this.setTemperature(temperature);
     }
 
     public List<Integer> getFrequencies() {
@@ -104,54 +123,20 @@ public class AttenuationParameters {
 
     public void setFrequencies(List<Integer> freq_lvl) {
         this.freq_lvl = freq_lvl;
+        freq_lvl_exact = new ArrayList<>();
+        freq_lvl_a_weighting = new ArrayList<>();
+        ProfileBuilder.initializeFrequencyArrayFromReference(freq_lvl, freq_lvl_exact, freq_lvl_a_weighting);
+        init();
     }
 
     public List<Double> getFrequenciesExact() {
         return freq_lvl_exact;
     }
 
-    public void setFrequenciesExact(List<Double> freq_lvl_exact) {
-        this.freq_lvl_exact = freq_lvl_exact;
-        this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
-    }
-
     public List<Double> getFrequenciesAWeighting() {
         return freq_lvl_a_weighting;
     }
 
-    public void setFrequenciesAWeighting(List<Double> freq_lvl_a_weighting) {
-        this.freq_lvl_a_weighting = freq_lvl_a_weighting;
-    }
-
-    /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
-        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
-
-    /**
-     * Create new array by taking middle third octave bands
-     *
-     * @param thirdOctaveBands Third octave bands array
-     * @return Octave bands array
-     */
-    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
-        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
-        int j = 0;
-        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
-            octaveBands[j++] = thirdOctaveBands[i];
-        }
-        return octaveBands;
-    }
     /**
      * Set relative humidity in percentage.
      * @param humidity relative humidity in percentage. 0-100
@@ -238,15 +223,6 @@ public class AttenuationParameters {
     }
 
     /**
-     * Compute sound celerity in air ISO 9613-1:1993(F)
-     * @param k Temperature in kelvin
-     * @return Sound celerity in m/s
-     */
-    static double computeCelerity(double k) {
-        return 343.2 * Math.sqrt(k/Kref);
-    }
-
-    /**
      * @param temperature Temperature in ° celsius
      */
     public AttenuationParameters setTemperature(double temperature) {
@@ -254,6 +230,69 @@ public class AttenuationParameters {
         this.celerity = computeCelerity(temperature + K_0);
         this.alpha_atmo = getAtmoCoeffArray(freq_lvl_exact,  temperature,  pressure,  humidity);
         return this;
+    }
+
+    public static double[] getAtmoCoeffArray(List<Double> freq_lvl, double temperature, double pressure, double humidity){
+        double[] alpha_atmo;
+        // Compute atmospheric alpha value by specified frequency band
+        alpha_atmo = new double[freq_lvl.size()];
+        for (int idfreq = 0; idfreq < freq_lvl.size(); idfreq++) {
+            alpha_atmo[idfreq] = getAlpha(freq_lvl.get(idfreq), temperature, pressure, humidity);
+        }
+        return alpha_atmo;
+    }
+
+    /**
+     * get the atmospheric attenuation coefficient in dB/km at the nominal centre frequency for each frequency band, in accordance with ISO 9613-1.
+     * @return alpha_atmo
+     */
+    public double[] getAlpha_atmo() {
+        return alpha_atmo;
+    }
+
+
+    /**
+     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the path (S,R):
+     * @param receiver
+     * @param source
+     * @return rose index
+     */
+    public static int getRoseIndex(Coordinate receiver, Coordinate source) {
+        return getRoseIndex(Angle.angle(receiver, source));
+    }
+
+    /**
+     * The north slice is the last array index not the first one
+     * Ex for slice width of 20°:
+     *      - The first column 20° contain winds between 10 to 30 °
+     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
+     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
+     * @return rose index
+     */
+    public static int getRoseIndex(double angle) {
+        // Angle from cos -1 sin 0
+        double angleRad = -(angle - Math.PI);
+        // Offset angle by PI / 2 (North),
+        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
+        angleRad -= (Math.PI / 2 - angle_section / 2);
+        // Fix out of bounds angle 0-2Pi
+        if(angleRad < 0) {
+            angleRad += Math.PI * 2;
+        }
+        int index = (int)(angleRad / angle_section) - 1;
+        if(index < 0) {
+            index = DEFAULT_WIND_ROSE.length - 1;
+        }
+        return index;
+    }
+
+    /**
+     * Compute sound celerity in air ISO 9613-1:1993(F)
+     * @param k Temperature in kelvin
+     * @return Sound celerity in m/s
+     */
+    static double computeCelerity(double k) {
+        return 343.2 * Math.sqrt(k/Kref);
     }
 
     /**
@@ -281,7 +320,7 @@ public class AttenuationParameters {
     }
 
     /**
-     *
+     * Compute AAtm
      * @param frequency Frequency (Hz)
      * @param humidity Humidity %
      * @param pressure Pressure in pascal
@@ -319,6 +358,7 @@ public class AttenuationParameters {
 
         return Alpha * 1000;
     }
+
     /**
      * This function calculates the atmospheric attenuation coefficient of sound in air
      * ISO 9613-1:1993(F)
@@ -369,23 +409,93 @@ public class AttenuationParameters {
         return getCoefAttAtmos(frequency, humidity, pressure, temperature + K_0);
     }
 
-    public static double[] getAtmoCoeffArray(List<Double> freq_lvl, double temperature, double pressure, double humidity){
-        double[] alpha_atmo;
-        // Compute atmospheric alpha value by specified frequency band
-        alpha_atmo = new double[freq_lvl.size()];
-        for (int idfreq = 0; idfreq < freq_lvl.size(); idfreq++) {
-            alpha_atmo[idfreq] = getAlpha(freq_lvl.get(idfreq), temperature, pressure, humidity);
+    /**
+     * Writes the attenuation parameters to an H2 database table. If the specified table does not exist,
+     * it will create the table. Then it inserts or merges the data into the table for the given period.
+     *
+     * @param connection the database connection to the H2 instance
+     * @param tableName the name of the table in the database
+     * @param period the time period for which the parameters are being saved
+     * @throws SQLException if a database access error occurs
+     */
+    public void writeToDatabase(Connection connection, String tableName, String period) throws SQLException {
+        String createTableSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+                "PERIOD VARCHAR PRIMARY KEY," +
+                "WINDROSE REAL ARRAY," +
+                "PRESSURE REAL," +
+                "HUMIDITY REAL," +
+                "GDISC BOOLEAN," +
+                "PRIME2520 BOOLEAN," +
+                "TEMPERATURE REAL)";
+
+        try (var stmt = connection.createStatement()) {
+            stmt.execute(createTableSQL);
         }
-        return alpha_atmo;
+
+        String insertSQL = "INSERT INTO " + tableName +
+                " (PERIOD, WINDROSE, PRESSURE, HUMIDITY, GDISC, PRIME2520, TEMPERATURE) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (var pstmt = connection.prepareStatement(insertSQL)) {
+            Array sqlWindRose = connection.createArrayOf("DOUBLE", Arrays.stream(windRose).boxed().toArray());
+            pstmt.setString(1, period);
+            pstmt.setArray(2, sqlWindRose);
+            pstmt.setDouble(3, pressure);
+            pstmt.setDouble(4, humidity);
+            pstmt.setBoolean(5, gDisc);
+            pstmt.setBoolean(6, prime2520);
+            pstmt.setDouble(7, getTemperature());
+            pstmt.executeUpdate();
+        }
     }
 
     /**
-     * get the atmospheric attenuation coefficient in dB/km at the nominal centre frequency for each frequency band, in accordance with ISO 9613-1.
-     * @return alpha_atmo
+     * Reads attenuation parameters from a database ResultSet and populates a map
+     * with these parameters for different periods.
+     *
+     * @param rs the ResultSet object containing the query results with attenuation parameters
+     * @param cnossosParametersPerPeriod a map to store the attenuation parameters
+     *                                   indexed by the corresponding period
+     * @throws SQLException if a database access error occurs or if the wind rose array
+     *                      length does not match the expected default length
      */
-    public double[] getAlpha_atmo() {
-        return alpha_atmo;
+    public static void readFromDatabase(ResultSet rs, Map<String, AttenuationParameters> cnossosParametersPerPeriod) throws SQLException {
+        AttenuationParameters params = new AttenuationParameters();
+        Array windrose = rs.getArray("WINDROSE");
+        params.windRose = convertSqlArrayToDoubleArray(windrose);
+        if(params.windRose.length != DEFAULT_WIND_ROSE.length) {
+            throw new SQLException("Wind rose array length is not " + DEFAULT_WIND_ROSE.length);
+        }
+        params.pressure = rs.getDouble("PRESSURE");
+        params.humidity = rs.getDouble("HUMIDITY");
+        params.gDisc = rs.getBoolean("GDISC");
+        params.prime2520 = rs.getBoolean("PRIME2520");
+        // Use the method as it will initialize the other parameters
+        params.setTemperature(rs.getDouble("TEMPERATURE"));
+        cnossosParametersPerPeriod.put(rs.getString("PERIOD"), params);
     }
 
 
+
+    /**
+     * Converts a java.sql.Array to a double[] array.
+     *
+     * @param array the SQL Array containing double values
+     * @return a double[] array or an empty array if the input is null
+     * @throws SQLException if a database access error occurs
+     */
+    public static double[] convertSqlArrayToDoubleArray(Array array) throws SQLException {
+        if (array == null) {
+            return new double[0];
+        }
+        Object arrayObj = array.getArray();
+        if (arrayObj instanceof Double[]) {
+            return Arrays.stream((Double[]) arrayObj).mapToDouble(Double::doubleValue).toArray();
+        } else if (arrayObj instanceof Object[]) {
+            return Arrays.stream((Object[]) arrayObj)
+                    .mapToDouble(o -> o instanceof Number ? ((Number) o).doubleValue() : 0.0)
+                    .toArray();
+        }
+        return new double[0];
+    }
 }

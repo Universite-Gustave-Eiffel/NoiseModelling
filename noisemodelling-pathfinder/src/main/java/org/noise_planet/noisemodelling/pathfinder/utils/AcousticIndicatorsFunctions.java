@@ -11,26 +11,31 @@ package org.noise_planet.noisemodelling.pathfinder.utils;
 import java.util.Arrays;
 import java.util.Locale;
 
+/**
+ * A utility class providing acoustic indicator functions for computations,
+ * including conversions between decibels and energy, summation and multiplication of arrays,
+ * and operations specific to octave bands.
+ */
 public class AcousticIndicatorsFunctions {
 
     /**
-     * Convert Decbiel to Watt
-     * @param dBA
+     * Convert Decibel to Watt
+     * @param dB Sound power spectrum in dB (or dBa , no weighting is done here)
      * @return Watt value
      */
-    public static double dbaToW(double dBA) {
-        return Math.pow(10., dBA / 10.);
+    public static double dBToW(double dB) {
+        return Math.pow(10., dB / 10.);
     }
 
     /**
      * Convert Decibel to Watt
-     * @param dBA
+     * @param dB Sound power spectrum in dB (or dBa , no weighting is done here)
      * @return Watt value
      */
-    public static double[] dbaToW(double[] dBA) {
-        double[] ret = new double[dBA.length];
-        for (int i = 0; i < dBA.length; i++) {
-            ret[i] = dbaToW(dBA[i]);
+    public static double[] dBToW(double[] dB) {
+        double[] ret = new double[dB.length];
+        for (int i = 0; i < dB.length; i++) {
+            ret[i] = dBToW(dB[i]);
         }
         return ret;
     }
@@ -40,7 +45,7 @@ public class AcousticIndicatorsFunctions {
      * @param w
      * @return Decibel value
      */
-    public static double wToDba(double w) {
+    public static double wToDb(double w) {
         return 10 * Math.log10(w);
     }
 
@@ -50,10 +55,10 @@ public class AcousticIndicatorsFunctions {
      * @param w
      * @return Decibel value
      */
-    public static double[] wToDba(double[] w) {
+    public static double[] wToDb(double[] w) {
         double[] ret = new double[w.length];
         for (int i = 0; i < w.length; i++) {
-            ret[i] = wToDba(w[i]);
+            ret[i] = wToDb(w[i]);
         }
         return ret;
     }
@@ -83,7 +88,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(p * dbaToW(array1[i]) + (1 - p) * dbaToW(array2[i]));
+            sum[i] = wToDb(p * dBToW(array1[i]) + (1 - p) * dBToW(array2[i]));
         }
         return sum;
     }
@@ -101,7 +106,7 @@ public class AcousticIndicatorsFunctions {
         }
         double[] sum = new double[array1.length];
         for (int i = 0; i < array1.length; i++) {
-            sum[i] = wToDba(dbaToW(array1[i]) + dbaToW(array2[i]));
+            sum[i] = wToDb(dBToW(array1[i]) + dBToW(array2[i]));
         }
         return sum;
     }
@@ -113,12 +118,12 @@ public class AcousticIndicatorsFunctions {
      */
     public static double sumDbArray(double[] array1) {
 
-        double sum = dbaToW(array1[0]);
+        double sum = dBToW(array1[0]);
         for (int i = 1; i < array1.length; i++) {
-            sum =dbaToW(array1[i]) + sum;
+            sum = dBToW(array1[i]) + sum;
         }
 
-        return wToDba(sum);
+        return wToDb(sum);
     }
 
     /**
@@ -205,11 +210,58 @@ public class AcousticIndicatorsFunctions {
         return ret;
     }
 
+    
     public static double[] sumArray(double[] array, double number) {
         double[] ret = new double[array.length];
         for (int idfreq = 0; idfreq < array.length; idfreq++) {
             ret[idfreq] = array[idfreq] + number;
         }
         return ret;
+    }
+
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Double[] asOctaveBands(Double[] thirdOctaveBands) {
+        Double[] octaveBands = new Double[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(Integer[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
+    }
+
+    /**
+     * Create new array by taking middle third octave bands
+     *
+     * @param thirdOctaveBands Third octave bands array
+     * @return Octave bands array
+     */
+    public static Integer[] asOctaveBands(int[] thirdOctaveBands) {
+        Integer[] octaveBands = new Integer[thirdOctaveBands.length / 3];
+        int j = 0;
+        for (int i = 1; i < thirdOctaveBands.length - 1; i += 3) {
+            octaveBands[j++] = thirdOctaveBands[i];
+        }
+        return octaveBands;
     }
 }

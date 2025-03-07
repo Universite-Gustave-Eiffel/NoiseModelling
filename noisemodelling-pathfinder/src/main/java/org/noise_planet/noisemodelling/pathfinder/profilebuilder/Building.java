@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class Building {
+public class Building extends Obstruction {
     /** Building footprint. */
     Polygon poly;
     /** Height of the building. */
@@ -27,15 +27,24 @@ public class Building {
      */
     double minimumZDEM = Double.NaN;
 
-    /** Absorption coefficients. */
-    final List<Double> alphas;
-
     /** if true take into account z value on Buildings Polygons */
     final boolean zBuildings;
 
     /** Primary key of the building in the database. */
     long primaryKey = -1;
     List<Wall> walls = new ArrayList<>();
+
+    public Building(Polygon geometry, double height, double g, long pk, boolean zBuildings) {
+        this.poly = geometry;
+        // Fix clock wise orientation of the polygon and inner holes
+        if(this.poly != null) {
+            this.poly.normalize();
+        }
+        this.height = height;
+        setG(g);
+        this.primaryKey = pk;
+        this.zBuildings = zBuildings;
+    }
 
     /**
      *
@@ -83,8 +92,7 @@ public class Building {
         // Fix clock wise orientation of the polygon and inner holes
         this.poly.normalize();
         this.height = height;
-        this.alphas = new ArrayList<>();
-        this.alphas.addAll(alphas);
+        setAlpha(alphas);
         this.primaryKey = key;
         this.zBuildings = zBuildings;
     }
@@ -104,13 +112,6 @@ public class Building {
         return poly;
     }
 
-    /**
-     * Retrieve the absorption coefficients.
-     * @return The absorption coefficients.
-     */
-    public List<Double> getAlphas() {
-        return alphas;
-    }
 
     /**
      * Retrieve the primary key of the building in the database. If there is no primary key, returns -1.

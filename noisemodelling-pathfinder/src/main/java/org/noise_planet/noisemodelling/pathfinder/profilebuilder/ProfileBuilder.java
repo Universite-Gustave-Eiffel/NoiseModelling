@@ -11,15 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
@@ -30,6 +22,7 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.IntegerTuple;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
@@ -42,16 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
-//import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility.dist2D;
 import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
-
-//TODO use NaN for building height
-//TODO fix wall references id in order to use also real wall database key
-//TODO check how the wall alpha are set to the cut point
-//TODO check how the topo and building height are set to cut point
-//TODO check how the building pk is set to cut point
-//TODO difference between Z and height (z = height+topo)
-//TODO create class org.noise_planet.noisemodelling.pathfinder.cnossos.ComputeCnossosRays which is a copy of computeRays using ProfileBuilder
 
 /**
  * Builder constructing profiles from buildings, topography and ground effects.
@@ -84,9 +68,9 @@ public class ProfileBuilder {
      */
     private double maxLineLength = 60;
     /** List of buildings. */
-    private final List<Building> buildings = new ArrayList<>();
+    private List<Building> buildings = new ArrayList<>();
     /** List of walls. */
-    private final List<Wall> walls = new ArrayList<>();
+    private List<Wall> walls = new ArrayList<>();
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
@@ -126,6 +110,13 @@ public class ProfileBuilder {
      * In this case, z represent the altitude (from the sea to the top of the wall) */
     private boolean zBuildings = false;
 
+    public static final int[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new int[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+    public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 1258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
+    public static final Double[] DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE = new Double[] {-30.2, -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8, -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5, -0.1, -1.1, -2.5};
+
+    public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+    public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
+    public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
 
     /**
      * @param zBuildings if true take into account z value on Buildings Polygons
@@ -146,7 +137,6 @@ public class ProfileBuilder {
         buildingTree = new STRtree(buildingNodeCapacity);
     }
 
-    //TODO : when a source/receiver are underground, should an offset be applied ?
     /**
      * Constructor setting parameters.
      * @param buildingNodeCapacity Building RTree node capacity.
@@ -160,6 +150,39 @@ public class ProfileBuilder {
         this.groundNodeCapacity = groundNodeCapacity;
         this.maxLineLength = maxLineLength;
         buildingTree = new STRtree(buildingNodeCapacity);
+    }
+
+    /**
+     * @param frequencyArray Frequency used in the simulation (extracted from Scene.DEFAULT_FREQUENCIES_THIRD_OCTAVE)
+     */
+    public void setFrequencyArray(Collection<Integer> frequencyArray) {
+        this.frequencyArray = new ArrayList<>(frequencyArray);
+        exactFrequencyArray = new ArrayList<>();
+        aWeightingArray = new ArrayList<>();
+        initializeFrequencyArrayFromReference(this.frequencyArray, exactFrequencyArray, aWeightingArray);
+        for (Wall wall : processedWalls) {
+            wall.initialize(exactFrequencyArray);
+        }
+        for (Building building : buildings) {
+            building.initialize(exactFrequencyArray);
+        }
+        for (Wall wall : walls) {
+            wall.initialize(exactFrequencyArray);
+        }
+
+    }
+
+    public static void initializeFrequencyArrayFromReference(List<Integer> frequencyArray,
+                                                             List<Double> exactFrequencyArray,
+                                                             List<Double> aWeightingArray) {
+        // Sort frequencies values
+        Collections.sort(frequencyArray);
+        // Get associated values for each frequency
+        for (int freq : frequencyArray) {
+            int index = Arrays.binarySearch(DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
+            exactFrequencyArray.add(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE[index]);
+            aWeightingArray.add(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE[index]);
+        }
     }
 
     /**
@@ -361,9 +384,9 @@ public class ProfileBuilder {
      * @param height Wall height.
      * @param id     Database key.
      */
-    /*public ProfileBuilder addWall(LineString geom, double height, int id) {
+    public ProfileBuilder addWall(LineString geom, double height, int id) {
         return addWall(geom, height, new ArrayList<>(), id);
-    }*/
+    }
 
     /**
      * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
@@ -609,9 +632,9 @@ public class ProfileBuilder {
      * Retrieve the count of wall add to this builder.
      * @return The count of wall.
      */
-    /*public int getWallCount() {
+    public int getWallCount() {
         return walls.size();
-    }*/
+    }
 
     /**
      * Retrieve the wall with the given id (id is starting from 1).
@@ -625,25 +648,17 @@ public class ProfileBuilder {
     /**
      * Clear the building list.
      */
-    /*public void clearBuildings() {
+    public void clearBuildings() {
         buildings.clear();
     }
 
     /**
      * Retrieve the global profile envelope.
      * @return The global profile envelope.
-
+     */
     public Envelope getMeshEnvelope() {
         return envelope;
     }
-
-    /**
-     * Add a constraint on maximum triangle area.
-     * @param maximumArea Value in square meter.
-
-    public void setMaximumArea(double maximumArea) {
-        maxArea = maximumArea;
-    }*/
 
     /**
      * Retrieve the topographic triangles.
@@ -789,7 +804,7 @@ public class ProfileBuilder {
         for (int j = 0; j < buildings.size(); j++) {
             Building building = buildings.get(j);
             buildingsWideAnglePoints.put(j + 1,
-                    getWideAnglePointsByBuilding(j + 1, 0, 2 * Math.PI));
+                    getWideAnglePointsOnPolygon(building.poly.getExteriorRing(), 0, 2 * Math.PI));
             List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
@@ -797,7 +812,7 @@ public class ProfileBuilder {
                 Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
                 walls.add(w);
                 w.setPrimaryKey(building.getPrimaryKey());
-                w.setAlpha(building.alphas);
+                w.copyAlphas(building);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -809,12 +824,15 @@ public class ProfileBuilder {
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
-                w.setAlpha(wall.alphas);
+                w.copyAlphas(wall);
                 w.setPrimaryKey(wall.primaryKey);
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
         }
+        // Set buildings and walls unmodifiable
+        this.buildings = Collections.unmodifiableList(this.buildings);
+        this.walls = Collections.unmodifiableList(this.walls);
         //Process the ground effects
         groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
         for (int j = 0; j < groundAbsorptions.size(); j++) {
@@ -841,6 +859,8 @@ public class ProfileBuilder {
         }
         rtree.build();
         groundEffectsRtree.build();
+        // initialize with default frequencies
+        setFrequencyArray(frequencyArray);
         return this;
     }
 
@@ -928,12 +948,12 @@ public class ProfileBuilder {
      * Retrieve the cutting profile following the line build from the given coordinates.
      * @param sourceCoordinate Starting point.
      * @param receiverCoordinate Ending point.
-     * @param gS Default source absorption ground effect value if no ground absorption value is found
+     * @param defaultGroundAttenuation Default absorption ground effect value if no ground absorption value is found
      * @param stopAtObstacleOverSourceReceiver If an obstacle is found higher than then segment sourceCoordinate
      *                                        receiverCoordinate, stop computing and a CutProfile with intersection information
      * @return Cutting profile.
      */
-    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double gS, boolean stopAtObstacleOverSourceReceiver) {
+    public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double defaultGroundAttenuation, boolean stopAtObstacleOverSourceReceiver) {
         CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
         CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
 
@@ -944,7 +964,7 @@ public class ProfileBuilder {
         if(groundAbsorptionIndex >= 0) {
             sourcePoint.setGroundCoefficient(groundAbsorptions.get(groundAbsorptionIndex).getCoefficient());
         } else {
-            sourcePoint.setGroundCoefficient(gS);
+            sourcePoint.setGroundCoefficient(defaultGroundAttenuation);
         }
 
         //Fetch topography evolution between sourceCoordinate and receiverCoordinate
@@ -1039,7 +1059,7 @@ public class ProfileBuilder {
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
 
         CutPointWall cutPointWall = new CutPointWall(processedWallIndex,
-                intersection, facetLine.getLineSegment(), facetLine.alphas);
+                intersection, facetLine.getLineSegment(), facetLine.getAlphas());
         cutPointWall.intersectionType = CutPointWall.INTERSECTION_TYPE.THIN_WALL_ENTER_EXIT;
         if(facetLine.primaryKey >= 0) {
             cutPointWall.setPk(facetLine.primaryKey);
@@ -1060,7 +1080,7 @@ public class ProfileBuilder {
                                  LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
         CutPointWall wallCutPoint = new CutPointWall(processedWallIndex, intersection, facetLine.getLineSegment(),
-                buildings.get(facetLine.getOriginId()).alphas);
+                facetLine.getAlphas());
         if(facetLine.primaryKey >= 0) {
             wallCutPoint.setPk(facetLine.primaryKey);
         }
@@ -1581,15 +1601,13 @@ public class ProfileBuilder {
     }
 
     /**
-     *
-     * @param build
+     * @param linearRing Coordinates loop
      * @param minAngle
      * @param maxAngle
      * @return
      */
-    public ArrayList<Coordinate> getWideAnglePointsByBuilding(int build, double minAngle, double maxAngle) {
-        ArrayList <Coordinate> verticesBuilding = new ArrayList<>();
-        Coordinate[] ring = getBuilding(build-1).getGeometry().getExteriorRing().getCoordinates().clone();
+    public ArrayList<Coordinate> getWideAnglePointsOnPolygon(LinearRing linearRing, double minAngle, double maxAngle) {
+        Coordinate[] ring = linearRing.getCoordinates().clone();
         if(!isCCW(ring)) {
             for (int i = 0; i < ring.length / 2; i++) {
                 Coordinate temp = ring[i];
@@ -1597,6 +1615,7 @@ public class ProfileBuilder {
                 ring[ring.length - 1 - i] = temp;
             }
         }
+        ArrayList <Coordinate> verticesBuilding = new ArrayList<>(ring.length);
         for(int i=0; i < ring.length - 1; i++) {
             int i1 = i > 0 ? i-1 : ring.length - 2;
             int i3 = i + 1;
@@ -1617,7 +1636,7 @@ public class ProfileBuilder {
                 Coordinate offsetPt = new Coordinate(
                         ring[i].x + Math.cos(midAngleFromZero) * wideAngleTranslationEpsilon,
                         ring[i].y + Math.sin(midAngleFromZero) * wideAngleTranslationEpsilon,
-                        buildings.get(build - 1).getGeometry().getCoordinate().z + wideAngleTranslationEpsilon);
+                        ring[i].z + wideAngleTranslationEpsilon);
                 verticesBuilding.add(offsetPt);
             }
         }

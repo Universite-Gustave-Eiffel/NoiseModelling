@@ -66,5 +66,5 @@ def exec(Connection connection, input) {
 
   // Step 6: Export (& see) the results
   runScript(connection, "noisemodelling/wps/Import_and_Export/Export_Table.groovy",
-        ["exportPath":"LDAY_GEOM.shp", "tableToExport":"LDAY_GEOM"])
+        ["exportPath":"RECEIVERS_LEVEL.shp", "tableToExport":"RECEIVERS_LEVEL"])
 }

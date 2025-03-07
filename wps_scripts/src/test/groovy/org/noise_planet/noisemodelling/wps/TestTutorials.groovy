@@ -13,30 +13,81 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
-import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.Test
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.GeometryFactory
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 /**
  * Test parsing of zip file using H2GIS database
  */
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
+
+
+    void testTutorialGetStarted() {
+        Sql sql = new Sql(connection)
+
+        // Check empty database
+        Object res = new Display_Database().exec(connection, [])
+        assertEquals("", res)
+
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ground_type.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("dem.geojson").getPath(),
+                 "inputSRID": "2154"])
+
+
+        new Noise_level_from_traffic().exec(connection,
+                ["tableBuilding"        : "BUILDINGS",
+                 "tableRoads"           : "ROADS2",
+                 "tableReceivers"       : "RECEIVERS",
+                 "tableGroundAbs"       : "ground_type",
+                 "tableDEM"             : "dem",
+                 "confDiffHorizontal"   : true,
+                 "confMaxSrcDist"       : 2000.0,
+                 "confReflOrder"        : 0,
+                 "confMaxError"         : 3.0,
+                 "frequencyFieldPrepend": "LW"])
+
+        def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
+        def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
+
+        assertEquals(4*countReceivers, countResult)
+
+        def minLevel = sql.firstRow("SELECT MIN(LW1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
+
+        assertNotSame(-99.0, minLevel)
+    }
+
 
 
     void testTutorialPointSource() {
@@ -60,9 +111,10 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("SOURCES"))
         assertTrue(res.contains("BUILDINGS"))
 
-        new Regular_Grid().exec(connection, ["sourcesTableName": "SOURCES",
-                                             delta             : 0.2,
-                                               "buildingTableName"   : "BUILDINGS"])
+        // generate a grid of receivers using the buildings as envelope
+        new Delaunay_Grid().exec(connection, [maxArea: 600, tableBuilding: "BUILDINGS",
+                                                          sourcesTableName : "SOURCES" , height: 1.6])
+
 
         // Check database
         res = new Display_Database().exec(connection, [])
@@ -70,37 +122,33 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("RECEIVERS"))
 
 
-        res = new Noise_level_from_source().exec(connection, ["tableSources"  : "SOURCES",
-                                                              "tableBuilding" : "BUILDINGS",
-                                                              "tableReceivers": "RECEIVERS",
-                                                              "confReflOrder" : 1,
-                                                              "confDiffVertical" : true,
-                                                              "confDiffHorizontal" : true,
-                                                              "confSkipLevening" : true,
-                                                              "confSkipLnight" : true,
-                                                              "confSkipLden" : true])
+        res = new Noise_level_from_source().exec(connection, ["tableSources"         : "SOURCES",
+                                                              "tableBuilding"        : "BUILDINGS",
+                                                              "tableReceivers"       : "RECEIVERS",
+                                                              "confReflOrder"        : 1,
+                                                              "confDiffVertical"     : true,
+                                                              "confDiffHorizontal"   : true,
+                                                              "frequencyFieldPrepend": "LW"])
 
         res =  new Display_Database().exec(connection, [])
 
         // Check database
-        new Table_Visualization_Data().exec(connection, ["tableName": "LDAY_GEOM"])
+        def output = new Table_Visualization_Data().exec(connection, ["tableName": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
-        assertTrue(res.contains("LDAY_GEOM"))
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
-        def rowResult = sql.firstRow("SELECT MAX(LEQ), MAX(LAEQ) FROM LDAY_GEOM")
-        assertEquals(72, rowResult[0] as Double, 5.0)
-        assertEquals(69, rowResult[1] as Double, 5.0)
+        assertTrue(output.contains("PERIOD"))
 
         // Check export geojson
-        File testPath = new File("target/tutoPointSource.geojson")
+        File testPath = new File("build/tmp/tutoPointSource.geojson")
 
         if(testPath.exists()) {
             testPath.delete()
         }
 
         new Export_Table().exec(connection,
-                ["exportPath"   : "target/tutoPointSource.geojson",
-                 "tableToExport": "LDAY_GEOM"])
+                ["exportPath"   : "build/tmp/tutoPointSource.geojson",
+                 "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
 
     }
@@ -150,27 +198,34 @@ class TestTutorials extends JdbcTestCase {
                                                           sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
 
-        new Export_Table().exec(connection, [exportPath:"target/receivers.shp", tableToExport: "RECEIVERS"])
-        new Export_Table().exec(connection, [exportPath:"target/TRIANGLES.shp", tableToExport: "TRIANGLES"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/receivers.shp", tableToExport: "RECEIVERS"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
                                                         tableGroundAbs: "GROUND_TYPE",
                                                         tableSourceDirectivity: "DIRECTIVITY",
                                                         confMaxSrcDist : 800,
-                                                        confSkipLden: true,
-                                                        confSkipLnight: true,
-                                                        confSkipLevening: true,
-                                                        tableDEM: "DEM"
+                                                        tableDEM: "DEM",
+                                                        "frequencyFieldPrepend": "LW"
                                                         ])
 
-        new Create_Isosurface().exec(connection, [resultTable: "LDAY_GEOM", smoothCoefficient : 0.4])
+        new Create_Isosurface().exec(connection,
+                [resultTable: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
+                 smoothCoefficient : 0.4])
 
-        new Export_Table().exec(connection, [exportPath:"target/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
+        new Export_Table().exec(connection, [exportPath:"build/tmp/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
 
-        new Export_Table().exec(connection, [exportPath:"target/LDAY_GEOM.shp", tableToExport: "LDAY_GEOM"])
+        new Export_Table().exec(connection,
+                [exportPath:"build/tmp/TUTO_DIR_RECEIVERS_LEVEL.shp",
+                 tableToExport: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
+        def columnNames = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
 
-
+        assertTrue(columnNames.contains("IDRECEIVER"))
+        assertTrue(columnNames.contains("PERIOD"))
+        assertTrue(columnNames.contains("LW500"))
+        assertTrue(columnNames.contains("LAEQ"))
+        assertTrue(columnNames.contains("LEQ"))
     }
 }

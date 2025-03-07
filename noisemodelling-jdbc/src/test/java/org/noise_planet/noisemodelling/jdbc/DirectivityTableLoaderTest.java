@@ -15,8 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.emission.LineSource;
 import org.noise_planet.noisemodelling.emission.directivity.DirectivityRecord;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.cnossos.RailwayCnossosDirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 
 
 import java.sql.Connection;
@@ -79,13 +81,15 @@ public class DirectivityTableLoaderTest {
         }
 
         // Data is inserted now fetch it from the database
-        Map<Integer, DiscreteDirectivitySphere> directivities = NoiseMapLoader.fetchDirectivity(connection, "DIRTEST", 1);
+        Map<Integer, DirectivitySphere> directivities = DefaultTableLoader.fetchDirectivity(connection,
+                "DIRTEST", 1, "LW");
 
         assertEquals(1, directivities.size());
 
         assertTrue(directivities.containsKey(1));
 
-        DiscreteDirectivitySphere d = directivities.get(1);
+        assertInstanceOf(DiscreteDirectivitySphere.class, directivities.get(1));
+        DiscreteDirectivitySphere d = (DiscreteDirectivitySphere)directivities.get(1);
         for(DirectivityRecord directivityRecord : d.getRecordsTheta()) {
             double[] attSpectrum = att.getAttenuationArray(freqTest, directivityRecord.getPhi(), directivityRecord.getTheta());
             assertArrayEquals(attSpectrum, directivityRecord.getAttenuation(), 1e-2);

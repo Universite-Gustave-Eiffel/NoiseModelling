@@ -19,51 +19,36 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import org.cts.crs.CRSException
-import org.cts.op.CoordinateOperationException
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.noise_planet.noisemodelling.jdbc.NoiseMap
-import org.noise_planet.noisemodelling.jdbc.NoiseMapMaker
-import org.noise_planet.noisemodelling.jdbc.NoiseMapParameters
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
-import org.noise_planet.noisemodelling.pathfinder.IComputePathsOut
-//import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder
-//import org.noise_planet.noisemodelling.pathfinder.RootProgressVisitor
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder
-import org.noise_planet.noisemodelling.pathfinder.utils.*
-import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.JVMMemoryMetric
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProgressMetric
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
-import org.noise_planet.noisemodelling.propagation.Attenuation
-//import org.noise_planet.noisemodelling.propagation.ComputeRaysOutAttenuation
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossosParameters
-
+import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.xml.stream.XMLStreamException
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
 
-title = 'Compute LDay,Levening,LNight,Lden from road traffic'
-description = '&#10145;&#65039; Computes Lden, LDay, LEvening, LNight noise map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details).' +
-        '<hr>' +
+title = 'Compute noise level directly from road traffic data'
+description = '&#10145;&#65039; Computes Noise map from each period from the traffic flow rate and speed estimates' +
+        ' (specific format, see input details). <hr>' +
         '&#127757; Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.</br> </br>' +
-        '&#x2705; The output table are called: <b> LDEN_GEOM, LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM </b> </br></br>' +
-        'These tables contain: </br> <ul>' +
+        '&#x2705; The output table is <b> RECEIVERS_LEVEL </b> </br></br>' +
+        'The output tables contain: </br> <ul>' +
         '<li><b> IDRECEIVER</b>: an identifier (INTEGER, PRIMARY KEY)</li>' +
+        '<li><b> IDSOURCE</b>: an identifier of the source (INTEGER) if keepSource is true</li>' +
         '<li><b> THE_GEOM </b>: the 3D geometry of the receivers (POINT)</li>' +
-        '<li><b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b>: 8 columns giving the day (evening, night or den) emission sound level for each octave band (FLOAT)</li> </ul>'
+        '<li><b> PERIOD </b>: time period ex. D, E, N, DEN (Varchar)</li>' +
+        '<li><b> Lw63, Lw125, Lw250, Lw500, Lw1000, Lw2000, Lw4000, Lw8000, Laeq, Leq</b>: noise level at receiver (REAL)</li> </ul>'
 
 inputs = [
         tableBuilding           : [
@@ -78,7 +63,7 @@ inputs = [
         tableRoads              : [
                 name       : 'Roads table name',
                 title      : 'Roads table name',
-                description: '&#128739; Name of the Roads table </br> </br>' +
+                description: '&#128739; Name of the Roads table, traffic can be provided here but are limited to DAY EVENING NIGHT periods </br> </br>' +
                         'This function recognize the following columns (* mandatory): </br> <ul>' +
                         '<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>' +
                         '<li><b> LV_D </b><b>TV_E </b><b> TV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
@@ -102,6 +87,60 @@ inputs = [
                         '</ul></br>'+
                         '&#128161; This table can be generated from the WPS Block "Import_OSM"',
                 type       : String.class
+        ],
+        tableRoadsTraffic              : [
+                name       : 'Roads traffic table name',
+                title      : 'Roads traffic table name',
+                description: '&#128739; Name of the Roads traffic table per period </br> </br>' +
+                        'This function recognize the following columns (* mandatory): </br> <ul>' +
+                        '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
+                        '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +
+                        '<li><b> LV </b>  : Hourly average light vehicle count (DOUBLE)</li>' +
+                        '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
+                        '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
+                        '<li><b> WAV </b>:  Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
+                        '<li><b> WBV </b>:  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
+                        '<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>' +
+                        '<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>' +
+                        '<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>' +
+                        '<li><b> JUNC_TYPE </b> : Type of junction (k=0 none, k = 1 for a crossing with traffic lights ; k = 2 for a roundabout) (INTEGER)</li>' +
+                        '<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>' +
+                        '<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>' +
+                        '</ul></br>',
+                min        : 0, max: 1, type: String.class
+        ],
+        tableSourceDirectivity          : [
+                name       : 'Source directivity table name',
+                title      : 'Source directivity table name',
+                description: 'Name of the emission directivity table </br> </br>' +
+                        'If not specified the default is train directivity of CNOSSOS-EU</b> </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> DIR_ID </b>: identifier of the directivity sphere (INTEGER) </li> ' +
+                        '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
+                        '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
+                        '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
+                min        : 0, max: 1, type: String.class
+        ],
+        tablePeriodAtmosphericSettings          : [
+                name       : 'Atmospheric settings table name for each time period',
+                title      : 'Atmospheric settings table name for each time period',
+                description: 'Name of the Atmospheric settings table </br> </br>' +
+                        'The table must contain the following columns: </br> <ul>' +
+                        '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
+                        '<li> <b> WINDROSE </b>: probability of occurrences of favourable propagation conditions (ARRAY(16)) </li> ' +
+                        '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
+                        '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
+                        '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
+                        '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
+                        '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
+                        '</ul>' ,
+                min        : 0, max: 1, type: String.class
         ],
         tableReceivers          : [
                 name       : 'Receivers table name',
@@ -195,37 +234,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Boolean.class
         ],
-        confSkipLday            : [
-                name       : 'Skip LDAY_GEOM table',
-                title      : 'Do not compute LDAY_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1,
-                type       : Boolean.class
-        ],
-        confSkipLevening        :
-                [name       : 'Skip LEVENING_GEOM table',
-                 title      : 'Do not compute LEVENING_GEOM table',
-                 description: 'Skip the creation of this table. </br> </br> ' +
-                         '&#128736; Default value: <b>false </b>',
-                 min        : 0, max: 1,
-                 type: Boolean.class
-                ],
-        confSkipLnight          : [
-                name       : 'Skip LNIGHT_GEOM table',
-                title      : 'Do not compute LNIGHT_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
-        ],
-        confSkipLden            : [
-                name       : 'Skip LDEN_GEOM table',
-                title      : 'Do not compute LDEN_GEOM table',
-                description: 'Skip the creation of this table. </br> </br>' +
-                        '&#128736; Default value : <b> false </b>',
-                min        : 0, max: 1,
-                type: Boolean.class
-        ],
         confExportSourceId      : [
                 name       : 'keep source id',
                 title      : 'Separate receiver level by source identifier',
@@ -238,50 +246,26 @@ inputs = [
                 name       : 'Relative humidity',
                 title      : 'Relative humidity',
                 description: '&#127783; Humidity for noise propagation. </br> </br>' +
-                        '&#128736; Default value: <b> 70</b>',
+                        '&#128736; Default humidity value: <b> 70</b>',
                 min        : 0, max: 1,
                 type: Double.class
         ],
         confTemperature         : [
                 name       : 'Temperature',
                 title      : 'Air temperature',
-                description: '&#127777; Air temperature in degree celsius. </br> </br>' +
+                description: '&#127777; Default Air temperature in degree celsius. </br> </br>' +
                         '&#128736; Default value: <b> 15</b>',
                 min        : 0, max: 1,
                 type: Double.class
         ],
-        confFavorableOccurrencesDay: [
-                name       : 'Probability of occurrences (Day)',
-                title      : 'Probability of occurrences (Day)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
+        confFavorableOccurrencesDefault: [
+                name       : 'Probability of occurrences',
+                title      : 'Probability of occurrences',
+                description: 'Comma-delimited string containing the default probability of occurrences of favourable propagation conditions. </br> </br>' +
                         'The north slice is the last array index not the first one <br/>' +
-                        'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
-                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
-                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
-                min        : 0, max: 1,
-                type       : String.class
-        ],
-        confFavorableOccurrencesEvening: [
-                name       : 'Probability of occurrences (Evening)',
-                title      : 'Probability of occurrences (Evening)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
-                        'The north slice is the last array index not the first one <br/>' +
-                        'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
-                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
-                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
-                min        : 0, max: 1,
-                type       : String.class
-        ],
-        confFavorableOccurrencesNight: [
-                name       : 'Probability of occurrences (Night)',
-                title      : 'Probability of occurrences (Night)',
-                description: 'Comma-delimited string containing the probability of occurrences of favourable propagation conditions. </br> </br>' +
-                        'The north slice is the last array index not the first one <br/>' +
-                        'Slice width are 22.5&#176;: (16 slices)<br/><ul>' +
-                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176;</li>' +
-                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176;</li></ul>' +
+                        'Slice width are 22.5&#176;: (16 slices)</br> <ul>' +
+                        '<li>The first column 22.5&#176; contain occurrences between 11.25 to 33.75 &#176; </li>' +
+                        '<li>The last column 360&#176; contains occurrences between 348.75&#176; to 360&#176; and 0 to 11.25&#176; </li> </ul>' +
                         '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b>',
                 min        : 0, max: 1,
                 type       : String.class
@@ -302,6 +286,13 @@ inputs = [
                 description: 'Threshold for excluding negligible sound sources in calculations. Default value: <b>0.1</b>',
                 min        : 0, max: 1,
                 type       : Double.class
+        ],
+        frequencyFieldPrepend            : [
+                name       : 'Frequency field name',
+                title      : 'Frequency field name',
+                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.' +
+                        '&#128736; Default value: <b>HZ</b>',
+                min        : 0, max: 1, type: String.class
         ]
 ]
 
@@ -339,90 +330,17 @@ def run(input) {
     }
 }
 
-def forgeCreateTable(Sql sql, String tableName, NoiseMapParameters ldenConfig, String geomField, String tableReceiver, String tableResult) {
-    // Create a logger to display messages in the geoserver logs and in the command prompt.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-
-    StringBuilder sb = new StringBuilder("create table ");
-    sb.append(tableName);
-    if (!ldenConfig.mergeSources) {
-        sb.append(" (IDRECEIVER bigint NOT NULL");
-        sb.append(", IDSOURCE bigint NOT NULL");
-    } else {
-        sb.append(" (IDRECEIVER bigint NOT NULL");
-    }
-    sb.append(", THE_GEOM geometry")
-    AttenuationCnossosParameters pathData = ldenConfig.getPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY);
-    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-        sb.append(", HZ");
-        sb.append(pathData.freq_lvl.get(idfreq));
-        sb.append(" REAL");
-    }
-    sb.append(", LAEQ REAL, LEQ REAL ) AS SELECT PK");
-    if (!ldenConfig.mergeSources) {
-        sb.append(", IDSOURCE");
-    }
-    sb.append(", ")
-    sb.append(geomField)
-    for (int idfreq = 0; idfreq < pathData.freq_lvl.size(); idfreq++) {
-        sb.append(", HZ");
-        sb.append(pathData.freq_lvl.get(idfreq));
-    }
-    sb.append(", LAEQ, LEQ FROM ")
-    sb.append(tableReceiver)
-    if (!ldenConfig.mergeSources) {
-        // idsource can't be null so we can't left join
-        sb.append(" a, ")
-        sb.append(tableResult)
-        sb.append(" b WHERE a.PK = b.IDRECEIVER")
-    } else {
-        sb.append(" a LEFT JOIN ")
-        sb.append(tableResult)
-        sb.append(" b ON a.PK = b.IDRECEIVER")
-    }
-    sql.execute(sb.toString())
-    // apply pk
-    logger.info("Add primary key on " + tableName)
-    if (!ldenConfig.mergeSources) {
-        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER, IDSOURCE)")
-    } else {
-        sql.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY(IDRECEIVER)")
-    }
-}
-
-
-static void exportScene(String name, ProfileBuilder builder, AttenuationCnossosParameters result, int crs) throws IOException {
-    try {
-        FileOutputStream outData = new FileOutputStream(name);
-        KMLDocument kmlDocument = new KMLDocument(outData);
-        kmlDocument.setInputCRS("EPSG:" + crs);
-        kmlDocument.writeHeader();
-        if(builder != null) {
-            kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
-        }
-        if(result != null) {
-            kmlDocument.writeRays(result.getPropagationPaths());
-        }
-        if(builder != null) {
-            kmlDocument.writeBuildings(builder);
-        }
-        kmlDocument.writeFooter();
-    } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-        throw new IOException(ex);
-    }
-}
-
-
 // main function of the script
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
+    int maximumRaysToExport = 5000
+
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
-
-    // output string, the information given back to the user
-    String resultString = null
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -499,7 +417,6 @@ def exec(Connection connection, input) {
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
     }
 
-
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
@@ -512,34 +429,41 @@ def exec(Connection connection, input) {
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
     }
 
-    boolean recordProfile = false;
+    String tableSourceDirectivity = ""
+    if (input['tableSourceDirectivity']) {
+        tableSourceDirectivity = input['tableSourceDirectivity']
+        // do it case-insensitive
+        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
+    }
+
+    boolean recordProfile = false
     if (input['confRecordProfile']) {
         recordProfile = input['confRecordProfile']
     }
 
     int reflexion_order = 0
     if (input['confReflOrder']) {
-        reflexion_order = Integer.valueOf(input['confReflOrder'])
+        reflexion_order = Integer.valueOf(input['confReflOrder'] as String)
     }
 
     double max_src_dist = 150
     if (input['confMaxSrcDist']) {
-        max_src_dist = Double.valueOf(input['confMaxSrcDist'])
+        max_src_dist = Double.valueOf(input['confMaxSrcDist'] as String)
     }
 
     double max_ref_dist = 50
     if (input['confMaxReflDist']) {
-        max_ref_dist = Double.valueOf(input['confMaxReflDist'])
+        max_ref_dist = Double.valueOf(input['confMaxReflDist'] as String)
     }
 
     double wall_alpha = 0.1
     if (input['paramWallAlpha']) {
-        wall_alpha = Double.valueOf(input['paramWallAlpha'])
+        wall_alpha = Double.valueOf(input['paramWallAlpha'] as String)
     }
 
     int n_thread = 0
     if (input['confThreadNumber']) {
-        n_thread = Integer.valueOf(input['confThreadNumber'])
+        n_thread = Integer.valueOf(input['confThreadNumber'] as String)
     }
 
     boolean compute_vertical_diffraction = false
@@ -552,147 +476,85 @@ def exec(Connection connection, input) {
         compute_horizontal_diffraction = input['confDiffHorizontal']
     }
 
-    boolean confSkipLday = false;
-    if (input['confSkipLday']) {
-        confSkipLday = input['confSkipLday']
-    }
-
-    boolean confSkipLevening = false;
-    if (input['confSkipLevening']) {
-        confSkipLevening = input['confSkipLevening']
-    }
-
-    boolean confSkipLnight = false;
-    if (input['confSkipLnight']) {
-        confSkipLnight = input['confSkipLnight']
-    }
-
-    boolean confSkipLden = false;
-    if (input['confSkipLden']) {
-        confSkipLden = input['confSkipLden']
-    }
-
-    boolean confExportSourceId = false;
+    boolean confExportSourceId = false
     if (input['confExportSourceId']) {
         confExportSourceId = input['confExportSourceId']
     }
 
-    double confMaxError = 0.1;
+    double confMaxError = 0.1
     if (input['confMaxError']) {
-        confMaxError = Double.valueOf(input['confMaxError'])
+        confMaxError = Double.valueOf(input['confMaxError'] as String)
     }
 
-    // -------------------------
-    // Initialize some variables
-    // -------------------------
+    String frequencyFieldPrepend = "HZ"
+    if (input['frequencyFieldPrepend']) {
+        frequencyFieldPrepend = input['frequencyFieldPrepend'] as String
+    }
 
-    // Set of already processed receivers
-    Set<Long> receivers = new HashSet<>()
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
 
     NoiseMapByReceiverMaker pointNoiseMap = new NoiseMapByReceiverMaker(building_table_name, sources_table_name, receivers_table_name)
 
-    NoiseMapParameters ldenConfig = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
+    def parameters = pointNoiseMap.getNoiseMapDatabaseParameters()
 
-    ldenConfig.setComputeLDay(!confSkipLday)
-    ldenConfig.setComputeLEvening(!confSkipLevening)
-    ldenConfig.setComputeLNight(!confSkipLnight)
-    ldenConfig.setComputeLDEN(!confSkipLden)
-    ldenConfig.setMergeSources(!confExportSourceId)
-    ldenConfig.setExportReceiverPosition(true)
-    ldenConfig.setlDayTable("LDAY_GEOM")
-    ldenConfig.setlEveningTable("LEVENING_GEOM")
-    ldenConfig.setlNightTable("LNIGHT_GEOM")
-    ldenConfig.setlDenTable("LDEN_GEOM")
+    parameters.setMergeSources(!confExportSourceId)
+    parameters.exportReceiverPosition = true
 
-    if(!confSkipLday) {
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDayTable()))
-    }
-    if(!confSkipLevening) {
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlEveningTable()))
-    }
-    if(!confSkipLnight) {
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlNightTable()))
-    }
-    if(!confSkipLden) {
-        sql.execute("drop table if exists " + TableLocation.parse(ldenConfig.getlDenTable()))
+    if (input['tableRoadsTraffic']) {
+        // Use the right default database caps according to db type
+        String tableRoadsTraffic = TableLocation.capsIdentifier(input['tableRoadsTraffic'] as String, dbType)
+        pointNoiseMap.setSourcesEmissionTableName(tableRoadsTraffic)
     }
 
+    // add optional discrete directivity table name
+    if(tableSourceDirectivity.isEmpty()) {
+        // Use train directivity functions instead of discrete directivity
+        pointNoiseMap.sceneInputSettings.setUseTrainDirectivity(true)
+    } else {
+        // Load table into specialized class
+        pointNoiseMap.sceneInputSettings.setDirectivityTableName(tableSourceDirectivity)
+        logger.info(String.format(Locale.ROOT, "Loaded directivity from %s table", tableSourceDirectivity))
+    }
 
-    int maximumRaysToExport = 5000
+    sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable))
 
-    File folderExportKML = null
-    String kmlFileNamePrepend = ""
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
-        String confRaysName = input['confRaysName'] as String
-        if(confRaysName.startsWith("file:")) {
-            ldenConfig.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_MEMORY)
-            URL url = new URL(confRaysName)
-            File urlFile = new File(url.toURI())
-            if(urlFile.isDirectory()) {
-                folderExportKML = urlFile
-            } else {
-                folderExportKML = urlFile.getParentFile()
-                kmlFileNamePrepend = confRaysName.substring(
-                        Math.max(0, confRaysName.lastIndexOf(File.separator) + 1),
-                        Math.max(0, confRaysName.lastIndexOf(".")))
-            }
-        } else {
-            ldenConfig.setExportRaysMethod(NoiseMapParameters.ExportRaysMethods.TO_RAYS_TABLE)
-            ldenConfig.setRaysTable(input['confRaysName'] as String)
-        }
-        ldenConfig.setKeepAbsorption(true);
-        ldenConfig.setMaximumRaysOutputCount(maximumRaysToExport);
+        parameters.setRaysTable(input['confRaysName'] as String)
+        parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
+        parameters.setRaysTable(input['confRaysName'] as String)
+        parameters.keepAbsorption = true
+        parameters.setMaximumRaysOutputCount(maximumRaysToExport)
     }
 
-    NoiseMapMaker ldenProcessing = new NoiseMapMaker(connection, ldenConfig)
     pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)
     pointNoiseMap.setComputeVerticalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
+    pointNoiseMap.setFrequencyFieldPrepend(frequencyFieldPrepend)
 
 
     // Set environmental parameters
-    AttenuationCnossosParameters environmentalDataDay = new AttenuationCnossosParameters(false)
+    DefaultTableLoader defaultTableLoader = (DefaultTableLoader)pointNoiseMap.tableLoader
+    AttenuationParameters environmentalData = defaultTableLoader.defaultParameters
 
+    if (input.containsKey('confFavorableOccurrencesDefault')) {
+        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
+        double[] favOccurrences = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]
+        for (int i = 0; i < favOccurrences.length; i++) {
+            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
+        }
+        environmentalData.setWindRose(favOccurrences)
+    }
     if (input.containsKey('confHumidity')) {
-        environmentalDataDay.setHumidity(input['confHumidity'] as Double)
+        environmentalData.setHumidity(input['confHumidity'] as Double)
     }
     if (input.containsKey('confTemperature')) {
-        environmentalDataDay.setTemperature(input['confTemperature'] as Double)
+        environmentalData.setTemperature(input['confTemperature'] as Double)
     }
-
-    AttenuationCnossosParameters environmentalDataEvening = new AttenuationCnossosParameters(environmentalDataDay)
-    AttenuationCnossosParameters environmentalDataNight = new AttenuationCnossosParameters(environmentalDataDay)
-    if (input.containsKey('confFavorableOccurrencesDay')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDay'] as String, ',')
-        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
-        for (int i = 0; i < favOccurrences.length; i++) {
-            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
-        }
-        environmentalDataDay.setWindRose(favOccurrences)
+    if(input.containsKey("tablePeriodAtmosphericSettings")) {
+        pointNoiseMap.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(input.get("tablePeriodAtmosphericSettings") as String)
     }
-    if (input.containsKey('confFavorableOccurrencesEvening')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesEvening'] as String, ',')
-        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
-        for (int i = 0; i < favOccurrences.length; i++) {
-            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
-        }
-        environmentalDataEvening.setWindRose(favOccurrences)
-    }
-    if (input.containsKey('confFavorableOccurrencesNight')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesNight'] as String, ',')
-        double[] favOccurrences = new double[PropagationProcessPathData.DEFAULT_WIND_ROSE.length]
-        for (int i = 0; i < favOccurrences.length; i++) {
-            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
-        }
-        environmentalDataNight.setWindRose(favOccurrences)
-    }
-
-    pointNoiseMap.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY, environmentalDataDay)
-    pointNoiseMap.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING, environmentalDataEvening)
-    pointNoiseMap.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT, environmentalDataNight)
 
     // Building height field name
     pointNoiseMap.setHeightField("HEIGHT")
@@ -710,18 +572,17 @@ def exec(Connection connection, input) {
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
+
+    if(recordProfile) {
+        LocalDateTime now = LocalDateTime.now()
+        pointNoiseMap.noiseMapDatabaseParameters.CSVProfilerOutputPath = new File(String.format("profile_%d_%d_%d_%dh%d.csv",
+                now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute()))
+        pointNoiseMap.noiseMapDatabaseParameters.CSVProfilerWriteInterval = 120 // delay write csv line in seconds
+    }
+
     // Do not propagate for low emission or far away sources
     // Maximum error in dB
-    ldenConfig.setMaximumError(confMaxError)
-
-    // --------------------------------------------
-    // Initialize NoiseModelling emission part
-    // --------------------------------------------
-    pointNoiseMap.setComputeRaysOutFactory(ldenProcessing)
-    pointNoiseMap.setPropagationProcessDataFactory(ldenProcessing)
-
-    // Init Map
-    pointNoiseMap.initialize(connection, new EmptyProgressVisitor())
+    parameters.setMaximumError(confMaxError)
 
     // --------------------------------------------
     // Run Calculations
@@ -730,75 +591,10 @@ def exec(Connection connection, input) {
     // Init ProgressLogger (loading bar)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
-
     logger.info("Start calculation... ")
-    LocalDateTime now = LocalDateTime.now();
-    ProfilerThread profilerThread = new ProfilerThread(new File(String.format("profile_%d_%d_%d_%dh%d.csv",
-            now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute())));
-    profilerThread.addMetric(ldenProcessing);
-    profilerThread.addMetric(new ProgressMetric(progressLogger));
-    profilerThread.addMetric(new JVMMemoryMetric());
-    profilerThread.addMetric(new ReceiverStatsMetric());
-    profilerThread.setWriteInterval(300);
-    profilerThread.setFlushInterval(300);
-    if(recordProfile) {
-        pointNoiseMap.setProfilerThread(profilerThread);
-    }
-    try {
-        ldenProcessing.start()
-        if(recordProfile) {
-            new Thread(profilerThread).start();
-        }
-        // Iterate over computation areas
-        int k = 0
-        Map cells = pointNoiseMap.searchPopulatedCells(connection)
-        ProgressVisitor progressVisitor = progressLogger.subProcess(cells.size())
-        new TreeSet<>(cells.keySet()).each { cellIndex ->
-            // Run ray propagation
-            logger.info(String.format("Compute... %.3f %% (%d receivers in this cell)", 100 * k++ / cells.size(), cells.get(cellIndex)))
-            IComputePathsOut out = pointNoiseMap.evaluateCell(connection, cellIndex.getLatitudeIndex(), cellIndex.getLongitudeIndex(), progressVisitor, receivers)
-            // Export as a Google Earth 3d scene
-            if (out instanceof AttenuationCnossosParameters && folderExportKML != null) {
-                AttenuationCnossosParameters cellStorage = (AttenuationCnossosParameters) out;
-                exportScene(new File(folderExportKML.getPath(),
-                        String.format(Locale.ROOT, kmlFileNamePrepend + "_%d_%d.kml", cellIndex.getLatitudeIndex(),
-                                cellIndex.getLongitudeIndex())).getPath(),
-                        cellStorage.inputData.profileBuilder, cellStorage, sridSources)
-            }
-        }
-    } catch(IllegalArgumentException | IllegalStateException ex) {
-        System.err.println(ex);
-        throw ex;
-    } finally {
-        profilerThread.stop();
-        ldenProcessing.stop()
-    }
 
-    // Associate Geometry column to the table LDEN
-    StringBuilder createdTables = new StringBuilder()
+    pointNoiseMap.run(connection, progressLogger)
 
-    if (ldenConfig.computeLDay) {
-        createdTables.append(" LDAY_GEOM")
-    }
-    if (ldenConfig.computeLEvening) {
-        createdTables.append(" LEVENING_GEOM")
-    }
-    if (ldenConfig.computeLNight) {
-        createdTables.append(" LNIGHT_GEOM")
-    }
-    if (ldenConfig.computeLDEN) {
-        createdTables.append(" LDEN_GEOM")
-    }
-
-    resultString = "Calculation Done ! " + createdTables.toString() + " table(s) have been created."
-
-    // print to command window
-    logger.info('Result : ' + resultString)
-    logger.info('End : LDAY from Traffic')
-
-    // print to WPS Builder
-    return resultString
-
-
+    return "Calculation Done ! The table $pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable have been created."
 }
 

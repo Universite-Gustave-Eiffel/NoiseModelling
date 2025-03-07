@@ -26,13 +26,12 @@ public class PolarGraphDirectivity {
 
 
     /**
-     *
-     * @param sb
-     * @param startX
-     * @param startY
-     * @param stopX
-     * @param stopY
-     * @param color
+     * @param sb String building instance
+     * @param startX line x
+     * @param startY line y
+     * @param stopX end line x
+     * @param stopY end line y
+     * @param color color of the line
      */
     private void generateLine(StringBuilder sb, double startX, double startY, double stopX, double stopY, String color) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
@@ -41,13 +40,12 @@ public class PolarGraphDirectivity {
 
 
     /**
-     *
-     * @param sb
-     * @param startX
-     * @param startY
-     * @param stopX
-     * @param stopY
-     * @param color
+     * @param sb String building instance
+     * @param startX line x
+     * @param startY line y
+     * @param stopX end line x
+     * @param stopY end line y
+     * @param color color of the line
      */
     private void generateDashedLine(StringBuilder sb, double startX, double startY, double stopX, double stopY, String color) {
         sb.append(String.format(Locale.ROOT, "<line x1=\"%f\" y1=\"%f\" x2=\"%f\" y2=\"%f\"" +
@@ -56,22 +54,22 @@ public class PolarGraphDirectivity {
 
     /**
      *
-     * @param sb
-     * @param startX
-     * @param startY
-     * @param fontSize
-     * @param text
-     * @param verticalAlignement
+     * @param sb String builder
+     * @param startX start x
+     * @param startY start y
+     * @param fontSize font size
+     * @param text text to print
+     * @param verticalAlignment vertical alignement as written in svg standard
      */
-    private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text, String verticalAlignement) {
-        sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"%s\">%s</text>\n",startX, startY, fontSize, verticalAlignement,text));
+    private void generateText(StringBuilder sb, double startX, double startY, int fontSize, String text, String verticalAlignment) {
+        sb.append(String.format(Locale.ROOT, "<text x=\"%f\" y=\"%f\" font-family=\"Verdana\" font-size=\"%d\"  text-anchor=\"middle\" dominant-baseline=\"%s\">%s</text>\n",startX, startY, fontSize, verticalAlignment,text));
     }
 
 
     /**
      * convert an angle from degrees to radians
-     * @param angle
-     * @return
+     * @param angle Angle in degree
+     * @return angle in radians
      */
     private double toRadian(double angle) {
         return (angle / 180.0) * Math.PI;
@@ -79,8 +77,8 @@ public class PolarGraphDirectivity {
 
     /**
      * adjust an angle based on a given orientation
-     * @param angle
-     * @param orientation
+     * @param angle Angle in degree
+     * @param orientation Orientation to set
      * @return
      */
     private double getAdjustedAngle(double angle, ORIENTATION orientation) {
@@ -94,10 +92,10 @@ public class PolarGraphDirectivity {
 
     /**
      * calculate the x and y coordinates for a legend entry based on a given angle and position,
-     * @param sb
-     * @param value
-     * @param position
-     * @param angle
+     * @param sb String builder
+     * @param value Value to set in text
+     * @param position Distance from center
+     * @param angle Angle in degree
      */
     private void generateLegend(StringBuilder sb, double value, double position, double angle) {
         double destX = centerx + Math.cos(toRadian(angle)) * radius * position;
@@ -109,12 +107,12 @@ public class PolarGraphDirectivity {
 
     /**
      *
-     * @param noiseSource
-     * @param frequency
-     * @param minimumAttenuation
-     * @param maximumAttenuation
-     * @param orientation
-     * @return
+     * @param noiseSource Sphere to print
+     * @param frequency Frequency to extract
+     * @param minimumAttenuation Scale min
+     * @param maximumAttenuation Scale max
+     * @param orientation orientation to extract
+     * @return SVG output
      */
     public String generatePolarGraph(DirectivitySphere noiseSource, double frequency, double minimumAttenuation, double maximumAttenuation, ORIENTATION orientation) {
 

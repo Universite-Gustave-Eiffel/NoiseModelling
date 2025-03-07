@@ -10,9 +10,8 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.utilities.GeometryTableUtilities;
-import org.h2gis.utilities.JDBCUtilities;
-import org.h2gis.utilities.TableLocation;
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.densify.Densifier;
@@ -21,8 +20,8 @@ import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.operation.buffer.BufferOp;
 import org.locationtech.jts.operation.buffer.BufferParameters;
 import org.locationtech.jts.simplify.TopologyPreservingSimplifier;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
@@ -32,15 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 
 /**
  * Create input receivers built from Delaunay for contructing a NoiseMap rendering.
@@ -48,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Nicolas Fortin
  * @author SU Qi
  */
-public class DelaunayReceiversMaker extends NoiseMapLoader {
+public class DelaunayReceiversMaker extends GridMapMaker {
     private static final int BATCH_MAX_SIZE = 100;
     private Logger logger = LoggerFactory.getLogger(DelaunayReceiversMaker.class);
     private double roadWidth = 2;
@@ -84,6 +82,31 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         this.isoSurfaceInBuildings = isoSurfaceInBuildings;
     }
 
+    /**
+     * Executes the Delaunay triangulation process for a grid of subdomains.
+     * Each subdomain is handled independently and includes the generation
+     * of receivers and triangles based on the given configuration.
+     *
+     * @param connection The database connection used to interact with the data.
+     * @param verticesTableName The name of the database table where the vertices will be stored.
+     * @param triangleTableName The name of the database table where the triangles will be stored.
+     * @throws SQLException Thrown if a database access error or other SQL-related error occurs.
+     */
+    public void run(Connection connection, String verticesTableName, String triangleTableName) throws SQLException {
+        initialize(connection, new EmptyProgressVisitor());
+
+        AtomicInteger pk = new AtomicInteger(0);
+        for(int i=0; i < getGridDim(); i++) {
+            for(int j=0; j < getGridDim(); j++) {
+                try {
+                    generateReceivers(connection, i, j, verticesTableName,
+                            triangleTableName, pk);
+                } catch (IOException | LayerDelaunayError ex) {
+                    throw new SQLException(ex);
+                }
+            }
+        }
+    }
     /**
      * @return When an exception occur, this folder with receiver the input data
      */
@@ -318,8 +341,9 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
             computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(sourcesTableName, dbTypes)).getEnvelopeInternal());
         }
-        if(!buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingsTableName) > 0) {
-            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(buildingsTableName, dbTypes)).getEnvelopeInternal());
+        if(!buildingTableParameters.buildingsTableName.isEmpty() && JDBCUtilities.getRowCount(connection, buildingTableParameters.buildingsTableName) > 0) {
+            computationEnvelope.expandToInclude(GeometryTableUtilities.getEnvelope(connection,
+                    TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes)).getEnvelopeInternal());
         }
         return computationEnvelope;
     }
@@ -397,6 +421,61 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         this.epsilon = epsilon;
     }
 
+
+
+    /**
+     * Fetch source geometries and power
+     * @param connection Active connection
+     * @param fetchEnvelope Fetch envelope
+     * @param scene (Out) Propagation process input data
+     * @throws SQLException
+     */
+    public void fetchCellSource(Connection connection, Envelope fetchEnvelope, boolean doIntersection, List<Geometry> sourceGeometries)
+            throws SQLException {
+
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
+        List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
+        if (geomFields.isEmpty()) {
+            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+        }
+        String sourceGeomName = geomFields.get(0);
+        Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
+        Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
+                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
+        int pkIndex = primaryKey.second();
+        if (pkIndex < 1) {
+            throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
+        }
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
+                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            st.setFetchSize(DefaultTableLoader.DEFAULT_FETCH_SIZE);
+            boolean autoCommit = connection.getAutoCommit();
+            if (autoCommit) {
+                connection.setAutoCommit(false);
+            }
+            st.setFetchDirection(ResultSet.FETCH_FORWARD);
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geo = rs.getGeometry();
+                    if (geo != null) {
+                        if (doIntersection) {
+                            geo = domainConstraint.intersection(geo);
+                        }
+                        if (!geo.isEmpty()) {
+                            sourceGeometries.add(geo);
+                        }
+                    }
+                }
+            } finally {
+                if (autoCommit) {
+                    connection.setAutoCommit(true);
+                }
+            }
+        }
+    }
+
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
 
         int ij = cellI * gridDim + cellJ + 1;
@@ -411,18 +490,19 @@ public class DelaunayReceiversMaker extends NoiseMapLoader {
         Envelope cellEnvelope = getCellEnv(mainEnvelope, cellI,
                 cellJ, getCellWidth(), getCellHeight());
         // Fetch all source located in expandedCellEnvelop
-        Scene data = new Scene(null, attenuationCnossosParametersDay.freq_lvl);
-        if(!sourcesTableName.isEmpty()) {
-            fetchCellSource(connection, cellEnvelope, data, false);
-        }
 
-        List<Geometry> sourceDelaunayGeometries = data.sourceGeometries;
+        List<Geometry> sourceDelaunayGeometries = new LinkedList<>();
+
+        if(!sourcesTableName.isEmpty()) {
+            fetchCellSource(connection, cellEnvelope, true, sourceDelaunayGeometries);
+        }
 
         List<Building> buildings = new LinkedList<>();
         List<Wall> walls = new LinkedList<>();
         Envelope expandedCell = new Envelope(cellEnvelope);
         expandedCell.expandBy(buildingBuffer);
-        fetchCellBuildings(connection, cellEnvelope, buildings, walls);
+        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters,cellEnvelope, buildings, walls,
+                geometryFactory);
 
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setEpsilon(epsilon);

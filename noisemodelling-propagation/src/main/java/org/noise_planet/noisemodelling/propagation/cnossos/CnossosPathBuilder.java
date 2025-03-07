@@ -37,7 +37,7 @@ public class CnossosPathBuilder {
     public static void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
                                      LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
                                      List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex,
-                                           List<Integer> frequencyTable) {
+                                           List<Double> exactFrequencyArray) {
         final List<CutPoint> cuts = cutProfile.cutPoints;
 
         Coordinate src = pts2D.get(0);
@@ -52,7 +52,7 @@ public class CnossosPathBuilder {
             double dOR = o.distance(rcv);
             double deltaH = dSR.orientationIndex(o) * (dSO + dOR - srSeg.d);
             boolean rcrit = false;
-            for(int f : frequencyTable) {
+            for(double f : exactFrequencyArray) {
                 if(deltaH > -(340./f) / 20) {
                     rcrit = true;
                     break;
@@ -81,7 +81,7 @@ public class CnossosPathBuilder {
                 seg2.dPrime = o.distance(rcvPrime);
 
                 double deltaPrimeH = dSPrimeRPrime.orientationIndex(o) * (seg1.dPrime + seg2.dPrime - srSeg.dPrime);
-                for(int f : frequencyTable) {
+                for(double f : exactFrequencyArray) {
                     if(deltaH > (340./f) / 4 - deltaPrimeH) {
                         rcrit = true;
                         break;
@@ -196,9 +196,11 @@ public class CnossosPathBuilder {
      * following Cnossos specification, or null if there is no valid path.
      * @param cutProfile Vertical cut of a domain
      * @param bodyBarrier
+     * @param exactFrequencyArray Expected frequencies
+     * @param gS Ground factor of the source area
      * @return The cnossos path or null
      */
-    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Integer> frequencyTable, double gS) {
+    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
@@ -217,15 +219,12 @@ public class CnossosPathBuilder {
         srPath.setPoints2DGround(pts2DGround);
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
-        CnossosPath pathParameters = new CnossosPath();
-        pathParameters.setCutProfile(cutProfile);
-        pathParameters.setSourceOrientation(cutProfile.getSource().orientation);
+        CnossosPath pathParameters = new CnossosPath(cutProfile);
         pathParameters.setFavorable(true);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
         pathParameters.setSRSegment(srPath);
-        pathParameters.init(frequencyTable.size());
-        pathParameters.angle= Angle.angle(cutProfile.getReceiver().getCoordinate(), cutProfile.getSource().getCoordinate());
+        pathParameters.init(exactFrequencyArray.size());
         // Extract the first and last points to define the line segment
         Coordinate firstPt = pts2D.get(0);
         Coordinate lastPt = pts2D.get(pts2D.size() - 1);
@@ -409,6 +408,9 @@ public class CnossosPathBuilder {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;
+                if(cutPt1 instanceof CutPointWall) {
+                    pt.alphaWall = ((CutPointWall) cutPt1).wallAlpha;
+                }
             }
         }
 
@@ -431,7 +433,7 @@ public class CnossosPathBuilder {
                 LineSegment dSR = new LineSegment(firstPts2D, lastPts2D);
                 // Look for diffraction over edge on free field (frequency dependent)
                 computeRayleighDiff(srPath, cutProfile, pathParameters, dSR, rayleighSegments, rayleighPoints, pts2D,
-                        pts2DGround, cut2DGroundIndex, frequencyTable);
+                        pts2DGround, cut2DGroundIndex, exactFrequencyArray);
             }
             if(rayleighSegments.isEmpty()) {
                 // We don't have a Rayleigh diffraction over DEM. Only direct SR path

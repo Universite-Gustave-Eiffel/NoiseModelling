@@ -7,10 +7,10 @@ Get Started
 
 #. There are 4 main librairies: 
 
-    * ``noisemodelling-emission`` : to determine the noise emission from traffic (road vehicles, trains)
-    * ``noisemodelling-jdbc`` : Fetch data from database, run computation then export results into the database
-    * ``noisemodelling-pathfinder`` : create vertical profiles between receivers and point sources
-    * ``noisemodelling-propagation`` : convert vertical profiles into propagation rays and compute cnossos attenuation
+    * ``noisemodelling-emission`` : to determine the noise emission
+    * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database
+    * ``noisemodelling-pathfinder`` : to determine the noise path
+    * ``noisemodelling-propagation`` : to calculate the noise propagation
 
 #. Enjoy & feel free to contact us!
 

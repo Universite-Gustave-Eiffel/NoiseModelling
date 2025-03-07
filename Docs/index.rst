@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-NoiseModelling v4.0 User Guide
+NoiseModelling v5.0 User Guide
 ==========================================
 
 .. figure:: images/home/NoiseModelling_banner.png
    :align: center
 
-Welcome on the **official NoiseModelling v4.0 User Guide**.
+Welcome on the **official NoiseModelling v5.0 User Guide**.
 
 NoiseModelling is a library capable of producing noise maps. 
 It can be freely used either for research and education, as well as by experts in a professional use.
@@ -28,32 +28,23 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 .. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
 .. _offical NoiseModelling website : http://noise-planet.org/noisemodelling.html
 
-What's new with the V4.0?
+What's new with the v5.0?
 ---------------------------
 
-Since the release v4.0, NoiseModelling implements the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`" and ":doc:`Validation`" pages for more information).
+Since the release v5.0, NoiseModelling validate the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`" and ":doc:`Validation`" ":doc:`Cnossos_report`"  pages for more information).
 
-Optimizations
-**************
+Time periods are not limited to Day Evening and Night anymore. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
 
-* `H2`_ and `H2GIS`_ versions have been upgraded (respectively to v2.0.202 and v2.0.0)
-* Triangulation library `Poly2Tri`_ has been replaced by `Tinfoor`_
-* Triangulation to accelerate the propagation is not used anymore (only used in DEM intersections test)
-
-.. _CNOSSOS-EU : https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
-.. _H2 : https://www.h2database.com/
-.. _H2GIS : https://www.h2gis.org/
-.. _Poly2Tri : https://github.com/jhasse/poly2tri
-.. _Tinfoor : https://github.com/gwlucastrig/Tinfour
+The computation time has been decreased. The separation between path finding and attenuation has been done in preparation to the implementation of more noise propagation model (ex. Harmonoise).
 
 Packaging
 **************
 
 On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
 
-* ``NoiseModelling_4.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
-* ``NoiseModelling_4.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_4.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
+* ``NoiseModelling_5.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
+* ``NoiseModelling_5.0.0_install.exe`` : windows installer, with GUI
+* ``NoiseModelling_5.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
 
 
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
@@ -144,6 +135,7 @@ Fundings
 
     Input_buildings
     Input_roads
+    Input_source
     Input_railways
     Input_ground
     Input_dem
@@ -160,6 +152,7 @@ Fundings
     Noise_Map_From_OSM_Tutorial
     Noise_Map_From_Point_Source
     Matsim_Tutorial
+    Dynamic_Tutorial
     Get_Started_Script
     Tutorials_FAQ
 

@@ -15,13 +15,11 @@ import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -180,7 +178,7 @@ public class TestPathFinder {
         Coordinate p2 = new Coordinate(13, 10, 6.7);
 
         // Check the computation of convex corners of a building
-        List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsByBuilding(1, Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
+        List<Coordinate> b1OffsetRoof = profileBuilder.getWideAnglePointsOnPolygon(profileBuilder.getBuildings().get(0).getGeometry().getExteriorRing(), Math.PI * (1 + 1 / 16.0), Math.PI * (2 - (1 / 16.)));
         int i = 0;
         assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
         assertEquals(0, new Coordinate(7, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);

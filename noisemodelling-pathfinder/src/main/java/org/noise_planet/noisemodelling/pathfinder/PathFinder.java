@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Line;
 import org.apache.commons.math3.geometry.euclidean.threed.Plane;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.geom.*;
@@ -52,6 +53,8 @@ public class PathFinder {
     private static final double epsilon = 1e-7;
     private static final double MAX_RATIO_HULL_DIRECT_PATH = 4;
     public static final Logger LOGGER = LoggerFactory.getLogger(PathFinder.class);
+    /** Progression information */
+    public ProgressVisitor progressVisitor;
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
@@ -69,9 +72,20 @@ public class PathFinder {
      * Create new instance from the propagation data.
      * @param data Propagation data used for ray computation.
      */
+    public PathFinder(Scene data, ProgressVisitor progressVisitor) {
+        this.data = data;
+        this.threadCount = Runtime.getRuntime().availableProcessors();
+        this.progressVisitor = progressVisitor;
+    }
+
+    /**
+     * Create new instance from the propagation data.
+     * @param data Propagation data used for ray computation.
+     */
     public PathFinder(Scene data) {
         this.data = data;
         this.threadCount = Runtime.getRuntime().availableProcessors();
+        this.progressVisitor = new EmptyProgressVisitor();
     }
 
     /**
@@ -104,21 +118,21 @@ public class PathFinder {
      * Run computation and store the results in the given output.
      * @param computeRaysOut Result output.
      */
-    public void run(IComputePathsOut computeRaysOut) {
-        ProgressVisitor visitor = data.cellProg;
+    public void run(CutPlaneVisitorFactory computeRaysOut) {
         ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
         int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
         int endReceiverRange = 0;
         //Launch execution of computation by batch
         List<Future<Boolean>> tasks = new ArrayList<>();
+        ProgressVisitor cellProgress = progressVisitor == null ? new EmptyProgressVisitor() : progressVisitor.subProcess(data.receivers.size());
         while (endReceiverRange < data.receivers.size()) {
             //Break if the progress visitor is cancelled
-            if (visitor != null && visitor.isCanceled()) {
+            if (cellProgress.isCanceled()) {
                 break;
             }
             int newEndReceiver = min(endReceiverRange + maximumReceiverBatch, data.receivers.size());
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
-                    this, visitor, computeRaysOut, data);
+                    this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
             if (threadCount != 1) {
                 tasks.add(threadManager.submitBlocking(batchThread));
             } else {
@@ -156,7 +170,7 @@ public class PathFinder {
      * @param dataOut Computation output.
      * @param visitor Progress visitor used for cancellation and progression managing.
      */
-    public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, IComputePathsOut dataOut, ProgressVisitor visitor) {
+    public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, CutPlaneVisitor dataOut, ProgressVisitor visitor) {
 
         long start = 0;
         if(profilerThread != null) {
@@ -244,12 +258,12 @@ public class PathFinder {
         AtomicInteger processedSources = new AtomicInteger(0);
         // For each Pt Source - Pt Receiver
         for (SourcePointInfo sourcePointInfo : sourceList) {
-            IComputePathsOut.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, receiverMirrorIndex);
+            CutPlaneVisitor.PathSearchStrategy strategy = rcvSrcPropagation(sourcePointInfo, receiverPointInfo, dataOut, receiverMirrorIndex);
             processedSources.addAndGet(1);
             // If the delta between already received power and maximal potential power received is inferior to data.maximumError
             if ((visitor != null && visitor.isCanceled()) ||
-                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER) ||
-                    strategy.equals(IComputePathsOut.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER)) {
+                    strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER) ||
+                    strategy.equals(CutPlaneVisitor.PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER)) {
                 break; //Stop looking for more rays
             }
         }
@@ -277,18 +291,18 @@ public class PathFinder {
      * @param dataOut Output.
      * @return Continue or not looking for propagation paths
      */
-    private IComputePathsOut.PathSearchStrategy rcvSrcPropagation(SourcePointInfo src,
-                                                                  ReceiverPointInfo rcv,
-                                                                  IComputePathsOut dataOut,
-                                                                  MirrorReceiversCompute receiverMirrorIndex) {
-        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
+    private CutPlaneVisitor.PathSearchStrategy rcvSrcPropagation(SourcePointInfo src,
+                                                                 ReceiverPointInfo rcv,
+                                                                 CutPlaneVisitor dataOut,
+                                                                 MirrorReceiversCompute receiverMirrorIndex) {
+        CutPlaneVisitor.PathSearchStrategy strategy = CutPlaneVisitor.PathSearchStrategy.CONTINUE;
         double propaDistance = src.getCoord().distance(rcv.getCoordinates());
         if (propaDistance < data.maxSrcDist) {
             // Process direct : horizontal and vertical diff
             strategy = directPath(src, rcv, data.computeVerticalDiffraction,
                     data.computeHorizontalDiffraction, dataOut);
-            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
-                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
+            if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
             }
             // Process reflection
@@ -307,13 +321,13 @@ public class PathFinder {
      * @param horizontalDiffraction Enable horizontal diffraction
      * @return Calculated propagation paths.
      */
-    public IComputePathsOut.PathSearchStrategy directPath(SourcePointInfo src, ReceiverPointInfo rcv,
-                                                          boolean verticalDiffraction, boolean horizontalDiffraction,
-                                                          IComputePathsOut dataOut) {
+    public CutPlaneVisitor.PathSearchStrategy directPath(SourcePointInfo src, ReceiverPointInfo rcv,
+                                                         boolean verticalDiffraction, boolean horizontalDiffraction,
+                                                         CutPlaneVisitor dataOut) {
 
-        IComputePathsOut.PathSearchStrategy strategy = IComputePathsOut.PathSearchStrategy.CONTINUE;
+        CutPlaneVisitor.PathSearchStrategy strategy = CutPlaneVisitor.PathSearchStrategy.CONTINUE;
 
-        CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.gS, !verticalDiffraction);
+        CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rcv.position, data.defaultGroundAttenuation, !verticalDiffraction);
         if(cutProfile.getSource() != null) {
             cutProfile.getSource().id = src.getSourceIndex();
             cutProfile.getSource().li = src.li;
@@ -331,8 +345,8 @@ public class PathFinder {
 
         if(verticalDiffraction || cutProfile.isFreeField()) {
             strategy = dataOut.onNewCutPlane(cutProfile);
-            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
-                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
+            if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
             }
         }
@@ -346,8 +360,8 @@ public class PathFinder {
             CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
             if (cutProfileRight != null) {
                 strategy = dataOut.onNewCutPlane(cutProfileRight);
-                if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
-                        strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
+                if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                        strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                     return strategy;
                 }
             }
@@ -379,7 +393,7 @@ public class PathFinder {
         if(coordinates.size() > 2) {
             // Fetch vertical profile between each point of the diffraction path
             for(int i=0; i<coordinates.size()-1; i++) {
-                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.gS,
+                CutProfile profile = data.profileBuilder.getProfile(coordinates.get(i), coordinates.get(i+1), data.defaultGroundAttenuation,
                         false);
 
                 // Push new plane (except duplicate points for intermediate segments)
@@ -649,11 +663,11 @@ public class PathFinder {
      * @param dataOut Where to push cut profile
      * @return Skip or continue looking for vertical cut
      */
-    public IComputePathsOut.PathSearchStrategy computeReflexion(ReceiverPointInfo rcv,
-                                                                SourcePointInfo src,
-                                                                MirrorReceiversCompute receiverMirrorIndex,
-                                                                IComputePathsOut dataOut, IComputePathsOut.PathSearchStrategy initialStrategy) {
-        IComputePathsOut.PathSearchStrategy strategy = initialStrategy;
+    public CutPlaneVisitor.PathSearchStrategy computeReflexion(ReceiverPointInfo rcv,
+                                                               SourcePointInfo src,
+                                                               MirrorReceiversCompute receiverMirrorIndex,
+                                                               CutPlaneVisitor dataOut, CutPlaneVisitor.PathSearchStrategy initialStrategy) {
+        CutPlaneVisitor.PathSearchStrategy strategy = initialStrategy;
         // Compute receiver mirror
         LineIntersector linters = new RobustLineIntersector();
         //Keep only building walls which are not too far.
@@ -718,7 +732,7 @@ public class PathFinder {
             }
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
-                    data.gS, !data.computeVerticalDiffraction);
+                    data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
@@ -734,7 +748,7 @@ public class PathFinder {
                 MirrorReceiver firstPoint = rayPath.get(idPt);
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
                 cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
-                        secondPoint.getReflectionPosition(), data.gS, !data.computeVerticalDiffraction);
+                        secondPoint.getReflectionPosition(), data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
                 if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     continue;
@@ -753,7 +767,7 @@ public class PathFinder {
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
             cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
-                    rcv.position, data.gS, !data.computeVerticalDiffraction);
+                    rcv.position, data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
             if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
@@ -779,8 +793,8 @@ public class PathFinder {
             mainProfile.getSource().li = src.li;
 
             strategy = dataOut.onNewCutPlane(mainProfile);
-            if(strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_SOURCE) ||
-                    strategy.equals(IComputePathsOut.PathSearchStrategy.SKIP_RECEIVER)) {
+            if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                    strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
             }
         }

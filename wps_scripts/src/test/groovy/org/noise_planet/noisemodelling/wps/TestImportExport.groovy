@@ -136,7 +136,7 @@ class TestImportExport extends JdbcTestCase {
     void testExportFile() {
 
         // Check export geojson
-        File testPath = new File("target/test.geojson")
+        File testPath = new File("build/tmp/test.geojson")
 
         if (testPath.exists()) {
             testPath.delete()
@@ -145,7 +145,7 @@ class TestImportExport extends JdbcTestCase {
         SHPRead.importTable(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : "target/test.geojson",
+                ["exportPath"   : "build/tmp/test.geojson",
                  "tableToExport": "RECEIVERS"])
 
 

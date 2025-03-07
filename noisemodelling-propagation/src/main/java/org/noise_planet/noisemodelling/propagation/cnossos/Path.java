@@ -8,6 +8,7 @@
  */
 
 package org.noise_planet.noisemodelling.propagation.cnossos;
+import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
@@ -16,6 +17,8 @@ import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -44,15 +47,33 @@ public class Path {
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favorable; // if true, favorable meteorological condition path TODO move to cnossospathparameters
-    public long idSource;
-    public long idReceiver;
     private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     Orientation sourceOrientation = new Orientation(0,0,0);
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
-    public double angle;
     double gs;
     // computed in Augmented Path
     public boolean keepAbsorption = false;
+
+    public Path() {
+    }
+
+    public Path(CutProfile cutProfile) {
+        this.cutProfile = cutProfile;
+        setSourceOrientation(cutProfile.getSource().orientation);
+    }
+
+    public Path(Path other) {
+        this.cutProfile = other.cutProfile;
+        this.srSegment = other.srSegment;
+        this.pointList = other.pointList;
+        this.segmentList = other.segmentList;
+        this.favorable = other.favorable;
+        this.timePeriod = other.timePeriod;
+        this.sourceOrientation = other.sourceOrientation;
+        this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
+        this.gs = other.gs;
+        this.keepAbsorption = other.keepAbsorption;
+    }
 
     /**
      * 3D intersections points of the ray
@@ -80,43 +101,6 @@ public class Path {
         this.cutProfile = cutProfile;
     }
 
-    /**
-     * parameters given by user
-     * @param favorable
-     * @param pointList
-     * @param segmentList
-     * @param angle         Angle between the 3D source and 3D receiver. Used to rose index.
-     */
-    public Path(boolean favorable, List<PointPath> pointList, List<SegmentPath> segmentList , SegmentPath srSegment, double angle) {
-        this.favorable = favorable;
-        this.pointList = pointList;
-        this.segmentList = segmentList;
-        this.srSegment = srSegment;
-    }
-
-    /**
-     * Copy constructor
-     * @param other
-     */
-    public Path(Path other) {
-        this.srSegment = other.srSegment;
-        this.pointList = other.pointList;
-        this.segmentList = other.segmentList;
-        this.favorable = other.favorable;
-        this.idSource = other.idSource;
-        this.idReceiver = other.idReceiver;
-        this.sourceOrientation = other.sourceOrientation;
-        this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
-        this.angle = other.angle;
-        this.gs = other.gs;
-        this.keepAbsorption = other.keepAbsorption;
-        this.timePeriod = other.timePeriod;
-        this.cutProfile = other.cutProfile;
-    }
-
-    public Path() {
-
-    }
 
     /**
      * @return time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
@@ -199,80 +183,6 @@ public class Path {
             coordinates[i++] = new Coordinate(rayPoint);
         }
         return geometryFactory.createLineString(coordinates);
-    }
-
-
-    /**
-     *
-     * @param sizeLimitation
-     * @return
-     * @throws IOException
-     */
-    public String profileAsJSON(int sizeLimitation) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        GeoJSONDocument geoJSONDocument = new GeoJSONDocument(byteArrayOutputStream);
-        geoJSONDocument.writeHeader();
-        for (CutPoint cutPoint : getCutPoints()) {
-            if(sizeLimitation > 0 && byteArrayOutputStream.size() + FOOTER_RESERVED_SIZE > sizeLimitation) {
-                break;
-            }
-            geoJSONDocument.writeCutPoint(cutPoint);
-        }
-        geoJSONDocument.writeFooter();
-        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
-    }
-
-    public long getIdSource() {
-        return idSource;
-    }
-
-    public void setIdSource(long idSource) {
-        this.idSource = idSource;
-    }
-
-    public long getIdReceiver() {
-        return idReceiver;
-    }
-
-    public void setIdReceiver(long idReceiver) {
-        this.idReceiver = idReceiver;
-    }
-
-
-    /**
-     * Reads the content of this object from <code>out</code>. All
-     * properties should be set to their default value or to the value read
-     * from the stream.
-     * @param in the stream to read
-     * @throws IOException if an I/O-error occurs
-     */
-    public void readStream( DataInputStream in ) throws IOException {
-        favorable = in.readBoolean();
-        idSource = in.readInt();
-        float bearing = in.readFloat();
-        float inclination = in.readFloat();
-        float roll = in.readFloat();
-        double gs = in.readFloat();
-        setGs(gs);
-        setSourceOrientation(new Orientation(bearing, inclination, roll));
-
-        idReceiver = in.readInt();
-        int pointListSize = in.readInt();
-        pointList = new ArrayList<>(pointListSize);
-        for(int i=0; i < pointListSize; i++) {
-            PointPath pointPath = new PointPath();
-            pointPath.readStream(in);
-            pointList.add(pointPath);
-        }
-        int segmentListSize = in.readInt();
-        segmentList = new ArrayList<>(segmentListSize);
-        for(int i=0; i < segmentListSize; i++) {
-            SegmentPath segmentPath = new SegmentPath();
-            segmentPath.readStream(in);
-            segmentList.add(segmentPath);
-        }
-        SegmentPath srSegment = new SegmentPath();
-        srSegment.readStream(in);
     }
 
     public List<PointPath> getPointList() {return pointList;}
@@ -394,23 +304,6 @@ public class Path {
      */
     public static Vector3D readVector(DataInputStream in) throws IOException {
         return new Vector3D(in.readDouble(), in.readDouble(), in.readDouble());
-    }
-
-    /**
-     * Reads the content of this object from <code>out</code>. All
-     * properties should be set to their default value or to the value read
-     * from the stream.
-     * @param in the stream to read
-     * @throws IOException if an I/O-error occurs
-     */
-    public static void readPropagationPathListStream( DataInputStream in , ArrayList<Path> pathsParameters) throws IOException {
-        int propagationPathsListSize = in.readInt();
-        pathsParameters.ensureCapacity(propagationPathsListSize);
-        for(int i=0; i < propagationPathsListSize; i++) {
-            Path path = new Path();
-            path.readStream(in);
-            pathsParameters.add(path);
-        }
     }
 
 }

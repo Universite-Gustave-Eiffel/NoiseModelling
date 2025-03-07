@@ -142,7 +142,7 @@ Step 6: Create Isosurfaces map
 
 Create an interpolation of levels between receivers points using the block ``Create_Isosurface``.
 
-Set ``LDEN_GEOM`` as ``Name of the noise table``.
+Set ``RECEIVERS_LEVEL`` as ``Name of the noise table``.
 
 Step 7: View the result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,7 +154,8 @@ You can then export the output table ``CONTOURING_NOISE_MAP`` via ``Export_Table
 
 View
 --------------
-You can view this layer in your favorite GIS. You can then apply a color gradient on ``ISOLVL`` field; the noise level intervals are in ``ISOLABEL`` field.
+You can view this layer in your favorite GIS. Drop the file in QGIS then filter by the `period` column (ex. ``DEN``).
+ You can then apply a (revert) color gradient on ``ISOLABEL`` field.
 
 
 .. figure:: images/tutorial/Tutorial2_ContouringNoiseMap.png

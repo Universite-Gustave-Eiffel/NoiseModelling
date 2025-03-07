@@ -121,3 +121,31 @@ Thread number
 * Type: Integer
 * Default value: ``0`` (``0`` = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used))
 * Recommended value: ``0``
+
+
+Max Error (dB)
+--------------------------------
+
+* Parameter name: ``confMaxError``
+* Description: Threshold for excluding negligible sound sources in calculations. Default value: **0.1**. This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.
+* Type: Double
+* Default value: ``0.1`` dB
+* Recommended value: ``0.1`` dB
+
+Maximum error algorithm explanation
+************************************
+
+In order to reduce computation time, we can ignore far away sound source that will not change the noise level at the receiver location.
+
+Before looking for propagation path, all sound sources are fetched in the radius of ``confMaxSrcDist`` then sorted by distance from the receiver position.
+
+After each propagation path is found, we evaluate if the difference between the accumulated noise level of all previous sound sources with the expected maximum noise level at the receiver with all sound sources is greater than the maximum error parameter.
+
+If the next sound sources contribution is negligible we move to the next receiver point.
+
+Minimal and maximal values are over all emission periods specified on the sound sources. The maximal expected noise level value is updated after each sound source is processed.
+
+.. figure:: images/Numerical_Model/maximumdberror.png
+	:align: center
+
+
