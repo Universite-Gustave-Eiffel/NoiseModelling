@@ -4,6 +4,7 @@ plugins {
     id 'maven-publish'
     id 'application'
     id 'distribution'
+    id 'java-library'
 }
 
 
@@ -38,17 +39,75 @@ compileJava {
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 
-publishing {
-    publications {
-        myLibrary(MavenPublication) {
-            from components.java
-        }
-    }
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
-    repositories {
-        mavenLocal()
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
     }
 }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.orbisgis'
+            artifactId = 'noisemodelling-wps'
+            version = '5.0.0-SNAPSHOT'
+            from components.java
+
+            pom {
+                name = 'wps_scripts'
+                description = 'Groovy scripts for NoiseModelling'
+                url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
+                inceptionYear = '2025'
+
+                licenses {
+                    license {
+                        name = 'GNU General Public License (GPLV3+)'
+                        url = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Nicolas Fortin'
+                        organization = 'Gustave Eiffel University UMRAE'
+                        url = 'https://github.com/nicolas-f'
+                    }
+                    developer {
+                        name = 'Pierre Aumond'
+                        organization = 'Gustave Eiffel University UMRAE'
+                        url = 'https://github.com/pierromond'
+                    }
+                }
+                scm {
+                    connection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                    developerConnection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                    url='git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
+                    tag='HEAD'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+
+            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots'
+            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
+
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+}
+
 repositories {
     mavenLocal() // To test noise modelling updated locally we have to put this first
     mavenCentral()
@@ -130,11 +189,11 @@ dependencies {
 }
 
 
-mainClassName = 'org.noisemodelling.runner.Main'
+mainClassName = 'org.noise_planet.noisemodelling.runner.Main'
 
 jar {
     manifest {
         attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
-                'Main-Class': 'org.noisemodelling.runner.Main')
+                'Main-Class': 'org.noise_planet.noisemodelling.runner.Main')
     }
 }

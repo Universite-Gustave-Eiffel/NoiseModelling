@@ -2,7 +2,7 @@ package org.noise_planet.noisemodelling.wps;
 
 import junit.framework.TestCase;
 import org.junit.Test;
-import org.noisemodelling.runner.Main;
+import org.noise_planet.noisemodelling.runner.Main;
 
 import java.util.UUID;
 

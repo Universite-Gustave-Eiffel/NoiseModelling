@@ -9,7 +9,7 @@
  * Contact: contact@noise-planet.org
  *
  */
-package org.noisemodelling.runner;
+package org.noise_planet.noisemodelling.runner;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
@@ -17,7 +17,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
