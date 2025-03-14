@@ -46,6 +46,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * Process that run SQL query to feed tables
  */
 public class NoiseMapWriter implements Callable<Boolean> {
+    static final int LOG_END_WRITING_DELAY = 15000;
     static final int BATCH_MAX_SIZE = 500;
     static final int WRITER_CACHE = 65536;
     AtomicBoolean exitWhenDone;
@@ -185,6 +186,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
      * @throws SQLException Got an error
      */
     void processStack(String tableName, ConcurrentLinkedDeque<ReceiverNoiseLevel> stack) throws SQLException {
+        long lastInfoLog = 0;
         if(stack.isEmpty()) {
             return;
         }
@@ -217,7 +219,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         int batchSize = 0;
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
-        while(!stack.isEmpty()) {
+        while(!stack.isEmpty() && !aborted.get()) {
             ReceiverNoiseLevel row = stack.pop();
             resultsCache.queueSize.decrementAndGet();
             int parameterIndex = 1;
@@ -261,6 +263,11 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 ps.executeBatch();
                 ps.clearBatch();
                 batchSize = 0;
+                long now = System.currentTimeMillis();
+                if(exitWhenDone.get() && now - lastInfoLog > LOG_END_WRITING_DELAY) {
+                    LOGGER.info("Calculation end, writing last {} records..", stack.size());
+                    lastInfoLog = now;
+                }
             }
         }
         if (batchSize > 0) {
