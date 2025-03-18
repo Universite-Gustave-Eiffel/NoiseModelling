@@ -16,4 +16,4 @@
 ./bin/wps_scripts -w ./ -s noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy -tableBuilding BUILDINGS -tableRoads ROADS2 -tableReceivers RECEIVERS -tableDEM DEM -tableGroundAbs GROUND_TYPE
 
 # Step 6: Export (& see) the results
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Export_Table.groovy -exportPath LDAY_GEOM.shp -tableToExport LDAY_GEOM
+./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Export_Table.groovy -exportPath RECEIVERS_LEVEL.shp -tableToExport RECEIVERS_LEVEL
