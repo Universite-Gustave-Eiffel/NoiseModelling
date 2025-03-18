@@ -16,7 +16,7 @@ import org.h2gis.utilities.JDBCUtilities
 import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
-import org.noisemodelling.runner.Main
+import org.noise_planet.noisemodelling.runner.Main
 
 import javax.sql.DataSource
 import java.sql.Connection

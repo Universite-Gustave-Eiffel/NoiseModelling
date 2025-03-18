@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
-    public int DEFAULT_END_WRITING_THREAD_TIMEOUT = 30; // timeout for write thread stop in seconds
     ResultsCache resultsCache = new ResultsCache();
     final NoiseMapDatabaseParameters noiseMapDatabaseParameters;
     NoiseMapWriter noiseMapWriter;
@@ -93,7 +92,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     public void stop() throws SQLException {
         exitWhenDone.set(true);
         try {
-            noiseMapWriterFuture.get(DEFAULT_END_WRITING_THREAD_TIMEOUT, TimeUnit.SECONDS);
+            noiseMapWriterFuture.get();
         } catch (Exception e) {
             throw new SQLException(e);
         }

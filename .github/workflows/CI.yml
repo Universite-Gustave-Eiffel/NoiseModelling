@@ -41,6 +41,13 @@ jobs:
         run: mvn clean deploy -B -P maven-deploy
       - name: Clean
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+      - name: Deploy WPS
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
+        run: ./gradlew publish
+        working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4
         with:

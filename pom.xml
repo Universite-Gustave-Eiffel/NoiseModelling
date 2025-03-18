@@ -26,9 +26,9 @@
         <module>noisemodelling-tutorial-01</module>
     </modules>
     <scm>
-        <connection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</connection>
-        <developerConnection>scm:git:https://github.com/Ifsttar/NoiseModelling.git</developerConnection>
-        <url>git@github.com:Ifsttar/NoiseModelling.git</url>
+        <connection>scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git</connection>
+        <developerConnection>scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git</developerConnection>
+        <url>git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git</url>
         <tag>HEAD</tag>
     </scm>
     <build>
@@ -81,7 +81,6 @@
                 <version>3.11.2</version>
                 <configuration>
                     <source>11</source>
-                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -92,11 +91,11 @@
             <distributionManagement>
                 <snapshotRepository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
                     <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
         </profile>
