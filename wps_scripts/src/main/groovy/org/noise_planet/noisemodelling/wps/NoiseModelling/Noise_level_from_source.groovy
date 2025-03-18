@@ -59,15 +59,17 @@ import java.sql.SQLException
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
-title = 'Calculation of the Lden,LDay,LEvening,LNight map from the noise emission table'
-description = '&#10145;&#65039; Computes the Lden, LDay, LEvening, LNight maps from the noise emission table.' +
+title = 'Computes the propagation from the sounds sources to the receivers'
+description = '&#10145;&#65039; Computes the propagation from the sounds sources to the receivers location using the noise emission table.' +
         '<hr>' +
         '&#127757; Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. </br></br>' +
-        '&#x2705; The output table are called: <b> LDEN_GEOM, LDAY_GEOM, LEVENING_GEOM, LNIGHT_GEOM </b> </br></br>' +
-        'These tables contain: </br> <ul>' +
-        '<li><b> IDRECEIVER</b>: an identifier (INTEGER, PRIMARY KEY)</li>' +
-        '<li><b> THE_GEOM </b>: the 3D geometry of the receivers (POINT)</li>' +
-        '<li><b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b>: 8 columns giving the day (evening, night or den) emission sound level for each octave band (FLOAT)</li></ul>'
+        '&#x2705; The output table are called: <b> RECEIVERS_LEVEL </b> </br></br>' +
+        'The output table contain: </br> <ul>' +
+        '<li><b> IDRECEIVER</b>: receiver an identifier (INTEGER) linked to RECEIVERS table primary key</li>' +
+        '<li><b> IDSOURCE</b>: source identifier (INTEGER) linked to SOURCES_GEOM primary key. Only if Keep source id is checked.</li>' +
+        '<li><b> PERIOD </b>: Time period (VARCHAR) ex. L D E and DEN. Only if you provide emission power to sources or the atmospheric settings table.</li>' +
+        '<li><b> THE_GEOM </b>: the 3D geometry of the receivers with the Z as the altitude (POINTZ)</li>' +
+        '<li><b> Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 </b>: 8 columns giving the sound level for each octave band (FLOAT)</li></ul>'
 
 inputs = [
         tableBuilding           : [
