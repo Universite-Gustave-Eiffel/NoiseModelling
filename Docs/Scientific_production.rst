@@ -9,6 +9,8 @@ Standard Noise maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 SOTO-MOLINA, Ignacio, AUSEJO PRIETO, Miguel, et ARCE RUIZ, Rosa Maria. `Enhancing noise assessment accuracy: FEM as an advanced complement to CNOSSOS-EU. <https://journals.sagepub.com/doi/10.1177/09574565251319271>`_ Noise & Vibration Worldwide, 2025, p. 09574565251319271.
 
+TAGUSARI, Junta. `Prediction of road traffic noise in the vicinity of trunk roads in Japan using digital road map platform. <https://www.researchgate.net/publication/381089609_Prediction_of_road_traffic_noise_in_the_vicinity_of_trunk_roads_in_Japan_using_digital_road_map_platform>`_ Acoustical Science and Technology, 2024, p. e24. 50.
+
 ESPADALER-CLAPÉS, Jasso, BARMPOUNAKIS, Emmanouil, et GEROLIMINIS, Nikolas. `Traffic congestion and noise emissions with detailed vehicle trajectories from UAVs. <https://www.sciencedirect.com/science/article/pii/S1361920923002195>`_ Transportation Research Part D: Transport and Environment, 2023, vol. 121, p. 103822.
 
 GRAZIUSO G., FRANCAVILLA A. B., MANCINI S., GUARNACCIA C., `Open-source software tools for strategic noise mapping: a case study <https://iopscience.iop.org/article/10.1088/1742-6596/2162/1/012014>`_, Journal of Physics: Conference Series, 2022, vol. 2162, 012014
