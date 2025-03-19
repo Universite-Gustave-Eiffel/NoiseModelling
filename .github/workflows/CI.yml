@@ -53,7 +53,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: ./gradlew publish
+        run: ./gradlew publish -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
         working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4
