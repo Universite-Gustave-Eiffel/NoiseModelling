@@ -20,7 +20,10 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.Level;
+import org.apache.log4j.PatternLayout;
 import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.RollingFileAppender;
 import org.h2.util.OsgiDataSourceFactory;
 import org.h2gis.functions.factory.H2GISFunctions;
 import org.h2gis.utilities.wrapper.ConnectionWrapper;
@@ -136,6 +139,7 @@ public class Main {
 
     public static void main(String... args) throws Exception {
         PropertyConfigurator.configure(Main.class.getResource("log4j.properties"));
+
         // Arguments parser
         Options options = new Options();
         Option workingDirOption = new Option("w", "working-dir", true, "Path where the database will be located");
@@ -180,6 +184,33 @@ public class Main {
 
             if(printVersion) {
                 printBuildIdentifiers(logger);
+            }
+
+            // configure file logger
+            try {
+                // Create rolling file appender
+                RollingFileAppender rollingAppender = new RollingFileAppender();
+
+                // Configure appender properties
+                rollingAppender.setName("rollingFile");
+                rollingAppender.setFile(new File(workingDir, "application.log").getPath());
+                rollingAppender.setAppend(true);
+                rollingAppender.setMaxBackupIndex(5);
+                rollingAppender.setMaximumFileSize(10_000_000);
+
+                // Create and set pattern layout
+                PatternLayout layout = new PatternLayout();
+                layout.setConversionPattern("[%t] %-5p %d{dd MMM HH:mm:ss} - %m%n");
+                rollingAppender.setLayout(layout);
+
+                // init stream
+                rollingAppender.activateOptions();
+
+                // Configure root logger
+                org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+                rootLogger.addAppender(rollingAppender);
+            } catch (Exception e) {
+                System.err.println("Failed to configure logger: " + e.getMessage());
             }
 
             // Open database

@@ -1,3 +1,15 @@
+buildscript {
+    repositories {
+        mavenCentral() // Use Maven Central to resolve dependencies
+    }
+    dependencies {
+        // Add the Groovy XML module (adjust the version to match your Gradle's Groovy version)
+        classpath 'org.codehaus.groovy:groovy-xml:3.0.9'
+    }
+}
+
+import groovy.xml.XmlSlurper
+
 plugins {
     id 'java'
     id 'groovy'
@@ -7,9 +19,18 @@ plugins {
     id 'java-library'
 }
 
-
 sourceCompatibility = 11
 
+def getPomVersion(File pomFile) {
+    try {
+        def pom = new XmlSlurper().parse(pomFile)
+        return pom.version.text()
+    } catch (Exception e) {
+        println "Error parsing POM file: ${pomFile.absolutePath}"
+        e.printStackTrace()
+        return null
+    }
+}
 
 distributions {
     main {
@@ -55,7 +76,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'org.orbisgis'
             artifactId = 'noisemodelling-wps'
-            version = '5.0.0-SNAPSHOT'
+            version = getPomVersion('../pom.xml' as File)
             from components.java
 
             pom {
@@ -171,10 +192,10 @@ dependencies {
     implementation group: 'org.orbisgis', name: 'h2gis', version: '2.2.3'
     implementation('org.locationtech.jts:jts-core:1.20.0')
     implementation('org.locationtech.jts:jts-io:1.20.0')
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '5.0.0-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: getPomVersion('../pom.xml' as File)
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: getPomVersion('../pom.xml' as File)
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: getPomVersion('../pom.xml' as File)
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: getPomVersion('../pom.xml' as File)
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
@@ -185,7 +206,6 @@ dependencies {
 
     implementation 'com.opencsv:opencsv:5.7.1'
     implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '2.0.17'
-    testRuntimeOnly group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.17'
     testCompileOnly 'junit:junit:4.13.1'
 }
 
