@@ -18,7 +18,16 @@ jobs:
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v2
+      # Checkout the source code of the project
+      - name: Checkout
+        uses: actions/checkout@v4
+      # Install the GPG secret key
+      - name: Import GPG Key
+        run: |
+          echo "${{ secrets.GPG_SECRET_KEY }}" | gpg --import --no-tty --batch --yes
+        env:
+          GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
+        if: ${{ (env.GPG_SECRET_KEY != null) && (github.ref == 'refs/heads/main') }}
       - name: Set up JDK 11
         uses: actions/setup-java@v1
         with:
