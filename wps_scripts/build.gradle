@@ -17,6 +17,7 @@ plugins {
     id 'application'
     id 'distribution'
     id 'java-library'
+    id 'signing'
 }
 
 sourceCompatibility = 11
@@ -117,8 +118,8 @@ publishing {
             name = "OSSRH"
             url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
 
-            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots'
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
             url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
 
             credentials {
@@ -209,6 +210,32 @@ dependencies {
     testCompileOnly 'junit:junit:4.13.1'
 }
 
+// Function to extract the first GPG key's fingerprint
+def getFirstGpgKeyFingerprint() {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'gpg2', '--list-secret-keys', '--with-colons'
+        standardOutput = stdout
+        ignoreExitValue = false
+    }
+    def fprLine = stdout.toString().split('\n').find { it.startsWith('fpr:') }
+    if (!fprLine) throw new GradleException('No GPG key found.')
+    return fprLine.split(':')[9]
+}
+
+signing {
+    // You'll need to tell gradle what you want your GPG key ID to be so that the gpg-agent can do the right thing.
+    //      On the command line this means including the following gradle property: -Psigning.gnupg.keyName=${MY_GPG_PUBLIC_KEY_ID} -P
+    //      And if the machine this is running on has the gpg command but not the gpg2 command, then you'll need this gradle prop as well: -Psigning.gnupg.useLegacyGpg=true
+    //      Full details here: https://docs.gradle.org/current/userguide/signing_plugin.html#sec:using_gpg_agent
+    if ( ! project.hasProperty("signing.gnupg.keyName") ) {
+        // Set the keyName property using the first defined in gpg program
+        project.ext.'signing.gnupg.keyName' = getFirstGpgKeyFingerprint()
+        logger.warn("Using the first GPG keyId " + project.ext.'signing.gnupg.keyName')
+    }
+    useGpgCmd()
+    sign publishing.publications.mavenJava
+}
 
 mainClassName = 'org.noise_planet.noisemodelling.runner.Main'
 
