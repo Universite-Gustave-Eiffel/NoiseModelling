@@ -39,7 +39,9 @@ import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Test asc reader
+ */
 public class AscReaderDriverTest {
 
     private Connection connection;
@@ -86,8 +88,8 @@ public class AscReaderDriverTest {
     /**
      * Test reading two time the same asc by pushing more lines
      * asc files may be tiled, it is interesting to have a method to read all asc files into the same output table
-     * @throws IOException
-     * @throws SQLException
+     * @throws IOException IOException
+     * @throws SQLException SQLException
      */
     @Test
     public void testReadPrecipTwoTimes() throws IOException, SQLException {

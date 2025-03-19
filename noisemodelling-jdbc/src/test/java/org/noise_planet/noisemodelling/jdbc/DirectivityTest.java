@@ -35,7 +35,7 @@ public class DirectivityTest {
 
     /**
      * Create cardioid using equation from
-     * Farina, Angelo & Capra, Andrea & Chiesi, Lorenzo & Scopece, Leonardo. (2010). A Spherical Microphone Array for
+     * Farina, Angelo {@literal &} Capra, Andrea or Chiesi, Lorenzo  {@literal &} Scopece, Leonardo. (2010). A Spherical Microphone Array for
      * Synthesizing Virtual Directive Microphones in Live Broadcasting and in Post Production.
      * @throws Exception
      */
