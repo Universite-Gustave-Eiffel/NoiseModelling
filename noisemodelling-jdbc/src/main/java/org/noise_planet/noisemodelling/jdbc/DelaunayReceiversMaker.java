@@ -427,7 +427,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * Fetch source geometries and power
      * @param connection Active connection
      * @param fetchEnvelope Fetch envelope
-     * @param scene (Out) Propagation process input data
+     * @param doIntersection Truncate geometris
+     * @param sourceGeometries List to feed
      * @throws SQLException
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, boolean doIntersection, List<Geometry> sourceGeometries)
