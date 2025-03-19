@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class SceneDatabaseInputSettings {
     public enum INPUT_MODE {
-        /** Guess input mode at {@link org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker.TableLoader#initialize(Connection, ProgressVisitor)} step */
+        /** Guess input mode at NoiseMapByReceiverMaker.TableLoader#initialize step */
         INPUT_MODE_GUESS,
         /** Read traffic from geometry source table */
         INPUT_MODE_TRAFFIC_FLOW_DEN,
@@ -40,7 +40,7 @@ public class SceneDatabaseInputSettings {
     boolean useTrainDirectivity = false;
 
     /**
-     * Read {@link org.noise_planet.noisemodelling.propagation.cnossos.AttenuationParameters} values from this table
+     * Read {@link org.noise_planet.noisemodelling.propagation.AttenuationParameters} values from this table
      */
     String periodAtmosphericSettingsTableName = "";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
