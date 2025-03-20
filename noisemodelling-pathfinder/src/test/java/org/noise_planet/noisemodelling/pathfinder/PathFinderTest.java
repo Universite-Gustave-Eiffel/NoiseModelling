@@ -1036,7 +1036,7 @@ public class PathFinderTest {
     /**
      * TC19 - Complex object and 2 barriers on ground with spatially varying heights and
      * acoustic properties:
-     * erreur Cnossos: left path -> gPath table 207
+     * erreur Cnossos: left path -&gt; gPath table 207
      */
     @Test
     public void TC19() throws Exception {
@@ -1532,7 +1532,7 @@ public class PathFinderTest {
     }
 
     /**
-     * error:       if b = 0.68: -> z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
+     * error: if b = 0.68: -&gt; z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
      */
     @Test
     public void TC28() throws Exception {

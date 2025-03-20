@@ -33,7 +33,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Building
-        run: mvn test install -B
+        run: mvn test install javadoc:test-javadoc javadoc:jar -B
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Build and test WPS with Gradle
