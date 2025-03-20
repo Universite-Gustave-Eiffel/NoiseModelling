@@ -23,7 +23,7 @@ VERSION=$(xpath -q -e '/project/version/text()' "$POM_FILE" 2>/dev/null)
 
 # Check if xpath is installed
 if [ $? -ne 0 ]; then
-    echo "Error: xpath is not installed. Please install it using 'apt-get install -y xmlstarlet' or equivalent."
+    echo "Error: xpath is not installed. Please install it using 'apt-get install -y libxml-xpath-perl' or equivalent."
     exit 1
 fi
 

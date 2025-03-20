@@ -40,7 +40,7 @@ jobs:
         run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
 
       - name: Install xmlstarlet (if needed)
-        run: sudo apt-get update && sudo apt-get install -y xmlstarlet
+        run: sudo apt-get update && sudo apt-get install -y libxml-xpath-perl
       - name: Update version in build.gradle
         run: |
           bash update_gradle_version.sh
