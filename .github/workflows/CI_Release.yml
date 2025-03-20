@@ -37,7 +37,7 @@ jobs:
 
       # Test build
       - name: Build test
-        run: mvn -ntp clean validate compile test javadoc:test-javadoc javadoc:jar
+        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
 
       # Create the release :
       #   - move from Snapshot version to Release
