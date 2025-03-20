@@ -43,7 +43,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y xmlstarlet
       - name: Update version in build.gradle
         run: |
-          bash update_version.sh
+          bash update_gradle_version.sh
           git commit -am "Update groovy wps version"
         working-directory: wps_scripts
       # Create the release :
