@@ -9,7 +9,7 @@ plugins {
 
 sourceCompatibility = 11
 
-def nm_version='5.0.0-SNAPSHOT'
+def nm_version='5.0.0'
 
 distributions {
     main {
