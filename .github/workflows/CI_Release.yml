@@ -51,7 +51,7 @@ jobs:
             -ntp \
             --batch-mode \
             -Dmaven.test.skip=true \
-            -P maven-release \
+            -P maven-deploy \
             release:prepare release:perform \
             -Dusername=$GITHUB_ACTOR -Dpassword=$GITHUB_TOKEN ${VERSION:+"-DdevelopmentVersion="$VERSION"-SNAPSHOT"}
         env:
