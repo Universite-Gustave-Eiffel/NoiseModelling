@@ -1532,7 +1532,7 @@ public class PathFinderTest {
     }
 
     /**
-     * error:       if b = 0.68: -> z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
+     * error: if b = 0.68: -&gt; z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
      */
     @Test
     public void TC28() throws Exception {
