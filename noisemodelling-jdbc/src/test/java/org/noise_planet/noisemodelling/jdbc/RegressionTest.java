@@ -32,7 +32,7 @@ public class RegressionTest {
     }
 
     /**
-     * Got reflection index out of bound exception in this scenario in the past (source->reflection->h diffraction->receiver)
+     * Got reflection index out of bound exception in this scenario in the past (source-&gt;reflection-&gt;h diffraction-&gt;receiver)
      */
     @Test
     public void testScenarioOutOfBoundException() throws Exception {
