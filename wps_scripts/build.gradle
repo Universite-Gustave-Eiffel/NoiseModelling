@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'groovy'
-    id 'maven-publish'
+    id 'maven'
     id 'application'
     id 'distribution'
     id 'java-library'
@@ -9,11 +9,12 @@ plugins {
 
 sourceCompatibility = 11
 
-def nm_version='5.0.0'
+def nm_version='5.0.1-SNAPSHOT'
 
 distributions {
     main {
-        distributionBaseName = 'scriptrunner'
+        distributionBaseName = 'NoiseModelling_without_gui'
+        archivesBaseName = "NoiseModelling_without_gui"
         contents {
             from '../LICENSE'
             from '../README.md'
@@ -50,59 +51,58 @@ javadoc {
     }
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'org.orbisgis'
-            artifactId = 'noisemodelling-wps'
-            version = nm_version
-            from components.java
+group = "org.orbisgis"
+archivesBaseName = "noisemodelling-wps"
+version = nm_version
 
-            pom {
-                name = 'wps_scripts'
-                description = 'Groovy scripts for NoiseModelling'
-                url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
-                inceptionYear = '2025'
+if(project.hasProperty("ossrhUsername")) {
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                licenses {
-                    license {
-                        name = 'GNU General Public License (GPLV3+)'
-                        url = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project {
+                    name = 'wps_scripts'
+                    description = 'Groovy scripts for NoiseModelling'
+                    url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
+                    packaging 'jar'
+
+
+                    scm {
+                        connection = 'scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                        developerConnection = 'scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                        url = 'git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
+                        tag = 'HEAD'
+                    }
+
+                    licenses {
+                        license {
+                            name = 'GNU General Public License (GPLV3+)'
+                            url = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            name = 'Nicolas Fortin'
+                            organization = 'Gustave Eiffel University UMRAE'
+                            url = 'https://github.com/nicolas-f'
+                        }
+                        developer {
+                            name = 'Pierre Aumond'
+                            organization = 'Gustave Eiffel University UMRAE'
+                            url = 'https://github.com/pierromond'
+                        }
                     }
                 }
-                developers {
-                    developer {
-                        name = 'Nicolas Fortin'
-                        organization = 'Gustave Eiffel University UMRAE'
-                        url = 'https://github.com/nicolas-f'
-                    }
-                    developer {
-                        name = 'Pierre Aumond'
-                        organization = 'Gustave Eiffel University UMRAE'
-                        url = 'https://github.com/pierromond'
-                    }
-                }
-                scm {
-                    connection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
-                    developerConnection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
-                    url='git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
-                    tag='HEAD'
-                }
-            }
-        }
-    }
-    repositories {
-        maven {
-            name = "OSSRH"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-
-            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
-            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
-
-            credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
             }
         }
     }
@@ -216,7 +216,7 @@ if (project.hasProperty("signing.gnupg.passphrase")) {
             logger.warn("Using the first GPG keyId " + project.ext.'signing.gnupg.keyName')
         }
         useGpgCmd()
-        sign publishing.publications.mavenJava
+        sign configurations.archives
     }
 }
 
