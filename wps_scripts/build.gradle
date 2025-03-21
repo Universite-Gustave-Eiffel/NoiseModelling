@@ -13,7 +13,8 @@ def nm_version='5.0.1-SNAPSHOT'
 
 distributions {
     main {
-        distributionBaseName = 'scriptrunner'
+        distributionBaseName = 'NoiseModelling_without_gui'
+        archivesBaseName = "NoiseModelling_without_gui"
         contents {
             from '../LICENSE'
             from '../README.md'
