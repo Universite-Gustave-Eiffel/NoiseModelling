@@ -96,5 +96,8 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
         } catch (Exception e) {
             throw new SQLException(e);
         }
+        // Shutdown the thread pool
+        // previously submitted tasks are executed, but no new tasks will be accepted.
+        postProcessingThreadPool.shutdown();
     }
 }
