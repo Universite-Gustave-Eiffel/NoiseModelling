@@ -39,21 +39,30 @@ jobs:
       - name: Build and test WPS with Gradle
         run:  ./gradlew build --info --stacktrace
         working-directory: ./wps_scripts
-      - name: Deploy
+      - name: Maven Deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         run: mvn clean deploy -B -P maven-deploy
-      - name: Clean
+      - name: Clean gradle cache
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
-      - name: Deploy WPS
+      - name: Restore gradle.properties
+        if: ${{ (secrets.OSSRH_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: ./gradlew publish -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          echo "ossrhUsername=${MAVEN_USERNAME}" >> gradle.properties
+          echo "ossrhPassword=${MAVEN_PASSWORD}" >> gradle.properties
+          echo "signing.gnupg.passphrase=${MAVEN_GPG_PASSPHRASE}" >> gradle.properties
+        working-directory: ./wps_scripts
+      - name: Deploy WPS
+        if: ${{ (secrets.OSSRH_USERNAME != null) && (github.ref == 'refs/heads/main') }}
+        run: ./gradlew uploadArchives
         working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4
