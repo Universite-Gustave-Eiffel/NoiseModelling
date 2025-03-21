@@ -319,8 +319,6 @@ def run(input) {
 def exec(Connection connection, Map input) {
     long startCompute = System.currentTimeMillis()
 
-    int maximumRaysToExport = 5000
-
     DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
@@ -517,9 +515,9 @@ def exec(Connection connection, Map input) {
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
         parameters.setRaysTable(input['confRaysName'] as String)
         parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
-        parameters.setRaysTable(input['confRaysName'] as String)
+        parameters.exportAttenuationMatrix = true
+        parameters.exportCnossosPathWithAttenuation = true
         parameters.keepAbsorption = true
-        parameters.setMaximumRaysOutputCount(maximumRaysToExport)
     }
 
     pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)

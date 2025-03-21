@@ -9,7 +9,7 @@ plugins {
 
 sourceCompatibility = 11
 
-def nm_version='5.0.0'
+def nm_version='5.0.1-SNAPSHOT'
 
 distributions {
     main {
@@ -54,50 +54,52 @@ group = "org.orbisgis"
 archivesBaseName = "noisemodelling-wps"
 version = nm_version
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+if(project.hasProperty("ossrhUsername")) {
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                name = 'wps_scripts'
-                description = 'Groovy scripts for NoiseModelling'
-                url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
-                packaging 'jar'
-
-
-                scm {
-                    connection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
-                    developerConnection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
-                    url='git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
-                    tag='HEAD'
+                repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                licenses {
-                    license {
-                        name = 'GNU General Public License (GPLV3+)'
-                        url = 'http://www.gnu.org/licenses/gpl-3.0.html'
-                    }
+                snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                developers {
-                    developer {
-                        name = 'Nicolas Fortin'
-                        organization = 'Gustave Eiffel University UMRAE'
-                        url = 'https://github.com/nicolas-f'
+                pom.project {
+                    name = 'wps_scripts'
+                    description = 'Groovy scripts for NoiseModelling'
+                    url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
+                    packaging 'jar'
+
+
+                    scm {
+                        connection = 'scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                        developerConnection = 'scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                        url = 'git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
+                        tag = 'HEAD'
                     }
-                    developer {
-                        name = 'Pierre Aumond'
-                        organization = 'Gustave Eiffel University UMRAE'
-                        url = 'https://github.com/pierromond'
+
+                    licenses {
+                        license {
+                            name = 'GNU General Public License (GPLV3+)'
+                            url = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            name = 'Nicolas Fortin'
+                            organization = 'Gustave Eiffel University UMRAE'
+                            url = 'https://github.com/nicolas-f'
+                        }
+                        developer {
+                            name = 'Pierre Aumond'
+                            organization = 'Gustave Eiffel University UMRAE'
+                            url = 'https://github.com/pierromond'
+                        }
                     }
                 }
             }
