@@ -4,11 +4,12 @@ plugins {
     id 'maven-publish'
     id 'application'
     id 'distribution'
+    id 'java-library'
 }
-
 
 sourceCompatibility = 11
 
+def nm_version='5.0.0'
 
 distributions {
     main {
@@ -38,17 +39,75 @@ compileJava {
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
 
-publishing {
-    publications {
-        myLibrary(MavenPublication) {
-            from components.java
-        }
-    }
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
-    repositories {
-        mavenLocal()
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
     }
 }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'org.orbisgis'
+            artifactId = 'noisemodelling-wps'
+            version = nm_version
+            from components.java
+
+            pom {
+                name = 'wps_scripts'
+                description = 'Groovy scripts for NoiseModelling'
+                url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
+                inceptionYear = '2025'
+
+                licenses {
+                    license {
+                        name = 'GNU General Public License (GPLV3+)'
+                        url = 'http://www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Nicolas Fortin'
+                        organization = 'Gustave Eiffel University UMRAE'
+                        url = 'https://github.com/nicolas-f'
+                    }
+                    developer {
+                        name = 'Pierre Aumond'
+                        organization = 'Gustave Eiffel University UMRAE'
+                        url = 'https://github.com/pierromond'
+                    }
+                }
+                scm {
+                    connection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                    developerConnection='scm:git:https://github.com/Universite-Gustave-Eiffel/NoiseModelling.git'
+                    url='git@github.com:Universite-Gustave-Eiffel/NoiseModelling.git'
+                    tag='HEAD'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
+            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
+
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+}
+
 repositories {
     mavenLocal() // To test noise modelling updated locally we have to put this first
     mavenCentral()
@@ -105,17 +164,17 @@ dependencies {
         exclude group: 'org.geotools', module: 'gt-process-raster'
         exclude group: 'org.geotools', module: 'gt-process-feature'
     }
-    implementation 'org.postgresql:postgresql:9.4-1201-jdbc41'
-    implementation 'org.codehaus.groovy:groovy-all:2.5.5'
+    implementation 'org.postgresql:postgresql:42.7.4'
+    implementation group: 'org.codehaus.groovy', name: 'groovy-all', version: '[2.5, 2.6)'
     implementation group: 'org.ejml', name: 'all', version: '0.29'
     implementation group: 'org.eclipse.emf', name: 'org.eclipse.emf.ecore', version: '2.10.1'
-    implementation group: 'org.orbisgis', name: 'h2gis', version: '2.2.0'
-    implementation('org.locationtech.jts:jts-core:1.19.0')
-    implementation('org.locationtech.jts:jts-io:1.19.0')
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '5.0.0-SNAPSHOT'
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc', version: '5.0.0-SNAPSHOT'
+    implementation group: 'org.orbisgis', name: 'h2gis', version: '[2.2, 3)'
+    implementation('org.locationtech.jts:jts-core:1.20.0')
+    implementation('org.locationtech.jts:jts-io:1.20.0')
+    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '[5.0, 6)', changing: true
+    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '[5.0, 6)', changing: true
+    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '[5.0, 6)', changing: true
+    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc',  version: '[5.0, 6.0)', changing: true
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
@@ -125,16 +184,47 @@ dependencies {
     }
 
     implementation 'com.opencsv:opencsv:5.7.1'
-    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
-    testCompileOnly 'junit:junit:4.12'
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '2.0.17'
+    testCompileOnly 'junit:junit:4.13.1'
+}
+
+// Function to extract the first GPG key's fingerprint
+def getFirstGpgKeyFingerprint() {
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'gpg2', '--list-secret-keys', '--with-colons'
+        standardOutput = stdout
+        ignoreExitValue = false
+    }
+    def fprLine = stdout.toString().split('\n').find { it.startsWith('fpr:') }
+    if (!fprLine) throw new GradleException('No GPG key found.')
+    return fprLine.split(':')[9]
 }
 
 
-mainClassName = 'org.noisemodelling.runner.Main'
+if (project.hasProperty("signing.gnupg.passphrase")) {
+    apply plugin: 'signing'
+
+    signing {
+        // You'll need to tell gradle what you want your GPG key ID to be so that the gpg-agent can do the right thing.
+        //      On the command line this means including the following gradle property: -Psigning.gnupg.keyName=${MY_GPG_PUBLIC_KEY_ID} -P
+        //      And if the machine this is running on has the gpg command but not the gpg2 command, then you'll need this gradle prop as well: -Psigning.gnupg.useLegacyGpg=true
+        //      Full details here: https://docs.gradle.org/current/userguide/signing_plugin.html#sec:using_gpg_agent
+        if ( ! project.hasProperty("signing.gnupg.keyName") ) {
+            // Set the keyName property using the first defined in gpg program
+            project.ext.'signing.gnupg.keyName' = getFirstGpgKeyFingerprint()
+            logger.warn("Using the first GPG keyId " + project.ext.'signing.gnupg.keyName')
+        }
+        useGpgCmd()
+        sign publishing.publications.mavenJava
+    }
+}
+
+mainClassName = 'org.noise_planet.noisemodelling.runner.Main'
 
 jar {
     manifest {
         attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
-                'Main-Class': 'org.noisemodelling.runner.Main')
+                'Main-Class': 'org.noise_planet.noisemodelling.runner.Main')
     }
 }

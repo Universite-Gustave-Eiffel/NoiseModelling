@@ -28,7 +28,7 @@ To create the source point, we will use the free and opensource GIS software `QG
 Load data into QGIS
 -------------------------
 
-Once installed, launch QGIS and load the three ``buildings.shp``, ``roads.shp`` and ``ground_type.shp`` files (that are in the folder ``../NoiseModelling_4.0.0/data_dir/data/wpsdata/``). To do so, you can just drag & drop these files into the ``Layers`` menu (bottom left of the user interface). Or you can also select them thanks to the dedicated panel opened via the ``Layer / Add a layer / Add a vectorial layer... /`` menu (or use ``Ctrl+Maj+V`` shortcut)
+Once installed, launch QGIS and load the three ``buildings.shp``, ``roads.shp`` and ``ground_type.shp`` files (that are in the folder ``../NoiseModelling_5.0.0/data_dir/data/wpsdata/``). To do so, you can just drag & drop these files into the ``Layers`` menu (bottom left of the user interface). Or you can also select them thanks to the dedicated panel opened via the ``Layer / Add a layer / Add a vectorial layer... /`` menu (or use ``Ctrl+Maj+V`` shortcut)
 
 You should see your input data in the map as below:
 
@@ -55,7 +55,7 @@ In the ``New field`` part, fill the information below:
 
 Once done, click on ``Add to Fields List``. Then redo this step with the following informations:
 
-* ``Name`` : LWD500 . Source noise level (LW) during the day (D) at a frequency of 500 Hz
+* ``Name`` : HZD500 . Source noise level during the day (D) at a frequency of 500 Hz
 * ``Type`` : Decimal number
 * ``Length`` : 5
 * ``Precision`` : 2
@@ -91,7 +91,7 @@ To have an interesting resulting noise map, choose to place your source point ne
 Click on the map where you want to create the source point. Once clicked, a new dialog appears and you are invited to fill the following attributes:
 
 * ``PK``: 1
-* ``LWD500`` : 90
+* ``HZD500`` : 90
 
 .. figure:: images/Noise_Map_From_Point_Source/fill_attributes.png
    :align: center
@@ -121,7 +121,7 @@ For your information, you can open ``.geojson`` files in most of text editor. If
    "type": "FeatureCollection",
    "name": "Point_Source",
    "crs": {"type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
-   "features": [{"type": "Feature", "properties": { "PK": 1, "LWD500": 90.0 }, 
+   "features": [{"type": "Feature", "properties": { "PK": 1, "HZD500": 90.0 },
                  "geometry": {"type": "Point", "coordinates": [223771.0727, 6757583.2983, 0.0]} 
                 }]
    }
@@ -164,19 +164,16 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the three fo
 * ``Receivers table name`` : ``RECEIVERS``
 * ``Buildings table name`` : ``BUILDINGS``
 
-.. warning::
-   For this example, since we only added information for noise level during the day (field ``LWD500``), we have to skip the noise level calculation for AttenuatedPaths, LNIGHT and LEVENING. To do so, check the boxes for ``Do not compute LDEN_GEOM``, ``Do not compute LEVENING_GEOM`` and ``Do not compute LNIGHT_GEOM`` options.
-
 Once ready, click on ``Run Process`` button.
 
-You should then have this message: ``Calculation Done ! LDAY_GEOM table(s) have been created.``
+You should then have this message: ``Calculation Done ! RECEIVERS_LEVEL table(s) have been created.``
 
 Generate noise level isosurfaces
 ----------------------------------
 
 Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following mandatory parameter *(in orange)* and click on ``Run Process`` button:
 
-* ``Sound levels table`` : ``LDAY_GEOM``
+* ``Sound levels table`` : ``RECEIVERS_LEVEL``
 
 You should have this message: ``Table CONTOURING_NOISE_MAP created``
 
@@ -186,6 +183,15 @@ You can then visualize this file into QGIS *(just load the file as seen before)*
 
 .. figure:: images/Noise_Map_From_Point_Source/table_contouring.png
    :align: center
+
+Filter the table according to a single period (ex. DEN):
+
+.. figure:: images/tutorial/Tutorial1_FilterMenu.png
+   :align: center
+
+.. figure:: images/tutorial/Tutorial1_FilterWindow.png
+   :align: center
+
 
 Apply a color palette adapted to acoustics
 -----------------------------------------------
@@ -257,7 +263,7 @@ The directivity table aims at modeling a realistic directional noise source. To 
 * ``DIR_ID`` : identifier of the directivity sphere
 * ``THETA`` : vertical angle in degrees, 0 (front), -90 (bottom), 90 (top), from -90 to 90
 * ``PHI``: horizontal angle in degrees, 0 (front) / 90 (right), from 0 to 360
-* ``LW500`` : attenuation levels in dB for 500 Hz
+* ``HZ500`` : attenuation levels in dB for 500 Hz
 
 Each of the sound sources has its own directivity. For the exercise we will use the directivity of a train, which is provided in the file `Directivity.csv`_ and which you are invited to download.
 
@@ -314,13 +320,13 @@ In our example, we will update the ``Point_Source.geojson`` file to add these co
 
 ::
 
-   { "PK": 1, "LWD500": 100.0}
+   { "PK": 1, "HZD500": 100.0}
 
 by
 
 ::
 
-   { "PK": 1, "LWD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }
+   { "PK": 1, "HZD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }
 
 Here we can see that the Yaw is setted to 45°. Pitch and Roll are equal to 0, and the directivity is defined as ``1``  and will refer to the directivy table (see below).
 
@@ -332,7 +338,7 @@ So your final .geojson file should look like this
    "type": "FeatureCollection",
    "name": "Point_Source",
    "crs": {"type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
-   "features": [{"type": "Feature", "properties": { "PK": 1, "LWD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }, 
+   "features": [{"type": "Feature", "properties": { "PK": 1, "HZD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 },
                  "geometry": {"type": "Point", "coordinates": [223771.0727, 6757583.2983, 0.0]} 
                 }]
    }
@@ -345,7 +351,7 @@ Now, in NoiseModelling we have to:
 
 * Import the ``Directivy.csv`` file
 * Reimport the ``Point_Source.geojson`` file in order to take into account the changes
-* Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling_4.0.0/data_dir/data/wpsdata/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
+* Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling_5.0.0/data_dir/data/wpsdata/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
 
 To do so, just use the ``Import_and_Export:Import_Table`` WPS script.
 
@@ -372,9 +378,6 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the followin
 * ``Ground absorption table name`` : ``GROUND_TYPE``
 * ``Source directivity table name`` : ``DIRECTIVITY``
 * ``Maximum source-receiver distance`` : ``800``
-* ``Do not compute LDEN_GEOM table`` : ``true``
-* ``Do not compute LNIGHT_GEOM table`` : ``true``
-* ``Do not compute LEVENING_GEOM table`` : ``true``
 * ``DEM table name`` : ``DEM``
 
 
@@ -383,7 +386,7 @@ Create isosurface
 
 Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following parameters and click on ``Run Process`` button:
 
-* ``Sound levels table`` : ``LDAY_GEOM``
+* ``Sound levels table`` : ``RECEIVERS_LEVEL``
 * ``Polygon smoothing coefficient`` : 0.4
 
 Export and visualize resulting tables
@@ -391,7 +394,7 @@ Export and visualize resulting tables
 
 Use the ``Import_and_Export:Export_Table`` WPS script to export the ``CONTOURING_NOISE_MAP`` table into a shapefile called ``CONTOURING_NOISE_MAP_DIRECTIVITY``.
 
-Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
+Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS and filter the period to ``DEN``. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
 
 .. figure:: images/Noise_Map_From_Point_Source/contouring_directivity_compare.png
    :align: center

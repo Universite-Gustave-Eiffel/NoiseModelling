@@ -34,8 +34,7 @@ public class DirectivityRecord {
     }
 
     /**
-     *
-     * @return
+     * @return Theta
      */
     public double getTheta() {
         return theta;
@@ -63,7 +62,7 @@ public class DirectivityRecord {
 
     /**
      * generate a hash code for an object with theta and phi argument
-     * @return
+     * @return Hash code
      */
     @Override
     public int hashCode() {

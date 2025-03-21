@@ -121,23 +121,22 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportFolder() {
 
-        File file = new File(TestImportExport.getResource("receivers.shp").getPath()).getParentFile()
+        File file = new File(TestImportExport.getResource("Train/buildings2.shp").getPath()).getParentFile()
         String res = new Import_Folder().exec(connection,
                 ["pathFolder": file.getPath(),
                  "importExt" : "shp"])
 
-        assertTrue(res.contains("ROADS2"))
-        assertTrue(res.contains("ROADS"))
-        assertTrue(res.contains("RECEIVERS"))
-        assertTrue(res.contains("GROUND_TYPE"))
-        assertTrue(res.contains("BUILDINGS"))
+        assertTrue(res.contains("BUILDINGS2"))
+        assertTrue(res.contains("RAIL_SECTIONS"))
+        assertTrue(res.contains("RAILTRACK"))
+        assertTrue(res.contains("RECEIVERS_RAILWAY"))
     }
 
     @Test
     void testExportFile() {
 
         // Check export geojson
-        File testPath = new File("target/test.geojson")
+        File testPath = new File("build/tmp/test.geojson")
 
         if (testPath.exists()) {
             testPath.delete()
@@ -146,7 +145,7 @@ class TestImportExport extends JdbcTestCase {
         SHPRead.importTable(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : "target/test.geojson",
+                ["exportPath"   : "build/tmp/test.geojson",
                  "tableToExport": "RECEIVERS"])
 
 

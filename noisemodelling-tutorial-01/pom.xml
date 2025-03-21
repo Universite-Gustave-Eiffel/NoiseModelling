@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <main.class>org.noise_planet.nmtutorial01.Main</main.class>
     </properties>
     <packaging>jar</packaging>
     <name>noisemodelling-tutorial-01</name>
@@ -11,7 +11,7 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>noisemodelling-parent</artifactId>
-        <version>5.0.0-SNAPSHOT</version>
+        <version>5.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <description>Test case with OpenStreetMap buildings and roads</description>
@@ -19,57 +19,77 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j-version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>noisemodelling-emission</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>noisemodelling-propagation</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>noisemodelling-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>noisemodelling-pathfinder</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>h2gis</artifactId>
-            <version>${h2gis-version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>h2gis-api</artifactId>
-            <version>${h2gis-version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>h2gis-utilities</artifactId>
-            <version>${h2gis-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
             <artifactId>postgis-jts-osgi</artifactId>
-            <version>${h2gis-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -77,6 +97,20 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>5.1.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Public-Package>org.noise_planet.noisemodelling.propagation.*</Public-Package>
+                        <Bundle-Vendor>UMRAE team (Eiffel University), DECIDE team (Lab-STICC) </Bundle-Vendor>
+                        <Import-Package>org.slf4j;version="[1.6.0,2)",!org.h2.*,*</Import-Package>
+                        <Implementation-Build>${buildNumber}</Implementation-Build>
+                    </instructions>
                 </configuration>
             </plugin>
 
@@ -92,7 +126,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>org.noise_planet.nmtutorial01.Main</mainClass>
+                    <mainClass>${main.class}</mainClass>
                 </configuration>
             </plugin>
             <plugin>
@@ -101,7 +135,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.noise_planet.nmtutorial01.Main</mainClass>
+                            <mainClass>${main.class}</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

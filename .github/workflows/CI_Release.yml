@@ -1,0 +1,99 @@
+name: CI release
+
+on:
+  workflow_dispatch:
+    inputs:
+      nextVersion:
+        required: false
+        description: "Next version (optional)"
+
+jobs:
+  build:
+    name: Release and next iteration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Checkout the source code of the project
+      - name: Checkout
+        uses: actions/checkout@v4
+      # Setup the jdk using version 11 of Adoptium Temurin
+      - name: Setup java 11 using Adoptium Temurin
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      # Configure git user in order to sign release with OrbisGIS user.
+      - name: Configure Git User
+        run: |
+          git config user.email "contact@noise-planet.org"
+          git config user.name Noise-Planet
+
+      # Test build
+      - name: Build test
+        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
+
+      - name: Install xmlstarlet (if needed)
+        run: sudo apt-get update && sudo apt-get install -y libxml-xpath-perl
+      - name: Update version in build.gradle
+        run: |
+          bash update_gradle_version.sh
+          git commit -am "Update groovy wps version"
+        working-directory: wps_scripts
+      # Create the release :
+      #   - move from Snapshot version to Release
+      #   - commit and tag release
+      #   - move to next Snapshot
+      #   - upload release to maven repo
+      - name: Release
+        run: |
+          VERSION=${{ github.event.inputs.nextVersion }}
+          mvn \
+            -ntp \
+            --batch-mode \
+            -Dmaven.test.skip=true \
+            -P maven-deploy \
+            release:prepare release:perform \
+            -Dusername=$GITHUB_ACTOR -Dpassword=$GITHUB_TOKEN ${VERSION:+"-DdevelopmentVersion="$VERSION"-SNAPSHOT"}
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      # Export the last git tag into env.
+      - name: Export env values
+        run: echo "GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_ENV
+      # Make the Github release from the last created tag. Write in its body the content of the changelog file.
+      - name: Make Github release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.GIT_TAG }}
+          release: ${{ env.GIT_TAG }}
+          bodyFile: "README.md"
+          draft: false
+          prerelease: false
+          artifacts: "wps_scripts/build/distributions/scriptrunner.zip"
+
+      # If the version change is a major or minor, create a branch from the previous tag for future revisions.
+      - name: Branch fork
+        run: |
+          GIT_TAG="${GIT_TAG:1}"
+          CUR_TAG="$( mvn help:evaluate -Dexpression=project.version  | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }' | cut -d- -f1)"
+          SPLIT0=(${GIT_TAG//./ })
+          SPLIT1=(${CUR_TAG//./ })
+          if [ "${SPLIT0[0]}" = "${SPLIT1[0]}" ] && [ "${SPLIT0[1]}" = "${SPLIT1[1]}" ]; then
+            echo "Revision change"
+          else
+            echo "Minor or Major change"
+            BRANCH="${SPLIT0[0]}.${SPLIT0[1]}.X"
+            git checkout -b "$BRANCH" "v${GIT_TAG}"
+            mvn versions:set -DnewVersion="${SPLIT0[0]}.${SPLIT0[1]}.$((${SPLIT0[2]}+1))-SNAPSHOT"
+            git commit -a -m "Set next version."
+            git push -u origin "$BRANCH"
+          fi

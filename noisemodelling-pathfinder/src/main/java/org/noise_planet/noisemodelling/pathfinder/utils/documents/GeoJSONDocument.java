@@ -120,15 +120,15 @@ public class GeoJSONDocument {
         jsonGenerator.writeFieldName("coordinates");
         jsonGenerator.writeStartArray();
 
-        for(CutPoint cutPoint : profile.getCutPoints()) {
+        for(CutPoint cutPoint : profile.cutPoints) {
             writeCoordinate(new Coordinate(cutPoint.getCoordinate()));
         }
         jsonGenerator.writeEndArray();
         jsonGenerator.writeEndObject(); // geometry
         // Write properties
         jsonGenerator.writeObjectFieldStart("properties");
-        jsonGenerator.writeNumberField("receiver", profile.getReceiver().getId());
-        jsonGenerator.writeNumberField("source", profile.getSource().getId());
+        jsonGenerator.writeNumberField("receiver", profile.getReceiver().receiverPk);
+        jsonGenerator.writeNumberField("source", profile.getSource().sourcePk);
         jsonGenerator.writeEndObject(); // properties
         jsonGenerator.writeEndObject();
     }
@@ -148,20 +148,7 @@ public class GeoJSONDocument {
         jsonGenerator.writeEndObject(); // geometry
         // Write properties
         jsonGenerator.writeObjectFieldStart("properties");
-        Double zGround = cutPoint.getzGround();
-        if(zGround != null && !Double.isNaN(zGround)) {
-            jsonGenerator.writeNumberField("zGround", zGround);
-        }
-        if(cutPoint.getBuildingId() != - 1) {
-            jsonGenerator.writeNumberField("building", cutPoint.getBuildingId());
-            jsonGenerator.writeNumberField("height", cutPoint.getHeight());
-            jsonGenerator.writeStringField("alpha", cutPoint.getWallAlpha().stream().
-                    map(aDouble -> String.format("%.2f", aDouble)).collect(Collectors.joining(",")));
-        }
-        jsonGenerator.writeStringField("type", cutPoint.getType().toString());
-        if(cutPoint.getGroundCoef() != 0) {
-            jsonGenerator.writeNumberField("g", cutPoint.getGroundCoef());
-        }
+        jsonGenerator.writeObject(cutPoint);
         jsonGenerator.writeEndObject(); // properties
         jsonGenerator.writeEndObject();
         jsonGenerator.flush();

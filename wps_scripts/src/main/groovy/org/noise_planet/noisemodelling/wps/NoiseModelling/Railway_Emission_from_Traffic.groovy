@@ -23,7 +23,7 @@ import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.noise_planet.noisemodelling.jdbc.NoiseEmissionMaker
+import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -156,8 +156,8 @@ def exec(Connection connection, input) {
         System.println('The table Rail Geom has ' + nSection + ' rail segments.')
     }
 
-    NoiseEmissionMaker.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY")
+    EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
+            "LW_RAILWAY", "HZ")
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

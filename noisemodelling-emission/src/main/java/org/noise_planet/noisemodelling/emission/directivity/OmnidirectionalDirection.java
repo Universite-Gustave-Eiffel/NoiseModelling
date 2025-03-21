@@ -18,7 +18,7 @@ public class OmnidirectionalDirection implements DirectivitySphere {
      * @param frequency Frequency in Hertz
      * @param phi (0 2π) with 0 is front
      * @param theta (-π/2 π/2) with 0 is horizontal; π is top
-     * @return
+     * @return attenuation in dB
      */
     @Override
     public double getAttenuation(double frequency, double phi, double theta) {

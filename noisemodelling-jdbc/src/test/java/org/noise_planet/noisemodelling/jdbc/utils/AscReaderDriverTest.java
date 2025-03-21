@@ -25,11 +25,10 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Envelope;
-import org.noise_planet.noisemodelling.jdbc.utils.AscReaderDriver;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,19 +37,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Test asc reader
+ */
 public class AscReaderDriverTest {
 
     private Connection connection;
 
-    @Before
+    @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(AscReaderDriverTest.class.getSimpleName(), true, ""));
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if(connection != null) {
             connection.close();
@@ -87,8 +88,8 @@ public class AscReaderDriverTest {
     /**
      * Test reading two time the same asc by pushing more lines
      * asc files may be tiled, it is interesting to have a method to read all asc files into the same output table
-     * @throws IOException
-     * @throws SQLException
+     * @throws IOException IOException
+     * @throws SQLException SQLException
      */
     @Test
     public void testReadPrecipTwoTimes() throws IOException, SQLException {

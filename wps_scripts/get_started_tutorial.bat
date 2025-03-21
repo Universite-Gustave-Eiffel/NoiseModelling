@@ -1,4 +1,4 @@
-@rem Run the get started turorial
+@rem Run the get started tutorial
 @rem https://noisemodelling.readthedocs.io/en/latest/Get_Started_Tutorial.html
 
 @rem Step 4: Upload files to database
@@ -14,5 +14,5 @@ bin\wps_scripts.bat -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.gr
 bin\wps_scripts.bat -w ./ -s noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy -tableBuilding BUILDINGS -tableRoads ROADS2 -tableReceivers RECEIVERS -tableDEM DEM -tableGroundAbs GROUND_TYPE
 
 @rem Step 6: Export (& see) the results
-bin\wps_scripts.bat -w ./ -s noisemodelling/wps/Import_and_Export/Export_Table.groovy -exportPath LDAY_GEOM.shp -tableToExport LDAY_GEOM
+bin\wps_scripts.bat -w ./ -s noisemodelling/wps/Import_and_Export/Export_Table.groovy -exportPath RECEIVERS_LEVEL.shp -tableToExport RECEIVERS_LEVEL
 

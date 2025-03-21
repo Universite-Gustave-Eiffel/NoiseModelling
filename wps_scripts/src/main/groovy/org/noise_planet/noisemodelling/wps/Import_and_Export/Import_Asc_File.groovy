@@ -46,8 +46,8 @@ inputs = [
         pathFile : [
                 name       : 'Path of the input File',
                 title      : 'Path of the ESRI Ascii Raster file',
-                description: '&#128194; Path of the ESRI Ascii Raster file you want to import, including its extension. </br> </br>' +
-                             'For example: c:/home/receivers.asc',
+                description: '&#128194; Path of the ESRI Ascii Raster file you want to import, including its extension. Can be gzip compressed. </br> </br>' +
+                             'For example: c:/home/receivers.asc or c:/home/receivers.asc.gz',
                 type       : String.class
         ],
         inputSRID: [
@@ -158,8 +158,8 @@ def exec(Connection connection, input) {
 
 
     // Get the extension of the file
-    String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length())
-    if (ext != "asc") {
+    if (!(pathFile.toLowerCase(Locale.ROOT).endsWith(".asc")
+            || pathFile.toLowerCase(Locale.ROOT).endsWith(".asc.gz"))) {
         resultString = "The extension is not valid"
         // print to command window
         throw new Exception('ERROR : ' + resultString)

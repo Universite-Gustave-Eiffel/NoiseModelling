@@ -48,9 +48,10 @@ inputs = [
         buildingTableName : [
                 name :       'Buildings table name',
                 title:       'Buildings table name',
-                description: 'Name of the Buildings table. </br></br>' +
+                description: 'Name of the Buildings table. Receivers inside buildings will be removed.</br></br>' +
                              'The table must contain: <ul>' +
                              '<li><b> THE_GEOM </b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li></ul>',
+                min        : 0, max: 1,
                 type : String.class
         ],
         fence             : [
@@ -61,14 +62,13 @@ inputs = [
                 type       : Geometry.class
         ],
         fenceTableName : [
-                name       : 'Fence geometry from table',
-                title      : 'Filter using table bounding box',
-                description: 'Filter receivers, using the bounding box of the given table name: <ol>' +
+                name       : 'Table bounding box name',
+                title      : 'Table bounding box name',
+                description: 'Using the bounding box of the given table name, define the envelope of the output grid: <ol>' +
                              '<li> Extract the bounding box of the specified table,</li>' +
                              '<li> then create only receivers on the table bounding box.</li></ol>' +
                              'The given table must contain: <ul>' +
-                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
-                min        : 0, max        : 1,
+                             '<li> <b>THE_GEOM</b> : any geometry type with the appropriate SRID </li></ul>',
                 type       : String.class
         ],
         sourcesTableName  : [
@@ -105,6 +105,13 @@ inputs = [
                 min        : 0, 
                 max        : 1,
                 type       : Double.class
+        ],
+        outputTriangleTable            : [
+                name       : 'Output triangle table',
+                title      : 'Output triangle table',
+                description: 'Output a triangle table in order to be used to generate iso contours with Create_Isosurface',
+                min        : 0, max: 1,
+                type       : Boolean.class
         ]
 ]
 
@@ -143,13 +150,17 @@ def run(input) {
 
 
 
-def exec(connection, input) {
+def exec(connection, Map input) {
 
     Sql sql = new Sql(connection)
 
     // output string, the information given back to the user
     String resultString = null
 
+
+    if (!input.containsKey('fenceTableName') && !input.containsKey('fence')) {
+        throw new SQLException("Fence geometry or fence table name must be provided, could be the buildings table or source table.")
+    }
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -194,16 +205,14 @@ def exec(connection, input) {
 
     // Try to find the best SRID for receivers table
     int srid = 0
-    if(input['buildingTableName']) {
-        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if(input['fenceTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
     }
-
+    if(srid == 0 && input['buildingTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name) as String)
+    }
     if (srid == 0 && input['sourcesTableName']) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name) as String)
-    }
-
-    if (srid == 0 && input['fenceTableName']) {
-        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
     }
 
     Geometry fenceGeom = null
@@ -216,10 +225,8 @@ def exec(connection, input) {
         } else {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
-    } else if (input['fenceTableName']) {
-        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     } else {
-        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(building_table_name), "THE_GEOM")
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
 
     //Delete previous receivers grid.

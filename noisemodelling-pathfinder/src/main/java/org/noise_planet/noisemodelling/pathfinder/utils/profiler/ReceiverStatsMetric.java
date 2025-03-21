@@ -18,9 +18,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class ReceiverStatsMetric implements ProfilerThread.Metric {
     private ConcurrentLinkedDeque<ReceiverComputationTime> receiverComputationTimes = new ConcurrentLinkedDeque<>();
-    private ConcurrentLinkedDeque<ReceiverRays> receiverRaysDeque = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<ReceiverCutProfiles> receiverCutProfilesDeque = new ConcurrentLinkedDeque<>();
     private DescriptiveStatistics computationTime = new DescriptiveStatistics();
-    private DescriptiveStatistics computationRays = new DescriptiveStatistics();
+    private DescriptiveStatistics computationCutProfiles = new DescriptiveStatistics();
+    private DescriptiveStatistics computationProcessSourcesPercentage = new DescriptiveStatistics();
+    private DescriptiveStatistics collectSourcesTime = new DescriptiveStatistics();
+    private DescriptiveStatistics precomputeReflectionTime = new DescriptiveStatistics();
+    private DescriptiveStatistics sourcesPerReceiver = new DescriptiveStatistics();
 
     public ReceiverStatsMetric() {
     }
@@ -30,24 +34,32 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
         while (!receiverComputationTimes.isEmpty()) {
             ReceiverComputationTime receiverProfile = receiverComputationTimes.pop();
             computationTime.addValue(receiverProfile.computationTime);
+            collectSourcesTime.addValue(receiverProfile.sourceCollectTime);
+            precomputeReflectionTime.addValue(receiverProfile.reflectionPreprocessTime);
         }
-        while (!receiverRaysDeque.isEmpty()) {
-            ReceiverRays receiverProfile = receiverRaysDeque.pop();
-            computationRays.addValue(receiverProfile.numberOfRays);
+        while (!receiverCutProfilesDeque.isEmpty()) {
+            ReceiverCutProfiles receiverProfile = receiverCutProfilesDeque.pop();
+            computationCutProfiles.addValue(receiverProfile.numberOfRays);
+            sourcesPerReceiver.addValue(receiverProfile.numberOfSources);
+            if(receiverProfile.numberOfSources > 0) {
+                computationProcessSourcesPercentage.addValue(((double) receiverProfile.numberOfProcessSources / receiverProfile.numberOfSources) * 100);
+            }
         }
     }
 
     @Override
     public String[] getColumnNames() {
-        return new String[] {"receiver_min","receiver_median","receiver_mean","receiver_max", "receiver_median_rays", "receiver_max_rays"};
+        return new String[] {"receiver_min_milliseconds","receiver_median_milliseconds","receiver_mean_milliseconds","receiver_max_milliseconds", "receiver_collect_sources_max_milliseconds", "receiver_precompute_reflection_max_milliseconds", "receiver_median_profiles_count", "receiver_max_profiles_count", "receiver_processed_sources_percentage_mean", "receiver_median_point_sources_in_range"};
     }
 
-    public void onEndComputation(int receiverId, int computationTime) {
-        receiverComputationTimes.add(new ReceiverComputationTime(receiverId, computationTime));
+    public void onEndComputation(ReceiverComputationTime receiverComputationTime) {
+        receiverComputationTimes.add(receiverComputationTime);
     }
 
-    public void onReceiverRays(int receiverId, int receiverRays) {
-        receiverRaysDeque.add(new ReceiverRays(receiverId, receiverRays));
+    public void onReceiverCutProfiles(int receiverId, int receiverCutProfiles, int numberOfSources,
+                                      int numberOfProcessSources) {
+        receiverCutProfilesDeque.add(new ReceiverCutProfiles(receiverId, receiverCutProfiles, numberOfSources,
+                numberOfProcessSources));
     }
 
     @Override
@@ -57,41 +69,60 @@ public class ReceiverStatsMetric implements ProfilerThread.Metric {
                 Integer.toString((int) computationTime.getPercentile(50)),
                 Integer.toString((int) computationTime.getMean()),
                 Integer.toString((int) computationTime.getMax()),
-                Integer.toString((int) computationRays.getPercentile(50)),
-                Integer.toString((int) computationRays.getMax())
+                Integer.toString((int) collectSourcesTime.getMax()),
+                Integer.toString((int) precomputeReflectionTime.getMax()),
+                Integer.toString((int) computationCutProfiles.getPercentile(50)),
+                Integer.toString((int) computationCutProfiles.getMax()),
+                Integer.toString((int) computationProcessSourcesPercentage.getMean()),
+                Integer.toString((int) sourcesPerReceiver.getPercentile(50))
         };
         computationTime.clear();
-        computationRays.clear();
+        computationCutProfiles.clear();
+        computationProcessSourcesPercentage.clear();
+        collectSourcesTime.clear();
+        precomputeReflectionTime.clear();
+        sourcesPerReceiver.clear();
         return res;
     }
 
-    private static class ReceiverComputationTime {
+    public static class ReceiverComputationTime {
         public int receiverId;
         public int computationTime;
+        public int reflectionPreprocessTime;
+        public int sourceCollectTime;
 
         /**
          * Create the ReceiverComputationTime constructor
+         *
          * @param receiverId
          * @param computationTime
+         * @param reflectionPreprocessTime
+         * @param sourceCollectTime
          */
-        public ReceiverComputationTime(int receiverId, int computationTime) {
+        public ReceiverComputationTime(int receiverId, int computationTime, int reflectionPreprocessTime, int sourceCollectTime) {
             this.receiverId = receiverId;
             this.computationTime = computationTime;
+            this.reflectionPreprocessTime = reflectionPreprocessTime;
+            this.sourceCollectTime = sourceCollectTime;
         }
     }
 
-    private static class ReceiverRays {
+    public static class ReceiverCutProfiles {
         public int receiverId;
         public int numberOfRays;
+        int numberOfSources;
+        int numberOfProcessSources;
 
         /**
-         * Create the ReceiverRays constructor
+         * Create the ReceiverCutProfiles constructor
          * @param receiverId
-         * @param numberOfRays
+         * @param numberOfCutProfiles
          */
-        public ReceiverRays(int receiverId, int numberOfRays) {
+        public ReceiverCutProfiles(int receiverId, int numberOfCutProfiles, int numberOfSources, int numberOfProcessSources) {
             this.receiverId = receiverId;
-            this.numberOfRays = numberOfRays;
+            this.numberOfRays = numberOfCutProfiles;
+            this.numberOfSources = numberOfSources;
+            this.numberOfProcessSources = numberOfProcessSources;
         }
     }
 }

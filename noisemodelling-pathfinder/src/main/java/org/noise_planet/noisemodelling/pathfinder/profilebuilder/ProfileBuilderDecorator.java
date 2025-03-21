@@ -83,7 +83,17 @@ public class ProfileBuilderDecorator {
      * @return
      */
     public ProfileBuilderDecorator setGs(double gs) {
-        data.setGs(gs);
+        data.setDefaultGroundAttenuation(gs);
+        return this;
+    }
+
+    /**
+     * Maximum source distance
+     * @param maximumPropagationDistance Maximum source distance
+     * @return
+     */
+    public ProfileBuilderDecorator setMaximumPropagationDistance(double maximumPropagationDistance) {
+        data.maxSrcDist = maximumPropagationDistance;
         return this;
     }
 

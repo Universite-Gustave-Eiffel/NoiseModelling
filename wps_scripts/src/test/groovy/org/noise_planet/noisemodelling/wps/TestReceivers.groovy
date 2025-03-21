@@ -22,6 +22,7 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
+import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
@@ -55,10 +56,7 @@ class TestReceivers extends JdbcTestCase {
 
         def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
-        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
-        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
         assertEquals(4.55, average_receiver_min_distance, 0.1)
-
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
@@ -86,16 +84,12 @@ class TestReceivers extends JdbcTestCase {
 
         def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
-        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
-        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
         assertEquals(4.55, average_receiver_min_distance, 0.1)
 
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
         //Execute a second time for missing drop tables test
-
-
 
         new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
                                                  "delta"         : 5,
@@ -125,13 +119,9 @@ class TestReceivers extends JdbcTestCase {
 
         def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_3DLength(ST_MakeLine(R.THE_GEOM, RR.THE_GEOM)) dist from receivers rr where rr.pk_building = r.pk_building and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
-        // SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
-        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
         assertEquals(4.55, average_receiver_min_distance, 0.1)
 
-
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
-
 
     }
 
@@ -161,14 +151,9 @@ class TestReceivers extends JdbcTestCase {
 
         def average_receiver_min_distance = sql.firstRow("SELECT AVG((select ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) dist from receivers rr where rr.build_pk = r.build_pk and r.pk != rr.pk ORDER BY ST_DISTANCE(R.THE_GEOM, RR.THE_GEOM) LIMIT 1)) avgdist from receivers r")[0] as Double
 
-        //SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
-        //SHPWrite.exportTable(connection, "target/receivers_line.shp", "TMP_SCREENS_MERGE")
         assertEquals(5, average_receiver_min_distance, 0.6)
 
-
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
-
-
     }
 
     void testBuildingGridWithPop() {
@@ -186,9 +171,6 @@ class TestReceivers extends JdbcTestCase {
                                                "height" : 6,
                                                "sourcesTableName" : "ROADS",
                                                "fenceTableName" : "BUILDINGS"])
-
-        //SHPWrite.exportTable(connection, "target/receivers.shp", "RECEIVERS")
-        //SHPWrite.exportTable(connection, "target/buildings.shp", "BUILDINGS")
 
         def receivers_pop = sql.firstRow("SELECT sum(pop) from receivers")[0] as Double
 
@@ -225,6 +207,24 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
+    }
+
+    void testDelaunayGridReduceExtent() {
+        def sql = new Sql(connection)
+
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                              "sourcesTableName" : "ROADS",
+                                              "fenceNegativeBuffer": 500]);
+
+
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        Envelope envelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse("RECEIVERS")).envelopeInternal
+        assertEquals(1127409.17, envelope.getArea(), 1.0)
     }
 
     void testDelaunayGrid() {
@@ -377,7 +377,7 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
-        SHPWrite.exportTable(connection, "target/regular.shp", "RECEIVERS", ValueBoolean.TRUE)
+        SHPWrite.exportTable(connection, "build/tmp/regular.shp", "RECEIVERS", ValueBoolean.TRUE)
 
     }
 

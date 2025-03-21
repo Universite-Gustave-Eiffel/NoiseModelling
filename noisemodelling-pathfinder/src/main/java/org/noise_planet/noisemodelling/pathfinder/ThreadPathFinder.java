@@ -10,17 +10,22 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 import org.h2gis.api.ProgressVisitor;
-import org.noise_planet.noisemodelling.pathfinder.path.PointPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
+
+import java.util.concurrent.Callable;
+
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.LOGGER;
 
-public final class ThreadPathFinder implements Runnable {
+/**
+ * A Thread class to evaluate all receivers cut planes.
+ * Return true if the computation is done without issues
+ */
+public final class ThreadPathFinder implements Callable<Boolean> {
     int startReceiver; // Included
     int endReceiver; // Excluded
     PathFinder propagationProcess;
     ProgressVisitor visitor;
-    IComputePathsOut dataOut;
+    CutPlaneVisitor dataOut;
     Scene data;
 
 
@@ -34,13 +39,13 @@ public final class ThreadPathFinder implements Runnable {
      * @param data
      */
     public ThreadPathFinder(int startReceiver, int endReceiver, PathFinder propagationProcess,
-                            ProgressVisitor visitor, IComputePathsOut dataOut,
+                            ProgressVisitor visitor, CutPlaneVisitor dataOut,
                             Scene data) {
         this.startReceiver = startReceiver;
         this.endReceiver = endReceiver;
         this.propagationProcess = propagationProcess;
         this.visitor = visitor;
-        this.dataOut = dataOut.subProcess();
+        this.dataOut = dataOut;
         this.data = data;
     }
 
@@ -48,7 +53,7 @@ public final class ThreadPathFinder implements Runnable {
      * Executes the computation of ray paths for each receiver in the specified range.
      */
     @Override
-    public void run() {
+    public Boolean call() throws Exception {
         try {
             for (int idReceiver = startReceiver; idReceiver < endReceiver; idReceiver++) {
                 if (visitor != null) {
@@ -56,21 +61,14 @@ public final class ThreadPathFinder implements Runnable {
                         break;
                     }
                 }
-                PointPath.ReceiverPointInfo rcv = new PointPath.ReceiverPointInfo(idReceiver, data.receivers.get(idReceiver));
-
-                long start = 0;
-                if(propagationProcess.getProfilerThread() != null) {
-                    start = propagationProcess.getProfilerThread().timeTracker.get();
+                long receiverPk = idReceiver;
+                if(idReceiver < data.receiversPk.size()) {
+                    receiverPk = data.receiversPk.get(idReceiver);
                 }
+                PathFinder.ReceiverPointInfo rcv = new PathFinder.ReceiverPointInfo(idReceiver, receiverPk, data.receivers.get(idReceiver));
+
 
                 propagationProcess.computeRaysAtPosition(rcv, dataOut, visitor);
-
-                // Save computation time for this receiver
-                if(propagationProcess.getProfilerThread() != null &&
-                        propagationProcess.getProfilerThread().getMetric(ReceiverStatsMetric.class) != null) {
-                    propagationProcess.getProfilerThread().getMetric(ReceiverStatsMetric.class).onEndComputation(idReceiver,
-                            (int) (propagationProcess.getProfilerThread().timeTracker.get() - start));
-                }
 
                 if (visitor != null) {
                     visitor.endStep();
@@ -83,5 +81,6 @@ public final class ThreadPathFinder implements Runnable {
             }
             throw ex;
         }
+        return true;
     }
 }

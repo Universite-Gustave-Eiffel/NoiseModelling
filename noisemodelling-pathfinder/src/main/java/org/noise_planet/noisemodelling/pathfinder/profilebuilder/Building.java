@@ -14,23 +14,37 @@ import org.locationtech.jts.geom.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class Building implements ProfileBuilder.Obstacle {
+public class Building extends Obstruction {
     /** Building footprint. */
     Polygon poly;
     /** Height of the building. */
     final double height;
-    double zTopo = 0.0; // minimum Z ground under building
-    /** Absorption coefficients. */
-    final List<Double> alphas;
+    /**
+     * Minimum Z ground under building contour
+     */
+    double minimumZDEM = Double.NaN;
 
     /** if true take into account z value on Buildings Polygons */
     final boolean zBuildings;
 
     /** Primary key of the building in the database. */
-    int pk = -1;
+    long primaryKey = -1;
     List<Wall> walls = new ArrayList<>();
+
+    public Building(Polygon geometry, double height, double g, long pk, boolean zBuildings) {
+        this.poly = geometry;
+        // Fix clock wise orientation of the polygon and inner holes
+        if(this.poly != null) {
+            this.poly.normalize();
+        }
+        this.height = height;
+        setG(g);
+        this.primaryKey = pk;
+        this.zBuildings = zBuildings;
+    }
 
     /**
      *
@@ -73,12 +87,13 @@ public class Building implements ProfileBuilder.Obstacle {
      * @param alphas Absorption coefficients.
      * @param key Primary key of the building in the database.
      */
-    public Building(Polygon poly, double height, List<Double> alphas, int key, boolean zBuildings) {
+    public Building(Polygon poly, double height, List<Double> alphas, long key, boolean zBuildings) {
         this.poly = poly;
+        // Fix clock wise orientation of the polygon and inner holes
+        this.poly.normalize();
         this.height = height;
-        this.alphas = new ArrayList<>();
-        this.alphas.addAll(alphas);
-        this.pk = key;
+        setAlpha(alphas);
+        this.primaryKey = key;
         this.zBuildings = zBuildings;
     }
 
@@ -97,20 +112,13 @@ public class Building implements ProfileBuilder.Obstacle {
         return poly;
     }
 
-    /**
-     * Retrieve the absorption coefficients.
-     * @return The absorption coefficients.
-     */
-    public List<Double> getAlphas() {
-        return alphas;
-    }
 
     /**
      * Retrieve the primary key of the building in the database. If there is no primary key, returns -1.
      * @return The primary key of the building in the database or -1.
      */
-    public int getPrimaryKey() {
-        return pk;
+    public long getPrimaryKey() {
+        return primaryKey;
     }
 
     /**
@@ -119,17 +127,22 @@ public class Building implements ProfileBuilder.Obstacle {
      * @return
      */
     public double updateZTopo(ProfileBuilder profileBuilder) {
-        Coordinate[] coordinates = poly.getCoordinates();
+        Coordinate[] coordinates = poly.getBoundary().getCoordinates();
         double minZ = Double.MAX_VALUE;
+        AtomicInteger triangleHint = new AtomicInteger(-1);
         for (int i = 0; i < coordinates.length-1; i++) {
-            minZ = Math.min(minZ, profileBuilder.getZGround(coordinates[i]));
+            minZ = Math.min(minZ, profileBuilder.getZGround(coordinates[i], triangleHint));
         }
-        zTopo = minZ;
-        return zTopo;
+        minimumZDEM = minZ;
+        return minimumZDEM;
     }
 
     public double getZ() {
-        return zTopo + height;
+        if(Double.isNaN(minimumZDEM) || Double.isNaN(height)) {
+            return poly.getCoordinate().z;
+        } else {
+            return minimumZDEM + height;
+        }
     }
 
     /**
@@ -138,10 +151,8 @@ public class Building implements ProfileBuilder.Obstacle {
      */
     public void setWalls(List<Wall> walls) {
         this.walls = walls;
-        walls.forEach(w -> w.setObstacle(this));
     }
 
-    @Override
     public Collection<? extends Wall> getWalls() {
         return walls;
     }

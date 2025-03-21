@@ -10,7 +10,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -20,7 +20,9 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.Triangle;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class LayerTinfourTest {
 

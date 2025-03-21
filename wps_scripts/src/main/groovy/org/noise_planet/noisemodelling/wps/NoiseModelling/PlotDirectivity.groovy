@@ -26,10 +26,6 @@ import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirec
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters
 import org.noise_planet.noisemodelling.emission.railway.nmpb.TrainAttenuation
-import org.noise_planet.noisemodelling.jdbc.NoiseMapLoader
-
-//import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere
-//import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -113,11 +109,9 @@ def exec(Connection connection, input) {
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
-
-    String tableSourceDirectivity = ""
     Map<Integer,DiscreteDirectivitySphere> directivityData;
     if (input['tableSourceDirectivity']) {
-        tableSourceDirectivity = input['tableSourceDirectivity']
+        String tableSourceDirectivity = input['tableSourceDirectivity']
         // do it case-insensitive
         tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
         directivityData = NoiseMapLoader.fetchDirectivity(connection, tableSourceDirectivity, 1)

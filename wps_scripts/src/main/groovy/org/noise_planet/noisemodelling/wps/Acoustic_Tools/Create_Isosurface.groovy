@@ -43,15 +43,22 @@ inputs = [
                 name       : 'Sound levels table',
                 title      : 'Sound levels table',
                 description: 'Name of the sound levels table, generated from "Noise_level_from_source". (STRING)</br> </br>' +
-                             'Example : LDEN_GEOM.',
+                             'Example : RECEIVERS_LEVEL.',
                 type       : String.class
         ],
         isoClass         : [
                 name       : 'Iso levels in dB',
                 title      : 'Iso levels in dB',
-                description: 'Separation of sound levels for isosurfaces. </br> </br>' +
+                description: 'Separation of sound levels for isosurfaces. First range is from -&#8734; to first value excluded. The first value included to next value excluded..</br> </br>' +
                              'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes. </br> </br>' +
                              '&#128736; Default value: <b>35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0 </b>',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        resultTableField         : [
+                name       : 'Field of result table',
+                title      : 'Field of result table',
+                description: 'Field to read in the result table to make the iso surface; Default value: LAEQ',
                 min        : 0, max: 1,
                 type       : String.class
         ],
@@ -93,7 +100,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -124,6 +131,9 @@ def exec(Connection connection, input) {
 
     IsoSurface isoSurface = new IsoSurface(isoLevels, srid)
 
+    if(input.containsKey("resultTableField")) {
+        isoSurface.setPointTableField(input["resultTableField"] as String)
+    }
     isoSurface.setPointTable(levelTable)
 
     if (input.containsKey("smoothCoefficient")) {
@@ -140,7 +150,7 @@ def exec(Connection connection, input) {
         isoSurface.setSmoothCoefficient(0.5)
     }
 
-    isoSurface.createTable(connection)
+    isoSurface.createTable(connection, "IDRECEIVER")
 
     resultString = "Table " + isoSurface.getOutputTable() + " created"
 

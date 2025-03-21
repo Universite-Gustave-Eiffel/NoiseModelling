@@ -11,11 +11,13 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.emission.directivity.DirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere;
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters;
 import org.noise_planet.noisemodelling.emission.railway.nmpb.TrainAttenuation;
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,7 @@ public class DirectivityTest {
 
     /**
      * Create cardioid using equation from
-     * Farina, Angelo & Capra, Andrea & Chiesi, Lorenzo & Scopece, Leonardo. (2010). A Spherical Microphone Array for
+     * Farina, Angelo {@literal &} Capra, Andrea or Chiesi, Lorenzo  {@literal &} Scopece, Leonardo. (2010). A Spherical Microphone Array for
      * Synthesizing Virtual Directive Microphones in Live Broadcasting and in Post Production.
      * @throws Exception
      */
@@ -53,8 +55,8 @@ public class DirectivityTest {
         pst.execute();
         // DEBUG st.execute("UPDATE DIRECTIVITY SET LW500=-10 WHERE THETA=45 AND PHI=270 ");
         // Data is inserted now fetch it from the database
-        Map<Integer, DiscreteDirectivitySphere> directivities =
-                NoiseMapLoader.fetchDirectivity(connection, "DIRECTIVITY", 1);
+        Map<Integer, DirectivitySphere> directivities =
+                DefaultTableLoader.fetchDirectivity(connection, "DIRECTIVITY", 1, "LW");
 
         try(BufferedWriter bw = new BufferedWriter(new FileWriter("target/cardioid_dir.html"))) {
             bw.write("<!DOCTYPE html>\n" +
@@ -82,7 +84,7 @@ public class DirectivityTest {
                     "</style>" +
                     "<head><body><h1>500 Hz</h1>\n");
             Logger logger = LoggerFactory.getLogger(DirectivityTest.class);
-            for (Map.Entry<Integer, DiscreteDirectivitySphere> entry : directivities.entrySet()) {
+            for (Map.Entry<Integer, DirectivitySphere> entry : directivities.entrySet()) {
                 // DEBUG logger.info(String.format("phi 0 theta 0 %f",
                 //       entry.getValue().getAttenuation(500, Math.toRadians(0), Math.toRadians(0))));
                 bw.write("<div class=\"wrapper\">");
