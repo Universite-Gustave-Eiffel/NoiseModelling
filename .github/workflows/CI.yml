@@ -49,7 +49,7 @@ jobs:
       - name: Clean gradle cache
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Restore gradle.properties
-        if: ${{ (secrets.OSSRH_USERNAME != null) && (github.ref == 'refs/heads/main') }}
+        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -61,7 +61,7 @@ jobs:
           echo "signing.gnupg.passphrase=${MAVEN_GPG_PASSPHRASE}" >> gradle.properties
         working-directory: ./wps_scripts
       - name: Deploy WPS
-        if: ${{ (secrets.OSSRH_USERNAME != null) && (github.ref == 'refs/heads/main') }}
+        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         run: ./gradlew uploadArchives
         working-directory: ./wps_scripts
       - name: Cache
