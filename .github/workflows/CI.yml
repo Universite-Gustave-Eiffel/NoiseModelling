@@ -59,7 +59,7 @@ jobs:
           echo "ossrhUsername=${MAVEN_USERNAME}" >> gradle.properties
           echo "ossrhPassword=${MAVEN_PASSWORD}" >> gradle.properties
           echo "signing.gnupg.passphrase=${MAVEN_GPG_PASSPHRASE}" >> gradle.properties
-        working-directory: ./wps_scripts
+        working-directory: ~/.gradle/
       - name: Deploy WPS
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         run: ./gradlew uploadArchives
