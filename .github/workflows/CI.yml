@@ -39,21 +39,31 @@ jobs:
       - name: Build and test WPS with Gradle
         run:  ./gradlew build --info --stacktrace
         working-directory: ./wps_scripts
-      - name: Deploy
+      - name: Maven Deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         run: mvn clean deploy -B -P maven-deploy
-      - name: Clean
+      - name: Clean gradle cache
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
-      - name: Deploy WPS
+      - name: Restore gradle.properties
+        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          mkdir -p ~/.gradle/
+          echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
+          echo "ossrhUsername=${MAVEN_USERNAME}" >> ~/.gradle/gradle.properties
+          echo "ossrhPassword=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
+          echo "signing.gnupg.passphrase=${MAVEN_GPG_PASSPHRASE}" >> ~/.gradle/gradle.properties
+      - name: Deploy WPS
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: ./gradlew publish -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
+        run: ./gradlew uploadArchives
         working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4
@@ -66,9 +76,10 @@ jobs:
 
       #Production of the archive
       - name: Unzip production artifacts
-        run: cd wps_scripts && ./gradlew assembleDist && unzip build/distributions/scriptrunner.zip
+        run: ./gradlew assembleDist && unzip build/distributions/*.zip -d NoiseModelling_without_gui
+        working-directory: ./wps_scripts
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NoiseModelling_without_gui
-          path: wps_scripts/scriptrunner/
+          path: wps_scripts/NoiseModelling_without_gui/

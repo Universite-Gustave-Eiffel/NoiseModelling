@@ -1,19 +1,20 @@
 plugins {
     id 'java'
     id 'groovy'
-    id 'maven-publish'
     id 'application'
     id 'distribution'
     id 'java-library'
+    id 'maven-publish'
 }
 
 sourceCompatibility = 11
 
-def nm_version='5.0.0'
+def nm_version='5.0.1-SNAPSHOT'
 
 distributions {
     main {
-        distributionBaseName = 'scriptrunner'
+        distributionBaseName = 'NoiseModelling_without_gui'
+        archivesBaseName = "NoiseModelling_without_gui"
         contents {
             from '../LICENSE'
             from '../README.md'
@@ -50,16 +51,27 @@ javadoc {
     }
 }
 
+group = "org.orbisgis"
+archivesBaseName = "noisemodelling-wps"
+version = nm_version
+
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'org.orbisgis'
-            artifactId = 'noisemodelling-wps'
-            version = nm_version
+            artifactId = archivesBaseName
             from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
 
             pom {
-                name = 'wps_scripts'
+                name = archivesBaseName
                 description = 'Groovy scripts for NoiseModelling'
                 url = 'https://github.com/Universite-Gustave-Eiffel/NoiseModelling'
                 inceptionYear = '2025'
@@ -94,15 +106,14 @@ publishing {
     repositories {
         maven {
             name = "OSSRH"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 
             def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
             def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
-            url = project.hasProperty('release') ? releasesRepoUrl : snapshotsRepoUrl
-
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+                username = System.getenv('OSSRH_USERNAME') ?: project.findProperty('ossrhUsername')
+                password = System.getenv('OSSRH_PASSWORD') ?: project.findProperty('ossrhPassword')
             }
         }
     }
@@ -192,7 +203,11 @@ dependencies {
 def getFirstGpgKeyFingerprint() {
     def stdout = new ByteArrayOutputStream()
     exec {
-        commandLine 'gpg2', '--list-secret-keys', '--with-colons'
+        def cmd = "gpg2"
+        if(project.hasProperty('signing.gnupg.executable')) {
+            cmd = project.signing.gnupg.executable
+        }
+        commandLine cmd, '--list-secret-keys', '--with-colons'
         standardOutput = stdout
         ignoreExitValue = false
     }
@@ -201,8 +216,7 @@ def getFirstGpgKeyFingerprint() {
     return fprLine.split(':')[9]
 }
 
-
-if (project.hasProperty("signing.gnupg.passphrase")) {
+if (project.hasProperty("ossrhUsername")) {
     apply plugin: 'signing'
 
     signing {
