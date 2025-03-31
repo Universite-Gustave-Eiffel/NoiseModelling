@@ -156,7 +156,8 @@ def exec(Connection connection, input) {
 
     sql.execute("DROP TABLE IF EXISTS "+building_table_name+";")
     sql.execute("create table "+building_table_name+"(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT FLOAT "+popFieldDef+")  as select s.PK, ST_SetSRID(s.the_geom,"+srid+"), s.HEIGHT "+popField+" from  BUILDINGS_TEMP s where PK not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SetSRID(the_geom,"+srid+"), HEIGHT "+popField+" from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);")
-
+    sql.execute("SELECT UpdateGeometrySRID($building_table_name,'THE_GEOM',$srid);")
+    sql.execute("DELETE FROM "+building_table_name+" WHERE ST_ISEMPTY(THE_GEOM)")
     logger.info('Create spatial index on new building table')
     sql.execute('CREATE SPATIAL INDEX ON '+building_table_name+'(the_geom);')
     sql.execute("drop table if exists tmp_buildings_truncated;")
