@@ -23,8 +23,9 @@ class TwentyFourHour {
      */
 
      static void main(String[] args) throws Exception {
-        String folderPath = "/home/maguettte/IdeaProjects/Orbiwise/DataORBIWISE/devices-data/devices-data_cleaned"
-        String outputFilePath = "/home/maguettte/IdeaProjects/Orbiwise/DataORBIWISE/devices-data/24_hour_updt.csv"
+        String outputFilePath = "./wps_script/24_hour.csv"
+        String folderPath = "./wps_scripts/devices-data_cleaned"
+
 
         // Read all CSV files
         List<Map<String, String>> allData = new ArrayList<>()
@@ -50,13 +51,6 @@ class TwentyFourHour {
 
         // Summarize start and end times per sensor
         Map<String, Map<String, String>> sensorSummary = summarizeSensorTimes(validData)
-
-        // Print sensor activity
-        /*sensorSummary.forEach({ deveui, times ->
-            System.out.println("Sensor: " + deveui);
-            System.out.println("Start Time: " + times.get("start_time"))
-            System.out.println("End Time: " + times.get("end_time"))
-        })*/
 
         // Find the global overlapping time window
         LocalDateTime globalStart = getMaxStartTime(sensorSummary)

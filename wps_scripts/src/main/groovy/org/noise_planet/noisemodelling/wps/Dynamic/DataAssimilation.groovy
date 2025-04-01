@@ -5,7 +5,6 @@ import groovy.sql.Sql
 import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.JDBCUtilities
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Add_Laeq_Leq_columns
-import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental.DiffAB
 import org.noise_planet.noisemodelling.wps.Experimental.Noise_Map_Sum
@@ -30,21 +29,20 @@ class DataAssimilation {
      * @param args Command line arguments (not used in this method).
      * */
      static void main(String[] args){
+         // Retrieve all configurations.
+         getAllConfig()
          // Extract observation data from the input CSV file 24_hour.csv and save it to a new CSV file.
-         //extractObservationData("./wps_script/24_hour.csv", "observationSensor.csv")
+         extractObservationData("./wps_script/24_hour.csv", "./wps_script/observationSensor.csv")
 
 
          // Establish a connection to the spatial database.
          Connection connection = JDBCUtilities.wrapConnection(
-                 H2GISDBFactory.createSpatialDataBase("mydatabase", true)
+                 H2GISDBFactory.createSpatialDataBase("mem:assimilationDatabase", true)
          )
          // Initialize SQL execution object.
          Sql sql = new Sql(connection)
 
-
          Object res
-         // Display the initial state of the database.
-          //res = new Display_Database().exec(connection, [])
 
          // Import OSM data into the database.
          res = new Import_OSM().exec(connection, [
@@ -59,14 +57,9 @@ class DataAssimilation {
          // Add a temperature: TEMP column to the ROADS table.
          sql.execute("ALTER TABLE ROADS ADD TEMP DOUBLE")
 
-         // Display the database after importing OSM data.
-         //res = new Display_Database().exec(connection, [])
 
          // Calculate road emissions from traffic data.
          res = new Road_Emission_from_Traffic().exec(connection, ["tableRoads": "ROADS"])
-
-         // Display the database after calculating road emissions.
-         //res = new Display_Database().exec(connection, [])
 
          // Import the observation sensor data into the database.
          new Import_File().exec(connection, [
@@ -74,16 +67,25 @@ class DataAssimilation {
                  "tableName": "OBSERVATION"
          ])
 
-         // Display the database after importing observation data.
-         //res = new Display_Database().exec(connection, [])
+
+         // Change the type "text from the csv file" to INTEGER or FLOAT
+         sql.execute("ALTER TABLE OBSERVATION " +
+                 " ALTER COLUMN T SET DATA TYPE  INTEGER")
+
+         sql.execute("ALTER TABLE OBSERVATION " +
+                 " ALTER COLUMN IDRECEIVER SET DATA TYPE  INTEGER")
+
+         sql.execute("ALTER TABLE OBSERVATION " +
+                 " ALTER COLUMN LEQA SET DATA TYPE  FLOAT")
+
+         // because thes sensors always measure 40 db: ID 17, 12 AND 29
+         sql.execute("DELETE FROM OBSERVATION "+
+                 "WHERE IDRECEIVER = 17 or IDRECEIVER = 12 or IDRECEIVER = 29;")
 
          // Create the RECEIVERS table with unique sensor data from OBSERVATION table.
          sql.execute("DROP TABLE IF EXISTS RECEIVERS")
          sql.execute("CREATE TABLE RECEIVERS(IDRECEIVER INTEGER PRIMARY KEY, THE_GEOM GEOMETRY)")
          sql.execute("INSERT INTO RECEIVERS (IDRECEIVER, THE_GEOM) SELECT DISTINCT IDRECEIVER, ST_GeomFromText(ST_AsText(THE_GEOM), 2056) FROM OBSERVATION")
-
-         // Display the database after creating the RECEIVERS table.
-         //res = new Display_Database().exec(connection, [])
 
 
          // Create and initialize the LW_ROADS_0DB table.
@@ -103,9 +105,6 @@ class DataAssimilation {
                  "confSkipLnight": true,
                  "confSkipLden": true
          ])
-
-         // Display the database after calculating noise levels.
-         //res = new Display_Database().exec(connection, [])
 
          // Visualize the LDAY_GEOM table.
          new Table_Visualization_Data().exec(connection, ["tableName": "LDAY_GEOM"])
@@ -127,9 +126,6 @@ class DataAssimilation {
                  "tableName": "TABLE_A_0"
          ]);
 
-         // Display the database after adding LEQA columns.
-         //res = new Display_Database().exec(connection, [])
-
          // Calculate the difference between observation and simulated data.
          res = new DiffAB().exec(connection, [
                  "mainMapTable": "OBSERVATION",
@@ -139,9 +135,6 @@ class DataAssimilation {
 
          // Visualize the SCENARIO_0 table.
          new Table_Visualization_Data().exec(connection, ["tableName": "SCENARIO_0"])
-
-         // Display the database after calculating the difference.
-         //res = new Display_Database().exec(connection, [])
 
          // Create the ROADS_CONFIG table.
          sql.execute("CREATE TABLE ROADS_CONFIG (" +
@@ -166,12 +159,9 @@ class DataAssimilation {
                  "TEMP DOUBLE" +
                  ")")
 
-         // Retrieve all configurations.
-         //getAllConfig()
-
          // Read all combinations from the CSV file.
          List<String[]> allCombinations = new ArrayList<>();
-         CSVReader reader = new CSVReader(new FileReader("./wps_scripts/ALL_COMBINATION.csv"))
+         CSVReader reader = new CSVReader(new FileReader("./wps_scripts/ALL_COMBI.csv"))
          reader.readNext()
          String[] row
          while ((row = reader.readNext()) != null) {
@@ -180,32 +170,18 @@ class DataAssimilation {
          // get the similated noise table TABLE_A.
          assimilationProcess(allCombinations, connection)
 
-         // Display the database after processing time steps.
-         //res = new Display_Database().exec(connection, [])
-
          // Add LEQA columns to the TABLE_A table.
          new Add_Laeq_Leq_columns().exec(connection, [
                  "prefix": "HZ",
                  "tableName": "TABLE_A"
          ])
 
-         // Display the database after adding LEQA columns.
-         //res = new Display_Database().exec(connection, [])
-
          // Export the TABLE_A table to a CSV file.
          new Export_Table().exec(connection, [
-                 "exportPath": "target/TABLE_A.csv",
+                 "exportPath": "./target/TABLE_A.csv",
                  "tableToExport": "TABLE_A"
          ])
 
-         sql.execute("ALTER TABLE OBSERVATION " +
-                 " ALTER COLUMN T SET DATA TYPE  INTEGER")
-
-         sql.execute("ALTER TABLE OBSERVATION " +
-                 " ALTER COLUMN IDRECEIVER SET DATA TYPE  FLOAT")
-
-         sql.execute("ALTER TABLE OBSERVATION " +
-                 " ALTER COLUMN LEQA SET DATA TYPE  FLOAT")
 
          /*new Import_File().exec(connection, [
                  pathFile : "./TABLE_A.csv",
@@ -213,25 +189,69 @@ class DataAssimilation {
          sql.execute("ALTER TABLE TABLE_A " +
                  " ALTER COLUMN LEQA SET DATA TYPE  FLOAT")*/
 
-         // Create the LOOP_TEMPS table to store average LEQA differences between observation and simulated data for each time step T
-         sql.execute("CREATE TABLE LOOP_TEMPS AS " +
-                 "SELECT mmt.T, smt.IT, AVG(ABS(mmt.LEQA - smt.LEQA)) AS LEQA " +
-                 "FROM OBSERVATION mmt " +
-                 "JOIN TABLE_A smt ON mmt.IDRECEIVER = smt.IDRECEIVER " +
-                 "GROUP BY mmt.T, smt.IT")
 
-         // Create the B_CONFIG table to store the best configurations.
-         sql.execute("CREATE TABLE B_CONFIG AS  SELECT T, IT, LEQA " +
-                 "FROM (" +
-                 "    SELECT T, IT, LEQA," +
-                 "           ROW_NUMBER() OVER (PARTITION BY T ORDER BY LEQA ASC) AS rn " +
-                 "    FROM LOOP_TEMPS " +
-                 ") " +
-                 "WHERE rn = 1 ")
+         sql.execute("CREATE TABLE file1_cleaned AS " +
+                 "SELECT " +
+                 "    IDRECEIVER AS ID_sensor, " +
+                 "    T, " +
+                 "    LEQA " +
+                 "FROM OBSERVATION; \n" )
+         sql.execute("CREATE TABLE file2_cleaned AS \n" +
+                 "SELECT \n" +
+                 "    IDRECEIVER AS ID_sensor, \n" +
+                 "    IT, \n" +
+                 "    LEQA\n" +
+                 "FROM TABLE_A; \n" )
+         sql.execute("CREATE TABLE joined_data AS \n" +
+                 "SELECT \n" +
+                 "    f1.ID_sensor, \n" +
+                 "    f1.T, \n" +
+                 "    f2.IT, \n" +
+                 "    f1.LEQA AS LEQA_file1, \n" +
+                 "    f2.LEQA AS LEQA_file2\n" +
+                 "FROM file1_cleaned f1\n" +
+                 "INNER JOIN file2_cleaned f2 \n" +
+                 "    ON f1.ID_sensor = f2.ID_sensor;\n")
+
+         sql.execute("CREATE TABLE agg_data AS \n" +
+                 "SELECT \n" +
+                 "    T, \n" +
+                 "    IT, \n" +
+                 "    MEDIAN(ABS(LEQA_file1 - LEQA_file2)) AS median_abs_diff, \n" +
+                 "    MEDIAN(LEQA_file1) AS value_file1,\n" +
+                 "    MEDIAN(LEQA_file2) AS value_file2,\n" +
+                 "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_lower,\n" +
+                 "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_upper,\n" +
+                 "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_lower,\n" +
+                 "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_upper\n" +
+                 "FROM joined_data\n" +
+                 "GROUP BY T, IT;\n" )
+
+         sql.execute("CREATE TABLE best_IT AS \n" +
+                 "SELECT \n" +
+                 "    T,\n" +
+                 "    IT,\n" +
+                 "    median_abs_diff,\n" +
+                 "    value_file1,\n" +
+                 "    value_file2,\n" +
+                 "    file1_lower,\n" +
+                 "    file1_upper,\n" +
+                 "    file2_lower,\n" +
+                 "    file2_upper\n" +
+                 "FROM agg_data\n" +
+                 "WHERE (T, median_abs_diff) IN (\n" +
+                 "    SELECT \n" +
+                 "        T, \n" +
+                 "        MIN(median_abs_diff)\n" +
+                 "    FROM agg_data\n" +
+                 "    GROUP BY T\n" +
+                 ");")
+
+          sql.execute("CREATE TABLE BEST_CONFIGURATION AS SELECT DISTINCT T,IT, ROUND(median_abs_diff,2) AS LEQA_DIFF FROM BEST_IT;\n")
 
          // Import the ALL_CONFIG table from the CSV file.
          new Import_File().exec(connection, [
-                 "pathFile": "./ALL_COMBINATION.csv",
+                 "pathFile": "./wps_scripts/ALL_COMBI.csv",
                  "tableName": "ALL_CONFIG"
          ])
 
@@ -241,8 +261,8 @@ class DataAssimilation {
 
          // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
          sql.execute("CREATE TABLE BEST_CONFIG AS " +
-                 "SELECT b.T, b.IT, b.LEQA, a.PRIMARY_VAL, a.SECONDARY_VAL, a.TERTIARY_VAL, a.OTHERS_VAL, a.TEMP_VAL " +
-                 "FROM B_CONFIG b " +
+                 "SELECT b.T, b.IT, b.LEQA_DIFF, a.PRIMARY_VAL, a.SECONDARY_VAL, a.TERTIARY_VAL, a.OTHERS_VAL, a.TEMP_VAL " +
+                 "FROM BEST_CONFIGURATION b " +
                  "JOIN ALL_CONFIG a ON b.IT = a.IT")
 
          // Export the BEST_CONFIG table to a CSV file.
@@ -337,17 +357,17 @@ class DataAssimilation {
      * The CSV file follows the structure:
      * IT, PRIMARY, SECONDARY, TERTIARY, OTHERS, TEMP.
      */
-    void getAllConfig() {
+    static void getAllConfig() {
 
-        FileWriter csvWriterCombi = new FileWriter("ALL_COMBINATION.csv")
-        csvWriterCombi.append("IT,PRIMARY,SECONDARY,TERTIARY,OTHERS,TEMP\n")
+        FileWriter csvWriterCombi = new FileWriter("./wps_scripts/ALL_COMBI.csv")
+        csvWriterCombi.append("IT,PRIMARY_VAL,SECONDARY_VAL,TERTIARY_VAL,OTHERS_VAL,TEMP_VAL\n")
 
         //double[] vals = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.8, 2.0, 2.2, 2.4, 2.8, 3]
         //int[] temps = [-5, 0, 5, 10, 15, 20, 25, 30]
 
         // this values can be modified
-        double[] vals = [0.2, 0.4, 0.6, 0.8, 1.0, 1.15, 1.30, 1.45, 2.0]
-        int[] temps = [0, 10, 20, 30]
+        double[] vals = [0.01,1.0, 2.0,3]
+        int[] temps = [20]
         int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length
 
         for (int i = 0; i < totalCombinations; i++) {
@@ -406,9 +426,9 @@ class DataAssimilation {
                 "HZ4000 double precision, " +
                 "HZ8000 double precision)" )
 
-        int size = 20000
+        //int size = 162
         try {
-            for (int j=0; j< size; j++) {
+            for (int j=0; j< allCombinations.size(); j++) {
                 println(LocalDateTime.now())
 
                 int it = j+1

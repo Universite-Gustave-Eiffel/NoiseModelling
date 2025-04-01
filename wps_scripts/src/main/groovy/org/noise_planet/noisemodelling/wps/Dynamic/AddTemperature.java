@@ -20,8 +20,8 @@ public class AddTemperature {
                     .skip(1) // Skip header
                     .map(line -> line.split(","))
                     .collect(Collectors.toMap(
-                            parts -> LocalDateTime.parse(parts[0], formatterTemperature),
-                            parts -> Double.parseDouble(parts[1])
+                            parts -> LocalDateTime.parse(parts[0] + "T" + parts[1], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+                            parts -> Double.parseDouble(parts[2])
                     ));
 
             // Lire et traiter le fichier 24_hour.csv

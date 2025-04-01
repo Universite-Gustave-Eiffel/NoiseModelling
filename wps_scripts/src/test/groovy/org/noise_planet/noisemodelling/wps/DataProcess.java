@@ -30,8 +30,8 @@ public class DataProcess {
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
 
         // Input and output directories
-        String inputDir = "/home/maguettte/Téléchargements/DataORBIWISE/devices-data/devices-data";
-        String outputDir = "/home/maguettte/IdeaProjects/Orbiwise/DataORBIWISE/devices-data/update_devices-data";
+        String inputDir = "./wps_scripts/devices-data";
+        String outputDir = "./wps_scripts/devices-data_cleaned";
 
         // Create output directory if it doesn't exist
         Files.createDirectories(Paths.get(outputDir));
