@@ -316,6 +316,7 @@ def run(input) {
 }
 
 // main function of the script
+@CompileStatic
 def exec(Connection connection, Map input) {
     long startCompute = System.currentTimeMillis()
 
