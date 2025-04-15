@@ -21,6 +21,7 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.cts.crs.CRSException
 import org.cts.op.CoordinateOperationException
 import org.geotools.jdbc.JDBCDataStore
