@@ -21,6 +21,7 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.cts.crs.CRSException
 import org.cts.op.CoordinateOperationException
 import org.geotools.jdbc.JDBCDataStore
@@ -316,6 +317,7 @@ def run(input) {
 }
 
 // main function of the script
+@CompileStatic
 def exec(Connection connection, Map input) {
     long startCompute = System.currentTimeMillis()
 
@@ -532,7 +534,7 @@ def exec(Connection connection, Map input) {
 
     if (input.containsKey('confFavorableOccurrencesDefault')) {
         StringTokenizer tk = new StringTokenizer(input['confFavorableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[AttenuationCnossosParameters.DEFAULT_WIND_ROSE.length]
+        double[] favOccurrences = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]
         for (int i = 0; i < favOccurrences.length; i++) {
             favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
         }
