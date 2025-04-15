@@ -10,7 +10,8 @@ import org.noise_planet.noisemodelling.wps.Dynamic.Flow_2_Noisy_Vehicles;
 import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles;
 import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix;
 import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_From_Network
-import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period;
+import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period
+import org.noise_planet.noisemodelling.wps.Experimental.DynamicTrainFromAADTTraffic;
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File;
@@ -400,5 +401,17 @@ class TestDynamic extends JdbcTestCase {
 
     }
 
+    // Test the generation of dynamic train from AADT traffic data
+    void testDynamicTrainGeneration() {
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_GEOM.geojson").getPath()])
+
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_TRAFFIC.csv").getPath()])
+
+        new DynamicTrainFromAADTTraffic().exec(connection,
+                [railsGeometries: "RAILS_GEOM",
+                  railsTraffic: "RAILS_TRAFFIC"])
+    }
 
 }
