@@ -402,6 +402,7 @@ class TestDynamic extends JdbcTestCase {
     }
 
     // Test the generation of dynamic train from AADT traffic data
+    // will generate false positions on a network over an average day using day, evening, night average traffic
     void testDynamicTrainGeneration() {
         new Import_File().exec(connection, [
                 pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_GEOM.geojson").getPath()])
@@ -412,6 +413,17 @@ class TestDynamic extends JdbcTestCase {
         new DynamicTrainFromAADTTraffic().exec(connection,
                 [railsGeometries: "RAILS_GEOM",
                   railsTraffic: "RAILS_TRAFFIC"])
+    }
+
+    void testDynamicTrainSourcesPlacement() {
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/pointTrainDynamic.geojson").getPath()])
+
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/train_network_32635.geojson").getPath()])
+
+
+
     }
 
 }
