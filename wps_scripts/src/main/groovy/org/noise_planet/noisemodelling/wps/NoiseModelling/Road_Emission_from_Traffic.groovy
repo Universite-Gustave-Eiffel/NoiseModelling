@@ -127,8 +127,8 @@ def exec(Connection connection, input) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
-    logger.info('Start : Road Emission from DEN')
-    logger.info("inputs {}", input) // log inputs of the run
+    //logger.info('Start : Road Emission from DEN')
+    //logger.info("inputs {}", input) // log inputs of the run
 
 
     // -------------------
@@ -171,6 +171,7 @@ def exec(Connection connection, input) {
 
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
+
     String qry = ""
 
     if (mode.equals("")){
@@ -186,6 +187,7 @@ def exec(Connection connection, input) {
             'LWE63, LWE125, LWE250, LWE500, LWE1000,LWE2000, LWE4000, LWE8000,' +
             'LWN63, LWN125, LWN250, LWN500, LWN1000,LWN2000, LWN4000, LWN8000) ' +
             'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+
     } else {
         sql.execute("drop table if exists LW_ROADS;")
         sql.execute("create table LW_ROADS (LINK_ID VARCHAR(255), the_geom Geometry, T integer, " +
@@ -202,9 +204,17 @@ def exec(Connection connection, input) {
     // --------------------------------------
 
     // Get Class to compute LW
-    NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_NOT_DEN)
+    /*NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_NOT_DEN)
     noiseMapParameters.setCoefficientVersion(2)
     noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters(false));
+    NoiseEmissionMaker noiseEmissionMaker = new NoiseEmissionMaker(null, noiseMapParameters)*/
+
+    NoiseMapParameters noiseMapParameters = new NoiseMapParameters(NoiseMapParameters.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW)
+    noiseMapParameters.setCoefficientVersion(2)
+    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.DAY, new AttenuationCnossosParameters(false));
+    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.EVENING, new AttenuationCnossosParameters(false));
+    noiseMapParameters.setPropagationProcessPathData(NoiseMapParameters.TIME_PERIOD.NIGHT, new AttenuationCnossosParameters(false));
+
     NoiseEmissionMaker noiseEmissionMaker = new NoiseEmissionMaker(null, noiseMapParameters)
 
 
@@ -214,7 +224,7 @@ def exec(Connection connection, input) {
     int nbRoads = 0
     while (rs1.next()) {
         nbRoads = rs1.getInt("total")
-        logger.info('The table Roads has ' + nbRoads + ' road segments.')
+        //logger.info('The table Roads has ' + nbRoads + ' road segments.')
     }
 
     int k = 0
@@ -246,6 +256,7 @@ def exec(Connection connection, input) {
                         lnight[6] as Double, lnight[7] as Double)
             } else {
                 // Compute emission sound level for each road segment
+               // println("here dynamic")
                 def results = noiseEmissionMaker.computeLw(rs)
                 def lw = Utils.wToDba(results[0])
                 def time = rs.getInt("TIME")
@@ -268,6 +279,8 @@ def exec(Connection connection, input) {
     if (mode == "") {
         sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
         sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
+        sql.execute("DROP TABLE IF EXISTS LW_ROADS_0DB")
+        sql.execute("CREATE TABLE LW_ROADS_0DB(PK integer NOT NULL PRIMARY KEY, THE_GEOM geometry, LWD63 real, LWD125 real, LWD250 real, LWD500 real, LWD1000 real, LWD2000 real, LWD4000 real, LWD8000 real) AS SELECT r.PK, r.THE_GEOM, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 FROM LW_ROADS AS r")
     } else {
         sql.execute("DROP TABLE IF EXISTS unique_roads;")
         sql.execute("CREATE TABLE unique_roads AS " +
@@ -277,8 +290,8 @@ def exec(Connection connection, input) {
         sql.execute("DROP TABLE IF EXISTS SOURCES_0DB;")
         sql.execute("CREATE TABLE SOURCES_0DB (LINK_ID VARCHAR(255), THE_GEOM GEOMETRY, HZ63 FLOAT, HZ125 FLOAT, HZ250 FLOAT, HZ500 FLOAT, HZ1000 FLOAT, HZ2000 FLOAT, HZ4000 FLOAT, HZ8000 FLOAT) AS SELECT a.link_id LINK_ID, a.the_geom THE_GEOM, 0.0 HZ63, 0.0 HZ125, 0.0 HZ250, 0.0 HZ500, 0.0 HZ1000, 0.0  HZ2000, 0.0 HZ4000, 0.0 HZ8000  FROM unique_roads a;");
         sql.execute("ALTER TABLE SOURCES_0DB ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
-
         sql.execute("DROP TABLE IF EXISTS unique_roads;")
+        logger.info('\nSource 0db done')
 
     }
 
