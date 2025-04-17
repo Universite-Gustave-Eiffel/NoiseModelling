@@ -2,6 +2,7 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.utilities.JDBCUtilities
+import org.noise_planet.noisemodelling.emission.railway.Railway
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface;
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators;
@@ -11,6 +12,7 @@ import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles
 import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix;
 import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_From_Network
 import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period
+import org.noise_planet.noisemodelling.wps.Dynamic.TrainSourcesFromPosition
 import org.noise_planet.noisemodelling.wps.Experimental.DynamicTrainFromAADTTraffic;
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
@@ -423,6 +425,16 @@ class TestDynamic extends JdbcTestCase {
                 pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/train_network_32635.geojson").getPath()])
 
 
+        new TrainSourcesFromPosition().exec(connection, [
+                trainsPosition: "pointTrainDynamic",
+                railwayGeometries: "train_network_32635",
+                fieldTrainset: "train_set",
+                fieldTrainId: "train_id",
+                fieldTimeStep: "timestep",
+                trainTrainsetData: Railway.class.getResource("RailwayTrainsets.json").toString(),
+                trainVehicleData: Railway.class.getResource("RailwayVehiclesCnossos.json").toString(),
+                trainCoefficientsData: Railway.class.getResource("RailwayCnossosSNCF_2021.json").toString()
+        ])
 
     }
 

@@ -305,7 +305,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
         Map<String, Integer> vehicles = railway.getVehicleFromTrainset(train);
        // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
-            int i = 0;
+            lWRailWay = null;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
                 double vehiclePerHouri = vehiclePerHour * entry.getValue();
@@ -313,13 +313,12 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(typeTrain, vehicleSpeed,
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
 
-                    if (i == 0) {
+                    if (lWRailWay == null) {
                         lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
                     } else {
                         lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
                     }
                 }
-                i++;
             }
 
         }else if (railway.isInVehicleList(train)){

@@ -20,6 +20,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -60,6 +61,34 @@ inputs = [
                 name: 'Field time step',
                 title: 'Field time step',
                 description: 'Name of the field that identifies the time. Default period',
+                min:0, max:1,
+                type: String.class
+        ],
+        trainTrainsetData: [
+                name: 'Train composition file',
+                title: 'Train composition file',
+                description: 'File URL, specification of the composition of a train' +
+                        ' (one train can contain one or more vehicles).' +
+                        ' Example file <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json">RailwayTrainsets.json</a>' +
+                        'Default value RailwayTrainsets.json. Can be any URL',
+                min:0, max:1,
+                type: String.class
+        ],
+        trainVehicleData: [
+                name: 'Vehicles characteristics file',
+                title: 'Vehicles characteristics file',
+                description: 'File URL, coefficients related to the characteristics of vehicles' +
+                        'Example file <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json">RailwayVehiclesCnossos.json</a>' +
+                        'Default value RailwayVehiclesCnossos.json. Accepted values RailwayVehiclesCnossos.json RailwayVehiclesCnossos_2015.json RailwayVehiclesNMPB.json or any URL ',
+                min:0, max:1,
+                type: String.class
+        ],
+        trainCoefficientsData: [
+                name: 'CNOSSOS coefficients file',
+                title: 'CNOSSOS coefficients file',
+                description: 'File URL, coefficients related to the emission of vehicles' +
+                        'Example file <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayCnossosSNCF_2021.json">RailwayCnossosSNCF_2021.json</a>' +
+                        'Default RailwayCnossosSNCF_2021.json. Accepted value RailwayCnossosSNCF_2021.json RailwayCnossosEU_2020.json or any URL',
                 min:0, max:1,
                 type: String.class
         ]
@@ -122,6 +151,22 @@ def exec(Connection connection, Map input) {
         fieldTimeStep = input["fieldTimeStep"] as String
     }
 
+    String trainTrainsetData = "RailwayTrainsets.json" as String
+    if(input["trainTrainsetData"]) {
+        trainTrainsetData = input["trainTrainsetData"] as String
+    }
+
+    String trainVehicleData = "RailwayVehiclesCnossos.json" as String
+    if(input["trainVehicleData"]) {
+        trainVehicleData = input["trainVehicleData"] as String
+    }
+
+    String trainCoefficientsData = "RailwayCnossosSNCF_2021.json" as String
+    if(input["trainCoefficientsData"]) {
+        trainCoefficientsData = input["trainCoefficientsData"] as String
+    }
+
+
     Sql sql = new Sql(connection)
 
     final int srid = GeometryTableUtilities.getSRID(connection, railwayGeometries) as Integer
@@ -135,14 +180,45 @@ def exec(Connection connection, Map input) {
         throw new SQLException("Geometry projection system of the table $railwayGeometries must be metric ! (not EPSG=$srid)")
     }
 
+    RailwayCnossos railway = new RailwayCnossos()
+
+    // Fetch configuration
+    try {
+        URL trainTrainsetDataUrl = new URL(trainTrainsetData)
+        trainTrainsetDataUrl.withInputStream { InputStream stream ->
+            railway.setTrainSetDataFile(stream)
+        }
+    } catch (MalformedURLException ignored) {
+        railway.setTrainSetDataFile(trainTrainsetData)
+    }
+    try {
+        URL trainVehicleDataUrl = new URL(trainVehicleData)
+        trainVehicleDataUrl.withInputStream { InputStream stream ->
+            railway.setVehicleDataFile(stream)
+        }
+    } catch (MalformedURLException ignored) {
+        railway.setVehicleDataFile(trainVehicleData)
+    }
+    try {
+        URL trainCoefficientsDataUrl = new URL(trainCoefficientsData)
+        trainCoefficientsDataUrl.withInputStream { InputStream stream ->
+            railway.setRailwayDataFile(stream)
+        }
+    } catch (MalformedURLException ignored) {
+        railway.setRailwayDataFile(trainCoefficientsData)
+    }
+
     // keep track of train settings changes
     String previousTrainset = ""
     // keep track of train identifier (if the train change we clear the train history)
     String previousTrainId = ""
     // keep track of previous rails to put the wagons on the good position
     LinkedList<RailInfo> railNavigationHistory = new LinkedList<>()
-    sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep") {
-
+    sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) {rs ->
+        String trainset = rs.getString(fieldTrainset)
+        if(trainset.equals(previousTrainset)) {
+            // New train configuration
+        }
     }
 
 }
@@ -156,4 +232,10 @@ class RailInfo {
         this.primaryKey = primaryKey
         this.railGeometry = railGeometry
     }
+}
+
+@CompileStatic
+class TrainInfo {
+    RailwayCnossos railway
+
 }
