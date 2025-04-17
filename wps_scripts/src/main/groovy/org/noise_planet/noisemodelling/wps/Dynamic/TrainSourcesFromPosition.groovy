@@ -14,13 +14,19 @@ package org.noise_planet.noisemodelling.wps.Dynamic
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -208,16 +214,52 @@ def exec(Connection connection, Map input) {
         railway.setRailwayDataFile(trainCoefficientsData)
     }
 
+    final double queryCacheDistance = 500
     // keep track of train settings changes
     String previousTrainset = ""
     // keep track of train identifier (if the train change we clear the train history)
     String previousTrainId = ""
+    // Keep track of the rail associated with the train
+    AreaRails previousNetworkData = null
+    // Precomputed source distribution settings according to current trainSet
+    TrainInfo sourceDistribution = null
     // keep track of previous rails to put the wagons on the good position
     LinkedList<RailInfo> railNavigationHistory = new LinkedList<>()
-    sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) {rs ->
+    sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset, the_geom FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) {rs ->
         String trainset = rs.getString(fieldTrainset)
-        if(trainset.equals(previousTrainset)) {
+        Geometry trainPosition = (Geometry) rs.getObject("the_geom")
+        // Read from the database then network of rails near the train position
+        // Do not query again if the position is near the last position
+        if(previousNetworkData == null || !previousNetworkData.queryEnvelope.contains(trainPosition.coordinate)) {
+            def data = sql.rows("SELECT * FROM $railwayGeometries WHERE THE_GEOM && ST_EXPAND(:geom,:dist, :dist)".toString(), [geom: trainPosition, dist:queryCacheDistance])
+            Envelope queryEnvelope = new Envelope(trainPosition.coordinate)
+            queryEnvelope.expandBy(queryCacheDistance)
+            previousNetworkData = new AreaRails(queryEnvelope,data)
+            // Look for closest rail
+            previousNetworkData.lookForClosestFeature(trainPosition.coordinate)
+        }
+        if(trainset != previousTrainset) {
+            previousNetworkData = null
             // New train configuration
+            // Precompute source distribution
+            double vehicleSpeed = 160
+            double vehiclePerHour = 1
+            int rollingCondition = 0
+            double idlingTime = 0
+            int trackTransfer = 4
+            int impactNoise = 0
+            int bridgeTransfert = 0
+            int curvature = 0
+            int railRoughness = 1
+            int nbTrack = 2
+            double vMaxInfra = 160
+            double commercialSpeed = 160
+            boolean isTunnel = false
+            RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
+                    impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack)
+            RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(trainset, vehicleSpeed,
+                    vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
+            sourceDistribution = new TrainInfo(railway, trackParameters, vehicleParameters)
         }
     }
 
@@ -237,5 +279,33 @@ class RailInfo {
 @CompileStatic
 class TrainInfo {
     RailwayCnossos railway
+    RailwayTrackCnossosParameters trackParameters
+    RailwayVehicleCnossosParameters vehicleParameters
 
+    TrainInfo(RailwayCnossos railway, RailwayTrackCnossosParameters trackParameters, RailwayVehicleCnossosParameters vehicleParameters) {
+        this.railway = railway
+        this.trackParameters = trackParameters
+        this.vehicleParameters = vehicleParameters
+        // Precompute all sources positions normalized to distance from center of first engine wagon
+    }
 }
+
+@CompileStatic
+class AreaRails {
+    Envelope queryEnvelope
+    Geometry closestRailGeometry
+    int closestRailRowIndex
+    List<GroovyRowResult> allFeaturesInArea
+
+    AreaRails(Envelope queryEnvelope, List<GroovyRowResult> allFeaturesInArea) {
+        this.queryEnvelope = queryEnvelope
+        this.closestRailGeometry = closestRailGeometry
+        this.closestRailRowIndex = closestRailRowIndex
+        this.allFeaturesInArea = allFeaturesInArea
+    }
+
+    void lookForClosestFeature(Coordinate position) {
+
+    }
+}
+
