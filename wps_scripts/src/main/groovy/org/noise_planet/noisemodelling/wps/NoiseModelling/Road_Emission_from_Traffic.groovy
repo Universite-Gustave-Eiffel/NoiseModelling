@@ -233,13 +233,6 @@ def exec(Connection connection, input) {
     sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
     sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
 
-    def mode = 'dynamic'
-    if (mode.equals('dynamic')){
-        sql.execute("DROP TABLE IF EXISTS SOURCES_0DB;")
-        sql.execute("CREATE TABLE SOURCES_0DB (PK INT PRIMARY KEY, THE_GEOM GEOMETRY, HZ63 FLOAT, HZ125 FLOAT, HZ250 FLOAT, HZ500 FLOAT, HZ1000 FLOAT, HZ2000 FLOAT, HZ4000 FLOAT, HZ8000 FLOAT) AS SELECT a.PK, a.the_geom THE_GEOM, 0.0 HZ63, 0.0 HZ125, 0.0 HZ250, 0.0 HZ500, 0.0 HZ1000, 0.0  HZ2000, 0.0 HZ4000, 0.0 HZ8000  FROM LW_ROADS a;");
-        logger.info('\nSource 0db done')
-    }
-
     resultString = "Calculation Done ! The table LW_ROADS has been created."
 
     // print to command window

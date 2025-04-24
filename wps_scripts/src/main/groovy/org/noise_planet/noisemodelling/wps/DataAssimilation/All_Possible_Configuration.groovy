@@ -108,7 +108,8 @@ static def getAllConfig(Connection connection,double[] vals,int[] temps) {
         double others = vals[indexOthers]
         int valTemps = temps[indexTemps]
 
-        // Skip incoherent combinations
+        // todo prepare statement
+        // todo Skip incoherent combinations
         if (others / primary > 20) {
             sql.execute("INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL,SECONDARY_VAL,TERTIARY_VAL,OTHERS_VAL,TEMP_VAL) VALUES("+ primary + "," + secondary + "," + tertiary + "," + others + "," + valTemps +")")
 

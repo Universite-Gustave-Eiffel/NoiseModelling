@@ -13,26 +13,15 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
-import org.h2gis.functions.factory.H2GISDBFactory
 import org.h2gis.utilities.JDBCUtilities
-import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Add_Laeq_Leq_columns
-import org.noise_planet.noisemodelling.wps.DataAssimilation.All_Possible_Configuration
-import org.noise_planet.noisemodelling.wps.DataAssimilation.Data_Simulation
-import org.noise_planet.noisemodelling.wps.DataAssimilation.Dynamic_Road_Traffic_Emission
-import org.noise_planet.noisemodelling.wps.DataAssimilation.Extract_Best_Configuration
-import org.noise_planet.noisemodelling.wps.DataAssimilation.Prepare_Sensors
-import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix
-import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period
+import org.noise_planet.noisemodelling.wps.DataAssimilation.*
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-import java.sql.Connection
 
 class TestDataAssimilation extends JdbcTestCase {
     Logger logger = LoggerFactory.getLogger(TestDataAssimilation.class)
@@ -40,10 +29,11 @@ class TestDataAssimilation extends JdbcTestCase {
     void testSimulation() {
 
         logger.info('Start Test for Data Assimilation')
+        Sql sql = new Sql(connection)
 
         // Path folder containing all the necessary data for this test
         String workingFolder = TestDataAssimilation.class.getResource("dataAssimilation/").getPath()
-/*
+
         new All_Possible_Configuration().exec(connection, [
                 "trafficValues"    : [0.01, 1.0, 2.0, 3],
                 "temperatureValues": [10, 15, 20]
@@ -58,6 +48,10 @@ class TestDataAssimilation extends JdbcTestCase {
                 "removeTunnels" : true
         ])
 
+        // use import file au maximum
+        // new import_file csv donnees
+        // new import_file _sf.csv
+        //todo new import_csv mieux, car toujours mieux de mettre un nom de table que workingfolder
         new Prepare_Sensors().exec(connection, [
                 "startDate"    : "2024-08-25 06:30:00",
                 "endDate"      : "2024-08-25 07:30:00",
@@ -71,7 +65,7 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
         new Noise_level_from_source().exec(connection, [
-                "tableSources": "SOURCES_0DB",
+                "tableSources": "ROADS",
                 "tableBuilding": "BUILDINGS",
                 "tableReceivers": "SENSORS_LOCATION",
                 "confExportSourceId": true,
@@ -81,60 +75,66 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
         // Method to execute a series of operations for generate noise maps
+        // todo create direct splitted sources, in this way not needed to user Split_Sources_Period
         new Data_Simulation().exec(connection,[
                 "noiseMapLimit": 10
         ])
 
-        new Add_Laeq_Leq_columns().exec(connection, [
-                "prefix": "HZ",
-                "tableName": "NOISE_MAPS"
+      new Noise_level_from_source().exec(connection, [
+                "tableSources": "ROADS_GEOM",
+                "tableSourcesEmission" : "LW_ROADS",
+                "tableBuilding": "BUILDINGS",
+                "tableReceivers": "SENSORS_LOCATION",
+                "confExportSourceId": false,
+                "confMaxSrcDist": 250,
+                "confDiffVertical": false,
+                "confDiffHorizontal": false
         ])
 
         // Extraction of the best maps
-        new Extract_Best_Configuration().exec(connection,[
-                "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
-                "noiseMapTable": "NOISE_MAPS"
-        ])
+              new Extract_Best_Configuration().exec(connection,[
+                      "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
+                      "noiseMapTable": "RECEIVERS_LEVEL"
+              ])
 
 
-        // Create a regular grid of receivers.
-        new Regular_Grid().exec(connection,[
-                "fenceTableName": "BUILDINGS",
-                "buildingTableName": "BUILDINGS",
-                "sourcesTableName":"ROADS",
-                "delta": 200
-        ])
+              // Create a regular grid of receivers.
+              new Regular_Grid().exec(connection,[
+                      "fenceTableName": "BUILDINGS",
+                      "buildingTableName": "BUILDINGS",
+                      "sourcesTableName":"ROADS",
+                      "delta": 200
+              ])
 
-        Sql sql = new Sql(connection)
-        sql.execute("ALTER TABLE RECEIVERS DROP COLUMN ID_ROW, ID_COL")
-        sql.execute("INSERT INTO RECEIVERS (THE_GEOM) SELECT The_GEOM FROM SENSORS_LOCATION; ")
+             sql.execute("ALTER TABLE RECEIVERS DROP COLUMN ID_ROW, ID_COL")
+              sql.execute("INSERT INTO RECEIVERS (THE_GEOM) SELECT The_GEOM FROM SENSORS_LOCATION; ")
 
-        // Creation of the dynamic road using best configurations
-        new Dynamic_Road_Traffic_Emission().exec(connection)
+             // Creation of the dynamic road using best configurations
+              new NMs_4_BestConfigs().exec(connection)
 
+        // Create NoiseMaps only for best configurations
+              new Noise_level_from_source().exec(connection, [
+                      "tableSources": "ROADS_GEOM",
+                      "tableSourcesEmission" : "LW_ROADS_best",
+                      "tableBuilding": "BUILDINGS",
+                      "tableReceivers": "RECEIVERS",
+                      "confExportSourceId": false,
+                      "confMaxSrcDist": 250,
+                      "confDiffVertical": false,
+                      "confDiffHorizontal": false
+              ])
 
-    // From the network with traffic flow to individual trajectories with associated Lw using the Probabilistic method
-    // This method place randomly the vehicles on the network according to the traffic flow
-    new Split_Sources_Period().exec(connection,
-                                    ["tableSourceDynamic": "LW_ROADS",
-                                    "sourceIndexFieldName" : "LINK_ID",
-                                    "sourcePeriodFieldName" : "PERIOD"])
-*/
-    // Compute the noise level from the network sources for each time period
-    new Noise_level_from_source().exec(connection,
-                                       ["tableBuilding"   : "BUILDINGS",
-                                       "tableSources"   : "SOURCES_GEOM",
-                                       "tableEmission"   : "SOURCES_EMISSION",
-                                       "tableReceivers": "RECEIVERS"
-    ])
+        // Add Timestamp to the NMs
+        sql.execute("DROP TABLE ASSIMILATED_MAPS IF EXISTS;")
+        sql.execute("CREATE TABLE ASSIMILATED_MAPS AS SELECT b.T TIMESTAMP, b.IT IMAP, a.LAEQ, a.THE_GEOM, a.IDRECEIVER FROM BEST_CONFIGURATION_FULL b  LEFT JOIN RECEIVERS_LEVEL a ON a.PERIOD = b.PERIOD ; ")
 
-    def columnNames = JDBCUtilities.getColumnNames(connection, "RECEIVERS_LEVEL")
+          def columnNames = JDBCUtilities.getColumnNames(connection, "ASSIMILATED_MAPS")
 
-    columnNames.containsAll(Arrays.asList("PERIOD", "LAEQ"))
+          columnNames.containsAll(Arrays.asList("IMAP", "LAEQ"))
 
-        new Export_Table().exec(connection,
-                ["tableToExport": "RECEIVERS_LEVEL",
-               "exportPath": "/home/aumond/Documents/github/noisemodelling_pierromond/wps_scripts/target/test.geojson" ])
+              new Export_Table().exec(connection,
+                      ["tableToExport": "ASSIMILATED_MAPS",
+                     "exportPath": "/home/aumond/Documents/github/noisemodelling_pierromond/wps_scripts/target/test.geojson" ])
 
         logger.info('End of Test for Data Assimilation:  The dynamic noise map LT_GEOM is save on '+ workingFolder+"results")
     }

@@ -6,6 +6,8 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -81,7 +83,14 @@ static def exec(Connection connection,input) {
     Float trainingRatio = input['trainingRatio'] as Float//: 0.8,
     Integer targetSRID = input['targetSRID'] as Integer
 
+    // todo replace by CALL CSV_READ
+    // CSVDriverFunction csvDriver = new CSVDriverFunction()
+    // csvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
     csvToSql(connection,sensorCsv)
+
+    // todo check epoch
+    // ne pas utiliser INT, mais plutot LONG
+    // separer les deux d'un cote l'import et de l'autre la preparation de données
     measurement(connection,dayStart,dayEnd,deviceFolder)
 
     sql.execute("ALTER TABLE SENSORS_LOCATION ALTER COLUMN The_GEOM " +

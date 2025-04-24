@@ -56,24 +56,34 @@ static def exec(Connection connection, input){
 
     Sql sql = new Sql(connection)
 
-    sql.execute("DROP TABLE BEST_TEMP IF EXISTS")
-    sql.execute(
-            "CREATE TABLE BEST_TEMP AS " +
-                    "SELECT T, TEMP, diff_temp FROM ( " +
-                    "    SELECT f1.T, f2.TEMP, " +
-                    "           MEDIAN(ABS(f1.TEMP - f2.TEMP)) AS diff_temp, " +
-                    "           ROW_NUMBER() OVER (PARTITION BY f1.T ORDER BY MEDIAN(ABS(f1.TEMP - f2.TEMP))) AS rn " +
-                    "    FROM " + observationTable + " f1 " +
-                    "    CROSS JOIN " + noiseMapTable + " f2 " +
-                    "    GROUP BY f1.T, f2.TEMP " +
-                    ") sub WHERE rn = 1;"
-    )
+    sql.execute("ALTER TABLE RECEIVERS_LEVEL ADD COLUMN TEMP DOUBLE PRECISION")
+    sql.execute("UPDATE RECEIVERS_LEVEL SET TEMP = (SELECT MAX(TEMP_D) FROM ROADS_CONFIG RC WHERE RC.PERIOD = RECEIVERS_LEVEL.PERIOD)")
+
+    sql.execute("""
+    DROP TABLE IF EXISTS DIFF_TEMP;
+    CREATE TABLE DIFF_TEMP AS 
+    SELECT f1.T AS T, f2.PERIOD AS PERIOD, f1.TEMP AS TEMPOBS, f2.TEMP AS TEMPSMOD, 
+           MEDIAN(ABS(f1.TEMP - f2.TEMP)) AS diff_temp
+    FROM SENSORS_MEASUREMENTS_TRAINING f1, RECEIVERS_LEVEL f2 
+    GROUP BY f1.T, f1.TEMP, f2.TEMP, f2.PERIOD;
+
+    DROP TABLE IF EXISTS BEST_TEMP;
+    CREATE TABLE BEST_TEMP AS 
+    SELECT T, TEMPOBS, TEMPSMOD,PERIOD, diff_temp FROM (
+        SELECT *, 
+               ROW_NUMBER() OVER (PARTITION BY T ORDER BY diff_temp) AS rn
+        FROM DIFF_TEMP
+    ) sub
+    WHERE rn = 1;
+""")
+
+
 
     sql.execute("DROP TABLE agg_data IF EXISTS")
     sql.execute("CREATE TABLE agg_data AS SELECT " +
-            "f1.T, f2.PERIOD, ROUND(MEDIAN(ABS(f1.LEQA - f2.LEQA)), 4) AS median_abs_diff " +
+            "f1.T, f2.PERIOD, ROUND(MEDIAN(ABS(f1.LEQA - f2.LAEQ)), 4) AS median_abs_diff " +
             "FROM "+observationTable+"  f1, "+noiseMapTable+" f2, best_temp bt " +
-            "WHERE f2.TEMP = bt.TEMP AND bt.T = f1.T " +
+            "WHERE bt.PERIOD = f2.PERIOD AND bt.T = f1.T " +
             "GROUP BY f1.T, f2.PERIOD;")
 
     sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
