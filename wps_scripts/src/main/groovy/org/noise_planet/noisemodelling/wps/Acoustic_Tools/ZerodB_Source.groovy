@@ -90,7 +90,7 @@ def exec(connection, input) {
     String resultString = null
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-    logger.info('Start : Create_0db_Source_From_Roads')
+    logger.info('Start : Zerodb_Source')
     logger.info("inputs {}", input)
 
     String tableName = input['tableName']
