@@ -33,7 +33,7 @@ import org.noise_planet.noisemodelling.emission.railway.RailwayVehicleParameters
 public class RailwayVehicleCnossosParameters extends RailwayVehicleParameters {
 
     // set default value
-    private int runningCondition = 0; // 0 = constand speed, 1 = acceleration , 2 =decceleration, 3 = idling
+    private int runningCondition = 0; // 0 = steady speed, 1 = acceleration , 2 = deceleration, 3 = idling
     private double idlingTime = 0; // if idling, idling time (seconds)
     private String fileVersion = "FR"; // version of cnossos coefficient, if 2 == amendments 2019
 

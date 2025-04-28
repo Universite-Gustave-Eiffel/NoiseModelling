@@ -417,6 +417,9 @@ class TestDynamic extends JdbcTestCase {
                   railsTraffic: "RAILS_TRAFFIC"])
     }
 
+    /**
+     * Test the generation of multiple wagons sources from engine train position
+     */
     void testDynamicTrainSourcesPlacement() {
         new Import_File().exec(connection, [
                 pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/pointTrainDynamic.geojson").getPath()])

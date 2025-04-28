@@ -12,6 +12,8 @@
  */
 package org.noise_planet.noisemodelling.wps.Dynamic
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ContainerNode
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.GroovyRowResult
@@ -260,6 +262,7 @@ def exec(Connection connection, Map input) {
             RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(trainset, vehicleSpeed,
                     vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
             sourceDistribution = new TrainInfo(railway, trackParameters, vehicleParameters)
+            previousTrainset = trainset
         }
     }
 
@@ -281,12 +284,68 @@ class TrainInfo {
     RailwayCnossos railway
     RailwayTrackCnossosParameters trackParameters
     RailwayVehicleCnossosParameters vehicleParameters
+    List<VehicleInfo> trainComposition = new ArrayList<>()
 
     TrainInfo(RailwayCnossos railway, RailwayTrackCnossosParameters trackParameters, RailwayVehicleCnossosParameters vehicleParameters) {
         this.railway = railway
         this.trackParameters = trackParameters
         this.vehicleParameters = vehicleParameters
-        // Precompute all sources positions normalized to distance from center of first engine wagon
+        // Precompute all sources positions normalized to distance from the tip of first vehicle
+        // vehicleParameters.typeVehicle define a specific train composition (main engine - wagons etc)
+        // Look for this vehicle in the JSON document
+        JsonNode trainNode = railway.trainsetData.get(vehicleParameters.typeVehicle)
+        if(trainNode instanceof ContainerNode) {
+            // in vehicleNode we have a map with the key that define the "wagon" type and the value is the quantity (int)
+            // The first element is supposed to be the engine, then other elements may not represent the real order of wagons
+            double tipDistanceFromFirstVehicle = 0
+            trainNode.fields().each {vehicle ->
+                def vehicleIdentifier = vehicle.key as String
+                def vehicleQuantity = vehicle.value.intValue()
+                // Look for the wagon characteristics
+                JsonNode vehicleNode = railway.vehicleData.get(vehicleIdentifier)
+                if(vehicleNode instanceof ContainerNode) {
+                    def maxSpeed = vehicleNode.get("Vmax").asDouble()
+                    double length = vehicleNode.get("Length").asDouble()
+                    int nbCoach = vehicleNode.get("NbCoach").asInt() // number of sources/wagons
+                    double firstSourcePosition = vehicleNode.get("FirstSourcePosition").asDouble() // distance
+                    double sourceSpacing = vehicleNode.get("SourceSpacing").asDouble() // distance between each coach
+                    for(vehicleId in 0..< vehicleQuantity) {
+                        // The reference point is at the tip of the first vehicle
+                        // first source position is relative to the tip of the train (our the_geom coordinate)
+                        double referenceDistance = trainComposition.isEmpty() ? firstSourcePosition : tipDistanceFromFirstVehicle + firstSourcePosition
+                        for (coachId in 0..<nbCoach) {
+                            trainComposition.add(new VehicleInfo(referenceDistance, 0.5d, 0.0d))
+                            referenceDistance += sourceSpacing
+                        }
+                        // next vehicle tip position will be at this new location (we add the full vehicle length)
+                        tipDistanceFromFirstVehicle += length
+                    }
+                } else {
+                    def allVehicles = railway.vehicleData.fieldNames().collect {it}.join(", ")
+                    throw new IllegalArgumentException("Vehicle identifier is set as '$vehicleIdentifier' but such" +
+                            " vehicle is not defined (possible values $allVehicles)")
+                }
+            }
+        } else {
+            def allTrains = railway.trainsetData.fieldNames().collect {it}.join(", ")
+            throw new IllegalArgumentException("Train identifier is set as '$vehicleParameters.typeVehicle' but such" +
+                    " train composition is not defined (possible values $allTrains)")
+        }
+    }
+}
+
+@CompileStatic
+class VehicleInfo {
+    double distanceFromTheGeom = 0 // source distance from the reference point
+    double height = 0.5 // source height
+    double lateralOffset = 0 // source lateral distance from the center of the train
+    VehicleInfo() {
+    }
+
+    VehicleInfo(double distanceFromTheGeom, double height, double lateralOffset) {
+        this.distanceFromTheGeom = distanceFromTheGeom
+        this.height = height
+        this.lateralOffset = lateralOffset
     }
 }
 
