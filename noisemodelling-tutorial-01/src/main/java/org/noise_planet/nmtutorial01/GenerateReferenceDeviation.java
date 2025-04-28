@@ -31,6 +31,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 public class GenerateReferenceDeviation {
@@ -46,7 +48,8 @@ public class GenerateReferenceDeviation {
     private static final String UNCHECKED = "□";
     private static final String REPORT_HEADER = "Conformity to ISO 17534-1:2015\n" +
             "==============================\n" +
-            ".. This document has been generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
+            ".. DO NOT UPDATE THIS FILE!!\n" +
+            ".. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
             "\n" +
             "\n" +
             "Clarifications on the ISO Standard and Identified Issues\n" +
@@ -60,10 +63,9 @@ public class GenerateReferenceDeviation {
             "\n" +
             "\n" +
             "Conformity table\n" +
-            "^^^^^^^^^^^^^^^^\n" +
-            "| Conform - Do not the deviate more than ±0,1 dB \n" +
-            "| NLD Conform - Do not the deviate more than ±0,1 dB neglecting lateral diffraction\n" +
-            ".. list-table::\n" +
+            "^^^^^^^^^^^^^^^^\n";
+
+    private static final String TABLE_HEADER = ".. list-table::\n" +
             "   :widths: 10 20 20 25 30\n" +
             "\n" +
             "   * - Test Case\n" +
@@ -153,7 +155,19 @@ public class GenerateReferenceDeviation {
         }
     }
 
-    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues, AttenuationComputeOutput actual, AttenuationComputeOutput actualWithoutLateral, double[] powerLevel) {
+    /**
+     * Generate documentatin content for a unit test according to the deviation
+     * @param utName Unit test name
+     * @param sb Output of documentation
+     * @param expectedValues Expected results
+     * @param actual Computed results
+     * @param actualWithoutLateral Computed results without lateral diffraction
+     * @param powerLevel Emission level at the source
+     */
+    private static void addUTDeviation(String utName, StringBuilder sb, JsonNode expectedValues,
+                                       AttenuationComputeOutput actual, AttenuationComputeOutput actualWithoutLateral,
+                                       double[] powerLevel, AtomicInteger fullConform, AtomicInteger directConform) {
+
         double[] expectedLA = asArray(expectedValues.get("LA"));
         double[] expectedLAWithoutLateral = asArray(expectedValues.get("LA_WL"));
         double[] actualLA = addArray(powerLevel, addArray(actual.receiversAttenuationLevels.getFirst().levels,
@@ -163,6 +177,12 @@ public class GenerateReferenceDeviation {
                 A_WEIGHTING));
         DeviationResult lADeviation = computeDeviation(expectedLA, actualLA);
         DeviationResult lADeviationWithoutLateral = computeDeviation(expectedLAWithoutLateral, actualLAWithoutLateral);
+        if(lADeviation.deviation <= 0.1) {
+            fullConform.incrementAndGet();
+        }
+        if(lADeviationWithoutLateral.deviation <= 0.1) {
+            directConform.incrementAndGet();
+        }
         sb.append(String.format(Locale.ROOT, "   * - %s\n" +
                 "     - %s\n" +
                 "     - %s\n" +
@@ -229,13 +249,17 @@ public class GenerateReferenceDeviation {
         }
         try(FileWriter fileWriter = new FileWriter(new File(workingDirPath, "Cnossos_Report.rst"))) {
             fileWriter.write(REPORT_HEADER);
+            int total = 0;
+            AtomicInteger directPass = new AtomicInteger(0);
+            AtomicInteger fullPass = new AtomicInteger(0);
             try (InputStream referenceStream = GenerateReferenceDeviation.class.getResourceAsStream("reference_cnossos.json")) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = mapper.getFactory().createParser(referenceStream).readValueAsTree();
                 StringBuilder stringBuilderDetail = new StringBuilder();
+                StringBuilder stringBuilderTable = new StringBuilder();
                 for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
+                    total += 1;
                     Map.Entry<String, JsonNode> elt = it.next();
-                    StringBuilder stringBuilder = new StringBuilder();
                     String utName = elt.getKey();
                     JsonNode pathsExpected = elt.getValue();
                     double[] powerLevel = SOUND_POWER_LEVELS;
@@ -258,8 +282,7 @@ public class GenerateReferenceDeviation {
                     }
                     AttenuationComputeOutput attenuationComputeOutput = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
                     AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
-                    addUTDeviation(utName, stringBuilder, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel);
-                    fileWriter.write(stringBuilder.toString());
+                    addUTDeviation(utName, stringBuilderTable, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel, fullPass, directPass);
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
                     addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths().get(0), powerLevel);
@@ -274,6 +297,19 @@ public class GenerateReferenceDeviation {
                         addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths().get(index), powerLevel);
                     }
                 }
+                fileWriter.write(String.format(Locale.ROOT, "| Conform\n" +
+                                "\n" +
+                                "* Do not the deviate more than ±0,1 dB\n" +
+                                "* Percentage of conformity : %d%% (%d/%d)\n" +
+                                "\n" +
+                                "| NLD Conform\n" +
+                                "\n" +
+                                "* Do not the deviate more than ±0,1 dB neglecting lateral diffraction\n" +
+                                "* Percentage of conformity : %d%% (%d/%d)\n\n",
+                        (int)Math.ceil(fullPass.get()/(double)total * 100), fullPass.get(), total,
+                        (int)Math.ceil(directPass.get()/(double)total * 100), directPass.get(), total));
+                fileWriter.write(TABLE_HEADER);
+                fileWriter.write(stringBuilderTable.toString());
                 fileWriter.write(stringBuilderDetail.toString());
             }
         }

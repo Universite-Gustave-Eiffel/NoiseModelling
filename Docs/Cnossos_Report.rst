@@ -1,6 +1,8 @@
 Conformity to ISO 17534-1:2015
 ==============================
-.. This document has been generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
+
 
 Clarifications on the ISO Standard and Identified Issues
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -14,8 +16,16 @@ Furthermore, with respect to favorable rays, our findings indicate a different i
 
 Conformity table
 ^^^^^^^^^^^^^^^^
-| Conform - Do not the deviate more than ±0,1 dB 
-| NLD Conform - Do not the deviate more than ±0,1 dB neglecting lateral diffraction
+| Conform
+
+* Do not the deviate more than ±0,1 dB
+* Percentage of conformity : 75% (21/28)
+
+| NLD Conform
+
+* Do not the deviate more than ±0,1 dB neglecting lateral diffraction
+* Percentage of conformity : 83% (23/28)
+
 .. list-table::
    :widths: 10 20 20 25 30
 
