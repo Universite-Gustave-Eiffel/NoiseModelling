@@ -23,9 +23,14 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.CoordinateSequence
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.LineSegment
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.MultiLineString
+import org.locationtech.jts.geom.Point
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters
@@ -42,7 +47,7 @@ inputs = [
         trainsPosition : [
                 name: 'Trains position table',
                 title: 'Trains position table',
-                description: 'Table that contains the head position (POINTZ) of the train at each timestep',
+                description: 'Table that contains the head position (POINTZ) of the train, the timestep and the train identifier',
                 type: String.class
         ],
         railwayGeometries: [
@@ -216,32 +221,19 @@ def exec(Connection connection, Map input) {
         railway.setRailwayDataFile(trainCoefficientsData)
     }
 
+    // Cache distance in metres when fetching all rails nearby the train position
     final double queryCacheDistance = 500
     // keep track of train settings changes
     String previousTrainset = ""
     // keep track of train identifier (if the train change we clear the train history)
     String previousTrainId = ""
-    // Keep track of the rail associated with the train
-    AreaRails previousNetworkData = null
     // Precomputed source distribution settings according to current trainSet
-    TrainInfo sourceDistribution = null
-    // keep track of previous rails to put the wagons on the good position
-    LinkedList<RailInfo> railNavigationHistory = new LinkedList<>()
+    TrainInfo trainInfo = null
     sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset, the_geom FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) {rs ->
         String trainset = rs.getString(fieldTrainset)
+        String trainId = rs.getString(fieldTrainId)
         Geometry trainPosition = (Geometry) rs.getObject("the_geom")
-        // Read from the database then network of rails near the train position
-        // Do not query again if the position is near the last position
-        if(previousNetworkData == null || !previousNetworkData.queryEnvelope.contains(trainPosition.coordinate)) {
-            def data = sql.rows("SELECT * FROM $railwayGeometries WHERE THE_GEOM && ST_EXPAND(:geom,:dist, :dist)".toString(), [geom: trainPosition, dist:queryCacheDistance])
-            Envelope queryEnvelope = new Envelope(trainPosition.coordinate)
-            queryEnvelope.expandBy(queryCacheDistance)
-            previousNetworkData = new AreaRails(queryEnvelope,data)
-            // Look for closest rail
-            previousNetworkData.lookForClosestFeature(trainPosition.coordinate)
-        }
-        if(trainset != previousTrainset) {
-            previousNetworkData = null
+        if(trainset != previousTrainset || trainId != previousTrainId) {
             // New train configuration
             // Precompute source distribution
             double vehicleSpeed = 160
@@ -250,7 +242,7 @@ def exec(Connection connection, Map input) {
             double idlingTime = 0
             int trackTransfer = 4
             int impactNoise = 0
-            int bridgeTransfert = 0
+            int bridgeTransfer = 0
             int curvature = 0
             int railRoughness = 1
             int nbTrack = 2
@@ -258,26 +250,29 @@ def exec(Connection connection, Map input) {
             double commercialSpeed = 160
             boolean isTunnel = false
             RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
-                    impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack)
+                    impactNoise, bridgeTransfer, curvature, commercialSpeed, isTunnel, nbTrack)
             RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(trainset, vehicleSpeed,
                     vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
-            sourceDistribution = new TrainInfo(railway, trackParameters, vehicleParameters)
+            trainInfo = new TrainInfo(railway, trackParameters, vehicleParameters)
             previousTrainset = trainset
+            previousTrainId = trainId
         }
-    }
+        // Read from the database then network of rails near the train position
+        // Do not query again if the new position of the train is still on the cached query area
+        if(trainInfo != null && !trainInfo.nearbyRails.queryEnvelope.contains(trainPosition.coordinate)) {
+            def data = sql.rows("SELECT * FROM $railwayGeometries WHERE THE_GEOM && ST_EXPAND(:geom,:dist, :dist)".toString(), [geom: trainPosition, dist:queryCacheDistance])
+            Envelope queryEnvelope = new Envelope(trainPosition.coordinate)
+            queryEnvelope.expandBy(queryCacheDistance)
+            trainInfo.nearbyRails.update(queryEnvelope, data)
+        }
+        // Distribute sources of sourceDistribution object into the rails lines
+        // The direction is currently deduced from the previous position of the specific train (so no sources on the first time step)
+        // it could be also provided using a field (same order or reverse) according to the orientation (order of points) of the geometry the rail ?
+        trainInfo.updatePosition(trainPosition.coordinate)
 
+    }
 }
 
-@CompileStatic
-class RailInfo {
-    int primaryKey
-    Geometry railGeometry;
-
-    RailInfo(int primaryKey, Geometry railGeometry) {
-        this.primaryKey = primaryKey
-        this.railGeometry = railGeometry
-    }
-}
 
 @CompileStatic
 class TrainInfo {
@@ -285,6 +280,13 @@ class TrainInfo {
     RailwayTrackCnossosParameters trackParameters
     RailwayVehicleCnossosParameters vehicleParameters
     List<VehicleInfo> trainComposition = new ArrayList<>()
+    // Keep track of the rail associated with the train
+    AreaRails nearbyRails = new AreaRails()
+    // We create invalid position by default
+    Coordinate trainPosition = new Coordinate(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
+    LineString trainTipRail = null
+    // Tip position fraction on the linestring
+    double tipFraction = Double.NaN
 
     TrainInfo(RailwayCnossos railway, RailwayTrackCnossosParameters trackParameters, RailwayVehicleCnossosParameters vehicleParameters) {
         this.railway = railway
@@ -332,6 +334,104 @@ class TrainInfo {
                     " train composition is not defined (possible values $allTrains)")
         }
     }
+
+    void updatePosition(Coordinate newPosition) {
+        if(trainPosition.isValid() && !trainComposition.isEmpty()) {
+            // We can compute the direction of the train
+            Coordinate vehiclePosition = newPosition
+            if(trainTipRail == null) {
+                // we need to find the closest rail
+                trainTipRail = nearbyRails.findClosestFeature(vehiclePosition)
+                if(trainTipRail != null) {
+                    double frontRailTotalLength = trainTipRail.length
+                    tipFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, vehiclePosition)
+                    // Initialize the first vehicle
+                    if(!trainComposition.isEmpty()) {
+                        // found out the direction of the train
+                        double previousFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, trainPosition)
+                        VehicleInfo firstVehicle = trainComposition.first()
+                        double firstVehicleFraction = tipFraction
+                        if(previousFraction < tipFraction) {
+                            // the train is moving following the same order than the position of the
+                            // points in the linestring
+                            firstVehicleFraction -= firstVehicle.distanceFromTheGeom / frontRailTotalLength
+                        } else {
+                            // the train is moving following the inverse order than the position of the
+                            // points in the linestring
+                            firstVehicleFraction += firstVehicle.distanceFromTheGeom / frontRailTotalLength
+                        }
+                        firstVehicle.sourceCoordinate = LineStringUtils.getPositionFromFraction(trainTipRail, firstVehicleFraction)
+                        firstVehicle.currentRail = trainTipRail
+                    }
+                }
+            }
+            VehicleInfo forwardVehicle = trainComposition.first()
+            trainComposition.forEach { vehicleInfo ->
+                if(vehicleInfo.currentRail == null) {
+                    // we need to find the closest rail
+                    vehicleInfo.currentRail = nearbyRails.findClosestFeature(vehiclePosition)
+
+                }
+                forwardVehicle = vehicleInfo
+            }
+        }
+        trainPosition = newPosition
+    }
+}
+
+
+@CompileStatic
+class LineStringUtils {
+    /**
+     * Find the fraction [0,1] where the closest perpendicular position of the provided coordinate is
+     * @param ls
+     * @param coordinate
+     * @return fraction [0,1] of the total length of the linestring following order of points
+     */
+    static double getLineStringLengthFraction(LineString ls, Coordinate coordinate) {
+        LineSegment seg = new LineSegment()
+        CoordinateSequence cs = ls.getCoordinateSequence()
+        double closestDistanceLength = Double.NaN
+        double minimumDistance = Double.MAX_VALUE
+        double cumulatedDistance = 0
+        for(pointId in 0..< cs.size() - 1) {
+            cs.getCoordinate(pointId, seg.p0)
+            cs.getCoordinate(pointId + 1, seg.p1)
+            double distance = seg.distance(coordinate)
+            double segmentLength = seg.length
+            if(distance < minimumDistance) {
+                closestDistanceLength = cumulatedDistance + seg.segmentFraction(coordinate) * segmentLength
+                minimumDistance = distance
+            }
+            cumulatedDistance += segmentLength
+        }
+        return closestDistanceLength / cumulatedDistance
+    }
+
+    /**
+     * Get the coordinate from the fraction of the length of the linestring
+     * @param ls
+     * @param lineStringFraction
+     * @return
+     */
+    static Coordinate getPositionFromFraction(LineString ls, double lineStringFraction) {
+        double fullLength = ls.length
+        double targetDistance = fullLength * lineStringFraction
+        LineSegment seg = new LineSegment()
+        CoordinateSequence cs = ls.getCoordinateSequence()
+        double cumulatedDistance = 0
+        for(pointId in 0..< cs.size() - 1) {
+            cs.getCoordinate(pointId, seg.p0)
+            cs.getCoordinate(pointId + 1, seg.p1)
+            double segmentLength = seg.length
+            if(cumulatedDistance + segmentLength > targetDistance) {
+                // the fraction is on this segment
+                return seg.pointAlong((targetDistance-cumulatedDistance)/segmentLength)
+            }
+            cumulatedDistance += segmentLength
+        }
+        return cs.getCoordinate(cs.size() - 1)
+    }
 }
 
 @CompileStatic
@@ -339,6 +439,10 @@ class VehicleInfo {
     double distanceFromTheGeom = 0 // source distance from the reference point
     double height = 0.5 // source height
     double lateralOffset = 0 // source lateral distance from the center of the train
+
+    Coordinate sourceCoordinate = new Coordinate()
+    LineString currentRail = null
+
     VehicleInfo() {
     }
 
@@ -349,22 +453,58 @@ class VehicleInfo {
     }
 }
 
+/**
+ * Cache for spatial query on rails geometries
+ */
 @CompileStatic
 class AreaRails {
     Envelope queryEnvelope
-    Geometry closestRailGeometry
-    int closestRailRowIndex
     List<GroovyRowResult> allFeaturesInArea
+    GeometryFactory gf = new GeometryFactory()
 
-    AreaRails(Envelope queryEnvelope, List<GroovyRowResult> allFeaturesInArea) {
+    AreaRails() {
+        queryEnvelope = new Envelope()
+        allFeaturesInArea = new ArrayList<>()
+    }
+
+    void update(Envelope queryEnvelope, List<GroovyRowResult> allFeaturesInArea) {
         this.queryEnvelope = queryEnvelope
-        this.closestRailGeometry = closestRailGeometry
-        this.closestRailRowIndex = closestRailRowIndex
         this.allFeaturesInArea = allFeaturesInArea
     }
 
-    void lookForClosestFeature(Coordinate position) {
+    /**
+     * Read cached linestrings and find the closest linestring to the provided coordinate
+     * @param coordinate Coordinate (same projection than rails)
+     * @return The closest linestring
+     */
+    LineString findClosestFeature(Coordinate coordinate) {
+        Point pt = gf.createPoint(coordinate)
+        double minDistance = Double.MAX_VALUE
+        LineString minDistanceGeometry = null
+        allFeaturesInArea.forEach {
+            Object geomObj = it.get("THE_GEOM")
+            if(geomObj instanceof LineString) {
+                LineString ls = (LineString)geomObj
+                double distance = ls.distance(pt)
+                if(distance < minDistance) {
+                    minDistance = distance
+                    minDistanceGeometry = ls
+                }
+            } else if(geomObj instanceof MultiLineString) {
+                MultiLineString mls = (MultiLineString) geomObj;
+                for(int geomId in 0..< mls.getNumGeometries()) {
+                    LineString ls = (LineString)mls.getGeometryN(geomId)
+                    double distance = ls.distance(pt)
+                    if(distance < minDistance) {
+                        minDistance = distance
+                        minDistanceGeometry = ls
+                    }
+                }
+            }
+        }
 
+        return minDistanceGeometry
     }
+
 }
 
