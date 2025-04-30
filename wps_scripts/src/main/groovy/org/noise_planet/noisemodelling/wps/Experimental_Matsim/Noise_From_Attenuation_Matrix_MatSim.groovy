@@ -32,54 +32,54 @@ description = 'Noise Map From Attenuation Matrix.' +
         '<br/>'
 
 inputs = [
-        matsimRoads: [
-                name: 'Table name of the MATSIM table containing the roads geometries',
-                title: 'Table name of the MATSIM table containing the roads geometries',
-                description: 'Table name of the MATSIM table containing the roads geometries' +
-                        '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
-                type: String.class
-        ],
-        matsimRoadsLw : [
-                name: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
-                title: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
-                description: 'Table name of the MATSIM table containing the roads LW stats per timeBin' +
-                        '<br/>The table must contain the following fields : ' +
-                        '<br/>PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME',
-                type: String.class
-        ],
-        receiversTable : [
-                name: 'Name of the table containing the receivers',
-                title: 'Name of the table containing the receivers',
-                description: 'Name of the table containing the receivers' +
-                        '<br/>The table must contain the following fields : ' +
-                        '<br/>PK, THE_GEOM',
-                type: String.class
-        ],
-        attenuationTable : [
-                name: 'Attenuation Matrix Table name',
-                title: 'Attenuation Matrix Table name',
-                description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
-                        '<br/>The table must contain the following fields :' +
-                        '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
-                type: String.class
-        ],
-        timeBinSize: [
-                name: 'The size of time bins in seconds.',
-                title: 'The size of time bins in seconds.',
-                description: 'This parameter dictates the time resolution of the resulting data ' +
-                        '<br/>The time information stored will be the starting time of the time bins ' +
-                        '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
-                        '<br/>0, 3600, 7200, ..., 79200, 82800',
-                type: Integer.class
-        ],
-        outTableName: [
-                name: 'Output table name',
-                title: 'Output table name',
-                description: 'Output table name' +
-                        '<br/>The table will contain the following fields :' +
-                        '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIME',
-                type: String.class
-        ]
+    matsimRoads: [
+            name: 'Table name of the MATSIM table containing the roads geometries',
+            title: 'Table name of the MATSIM table containing the roads geometries',
+            description: 'Table name of the MATSIM table containing the roads geometries' +
+                    '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
+            type: String.class
+    ],
+    matsimRoadsLw : [
+            name: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+            title: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+            description: 'Table name of the MATSIM table containing the roads LW stats per timeBin' +
+                    '<br/>The table must contain the following fields : ' +
+                    '<br/>PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME',
+            type: String.class
+    ],
+    receiversTable : [
+            name: 'Name of the table containing the receivers',
+            title: 'Name of the table containing the receivers',
+            description: 'Name of the table containing the receivers' +
+                    '<br/>The table must contain the following fields : ' +
+                    '<br/>PK, THE_GEOM',
+            type: String.class
+    ],
+    attenuationTable : [
+            name: 'Attenuation Matrix Table name',
+            title: 'Attenuation Matrix Table name',
+            description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
+                    '<br/>The table must contain the following fields :' +
+                    '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
+            type: String.class
+    ],
+    timeBinSize: [
+            name: 'The size of time bins in seconds.',
+            title: 'The size of time bins in seconds.',
+            description: 'This parameter dictates the time resolution of the resulting data ' +
+                    '<br/>The time information stored will be the starting time of the time bins ' +
+                    '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
+                    '<br/>0, 3600, 7200, ..., 79200, 82800',
+            type: Integer.class
+    ],
+    outTableName: [
+            name: 'Output table name',
+            title: 'Output table name',
+            description: 'Output table name' +
+                    '<br/>The table will contain the following fields :' +
+                    '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIME',
+            type: String.class
+    ]
 ]
 
 outputs = [
