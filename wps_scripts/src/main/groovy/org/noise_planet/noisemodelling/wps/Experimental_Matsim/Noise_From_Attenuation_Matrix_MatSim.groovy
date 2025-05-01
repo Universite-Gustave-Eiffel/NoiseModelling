@@ -33,19 +33,19 @@ description = 'Noise Map From Attenuation Matrix.' +
 
 inputs = [
     matsimRoads: [
-        name: 'Table name of the MATSIM table containing the roads geometries',
-        title: 'Table name of the MATSIM table containing the roads geometries',
-        description: 'Table name of the MATSIM table containing the roads geometries' +
-                '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
-        type: String.class
+            name: 'Table name of the MATSIM table containing the roads geometries',
+            title: 'Table name of the MATSIM table containing the roads geometries',
+            description: 'Table name of the MATSIM table containing the roads geometries' +
+                    '<br/>The table must contain the following fields : (PK, LINK_ID, THE_GEOM)',
+            type: String.class
     ],
     matsimRoadsLw : [
-        name: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
-        title: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
-        description: 'Table name of the MATSIM table containing the roads LW stats per timeBin' +
-                '<br/>The table must contain the following fields : ' +
-                '<br/>PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME',
-        type: String.class
+            name: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+            title: 'Table name of the MATSIM table containing the roads LW stats per timeBin',
+            description: 'Table name of the MATSIM table containing the roads LW stats per timeBin' +
+                    '<br/>The table must contain the following fields : ' +
+                    '<br/>PK, LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME',
+            type: String.class
     ],
     receiversTable : [
             name: 'Name of the table containing the receivers',
@@ -56,12 +56,12 @@ inputs = [
             type: String.class
     ],
     attenuationTable : [
-        name: 'Attenuation Matrix Table name',
-        title: 'Attenuation Matrix Table name',
-        description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
-                '<br/>The table must contain the following fields :' +
-                '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
-        type: String.class
+            name: 'Attenuation Matrix Table name',
+            title: 'Attenuation Matrix Table name',
+            description: 'Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled' +
+                    '<br/>The table must contain the following fields :' +
+                    '<br/>IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000',
+            type: String.class
     ],
     timeBinSize: [
             name: 'The size of time bins in seconds.',
@@ -73,22 +73,22 @@ inputs = [
             type: Integer.class
     ],
     outTableName: [
-        name: 'Output table name',
-        title: 'Output table name',
-        description: 'Output table name' +
-                '<br/>The table will contain the following fields :' +
-                '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIME',
-        type: String.class
+            name: 'Output table name',
+            title: 'Output table name',
+            description: 'Output table name' +
+                    '<br/>The table will contain the following fields :' +
+                    '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIME',
+            type: String.class
     ]
 ]
 
 outputs = [
-    result: [
-        name: 'Result output string',
-        title: 'Result output string',
-        description: 'This type of result does not allow the blocks to be linked together.',
-        type: String.class
-    ]
+        result: [
+                name: 'Result output string',
+                title: 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type: String.class
+        ]
 ]
 
 static Connection openGeoserverDataStoreConnection(String dbName) {
