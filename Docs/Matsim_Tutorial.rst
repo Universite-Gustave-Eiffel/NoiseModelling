@@ -9,9 +9,9 @@ In this tutorial we will learn how to import the output of a successful MATSim s
 The idea is to use the traffic data from MATSim for NoiseModelling road noise emission.
 Then we will leverage the fact that MATSim is a multi-agent simulator. We will import MATSim agent's positions to calculate their noise exposition throughout the simulated day.
 
-For this tutorial, we'll look into a simulation of the `island in the center of Nantes`_, the 6th most populated city in France.
+For this tutorial, we'll look into a simulation of a small part of the `center of Nantes`_, the 6th most populated city in France.
 
-.. _island in the center of Nantes: https://www.openstreetmap.org/way/157597537
+.. _the center of Nantes: https://www.openstreetmap.org/way/45178361
 
 Prerequisites
 ~~~~~~~~~~~~~~~~~
@@ -25,29 +25,32 @@ Prerequisites
 The data
 ~~~~~~~~~~~~~~~
 
-You can download and unzip the data in any folder from here : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/download/v3.3.1/scenario_matsim.zip
+You can download and unzip the data in any folder from here : https://github.com/Symexpo/matsim-noisemodelling/releases/download/v5.0.0/scenario_matsim.zip
 
 The data folder should contain the following files :
 
-- ``nantes_ile.osm.pbf`` : the Openstreetmap data of the area. We'll use it to import buildings into NoiseModelling.
-- ``network.csv`` : A file containing the 'true' geometries of the road segments (called "links" in MATSim)
+- ``nantes_mini.osm.pbf`` : the Openstreetmap data of the area. We'll use it to import buildings into NoiseModelling.
+- ``detailed_network.csv`` : A file containing the 'true' geometries of the road segments (called "links" in MATSim)
 - ``output_events.xml.gz`` : A file containing the list of MATSim events from the simulation.
 - ``output_facilities.xml.gz`` : A file containing the list of facilities, the agent's activity locations.
 - ``output_network.xml.gz`` : A file containing the MATSim road network, a list of nodes and links.
-- ``output_plans.xml.gz`` : A file containing the list of agents and their final schedule, or plan.
+- ``output_plans.xml.gz`` : A file containing the list of agents and their final planned schedule.
+- ``output_experienced_plans.xml.gz`` : A file containing the list of agents and their final experienced schedule wich may differ from the inital planned one.
+- ``output_persons.csv.gz`` : A file containing the simple list of agents and some of there socioeconomic characteristics
 
 Step 1 : Import Buildings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first thing we're going to do is to import buildings.
-We use the ``Import_OSM`` WPS block to do that. Simply put the ``nantes_ile.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
+We use the ``Import_OSM`` WPS block to do that. There are several options. Put the ``nantes_mini.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
+Since we're only interested in buildings, you can also check the ``Do not import roads`` option as well as the ```Do not import Surface acoustic absorption`` option.
 
 .. _2154: https://epsg.io/2154
 
 .. figure:: images/matsim/osm_pbf_wps.png
    :align: center
 
-You should end up with a ``BUILDINGS`` table containing the island buildings.
+You should end up with a ``BUILDINGS`` table containing the city center buildings.
 
 .. figure:: images/matsim/buildings_table.png
    :align: center
@@ -61,28 +64,26 @@ To do that, we use the ``Traffic_From_Events`` WPS block.
 The mandatory inputs are :
 
 - ``folder`` : the path of the MATSim folder, here it is where you put the content of the ``scenario_matsim.zip`` file
-- ``timeSlice`` : wich represents the time period you want to aggregate the traffic data over. Here let's use the "quarter" option.
+
+An important option is ``The size of time bins in seconds`` which represents the time period you want to aggregate the traffic data over. Here let's use 900 to get data every 15 minutes.
 
 One optional but very important input is the ``Network CSV`` file path. The idea is that when the MATSim scenario was run, the link geometries were simplified to save computation time.
 This simplification of roads geometry is a bad thing for NoiseModelling since we take buidlings into account (simplified links can pass through buildings) and since source-receiver distance has a big impact on noise levels.
 That's why the ``network.csv`` file is given with the other data files. It contains the "real" geometry of links before MATSim simplification process (FYI, This is obtained by setting the 'outputDetailedLinkGeometryFile' option to a file name in the ``pt2matsim`` config file).
 
 An other important parameter is the ``populationFactor``. This corresponds to the downscaling factor that was used to generate the list of agents. Typically, this list of agents is generated based on the available census and survey data for an administrative area.
-Here, for our use case, the MAtsim scenario and it's agents were generated by using only 1% of the area total population (that is a population factor of 0.01).
+Here, for our use case, the Matsim scenario and it's agents were generated by using only 0,1% of the area total population (that is a population factor of 0.001).
 
 You can explore the other options by reading their descriptions. Here we are going to set them as follows:
 
-- Network CSV file: ``/path/to/your/scenario_matsim/network.csv``
-- Export additionnal traffic data ? : ``true``
-- Calculate All vehicles noise source ?: ``true``
-- Path of the matsim output folder: ``/path/to/your/scenario_matsim``
-- populationFactor: ``0.01``
-- Time Quantification: ``quarter``
+- Network CSV file: ``/path/to/your/scenario_matsim/detailed_network.csv``
+- Export additional traffic data ? : ``true``
+- Path of the Matsim output folder: ``/path/to/your/scenario_matsim``
+- populationFactor: ``0.001``
+- The size of time bins in seconds: ``900``
 - outTableName: "" (not set, use default)
 - Skip unused links ?: ``true``
 - Projection identifier: ``2154``
-- ignoreAgents: "" (not set)
-
 
 .. figure:: images/matsim/traffic_events_wps.png
    :align: center
@@ -132,7 +133,7 @@ Let's calculate all the receivers around our buildings using the ``Building_Grid
 
 - Buildings table table : ``BUILDINGS``
 - Distance between receivers : ``5.0``
-- height : ``4.0``
+- Height : ``4.0``
 
 That will place receviers around all the buildings, at 4 meter high and 5 meters apart.
 
@@ -162,8 +163,8 @@ In the end we want to have a noise map every 15 minutes (96 maps in total). If w
 
 So the process is as follows :
 
-1. we generate a SOURCE table, using the ``MATSIM_ROADS`` table.
-2. We use that table as input of the ``Noise_level_from_source`` WPS bloc and setting the ``confExportSourceId`` input paramter.
+1. we use the ``MATSIM_ROADS`` table as a SOURCE table. It only contains geometries, without any power levels, so the ``Noise_level_from_source`` bloc will compute acoustic attenuation by virtually attributing a power level of 0dB for every road link.
+2. We use the ``Noise_level_from_source`` WPS bloc and setting the ``confExportSourceId`` input paramter.
 
 The ``confExportSourceId`` parameter will actually ouput, for every recevier, the list of sources that contribute to the resulting levels, with the source-receiver noise attenuation.
 
@@ -174,7 +175,7 @@ Calculate the attenuation matrix
 
 Let's use the previously generated table to launch our propagation calculation.
 
-As explained before, we'll use the Noise_level_from_source WPS bloc with the 'confExportSourceId' parameter enabled.
+As explained before, we'll use the ``Noise_level_from_source`` WPS bloc with the ``Separate receiver level by source identifier`` parameter enabled.
 For more details about the different parameters, browse the NoiseModelling general documentation.
 
 The parameters we will use are the following :
@@ -203,7 +204,7 @@ Step 6 : Calculate Noise Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have noise power levels every 15 minutes in the ``MATSIM_ROADS_LW`` table, and a source-receiver noise attenuation matrix in the ``RECEIVERS_LEVEL`` table.
-We just need to combine the two to get receivers noise levels, noise maps, every 15 minutes.
+We just need to combine the two to get receivers noise levels every 15 minutes.
 
 This is the purpose of the ``Noise_From_Attenuation_Matrix_MatSim`` WPS bloc.
 We just have set the right tables as input as follows :
@@ -212,10 +213,11 @@ We just have set the right tables as input as follows :
 - Output table name: ``RESULT_GEOM``
 - Table name of the MATSIM table containing the roads LW stats per timeBin: ``MATSIM_ROADS_LW``
 - Table name of the MATSIM table containing the roads geometries: ``MATSIM_ROADS``
+- Table name of the MATSIM table containing the receivers: ``ACTIVITY_RECEIVERS``
 
-.. figure:: images/matsim/noise_map_wps.png
+.. figure:: images/matsim/noise_from_attenuation_wps.png
    :align: center
-S
+
 It takes some time but in the end you should get a noise spectrum for every receiver every 15 minutes in the table ``RESULT_GEOM``.
 
 We have our noise maps !
@@ -274,4 +276,17 @@ And the final result, between 10h00 and 10h15 :
    :align: center
 
 
+Going Further
+---------------------
 
+Now maybe we just want to compute actual noise maps instead of just the noise levels at some specific points.
+In this case we'd want to use a different receiver grid using the ``Delaunay_Grid`` WPS bloc.
+
+Then we can use the same ``Noise_level_from_source`` and ``Noise_From_Attenuation_Matrix_MatSim`` WPS blocs to calculate the noise levels at every receiver at every timestep.
+
+If you then select a specific timeBin you can then run a ``Create_Isosurface`` WPS bloc to create a noise map.
+
+Here is an example of a noise map for the 10h00_10h15 time period :
+
+.. figure:: images/matsim/map_10h_qgis.png
+   :align: center
