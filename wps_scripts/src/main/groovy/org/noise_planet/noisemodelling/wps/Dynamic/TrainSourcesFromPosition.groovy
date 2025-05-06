@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ContainerNode
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
@@ -31,6 +32,8 @@ import org.locationtech.jts.geom.LineSegment
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Point
+import org.locationtech.jts.math.Vector2D
+import org.locationtech.jts.triangulate.quadedge.Vertex
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters
@@ -229,53 +232,86 @@ def exec(Connection connection, Map input) {
     String previousTrainId = ""
     // Precomputed source distribution settings according to current trainSet
     TrainInfo trainInfo = null
-    sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset, the_geom FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) {rs ->
-        String trainset = rs.getString(fieldTrainset)
-        String trainId = rs.getString(fieldTrainId)
-        Geometry trainPosition = (Geometry) rs.getObject("the_geom")
-        if(trainset != previousTrainset || trainId != previousTrainId) {
-            // New train configuration
-            // Precompute source distribution
-            double vehicleSpeed = 160
-            double vehiclePerHour = 1
-            int rollingCondition = 0
-            double idlingTime = 0
-            int trackTransfer = 4
-            int impactNoise = 0
-            int bridgeTransfer = 0
-            int curvature = 0
-            int railRoughness = 1
-            int nbTrack = 2
-            double vMaxInfra = 160
-            double commercialSpeed = 160
-            boolean isTunnel = false
-            RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
-                    impactNoise, bridgeTransfer, curvature, commercialSpeed, isTunnel, nbTrack)
-            RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(trainset, vehicleSpeed,
-                    vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
-            trainInfo = new TrainInfo(railway, trackParameters, vehicleParameters)
-            previousTrainset = trainset
-            previousTrainId = trainId
-        }
-        // Read from the database then network of rails near the train position
-        // Do not query again if the new position of the train is still on the cached query area
-        if(trainInfo != null && !trainInfo.nearbyRails.queryEnvelope.contains(trainPosition.coordinate)) {
-            def data = sql.rows("SELECT * FROM $railwayGeometries WHERE THE_GEOM && ST_EXPAND(:geom,:dist, :dist)".toString(), [geom: trainPosition, dist:queryCacheDistance])
-            Envelope queryEnvelope = new Envelope(trainPosition.coordinate)
-            queryEnvelope.expandBy(queryCacheDistance)
-            trainInfo.nearbyRails.update(queryEnvelope, data)
-        }
-        // Distribute sources of sourceDistribution object into the rails lines
-        // The direction is currently deduced from the previous position of the specific train (so no sources on the first time step)
-        // it could be also provided using a field (same order or reverse) according to the orientation (order of points) of the geometry the rail ?
-        trainInfo.updatePosition(trainPosition.coordinate)
+    int BATCH_SIZE = 500
+    // Currently all sound sources are duplicated at each time step
+    // it would be efficient to merge the same kind of source source generated at the same location (with an appropriate snap distance)
+    int sourceCounter = 1
+    def bands =  ["HZ50", "HZ63", "HZ80", "HZ100", "HZ125", "HZ160", "HZ200", "HZ250", "HZ315", "HZ400", "HZ500",
+                  "HZ630", "HZ800", "HZ1000", "HZ1250", "HZ1600", "HZ2000", "HZ2500", "HZ3150", "HZ4000", "HZ5000",
+                  "HZ6300", "HZ8000", "HZ10000"]
+    sql.execute("DROP TABLE IF EXISTS SOURCES_GEOM")
+    sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
+    sql.execute("CREATE TABLE SOURCES_GEOM(IDSOURCE integer primary key,timestep long, THE_GEOM GEOMETRY(POINTZ, $srid), DIR_ID integer, YAW real, PITCH real, ROLL real)".toString())
+    sql.execute("CREATE TABLE SOURCES_EMISSION(IDSOURCE integer, PERIOD VARCHAR, ${bands.collect(){it+" real"}.join(", ")})".toString())
 
+    sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_GEOM(IDSOURCE,TIMESTEP, THE_GEOM, DIR_ID, YAW, PITCH, ROLL) VALUES (?, ?, ?, ?, ?, 0, 0)") { BatchingPreparedStatementWrapper sourceGeomBatch ->
+        sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_EMISSION(IDSOURCE, PERIOD, ${bands.join(", ")}) VALUES (?, ?," +
+                " ${(["?"] * bands.size()).join(", ")})") { BatchingPreparedStatementWrapper sourcePowerBatch ->
+            sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset, the_geom FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) { rs ->
+                String trainset = rs.getString(fieldTrainset)
+                String trainId = rs.getString(fieldTrainId)
+                long timeStep = rs.getLong(fieldTimeStep)
+                Geometry trainPosition = (Geometry) rs.getObject("the_geom")
+                if (trainset != previousTrainset || trainId != previousTrainId) {
+                    // New train configuration
+                    // Precompute source distribution
+                    double vehicleSpeed = 160
+                    double vehiclePerHour = 1
+                    int rollingCondition = 0
+                    double idlingTime = 0
+                    int trackTransfer = 4
+                    int impactNoise = 0
+                    int bridgeTransfer = 0
+                    int curvature = 0
+                    int railRoughness = 1
+                    int nbTrack = 2
+                    double vMaxInfra = 160
+                    double commercialSpeed = 160
+                    boolean isTunnel = false
+                    RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
+                            impactNoise, bridgeTransfer, curvature, commercialSpeed, isTunnel, nbTrack)
+                    RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(trainset, vehicleSpeed,
+                            vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
+                    trainInfo = new TrainInfo(railway, trackParameters, vehicleParameters)
+                    previousTrainset = trainset
+                    previousTrainId = trainId
+                }
+                // Read from the database then network of rails near the train position
+                // Do not query again if the new position of the train is still on the cached query area
+                if (trainInfo != null && !trainInfo.nearbyRails.queryEnvelope.contains(trainPosition.coordinate)) {
+                    def data = sql.rows("SELECT * FROM $railwayGeometries WHERE THE_GEOM && ST_EXPAND(:geom,:dist, :dist)".toString(), [geom: trainPosition, dist: queryCacheDistance])
+                    Envelope queryEnvelope = new Envelope(trainPosition.coordinate)
+                    queryEnvelope.expandBy(queryCacheDistance)
+                    trainInfo.nearbyRails.update(queryEnvelope, data)
+                }
+                // Distribute sources of sourceDistribution object into the rails lines
+                // The direction is currently deduced from the previous position of the specific train (so no sources on the first time step)
+                // it could be also provided using a field (same order or reverse) according to the orientation (order of points) of the geometry the rail ?
+                trainInfo.updatePosition(trainPosition.coordinate)
+                if(trainInfo.trainTipRail != null) {
+                    for(VehicleInfo vehicleInfo in trainInfo.trainComposition) {
+                        // Insert the source emission into the output table
+                        int idSource = sourceCounter++
+                        def sourcePower = [idSource, timeStep.toString()] as List<Object>
+                        sourcePower = sourcePower + ([90.0] * bands.size()  as List<Object>)
+                        sourcePowerBatch.addBatch(sourcePower)
+                        // Insert the source geometry and directivity into the output table
+                        int directivityId = 0 // train source directivity identifier
+                        Point point = trainPosition.getFactory().createPoint(vehicleInfo.source.position)
+                        point.setSRID(srid)
+                        def sourceGeom = [idSource, timeStep, point, directivityId, vehicleInfo.source.orientation] as List<Object>
+                        sourceGeomBatch.addBatch(sourceGeom)
+                    }
+                }
+            }
+        }
     }
 }
 
 
 @CompileStatic
 class TrainInfo {
+    static final double LOOK_FOR_CLOSEST_RAIL = 1.0 // will look for another closest rail if we are at least from this distance of the old rail
     RailwayCnossos railway
     RailwayTrackCnossosParameters trackParameters
     RailwayVehicleCnossosParameters vehicleParameters
@@ -285,8 +321,6 @@ class TrainInfo {
     // We create invalid position by default
     Coordinate trainPosition = new Coordinate(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
     LineString trainTipRail = null
-    // Tip position fraction on the linestring
-    double tipFraction = Double.NaN
 
     TrainInfo(RailwayCnossos railway, RailwayTrackCnossosParameters trackParameters, RailwayVehicleCnossosParameters vehicleParameters) {
         this.railway = railway
@@ -339,38 +373,77 @@ class TrainInfo {
         if(trainPosition.isValid() && !trainComposition.isEmpty()) {
             // We can compute the direction of the train
             Coordinate vehiclePosition = newPosition
-            if(trainTipRail == null) {
+            // The first wagon cannot rely on the next wagon (yes)
+            // so the processing is separate for this one:
+            if (trainTipRail == null || trainTipRail.distance(trainTipRail.getFactory().createPoint(vehiclePosition)) > LOOK_FOR_CLOSEST_RAIL) {
                 // we need to find the closest rail
                 trainTipRail = nearbyRails.findClosestFeature(vehiclePosition)
-                if(trainTipRail != null) {
-                    double frontRailTotalLength = trainTipRail.length
-                    tipFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, vehiclePosition)
-                    // Initialize the first vehicle
-                    if(!trainComposition.isEmpty()) {
-                        // found out the direction of the train
-                        double previousFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, trainPosition)
-                        VehicleInfo firstVehicle = trainComposition.first()
-                        double firstVehicleFraction = tipFraction
-                        if(previousFraction < tipFraction) {
-                            // the train is moving following the same order than the position of the
-                            // points in the linestring
-                            firstVehicleFraction -= firstVehicle.distanceFromTheGeom / frontRailTotalLength
-                        } else {
-                            // the train is moving following the inverse order than the position of the
-                            // points in the linestring
-                            firstVehicleFraction += firstVehicle.distanceFromTheGeom / frontRailTotalLength
-                        }
-                        firstVehicle.sourceCoordinate = LineStringUtils.getPositionFromFraction(trainTipRail, firstVehicleFraction)
-                        firstVehicle.currentRail = trainTipRail
+            }
+            if (trainTipRail != null) {
+                double frontRailTotalLength = trainTipRail.length
+                double tipFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, vehiclePosition)
+                // Initialize the first vehicle
+                if (!trainComposition.isEmpty()) {
+                    // found out the direction of the train
+                    double previousFraction = LineStringUtils.getLineStringLengthFraction(trainTipRail, trainPosition)
+                    VehicleInfo firstVehicle = trainComposition.first()
+                    firstVehicle.locationFractionOnCurrentRail = tipFraction
+                    if (previousFraction < tipFraction) {
+                        // the train is moving following the same order than the position of the
+                        // points in the linestring
+                        firstVehicle.locationFractionOnCurrentRail -= firstVehicle.distanceFromTheGeom / frontRailTotalLength
+                        firstVehicle.followDirectionRailGeometry = true
+                    } else {
+                        // the train is moving following the inverse order than the position of the
+                        // points in the linestring
+                        firstVehicle.locationFractionOnCurrentRail += firstVehicle.distanceFromTheGeom / frontRailTotalLength
+                        firstVehicle.followDirectionRailGeometry = false
                     }
+                    firstVehicle.source = LineStringUtils.getPositionFromFraction(trainTipRail,
+                            firstVehicle.locationFractionOnCurrentRail)
+                    firstVehicle.setCurrentRail(trainTipRail)
                 }
             }
             VehicleInfo forwardVehicle = trainComposition.first()
-            trainComposition.forEach { vehicleInfo ->
-                if(vehicleInfo.currentRail == null) {
-                    // we need to find the closest rail
-                    vehicleInfo.currentRail = nearbyRails.findClosestFeature(vehiclePosition)
-
+            for(VehicleInfo vehicleInfo in trainComposition.subList(1, trainComposition.size())) {
+                // compute the new fraction distance from the forward wagon data
+                double distanceOnRailFromNextWagon = vehicleInfo.distanceFromTheGeom - forwardVehicle.distanceFromTheGeom
+                double nextPositionOnRail = forwardVehicle.locationFractionOnCurrentRail *
+                        forwardVehicle.currentRailLength + distanceOnRailFromNextWagon * (forwardVehicle.followDirectionRailGeometry ? -1 : 1)
+                if(nextPositionOnRail < 0 || nextPositionOnRail > forwardVehicle.currentRailLength) {
+                    // the source is not the same rail than the next wagon
+                    // we can still project the source position using the closest line segment
+                    // so we could fetch the nearest rail
+                    double fractionOnLineString = nextPositionOnRail / forwardVehicle.currentRailLength
+                    PositionAndOrientation detachedSourcePosition = LineStringUtils.getPositionFromFraction(forwardVehicle.getCurrentRail(),
+                            fractionOnLineString)
+                    LineString closestRail = nearbyRails.findClosestFeature(detachedSourcePosition.position)
+                    vehicleInfo.setCurrentRail(closestRail)
+                    if(closestRail != null && closestRail == vehicleInfo.currentRail) {
+                        // There is no rails where the wagon is located..
+                        // maybe there is an hole in the network, we still place the wagon on the map by extrapolating using the line segment
+                        vehicleInfo.followDirectionRailGeometry = forwardVehicle.followDirectionRailGeometry
+                        vehicleInfo.locationFractionOnCurrentRail = fractionOnLineString
+                    } else {
+                        // we found another rail closest than the one of the next wagon
+                        vehicleInfo.locationFractionOnCurrentRail = LineStringUtils.getLineStringLengthFraction(vehicleInfo.getCurrentRail(), detachedSourcePosition.position)
+                        // by using the next wagon coordinate we fix the source direction relative to the new geometry
+                        double nextWagonFraction = LineStringUtils.getLineStringLengthFraction(vehicleInfo.getCurrentRail(), forwardVehicle.source.position)
+                        vehicleInfo.followDirectionRailGeometry = vehicleInfo.locationFractionOnCurrentRail < nextWagonFraction
+                    }
+                } else {
+                    // still on the same rail that the forward wagon
+                    vehicleInfo.followDirectionRailGeometry = forwardVehicle.followDirectionRailGeometry
+                    vehicleInfo.locationFractionOnCurrentRail = nextPositionOnRail / forwardVehicle.currentRailLength
+                    if(vehicleInfo.getCurrentRail() != forwardVehicle.getCurrentRail()) {
+                        vehicleInfo.setCurrentRail(forwardVehicle.getCurrentRail())
+                    }
+                }
+                // compute new source coordinate
+                vehicleInfo.source = LineStringUtils.getPositionFromFraction(vehicleInfo.getCurrentRail(),
+                        vehicleInfo.locationFractionOnCurrentRail)
+                if(!vehicleInfo.followDirectionRailGeometry) {
+                    vehicleInfo.source.reverse()
                 }
                 forwardVehicle = vehicleInfo
             }
@@ -414,7 +487,7 @@ class LineStringUtils {
      * @param lineStringFraction
      * @return
      */
-    static Coordinate getPositionFromFraction(LineString ls, double lineStringFraction) {
+    static PositionAndOrientation getPositionFromFraction(LineString ls, double lineStringFraction) {
         double fullLength = ls.length
         double targetDistance = fullLength * lineStringFraction
         LineSegment seg = new LineSegment()
@@ -424,15 +497,39 @@ class LineStringUtils {
             cs.getCoordinate(pointId, seg.p0)
             cs.getCoordinate(pointId + 1, seg.p1)
             double segmentLength = seg.length
-            if(cumulatedDistance + segmentLength > targetDistance) {
+            if(cumulatedDistance + segmentLength > targetDistance || pointId + 1 == cs.size() - 1) {
                 // the fraction is on this segment
-                return seg.pointAlong((targetDistance-cumulatedDistance)/segmentLength)
+                Coordinate positionOnSegment = seg.pointAlong((targetDistance-cumulatedDistance)/segmentLength);
+                positionOnSegment.z = Vertex.interpolateZ(positionOnSegment, seg.p0, seg.p1)
+                return new PositionAndOrientation(positionOnSegment, Math.toDegrees(seg.angle()))
             }
             cumulatedDistance += segmentLength
         }
-        return cs.getCoordinate(cs.size() - 1)
+        return new PositionAndOrientation(cs.getCoordinate(cs.size() - 1), Math.toDegrees(seg.angle()))
     }
 }
+
+
+@CompileStatic
+class PositionAndOrientation {
+    Coordinate position
+    double orientation // YAW en degree
+
+    PositionAndOrientation() {
+        position = new Coordinate()
+        orientation = 0.0
+    }
+
+    PositionAndOrientation(Coordinate position, double orientation) {
+        this.position = position
+        this.orientation = orientation
+    }
+
+    void reverse() {
+        orientation = (orientation + 180) % 360
+    }
+}
+
 
 @CompileStatic
 class VehicleInfo {
@@ -440,8 +537,13 @@ class VehicleInfo {
     double height = 0.5 // source height
     double lateralOffset = 0 // source lateral distance from the center of the train
 
-    Coordinate sourceCoordinate = new Coordinate()
-    LineString currentRail = null
+    PositionAndOrientation source = new PositionAndOrientation()
+
+    private LineString currentRail = null
+    double currentRailLength = 0
+    // [0-1] current location on the linestring of currentRail
+    double locationFractionOnCurrentRail = 0
+    boolean followDirectionRailGeometry = true;
 
     VehicleInfo() {
     }
@@ -450,6 +552,15 @@ class VehicleInfo {
         this.distanceFromTheGeom = distanceFromTheGeom
         this.height = height
         this.lateralOffset = lateralOffset
+    }
+
+    LineString getCurrentRail() {
+        return currentRail
+    }
+
+    void setCurrentRail(LineString currentRail) {
+        this.currentRail = currentRail
+        this.currentRailLength = currentRail.length
     }
 }
 

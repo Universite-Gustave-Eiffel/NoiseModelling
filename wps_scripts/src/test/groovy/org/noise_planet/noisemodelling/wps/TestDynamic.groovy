@@ -439,6 +439,8 @@ class TestDynamic extends JdbcTestCase {
                 trainCoefficientsData: Railway.class.getResource("RailwayCnossosSNCF_2021.json").toString()
         ])
 
+        new Export_Table().exec(connection, [exportPath:"build/SOURCES_GEOM.shp",
+                                             tableToExport:"SOURCES_GEOM"])
     }
 
 }
