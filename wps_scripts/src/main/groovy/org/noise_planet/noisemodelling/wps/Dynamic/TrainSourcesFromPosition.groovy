@@ -497,15 +497,20 @@ class LineStringUtils {
             cs.getCoordinate(pointId, seg.p0)
             cs.getCoordinate(pointId + 1, seg.p1)
             double segmentLength = seg.length
+            // If the target distance is before or after the points, extrapolate the value using the first or last segment
             if(cumulatedDistance + segmentLength > targetDistance || pointId + 1 == cs.size() - 1) {
                 // the fraction is on this segment
                 Coordinate positionOnSegment = seg.pointAlong((targetDistance-cumulatedDistance)/segmentLength);
                 positionOnSegment.z = Vertex.interpolateZ(positionOnSegment, seg.p0, seg.p1)
-                return new PositionAndOrientation(positionOnSegment, Math.toDegrees(seg.angle()))
+                // YAW is clockwise direction (geographic orientation)
+                // Source horizontal orientation in degrees. For points 0° North, 90° East
+                // Values 0-360
+                final double yaw = (Math.toDegrees(-seg.angle() + Math.PI / 2.0) + 360) % 360
+                return new PositionAndOrientation(positionOnSegment, yaw)
             }
             cumulatedDistance += segmentLength
         }
-        return new PositionAndOrientation(cs.getCoordinate(cs.size() - 1), Math.toDegrees(seg.angle()))
+        return new PositionAndOrientation()
     }
 }
 
