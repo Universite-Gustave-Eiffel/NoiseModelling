@@ -63,7 +63,10 @@ inputs = [
             description: 'This parameter dictates the time resolution of the resulting data ' +
                     '<br/>The time information stored will be the starting time of the time bins ' +
                     '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
-                    '<br/>0, 3600, 7200, ..., 79200, 82800',
+                    '<br/>0, 3600, 7200, ..., 79200, 82800' +
+                    '<br/>Default: 3600',
+            min: 0,
+            max: 1,
             type: Integer.class
     ],
     populationFactor: [

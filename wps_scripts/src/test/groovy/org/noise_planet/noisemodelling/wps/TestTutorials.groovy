@@ -21,15 +21,31 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Agent_Exposure
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Import_Activities
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Noise_From_Attenuation_Matrix_MatSim
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Receivers_From_Activities_Closest
+import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Traffic_From_Events
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Folder
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.zip.ZipFile
+
+import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -227,5 +243,170 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(columnNames.contains("LW500"))
         assertTrue(columnNames.contains("LAEQ"))
         assertTrue(columnNames.contains("LEQ"))
+    }
+
+
+    void testTutorialMatsim() {
+        Logger logger = LoggerFactory.getLogger(TestTutorials.class)
+        Sql sql = new Sql(connection)
+
+        Path tempDataDir = new File("build/tmp/matsim/").toPath();
+
+        Files.createDirectories(tempDataDir);
+
+        // URL of the file to download
+        String fileUrl = "https://github.com/Symexpo/matsim-noisemodelling/releases/download/v5.0.0/scenario_matsim.zip";
+
+        // Create a temporary directory
+        Path zipFilePath = tempDataDir.resolve("scenario_matsim.zip");
+
+        String osmFile = tempDataDir.toString() + "/nantes_mini.osm.pbf";
+        String matsimFolder = tempDataDir.toString();
+        String resultsFolder = tempDataDir.toString() + "/results/";
+        Files.createDirectories(Path.of(resultsFolder));
+        String populationFactor = "0.001"; // 0.001 for 1/1000 of the population
+
+        int timeBinSize = 900;
+        int timeBinMin = 0;
+        int timeBinMax = 86400;
+
+        Path buildingsPath = Path.of(tempDataDir.toString() + "/results/BUILDINGS.geojson");
+        Path roadsPath = Path.of(tempDataDir.toString() + "/results/MATSIM_ROADS.geojson");
+
+        int srid = 2154
+
+        if (!zipFilePath.toFile().exists()) {
+            // Download the file
+            InputStream ins = new URL(fileUrl).openStream();
+            Files.copy(ins, zipFilePath);
+
+            // Unzip the file
+            ZipFile zipFile = new ZipFile(zipFilePath.toFile());
+            zipFile.stream().forEach({ entry ->
+                try {
+                    Path entryPath = tempDataDir.resolve(entry.getName());
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(entryPath);
+                    } else {
+                        Files.createDirectories(entryPath.getParent());
+                        InputStream insz = zipFile.getInputStream(entry);
+                        Files.copy( insz, entryPath );
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            // Clean up
+            zipFile.close();
+        }
+        new Import_OSM().exec(connection, Map.of(
+                "pathFile", osmFile,
+                "targetSRID", srid,
+                "ignoreGround", true,
+                "ignoreBuilding", false,
+                "ignoreRoads", true,
+                "removeTunnels", false
+        ));
+
+        sql.execute("DELETE FROM BUILDINGS WHERE ST_IsEmpty(THE_GEOM);");
+
+        new Export_Table().exec(connection, Map.of(
+                "tableToExport", "BUILDINGS",
+                "exportPath", Paths.get(resultsFolder, "BUILDINGS.geojson")
+        ));
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("folder", matsimFolder);
+        params.put("outTableName", "MATSIM_ROADS");
+        params.put("link2GeometryFile", Paths.get(matsimFolder, "detailed_network.csv")); // absolute path
+        params.put("timeBinSize", timeBinSize);
+        params.put("timeBinMin", timeBinMin);
+        params.put("timeBinMax", timeBinMax);
+        params.put("skipUnused", true);
+        params.put("exportTraffic", true);
+        params.put("SRID", srid);
+        params.put("perVehicleLevel", true);
+        params.put("populationFactor", populationFactor);
+
+        new Traffic_From_Events().exec(connection, params);
+
+        new Building_Grid().exec(connection, Map.of(
+                "delta",  5.0,
+                "tableBuilding", "BUILDINGS",
+                "receiversTableName", "RECEIVERS",
+                "height", 4.0,
+                "fenceTableName", "BUILDINGS"
+        ));
+
+        new Import_Activities().exec(connection, Map.of(
+                "facilitiesPath", Paths.get(matsimFolder, "output_facilities.xml.gz"),
+                "SRID", srid,
+                "outTableName", "ACTIVITIES"
+        ));
+
+        new Receivers_From_Activities_Closest().exec(connection, Map.of(
+                "activitiesTable", "ACTIVITIES",
+                "receiversTable", "RECEIVERS",
+                "outTableName", "ACTIVITIES_RECEIVERS"
+        ));
+
+        params = new HashMap<>();
+        params.put("tableBuilding", "BUILDINGS");
+        params.put("tableReceivers", "ACTIVITIES_RECEIVERS");
+        params.put("tableSources", "MATSIM_ROADS");
+        params.put("confMaxSrcDist", 50);
+        params.put("confMaxReflDist", 10);
+        params.put("confReflOrder", 0);
+        params.put("confSkipLevening", true);
+        params.put("confSkipLnight", true);
+        params.put("confSkipLden", true);
+        params.put("confExportSourceId", true);
+        params.put("confDiffVertical", false);
+        params.put("confDiffHorizontal", false);
+
+        new Noise_level_from_source().exec(connection, params);
+
+        sql.execute("DROP TABLE IF EXISTS ATTENUATION_TRAFFIC");
+        sql.execute("ALTER TABLE RECEIVERS_LEVEL RENAME TO ATTENUATION_TRAFFIC");
+
+        new Noise_From_Attenuation_Matrix_MatSim().exec(connection, Map.of(
+                "matsimRoads", "MATSIM_ROADS",
+                "matsimRoadsLw", "MATSIM_ROADS_LW",
+                "attenuationTable", "ATTENUATION_TRAFFIC",
+                "receiversTable", "ACTIVITIES_RECEIVERS",
+                "outTableName", "RESULT_GEOM",
+                "timeBinSize", timeBinSize,
+                "timeBinMin", timeBinMin,
+                "timeBinMax", timeBinMax
+        ));
+
+        params = new HashMap<>();
+        params.put("experiencedPlansFile", Paths.get(matsimFolder, "output_experienced_plans.xml.gz"));
+        params.put("plansFile", Paths.get(matsimFolder, "output_plans.xml.gz"));
+        params.put("personsCsvFile", Paths.get(matsimFolder, "output_persons.csv.gz"));
+        params.put("SRID", srid);
+        params.put("receiversTable", "ACTIVITIES_RECEIVERS");
+        params.put("outTableName", "EXPOSURES");
+        params.put("dataTable", "RESULT_GEOM");
+        params.put("timeBinSize", timeBinSize);
+        params.put("timeBinMin", timeBinMin);
+        params.put("timeBinMax", timeBinMax);
+
+        new Agent_Exposure().exec(connection, params);
+
+        new Export_Table().exec(connection, Map.of(
+                "tableToExport", "MATSIM_ROADS",
+                "exportPath", Paths.get(resultsFolder, "MATSIM_ROADS.geojson")
+        ));
+
+        new Export_Table().exec(connection, Map.of(
+                "tableToExport", "RESULT_GEOM",
+                "exportPath", Paths.get(resultsFolder, "RESULT_GEOM.shp")
+        ));
+
+        assertTrue(Paths.get(resultsFolder, "RESULT_GEOM.shp").toFile().exists());
+        assertTrue(buildingsPath.toFile().exists());
+        assertTrue(roadsPath.toFile().exists());
     }
 }
