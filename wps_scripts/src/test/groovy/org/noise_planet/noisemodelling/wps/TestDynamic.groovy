@@ -2,6 +2,9 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableUtilities
+import org.h2gis.utilities.dbtypes.DBUtils
+import org.noise_planet.noisemodelling.emission.railway.Railway
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface;
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators;
@@ -10,7 +13,9 @@ import org.noise_planet.noisemodelling.wps.Dynamic.Flow_2_Noisy_Vehicles;
 import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles;
 import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix;
 import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_From_Network
-import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period;
+import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period
+import org.noise_planet.noisemodelling.wps.Dynamic.TrainSourcesFromPosition
+import org.noise_planet.noisemodelling.wps.Experimental.DynamicTrainFromAADTTraffic;
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File;
@@ -400,5 +405,53 @@ class TestDynamic extends JdbcTestCase {
 
     }
 
+    // Test the generation of dynamic train from AADT traffic data
+    // will generate false positions on a network over an average day using day, evening, night average traffic
+    void testDynamicTrainGeneration() {
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_GEOM.geojson").getPath()])
+
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_TRAFFIC.csv").getPath()])
+
+        def columns  = JDBCUtilities.getColumnNames(connection, "RAILS_TRAFFIC")
+
+        new DynamicTrainFromAADTTraffic().exec(connection,
+                [railsGeometries: "RAILS_GEOM",
+                  railsTraffic: "RAILS_TRAFFIC"])
+    }
+
+    /**
+     * Test the generation of multiple wagons sources from engine train position
+     */
+    void testDynamicTrainSourcesPlacement() {
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/pointTrainDynamic.geojson").getPath()])
+
+        new Import_File().exec(connection, [
+                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/train_network_32635.geojson").getPath()])
+
+
+        new TrainSourcesFromPosition().exec(connection, [
+                trainsPosition: "pointTrainDynamic",
+                railwayGeometries: "train_network_32635",
+                fieldTrainset: "train_set",
+                fieldTrainId: "train_id",
+                fieldTimeStep: "timestep",
+                trainTrainsetData: Railway.class.getResource("RailwayTrainsets.json").toString(),
+                trainVehicleData: Railway.class.getResource("RailwayVehiclesCnossos.json").toString(),
+                trainCoefficientsData: Railway.class.getResource("RailwayCnossosSNCF_2021.json").toString()
+        ])
+
+        //new Export_Table().exec(connection, [exportPath:"build/SOURCES_GEOM.shp",
+        //                                     tableToExport:"SOURCES_GEOM"])
+
+        // Check output table content
+        def sql = new Sql(connection)
+
+        def cols = sql.rows("SELECT MIN(PERIOD::long) min_period, MAX(PERIOD::long) max_period FROM SOURCES_EMISSION")[0]
+        assertEquals(1734297901, cols["min_period"])
+        assertEquals(1734297955, cols["max_period"])
+    }
 
 }

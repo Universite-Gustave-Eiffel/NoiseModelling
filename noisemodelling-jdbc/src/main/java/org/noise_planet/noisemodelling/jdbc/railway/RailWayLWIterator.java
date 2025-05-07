@@ -296,41 +296,36 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
             nbTrack = rs.getInt("NTRACK");
         }
 
-
-        RailWayCnossosParameters  lWRailWay = new RailWayCnossosParameters();
-
         RailwayTrackCnossosParameters trackParameters = new RailwayTrackCnossosParameters(vMaxInfra, trackTransfer, railRoughness,
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = railway.getVehicleFromTrainset(train);
-       // double vehiclePerHouri=vehiclePerHour;
-        if (vehicles!=null){
-            int i = 0;
-            for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
+
+        if (vehicles != null) {
+            RailWayCnossosParameters  lWRailWay = null;
+            for (Map.Entry<String, Integer> entry : vehicles.entrySet()) {
                 String typeTrain = entry.getKey();
                 double vehiclePerHouri = vehiclePerHour * entry.getValue();
-                if (vehiclePerHouri>0) {
+                if (vehiclePerHouri > 0) {
                     RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(typeTrain, vehicleSpeed,
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
-
-                    if (i == 0) {
+                    if (lWRailWay == null) {
                         lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
                     } else {
                         lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
                     }
                 }
-                i++;
             }
-
-        }else if (railway.isInVehicleList(train)){
-            if (vehiclePerHour>0) {
+            return Objects.requireNonNullElseGet(lWRailWay, RailWayCnossosParameters::new);
+        } else {
+            if (vehiclePerHour > 0 && railway.isInVehicleList(train)) {
                 RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(train, vehicleSpeed,
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
-                lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
+                return railway.evaluate(vehicleParameters, trackParameters);
+            } else {
+                return new RailWayCnossosParameters();
             }
         }
-
-        return lWRailWay;
     }
 
 

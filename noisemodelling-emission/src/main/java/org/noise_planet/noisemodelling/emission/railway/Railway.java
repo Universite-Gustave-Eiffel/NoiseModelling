@@ -60,6 +60,30 @@ public class Railway {
         this.railWayData = parse(Railway.class.getResourceAsStream(RailWayData));
     }
 
+    /**
+     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json">RailwayVehiclesCnossos.json</a>
+     * @param VehicleData Coefficients related to the characteristics of vehicles
+     */
+    public void setVehicleDataFile(InputStream VehicleData) {
+        this.vehicleData = parse(VehicleData);
+    }
+
+    /**
+     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json">RailwayTrainsets.json</a>
+     * @param TrainsetData Composition of a train (one train can contain one or more vehicles)
+     */
+    public void setTrainSetDataFile(InputStream TrainsetData) {
+        this.trainsetData = parse(TrainsetData);
+    }
+
+    /**
+     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayCnossosSNCF_2021.json">RailwayCnossosSNCF_2021.json</a>
+     * @param RailWayData CNOSSOS coefficients
+     */
+    public void setRailwayDataFile(InputStream RailWayData) {
+        this.railWayData = parse(RailWayData);
+    }
+
     public JsonNode getVehicleNode(String typeVehicle) {
         JsonNode vehicle = vehicleData.get(typeVehicle);
         if (vehicle == null) {
@@ -144,23 +168,8 @@ public class Railway {
      * @throws IOException io exception
      **/
     public RailWayParameters evaluate(RailwayVehicleParameters vehicleParameters, RailwayTrackParameters trackParameters) throws IOException {
-
-        String typeVehicle = vehicleParameters.getTypeVehicle();
-        double speedVehicle = vehicleParameters.getSpeedVehicle();
-        double vehPerHour = vehicleParameters.getNumberVehicle();
-
-        boolean isTunnel = trackParameters.getIsTunnel();
-
-        if (isTunnel) {
-            RailWayParameters lWRailWay = new RailWayParameters();
-            return lWRailWay;
-        } else {
-            RailWayParameters lWRailWay = new RailWayParameters();
-            return lWRailWay;
-        }
+        return new RailWayParameters();
     }
-
-
 }
 
 
