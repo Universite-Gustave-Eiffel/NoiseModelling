@@ -85,7 +85,7 @@ def exec(Connection connection, Map input) {
     connection = new ConnectionWrapper(connection)
 
     final def railsGeometries = input["railsGeometries"] as String
-    final def railsTraffic = input["railsGeometries"] as String
+    final def railsTraffic = input["railsTraffic"] as String
 
     Sql sql = new Sql(connection)
 
@@ -139,9 +139,9 @@ def exec(Connection connection, Map input) {
         }
     }
 
-    // Loop over unique characteristic of train (currently limited to engine attribute)
-    sql.eachRow("SELECT DISTINCT ENGINE FROM $railsTraffic") {
-        def engine = it.getString("engine")
+    // Loop over unique characteristic of train (currently limited to train set attribute)
+    sql.eachRow("SELECT DISTINCT train_set FROM $railsTraffic".toString()) {
+        def trainSet = it.getString("train_set")
 
         // init expected traffic to 0 for all segments
         segments.each {entry ->
@@ -151,8 +151,8 @@ def exec(Connection connection, Map input) {
             segment.remainingNight = 0
         }
 
-        // Fetch expected traffic for this engine
-        sql.eachRow("SELECT PK_RAILS, TDAY, TEVENING, TNIGHT, MAXSPEED FROM $railsTraffic WHERE ENGINE = $engine") {
+        // Fetch expected traffic for this train set
+        sql.eachRow("SELECT PK_RAILS, TDAY, TEVENING, TNIGHT, MAXSPEED FROM $railsTraffic WHERE TRAIN_SET = :train_set".toString(), [train_set:trainSet]) {
             def pkRails = it.getString("PK_RAILS")
             if(segments.containsKey(pkRails)) {
                 def segment = segments.get(pkRails)

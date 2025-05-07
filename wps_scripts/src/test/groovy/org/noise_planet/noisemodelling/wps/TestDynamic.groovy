@@ -2,6 +2,8 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableUtilities
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.noise_planet.noisemodelling.emission.railway.Railway
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface;
@@ -411,6 +413,8 @@ class TestDynamic extends JdbcTestCase {
 
         new Import_File().exec(connection, [
                 pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_TRAFFIC.csv").getPath()])
+
+        def columns  = JDBCUtilities.getColumnNames(connection, "RAILS_TRAFFIC")
 
         new DynamicTrainFromAADTTraffic().exec(connection,
                 [railsGeometries: "RAILS_GEOM",
