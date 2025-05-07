@@ -74,14 +74,18 @@ public class RailWayCnossosParameters extends RailWayParameters {
      * @return Merged level
      */
     public static RailWayCnossosParameters sumRailwaySource(RailWayCnossosParameters lineSource1, RailWayCnossosParameters lineSource2) {
-        if (!lineSource2.getRailwaySourceList().isEmpty()){
-            for (Map.Entry<String, LineSource> railwaySourceEntry : lineSource1.getRailwaySourceList().entrySet()) {
-                double[]  lW1 = railwaySourceEntry.getValue().getlW();
-                double[]  lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
-                lineSource1.getRailwaySourceList().get(railwaySourceEntry.getKey()).setlW(sumDbArray(lW1, lW2));
+        RailWayCnossosParameters returnValue = new RailWayCnossosParameters();
+        for (Map.Entry<String, LineSource> railwaySourceEntry : lineSource1.getRailwaySourceList().entrySet()) {
+            if(lineSource2.getRailwaySourceList().containsKey(railwaySourceEntry.getKey())) {
+                double[] lW1 = railwaySourceEntry.getValue().getlW();
+                double[] lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
+                double[] lW = sumDbArray(lW1, lW2);
+                returnValue.getRailwaySourceList().put(railwaySourceEntry.getKey(),
+                        new LineSource(lW, railwaySourceEntry.getValue().sourceHeight,
+                                railwaySourceEntry.getValue().typeSource));
             }
         }
-        return lineSource1;
+        return returnValue;
     }
 
 

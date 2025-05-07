@@ -32,7 +32,6 @@ import org.locationtech.jts.geom.LineSegment
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Point
-import org.locationtech.jts.math.Vector2D
 import org.locationtech.jts.triangulate.quadedge.Vertex
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters
@@ -244,7 +243,7 @@ def exec(Connection connection, Map input) {
     sql.execute("CREATE TABLE SOURCES_GEOM(IDSOURCE integer primary key,timestep long, THE_GEOM GEOMETRY(POINTZ, $srid), DIR_ID integer, YAW real, PITCH real, ROLL real)".toString())
     sql.execute("CREATE TABLE SOURCES_EMISSION(IDSOURCE integer, PERIOD VARCHAR, ${bands.collect(){it+" real"}.join(", ")})".toString())
 
-    sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_GEOM(IDSOURCE,TIMESTEP, THE_GEOM, DIR_ID, YAW, PITCH, ROLL) VALUES (?, ?, ?, ?, ?, 0, 0)") { BatchingPreparedStatementWrapper sourceGeomBatch ->
+    sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_GEOM(IDSOURCE,TIMESTEP, THE_GEOM, DIR_ID, YAW, PITCH, ROLL) VALUES (?, ?, ?, ?, ?, ?, 0)") { BatchingPreparedStatementWrapper sourceGeomBatch ->
         sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_EMISSION(IDSOURCE, PERIOD, ${bands.join(", ")}) VALUES (?, ?," +
                 " ${(["?"] * bands.size()).join(", ")})") { BatchingPreparedStatementWrapper sourcePowerBatch ->
             sql.eachRow("SELECT $fieldTimeStep, $fieldTrainId, $fieldTrainset, the_geom FROM $trainsPosition ORDER BY $fieldTrainId, $fieldTimeStep".toString()) { rs ->
@@ -299,7 +298,7 @@ def exec(Connection connection, Map input) {
                         int directivityId = 0 // train source directivity identifier
                         Point point = trainPosition.getFactory().createPoint(vehicleInfo.source.position)
                         point.setSRID(srid)
-                        def sourceGeom = [idSource, timeStep, point, directivityId, vehicleInfo.source.orientation] as List<Object>
+                        def sourceGeom = [idSource, timeStep, point, directivityId, vehicleInfo.source.yaw, vehicleInfo.source.pitch] as List<Object>
                         sourceGeomBatch.addBatch(sourceGeom)
                     }
                 }
@@ -506,7 +505,9 @@ class LineStringUtils {
                 // Source horizontal orientation in degrees. For points 0° North, 90° East
                 // Values 0-360
                 final double yaw = (Math.toDegrees(-seg.angle() + Math.PI / 2.0) + 360) % 360
-                return new PositionAndOrientation(positionOnSegment, yaw)
+                // Source vertical orientation in degrees. 0° front 90° Top 270° Bottom
+                final double pitch = (Math.toDegrees(Math.atan2(seg.p1.z - seg.p0.z, segmentLength)) + 360) % 360
+                return new PositionAndOrientation(positionOnSegment, yaw, pitch)
             }
             cumulatedDistance += segmentLength
         }
@@ -518,20 +519,22 @@ class LineStringUtils {
 @CompileStatic
 class PositionAndOrientation {
     Coordinate position
-    double orientation // YAW en degree
+    double yaw // YAW en degree
+    double pitch // PITCH degree
 
     PositionAndOrientation() {
         position = new Coordinate()
-        orientation = 0.0
     }
 
-    PositionAndOrientation(Coordinate position, double orientation) {
+    PositionAndOrientation(Coordinate position, double yaw, double pitch) {
         this.position = position
-        this.orientation = orientation
+        this.yaw = yaw
+        this.pitch = pitch
     }
 
     void reverse() {
-        orientation = (orientation + 180) % 360
+        yaw = (yaw + 180) % 360
+        pitch = (pitch + 180) % 360
     }
 }
 

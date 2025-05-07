@@ -439,8 +439,15 @@ class TestDynamic extends JdbcTestCase {
                 trainCoefficientsData: Railway.class.getResource("RailwayCnossosSNCF_2021.json").toString()
         ])
 
-        new Export_Table().exec(connection, [exportPath:"build/SOURCES_GEOM.shp",
-                                             tableToExport:"SOURCES_GEOM"])
+        //new Export_Table().exec(connection, [exportPath:"build/SOURCES_GEOM.shp",
+        //                                     tableToExport:"SOURCES_GEOM"])
+
+        // Check output table content
+        def sql = new Sql(connection)
+
+        def cols = sql.rows("SELECT MIN(PERIOD::long) min_period, MAX(PERIOD::long) max_period FROM SOURCES_EMISSION")[0]
+        assertEquals(1734297901, cols["min_period"])
+        assertEquals(1734297955, cols["max_period"])
     }
 
 }

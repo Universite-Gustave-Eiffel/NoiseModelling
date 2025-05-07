@@ -260,7 +260,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
     }
 
     /**
-     * Evaluate the sound level for one Vehicle
+     * Evaluate the sound level for one Vehicle, merge all sound sources
      * @param vehicleParameters Vehicle Noise emission parameters
      * @param trackParameters Track Noise emission parameters
      * constant speed
@@ -323,7 +323,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      * @param height height source
      * @return lWSpectre(freq) (Traction or Aerodynamic)
      **/
-    private double[] getLWTraction(String typeVehicle, int runningCondition, String height, String fileVersion) {
+    public double[] getLWTraction(String typeVehicle, int runningCondition, String height, String fileVersion) {
         double[] lWSpectre = new double[24];
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             lWSpectre[idFreq] = getTractionNoise(typeVehicle, runningCondition, height, fileVersion, idFreq);
@@ -338,7 +338,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      * @param height height source
      * @return lWSpectre(freq) (Traction or Aerodynamic)
      **/
-    private double[] getLWAero(String typeVehicle, double speed, String height, String fileVersion) {
+    public double[] getLWAero(String typeVehicle, double speed, String height, String fileVersion) {
         double[] lWSpectre = new double[24];
 
         for (int idFreq = 0; idFreq < 24; idFreq++) {
@@ -376,7 +376,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      **/
 
 
-    private double[] getLWRolling(String typeVehicle, int trackRoughnessId, int impactId, int curvature, double speed, int trackTransferId, String trackFileVersion, double axlesPerVeh) {
+    public double[] getLWRolling(String typeVehicle, int trackRoughnessId, int impactId, int curvature, double speed, int trackTransferId, String trackFileVersion, double axlesPerVeh) {
 
         double[] trackTransfer = new double[24];
         double[] lWTr = new double[24];
@@ -422,7 +422,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      * @param axlesPerVeh
      * @return
      */
-    private double[] getLWBridge(String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, double speed, String trackFileVersion, double axlesPerVeh) {
+    public double[] getLWBridge(String typeVehicle, int trackRoughnessId, int impactId, int bridgeId, double speed, String trackFileVersion, double axlesPerVeh) {
 
         double[] lW = new double[24];
 
@@ -456,7 +456,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      * @param speed  impact reference
      * @return Lroughness(freq)
      **/
-    private double[] getLWRoughness(String typeVehicle, int trackRoughnessId, int impactId, double speed, String trackFileVersion) {
+    public double[] getLWRoughness(String typeVehicle, int trackRoughnessId, int impactId, double speed, String trackFileVersion) {
 
         double[] roughnessTotLambda = new double[35];
         double[] roughnessLtot = new double[35];
