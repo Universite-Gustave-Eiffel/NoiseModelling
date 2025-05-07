@@ -97,8 +97,6 @@ def exec(connection, Map input) {
 
     Sql sql = new Sql(connection)
 
-    String resultString = null
-
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start : Point_Source_From_Network.groovy')
     logger.info("inputs {}", input)
@@ -139,6 +137,6 @@ def exec(connection, Map input) {
 
     logger.info('End !')
 
-    return resultString
+    return "SOURCES_GEOM table has been created !"
 }
 
