@@ -33,6 +33,7 @@ import org.matsim.core.scenario.ScenarioUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import groovy.transform.CompileStatic
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.sql.*
@@ -142,7 +143,8 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+@CompileStatic
+static def exec(Connection connection, input) {
 
     connection = new ConnectionWrapper(connection)
     Sql sql = new Sql(connection)
@@ -175,16 +177,16 @@ def exec(Connection connection, input) {
 
     File file = new File(plansFile);
     if(!file.exists() || file.isDirectory()) {
-        throw new FileNotFoundException(file.getName(), file.getName() + " not found");
+        throw new FileNotFoundException(file.getName() + " not found");
     }
     file = new File(experiencedPlansFile);
     if(!file.exists() || file.isDirectory()) {
-        throw new FileNotFoundException(file.getName(), file.getName() + " not found");
+        throw new FileNotFoundException(file.getName() + " not found");
     }
     if (personsCsvFile != "") {
         def f = new File(personsCsvFile);
         if(!f.exists() || f.isDirectory()) {
-            throw new FileNotFoundException(f.getName(), f.getName() + " not found");
+            throw new FileNotFoundException(f.getName() + " not found");
         }
     }
 
@@ -338,6 +340,9 @@ def exec(Connection connection, input) {
                 continue;
             }
             Activity activity = (Activity) element;
+            if (activity.getFacilityId() == null) {
+                continue;
+            }
             String activityId = activity.getFacilityId().toString();
             if (activity.getType().contains("home")) {
                 homeId = activityId;
@@ -399,22 +404,16 @@ def exec(Connection connection, input) {
                     continue;
                 }
                 Activity activity = (Activity) element;
-                String activityId = activity.getFacilityId().toString();
-                if (activityId == "null") { // pt interaction ?
+                if (activity.getFacilityId() == null) { // pt interaction ?
                     continue;
                 }
+                String activityId = activity.getFacilityId().toString();
                 if (activity.type == "outside") {
                     isOutside = true
                     continue;
                 }
-                double activityStart = 0;
-                if (activity.getStartTime() > 0) {
-                    activityStart = activity.getStartTime();
-                }
-                double activityEnd = 86400 + 4 * 3600; // 28h
-                if (activity.getEndTime() > 0) {
-                    activityEnd = activity.getEndTime();
-                }
+                double activityStart = activity.getStartTime().orElse(0);
+                double activityEnd = activity.getEndTime().orElse(86400 + 4 * 3600); // 28h
                 double timeWeight = 0.0;
 
                 if (activityStart >= activityEnd) {
@@ -469,7 +468,7 @@ def exec(Connection connection, input) {
 
                 Double value = activitiesTimeSeries[activityId][timeBin]
                 if (value != null) {
-                    LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, value / 10));
+                    LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, (value / 10) as double));
                     sequence[timeBin].noise_laeq = value
                     hasLevel = true;
                 }

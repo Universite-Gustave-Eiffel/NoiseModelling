@@ -18,6 +18,7 @@ package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.jfree.chart.ChartFactory
@@ -93,7 +94,8 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+@CompileStatic
+static def exec(Connection connection, input) {
 
     connection = new ConnectionWrapper(connection)
 
