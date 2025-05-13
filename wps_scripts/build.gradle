@@ -7,7 +7,7 @@ plugins {
     id 'maven-publish'
 }
 
-sourceCompatibility = '21'
+sourceCompatibility = '11'
 
 def nm_version='5.0.1-SNAPSHOT'
 
@@ -34,8 +34,8 @@ startScripts {
 
 
 compileJava {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 }
 compileJava.options.encoding = "UTF-8"
 compileTestJava.options.encoding = "UTF-8"
@@ -191,7 +191,7 @@ dependencies {
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '[0.48, 0.49)'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '[0.48, 0.49)'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '[0.48, 0.49)'
-    implementation(group: 'org.matsim', name: 'matsim', version: '[2024.0, 2025.0)') {
+    implementation(group: 'org.matsim', name: 'matsim', version: '14.0') {
         exclude group: 'org.geotools'
     }
 

@@ -38,7 +38,7 @@ description = '&#10145;&#65039; Creates a SOURCE table from a ROAD table.' +
 inputs = [
         tableRoads: [
                 name: 'Input table name',
-                title: 'Intput table name',
+                title: 'Input table name',
                 description: 'Name of the Roads table. <br/> <br/>' +
                              'Must contain at least:</br>'+
                              '- <b>PK</b>: identifier with a Primary Key constraint</br>' +
