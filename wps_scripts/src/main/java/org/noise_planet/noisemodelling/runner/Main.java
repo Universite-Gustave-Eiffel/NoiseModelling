@@ -199,8 +199,7 @@ public class Main {
                 rollingAppender.setMaximumFileSize(10_000_000);
 
                 // Create and set pattern layout
-                PatternLayout layout = new PatternLayout();
-                layout.setConversionPattern("[%t] %-5p %d{dd MMM HH:mm:ss} - %m%n");
+                PatternLayout layout = new PatternLayout("[%t] %-5p %d{dd MMM HH:mm:ss} - %m%n");
                 rollingAppender.setLayout(layout);
 
                 // init stream

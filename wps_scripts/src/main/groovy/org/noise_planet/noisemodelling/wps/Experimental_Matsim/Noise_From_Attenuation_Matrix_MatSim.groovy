@@ -18,6 +18,7 @@ package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.GroovyRowResult
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -114,7 +115,8 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+@CompileStatic
+static def exec(Connection connection, input) {
 
     connection = new ConnectionWrapper(connection)
 
@@ -208,7 +210,7 @@ def exec(Connection connection, input) {
                 }
                 for (i in 0..<8) {
                     double new_level = (roads_stats[mrs_freqs[i]] as double) + attenuation[i];
-                    levels[timeBin][i] = 10 * Math.log10( Math.pow(10, levels[timeBin][i] / 10) + Math.pow(10, new_level / 10))
+                    levels[timeBin][i] = (double) 10 * Math.log10( Math.pow(10, (double) levels[timeBin][i] / 10.0) + Math.pow(10, (double) new_level / 10.0) );
                 }
             }
         }
