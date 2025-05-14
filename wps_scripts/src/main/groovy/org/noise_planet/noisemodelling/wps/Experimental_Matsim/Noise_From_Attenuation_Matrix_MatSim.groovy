@@ -210,7 +210,7 @@ static def exec(Connection connection, input) {
                 }
                 for (i in 0..<8) {
                     double new_level = (roads_stats[mrs_freqs[i]] as double) + attenuation[i];
-                    levels[timeBin][i] = (double) 10.0 * (double) Math.log10( (double) Math.pow((double) 10.0, (double) levels[timeBin][i] / 10.0) + (double) Math.pow((double) 10.0, (double) new_level / 10.0) );
+                    levels[timeBin][i] = (double) 10 * Math.log10( Math.pow(10, (double) levels[timeBin][i] / 10.0) + Math.pow(10, (double) new_level / 10.0) );
                 }
             }
         }

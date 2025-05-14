@@ -468,7 +468,7 @@ static def exec(Connection connection, input) {
 
                 Double value = activitiesTimeSeries[activityId][timeBin]
                 if (value != null) {
-                    LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, (value / 10) as double));
+                    LAeq = 10 * Math.log10(Math.pow(10, LAeq / 10) + timeWeight * Math.pow(10, (double) value / 10));
                     sequence[timeBin].noise_laeq = value
                     hasLevel = true;
                 }
