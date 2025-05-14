@@ -63,7 +63,7 @@ jobs:
           echo "signing.gnupg.passphrase=${MAVEN_GPG_PASSPHRASE}" >> ~/.gradle/gradle.properties
       - name: Deploy WPS
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: ./gradlew uploadArchives
+        run: ./gradlew publish
         working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4
