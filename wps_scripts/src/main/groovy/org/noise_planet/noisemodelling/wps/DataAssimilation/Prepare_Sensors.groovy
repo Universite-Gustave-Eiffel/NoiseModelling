@@ -5,9 +5,8 @@ import com.opencsv.exceptions.CsvException
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -15,7 +14,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.sql.Connection
-import java.sql.PreparedStatement
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicInteger
@@ -61,13 +59,15 @@ inputs = [
 outputs = [
         result: [
                 name: 'Sql tables output',
-                title: 'Best Configuration',
-                description: 'Sql tables "SENSORS_MEASUREMENTS", "OBSERVATION", "RECEIVERS", SENSORS',
+                title: 'Sql tables output',
+                description: 'Sql tables "SENSORS_MEASUREMENTS", "SENSORS_LOCATION","SENSORS", "SENSORS_MEASUREMENTS_TRAINING"',
                 type: Sql.class
         ]
 ]
 
-static def exec(Connection connection,input) {
+
+//@CompileStatic
+static def exec(Connection connection,input){
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Preparation of Sensor dataset ')
@@ -79,19 +79,12 @@ static def exec(Connection connection,input) {
     String deviceFolder = folderPath + "devices_data"
     LocalDateTime dayStart = parseTimestamp(input['startDate'] as String)
     LocalDateTime dayEnd = parseTimestamp(input['endDate'] as String)
-    String sensorCsv = folderPath + "device_mapping_sf.csv"
+    //String sensorCsv = folderPath + "device_mapping_sf.csv"
     Float trainingRatio = input['trainingRatio'] as Float//: 0.8,
     Integer targetSRID = input['targetSRID'] as Integer
 
-    // todo replace by CALL CSV_READ
-    // CSVDriverFunction csvDriver = new CSVDriverFunction()
-    // csvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
-    csvToSql(connection,sensorCsv)
-
-    // todo check epoch
-    // ne pas utiliser INT, mais plutot LONG
-    // separer les deux d'un cote l'import et de l'autre la preparation de données
-    measurement(connection,dayStart,dayEnd,deviceFolder)
+    List<Map<String, String>> selectedData = allMeasurements(dayStart, dayEnd,deviceFolder)
+    measurementTable(connection,selectedData)
 
     sql.execute("ALTER TABLE SENSORS_LOCATION ALTER COLUMN The_GEOM " +
             "TYPE geometry(PointZ, "+targetSRID+") " +
@@ -155,61 +148,15 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
 }
 
 /**
- * Create sql table from a csv file
- * @param connection : The database connection used for executing queries.
- * @param filepath : Path to the csv file
- * @throws IOException, CsvException In case of read errors
- */
-
-static def csvToSql(Connection connection, String filepath){
-    Sql sql= new Sql(connection)
-    sql.execute("""DROP TABLE IF EXISTS SENSORS_LOCATION""")
-    String tableName = "SENSORS_LOCATION"
-    sql.execute("CREATE TABLE "+tableName+" (" +
-            "    deveui VARCHAR(255)," +
-            "    The_GEOM VARCHAR(255)" +
-            ")")
-
-
-    try {
-        CSVReader csvReader = new CSVReader(new FileReader(filepath));
-        List<String[]> allRows = csvReader.readAll();
-
-        String[] headers = allRows.get(0);
-
-        String columns = String.join(", ", headers);
-        String placeholders = String.join(", ", Collections.nCopies(headers.length, "?"));
-        String insertSQL = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + placeholders + ")";
-
-        PreparedStatement stmt = connection.prepareStatement(insertSQL);
-
-        for (int i = 1; i < allRows.size(); i++) {
-            String[] row = allRows.get(i);
-            for (int j = 0; j < row.length; j++) {
-                stmt.setString(j + 1, row[j]);
-            }
-            stmt.addBatch();
-        }
-
-        stmt.executeBatch();
-    }catch (IOException | CsvException e) {
-    e.printStackTrace()
-    }
-
-}
-
-/**
  * Extracts sensor data from the sensor measurements files for a given period dayStart -> dayEnd
  *
- * @param connection: The database connection used for executing queries.
  * @param dayStart: Starting date period
  * @param dayEnd: Ending date period
  * @param deviceFolder: Path to the folder containing all the measurements of sensors
+ * @return a Map containing all sensors data
  */
+static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String deviceFolder){
 
-
-static def measurement(Connection connection,LocalDateTime dayStart, LocalDateTime dayEnd, String deviceFolder) {
-    Sql sql = new Sql(connection)
     List<Map<String, String>> allData = []
     Files.walk(Paths.get(deviceFolder))
             .filter { Files.isRegularFile(it) && it.toString().endsWith(".csv") }
@@ -227,6 +174,23 @@ static def measurement(Connection connection,LocalDateTime dayStart, LocalDateTi
         !ts.isBefore(dayStart) && !ts.isAfter(dayEnd)
     }
 
+    return selectedData
+   // if (dataSelected == null ) print("null selected data")
+
+    //selectedData.clear()
+    //selectedData.addAll(dataSelected)
+}
+
+
+
+/**
+ * Extracts sensor data from the sensor measurements files for a given period dayStart -> dayEnd
+ *
+ * @param connection: The database connection used for executing queries.
+ * @param selectedData Map containing all sensors
+ */
+static def measurementTable(Connection connection,List<Map<String, String>> selectedData) {
+    Sql sql = new Sql(connection)
     sql.execute("""DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;""")
     sql.execute("CREATE TABLE SENSORS_MEASUREMENTS (" +
             "    deveui VARCHAR(255)," +
@@ -321,7 +285,6 @@ static def extractObservationData(Connection connection,Float ratio) {
         idReceiverMap[sensor] = idCounter.getAndIncrement()
     }
 
-
     int keepSize = (int) (idReceiverMap.size() * ratio)
     Map<String, Integer> resultMap = idReceiverMap.entrySet().toList().subList(0, keepSize).collectEntries {
         [(it.key): it.value]
@@ -337,7 +300,6 @@ static def extractObservationData(Connection connection,Float ratio) {
             TEMP FLOAT
         )
     """)
-
 
     measureRows.each { row ->
         String sensor = row.deveui

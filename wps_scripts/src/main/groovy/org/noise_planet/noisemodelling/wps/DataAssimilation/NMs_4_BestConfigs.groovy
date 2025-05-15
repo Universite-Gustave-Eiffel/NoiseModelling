@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.wps.DataAssimilation
 
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
@@ -33,7 +34,7 @@ outputs = [
                 type: Sql.class
         ]
 ]
-
+@CompileStatic
 static def exec(Connection connection){
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Traffic calibration')
@@ -45,7 +46,7 @@ static def exec(Connection connection){
     sql.execute("CREATE TABLE LW_ROADS_best AS SELECT distinct r.* FROM LW_ROADS r, BEST_CONFIGURATION_FULL c WHERE c.PERIOD = r.PERIOD")
 
     // Add Z dimension to the road segments
-    sql.execute("CREATE INDEX ON LW_ROADS_best(IDSOURCE, PERIOD);")
+    sql.execute("CREATE INDEX ON LW_ROADS_best(IDSOURCE, PERIOD)")
 
     logger.info('End Traffic calibration')
 }

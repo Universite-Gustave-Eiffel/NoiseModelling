@@ -15,6 +15,7 @@ package org.noise_planet.noisemodelling.wps.DataAssimilation
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -45,9 +46,8 @@ outputs = [
                 type: Sql.class
         ]
 ]
-
+@CompileStatic
 static def exec(Connection connection, input){
-
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Extract best configuration')
 
@@ -59,12 +59,69 @@ static def exec(Connection connection, input){
     sql.execute("ALTER TABLE RECEIVERS_LEVEL ADD COLUMN TEMP DOUBLE PRECISION")
     sql.execute("UPDATE RECEIVERS_LEVEL SET TEMP = (SELECT MAX(TEMP_D) FROM ROADS_CONFIG RC WHERE RC.PERIOD = RECEIVERS_LEVEL.PERIOD)")
 
-    sql.execute("""
+    sql.execute("CREATE TABLE file1_cleaned AS " +
+            "SELECT " +
+            "    IDRECEIVER AS ID_sensor, " +
+            "    T, " +
+            "    LEQA " +
+            "FROM "+observationTable+"; \n" )
+    sql.execute("CREATE TABLE file2_cleaned AS \n" +
+            "SELECT \n" +
+            "    IDRECEIVER AS ID_sensor, \n" +
+            "    PERIOD, \n" +
+            "    LAEQ\n" +
+            "FROM "+noiseMapTable+"; \n" )
+    sql.execute("CREATE TABLE joined_data AS \n" +
+            "SELECT \n" +
+            "    f1.ID_sensor, \n" +
+            "    f1.T, \n" +
+            "    f2.PERIOD, \n" +
+            "    f1.LEQA AS LEQA_file1, \n" +
+            "    f2.LAEQ AS LEQA_file2\n" +
+            "FROM file1_cleaned f1\n" +
+            "INNER JOIN file2_cleaned f2 \n" +
+            "    ON f1.ID_sensor = f2.ID_sensor;\n")
+
+    sql.execute("CREATE TABLE agg_data AS \n" +
+            "SELECT \n" +
+            "    T, \n" +
+            "    PERIOD, \n" +
+            "    MEDIAN(ABS(LEQA_file1 - LEQA_file2)) AS median_abs_diff, \n" +
+            "    MEDIAN(LEQA_file1) AS value_file1,\n" +
+            "    MEDIAN(LEQA_file2) AS value_file2,\n" +
+            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_lower,\n" +
+            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_upper,\n" +
+            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_lower,\n" +
+            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_upper\n" +
+            "FROM joined_data\n" +
+            "GROUP BY T, PERIOD;\n" )
+
+    sql.execute("CREATE TABLE best_IT AS \n" +
+            "SELECT \n" +
+            "    T,\n" +
+            "    PERIOD,\n" +
+            "    median_abs_diff,\n" +
+            "    value_file1,\n" +
+            "    value_file2,\n" +
+            "    file1_lower,\n" +
+            "    file1_upper,\n" +
+            "    file2_lower,\n" +
+            "    file2_upper\n" +
+            "FROM agg_data\n" +
+            "WHERE (T, median_abs_diff) IN (\n" +
+            "    SELECT \n" +
+            "        T, \n" +
+            "        MIN(median_abs_diff)\n" +
+            "    FROM agg_data\n" +
+            "    GROUP BY T\n" +
+            ");")
+
+    /*sql.execute("""
     DROP TABLE IF EXISTS DIFF_TEMP;
     CREATE TABLE DIFF_TEMP AS 
     SELECT f1.T AS T, f2.PERIOD AS PERIOD, f1.TEMP AS TEMPOBS, f2.TEMP AS TEMPSMOD, 
            MEDIAN(ABS(f1.TEMP - f2.TEMP)) AS diff_temp
-    FROM SENSORS_MEASUREMENTS_TRAINING f1, RECEIVERS_LEVEL f2 
+    FROM """ +observationTable+""" f1, """+noiseMapTable+""" f2 
     GROUP BY f1.T, f1.TEMP, f2.TEMP, f2.PERIOD;
 
     DROP TABLE IF EXISTS BEST_TEMP;
@@ -87,9 +144,16 @@ static def exec(Connection connection, input){
             "GROUP BY f1.T, f2.PERIOD;")
 
     sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
-    sql.execute("CREATE TABLE BEST_CONFIGURATION AS  SELECT * FROM agg_data a  WHERE median_abs_diff = ( SELECT MIN(median_abs_diff)   FROM agg_data WHERE T = a.T  );")
+    sql.execute("CREATE TABLE BEST_CONFIGURATION AS  SELECT * FROM agg_data a  WHERE median_abs_diff = ( SELECT MIN(median_abs_diff)   FROM agg_data WHERE T = a.T  );")*/
 
     // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
+    sql.execute("CREATE TABLE BEST_CONFIGURATION AS SELECT DISTINCT T, PERIOD,ROUND(median_abs_diff,2) AS LEQA_DIFF FROM BEST_IT;")
+
+    // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
+    /*sql.execute("CREATE TABLE BEST_CONFIG AS " +
+            "SELECT DISTINCT b.T, b.IT, b.LEQA_DIFF, a.PRIMARY_VAL, a.SECONDARY_VAL, a.TERTIARY_VAL, a.OTHERS_VAL, a.TEMP_VAL " +
+            "FROM BEST_CONFIGURATION b " +
+            "JOIN ALL_CONFIGURATIONS a ON b.IT = a.IT")*/
     sql.execute("DROP TABLE BEST_CONFIGURATION_full IF EXISTS")
     sql.execute("CREATE TABLE BEST_CONFIGURATION_full AS SELECT b.*, a.* FROM BEST_CONFIGURATION b, ALL_CONFIGURATIONS a WHERE b.PERIOD = a.IT")
 

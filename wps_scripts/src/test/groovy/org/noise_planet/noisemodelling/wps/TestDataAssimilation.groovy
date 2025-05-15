@@ -12,24 +12,30 @@
 
 package org.noise_planet.noisemodelling.wps
 
-import groovy.sql.Sql
 import org.h2gis.utilities.JDBCUtilities
+import org.junit.Test
 import org.noise_planet.noisemodelling.wps.DataAssimilation.*
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.h2gis.functions.factory.H2GISDBFactory
 
-class TestDataAssimilation extends JdbcTestCase {
+import java.sql.Connection
+
+class TestDataAssimilation {
     Logger logger = LoggerFactory.getLogger(TestDataAssimilation.class)
 
+    @Test
     void testSimulation() {
+        Connection connection = JDBCUtilities.wrapConnection(
+                H2GISDBFactory.createSpatialDataBase("mem:assimilation", true)
+        )
 
         logger.info('Start Test for Data Assimilation')
-        Sql sql = new Sql(connection)
 
         // Path folder containing all the necessary data for this test
         String workingFolder = TestDataAssimilation.class.getResource("dataAssimilation/").getPath()
@@ -37,6 +43,24 @@ class TestDataAssimilation extends JdbcTestCase {
         new All_Possible_Configuration().exec(connection, [
                 "trafficValues"    : [0.01, 1.0, 2.0, 3],
                 "temperatureValues": [10, 15, 20]
+        ])
+        new Export_Table().exec(connection,
+                ["tableToExport": "ALL_CONFIGURATIONS",
+                 "exportPath": "./target/all_config.csv" ])
+
+        new Import_File().exec(connection,[
+                "pathFile" : workingFolder+"device_mapping_sf.csv",
+                "inputSRID" : 2056,
+                "tableName": "SENSORS_LOCATION"
+
+        ])
+
+        new Prepare_Sensors().exec(connection, [
+                "startDate"    : "2024-08-25 06:30:00",
+                "endDate"      : "2024-08-25 07:30:00",
+                "trainingRatio": 0.8,
+                "workingFolder": workingFolder,
+                "targetSRID"   : 2056
         ])
 
         new Import_OSM().exec(connection, [
@@ -47,40 +71,21 @@ class TestDataAssimilation extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ])
+        /*new Export_Table().exec(connection,
+                ["tableToExport": "ROADS",
+                 "exportPath": "./target/roads.csv" ])*/
 
-        // use import file au maximum
-        // new import_file csv donnees
-        // new import_file _sf.csv
-        //todo new import_csv mieux, car toujours mieux de mettre un nom de table que workingfolder
-        new Prepare_Sensors().exec(connection, [
-                "startDate"    : "2024-08-25 06:30:00",
-                "endDate"      : "2024-08-25 07:30:00",
-                "trainingRatio": 0.8,
-                "workingFolder": workingFolder,
-                "targetSRID"   : 2056
-        ])
-
-        new Road_Emission_from_Traffic().exec(connection, [
-                "tableRoads" : "ROADS"
-        ])
-
-        new Noise_level_from_source().exec(connection, [
-                "tableSources": "ROADS",
-                "tableBuilding": "BUILDINGS",
-                "tableReceivers": "SENSORS_LOCATION",
-                "confExportSourceId": true,
-                "confMaxSrcDist": 250,
-                "confDiffVertical": false,
-                "confDiffHorizontal": false
-        ])
 
         // Method to execute a series of operations for generate noise maps
-        // todo create direct splitted sources, in this way not needed to user Split_Sources_Period
         new Data_Simulation().exec(connection,[
                 "noiseMapLimit": 10
         ])
 
-      new Noise_level_from_source().exec(connection, [
+       /* new Export_Table().exec(connection,
+                ["tableToExport": "LW_ROADS",
+                 "exportPath": "./target/lw_roads.csv" ])*/
+
+       new Noise_level_from_source().exec(connection, [
                 "tableSources": "ROADS_GEOM",
                 "tableSourcesEmission" : "LW_ROADS",
                 "tableBuilding": "BUILDINGS",
@@ -92,28 +97,42 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
         // Extraction of the best maps
-              new Extract_Best_Configuration().exec(connection,[
-                      "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
-                      "noiseMapTable": "RECEIVERS_LEVEL"
-              ])
+        new Extract_Best_Configuration().exec(connection,[
+              "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
+              "noiseMapTable": "RECEIVERS_LEVEL"
+        ])
+
+        /*new Export_Table().exec(connection,
+                ["tableToExport": "SENSORS_MEASUREMENTS_TRAINING",
+                 "exportPath": "./target/observe.csv" ])
+
+        new Export_Table().exec(connection,
+                ["tableToExport": "RECEIVERS_LEVEL",
+                 "exportPath": "./target/noisemaps.csv" ])*/
+
+        new Export_Table().exec(connection,
+                ["tableToExport": "BEST_CONFIGURATION_full",
+                 "exportPath": "./target/bestconfig.csv" ])
 
 
-              // Create a regular grid of receivers.
-              new Regular_Grid().exec(connection,[
-                      "fenceTableName": "BUILDINGS",
-                      "buildingTableName": "BUILDINGS",
-                      "sourcesTableName":"ROADS",
-                      "delta": 200
-              ])
+      // Create a regular grid of receivers.
+        new Regular_Grid().exec(connection,[
+              "fenceTableName": "BUILDINGS",
+              "buildingTableName": "BUILDINGS",
+              "sourcesTableName":"ROADS",
+              "delta": 200
+        ])
 
-             sql.execute("ALTER TABLE RECEIVERS DROP COLUMN ID_ROW, ID_COL")
-              sql.execute("INSERT INTO RECEIVERS (THE_GEOM) SELECT The_GEOM FROM SENSORS_LOCATION; ")
+        new Merged_Sensors_Receivers().exec(connection,[
+                "tableReceivers": "RECEIVERS",
+                "tableSensors" : "SENSORS_LOCATION"
+        ])
 
-             // Creation of the dynamic road using best configurations
-              new NMs_4_BestConfigs().exec(connection)
+         // Creation of the dynamic road using best configurations
+        new NMs_4_BestConfigs().exec(connection)
 
         // Create NoiseMaps only for best configurations
-              new Noise_level_from_source().exec(connection, [
+        new Noise_level_from_source().exec(connection, [
                       "tableSources": "ROADS_GEOM",
                       "tableSourcesEmission" : "LW_ROADS_best",
                       "tableBuilding": "BUILDINGS",
@@ -122,19 +141,17 @@ class TestDataAssimilation extends JdbcTestCase {
                       "confMaxSrcDist": 250,
                       "confDiffVertical": false,
                       "confDiffHorizontal": false
-              ])
+        ])
 
-        // Add Timestamp to the NMs
-        sql.execute("DROP TABLE ASSIMILATED_MAPS IF EXISTS;")
-        sql.execute("CREATE TABLE ASSIMILATED_MAPS AS SELECT b.T TIMESTAMP, b.IT IMAP, a.LAEQ, a.THE_GEOM, a.IDRECEIVER FROM BEST_CONFIGURATION_FULL b  LEFT JOIN RECEIVERS_LEVEL a ON a.PERIOD = b.PERIOD ; ")
+        new Create_Assimilated_Maps().exec(connection,[
+                "bestConfigTable" : "BEST_CONFIGURATION_FULL",
+                "receiverLevel" : "RECEIVERS_LEVEL",
+                "outputTable": "ASSIMILATED_MAPS"
+        ])
 
-          def columnNames = JDBCUtilities.getColumnNames(connection, "ASSIMILATED_MAPS")
-
-          columnNames.containsAll(Arrays.asList("IMAP", "LAEQ"))
-
-              new Export_Table().exec(connection,
-                      ["tableToExport": "ASSIMILATED_MAPS",
-                     "exportPath": "/home/aumond/Documents/github/noisemodelling_pierromond/wps_scripts/target/test.geojson" ])
+        /*new Export_Table().exec(connection,
+                  ["tableToExport": "ASSIMILATED_MAPS",
+                 "exportPath": "./target/LT_GEOM.shp" ])*/
 
         logger.info('End of Test for Data Assimilation:  The dynamic noise map LT_GEOM is save on '+ workingFolder+"results")
     }

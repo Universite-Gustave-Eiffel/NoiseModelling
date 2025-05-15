@@ -16,6 +16,7 @@ package org.noise_planet.noisemodelling.wps.DataAssimilation
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.SpatialResultSet
 import org.locationtech.jts.geom.Geometry
@@ -29,6 +30,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.sql.SQLException
 import java.sql.Statement
 import java.time.LocalDateTime
@@ -54,13 +56,13 @@ outputs = [
                 type: Sql.class
         ]
 ]
-
-// todo do only on D, delete E and N
+// Executes the assimilation process for a list of combinations with road configurations and calculating noise levels.
+@CompileStatic
 def exec(Connection connection,input) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Data simulation ')
     Sql sql = new Sql(connection)
-    Integer limit = input['noiseMapLimit'] as Integer
+    Integer limit = input['noiseMapLimit'] as Integer // limit the number of maps to be generated
 
     // Create the ROADS_CONFIG table.
     sql.execute("DROP TABLE IF EXISTS ROADS_CONFIG")
@@ -78,33 +80,24 @@ def exec(Connection connection,input) {
             "TEMP_D DOUBLE" +
             ")")
 
-    // Read all combinations from the table .
+    //  A list of possible parameter combinations, where each entry contains:
+    // [iteration ID, primary factor, secondary factor, tertiary factor, others factor, temperature].
     List<String[]> allCombinations = new ArrayList<>()
 
+    // Read all combinations from the table .
     sql.eachRow("SELECT * FROM ALL_CONFIGURATIONS") { row ->
         allCombinations.add(row.toRowResult().values() as String[])
     }
 
-    // get the similated noise map.
+    // get the simulated noise map.
     def iConf
     double primary, secondary, tertiary, others
     int valTemps
     Statement stmt = connection.createStatement()
     stmt.execute("ALTER TABLE ROADS ADD TEMP DOUBLE")
 
-    stmt.execute("DROP TABLE IF EXISTS NOISE_MAPS")
-    stmt.execute("CREATE TABLE NOISE_MAPS ( " +
-            "PERIOD CHARACTER VARYING, "+
-            "TEMP double precision, "+
-            "IDRECEIVER integer, " +
-            "HZ63 double precision, " +
-            "HZ125 double precision, " +
-            "HZ250 double precision, " +
-            "HZ500 double precision, " +
-            "HZ1000 double precision, " +
-            "HZ2000 double precision, " +
-            "HZ4000 double precision, " +
-            "HZ8000 double precision)" )
+    stmt.execute("drop table if exists ROADS_GEOM;")
+    stmt.execute("create table ROADS_GEOM (IDSOURCE LONG PRIMARY KEY, THE_GEOM geometry) as select PK, THE_GEOM FROM ROADS;" )
 
     stmt.execute("drop table if exists LW_ROADS;")
     stmt.execute("create table LW_ROADS (pk integer, IDSOURCE LONG, PERIOD CHARACTER VARYING, " +
@@ -119,7 +112,6 @@ def exec(Connection connection,input) {
 
     try {
         EmissionTableGenerator emissionTableGenerator = new EmissionTableGenerator();
-
 
         int pk = 1
         for (int j = 0; j < size; j++) {
@@ -158,53 +150,87 @@ def exec(Connection connection,input) {
 
             // remove THE_GEOM but ad ID_WAY SOURCE_ID
 
-            stmt.execute("drop table if exists ROADS_GEOM;")
-            stmt.execute("create table ROADS_GEOM (IDSOURCE LONG PRIMARY KEY, THE_GEOM geometry) as select PK, THE_GEOM FROM ROADS;" )
-
             def qry = 'INSERT INTO LW_ROADS(pk,IDSOURCE, PERIOD,' +
                     'HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000) ' +
                     'VALUES (?,?,?,?,?,?,?,?,?,?,?);'
 
             int k = 0
-            st = connection.prepareStatement("SELECT * FROM ROADS_CONFIG" )
+            PreparedStatement st = connection.prepareStatement("SELECT * FROM ROADS")
+            //st = connection.prepareStatement("SELECT * FROM ROADS_CONFIG" )
             int coefficientVersion = 2
             sql.withBatch( 100, qry) { ps ->
 
                 SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
 
-                Map<String, Integer> sourceFieldsCache = new HashMap<>()
+                //Map<String, Integer> sourceFieldsCache = new HashMap<>()
 
+                double lvPerHour
+                double hgvPerHour
                 while (rs.next()) {
+                    String type = rs.getString("TYPE")
+                    if (type == "primary" || type =="primary_link" ){
+                        lvPerHour = rs.getDouble("LV_D") * primary
+                        hgvPerHour = rs.getDouble("HGV_D") * primary
+                    }
+                    else if (type == "secondary" || type =="secondary_link" ){
+                        lvPerHour = rs.getDouble("LV_D") * secondary
+                        hgvPerHour = rs.getDouble("HGV_D") * secondary
+                    }
+                    else if (type == "tertiary"){
+                        lvPerHour = rs.getDouble("LV_D") * tertiary
+                        hgvPerHour = rs.getDouble("HGV_D") * tertiary
+                    }
+                    else {
+                        lvPerHour = rs.getDouble("LV_D") * others
+                        hgvPerHour = rs.getDouble("HGV_D") * others
+                    }
                     k++
                     //logger.info(rs)
-                    //Geometry geo = rs.getGeometry()
+                    double lv_speed = rs.getDouble("LV_SPD_D")
+                    double hgv_speed = rs.getDouble("HGV_SPD_D")
+                    double junctionDistance = 100; // Distance to junction
+                    int junctionType =2 ; // Junction type (k=1 traffic lights, k=2 roundabout)
+                    double mvPerHour = 1
+                    double wavPerHour = 1
+                    double wbvPerHour = 1
+                    String roadSurface = rs.getString("PVMT")
+                    double tsStud = 1
+                    double pmStud = 2
+                    //double slopePercentage = 0
+                    double mv_speed = 20
+                    double wav_speed = 20
+                    double wbv_speed = 20
+
+                    Geometry geo = rs.getGeometry()
 
                     // Compute emission sound level for each road segment
 
 
-                    double[][] results = emissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
-                    def lday = AcousticIndicatorsFunctions.wToDb(results[0])
+                    //double[][] results = emissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+                    //def lday = AcousticIndicatorsFunctions.wToDb(results[0])
 
                     // todo to win some time use this to compute lday (only read road, and not write road_config)
-                   /* List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
-                    double[] lvl = new double[roadOctaveFrequencyBands.size()];
+                    List<Integer> roadOctaveFrequencyBands = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
+                    double[] lday = new double[roadOctaveFrequencyBands.size()]
                     for (int idFreq = 0; idFreq < roadOctaveFrequencyBands.size(); idFreq++) {
-                        int freq = roadOctaveFrequencyBands.get(idFreq);
+                        int freq = roadOctaveFrequencyBands.get(idFreq)
                         RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed,
-                                wbv_speed, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, temperature,
-                                roadSurface, tsStud, pmStud, junctionDistance, junctionType);
-                        rsParametersCnossos.setSlopePercentage(slope);
-                        rsParametersCnossos.setWay(way);
-                        rsParametersCnossos.setFileVersion(coefficientVersion);
+                                wbv_speed, lvPerHour, mvPerHour, hgvPerHour, wavPerHour, wbvPerHour, freq, valTemps,
+                                roadSurface, tsStud, pmStud, junctionDistance, junctionType)
+                        rsParametersCnossos.setSlopePercentage(1)
+                        rsParametersCnossos.setWay(3)
+                        rsParametersCnossos.setFileVersion(coefficientVersion)
                         try {
-                            lvl[idFreq] = RoadCnossos.evaluate(rsParametersCnossos);
+                            lday[idFreq] = RoadCnossos.evaluate(rsParametersCnossos)
+
                         } catch (IOException ex) {
-                            throw new SQLException(ex);
+                            throw new SQLException(ex)
                         }
-                    }*/
+                    }
                     // fill the LW_ROADS table
 
-                    ps.addBatch(pk as Integer, rs.getInt("PK")  as Integer, rs.getString("PERIOD") as String,
+
+                    ps.addBatch(pk as Integer, rs.getInt("PK")  as Integer, it as String,
                             lday[0] as Double, lday[1] as Double, lday[2] as Double,
                             lday[3] as Double, lday[4] as Double, lday[5] as Double,
                             lday[6] as Double, lday[7] as Double)
@@ -265,18 +291,4 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     Store store = new GeoServer().catalog.getStore(dbName)
     JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
     return jdbcDataStore.getDataSource().getConnection()
-}
-/**
- * Executes the assimilation process for a list of combinations, updating the database
- * with road configurations and calculating noise levels.
- *
- * @param allCombinations A list of possible parameter combinations, where each entry contains:
- *  [iteration ID, primary factor, secondary factor, tertiary factor, others factor, temperature].
- * @param connection The database connection used for executing queries.
- * @param limit the number of maps to be generated
- * @throws SQLException If a database access error occurs.
- */
-def assimilationProcess(List<String[]> allCombinations, Connection connection,Integer limit) {
-
-
 }

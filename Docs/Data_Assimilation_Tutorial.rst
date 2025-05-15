@@ -10,7 +10,7 @@ The main objective is to combine measurements from sensors located in Geneva wit
 Prerequisites
 ~~~~~~~~~~~~~~~~~
 
-- You need to have a working installation of NoiseModelling (NM).
+- You need to have a working installation of NoiseModelling (NM) with version 5.
 - A folder named ``devices_data`` containing sensor measurement files in ``CSV`` format. Each file represents the measurements of a single sensor.
 - A ``CSV`` file named ``device_mapping_sf.csv`` containing the geometry and unique identifier of all sensors.
 - The the OpenStreetMap (OSM) data of the given area : ``geneva.osm.pbf``.
@@ -25,7 +25,7 @@ The key columns are:
   * ``timestamp`` : Time in format <b>"%Y-%m-%d %H:%M:%S"</b>, representing the time of measurement.
   * ``Leq`` : Equivalent continuous sound level in dB(A), calculated over a period (15 min).
   * ``Temp`` : Temperature (°C) recorded by the sensor at the time of measurement.
-The ``device_mapping_sf.csv`` columns ka y are:
+The ``device_mapping_sf.csv`` columns kay are:
   * ``deveui`` : Unique identifier of the sensor.
   * ``The_GEOM`` : 3D point geometry in WKT (Well-Known Text) format — includes coordinates (X, Y) and altitude (Z) in the projected coordinate system.
 
@@ -49,13 +49,24 @@ The generated combinations include variation (%) around standard values for type
                    "temperatureValues": [10,15,20]
     ])
 
+Step 2 : Import Sensor Positions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Step 2 : Preparation of Sensor data
+Importing the location of the sensors into the database from the csv file ``device_mapping_sf.csv``.
+
+.. code-block:: groovy
+    new Import_File().exec(connection,[
+                    "pathFile" : workingFolder+"device_mapping_sf.csv",
+                    "inputSRID" : 2056,
+                    "tableName": "SENSORS_LOCATION"
+    ])
+
+
+Step 3 : Preparation of Sensor data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This part extracts sensor data for a given period.Then use ``trainingRation`` (%) for the training data which will represent the receivers.
-So at the end of this part, the ``SENSORS_MEASUREMENTS`` (representing all the data for this period), ``OBSERVATION`` (training data set) and ``RECEIVERS`` sql tables will be created.
-And the ``device_mapping_sf.csv`` file is transformed into an sql table named ``SENSORS``.
+So at the end of this part, the ``SENSORS_MEASUREMENTS`` (representing all the data for this period), ``SENSORS_MEASUREMENTS_TRAINING`` (training data set representing the receiver) sql tables will be created.
 
 .. code-block:: groovy
     new Prepare_Sensors().exec(connection,[
@@ -66,7 +77,7 @@ And the ``device_mapping_sf.csv`` file is transformed into an sql table named ``
                     "targetSRID": 2056
     ])
 
-Step 3 : Import Buildings and Roads
+Step 4: Import Buildings and Roads
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Import buildings and road network (with predicted traffic flows) from an OSM file.
@@ -81,144 +92,115 @@ Import buildings and road network (with predicted traffic flows) from an OSM fil
                     "removeTunnels" : true
     ])
 
-Step 4 : Generate Traffic Emissions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates.
-
-.. code-block:: groovy
-    new Road_Emission_from_Traffic().exec(connection, [
-                    "tableRoads": "ROADS"
-    ])
-
-Step 5 : Generate an initial Reference Map
+Step 5 : Generate all Traffic Emissions and Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Compute the attenuation noise level from the network sources (LW_ROADS_0DB) to the receivers (at least 500 meters distance).
-
-.. code-block:: groovy
-    new Noise_level_from_source().exec(connection, [
-                    "tableSources": "LW_ROADS_0DB",
-                    "tableBuilding": "BUILDINGS",
-                    "tableReceivers": "RECEIVERS",
-                    "confExportSourceId": true,
-                    "confMaxSrcDist": 500,
-                    "confDiffVertical": true,
-                    "confDiffHorizontal": true,
-                    "confSkipLevening": true,
-                    "confSkipLnight": true,
-                    "confSkipLden": true
-    ])
-
-Step 6 : Generate all Maps
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This step generates all maps by modifying traffic data according to the road type, using data from ``ALL_CONFIGURATIONS``.
+This step generates all traffic emission by modifying traffic data according to the road type, using data from ``ALL_CONFIGURATIONS``.
 The optional ``noiseMapLimit`` parameter limits the number of maps to be generated, in order to avoid ``Out-Of-Memory ``errors.
-At the end of this step, the ``NOISE_MAPS`` table containing all the maps is created.
+The ``LW_ROADS`` table containing all traffic emission and ``ROADS_GEOM`` table containing the geometry of roads are created.
 
 .. code-block:: groovy
     new DataSimulation().exec(connection,[
                     "noiseMapLimit": 80
     ])
 
-Step 7 : Adding the LAEQ
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Add the columns <b>Leq</b> and <b>LAeq</b> to the <b>NOISE_MAPS</b> table with octave band values from 63 Hz to 8000 Hz.
+Compute the attenuation noise level from the network sources emission (LW_ROADS) to the receivers. The ``RECEIVERS_LEVEL`` table represents the table of all generated maps.
 
 .. code-block:: groovy
-    new Add_Laeq_Leq_columns().exec(connection, [
-                    "prefix": "HZ",
-                    "tableName": "NOISE_MAPS"
+    new Noise_level_from_source().exec(connection, [
+                    "tableSources": "ROADS_GEOM",
+                    "tableSourcesEmission" : "LW_ROADS",
+                    "tableBuilding": "BUILDINGS",
+                    "tableReceivers": "SENSORS_LOCATION",
+                    "confExportSourceId": false,
+                    "confMaxSrcDist": 250,
+                    "confDiffVertical": false,
+                    "confDiffHorizontal": false
     ])
 
-Step 8 : Extract best Configurations
+Step 6 : Extract best Configurations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Many maps have been generated, so the best map,the one that minimizes the difference between the measurements and the simulation, must be chosen.
-By calculating the difference in LAEQ between simulated (<b>NOISE_MAPS data</b>) and observed (<b>OBSERVATION data</b>) values.
+By calculating the difference in LAEQ between simulated (<b>RECEIVERS_LEVEL data</b>) and observed (<b>SENSORS_MEASUREMENTS_TRAINING data</b>) values.
 For each time step, the median value of the difference between the two values for all maps is calculated, and the map corresponding to the smallest median value will be the best map.
-At the end the ``BEST_CONFIG`` table is created.
+At the end the ``BEST_CONFIGURATION_FULL`` table is created.
 
 .. code-block:: groovy
     new Extract_Best_Configuration().exec(connection,[
-                    "observationTable": "OBSERVATION",
-                    "noiseMapTable": "NOISE_MAPS"
+                    "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
+                    "noiseMapTable": "RECEIVERS_LEVEL"
     ])
 
 Execute Simulation: Generate the Dynamic Map
 -----------------
 This pars is designed to execute a dynamic traffic calibration process using the best configuration.
 
-Step 9 : Generate new Receivers
+Step 7 : Generate new Receivers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Create a regular grid of over 4000 receivers.
+Create a regular grid between the buildings of over 4000 receivers.
 
 .. code-block:: groovy
     new Regular_Grid().exec(connection,[
-                    "buildingTableName": "BUILDINGS",
-                    "sourcesTableName":"ROADS",
-                    "delta": 200
+                  "fenceTableName": "BUILDINGS",
+                  "buildingTableName": "BUILDINGS",
+                  "sourcesTableName":"ROADS",
+                  "delta": 200
     ])
 
-Step 10 : Generate Dynamic Road
+
+Step 8 : Adding Sensors as Receivers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generate the road by adjusting dynamically the traffic using <b>BEST_CONFIG</b> according to road type.
-.. code-block:: groovy
-    new Dynamic_Road_Traffic_Emission().exec(connection)
-
-Step 11 : Generate Dynamic Traffic Emissions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Execute road emission and noise level calculations with dynamic mode.
+Adding the sensors into the RECEIVERS after creating a regular grid of receivers. This step is optional.
 
 .. code-block:: groovy
-    new Road_Emission_from_Traffic().exec(connection, [
-                    "tableRoads": "DYNAMIC_ROADS",
-                    "mode": "dynamic"
+    new Merged_Sensors_Receivers().exec(connection,[
+                    "tableReceivers": "RECEIVERS",
+                    "tableSensors" : "SENSORS_LOCATION"
     ])
 
-Step 12 : Generate the Map
+Step 9 : Generate Dynamic Road
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Compute the attenuation noise level from the network sources (SOURCES_0DB) to the receivers.
+Generate the road ``LW_ROADS_best`` by adjusting dynamically the traffic using <b>BEST_CONFIG</b> according to road type.
+
+.. code-block:: groovy
+    new NMs_4_BestConfigs().exec(connection)
+
+Step 10 : Generate the Map
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Compute the attenuation noise level from the network sources emission (LW_ROADS_best) to the receivers.
 
 .. code-block:: groovy
     new Noise_level_from_source().exec(connection, [
-                    "tableBuilding": "BUILDINGS",
-                    "tableSources": "SOURCES_0DB",
-                    "tableReceivers": "RECEIVERS",
-                    "maxError": 0.0,
-                    "confMaxSrcDist": 250,
-                    "confDiffHorizontal": false,
-                    "confExportSourceId": true,
-                    "confSkipLday": true,
-                    "confSkipLevening": true,
-                    "confSkipLnight": true,
-                    "confSkipLden": true
+                          "tableSources": "ROADS_GEOM",
+                          "tableSourcesEmission" : "LW_ROADS_best",
+                          "tableBuilding": "BUILDINGS",
+                          "tableReceivers": "RECEIVERS",
+                          "confExportSourceId": false,
+                          "confMaxSrcDist": 250,
+                          "confDiffVertical": false,
+                          "confDiffHorizontal": false
     ])
 
-Step 13 : Generate Dynamic Noise Map From Attenuation Matrix
+Step 11 : Creation of the result table
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Compute the noise level from the moving vehicles to the receivers.
-The output table is called here ``LT_GEOM`` and contains the noise level at each receiver for the whole time steps.
+Create the map result. The output table is called here ``ASSIMILATED_MAPS`` and contains the noise level at each receiver for the whole time steps.
 
 .. code-block:: groovy
-    new Noise_From_Attenuation_Matrix().exec(connection, [
-                    "lwTable": "LW_ROADS",
-                    "lwTable_sourceId": "LINK_ID",
-                    "attenuationTable": "LDAY_GEOM",
-                    "sources0DBTable": "SOURCES_0DB",
-                    "outputTable": "LT_GEOM"
+    new Create_Assimilated_Maps().exec(connection,[
+                    "bestConfigTable" : "BEST_CONFIGURATION_FULL",
+                    "receiverLevel" : "RECEIVERS_LEVEL",
+                    "outputTable": "ASSIMILATED_MAPS"
     ])
 
-This table <b>LT_GEOM</b> can be exported as a shape file and imported into qgis to analyze results.
+This table <b>ASSIMILATED_MAPS</b> can be exported as a shape file and imported into qgis to analyze results.
 .. code-block:: groovy
     new Export_Table().exec(connection,
-                    ["exportPath": workingFolder+"results/LT_GEOM.shp",
-                     "tableToExport": "LT_GEOM"
+                    ["exportPath": workingFolder+"results/ASSIMILATED_MAPS.shp",
+                     "tableToExport": "ASSIMILATED_MAPS"
     ])

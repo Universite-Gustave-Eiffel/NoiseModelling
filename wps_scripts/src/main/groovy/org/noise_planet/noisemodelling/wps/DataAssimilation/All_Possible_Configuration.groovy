@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.wps.DataAssimilation
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -35,7 +36,7 @@ outputs = [
                 type: Sql
         ]
 ]
-
+@CompileStatic
 static def exec(Connection connection,input) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
@@ -93,28 +94,28 @@ static def getAllConfig(Connection connection,double[] vals,int[] temps) {
     sql.execute("DROP TABLE ALL_CONFIGURATIONS IF EXISTS")
     sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY AUTO_INCREMENT,PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL INTEGER)")
 
+    String insertQuery = "INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL, SECONDARY_VAL, TERTIARY_VAL, OTHERS_VAL, TEMP_VAL) VALUES (?, ?, ?, ?, ?)"
     int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length
 
-    for (int i = 0; i < totalCombinations; i++) {
-        int indexPrimary = (int) (i / (vals.length * vals.length * vals.length * temps.length)) % vals.length
-        int indexSecondary = (int) (i / (vals.length * vals.length * temps.length)) % vals.length
-        int indexTertiary = (int) (i / (vals.length * temps.length)) % vals.length
-        int indexOthers = (int) (i / temps.length) % vals.length
-        int indexTemps = (int) i % temps.length
+    sql.withBatch(insertQuery) { ps ->
+        for (int i = 0; i < totalCombinations; i++) {
+            int indexPrimary = (int) (i / (vals.length * vals.length * vals.length * temps.length)) % vals.length
+            int indexSecondary = (int) (i / (vals.length * vals.length * temps.length)) % vals.length
+            int indexTertiary = (int) (i / (vals.length * temps.length)) % vals.length
+            int indexOthers = (int) (i / temps.length) % vals.length
+            int indexTemps = i % temps.length
 
-        double primary = vals[indexPrimary]
-        double secondary = vals[indexSecondary]
-        double tertiary = vals[indexTertiary]
-        double others = vals[indexOthers]
-        int valTemps = temps[indexTemps]
+            double primary = vals[indexPrimary]
+            double secondary = vals[indexSecondary]
+            double tertiary = vals[indexTertiary]
+            double others = vals[indexOthers]
+            int valTemps = temps[indexTemps]
 
-        // todo prepare statement
-        // todo Skip incoherent combinations
-        if (others / primary > 20) {
-            sql.execute("INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL,SECONDARY_VAL,TERTIARY_VAL,OTHERS_VAL,TEMP_VAL) VALUES("+ primary + "," + secondary + "," + tertiary + "," + others + "," + valTemps +")")
-
+            // Skip incoherent combinations
+            if (others / primary <= 20) {
+                ps.addBatch([primary, secondary, tertiary, others, valTemps])
+            }
         }
-
     }
 
 }
