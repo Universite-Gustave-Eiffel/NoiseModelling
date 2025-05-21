@@ -14,15 +14,10 @@ package org.noise_planet.noisemodelling.wps.DataAssimilation
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-import org.h2gis.utilities.SpatialResultSet
-import org.locationtech.jts.geom.Geometry
-import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
-import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-
 
 title = 'Dynamic Road Traffic Emission'
 description = 'Creation of the dynamic road using best configurations'

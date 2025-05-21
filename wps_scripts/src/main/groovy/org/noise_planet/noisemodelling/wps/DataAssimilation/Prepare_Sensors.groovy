@@ -5,11 +5,9 @@ import com.opencsv.exceptions.CsvException
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -66,7 +64,6 @@ outputs = [
 ]
 
 
-//@CompileStatic
 static def exec(Connection connection,input){
 
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -79,12 +76,12 @@ static def exec(Connection connection,input){
     String deviceFolder = folderPath + "devices_data"
     LocalDateTime dayStart = parseTimestamp(input['startDate'] as String)
     LocalDateTime dayEnd = parseTimestamp(input['endDate'] as String)
-    //String sensorCsv = folderPath + "device_mapping_sf.csv"
-    Float trainingRatio = input['trainingRatio'] as Float//: 0.8,
+    Float trainingRatio = input['trainingRatio'] as Float
     Integer targetSRID = input['targetSRID'] as Integer
 
     List<Map<String, String>> selectedData = allMeasurements(dayStart, dayEnd,deviceFolder)
     measurementTable(connection,selectedData)
+    sql.execute("ALTER TABLE SENSORS_LOCATION RENAME COLUMN DEVEUI TO IDSENSOR ")
 
     sql.execute("ALTER TABLE SENSORS_LOCATION ALTER COLUMN The_GEOM " +
             "TYPE geometry(PointZ, "+targetSRID+") " +
@@ -96,16 +93,17 @@ static def exec(Connection connection,input){
 
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN THE_GEOM GEOMETRY(PointZ,"+targetSRID+")")
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN IDRECEIVER INTEGER")
+    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS RENAME COLUMN DEVEUI TO IDSENSOR ")
 
     sql.execute("UPDATE SENSORS_MEASUREMENTS sm " +
             "SET THE_GEOM = (select ST_Transform(s.The_GEOM, "+targetSRID+" )"+
             " FROM SENSORS_LOCATION s " +
-            " WHERE sm.deveui = s.deveui );")
+            " WHERE sm.IDSENSOR = s.IDSENSOR );")
 
     sql.execute("UPDATE SENSORS_MEASUREMENTS sm " +
             "SET IDRECEIVER = (select PK"+
             " FROM SENSORS_LOCATION s " +
-            " WHERE sm.deveui = s.deveui);")
+            " WHERE sm.IDSENSOR = s.IDSENSOR);")
 
     extractObservationData(connection,trainingRatio)
 
@@ -175,10 +173,6 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
     }
 
     return selectedData
-   // if (dataSelected == null ) print("null selected data")
-
-    //selectedData.clear()
-    //selectedData.addAll(dataSelected)
 }
 
 
@@ -191,7 +185,7 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
  */
 static def measurementTable(Connection connection,List<Map<String, String>> selectedData) {
     Sql sql = new Sql(connection)
-    sql.execute("""DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;""")
+    sql.execute("DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;")
     sql.execute("CREATE TABLE SENSORS_MEASUREMENTS (" +
             "    deveui VARCHAR(255)," +
             "    epoch VARCHAR(255)," +
@@ -279,7 +273,7 @@ static def extractObservationData(Connection connection,Float ratio) {
     Map<String, Integer> idReceiverMap = [:]
     AtomicInteger idCounter = new AtomicInteger(1)
 
-    Set<String> uniqueSensors = measureRows*.deveui.toSet() as Set<String>
+    Set<String> uniqueSensors = measureRows*.IDSENSOR.toSet() as Set<String>
 
     uniqueSensors.each { sensor ->
         idReceiverMap[sensor] = idCounter.getAndIncrement()
@@ -289,10 +283,10 @@ static def extractObservationData(Connection connection,Float ratio) {
     Map<String, Integer> resultMap = idReceiverMap.entrySet().toList().subList(0, keepSize).collectEntries {
         [(it.key): it.value]
     }
-    sql.execute("""DROP TABLE IF EXISTS SENSORS_MEASUREMENTS_TRAINING;""")
+    sql.execute("DROP TABLE IF EXISTS SENSORS_MEASUREMENTS_TRAINING;")
     sql.execute("""
         CREATE TABLE IF NOT EXISTS SENSORS_MEASUREMENTS_TRAINING (
-            SENSORS VARCHAR(255),
+            IDSENSOR VARCHAR(255),
             THE_GEOM VARCHAR(255),
             IDRECEIVER INTEGER,
             T INTEGER,
@@ -302,9 +296,9 @@ static def extractObservationData(Connection connection,Float ratio) {
     """)
 
     measureRows.each { row ->
-        String sensor = row.deveui
+        String sensor = row.IDSENSOR
         if (resultMap.containsKey(sensor)) {
-            sql.execute("INSERT INTO SENSORS_MEASUREMENTS_TRAINING (SENSORS, THE_GEOM, IDRECEIVER, T, LEQA, TEMP) " +
+            sql.execute("INSERT INTO SENSORS_MEASUREMENTS_TRAINING (IDSENSOR, THE_GEOM, IDRECEIVER, T, LEQA, TEMP) " +
                     " VALUES ('${sensor}', '${row.The_GEOM}', ${row.IDRECEIVER}, '${row.epoch}', ${row.Leq}, ${row.Temp})")
         }
     }

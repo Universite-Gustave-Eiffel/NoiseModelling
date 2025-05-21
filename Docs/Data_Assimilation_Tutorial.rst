@@ -12,7 +12,7 @@ Prerequisites
 
 - You need to have a working installation of NoiseModelling (NM) with version 5.
 - A folder named ``devices_data`` containing sensor measurement files in ``CSV`` format. Each file represents the measurements of a single sensor.
-- A ``CSV`` file named ``device_mapping_sf.csv`` containing the geometry and unique identifier of all sensors.
+- A ``geojson`` file named ``device_mapping_sf.geojson`` containing the geometry and unique identifier of all sensors. This file can also be in csv format.
 - The the OpenStreetMap (OSM) data of the given area : ``geneva.osm.pbf``.
 
 The data
@@ -25,7 +25,7 @@ The key columns are:
   * ``timestamp`` : Time in format <b>"%Y-%m-%d %H:%M:%S"</b>, representing the time of measurement.
   * ``Leq`` : Equivalent continuous sound level in dB(A), calculated over a period (15 min).
   * ``Temp`` : Temperature (°C) recorded by the sensor at the time of measurement.
-The ``device_mapping_sf.csv`` columns kay are:
+The ``device_mapping_sf.geojson`` columns kay are:
   * ``deveui`` : Unique identifier of the sensor.
   * ``The_GEOM`` : 3D point geometry in WKT (Well-Known Text) format — includes coordinates (X, Y) and altitude (Z) in the projected coordinate system.
 
@@ -52,11 +52,11 @@ The generated combinations include variation (%) around standard values for type
 Step 2 : Import Sensor Positions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Importing the location of the sensors into the database from the csv file ``device_mapping_sf.csv``.
+Importing the location of the sensors into the database from the csv file ``device_mapping_sf.geojson``.
 
 .. code-block:: groovy
     new Import_File().exec(connection,[
-                    "pathFile" : workingFolder+"device_mapping_sf.csv",
+                    "pathFile" : workingFolder+"device_mapping_sf.geojson",
                     "inputSRID" : 2056,
                     "tableName": "SENSORS_LOCATION"
     ])
@@ -122,14 +122,15 @@ Step 6 : Extract best Configurations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Many maps have been generated, so the best map,the one that minimizes the difference between the measurements and the simulation, must be chosen.
-By calculating the difference in LAEQ between simulated (<b>RECEIVERS_LEVEL data</b>) and observed (<b>SENSORS_MEASUREMENTS_TRAINING data</b>) values.
+By considering a tolerance threshold for the temperature that allows to extract the map that have a temperature value close to the real temperature. And then, by calculating the difference in LAEQ between simulated (<b>RECEIVERS_LEVEL data</b>) and observed (<b>SENSORS_MEASUREMENTS_TRAINING data</b>) values.
 For each time step, the median value of the difference between the two values for all maps is calculated, and the map corresponding to the smallest median value will be the best map.
 At the end the ``BEST_CONFIGURATION_FULL`` table is created.
 
 .. code-block:: groovy
     new Extract_Best_Configuration().exec(connection,[
                     "observationTable": "SENSORS_MEASUREMENTS_TRAINING",
-                    "noiseMapTable": "RECEIVERS_LEVEL"
+                    "noiseMapTable": "RECEIVERS_LEVEL",
+                    "tempToleranceThreshold"  : 5
     ])
 
 Execute Simulation: Generate the Dynamic Map
@@ -199,6 +200,7 @@ Create the map result. The output table is called here ``ASSIMILATED_MAPS`` and 
     ])
 
 This table <b>ASSIMILATED_MAPS</b> can be exported as a shape file and imported into qgis to analyze results.
+
 .. code-block:: groovy
     new Export_Table().exec(connection,
                     ["exportPath": workingFolder+"results/ASSIMILATED_MAPS.shp",

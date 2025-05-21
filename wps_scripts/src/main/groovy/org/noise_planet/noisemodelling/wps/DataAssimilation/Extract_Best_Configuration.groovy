@@ -36,6 +36,11 @@ inputs = [
                 name: 'Input table',
                 title: 'table of noiseMapTable containing the noise maps after simulation',
                 type: String.class
+        ],
+        tempToleranceThreshold: [
+                name: 'temperature tolerance threshold ',
+                title: 'temperature tolerance threshold pour extraire la best configuration',
+                type: String.class
         ]
 ]
 
@@ -53,88 +58,42 @@ static def exec(Connection connection, input){
 
     String observationTable = input['observationTable']
     String noiseMapTable = input['noiseMapTable']
+    int threshold = input['tempToleranceThreshold'] as int
 
     Sql sql = new Sql(connection)
 
     sql.execute("ALTER TABLE RECEIVERS_LEVEL ADD COLUMN TEMP DOUBLE PRECISION")
-    sql.execute("UPDATE RECEIVERS_LEVEL SET TEMP = (SELECT MAX(TEMP_D) FROM ROADS_CONFIG RC WHERE RC.PERIOD = RECEIVERS_LEVEL.PERIOD)")
+    sql.execute("UPDATE RECEIVERS_LEVEL SET TEMP = (SELECT TEMP_VAL FROM ALL_CONFIGURATIONS RC WHERE RC.IT = RECEIVERS_LEVEL.PERIOD)")
 
-    sql.execute("CREATE TABLE file1_cleaned AS " +
-            "SELECT " +
-            "    IDRECEIVER AS ID_sensor, " +
-            "    T, " +
-            "    LEQA " +
-            "FROM "+observationTable+"; \n" )
-    sql.execute("CREATE TABLE file2_cleaned AS \n" +
-            "SELECT \n" +
-            "    IDRECEIVER AS ID_sensor, \n" +
-            "    PERIOD, \n" +
-            "    LAEQ\n" +
-            "FROM "+noiseMapTable+"; \n" )
-    sql.execute("CREATE TABLE joined_data AS \n" +
-            "SELECT \n" +
-            "    f1.ID_sensor, \n" +
-            "    f1.T, \n" +
-            "    f2.PERIOD, \n" +
-            "    f1.LEQA AS LEQA_file1, \n" +
-            "    f2.LAEQ AS LEQA_file2\n" +
-            "FROM file1_cleaned f1\n" +
-            "INNER JOIN file2_cleaned f2 \n" +
-            "    ON f1.ID_sensor = f2.ID_sensor;\n")
+    // Average observed temperatures per time step T
+    sql.execute("DROP TABLE IF EXISTS OBS_TEMP_UNIQ; ")
+    sql.execute(" CREATE TABLE OBS_TEMP_UNIQ AS " +
+            "    SELECT T, AVG(TEMP) AS TEMP" +
+            "    FROM " + observationTable + "    GROUP BY T")
 
-    sql.execute("CREATE TABLE agg_data AS \n" +
-            "SELECT \n" +
-            "    T, \n" +
-            "    PERIOD, \n" +
-            "    MEDIAN(ABS(LEQA_file1 - LEQA_file2)) AS median_abs_diff, \n" +
-            "    MEDIAN(LEQA_file1) AS value_file1,\n" +
-            "    MEDIAN(LEQA_file2) AS value_file2,\n" +
-            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_lower,\n" +
-            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file1) AS file1_upper,\n" +
-            "    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_lower,\n" +
-            "    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY LEQA_file2) AS file2_upper\n" +
-            "FROM joined_data\n" +
-            "GROUP BY T, PERIOD;\n" )
+    // Average simulated temperatures by period
+    sql.execute(" DROP TABLE IF EXISTS NOISE_TEMP_UNIQ ")
+    sql.execute("CREATE TABLE NOISE_TEMP_UNIQ AS " +
+            "    SELECT IT as PERIOD, TEMP_VAL AS TEMP" +
+            "    FROM ALL_CONFIGURATIONS GROUP BY IT;")
 
-    sql.execute("CREATE TABLE best_IT AS \n" +
-            "SELECT \n" +
-            "    T,\n" +
-            "    PERIOD,\n" +
-            "    median_abs_diff,\n" +
-            "    value_file1,\n" +
-            "    value_file2,\n" +
-            "    file1_lower,\n" +
-            "    file1_upper,\n" +
-            "    file2_lower,\n" +
-            "    file2_upper\n" +
-            "FROM agg_data\n" +
-            "WHERE (T, median_abs_diff) IN (\n" +
-            "    SELECT \n" +
-            "        T, \n" +
-            "        MIN(median_abs_diff)\n" +
-            "    FROM agg_data\n" +
-            "    GROUP BY T\n" +
-            ");")
+    // Cartesian product T × PERIOD with gaps
+    sql.execute("DROP TABLE IF EXISTS DIFF_TEMP;")
+    sql.execute("CREATE TABLE DIFF_TEMP AS " +
+            "    SELECT f1.T AS T, " +
+            "           f2.PERIOD AS PERIOD, " +
+            "           f1.TEMP AS TEMPOBS, " +
+            "           f2.TEMP AS TEMPSMOD, " +
+            "           ABS(f1.TEMP - f2.TEMP) AS diff_temp " +
+            "    FROM OBS_TEMP_UNIQ f1, " +
+            "         NOISE_TEMP_UNIQ f2")
 
-    /*sql.execute("""
-    DROP TABLE IF EXISTS DIFF_TEMP;
-    CREATE TABLE DIFF_TEMP AS 
-    SELECT f1.T AS T, f2.PERIOD AS PERIOD, f1.TEMP AS TEMPOBS, f2.TEMP AS TEMPSMOD, 
-           MEDIAN(ABS(f1.TEMP - f2.TEMP)) AS diff_temp
-    FROM """ +observationTable+""" f1, """+noiseMapTable+""" f2 
-    GROUP BY f1.T, f1.TEMP, f2.TEMP, f2.PERIOD;
-
-    DROP TABLE IF EXISTS BEST_TEMP;
-    CREATE TABLE BEST_TEMP AS 
-    SELECT T, TEMPOBS, TEMPSMOD,PERIOD, diff_temp FROM (
-        SELECT *, 
-               ROW_NUMBER() OVER (PARTITION BY T ORDER BY diff_temp) AS rn
-        FROM DIFF_TEMP
-    ) sub
-    WHERE rn = 1;
-""")
-
-
+    // Keep only couples with a difference < TEMPERATURE TOLERANCE THRESHOLD
+    sql.execute("DROP TABLE IF EXISTS BEST_TEMP ")
+    sql.execute("CREATE TABLE BEST_TEMP AS " +
+            "    SELECT * " +
+            "    FROM DIFF_TEMP" +
+            "    WHERE diff_temp < "+ threshold)
 
     sql.execute("DROP TABLE agg_data IF EXISTS")
     sql.execute("CREATE TABLE agg_data AS SELECT " +
@@ -144,22 +103,15 @@ static def exec(Connection connection, input){
             "GROUP BY f1.T, f2.PERIOD;")
 
     sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
-    sql.execute("CREATE TABLE BEST_CONFIGURATION AS  SELECT * FROM agg_data a  WHERE median_abs_diff = ( SELECT MIN(median_abs_diff)   FROM agg_data WHERE T = a.T  );")*/
+    sql.execute("CREATE TABLE BEST_CONFIGURATION AS  SELECT * FROM agg_data a  WHERE median_abs_diff = ( SELECT MIN(median_abs_diff)   FROM agg_data WHERE T = a.T  );")
 
-    // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
-    sql.execute("CREATE TABLE BEST_CONFIGURATION AS SELECT DISTINCT T, PERIOD,ROUND(median_abs_diff,2) AS LEQA_DIFF FROM BEST_IT;")
-
-    // Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
-    /*sql.execute("CREATE TABLE BEST_CONFIG AS " +
-            "SELECT DISTINCT b.T, b.IT, b.LEQA_DIFF, a.PRIMARY_VAL, a.SECONDARY_VAL, a.TERTIARY_VAL, a.OTHERS_VAL, a.TEMP_VAL " +
-            "FROM BEST_CONFIGURATION b " +
-            "JOIN ALL_CONFIGURATIONS a ON b.IT = a.IT")*/
+// Create the BEST_CONFIG table to store the best configurations with adding the corresponding combination.
     sql.execute("DROP TABLE BEST_CONFIGURATION_full IF EXISTS")
     sql.execute("CREATE TABLE BEST_CONFIGURATION_full AS SELECT b.*, a.* FROM BEST_CONFIGURATION b, ALL_CONFIGURATIONS a WHERE b.PERIOD = a.IT")
 
-    sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
-    sql.execute("DROP TABLE agg_data IF EXISTS")
-    sql.execute("DROP TABLE BEST_TEMP IF EXISTS")
+   sql.execute("DROP TABLE BEST_CONFIGURATION IF EXISTS")
+   sql.execute("DROP TABLE agg_data IF EXISTS")
+   sql.execute("DROP TABLE BEST_TEMP IF EXISTS")
 
     logger.info('End Extract best configuration')
 }
