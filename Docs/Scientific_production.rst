@@ -29,9 +29,14 @@ Contact: j.tagusari@eng.hokudai.ac.jp
 BISSON, Jérôme, CÔTÉ, Sabrina, CURRY, Henri, et al. `Setting up light and noise maps to define the contours of a reserve of darkness and silence in Sherbrooke, Québec, Canada <https://www.researchgate.net/publication/384881081_Setting_up_light_and_noise_maps_to_define_the_contours_of_a_reserve_of_darkness_and_silence_in_Sherbrooke_Quebec_Canada>_`. In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Institute of Noise Control Engineering, 2024. p. 5334-5342.
 
 Contact:
-         -  jerome.bisson@usherbrooke.ca
+         - jerome.bisson@usherbrooke.ca
 
+EGE, Kerem, BERRY, Alain, ROBIN, Olivier, et al. `The Sherbrooke-Lyon Research Training Program in Acoustics-Projet Samuel de Champlain 2022-2024. <https://www.researchgate.net/publication/384879871_The_Sherbrooke-Lyon_Research_Training_Program_in_Acoustics_-_Projet_Samuel_de_Champlain_2022-2024>_` In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Institute of Noise Control Engineering, 2024. p. 1746-1752.
 
+Contact: 
+         - kerem.ege@insa-lyon.fr
+         - Alain.Berry@USherbrooke.ca
+         - olivier.robin@usherbrooke.ca
 
 LEGRIFFON, Ingrid et RUAUD, Elise. `Drone fleet noise impact calculation-a methodology <https://www.ingentaconnect.com/contentone/ince/incecp/2024/00000270/00000010/art00074>`_. In : INTER-NOISE and NOISE-CON Congress and Conference Proceedings. Institute of Noise Control Engineering, 2024. p. 1675-1680.
 
