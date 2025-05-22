@@ -329,6 +329,7 @@ def exec(Connection connection, Map input) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
+    sql.execute("DROP TABLE RECEIVERS_LEVEL IF EXISTS;")
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 

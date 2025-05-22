@@ -523,7 +523,8 @@ def exec(Connection connection, Map input) {
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
         parameters.setRaysTable(input['confRaysName'] as String)
         parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
-        parameters.setRaysTable(input['confRaysName'] as String)
+        parameters.exportAttenuationMatrix = true
+        parameters.exportCnossosPathWithAttenuation = true
         parameters.keepAbsorption = true
         parameters.setMaximumRaysOutputCount(maximumRaysToExport)
     }
