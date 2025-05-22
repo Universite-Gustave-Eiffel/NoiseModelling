@@ -41,6 +41,6 @@ static def exec(Connection connection,inputs) {
 
     Sql sql = new Sql(connection)
     sql.execute("ALTER TABLE "+ receiverTable +" DROP COLUMN ID_ROW, ID_COL")
-    sql.execute("INSERT INTO RECEIVERS (THE_GEOM) SELECT The_GEOM FROM "+tableSensors)
+    sql.execute("INSERT INTO "+ receiverTable +" (THE_GEOM) SELECT The_GEOM FROM "+tableSensors)
 
 }
