@@ -88,7 +88,7 @@ Table SOURCES_GEOM definition
 
 .. _CNOSSOS road pavement identifier : https://circabc.europa.eu/sd/a/00a6a620-b570-4f57-9dbb-76f66a48b325/CNOSSOS-
 
-.. _See NM possible values : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/4.X/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/coefficients_Road_Cnossos_2020.json
+.. _See NM possible values : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/road/cnossos/RoadCnossos_2020.json
 
 
 Table SOURCES_EMISSION definition
