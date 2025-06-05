@@ -45,7 +45,3 @@ static def exec(Connection connection){
 
     logger.info('End Traffic calibration')
 }
-
-
-
-

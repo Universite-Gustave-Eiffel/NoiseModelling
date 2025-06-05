@@ -1,6 +1,6 @@
 {
 "type": "FeatureCollection",
-"name": "device_mapping_sf",
+"name": "divice_mappinf_sf",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2056" } },
 "features": [
 { "type": "Feature", "properties": { "deveui": "57a" }, "geometry": { "type": "Point", "coordinates": [ 2499748.013964179903269, 1118023.647635990055278, 4.0 ] } },

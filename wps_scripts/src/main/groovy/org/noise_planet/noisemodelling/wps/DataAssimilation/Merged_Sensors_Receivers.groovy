@@ -40,7 +40,9 @@ static def exec(Connection connection,inputs) {
     String tableSensors = inputs['tableSensors'] as String
 
     Sql sql = new Sql(connection)
-    sql.execute("ALTER TABLE "+ receiverTable +" DROP COLUMN ID_ROW, ID_COL")
-    sql.execute("INSERT INTO "+ receiverTable +" (THE_GEOM) SELECT The_GEOM FROM "+tableSensors)
+    sql.execute("ALTER TABLE " + receiverTable + " DROP COLUMN ID_ROW, ID_COL")
+    sql.execute("ALTER TABLE " + receiverTable + " ADD COLUMN IDNAME VARCHAR;")
+    sql.execute("UPDATE " + receiverTable + "  SET IDNAME = 'REC_MAP'")
 
+    sql.execute("INSERT INTO  " + receiverTable + "  (THE_GEOM, IDNAME) SELECT The_GEOM THE_GEOM , IDSENSOR IDNAME FROM " + tableSensors)
 }
