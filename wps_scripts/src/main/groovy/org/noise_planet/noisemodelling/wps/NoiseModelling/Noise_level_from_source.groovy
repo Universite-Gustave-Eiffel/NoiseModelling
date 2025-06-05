@@ -22,39 +22,21 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-import org.cts.crs.CRSException
-import org.cts.op.CoordinateOperationException
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
-import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.GeometryFactory
-
-import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
-import org.noise_planet.noisemodelling.pathfinder.*
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder
-import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.JVMMemoryMetric
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProgressMetric
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
-
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import javax.xml.stream.XMLStreamException
-import java.nio.file.Paths
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
@@ -329,6 +311,7 @@ def exec(Connection connection, Map input) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
+    sql.execute("DROP TABLE RECEIVERS_LEVEL IF EXISTS;")
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
