@@ -165,30 +165,26 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
                     CSVReader reader = new CSVReader(new FileReader(path.toFile()))
                     List<String[]> rows = reader.readAll()
                     String[] headers = rows.get(0)
-                    if (rows.get(1)[0]!= "70b3d5078000049e" && rows.get(1)[0]!= "70b3d5078000051b" && rows.get(1)[0]!= "70b3d50780000663" && rows.get(1)[0]!= "70b3d50780000678" &&
-                            rows.get(1)[0]!= "70b3d50780000684" && rows.get(1)[0]!= "70b3d50780000689" && rows.get(1)[0]!= "70b3d5078000068b" && rows.get(1)[0]!= "70b3d50780000693" &&
-                            rows.get(1)[0]!= "70b3d507800007c3" && rows.get(1)[0]!= "70b3d507800007d8" && rows.get(1)[0]!= "70b3d507800007f3") {// Filter defective sensor
-
-                        for (int i = 1; i < rows.size(); i++) {
-                            String[] row = rows.get(i)
-                            Map<String, String> map = [:]
-
-                            for (int j = 0; j < headers.length; j++) {
-                                if (j < row.length) {
-                                    map[headers[j]] = row[j]
-                                }
+                    for (int i = 1; i < rows.size(); i++) {
+                        String[] row = rows.get(i)
+                        Map<String, String> map = [:]
+        
+                        for (int j = 0; j < headers.length; j++) {
+                            if (j < row.length) {
+                                map[headers[j]] = row[j]
                             }
+                         }
 
-                            map["file_name"] = path.getFileName().toString()
-
-                            if (map.containsKey("timestamp") && map["timestamp"]) {
-                                LocalDateTime ts = parseTimestamp(map["timestamp"])
-                                if (!ts.isBefore(dayStart) && !ts.isAfter(dayEnd)) {
-                                    selectedData.add(map)
-                                }
-                            }
+                        map["file_name"] = path.getFileName().toString()
+        
+                        if (map.containsKey("timestamp") && map["timestamp"]) {
+                           LocalDateTime ts = parseTimestamp(map["timestamp"])
+                           if (!ts.isBefore(dayStart) && !ts.isAfter(dayEnd)) {
+                              selectedData.add(map)
+                           }
                         }
-                    }
+                  }
+                    
                 } catch (Exception e) {
                     e.printStackTrace()
                 }
