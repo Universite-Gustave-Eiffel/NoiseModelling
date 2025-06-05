@@ -1,19 +1,21 @@
 package org.noise_planet.noisemodelling.wps.DataAssimilation
 
 import com.opencsv.CSVReader
-import com.opencsv.exceptions.CsvException
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.sql.Connection
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.concurrent.atomic.AtomicInteger
 
 title = 'Preparation of Sensor data'
@@ -153,24 +155,44 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
  * @param deviceFolder: Path to the folder containing all the measurements of sensors
  * @return a Map containing all sensors data
  */
-static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String deviceFolder){
+static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String deviceFolder) {
+    List<Map<String, String>> selectedData = []
 
-    List<Map<String, String>> allData = []
     Files.walk(Paths.get(deviceFolder))
             .filter { Files.isRegularFile(it) && it.toString().endsWith(".csv") }
             .forEach { path ->
                 try {
-                    allData.addAll(readCsv(path))
+                    CSVReader reader = new CSVReader(new FileReader(path.toFile()))
+                    List<String[]> rows = reader.readAll()
+                    String[] headers = rows.get(0)
+                    if (rows.get(1)[0]!= "70b3d5078000049e" && rows.get(1)[0]!= "70b3d5078000051b" && rows.get(1)[0]!= "70b3d50780000663" && rows.get(1)[0]!= "70b3d50780000678" &&
+                            rows.get(1)[0]!= "70b3d50780000684" && rows.get(1)[0]!= "70b3d50780000689" && rows.get(1)[0]!= "70b3d5078000068b" && rows.get(1)[0]!= "70b3d50780000693" &&
+                            rows.get(1)[0]!= "70b3d507800007c3" && rows.get(1)[0]!= "70b3d507800007d8" && rows.get(1)[0]!= "70b3d507800007f3") {// Filter defective sensor
+
+                        for (int i = 1; i < rows.size(); i++) {
+                            String[] row = rows.get(i)
+                            Map<String, String> map = [:]
+
+                            for (int j = 0; j < headers.length; j++) {
+                                if (j < row.length) {
+                                    map[headers[j]] = row[j]
+                                }
+                            }
+
+                            map["file_name"] = path.getFileName().toString()
+
+                            if (map.containsKey("timestamp") && map["timestamp"]) {
+                                LocalDateTime ts = parseTimestamp(map["timestamp"])
+                                if (!ts.isBefore(dayStart) && !ts.isAfter(dayEnd)) {
+                                    selectedData.add(map)
+                                }
+                            }
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace()
                 }
             }
-
-    List<Map<String, String>> validData = allData.findAll { it.containsKey("timestamp") && !it.timestamp.isEmpty() }
-    List<Map<String, String>> selectedData = validData.findAll {
-        LocalDateTime ts = parseTimestamp(it.timestamp)
-        !ts.isBefore(dayStart) && !ts.isAfter(dayEnd)
-    }
 
     return selectedData
 }
@@ -183,6 +205,7 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
  * @param connection: The database connection used for executing queries.
  * @param selectedData Map containing all sensors
  */
+@CompileStatic
 static def measurementTable(Connection connection,List<Map<String, String>> selectedData) {
     Sql sql = new Sql(connection)
     sql.execute("DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;")
@@ -219,44 +242,37 @@ static def measurementTable(Connection connection,List<Map<String, String>> sele
 
 /**
  * Converts a timestamp to LocalDateTime.
+ * Supports: milliseconds (as string), ISO format (yyyy-MM-dd'T'HH:mm:ss), space format (yyyy-MM-dd HH:mm:ss).
  *
- * @param timestamp Timestamp in milliseconds
- * @return Corresponding date and time
+ * @param timestamp Timestamp as string (milliseconds or date format)
+ * @return Corresponding LocalDateTime
  */
+@CompileStatic
 static def parseTimestamp(String timestamp) {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    return LocalDateTime.parse(timestamp, formatter)
-}
-
-
-/**
- * Reads all the CSV file and converts it into a list of maps.
- *
- * @param filePath Path to the CSV file
- * @return List of data as a map
- * @throws IOException, CsvException In case of read errors
- */
-static def readCsv(Path path) {
-    List<Map<String, String>> data = new ArrayList<>()
-    try {
-        CSVReader reader = new CSVReader(new FileReader(path.toFile()))
-        List<String[]> rows = reader.readAll()
-        String[] headers = rows.get(0)
-        for (int i = 1; i < rows.size(); i++) {
-            String[] row = rows.get(i)
-            Map<String, String> map = new HashMap<>()
-            for (int j = 0; j < headers.length; j++) {
-                map.put(headers[j], row[j])
-            }
-            map.put("file_name", path.getFileName().toString())
-            data.add(map)
+    // Check if it's numeric (milliseconds)
+    if (timestamp.isNumber()) {
+        try {
+            long millis = Long.parseLong(timestamp)
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault())
+        } catch (NumberFormatException e) {
+            throw e
         }
-    }catch (IOException | CsvException e) {
-        e.printStackTrace()
     }
-    return data
-}
 
+    try {
+        // First try ISO format with 'T'
+        DateTimeFormatter isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+        return LocalDateTime.parse(timestamp, isoFormatter)
+    } catch (DateTimeParseException e1) {
+        try {
+            // If that fails, try format with space
+            DateTimeFormatter spaceFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            return LocalDateTime.parse(timestamp, spaceFormatter)
+        } catch (DateTimeParseException e2) {
+            throw e2
+        }
+    }
+}
 
 
 /**
@@ -280,7 +296,12 @@ static def extractObservationData(Connection connection,Float ratio) {
     }
 
     int keepSize = (int) (idReceiverMap.size() * ratio)
-    Map<String, Integer> resultMap = idReceiverMap.entrySet().toList().subList(0, keepSize).collectEntries {
+
+    def shuffledEntries = idReceiverMap.entrySet().toList()
+    Random random = new Random(42)  // Set seed for reproducibility
+    Collections.shuffle(shuffledEntries, random)
+
+    Map<String, Integer> resultMap = shuffledEntries.subList(0, keepSize).collectEntries {
         [(it.key): it.value]
     }
     sql.execute("DROP TABLE IF EXISTS SENSORS_MEASUREMENTS_TRAINING;")

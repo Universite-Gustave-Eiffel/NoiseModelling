@@ -88,6 +88,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
  * @param vals : list of traffic values
  * @param temps : list of temperature values
  */
+@CompileStatic
 static def getAllConfig(Connection connection,double[] vals,int[] temps) {
     Sql sql = new Sql(connection)
 
@@ -112,8 +113,8 @@ static def getAllConfig(Connection connection,double[] vals,int[] temps) {
             int valTemps = temps[indexTemps]
 
             // Skip incoherent combinations
-            if (others / primary <= 20 || secondary / primary <= 20 || tertiary / primary <= 20 || tertiary /secondary <= 20  ||  others / secondary <= 20 || others / tertiary <= 20){
-                ps.addBatch([primary, secondary, tertiary, others, valTemps])
+            if (others / primary <= 20 && secondary / primary <= 20 && tertiary / primary <= 20 && tertiary /secondary <= 20  &&  others / secondary <= 20 && others / tertiary <= 20){
+                ps.addBatch([primary, secondary, tertiary, others, valTemps] as Object[])
             }
         }
     }

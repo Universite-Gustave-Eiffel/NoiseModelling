@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
-import java.sql.Statement
-import java.time.LocalDateTime
 
 title = 'Data Simulation'
 description = 'Method to execute a series of operations for generate noise maps'
@@ -54,10 +52,12 @@ outputs = [
 // Executes the assimilation process for a list of combinations with road configurations and calculating noise levels.
 @CompileStatic
 def exec(Connection connection,input) {
+
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Data simulation ')
     Sql sql = new Sql(connection)
-    Integer limit = input['noiseMapLimit'] as Integer // limit the number of maps to be generated
+    Integer limit = null
+    if (input!=[]) limit = input['noiseMapLimit'] as Integer // limit the number of maps to be generated
 
     //  A list of possible parameter combinations, where each entry contains:
     // [iteration ID, primary factor, secondary factor, tertiary factor, others factor, temperature].
@@ -71,14 +71,12 @@ def exec(Connection connection,input) {
     // get the simulated noise map.
     double primary, secondary, tertiary, others
     int valTemps
-    Statement stmt = connection.createStatement()
-    stmt.execute("ALTER TABLE ROADS ADD TEMP DOUBLE")
 
-    stmt.execute("drop table if exists ROADS_GEOM;")
-    stmt.execute("create table ROADS_GEOM (IDSOURCE LONG PRIMARY KEY, THE_GEOM geometry) as select PK, THE_GEOM FROM ROADS;" )
+    sql.execute("drop table if exists ROADS_GEOM;")
+    sql.execute("create table ROADS_GEOM (IDSOURCE LONG PRIMARY KEY, THE_GEOM geometry) as select PK, THE_GEOM FROM ROADS;" )
 
-    stmt.execute("drop table if exists LW_ROADS;")
-    stmt.execute("create table LW_ROADS (pk integer, IDSOURCE LONG, PERIOD CHARACTER VARYING, " +
+    sql.execute("drop table if exists LW_ROADS;")
+    sql.execute("create table LW_ROADS (pk integer PRIMARY KEY, IDSOURCE LONG, PERIOD CHARACTER VARYING, " +
             "HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision);")
     int size
     if (limit != null){
@@ -88,20 +86,44 @@ def exec(Connection connection,input) {
         size = allCombinations.size()
     }
 
+
+    // Total combinations
+    int totalCombinations = allCombinations.size()
+
+    // How many samples you want
+    int sampleCount = size
+
+    // Sanity check
+    if (sampleCount > totalCombinations) {
+        throw new IllegalArgumentException("Sample count exceeds total combinations")
+    }
+    // Generate LHS indices
+    List<Integer> lhsIndices = (0..<sampleCount).collect { i ->
+        int binSize = (int) (totalCombinations / sampleCount)
+        int start = i * binSize
+        int end = Math.min((i + 1) * binSize - 1, totalCombinations - 1)
+        start + (Math.random() * (end - start + 1)) as int
+    }
+
+    // Convert list to comma-separated string without brackets
+    String idList = lhsIndices.join(", ")
+
+// Create filtered table
+    sql.execute("DROP TABLE IF EXISTS FILTERED_CONFIGURATIONS")
+    sql.execute("CREATE TABLE FILTERED_CONFIGURATIONS AS SELECT * FROM ALL_CONFIGURATIONS WHERE IT IN ("+ idList +" )")
+
+
     try {
 
         int pk = 1
         for (int j = 0; j < size; j++) {
-            println(LocalDateTime.now())
             int it = j + 1
-            String[] combination = allCombinations.get(j)
+            String[] combination = allCombinations.get( lhsIndices[j])
             primary = Double.parseDouble(combination[1])
             secondary = Double.parseDouble(combination[2])
             tertiary = Double.parseDouble(combination[3])
             others = Double.parseDouble(combination[4])
             valTemps = Integer.parseInt(combination[5])
-
-            // remove THE_GEOM but ad ID_WAY SOURCE_ID
 
             def qry = 'INSERT INTO LW_ROADS(pk,IDSOURCE, PERIOD,' +
                     'HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000) ' +
@@ -144,7 +166,6 @@ def exec(Connection connection,input) {
                     String roadSurface = rs.getString("PVMT")
                     double tsStud = 1
                     double pmStud = 2
-                    //double slopePercentage = 0
                     double mv_speed = 20
                     double wav_speed = 20
                     double wbv_speed = 20
@@ -169,16 +190,17 @@ def exec(Connection connection,input) {
                         }
                     }
                     // fill the LW_ROADS table
-                    ps.addBatch(pk as Integer, rs.getInt("PK")  as Integer, it as String,
+                    ps.addBatch(pk as Integer, rs.getInt("PK")  as Integer, lhsIndices[j] as String,
                             lday[0] as Double, lday[1] as Double, lday[2] as Double,
                             lday[3] as Double, lday[4] as Double, lday[5] as Double,
                             lday[6] as Double, lday[7] as Double)
                     pk++
                 }
             }
+            if (j%10 ==0){
+                println('Generate LW maps for '+ size +' configurations : (%): '+ 100 * (j/size))
+            }
         }
-        sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
-        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
         sql.execute("CREATE INDEX ON LW_ROADS(IDSOURCE, PERIOD);")
     } catch (SQLException e) {
         e.printStackTrace()
