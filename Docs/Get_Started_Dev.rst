@@ -14,5 +14,8 @@ Get Started
 
 #. Enjoy & feel free to contact us!
 
+.. Important::
+   A Java documentation is available `here`_
 
+.. _here: https://universite-gustave-eiffel.github.io/NoiseModelling/javadoc/
 .. _Github: https://github.com/
