@@ -176,12 +176,12 @@ Fundings
     :caption: For Developers
 
     Get_Started_Dev
-    Cnossos_Report
 
 .. toctree::
     :maxdepth: 2
     :caption: Appendices
 
+    Cnossos_Report
     Noise_Map_Color_Scheme
     Support
     License
