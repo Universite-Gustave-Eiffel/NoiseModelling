@@ -1,7 +1,18 @@
 .. _My target:
 
-Usages & Scientific production
+Scientific production
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Below is a **non-exhaustive** list of scientific publications in which NoiseModelling has been used.
+
+* Articles (co-)written by members of the NoiseModelling team, belonging to the `Joint Research Unit in Environmental Acoustics`_, are in the ``UMRAE`` tab.
+* Articles written outside the UMRAE are in the ``Not UMRAE`` tab.
+
+
+.. tip::
+    If you have done work with NoiseModelling and your article is not referenced in this list, please let us know (contact@noise-planet.org).
+
+.. _Joint Research Unit in Environmental Acoustics: https://www.umrae.fr/
 
 .. tabs::
 
@@ -12,7 +23,7 @@ Usages & Scientific production
             :style: plain
             :all:
 
-   .. tab:: [UMRAE]
+   .. tab:: UMRAE
 
       .. bibliography::
             :list: enumerated
@@ -20,7 +31,7 @@ Usages & Scientific production
             :all:
             :filter: keywords % "UMRAE"
 
-   .. tab:: ]UMRAE[
+   .. tab:: Not UMRAE
 
       .. bibliography::
             :list: enumerated
@@ -43,6 +54,14 @@ Usages & Scientific production
             :style: plain
             :all:
             :filter: keywords % "Traffic dynamics"
+
+   .. tab:: Other than Traffic noise
+
+      .. bibliography::
+            :list: enumerated
+            :style: plain
+            :all:
+            :filter: keywords % "e-VTOL" or keywords % "Siren" or keywords % "Wind Turbine" or keywords % "Competing sources"
 
    .. tab:: Fauna impacts
 
@@ -67,14 +86,6 @@ Usages & Scientific production
             :style: plain
             :all:
             :filter: keywords % "Data Assimilation"
-
-   .. tab:: ]Traffic noise[
-
-      .. bibliography::
-            :list: enumerated
-            :style: plain
-            :all:
-            :filter: keywords % "e-VTOL" or keywords % "Siren" or keywords % "Wind Turbine" or keywords % "Competing sources"
 
    .. tab:: Teaching
 
