@@ -54,7 +54,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
-urllib3==1.26.19
+urllib3==2.5.0
     # via requests
 sphinx-tabs==3.4.7
 sphinxcontrib-bibtex==2.6.3
