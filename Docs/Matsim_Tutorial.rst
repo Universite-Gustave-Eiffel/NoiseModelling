@@ -11,7 +11,7 @@ Then we will leverage the fact that MATSim is a multi-agent simulator. We will i
 
 For this tutorial, we'll look into a simulation of a small part of the `center of Nantes`_, the 6th most populated city in France.
 
-.. _the center of Nantes: https://www.openstreetmap.org/way/45178361
+.. _center of Nantes: https://www.openstreetmap.org/way/45178361
 
 Prerequisites
 ~~~~~~~~~~~~~~~~~

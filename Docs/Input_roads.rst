@@ -1,5 +1,5 @@
 Roads
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^
 
 NoiseModelling is a tool for producing noise maps. To do so, at different stages of the process, the application needs input data, respecting a strict formalism.
 
@@ -11,7 +11,7 @@ The other tables are accessible via the left menu in the ``Input tables & parame
     :align: center
 
 Table SOURCES_GEOM definition
----------------------
+-------------------------------
 
 .. warning::
     * In the list below, the columns noted with ``*`` are mandatory
@@ -92,7 +92,7 @@ Table SOURCES_GEOM definition
 
 
 Table SOURCES_EMISSION definition
----------------------
+-----------------------------------
 
 If you have custom time periods (ex. ``8h00-9h00``). You can place the traffic data into another table with the ``PERIOD`` column:
 
@@ -167,7 +167,7 @@ Geometry modelling
 In NoiseModelling, road geometries are used as a medium for road noise emission and propagation. 
 
 Emission
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
 
 According to CNOSSOS-EU, emissions from road traffic should be 5cm above the ground. 
 
@@ -183,7 +183,7 @@ You can create your own emmission layer or use the dedicated NoiseModelling bloc
     Z values in the input layer are only used to calculate the slope
 
 Propagation
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 Whether you use your own sources or those calculated by NoiseModelling, the propagation step will consist of deducing the altitude from the DEM and adding the emission height (5cm).
 
