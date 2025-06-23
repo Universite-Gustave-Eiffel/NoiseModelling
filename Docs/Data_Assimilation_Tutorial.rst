@@ -1,6 +1,9 @@
 Data Assimilation
 ^^^^^^^^^^^^^^^^^^^^
 
+.. image:: ./images/Data_Assimilation/data_assimilation_banner.png
+        :alt: Data assimilation
+
 Introduction
 ~~~~~~~~~~~~~~~
 
@@ -141,11 +144,11 @@ Result
 The generated combinations include values for type of roads primary, secondary, tertiary, others, and temperature. The resulting table ``ALL_CONFIGURATIONS`` has the following columns:
 
 * ``IT``: Unique identifier of the combination (Primary Key - Integer)
-* ``PRIMARY_VAL``: percentage of primary roads traffic, given by trafficValues  (Double)
-* ``SECONDARY_VAL``: (Double)
-* ``TERTIARY_VAL``: (Double)
-* ``OTHERS_VAL``: (Double)
-* ``TEMP_VAL``: (Integer)
+* ``PRIMARY_VAL``: percentage of primary roads traffic, given by trafficValues (Double)
+* ``SECONDARY_VAL``: ... of secondary roads ... (Double)
+* ``TERTIARY_VAL``: ... of tertiary roads ...(Double)
+* ``OTHERS_VAL``: ... of other roads ...(Double)
+* ``TEMP_VAL``: temperature (Double)
 
 
 The first 10 lines of this table are shown below:
@@ -159,7 +162,7 @@ The first 10 lines of this table are shown below:
 .. warning::
     The total number of combinations can be huge. This value is defined as: (number of ``trafficValues`` elements) ^ 4  * (number of ``temperatureValues`` elements). 
 
-    In our example, we have ``"trafficValues": [0.01, 1.0, 2.0]`` and ``"temperatureValues": [10,15,20]``, so the number of combinations = 3 ^ 4 * 3 = 243 *(before filtration - see ‘note‘ tab just below)*
+    In our example, we have ``"trafficValues": "0.01, 1.0, 2.0"`` and ``"temperatureValues": "10,15,20"``, so the number of combinations = 3 ^ 4 * 3 = 243 *(before filtration - see ‘note‘ tab just below)*
 
     Even though this table is very important, only part of it will be used for all the maps to be simulated (see :ref:`Step 5 <Generate_all_traffic_emissions_and_maps>`)
 
@@ -230,9 +233,8 @@ For this tutorial, you can fill with these informations:
 * ``startDate`` : ``2024-08-25 06:30:00``
 * ``endDate`` : ``2024-08-25 07:30:00``
 * ``trainingRatio`` : ``0.8``
-* ``workingFolder`` : ``data_dir/data/wpsdata/dataAssimilation/``
+* ``workingFolder`` : ``.../data_dir/data/wpsdata/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling_5.0.0/NoiseModelling_5.0.0/data_dir/data/wpsdata/dataAssimilation/``)
 * ``targetSRID`` : ``2056``
-
 
 If you are using the Groovy script
 
@@ -242,7 +244,7 @@ If you are using the Groovy script
                     "startDate":"2024-08-25 06:30:00",
                     "endDate": "2024-08-25 07:30:00",
                     "trainingRatio": 0.8,
-                    "workingFolder": "data_dir/data/wpsdata/dataAssimilation/",
+                    "workingFolder": ".../data_dir/data/wpsdata/dataAssimilation/",
                     "targetSRID": 2056
     ])
 
@@ -259,8 +261,7 @@ Once executed, two tables are created:
     * ``IDRECEIVER`` : The receiver's unique Id
     * ``EPOCH`` : Time of measurement (Epoch format - Unix time, ex:1724567400),
     * ``LAEQ`` : Equivalent continuous sound level in dB(A), calculated over a period (15 min),
-    * ``TEMP`` : Temperature (°C) recorded by the sensor at the time of measurement,
-    * ``timestamp`` : Time of measurement (timestamp format ``"YYYY-MM-DD HH:MM:SS"``).
+    * ``TEMP`` : Temperature (°C) recorded by the sensor at the time of measurement.
 
 
 Step 4: Import buildings and roads
@@ -271,27 +272,22 @@ Now, using the ``Ìmport_OSM`` block, you can import buildings and road network 
 Execution
 **********
 
-* ``pathFile`` : ``data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf``
-* ``targetSRID``: ``2056``
-* ``ignoreGround`` : ``true``
-* ``ignoreBuilding`` : ``false``
-* ``ignoreRoads`` : ``false``
-* ``removeTunnels`` : ``true``
-* ``eliminateNoTrafficRoads`` : ``false``
+* Path of the OSM file (``pathFile``): ``.../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf``
+* Target projection identifier (``targetSRID``): ``2056``
+* Do not import Surface acoustic absorption (``ignoreGround``): ``true``
+* Remove tunnels from OSM data (``removeTunnels``): ``true``
 
+**The other parameters are left as default**
 
 If you are using the Groovy script
 
 .. code-block:: groovy
 
     new Import_OSM().exec(connection, [
-                    "pathFile"      : "data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf",
+                    "pathFile"      : ".../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf",
                     "targetSRID"    : 2056,
                     "ignoreGround"  : true,
-                    "ignoreBuilding": false,
-                    "ignoreRoads"   : false,
-                    "removeTunnels" : true,
-                    "eliminateNoTrafficRoads" : false
+                    "removeTunnels" : true
     ])
 
 Result
@@ -317,7 +313,7 @@ This step consists in generating all the traffic emissions by modifying traffic 
 
 To do so, users have first to execute the ``Data_Simulation`` WPS block, which has only one **optionnal** parameter :
 
-* ``noiseMapLimit`` : final number of maps to be generated (INTEGER). If a value is filled, a random selection is applied to keep the number of expected maps, based on the LHS (`Latin Hypercube Sampling`_) method. 
+* ``noiseMapLimit`` : final number of maps to be generated (Integer). If a value is filled, a random selection is applied to keep the number of expected maps, based on the LHS (`Latin Hypercube Sampling`_) method. 
 
 .. _Latin Hypercube Sampling: https://en.wikipedia.org/wiki/Latin_hypercube_sampling
 
@@ -355,14 +351,14 @@ Execution
 
 For this tutorial, you can fill with this information:
 
-* Source geometry table name / ``tableSources`` : ``ROADS_GEOM``
-* Source emission table name / ``tableSourcesEmission`` : ``LW_ROADS``
-* Buildings table name / ``tableBuilding`` : ``BUILDINGS``
-* Receivers table name / ``tableReceivers`` : ``SENSORS_LOCATION``,
-* Separate receiver level by source id / ``confExportSourceId`` : ``false``
-* Maximum source-receiver distance / ``confMaxSrcDist`` : ``250``
-* Diffraction on vertical edges / ``confDiffVertical`` : ``false``
-* Diffraction on horizontal edges / ``confDiffHorizontal`` : ``false``
+* Source geometry table name (``tableSources``): ``ROADS_GEOM``
+* Source emission table name (``tableSourcesEmission``): ``LW_ROADS``
+* Buildings table name (``tableBuilding``): ``BUILDINGS``
+* Receivers table name (``tableReceivers``): ``SENSORS_LOCATION``,
+* Separate receiver level by source id (``confExportSourceId``): ``false``
+* Maximum source-receiver distance (``confMaxSrcDist``): ``250``
+* Diffraction on vertical edges (``confDiffVertical``): ``false``
+* Diffraction on horizontal edges (``confDiffHorizontal``): ``false``
 
 If you are using the Groovy script
 
@@ -382,7 +378,7 @@ If you are using the Groovy script
 Result
 ********
 
-The table ``RECEIVERS_LEVEL`` is created and stores all the generated maps *(see the three first lines below)*.
+The table ``RECEIVERS_LEVEL`` is created and stores all the generated maps *(see the three first lines below - you can scroll the table to the right)*.
 
 .. csv-table:: 
    :file: ./data/RECEIVERS_LEVEL.csv
@@ -397,13 +393,14 @@ Many maps have been generated. So now, the best map, **minimizing the difference
 
 To do so, users have to execute the ``Extract_Best_Configuration`` WPS script. There are 3 parameters to enter here:
 
-* ``observationTable`` : name of the table where observed data are stored,
-* ``noiseMapTable`` : name of the table where simulated data are stored,
-* ``tempToleranceThreshold`` : tolerance threshold (exprimed in °C) for the temperature that allows to extract the map that have a temperature value close to the real temperature.
+* Measurement table (``observationTable``): name of the table where observed data are stored,
+* Noise map table (``noiseMapTable``): name of the table where simulated data are stored,
+* Temperature tolerance threshold (``tempToleranceThreshold``): tolerance threshold (exprimed in °C) for the temperature that allows to extract the map that have a temperature value close to the real temperature.
 
-This process will first determine the LAEQ difference between simulated (``noiseMapTable``) and observed (``observationTable``) values.
+This process will:
 
-Then, for each time steps, the median value of the difference between the two values is calculated, for all maps. **The map having the smallest median value will be the best one**.
+* first determine the LAEQ difference between simulated (``noiseMapTable``) and observed (``observationTable``) values,
+* then calculate, for each time steps and for all maps, the median value of the difference between the two values. **The map having the smallest median value will be the best one**.
 
 
 Execution
@@ -465,10 +462,10 @@ Execution
 
 For this tutorial, you can fill with this information:
 
-* ``buildingTableName`` : ``BUILDINGS``
-* ``fenceTableName`` : ``BUILDINGS``
-* ``sourcesTableName`` : ``ROADS``
-* ``delta`` : ``200`` (1 receiver every 200m)
+* Buildings table name (``buildingTableName``): ``BUILDINGS``
+* Table bounding box name (``fenceTableName``): ``BUILDINGS``
+* Source table name (``sourcesTableName``): ``ROADS``
+* Offset (``delta``): ``200`` (1 receiver every 200m)
 
 If you are using the Groovy script
 
@@ -505,8 +502,8 @@ Execution
 
 In the ``Merged_Sensors_Receivers`` WPS block, fill these information:
 
-* ``tableReceivers`` : ``RECEIVERS``
-* ``tableSensors`` : ``SENSORS_LOCATION``
+* The receiver table (``tableReceivers``): ``RECEIVERS``
+* The sensors table (``tableSensors``): ``SENSORS_LOCATION``
 
 If you are using the Groovy script
 
@@ -533,8 +530,8 @@ For each time step (here 15 min), generate an emissions map for all the receiver
 
 To do so, use the ``NMs_4_BestConfigs`` WPS block. This block has two inputs:
 
-* ``bestConfig`` : best configuration table name
-* ``roadEmission`` : road emissions table name
+* The best configuration table (``bestConfig``)
+* The road emission table (``roadEmission``)
 
 Execution
 **********
@@ -553,7 +550,19 @@ If you are using the Groovy script
 Result
 ********
 
-The table ``LW_ROADS_best`` is created.
+The table ``LW_ROADS_best`` is created, with the following structure:
+
+* ``PK`` : Unique Identifier 
+* ``IDSOURCE`` : Source id
+* ``PERIOD`` : time
+* ``HZ63`` : noise level for the 63 HZ frequency band
+* ``HZ125`` : ... for 125 HZ ...
+* ``HZ250`` : ... for 250 HZ ...
+* ``HZ500`` : ... for 500 HZ ...
+* ``HZ1000`` : ... for 1000 HZ ...
+* ``HZ2000`` : ... for 2000 HZ ...
+* ``HZ4000`` : ... for 4000 HZ ...
+* ``HZ8000`` : ... for 8000 HZ ...
 
 
 Step 10 : Generate the noise levels
@@ -564,14 +573,14 @@ Using the ``Noise_level_from_source`` WPS block, we can finally compute the nois
 Execution
 **********
 
-* ``tableSources`` : ``ROADS_GEOM``
-* ``tableSourcesEmission`` : ``LW_ROADS_best``
-* ``tableBuilding`` : ``BUILDINGS``
-* ``tableReceivers`` : ``RECEIVERS``
-* ``confExportSourceId`` : ``false``
-* ``confMaxSrcDist`` : ``250``
-* ``confDiffVertical`` : ``false``
-* ``confDiffHorizontal`` : ``false``
+* Source geometry table name (``tableSources``): ``ROADS_GEOM``
+* Source emission table name (``tableSourcesEmission``): ``LW_ROADS_best``
+* Buildings table name (``tableBuilding``): ``BUILDINGS``
+* Receivers table name (``tableReceivers``): ``RECEIVERS``
+* Separate receiver level by source id (``confExportSourceId``): ``false``
+* Maximum source-receiver distance (``confMaxSrcDist``): ``250``
+* Diffraction on vertical edges (``confDiffVertical``): ``false``
+* Diffraction on horizontal edges (``confDiffHorizontal``): ``false``
 
 If you are using the Groovy script
 
@@ -596,7 +605,7 @@ We obtain the table ``RECEIVERS_LEVEL``.
 Step 11 : Create & visualize the resulting table
 --------------------------------------------------
 
-Create a table, called ``ASSIMILATED_MAPS``, containing both sound levels and configuration parameters
+Create a table, called ``ASSIMILATED_MAPS``, containing both sound levels and configuration parameters.
 
 To do so, execute the ``Create_Assimilated_Maps`` WPS block, with the 3 following parameters:
 
@@ -640,7 +649,7 @@ The resulting ``ASSIMILATED_MAPS`` table has the following columns:
 Visualize the map
 ******************
 
-You can now export ``ASSIMILATED_MAPS``, for example as a Shapefile, using the ``Export_Table`` WPS block and then import it into your favorite GIS app (such as `QGIS`_) to visualize the results.
+You can now export the ``ASSIMILATED_MAPS`` table, for example as a Shapefile, using the ``Export_Table`` WPS block and then import it into your favorite GIS app (such as `QGIS`_) to visualize the results.
 
 * ``exportPath`` : ``results/ASSIMILATED_MAPS.shp``
 * ``tableToExport``: ``ASSIMILATED_MAPS``
@@ -662,4 +671,4 @@ The resulting maps may looks like this
 .. image:: ./images/Data_Assimilation/ASSIMILATED_MAPS.png
         :alt: ASSIMILATED_MAPS map
 
-Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (light grey) and the roads (white lines).
+**Legend** : Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (light grey) and the roads (white lines).
