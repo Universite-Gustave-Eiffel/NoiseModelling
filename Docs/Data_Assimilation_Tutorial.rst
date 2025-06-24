@@ -450,6 +450,8 @@ Execute Simulation: Generate the Dynamic Map
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This part is made to execute a dynamic traffic calibration process, using the best configuration.
 
+.. _generate_new_receivers:
+
 Step 7 : Generate new receivers
 ---------------------------------
 
@@ -666,9 +668,14 @@ or
 
 .. _QGIS: https://qgis.org/
 
-The resulting maps may looks like this
+The resulting map may looks like this:
+
+.. image:: ./images/Data_Assimilation/ASSIMILATED_MAPS_200m.png
+        :alt: ASSIMILATED_MAPS map
+
+**Legend**: Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (light grey) and the roads (white lines).
+
+**Remark**: In this example, we have chosen to have a receiver every 200m (see :ref:`Step 7 <generate_new_receivers>`). To achieve a denser rendering, we could have made the receiver grid denser. Below is an example, on the same area, but with a 20m grid.
 
 .. image:: ./images/Data_Assimilation/ASSIMILATED_MAPS.png
         :alt: ASSIMILATED_MAPS map
-
-**Legend** : Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (light grey) and the roads (white lines).
