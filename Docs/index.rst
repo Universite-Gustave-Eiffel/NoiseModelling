@@ -85,6 +85,7 @@ Fundings
 
 - OPTImisation technique et environnementale des moyens de lutte contre le gel en viticulture par Tours-Anti-Gel en Centre-Val de Loire (OptiTAG), funded by Région Centre Val de Loire & co-funded by European Union 2024-2027
 - AMELIA, funded by the call "DIAT (Démonstrateurs d’IA frugale au service de la transition écologique) de la Banque des Territoires" 2024-2027
+- `ANR SYMEXPO`_ (ANR-21-CE22-0022-01) 2021-2026
 - Sampols 2.0: a disruptive solution for noise pollution monitoring (SIREN), funded by Eurostars 3 - BPI 2024-2025
 - `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement N°730468
 - `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
@@ -103,6 +104,7 @@ Fundings
 .. _ANR Eval-PDU : https://anr.fr/Projet-ANR-08-VILL-0005
 .. _ANR VegDUD : https://anr.fr/Projet-ANR-09-VILL-0007
 .. _ANR CENSE : https://anr.fr/Projet-ANR-16-CE22-0012
+.. _ANR SYMEXPO : https://symexpo.univ-gustave-eiffel.fr/
 .. _Nature4cities : https://www.nature4cities.eu/
 .. _DGPR : https://www.cerema.fr/fr/projets/plamade-plate-forme-mutualisee-aide-au-diagnostic
 
