@@ -3,10 +3,10 @@
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
 [![GitHub release](https://img.shields.io/github/release/Universite-Gustave-Eiffel/NoiseModelling)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/)
 
-<img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="70%">
+<img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="90%">
 
 NoiseModelling
-======
+===============
 
 NoiseModelling is a library capable of producing noise maps. 
 It can be freely used either for research and education, as well as by experts in a professional use.
@@ -27,7 +27,7 @@ The current stable version is v5.0.0 (see [latest release](https://github.com/Un
 Documentation
 ---------------------------
 
-An online documentation is available [here](https://noisemodelling.readthedocs.io/en/latest/).
+An online documentation is available [here](https://noisemodelling.readthedocs.io/en/latest/). Here you'll find a wealth of useful information, including numerous step-by-step tutorials on how to use NoiseModelling.
 
 Authors
 ---------------------------
@@ -39,10 +39,10 @@ The NoiseModelling team owns the majority of the authorship of this application,
 Licence
 ---------------------------
 
-NoiseModelling and its documentation are distributed for free under [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html). 
+NoiseModelling and its documentation are distributed for free and under the open-source [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html) licence. 
 
-Publications, Fundings, Tutorials...
----------------------------
+Publications & Fundings
+--------------------------------------
 
-Please consult the online documentation [here](https://noisemodelling.readthedocs.io/en/latest/).
-
+* [Scientific production](https://noisemodelling.readthedocs.io/en/latest/Scientific_production.html) 
+* [Fundings](https://noisemodelling.readthedocs.io/en/latest/index.html#fundings)
