@@ -31,7 +31,7 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 What's new with the v5.0?
 ---------------------------
 
-Since the release v5.0, **NoiseModelling validate the `CNOSSOS-EU`_ standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
+Since the release v5.0, **NoiseModelling validate the** `CNOSSOS-EU`_ **standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
 
 **Time periods are not limited to Day Evening and Night anymore**. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
 
