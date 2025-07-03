@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps.DataAssimilation
+package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
 import com.opencsv.CSVReader
 import geoserver.GeoServer
@@ -6,6 +6,7 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -60,14 +61,14 @@ outputs = [
         result: [
                 name: 'Sql tables output',
                 title: 'Sql tables output',
-                description: 'Sql tables "SENSORS_MEASUREMENTS", "SENSORS_LOCATION","SENSORS", "SENSORS_MEASUREMENTS_TRAINING"',
-                type: Sql.class
+                description: 'Sql tables "SENSORS_MEASUREMENTS", "SENSORS_LOCATION", "SENSORS_MEASUREMENTS_TRAINING"',
+                type: String.class
         ]
 ]
 
 
 static def exec(Connection connection,input){
-
+    connection = new ConnectionWrapper(connection)
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
     logger.info('Start Preparation of Sensor dataset ')
 
@@ -83,7 +84,21 @@ static def exec(Connection connection,input){
 
     List<Map<String, String>> selectedData = allMeasurements(dayStart, dayEnd,deviceFolder)
     measurementTable(connection,selectedData)
-    sql.execute("ALTER TABLE SENSORS_LOCATION RENAME COLUMN DEVEUI TO IDSENSOR ")
+
+    boolean columnExists = false
+    sql.eachRow(" SELECT COUNT(*) AS cnt "+
+            " FROM INFORMATION_SCHEMA.COLUMNS "+
+            " WHERE TABLE_NAME = 'SENSORS_LOCATION' "+
+            " AND COLUMN_NAME = 'DEVEUI' ")
+            { row ->
+                if (row.cnt > 0) {
+                    columnExists = true
+                }
+            }
+
+    if (columnExists) {
+        sql.execute("ALTER TABLE SENSORS_LOCATION RENAME COLUMN DEVEUI TO IDSENSOR")
+    }
 
     sql.execute("ALTER TABLE SENSORS_LOCATION ALTER COLUMN The_GEOM " +
             "TYPE geometry(PointZ, "+targetSRID+") " +
@@ -95,7 +110,6 @@ static def exec(Connection connection,input){
 
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN THE_GEOM GEOMETRY(PointZ,"+targetSRID+")")
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN IDRECEIVER INTEGER")
-    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS RENAME COLUMN DEVEUI TO IDSENSOR ")
 
     sql.execute("UPDATE SENSORS_MEASUREMENTS sm " +
             "SET THE_GEOM = (select ST_Transform(s.The_GEOM, "+targetSRID+" )"+
@@ -113,12 +127,14 @@ static def exec(Connection connection,input){
             "USING ST_SetSRID(ST_Force3D(THE_GEOM), "+targetSRID+")")
 
     String inputTable = "SENSORS_MEASUREMENTS_TRAINING"
-    sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN T SET DATA TYPE INTEGER")
+    sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN EPOCH SET DATA TYPE INTEGER")
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN IDRECEIVER SET DATA TYPE INTEGER")
     sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN TEMP SET DATA TYPE FLOAT")
-    sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN LEQA SET DATA TYPE FLOAT")
+    sql.execute("ALTER TABLE "+inputTable+" ALTER COLUMN LAEQ SET DATA TYPE FLOAT")
 
     logger.info('End Preparation of Sensor dataset ')
+    return "Calculation Done ! The tables SENSORS_MEASUREMENTS, SENSORS_LOCATION and SENSORS_MEASUREMENTS_TRAINING have been created."
+
 
 
 }
@@ -168,7 +184,7 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
                     for (int i = 1; i < rows.size(); i++) {
                         String[] row = rows.get(i)
                         Map<String, String> map = [:]
-        
+
                         for (int j = 0; j < headers.length; j++) {
                             if (j < row.length) {
                                 map[headers[j]] = row[j]
@@ -176,7 +192,7 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
                          }
 
                         map["file_name"] = path.getFileName().toString()
-        
+
                         if (map.containsKey("timestamp") && map["timestamp"]) {
                            LocalDateTime ts = parseTimestamp(map["timestamp"])
                            if (!ts.isBefore(dayStart) && !ts.isAfter(dayEnd)) {
@@ -184,7 +200,7 @@ static def allMeasurements(LocalDateTime dayStart, LocalDateTime dayEnd, String 
                            }
                         }
                   }
-                    
+
                 } catch (Exception e) {
                     e.printStackTrace()
                 }
@@ -207,7 +223,7 @@ static def measurementTable(Connection connection,List<Map<String, String>> sele
     sql.execute("DROP TABLE IF EXISTS SENSORS_MEASUREMENTS;")
     sql.execute("CREATE TABLE SENSORS_MEASUREMENTS (" +
             "    deveui VARCHAR(255)," +
-            "    epoch VARCHAR(255)," +
+            "    EPOCH VARCHAR(255)," +
             "    Leq FLOAT," +
             "    Temp FLOAT" +
             ")")
@@ -234,6 +250,8 @@ static def measurementTable(Connection connection,List<Map<String, String>> sele
         sb.append(")")
         sql.execute(sb.toString())
     }
+    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS RENAME COLUMN deveui TO IDSENSOR ")
+    sql.execute("ALTER TABLE SENSORS_MEASUREMENTS RENAME COLUMN Leq TO LAEQ ")
 }
 
 /**
@@ -306,8 +324,8 @@ static def extractObservationData(Connection connection,Float ratio) {
             IDSENSOR VARCHAR(255),
             THE_GEOM VARCHAR(255),
             IDRECEIVER INTEGER,
-            T INTEGER,
-            LEQA FLOAT,
+            EPOCH INTEGER,
+            LAEQ FLOAT,
             TEMP FLOAT
         )
     """)
@@ -315,8 +333,8 @@ static def extractObservationData(Connection connection,Float ratio) {
     measureRows.each { row ->
         String sensor = row.IDSENSOR
         if (resultMap.containsKey(sensor)) {
-            sql.execute("INSERT INTO SENSORS_MEASUREMENTS_TRAINING (IDSENSOR, THE_GEOM, IDRECEIVER, T, LEQA, TEMP) " +
-                    " VALUES ('${sensor}', '${row.The_GEOM}', ${row.IDRECEIVER}, '${row.epoch}', ${row.Leq}, ${row.Temp})")
+            sql.execute("INSERT INTO SENSORS_MEASUREMENTS_TRAINING (IDSENSOR, THE_GEOM, IDRECEIVER, EPOCH, LAEQ, TEMP) " +
+                    " VALUES ('${sensor}', '${row.The_GEOM}', ${row.IDRECEIVER}, '${row.EPOCH}', ${row.LAEQ}, ${row.Temp})")
         }
     }
 

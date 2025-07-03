@@ -10,11 +10,15 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps.DataAssimilation
+package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.JDBCUtilities
+import geoserver.GeoServer
+import geoserver.catalog.Store
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import java.sql.Connection
 
@@ -25,23 +29,35 @@ description = 'Creation of the result table.'
 inputs = [
         bestConfigTable: [
                 name: 'The best configuration table',
+                title: 'The best configuration table',
                 description: 'The best configuration table',
                 type: String.class
         ],
         receiverLevel: [
                 name: 'The receivers Level table',
+                title: 'The receivers Level table',
                 description: 'The receivers Level table ',
                 type:  String.class
         ],
         outputTable: [
-                name: 'The results table',
-                description: 'The results table',
+                name: 'The output  table name',
+                title: 'The output  table name',
+                description: 'The output  table name',
+                type: String.class
+        ]
+]
+outputs = [
+        result: [
+                name: 'The result table',
+                title: 'The result table',
+                description: 'The result table',
                 type: String.class
         ]
 ]
 
 @CompileStatic
 static def exec(Connection connection,inputs) {
+    connection = new ConnectionWrapper(connection)
     String bestConfigTable = inputs['bestConfigTable'] as String
     String receiverLevel = inputs['receiverLevel'] as String
     String outputTable = inputs['outputTable'] as String
@@ -49,12 +65,38 @@ static def exec(Connection connection,inputs) {
     Sql sql = new Sql(connection)
     // Add Timestamp to the NMs
     sql.execute("DROP TABLE "+outputTable+" IF EXISTS;")
-    sql.execute("CREATE TABLE "+outputTable+" AS SELECT b.T TIMESTAMP, b.IT IMAP, a.LAEQ, a.THE_GEOM, a.IDRECEIVER FROM "+bestConfigTable+" b  LEFT JOIN "+receiverLevel+" a ON a.PERIOD = b.PERIOD ; ")
+    sql.execute("CREATE TABLE "+outputTable+" AS SELECT b.EPOCH TIMESTAMP, a.LAEQ, a.THE_GEOM, a.IDRECEIVER FROM "+bestConfigTable+" b  LEFT JOIN "+receiverLevel+" a ON a.PERIOD = b.IT ; ")
     sql.execute("ALTER TABLE "+outputTable+" ALTER COLUMN TIMESTAMP SET DATA TYPE INTEGER")
 
     def columnNames = JDBCUtilities.getColumnNames(connection, outputTable)
 
     columnNames.containsAll(Arrays.asList("IMAP", "LAEQ"))
 
+    return "Calculation Done ! The table "+outputTable+" has been created."
 
+}
+
+// run the script
+static def run(input) {
+
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+// Open Connection to Geoserver
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
 }

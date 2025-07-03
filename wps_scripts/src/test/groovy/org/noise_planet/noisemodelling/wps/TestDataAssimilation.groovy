@@ -11,10 +11,8 @@
  */
 
 package org.noise_planet.noisemodelling.wps
-
-
 import org.junit.Test
-import org.noise_planet.noisemodelling.wps.DataAssimilation.*
+import org.noise_planet.noisemodelling.wps.Data_Assimilation.*
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
@@ -34,8 +32,12 @@ class TestDataAssimilation extends JdbcTestCase {
         String workingFolder = TestDataAssimilation.class.getResource("dataAssimilation/").getPath()
 
         new All_Possible_Configuration().exec(connection, [
-                "trafficValues"    : [0.01, 1.0, 2.0, 3],
-                "temperatureValues": [10, 15, 20]
+                "trafficValues"    : "0.01, 1.0, 2.0",
+                "temperatureValues": "10, 15, 20"
+        ])
+        new Export_Table().exec(connection, [
+                "exportPath":"./target/ALL_CONFIGURATIONS.csv", // receivers
+                "tableToExport":"ALL_CONFIGURATIONS"
         ])
 
         new Import_File().exec(connection,[
@@ -52,7 +54,6 @@ class TestDataAssimilation extends JdbcTestCase {
                 "workingFolder": workingFolder,
                 "targetSRID"   : 2056
         ])
-
         new Import_OSM().exec(connection, [
                 "pathFile"      : workingFolder + "geneva.osm.pbf",
                 "targetSRID"    : 2056,
@@ -63,9 +64,7 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
         // Method to execute a series of operations for generate noise maps
-        new Data_Simulation().exec(connection,[
-                "noiseMapLimit": 10
-        ])
+        new Data_Simulation().exec(connection,["noiseMapLimit": 5])
 
        new Noise_level_from_source().exec(connection, [
                 "tableSources": "ROADS_GEOM",
@@ -73,9 +72,9 @@ class TestDataAssimilation extends JdbcTestCase {
                 "tableBuilding": "BUILDINGS",
                 "tableReceivers": "SENSORS_LOCATION",
                 "confExportSourceId": false,
-                "confMaxSrcDist": 250,
+                "confMaxSrcDist": 500,
                 "confDiffVertical": false,
-                "confDiffHorizontal": false
+                "confDiffHorizontal": true
         ])
 
         // Extraction of the best maps
@@ -90,7 +89,7 @@ class TestDataAssimilation extends JdbcTestCase {
               "fenceTableName": "BUILDINGS",
               "buildingTableName": "BUILDINGS",
               "sourcesTableName":"ROADS",
-              "delta": 200
+              "delta": 20
         ])
 
         new Merged_Sensors_Receivers().exec(connection,[
@@ -99,7 +98,10 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
          // Creation of the dynamic road using best configurations
-        new NMs_4_BestConfigs().exec(connection)
+        new NMs_4_BestConfigs().exec(connection,[
+                "bestConfig": "BEST_CONFIGURATION_FULL",
+                "roadEmission" : "LW_ROADS"
+        ])
 
         // Create NoiseMaps only for best configurations
         new Noise_level_from_source().exec(connection, [
@@ -108,9 +110,9 @@ class TestDataAssimilation extends JdbcTestCase {
                       "tableBuilding": "BUILDINGS",
                       "tableReceivers": "RECEIVERS",
                       "confExportSourceId": false,
-                      "confMaxSrcDist": 250,
+                      "confMaxSrcDist": 200,
                       "confDiffVertical": false,
-                      "confDiffHorizontal": false
+                      "confDiffHorizontal": true
         ])
 
         new Create_Assimilated_Maps().exec(connection,[
@@ -120,5 +122,6 @@ class TestDataAssimilation extends JdbcTestCase {
         ])
 
         logger.info('End of Test for Data Assimilation.')
+
     }
 }
