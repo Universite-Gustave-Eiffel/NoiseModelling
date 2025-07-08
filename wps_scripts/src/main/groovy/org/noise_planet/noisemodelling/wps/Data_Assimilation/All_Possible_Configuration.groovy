@@ -2,6 +2,8 @@ package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.BatchingPreparedStatementWrapper
+import groovy.sql.BatchingStatementWrapper
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
@@ -40,7 +42,7 @@ outputs = [
 ]
 
 // Open Connection to Geoserver
-Connection openGeoserverDataStoreConnection(String dbName) {
+static Connection openGeoserverDataStoreConnection(String dbName) {
     if (dbName == null || dbName.isEmpty()) {
         dbName = new GeoServer().catalog.getStoreNames().get(0)
     }
@@ -49,6 +51,22 @@ Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
+// run the script
+def run(input) {
+
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+@CompileStatic
 def exec(Connection connection,input) {
     connection = new ConnectionWrapper(connection)
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -71,20 +89,6 @@ def exec(Connection connection,input) {
     logger.info('End generate all possible configuration')
     return "Calculation Done ! The table ALL_CONFIGURATIONS has been created."
 
-}
-
-def run(input) {
-
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
 }
 
 
@@ -113,7 +117,7 @@ def getAllConfig(Connection connection,double[] vals,double[] temps) {
     String insertQuery = "INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL, SECONDARY_VAL, TERTIARY_VAL, OTHERS_VAL, TEMP_VAL) VALUES (?, ?, ?, ?, ?)"
     int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length
 
-    sql.withBatch(insertQuery) { ps ->
+    sql.withBatch(100, insertQuery) { BatchingPreparedStatementWrapper ps ->
         for (int i = 0; i < totalCombinations; i++) {
             int indexPrimary = (int) (i / (vals.length * vals.length * vals.length * temps.length)) % vals.length
             int indexSecondary = (int) (i / (vals.length * vals.length * temps.length)) % vals.length
@@ -129,7 +133,7 @@ def getAllConfig(Connection connection,double[] vals,double[] temps) {
 
             // Skip incoherent combinations
             if (others / primary <= 20 && secondary / primary <= 20 && tertiary / primary <= 20 && tertiary /secondary <= 20  &&  others / secondary <= 20 && others / tertiary <= 20){
-                ps.addBatch([primary, secondary, tertiary, others, valTemps] as Object[])
+                ps.addBatch(primary, secondary, tertiary, others, valTemps)
             }
         }
     }
