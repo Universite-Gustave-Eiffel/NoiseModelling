@@ -1,10 +1,13 @@
-package org.noise_planet.noisemodelling.wps.DataAssimilation
+package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
+import groovy.sql.BatchingPreparedStatementWrapper
+import groovy.sql.BatchingStatementWrapper
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -18,13 +21,13 @@ inputs = [
                 name: 'Traffic values',
                 title: 'Traffic values',
                 description: 'list of variation values in % for traffic like [0.01,1.0, 2.0,3,4]',
-                type: Double[].class
+                type: String.class
         ],
         temperatureValues : [
                 name       : 'Temperature values',
                 title      : 'Temperature values',
                 description: 'List of temperature values for the road traffic emission',
-                type       : Double[].class
+                type       : String.class
         ]
 ]
 
@@ -32,24 +35,24 @@ inputs = [
 outputs = [
         result: [
                 name: 'ALL_CONFIGURATIONS',
+                title: 'ALL_CONFIGURATIONS',
                 description: 'A sql table named ALL_CONFIGURATIONS ',
-                type: Sql
+                type: String.class
         ]
 ]
-@CompileStatic
-static def exec(Connection connection,input) {
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
-    logger.info('Start generate all possible configuration')
-    double[] trafficValues = input['trafficValues'] as double[]
-    int[] temperatureValues = input['temperatureValues'] as int[]
-
-    getAllConfig(connection,trafficValues,temperatureValues)
-    logger.info('End generate all possible configuration')
-
+// Open Connection to Geoserver
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
 }
 
-static def run(input) {
+// run the script
+def run(input) {
 
     // Get name of the database
     // by default an embedded h2gis database is created
@@ -63,15 +66,31 @@ static def run(input) {
     }
 }
 
-// Open Connection to Geoserver
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
+@CompileStatic
+def exec(Connection connection,input) {
+    connection = new ConnectionWrapper(connection)
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    logger.info('Start generate all possible configuration')
+
+    String trafficString = input['trafficValues'] as String
+    def trafficList = trafficString.replaceAll(" ", "")  // Remove brackets
+            .split(",")                  // Split by comma
+            .collect { it.trim().toDouble() }  // Convert to double
+    double[] trafficValues = trafficList as double[]
+
+    String tempString = input['temperatureValues'] as String
+    def tempList = tempString.replaceAll(" ", "")  // Remove brackets
+            .split(",")                  // Split by comma
+            .collect { it.trim().toDouble() }  // Convert to double
+    double[] temperatureValues = tempList as double[]
+
+    getAllConfig(connection,trafficValues,temperatureValues)
+    logger.info('End generate all possible configuration')
+    return "Calculation Done ! The table ALL_CONFIGURATIONS has been created."
+
 }
+
 
 /**
  * Generates all possible value combinations based on two list and into a sql table "ALL_CONFIGURATIONS".
@@ -89,16 +108,16 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
  * @param temps : list of temperature values
  */
 @CompileStatic
-static def getAllConfig(Connection connection,double[] vals,int[] temps) {
+def getAllConfig(Connection connection,double[] vals,double[] temps) {
     Sql sql = new Sql(connection)
 
     sql.execute("DROP TABLE ALL_CONFIGURATIONS IF EXISTS")
-    sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY AUTO_INCREMENT,PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL INTEGER)")
+    sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY AUTO_INCREMENT,PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL double)")
 
     String insertQuery = "INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL, SECONDARY_VAL, TERTIARY_VAL, OTHERS_VAL, TEMP_VAL) VALUES (?, ?, ?, ?, ?)"
     int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length
 
-    sql.withBatch(insertQuery) { ps ->
+    sql.withBatch(100, insertQuery) { BatchingPreparedStatementWrapper ps ->
         for (int i = 0; i < totalCombinations; i++) {
             int indexPrimary = (int) (i / (vals.length * vals.length * vals.length * temps.length)) % vals.length
             int indexSecondary = (int) (i / (vals.length * vals.length * temps.length)) % vals.length
@@ -110,11 +129,11 @@ static def getAllConfig(Connection connection,double[] vals,int[] temps) {
             double secondary = vals[indexSecondary]
             double tertiary = vals[indexTertiary]
             double others = vals[indexOthers]
-            int valTemps = temps[indexTemps]
+            double valTemps = temps[indexTemps]
 
             // Skip incoherent combinations
             if (others / primary <= 20 && secondary / primary <= 20 && tertiary / primary <= 20 && tertiary /secondary <= 20  &&  others / secondary <= 20 && others / tertiary <= 20){
-                ps.addBatch([primary, secondary, tertiary, others, valTemps] as Object[])
+                ps.addBatch(primary, secondary, tertiary, others, valTemps)
             }
         }
     }

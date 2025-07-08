@@ -10,10 +10,14 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps.DataAssimilation
+package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
+import geoserver.GeoServer
+import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
+import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.utilities.wrapper.ConnectionWrapper
 
 import java.sql.Connection
 
@@ -24,18 +28,30 @@ description = 'Adding the sensors into the RECEIVERS after creating a regular gr
 inputs = [
         tableReceivers: [
                 name: 'The receiver table',
+                title: 'The receiver table',
                 description: 'The receiver table',
-                type: Sql.class
+                type: String.class
         ],
         tableSensors: [
                 name: 'The Sensors table',
+                title: 'The Sensors table',
                 description: 'The Sensors table ',
-                type: Sql.class
+                type: String.class
+        ]
+]
+
+outputs = [
+        result: [
+                name: 'Merged table',
+                title: 'Merged table',
+                description: 'Receiver table containing all sensors',
+                type: String.class
         ]
 ]
 
 @CompileStatic
 static def exec(Connection connection,inputs) {
+    connection = new ConnectionWrapper(connection)
     String receiverTable = inputs['tableReceivers'] as String
     String tableSensors = inputs['tableSensors'] as String
 
@@ -45,4 +61,31 @@ static def exec(Connection connection,inputs) {
     sql.execute("UPDATE " + receiverTable + "  SET IDNAME = 'REC_MAP'")
 
     sql.execute("INSERT INTO  " + receiverTable + "  (THE_GEOM, IDNAME) SELECT The_GEOM THE_GEOM , IDSENSOR IDNAME FROM " + tableSensors)
+
+    return "Calculation Done ! The tables " + receiverTable + " and "+tableSensors +" have been merged."
+
+}
+// run the script
+static def run(input) {
+
+    // Get name of the database
+    // by default an embedded h2gis database is created
+    // Advanced user can replace this database for a postGis or h2Gis server database.
+    String dbName = "h2gisdb"
+
+    // Open connection
+    openGeoserverDataStoreConnection(dbName).withCloseable {
+        Connection connection ->
+            return [result: exec(connection, input)]
+    }
+}
+
+// Open Connection to Geoserver
+static Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
 }
