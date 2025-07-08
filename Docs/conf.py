@@ -50,8 +50,11 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.autosectionlabel',
     'sphinx_rtd_theme',
+    'sphinx_tabs.tabs',
+    'sphinxcontrib.bibtex',
 ]
 
+bibtex_bibfiles = ['NoiseModelling.bib']
 
 intersphinx_mapping = {
     "rtd": ("https://docs.readthedocs.io/en/stable/", None),

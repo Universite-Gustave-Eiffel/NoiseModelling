@@ -18,6 +18,7 @@ package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
@@ -44,6 +45,8 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
 
+import java.io.FileNotFoundException
+
 title = 'Import traffic data from Mastim simultaion output folder'
 description = 'Read Mastim events output file in order to get traffic NoiseModelling input'
 
@@ -63,7 +66,10 @@ inputs = [
             description: 'This parameter dictates the time resolution of the resulting data ' +
                     '<br/>The time information stored will be the starting time of the time bins ' +
                     '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
-                    '<br/>0, 3600, 7200, ..., 79200, 82800',
+                    '<br/>0, 3600, 7200, ..., 79200, 82800' +
+                    '<br/>Default: 3600',
+            min: 0,
+            max: 1,
             type: Integer.class
     ],
     populationFactor: [
@@ -164,7 +170,8 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+@CompileStatic
+static def exec(Connection connection, input) {
 
     connection = new ConnectionWrapper(connection)
     Sql sql = new Sql(connection)
@@ -232,17 +239,17 @@ def exec(Connection connection, input) {
     String eventFile = folder + "/output_events.xml.gz"
     f = new File(eventFile)
     if(!f.exists() || f.isDirectory()) {
-        throw new FileNotFoundException(eventFile, "output_events.xml.gz not found in MATSim folder")
+        throw new FileNotFoundException("output_events.xml.gz not found in MATSim folder")
     }
     String networkFile = folder + "/output_network.xml.gz"
     f = new File(networkFile)
     if(!f.exists() || f.isDirectory()) {
-        throw new FileNotFoundException(networkFile, "output_network.xml.gz not found in MATSim folder")
+        throw new FileNotFoundException("output_network.xml.gz not found in MATSim folder")
     }
     if (link2GeometryFile != "") {
         f = new File(link2GeometryFile)
         if(!f.exists() || f.isDirectory()) {
-            throw new FileNotFoundException(link2GeometryFile, link2GeometryFile + " not found")
+            throw new FileNotFoundException(link2GeometryFile + " not found")
         }
     }
 
