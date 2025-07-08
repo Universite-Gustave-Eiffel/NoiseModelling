@@ -3,6 +3,7 @@ package org.noise_planet.noisemodelling.wps.Data_Assimilation
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
@@ -38,7 +39,17 @@ outputs = [
         ]
 ]
 
-static def exec(Connection connection,input) {
+// Open Connection to Geoserver
+Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
+}
+
+def exec(Connection connection,input) {
     connection = new ConnectionWrapper(connection)
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
@@ -62,7 +73,7 @@ static def exec(Connection connection,input) {
 
 }
 
-static def run(input) {
+def run(input) {
 
     // Get name of the database
     // by default an embedded h2gis database is created
@@ -76,15 +87,6 @@ static def run(input) {
     }
 }
 
-// Open Connection to Geoserver
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
 
 /**
  * Generates all possible value combinations based on two list and into a sql table "ALL_CONFIGURATIONS".
@@ -101,7 +103,8 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
  * @param vals : list of traffic values
  * @param temps : list of temperature values
  */
-static def getAllConfig(Connection connection,double[] vals,double[] temps) {
+@CompileStatic
+def getAllConfig(Connection connection,double[] vals,double[] temps) {
     Sql sql = new Sql(connection)
 
     sql.execute("DROP TABLE ALL_CONFIGURATIONS IF EXISTS")

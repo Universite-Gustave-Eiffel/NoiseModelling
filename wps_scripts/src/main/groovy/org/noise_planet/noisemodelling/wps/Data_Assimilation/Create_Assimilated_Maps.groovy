@@ -55,8 +55,18 @@ outputs = [
         ]
 ]
 
+// Open Connection to Geoserver
+Connection openGeoserverDataStoreConnection(String dbName) {
+    if (dbName == null || dbName.isEmpty()) {
+        dbName = new GeoServer().catalog.getStoreNames().get(0)
+    }
+    Store store = new GeoServer().catalog.getStore(dbName)
+    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
+    return jdbcDataStore.getDataSource().getConnection()
+}
+
 @CompileStatic
-static def exec(Connection connection,inputs) {
+def exec(Connection connection,inputs) {
     connection = new ConnectionWrapper(connection)
     String bestConfigTable = inputs['bestConfigTable'] as String
     String receiverLevel = inputs['receiverLevel'] as String
@@ -77,7 +87,7 @@ static def exec(Connection connection,inputs) {
 }
 
 // run the script
-static def run(input) {
+def run(input) {
 
     // Get name of the database
     // by default an embedded h2gis database is created
@@ -89,14 +99,4 @@ static def run(input) {
         Connection connection ->
             return [result: exec(connection, input)]
     }
-}
-
-// Open Connection to Geoserver
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
 }
