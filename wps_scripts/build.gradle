@@ -147,6 +147,9 @@ repositories {
 }
 
 test {
+    minHeapSize = "128m" // initial heap size
+    maxHeapSize = "1g" // maximum heap size
+    jvmArgs '-XX:MaxPermSize=1g' // mem argument for the test JVM
     afterTest { desc, result ->
         println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
     }
@@ -191,7 +194,7 @@ dependencies {
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '[0.48, 0.49)'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '[0.48, 0.49)'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '[0.48, 0.49)'
-    implementation(group: 'org.matsim', name: 'matsim', version: '[11.0, 12)') {
+    implementation(group: 'org.matsim', name: 'matsim', version: '14.0') {
         exclude group: 'org.geotools'
     }
 
@@ -239,7 +242,7 @@ mainClassName = 'org.noise_planet.noisemodelling.runner.Main'
 
 jar {
     manifest {
-        attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
+        attributes('Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
                 'Main-Class': 'org.noise_planet.noisemodelling.runner.Main')
     }
 }

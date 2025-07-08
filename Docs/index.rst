@@ -31,11 +31,11 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 What's new with the v5.0?
 ---------------------------
 
-Since the release v5.0, NoiseModelling validate the `CNOSSOS-EU`_ standard method for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`" and ":doc:`Validation`" ":doc:`Cnossos_report`"  pages for more information).
+Since the release v5.0, **NoiseModelling validate the** `CNOSSOS-EU`_ **standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
 
-Time periods are not limited to Day Evening and Night anymore. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
+**Time periods are not limited to Day Evening and Night anymore**. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
 
-The computation time has been decreased. The separation between path finding and attenuation has been done in preparation to the implementation of more noise propagation model (ex. Harmonoise).
+The **computation time has been decreased**. The separation between path finding and attenuation has been done in preparation to the implementation of more noise propagation model (ex. Harmonoise).
 
 Packaging
 **************
@@ -46,7 +46,7 @@ On the NoiseModelling latest `release page`_, three packages of NoiseModelling a
 * ``NoiseModelling_5.0.0_install.exe`` : windows installer, with GUI
 * ``NoiseModelling_5.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
 
-
+.. _CNOSSOS-EU: https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
 
 Authors
@@ -83,14 +83,18 @@ Fundings
 
 *Research projects:*
 
-- `ANR Eval-PDU`_ (ANR-08-VILL-0005) 2008-2011
-- `ANR VegDUD`_ (ANR-09-VILL-0007) 2009-2014
-- `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
+- OPTImisation technique et environnementale des moyens de lutte contre le gel en viticulture par Tours-Anti-Gel en Centre-Val de Loire (OptiTAG), funded by Région Centre Val de Loire & co-funded by European Union 2024-2027
+- AMELIA, funded by the call "DIAT (Démonstrateurs d’IA frugale au service de la transition écologique) de la Banque des Territoires" 2024-2027
+- `ANR SYMEXPO`_ (ANR-21-CE22-0022-01) 2021-2026
+- Sampols 2.0: a disruptive solution for noise pollution monitoring (SIREN), funded by Eurostars 3 - BPI 2024-2025
 - `Nature4cities`_ (N4C) project, funded by European Union’s Horizon 2020 research and innovation programme under grant agreement N°730468
-- `PlaMADE`_ 2020-2022
+- `ANR CENSE`_ (ANR-16-CE22-0012) 2017-2021
+- `ANR VegDUD`_ (ANR-09-VILL-0007) 2009-2014
+- `ANR Eval-PDU`_ (ANR-08-VILL-0005) 2008-2011
 
 *Institutional (public) fundings:*
 
+- `DGPR`_ 2020-2022 & 2025-27
 - `Université Gustave Eiffel`_ (formerly Ifsttar, formerly LCPC), `CNRS`_, `Cerema`_, `Université Bretagne Sud`_, `Ecole Centrale de Nantes`_
 
 *Private fundings:*
@@ -100,8 +104,9 @@ Fundings
 .. _ANR Eval-PDU : https://anr.fr/Projet-ANR-08-VILL-0005
 .. _ANR VegDUD : https://anr.fr/Projet-ANR-09-VILL-0007
 .. _ANR CENSE : https://anr.fr/Projet-ANR-16-CE22-0012
+.. _ANR SYMEXPO : https://symexpo.univ-gustave-eiffel.fr/
 .. _Nature4cities : https://www.nature4cities.eu/
-.. _PlaMADE : https://www.cerema.fr/fr/projets/plamade-plate-forme-mutualisee-aide-au-diagnostic
+.. _DGPR : https://www.cerema.fr/fr/projets/plamade-plate-forme-mutualisee-aide-au-diagnostic
 
 .. _Université Gustave Eiffel: https://www.univ-gustave-eiffel.fr/
 .. _CNRS: https://www.cnrs.fr
@@ -128,6 +133,7 @@ Fundings
     Numerical_Model
     Validation
     Scientific_production
+    Community
 
 .. toctree::
     :maxdepth: 1
@@ -153,6 +159,7 @@ Fundings
     Noise_Map_From_Point_Source
     Matsim_Tutorial
     Dynamic_Tutorial
+    Data_Assimilation_Tutorial
     Get_Started_Script
     Tutorials_FAQ
 
@@ -176,12 +183,12 @@ Fundings
     :caption: For Developers
 
     Get_Started_Dev
-    Cnossos_Report
 
 .. toctree::
     :maxdepth: 2
     :caption: Appendices
 
+    Cnossos_Report
     Noise_Map_Color_Scheme
     Support
     License

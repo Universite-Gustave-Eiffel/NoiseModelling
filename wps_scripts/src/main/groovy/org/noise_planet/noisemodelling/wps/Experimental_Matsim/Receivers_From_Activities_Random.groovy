@@ -18,6 +18,7 @@ package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.GroovyRowResult
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -105,7 +106,8 @@ def run(input) {
 }
 
 // main function of the script
-def exec(Connection connection, input) {
+@CompileStatic
+static def exec(Connection connection, input) {
 
     connection = new ConnectionWrapper(connection)
 
@@ -122,7 +124,7 @@ def exec(Connection connection, input) {
     String receiversTable = input['receiversTable']
     int randomSeed = 1234
     if (input["randomSeed"]) {
-        randomSeed = intput["randomSeed"] as Integer
+        randomSeed = input["randomSeed"] as Integer
     }
     Random randGen = new Random(randomSeed);
     String outTableName = input['outTableName']
@@ -170,7 +172,7 @@ def exec(Connection connection, input) {
 
     logger.info("Loading activities...")
     def res = sql.firstRow("SELECT COUNT(PK) as NB_ACTIVITIES FROM " + activitiesTable)
-    int NB_ACTIVITIES = res[0];
+    int NB_ACTIVITIES = res[0] as int;
     logger.info("Found " + NB_ACTIVITIES + " activities")
 
     int counter = 0;
@@ -187,8 +189,8 @@ def exec(Connection connection, input) {
     sql.execute(query)
 
     sql.eachRow("SELECT * FROM " + activitiesTable, { activity ->
-        int activity_id = activity[0]
-        Geometry activity_geom = activity[2]
+        int activity_id = activity[0] as int;
+        Geometry activity_geom = activity[2] as Geometry;
 
         def buildings = sql.rows("SELECT B.PK FROM " + buildingsTable + " AS B, " + activitiesTable + " AS A " +
                 "WHERE ST_EXPAND(A.THE_GEOM, 200, 200) && B.THE_GEOM AND A.PK = " + activity_id +

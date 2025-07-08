@@ -99,7 +99,7 @@ Wall absorption coefficient
 --------------------------------
 
 * Parameter name: ``paramWallAlpha``
-* Description: Wall absorption coefficient [0,1] (between ``0`` : "fully absorbent" and ``1`` : "fully reflective")
+* Description: Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully absorbent")
 * Type: Double
 * Default value: ``0.1``
 * Recommended value: ``0.1``
