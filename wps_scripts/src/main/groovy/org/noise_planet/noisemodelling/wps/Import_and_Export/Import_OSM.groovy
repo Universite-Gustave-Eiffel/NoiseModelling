@@ -296,6 +296,8 @@ def exec(Connection connection, input) {
             DROP TABLE IF EXISTS BUILDINGS;
             CREATE TABLE BUILDINGS(PK INTEGER PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT real) AS SELECT s.id_way, ST_SETSRID(s.the_geom, '''+srid+'''), s.HEIGHT from  MAP_BUILDINGS_GEOM s where id_way not in (select PK_BUILDING from tmp_buildings_truncated) UNION ALL select PK_BUILDING, ST_SETSRID(the_geom, '''+srid+'''), HEIGHT from tmp_buildings_truncated WHERE NOT st_isempty(the_geom);
     
+            DELETE FROM BUILDINGS WHERE the_geom IS NULL OR ST_IsEmpty(the_geom);
+             
             DROP TABLE IF EXISTS tmp_buildings_truncated;
             DROP TABLE IF EXISTS tmp_relation_buildings_buildings;
             DROP TABLE IF EXISTS MAP_BUILDINGS_GEOM;

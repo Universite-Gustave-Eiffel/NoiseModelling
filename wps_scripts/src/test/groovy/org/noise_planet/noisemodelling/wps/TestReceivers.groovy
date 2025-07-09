@@ -19,13 +19,11 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.io.WKTReader
+import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid3D
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
@@ -238,6 +236,36 @@ class TestReceivers extends JdbcTestCase {
         new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
         "sourcesTableName" : "ROADS"]);
 
+
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
+
+        // Check if index and geoms is corresponding
+        def res = sql.firstRow("SELECT MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_1)) D1," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_2)) D2," +
+                " MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_3)) D3 FROM TRIANGLES T");
+        def max_dist_a = res[0] as Double
+        def max_dist_b = res[1] as Double
+        def max_dist_c = res[2] as Double
+        assertEquals(0.0, max_dist_a, 1e-6d);
+        assertEquals(0.0, max_dist_b, 1e-6d);
+        assertEquals(0.0, max_dist_c, 1e-6d);
+    }
+
+    void testDelaunayGridClean() {
+        def sql = new Sql(connection)
+
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        // create empty geom
+        sql.execute("INSERT INTO BUILDINGS(PK, THE_GEOM) VALUES (9999, 'SRID=2154;MULTIPOLYGON EMPTY'::geometry)")
+
+        new Clean_Buildings_Table().exec(connection, ["tableName": "buildings"])
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
+                                              "sourcesTableName" : "ROADS"]);
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 

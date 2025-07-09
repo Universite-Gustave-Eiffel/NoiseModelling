@@ -14,14 +14,15 @@ package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableLocation
 import org.junit.Test
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Enrich_DEM_with_road
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Screen_to_building
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.slf4j.Logger
@@ -119,6 +120,9 @@ class TestGeometricTools extends JdbcTestCase {
     @Test
     void testCleanBuildingsPop() {
         SHPRead.importTable(connection, TestGeometricTools.getResource("buildings.shp").getPath())
+
+        def srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS"))
+
         def sql = new Sql(connection)
 
         sql.execute("ALTER TABLE BUILDINGS ADD COLUMN POP REAL")
@@ -127,9 +131,14 @@ class TestGeometricTools extends JdbcTestCase {
         new Clean_Buildings_Table().exec(connection,
                 ["tableName": "buildings"])
 
+
+        def srid2 = GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS"))
+
         // Check if there is remaining intersecting buildings
         assertEquals(0, sql.firstRow("select COUNT(*) COUNTINTERS FROM buildings S1, buildings S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.05;")[0] as Integer)
         assertEquals(30, sql.firstRow("select AVG(POP) FROM buildings")[0] as Integer, 1e-3)
+        assertEquals(2154, srid)
+        assertEquals(2154, srid2)
     }
 
     void testEnrichRoad() {

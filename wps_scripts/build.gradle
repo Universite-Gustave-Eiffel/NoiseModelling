@@ -146,6 +146,9 @@ repositories {
 }
 
 test {
+    minHeapSize = "128m" // initial heap size
+    maxHeapSize = "1g" // maximum heap size
+    jvmArgs '-XX:MaxPermSize=1g' // mem argument for the test JVM
     afterTest { desc, result ->
         println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
     }
@@ -187,16 +190,16 @@ dependencies {
     implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '[5.0, 6)', changing: true
     implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc',  version: '[5.0, 6.0)', changing: true
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
-    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '0.48.3'
-    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '0.48.3'
-    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '0.48.3'
-    implementation(group: 'org.matsim', name: 'matsim', version: '11.0') {
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '[0.48, 0.49)'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '[0.48, 0.49)'
+    implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-xml', version: '[0.48, 0.49)'
+    implementation(group: 'org.matsim', name: 'matsim', version: '14.0') {
         exclude group: 'org.geotools'
     }
 
     implementation 'com.opencsv:opencsv:5.7.1'
-    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '2.0.17'
-    testCompileOnly 'junit:junit:4.13.1'
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '[2, 3)'
+    testImplementation 'junit:junit:4.13.1'
 }
 
 // Function to extract the first GPG key's fingerprint
@@ -238,7 +241,7 @@ mainClassName = 'org.noise_planet.noisemodelling.runner.Main'
 
 jar {
     manifest {
-        attributes('Class-Path': configurations.default.collect { it.getName() }.join(' '),
+        attributes('Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
                 'Main-Class': 'org.noise_planet.noisemodelling.runner.Main')
     }
 }
