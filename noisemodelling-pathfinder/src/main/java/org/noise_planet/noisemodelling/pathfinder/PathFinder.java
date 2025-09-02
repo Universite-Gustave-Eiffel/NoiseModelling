@@ -940,16 +940,28 @@ public class PathFinder {
     public void makeSourceRelativeZToAbsolute() {
         List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
         for (Geometry source : data.sourceGeometries) {
-            Geometry offsetGeometry = source.copy();
-            if(source instanceof LineString) {
+            Geometry offsetGeometry;
+            if (source instanceof LineString) {
                 offsetGeometry = splitLineSource((LineString) source, data.profileBuilder, ProfileBuilder.MILLIMETER);
-            } else if(source instanceof MultiLineString) {
+            } else if (source instanceof MultiLineString) {
                 LineString[] newGeom = new LineString[source.getNumGeometries()];
-                for(int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
+                for (int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
                     newGeom[idGeom] = splitLineSource((LineString) source.getGeometryN(idGeom),
                             data.profileBuilder, ProfileBuilder.MILLIMETER);
                 }
                 offsetGeometry = GEOMETRY_FACTORY.createMultiLineString(newGeom);
+            } else if (source instanceof Point) {
+                Coordinate sourceCoord = source.getCoordinate();
+                offsetGeometry = GEOMETRY_FACTORY.createPoint(new Coordinate(sourceCoord.x, sourceCoord.y,
+                        sourceCoord.z + data.profileBuilder.getZGround(sourceCoord)));
+                // Check if the source is into a building
+                Building building = data.profileBuilder.getBuildingAtCoordinate(sourceCoord);
+                if(building != null && building.getHeight() < sourceCoord.z) {
+                    LOGGER.warn("Point source is inside a building (height {} m), it should be moved higher :\n {}",
+                            building.getHeight(),new WKTWriter(3).write(source));
+                }
+            } else {
+                throw new IllegalArgumentException("Unsupported source geometry " + source.getGeometryType());
             }
             // Offset the geometry with value of elevation for each coordinate
             sourceCopy.add(offsetGeometry);
