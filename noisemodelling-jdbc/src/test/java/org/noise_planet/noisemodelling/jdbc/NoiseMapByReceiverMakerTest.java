@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
@@ -92,7 +93,7 @@ public class NoiseMapByReceiverMakerTest {
         StringBuilder sb = new StringBuilder("CREATE TABLE ROADS_GEOM(PK SERIAL PRIMARY KEY, THE_GEOM GEOMETRY, YAW REAL, PITCH REAL, ROLL REAL, DIR_ID INT");
         StringBuilder values = new StringBuilder("(row_number() over())::int, ST_SETSRID('");
         values.append(new WKTWriter(3).write(source));
-        values.append("', 2154) THE_GEOM, ");
+        values.append("', ").append(source.getSRID()).append(") THE_GEOM, ");
         values.append(sourceOrientation.yaw);
         values.append(" YAW, ");
         values.append(sourceOrientation.pitch);
@@ -396,6 +397,128 @@ public class NoiseMapByReceiverMakerTest {
 
             // D E N, should be 3 more rows than receivers
             assertEquals(receiversRowCount * 3, resultRowCount);
+        }
+    }
+
+
+
+
+    @Test
+    public void testPointDem() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            // Import shape file
+            // org/noise_planet/noisemodelling/jdbc/PointSource/DEM_Fence.shp
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            // Import buildings
+            // org/noise_planet/noisemodelling/jdbc/PointSource/BUILD_GRID2.shp
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+
+            // create source point direction east->90°
+            st.execute(createSource(new GeometryFactory(new PrecisionModel(), 2154).createPoint(new Coordinate(759520.99,6299434.84,1.0 )),
+                    91, new Orientation(90,0,0),0));
+
+            //SRID=2154;Point Z (759155.20419493981171399 6299238.93822849541902542 0)
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ))");
+            st.execute("insert into receivers(the_geom) values ('SRID=2154; POINTZ (759155.204 6299238.93 1.6)')");
+
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setBodyBarrier(true);
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+            List<CnossosPath> pathsParameters = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+                while (rs.next()) {
+                    CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
+                    pathsParameters.add(cnossosPath);
+                }
+            }
+            assertEquals(1 , pathsParameters.size());
+            // Check source coordinates
+            CnossosPath pathParameters = pathsParameters.get(0);
+            assertEquals(200.53, pathParameters.getCutProfile().getSource().coordinate.z, 0.1);
+            // Check receiver coordinates
+            assertEquals(189.30, pathParameters.getCutProfile().getReceiver().coordinate.z, 0.1);
+            // Check CNOSSOS path points
+            // One diffraction on horizontal edge of building
+            assertEquals(3, pathParameters.getPointList().size());
+            assertEquals(200.53, pathParameters.getPointList().get(0).coordinate.y, 0.1);
+            assertEquals(189.30, pathParameters.getPointList().get(pathParameters.getPointList().size() - 1).coordinate.y, 0.1);
+        }
+    }
+
+
+    /**
+     * Place a point source into a building to check if the source is ignored
+     * @throws Exception
+     */
+    @Test
+    public void testIgnoredSourceInBuilding() throws Exception {
+        try (Statement st = connection.createStatement()) {
+            // Import shape file
+            // org/noise_planet/noisemodelling/jdbc/PointSource/DEM_Fence.shp
+            st.execute(String.format("CALL SHPREAD('%s', 'DEM')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/DEM_Fence.shp").getFile()));
+            // Import buildings
+            // org/noise_planet/noisemodelling/jdbc/PointSource/BUILD_GRID2.shp
+            st.execute(String.format("CALL SHPREAD('%s', 'BUILDINGS')", NoiseMapByReceiverMakerTest.class.getResource("PointSource/BUILD_GRID2.shp").getFile()));
+
+            // create source point direction east->90°
+            st.execute(createSource(new GeometryFactory(new PrecisionModel(), 2154).createPoint(new Coordinate(759502.135,6299460.753,1.0 )),
+                    91, new Orientation(90,0,0),0));
+
+            //SRID=2154;Point Z (759155.20419493981171399 6299238.93822849541902542 0)
+            st.execute("create table receivers(id serial PRIMARY KEY, the_geom GEOMETRY(POINTZ))");
+            st.execute("insert into receivers(the_geom) values ('SRID=2154; POINTZ (759155.204 6299238.93 1.6)')");
+
+            NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
+                    "ROADS_GEOM", "RECEIVERS");
+
+            noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
+            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
+            noiseMapByReceiverMaker.setHeightField("HEIGHT");
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
+            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
+            noiseMapByReceiverMaker.setDemTable("DEM");
+            noiseMapByReceiverMaker.setBodyBarrier(true);
+
+            noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
+
+            NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
+
+            List<CnossosPath> pathsParameters = new ArrayList<>();
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+                while (rs.next()) {
+                    CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
+                    pathsParameters.add(cnossosPath);
+                }
+            }
+            assertEquals(0 , pathsParameters.size());
         }
     }
 }

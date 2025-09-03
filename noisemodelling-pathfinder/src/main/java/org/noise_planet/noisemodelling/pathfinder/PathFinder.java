@@ -26,6 +26,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 import org.slf4j.Logger;
@@ -956,9 +957,10 @@ public class PathFinder {
                         sourceCoord.z + data.profileBuilder.getZGround(sourceCoord)));
                 // Check if the source is into a building
                 Building building = data.profileBuilder.getBuildingAtCoordinate(sourceCoord);
-                if(building != null && building.getHeight() < sourceCoord.z) {
-                    LOGGER.warn("Point source is inside a building (height {} m), it should be moved higher :\n {}",
+                if(building != null && building.getHeight() >= sourceCoord.z) {
+                    LOGGER.warn("Point source has been ignored as it is inside a building (building height {} m), it should be moved higher SOURCE: {}",
                             building.getHeight(),new WKTWriter(3).write(source));
+                    continue;
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported source geometry " + source.getGeometryType());
@@ -966,7 +968,7 @@ public class PathFinder {
             // Offset the geometry with value of elevation for each coordinate
             sourceCopy.add(offsetGeometry);
         }
-        data.sourceGeometries = sourceCopy;
+        data.setSources(sourceCopy);
     }
 
     /**

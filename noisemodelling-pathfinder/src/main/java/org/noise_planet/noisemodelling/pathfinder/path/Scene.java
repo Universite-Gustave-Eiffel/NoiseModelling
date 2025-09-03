@@ -122,10 +122,11 @@ public class Scene {
     }
 
     /**
-     *
+     * Replace the sources by the given list
      * @param sourceGeometries
      */
     public void setSources(List<Geometry> sourceGeometries) {
+        sourcesIndex = new QueryRTree();
         int i = 0;
         for(Geometry source : sourceGeometries) {
             sourcesIndex.appendGeometry(source, i++);
