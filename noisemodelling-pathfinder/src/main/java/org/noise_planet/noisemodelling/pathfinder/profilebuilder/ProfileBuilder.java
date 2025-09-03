@@ -864,28 +864,23 @@ public class ProfileBuilder {
         return this;
     }
 
-
     /**
-     *
-     * @param reflectionPt
-     * @return
+     * Retrieve the building at the given coordinate.
+     * @param pt Coordinate.
+     * @return The building at the given coordinate, null if no building is found.
      */
-    public double getZ(Coordinate reflectionPt) {
-        List<Integer> ids = buildingTree.query(new Envelope(reflectionPt));
-        if(ids.isEmpty()) {
-            return getZGround(reflectionPt);
-        }
-        else {
-            for(Integer id : ids) {
-                Geometry buildingGeometry =  buildings.get(id - 1).getGeometry();
-                if(buildingGeometry.getEnvelopeInternal().intersects(reflectionPt)) {
-                    return buildingGeometry.getCoordinate().z;
+    public Building getBuildingAtCoordinate(Coordinate pt) {
+        List<Integer> ids = buildingTree.query(new Envelope(pt));
+        if (!ids.isEmpty()) {
+            for (Integer id : ids) {
+                Geometry buildingGeometry = buildings.get(id - 1).getGeometry();
+                if (buildingGeometry.contains(FACTORY.createPoint(pt))) {
+                    return buildings.get(id - 1);
                 }
             }
-            return getZGround(reflectionPt);
         }
+        return null;
     }
-
 
     /**
      *
