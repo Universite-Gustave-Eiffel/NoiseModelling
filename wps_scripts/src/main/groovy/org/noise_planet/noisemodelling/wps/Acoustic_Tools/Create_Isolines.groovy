@@ -51,7 +51,7 @@ inputs = [
                 title      : 'Triangles table',
                 description: '<b>Name of the triangles table.</b></br>' +
                              'Shall contain : PK, THE_GEOM, PK_1, PK_2, PK_3, CELL_ID.',
-                min        : 0, max: 1,
+                min        : 1, max: 1,
                 type       : String.class
         ],
         receiversTable : [
@@ -59,7 +59,7 @@ inputs = [
                 title      : 'Receivers level table',
                 description: '<b>Name of the receivers level table.</b></br>' +
                              'Shall contain : IDRECEIVER, PERIOD, THE_GEOM, LAEQ (or any field to contour).',
-                min        : 0, max: 1,
+                min        : 1, max: 1,
                 type       : String.class
         ],
         fieldName      : [
@@ -345,3 +345,4 @@ def exec(Connection connection, input) {
     // send resultString to WPS Builder
     return resultString
 }
+
