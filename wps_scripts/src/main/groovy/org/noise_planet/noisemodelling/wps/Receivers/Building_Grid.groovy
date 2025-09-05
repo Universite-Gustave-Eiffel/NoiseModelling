@@ -210,7 +210,7 @@ def exec(Connection connection, input) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             WKTReader wktReader = new WKTReader()
-            // --- FIX: variable 'fence' no existe. Usamos una variable local y la asignamos a fenceGeom reproyectada.
+            // --- FIX: The variable 'fence' does not exist. We use a local variable and assign it to the reprojected fenceGeom.
             Geometry wktFence = wktReader.read(input['fence'] as String)
             fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(wktFence, 4326), targetSrid)
             // --- FIN FIX
@@ -297,7 +297,7 @@ def exec(Connection connection, input) {
         sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
-        // --- NUEVO: eliminar receptores que hayan quedado dentro de edificios (caso sin POP)
+        // --- NEW: Remove receivers left inside buildings (non-POP case)
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g " +
                     "where exists (" +
@@ -305,7 +305,7 @@ def exec(Connection connection, input) {
                     "  where b.the_geom && g.the_geom " +
                     "    and ST_Contains(b.the_geom, g.the_geom) " +
                     "  limit 1)")
-        // --- FIN NUEVO
+        // --- END NEW
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -328,7 +328,7 @@ def exec(Connection connection, input) {
         sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
-        // --- NUEVO: eliminar receptores que hayan quedado dentro de edificios ANTES de repartir POP
+        // --- NEW: Remove recipients left inside buildings BEFORE distributing POP
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from tmp_receivers g " +
                     "where exists (" +
@@ -336,7 +336,7 @@ def exec(Connection connection, input) {
                     "  where b.the_geom && g.the_geom " +
                     "    and ST_Contains(b.the_geom, g.the_geom) " +
                     "  limit 1)")
-        // --- FIN NUEVO
+        // --- END NEW
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -460,3 +460,4 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
         return targetSegmentSize;
     }
 }
+
