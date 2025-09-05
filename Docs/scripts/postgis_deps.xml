@@ -12,12 +12,12 @@
             <version>1.7.12</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>org.noise-planet</groupId>
             <artifactId>noisemodelling-emission</artifactId>
             <version>${noisemodelling-version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>org.noise-planet</groupId>
             <artifactId>noisemodelling-propagation</artifactId>
             <version>${noisemodelling-version}</version>
         </dependency>

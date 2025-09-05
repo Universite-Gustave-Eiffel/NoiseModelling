@@ -45,7 +45,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean deploy -B -P maven-deploy
+        run: mvn clean deploy -B
       - name: Clean gradle cache
         run: rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
       - name: Restore gradle.properties
@@ -67,7 +67,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: ./gradlew publish
+        run: ./gradlew publish -d
         working-directory: ./wps_scripts
       - name: Cache
         uses: actions/cache@v4

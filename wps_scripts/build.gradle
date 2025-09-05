@@ -51,7 +51,7 @@ javadoc {
     }
 }
 
-group = "org.orbisgis"
+group = "org.noise-planet"
 archivesBaseName = "noisemodelling-wps"
 version = nm_version
 
@@ -108,8 +108,8 @@ publishing {
             name = "OSSRH"
             url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 
-            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots'
+            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://central.sonatype.com/repository/maven-snapshots/'
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
                 username = System.getenv('OSSRH_USERNAME') ?: project.findProperty('ossrhUsername')
@@ -122,8 +122,12 @@ publishing {
 
 repositories {
     mavenLocal() // To test noise modelling updated locally we have to put this first
-    mavenCentral()
     maven {
+        name = 'Central Portal Snapshots'
+        url = 'https://central.sonatype.com/repository/maven-snapshots/'
+    }
+    mavenCentral()
+    maven { //for outdated geoserver wps plugin
         url "libs/"
     }
     maven {
@@ -134,12 +138,6 @@ repositories {
     }
     maven {
         url "https://maven.geo-solutions.it/"
-    }
-    maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
-    maven {
-        url "https://oss.sonatype.org/content/repositories/releases/"
     }
     maven {
         url "https://repo.matsim.org/repository/matsim/"
@@ -186,10 +184,10 @@ dependencies {
     implementation group: 'org.orbisgis', name: 'h2gis', version: '[2.2, 3)'
     implementation('org.locationtech.jts:jts-core:1.20.0')
     implementation('org.locationtech.jts:jts-io:1.20.0')
-    implementation group: 'org.orbisgis', name: 'noisemodelling-emission', version: '[5.0, 6)', changing: true
-    implementation group: 'org.orbisgis', name: 'noisemodelling-propagation', version: '[5.0, 6)', changing: true
-    implementation group: 'org.orbisgis', name: 'noisemodelling-pathfinder', version: '[5.0, 6)', changing: true
-    implementation group: 'org.orbisgis', name: 'noisemodelling-jdbc',  version: '[5.0, 6.0)', changing: true
+    implementation group: 'org.noise-planet', name: 'noisemodelling-emission', version: '[5.0, 6)', changing: true
+    implementation group: 'org.noise-planet', name: 'noisemodelling-propagation', version: '[5.0, 6)', changing: true
+    implementation group: 'org.noise-planet', name: 'noisemodelling-pathfinder', version: '[5.0, 6)', changing: true
+    implementation group: 'org.noise-planet', name: 'noisemodelling-jdbc',  version: '[5.0, 6.0)', changing: true
     implementation group: 'org.osgi', name: 'org.osgi.service.jdbc', version: '1.0.0'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-core', version: '[0.48, 0.49)'
     implementation group: 'org.openstreetmap.osmosis', name: 'osmosis-pbf', version: '[0.48, 0.49)'

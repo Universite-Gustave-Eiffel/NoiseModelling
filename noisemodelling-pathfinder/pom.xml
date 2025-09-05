@@ -8,7 +8,7 @@
     <name>noisemodelling-pathfinder</name>
     <artifactId>noisemodelling-pathfinder</artifactId>
     <parent>
-        <groupId>org.orbisgis</groupId>
+        <groupId>org.noise-planet</groupId>
         <artifactId>noisemodelling-parent</artifactId>
         <version>5.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>

@@ -8,7 +8,7 @@
     <name>noisemodelling-propagation</name>
     <artifactId>noisemodelling-propagation</artifactId>
     <parent>
-        <groupId>org.orbisgis</groupId>
+        <groupId>org.noise-planet</groupId>
         <artifactId>noisemodelling-parent</artifactId>
         <version>5.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -46,7 +46,7 @@
             <artifactId>cts</artifactId>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>org.orbisgis</groupId>
             <artifactId>h2gis</artifactId>
             <scope>test</scope>
         </dependency>
