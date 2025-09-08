@@ -10,7 +10,11 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
@@ -166,6 +170,62 @@ public class CutProfile {
                 .collect(Collectors.toList());
         pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
         return pts2D;
+    }
+
+    public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
+        if(coordinates2d.size() != cutPoints.size()) {
+            throw new IllegalArgumentException("Coordinates size must be equal to cut points size");
+        }
+        // Filter out points that are below the line segment
+        List<Coordinate> convexHullInput = new ArrayList<>();
+        // Add source position
+        convexHullInput.add(coordinates2d.get(0));
+        // Add valid diffraction point, building/walls/dem
+        for (int idPoint=1; idPoint < cutPoints.size() - 1; idPoint++) {
+            CutPoint currentPoint = cutPoints.get(idPoint);
+            // We only add the point at the top of the wall, not the point at the bottom of the wall
+            if(currentPoint instanceof CutPointTopography
+                    || (currentPoint instanceof CutPointWall
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
+                convexHullInput.add(coordinates2d.get(idPoint));
+            }
+        }
+        // Add receiver position
+        convexHullInput.add(coordinates2d.get(coordinates2d.size() - 1));
+
+        // Compute the convex hull using JTS
+        List<Coordinate> convexHullPoints = new ArrayList<>();
+        if(convexHullInput.size() > 2) {
+            GeometryFactory geomFactory = new GeometryFactory();
+            Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
+            ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
+            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
+            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(coordinates2d.get(0));
+            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(coordinates2d.get(coordinates2d.size() - 1));
+            if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
+                throw new IllegalArgumentException("Wrong input data ");
+            }
+            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
+            CoordinateSequence coordinatesSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
+            Geometry geom = geomFactory.createLineString(coordinatesSequence);
+            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
+            convexHullCoords = uniqueGeom.getCoordinates();
+            // Convert the result back to your format (List<Point2D> pts)
+            if (convexHullCoords.length == 3) {
+                convexHullPoints = Arrays.asList(convexHullCoords);
+            } else {
+                for (Coordinate convexHullCoordinates : convexHullCoords) {
+                    // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
+                    if (convexHullCoordinates.y == Double.MAX_VALUE || Double.isInfinite(convexHullCoordinates.y)) {
+                        continue; // Skip this point as it's not part of the hull
+                    }
+                    convexHullPoints.add(convexHullCoordinates);
+                }
+            }
+        } else {
+            convexHullPoints = convexHullInput;
+        }
+        return convexHullPoints.stream().map(coordinates2d::indexOf).collect(Collectors.toList());
     }
 
     /**

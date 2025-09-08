@@ -39,7 +39,6 @@ public class CurvedProfileGenerator {
         return (C0*(xpp2+ypp2+zpp2+zpp*C0))/(xpp2+ypp2+((C0+zpp)*(C0+zpp)));
     }
 
-
     /**
      * Salomons, E., Van Maercke, D., Defrance, J., & De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
      * @param cs Source coordinate
@@ -53,7 +52,7 @@ public class CurvedProfileGenerator {
         Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
 
         // Radius of curvature
-        double R_c = 2 * Math.max(1000, 8 * cs.distance3D(cr));
+        double R_c = Math.max(1000, 8 * cs.distance3D(cr));
         double C0 = 2*(((hs+hr)/2)+R_c);
         double zs = computeZp(cs, cr, C0, cs) - cs.z;
 

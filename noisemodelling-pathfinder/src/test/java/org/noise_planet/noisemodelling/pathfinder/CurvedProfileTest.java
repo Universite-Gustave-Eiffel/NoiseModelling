@@ -121,13 +121,73 @@ public class CurvedProfileTest {
         Coordinate source = new Coordinate(0, 50, 4);
         Coordinate receiver = new Coordinate(1000, 100, 1);
         CutProfile profile = builder.getProfile(source, receiver);
+
+        List<Integer> homogeneousHullIndices = profile.getConvexHullIndices(profile.computePts2D());
+        // Expected
+        // dSR       : 1001.2537 m
+        // dSO       : 169.4555  m
+        // dOR       :  12.4836  m
+
+        assertEquals(7, homogeneousHullIndices.size());
+        assertEquals(169.4555, profile.getCutPoints().get(homogeneousHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
+        assertEquals(12.4836, profile.getCutPoints().get(homogeneousHullIndices.get(homogeneousHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
         List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(profile.getCutPoints());
         CutProfile curvedCutProfile = new CutProfile((CutPointSource) curvedProfile.get(0),
                 (CutPointReceiver) curvedProfile.get(curvedProfile.size() - 1));
         curvedCutProfile.cutPoints = new ArrayList<>(curvedProfile);
         // Check new convex hull
+        List<Integer> curvatureHullIndices = curvedCutProfile.getConvexHullIndices(curvedCutProfile.computePts2D());
+        // Expected
+        // dSR       : 1001.2537
+        // dSO       : 991.5540 m
+        // dOR       :  12.4836 m
 
-
+        assertEquals(3, curvatureHullIndices.size());
+        assertEquals(991.5540, profile.getCutPoints().get(curvatureHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
+        assertEquals(12.4836, profile.getCutPoints().get(curvatureHullIndices.get(curvatureHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
     }
 
+
+    @Test
+    public void testCurvedGroundFromGraph() {
+
+        Coordinate source = new Coordinate(0,0,0);
+        Coordinate receiver = new Coordinate(1040,0,3);
+
+        // Values are extracted from a 2D graph, so it is not accurate
+        List<Coordinate> coordinates = List.of(
+                new Coordinate(0, 0,0),
+                new Coordinate(50,  0,-2.933),
+                new Coordinate(100, 0, -5.594),
+                new Coordinate(150, 0, -7.972),
+                new Coordinate(200, 0, -9.984),
+                new Coordinate(250, 0, -11.699),
+                new Coordinate(300, 0, -13.162),
+                new Coordinate(350, 0, -14.332),
+                new Coordinate(400, 0, -15.199),
+                new Coordinate(450, 0, -15.888),
+                new Coordinate(500, 0, -16.119),
+                new Coordinate(550, 0, -16.116),
+                new Coordinate(600, 0, -15.765),
+                new Coordinate(650, 0, -15.131),
+                new Coordinate(700, 0, -14.224),
+                new Coordinate(750, 0, -13.023),
+                new Coordinate(800, 0, -11.519),
+                new Coordinate(850, 0, -9.717),
+                new Coordinate(900, 0, -7.553),
+                new Coordinate(950, 0, -5.123),
+                new Coordinate(1000,0, -2.377),
+                new Coordinate(1040,0, 0)
+        );
+        Coordinate[] flatGroundcoordinates = new Coordinate[coordinates.size()];
+        for (int i = 0; i < flatGroundcoordinates.length; i++) {
+            flatGroundcoordinates[i] = new Coordinate(coordinates.get(i).x, 0, 0);
+        }
+        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, source.z, receiver.z, flatGroundcoordinates);
+        for (int i = 0; i < curvedCoordinates.length; i++) {
+            double expectedZ = coordinates.get(i).z;
+            double computedZ = curvedCoordinates[i].z;
+            assertEquals(expectedZ, computedZ, 0.2);
+        }
+    }
 }
