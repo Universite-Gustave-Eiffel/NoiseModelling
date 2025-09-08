@@ -13,10 +13,19 @@
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Contributor Ignacio Soto, Ministry for the Ecological Transition, Spain
  */
 
 
 package org.noise_planet.noisemodelling.wps.Receivers
+
+/**
+ * Modifications by IsotoCedex:
+ *  - Added 'buildingBuffer' parameter and enforced minimum distance to buildings.
+ *  - Added safe spatial index helper (ensureSpatialIndex) and applied it to inputs/outputs.
+ *  - Implemented 'fenceTableName' handling (use table bounding box as fence), aligned with Building_Grid.groovy.
+ */
+
 
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -56,6 +65,14 @@ description = '&#10145;&#65039; Computes a <a href="https://en.wikipedia.org/wik
               '<img src="/wps_images/delaunay_grid_output.png" alt="Delaunay grid output" width="95%" align="center">'
 
 inputs = [
+        fenceTableName: [
+                name       : 'Fence table name',
+                title      : 'Fence table name',
+                description: 'Use the extent of a geometry table (e.g., from a shapefile) to limit receiver area',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+
         tableBuilding      : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
@@ -96,6 +113,16 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
+
+        buildingBuffer      : [
+                name       : 'Building buffer',
+                title      : 'Minimum distance to buildings (m)',
+                description: 'Do not add receivers closer than this distance to buildings (in meters). ' +
+                             'Default value: 2',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+
         maxArea            : [
                 name       : 'Maximum Area',
                 title      : 'Maximum Area',
@@ -210,8 +237,9 @@ def exec(Connection connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
+    // Fix: correct key name for 'isoSurfaceInBuildings' (typo in original code).
     boolean isoSurfaceInBuildings = false;
-    if(input['isoSurfaceInBuildings)']) {
+    if(input['isoSurfaceInBuildings']) {
         isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
     }
 
@@ -231,6 +259,14 @@ def exec(Connection connection, input) {
         roadWidth = input['roadWidth'] as Double
     }
 
+    // Receiver-to-building minimum distance (meters).
+    // New parameter: prevents adding receivers too close to building footprints.
+    // Default: 2.0 m.
+    Double buildingBuffer = 2.0
+    if (input['buildingBuffer']) {
+        buildingBuffer = input['buildingBuffer'] as Double
+    }
+
     Double maxArea = 2500
     if (input.containsKey('maxArea')) {
         maxArea = input['maxArea'] as Double
@@ -244,14 +280,50 @@ def exec(Connection connection, input) {
         fence = wktReader.read(input['fence'] as String)
     }
 
+    // Fence handling (two options):
+    //  1) Direct geometry passed as 'fence' (handled above)
+    //  2) Bounding box extracted from another table via 'fenceTableName'
+    // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
+    Geometry fenceGeom = null
+    if (input['fenceTableName']) {
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+    }
+
     //Statement sql = connection.createStatement()
     Sql sql = new Sql(connection)
+
+    // Crea un índice espacial si no existe ya sobre table(geomCol)
+    def ensureSpatialIndex = { Sql s, String table, String geomCol ->
+        // ¿Existe algún índice (espacial o normal) sobre esa columna?
+        def row = s.firstRow("""
+            SELECT COUNT(*) AS C
+            FROM INFORMATION_SCHEMA.INDEXES I
+            JOIN INFORMATION_SCHEMA.INDEX_COLUMNS C
+              ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME
+            WHERE UPPER(I.TABLE_NAME) = UPPER(?) AND UPPER(C.COLUMN_NAME) = UPPER(?)
+        """.stripIndent(), [table, geomCol])
+        int exists = (row?.C ?: 0) as int
+        if (exists == 0) {
+            logger.info("Create spatial index on ${table}(${geomCol})")
+            // nombre de índice seguro (sin puntos ni caracteres no válidos)
+            String idxName = ("IDX_${table}_${geomCol}").replaceAll('[^A-Za-z0-9_]', '_')
+            s.execute("CREATE INDEX " + idxName + " ON " + table + "(" + geomCol + ")")
+        } else {
+            logger.info("Spatial index already exists on ${table}(${geomCol})")
+        }
+    }
+
     connection = new ConnectionWrapper(connection)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
+    // Clean previous outputs so we can regenerate a fresh grid.
     // Delete previous receivers grid
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
     sql.execute("DROP TABLE IF EXISTS TRIANGLES")
+
+    // Ensure spatial indexes on input tables (if missing)
+    ensureSpatialIndex(sql, building_table_name, 'THE_GEOM')
+    ensureSpatialIndex(sql, sources_table_name, 'THE_GEOM')
 
     // Generate receivers grid for noise map rendering
     DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
@@ -270,6 +342,12 @@ def exec(Connection connection, input) {
             System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     }
+    // If a fence table name was provided, apply its envelope as main extent as well.
+    // This complements the direct 'fence' geometry option.
+    if (fenceGeom != null) {
+        delaunayReceiversMaker.setMainEnvelope(fenceGeom.getEnvelopeInternal())
+    }
+
 
 
     // Avoid loading to much geometries when doing Delaunay triangulation
@@ -280,7 +358,11 @@ def exec(Connection connection, input) {
     delaunayReceiversMaker.setRoadWidth(roadWidth)
     // No triangles larger than provided area
     delaunayReceiversMaker.setMaximumArea(maxArea)
+    // Do not add receivers closer to buildings than this distance
+    delaunayReceiversMaker.setBuildingBuffer(buildingBuffer)
 
+
+    // Allow isosurfaces to be present over buildings if requested.
     delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
     logger.info("Delaunay initialize")
@@ -319,13 +401,15 @@ def exec(Connection connection, input) {
         throw ex
     }
 
-    logger.info("Create spatial index on "+receivers_table_name+" table")
-    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
+    // Ensure spatial indexes on output tables (if missing)
+    ensureSpatialIndex(sql, receivers_table_name, 'THE_GEOM')
+    ensureSpatialIndex(sql, 'TRIANGLES', 'THE_GEOM')
+
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created. "
+    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created."
 
     // print to command window
     logger.info('Result : ' + resultString)
@@ -333,6 +417,7 @@ def exec(Connection connection, input) {
 
     // print to WPS Builder
     return resultString
+
 
 }
 
