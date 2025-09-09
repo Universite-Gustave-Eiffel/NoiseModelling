@@ -22,7 +22,7 @@ import static java.lang.Math.max;
 /**
  * Generate a curved profile (favorable propagation conditions) from a coordinate list and two endpoints (source and receiver)
  * Based on:
- * Salomons, E., Van Maercke, D., Defrance, J., & De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+ * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
  * @author Pierre Aumond
  */
 public class CurvedProfileGenerator {
@@ -52,15 +52,15 @@ public class CurvedProfileGenerator {
         return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
     }
 
-    /**
-     * Salomons, E., Van Maercke, D., Defrance, J., & De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
-     * @param cs Source coordinate
-     * @param cr Receiver coordinate
-     * @param hs Height of source above ground
-     * @param hr Height of receiver above ground
-     * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance < 50 m)
-     * @return Array of coordinates representing the curved profile
-     */
+/**
+* Salomons, E., Van Maercke, D., Defrance, J., &amp; De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+* @param cs Source coordinate
+* @param cr Receiver coordinate
+* @param hs Height of source above ground
+* @param hr Height of receiver above ground
+* @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance &lt; 50 m)
+* @return Array of coordinates representing the curved profile
+*/
     public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr, double hs, double hr,  Coordinate[] flatProfile) {
         Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
 
@@ -77,7 +77,7 @@ public class CurvedProfileGenerator {
     }
 
     /**
-     * Salomons, E., Van Maercke, D., Defrance, J., & De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
      * @param flatProfile
      * @return
      */
