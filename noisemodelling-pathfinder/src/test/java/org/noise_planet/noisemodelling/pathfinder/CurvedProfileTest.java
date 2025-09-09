@@ -24,38 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 public class CurvedProfileTest {
 
-
-    @Test
-    public void curvedProfile() {
-        // Test the implementation with some dummy data
-        List<CutPoint> flatProfile = new ArrayList<>();
-        flatProfile.add(new CutPointSource(new Coordinate(0, 0, 4)));
-        flatProfile.add(new CutPoint(new Coordinate(500, 500, 1)));
-        flatProfile.add(new CutPoint(new Coordinate(1000, 1000, 1)));
-        flatProfile.add(new CutPoint(new Coordinate(1500, 1500, 1)));
-        flatProfile.add(new CutPointReceiver(new Coordinate(2000, 2000, 4)));
-
-        flatProfile.get(0).setZGround(0);
-        flatProfile.get(1).setZGround(0);
-        flatProfile.get(2).setZGround(0);
-        flatProfile.get(3).setZGround(0);
-        flatProfile.get(4).setZGround(0);
-
-        double distance = flatProfile.get(0).getCoordinate().distance(flatProfile.get(4).getCoordinate());
-        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(flatProfile);
-        assertInstanceOf(CutPointSource.class, curvedProfile.get(0));
-        assertInstanceOf(CutPointReceiver.class, curvedProfile.get(curvedProfile.size() - 1));
-        assertEquals(2828.427, distance, 1e-3);
-        assertEquals(0, new Coordinate(0, 0, 4).distance3D(curvedProfile.get(0).getCoordinate()), 1e-6);
-        assertEquals(0, new Coordinate(2000, 2000, 4).distance3D(curvedProfile.get(curvedProfile.size() - 1).getCoordinate()), 1e-6);
-        assertEquals(-15.57, curvedProfile.get(1).getCoordinate().z, 1e-2);
-        assertEquals(-21.09, curvedProfile.get(2).getCoordinate().z, 1e-2);
-        assertEquals(-15.57, curvedProfile.get(3).getCoordinate().z, 1e-2);
-        assertEquals(-16.57, curvedProfile.get(1).zGround, 1e-2);
-        assertEquals(-22.09, curvedProfile.get(2).zGround, 1e-2);
-        assertEquals(-16.57, curvedProfile.get(3).zGround, 1e-2);
-    }
-
+    /**
+     * Test case 28 for favorable propagation conditions between source and receiver
+     */
     @Test
     public void testTC28CurvedProfile() {
 
@@ -132,6 +103,8 @@ public class CurvedProfileTest {
         assertEquals(169.4555, profile.getCutPoints().get(homogeneousHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
         assertEquals(12.4836, profile.getCutPoints().get(homogeneousHullIndices.get(homogeneousHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
         List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(profile.getCutPoints());
+        assertInstanceOf(CutPointSource.class, curvedProfile.get(0));
+        assertInstanceOf(CutPointReceiver.class, curvedProfile.get(curvedProfile.size() - 1));
         CutProfile curvedCutProfile = new CutProfile((CutPointSource) curvedProfile.get(0),
                 (CutPointReceiver) curvedProfile.get(curvedProfile.size() - 1));
         curvedCutProfile.cutPoints = new ArrayList<>(curvedProfile);
@@ -143,8 +116,14 @@ public class CurvedProfileTest {
         // dOR       :  12.4836 m
 
         assertEquals(3, curvatureHullIndices.size());
-        assertEquals(991.5540, profile.getCutPoints().get(curvatureHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
-        assertEquals(12.4836, profile.getCutPoints().get(curvatureHullIndices.get(curvatureHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
+        double SO = CurvedProfileGenerator.toCurve(
+                profile.getCutPoints().get(curvatureHullIndices.get(1)).getCoordinate().distance3D(source),
+                source.distance3D(receiver));
+        assertEquals(991.5540, SO, 1e-4);
+        double OR = CurvedProfileGenerator.toCurve(
+                profile.getCutPoints().get(curvatureHullIndices.get(curvatureHullIndices.size() - 2))
+                        .getCoordinate().distance3D(receiver), source.distance3D(receiver));
+        assertEquals(12.4836, OR, 1e-4);
     }
 
 

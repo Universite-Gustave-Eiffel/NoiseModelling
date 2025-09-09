@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static java.lang.Math.max;
+import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator.toCurve;
 import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
 
@@ -179,16 +180,6 @@ public class CnossosPathBuilder {
         seg.zrF = seg.zrH + deltaZR + deltaZT;
         seg.testFormF = seg.dp/(30*(seg.zsF +seg.zrF));
         return seg;
-    }
-
-    /**
-     * Eq.2.5.24 and Eq. 2.5.25
-     * @param mn
-     * @param d
-     * @return
-     */
-    public static double toCurve(double mn, double d){
-        return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
     }
 
     /**

@@ -16,6 +16,9 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import java.util.List;
 import java.util.ArrayList;
 
+import static java.lang.Math.asin;
+import static java.lang.Math.max;
+
 /**
  * Generate a curved profile (favorable propagation conditions) from a coordinate list and two endpoints (source and receiver)
  * Based on:
@@ -40,6 +43,16 @@ public class CurvedProfileGenerator {
     }
 
     /**
+     * Eq.2.5.24 and Eq. 2.5.25
+     * @param mn Length of ray
+     * @param d Distance between source and receiver
+     * @return Length of curved ray
+     */
+    public static double toCurve(double mn, double d){
+        return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
+    }
+
+    /**
      * Salomons, E., Van Maercke, D., Defrance, J., & De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
      * @param cs Source coordinate
      * @param cr Receiver coordinate
@@ -48,7 +61,7 @@ public class CurvedProfileGenerator {
      * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance < 50 m)
      * @return Array of coordinates representing the curved profile
      */
-    public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr,double hs,double hr,  Coordinate[] flatProfile) {
+    public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr, double hs, double hr,  Coordinate[] flatProfile) {
         Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
 
         // Radius of curvature
