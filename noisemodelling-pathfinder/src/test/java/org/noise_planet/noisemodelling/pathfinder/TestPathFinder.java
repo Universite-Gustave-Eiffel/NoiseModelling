@@ -91,7 +91,7 @@ public class TestPathFinder {
         Coordinate p1 = new Coordinate(2, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
-        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2, profileBuilder);
+        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
         int i = 0;
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
@@ -99,7 +99,7 @@ public class TestPathFinder {
         assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
         assertEquals(0, p2.distance(ray.get(i)), 0.02);
 
-        ray = computeRays.computeSideHull(false, p1, p2, profileBuilder);
+        ray = computeRays.computeSideHull(false, p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
@@ -107,7 +107,7 @@ public class TestPathFinder {
         assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
         assertEquals(0, p2.distance(ray.get(i)), 0.02);
 
-        ray = computeRays.computeSideHull(false, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(false, p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
@@ -115,7 +115,7 @@ public class TestPathFinder {
         assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
         assertEquals(0, p1.distance(ray.get(i)), 0.02);
 
-        ray = computeRays.computeSideHull(true, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(true, p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
@@ -188,27 +188,27 @@ public class TestPathFinder {
         assertEquals(0, new Coordinate(5, 5).distance(b1OffsetRoof.get(i++)), 2 * ProfileBuilder.wideAngleTranslationEpsilon);
 
 
-        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2, profileBuilder);
+        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
 
-        ray = computeRays.computeSideHull(false, p1, p2, profileBuilder);
+        ray = computeRays.computeSideHull(false, p1, p2);
         i = 0;
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
 
 
-        ray = computeRays.computeSideHull(false, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(false, p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(5, 8).distance(ray.get(i++)), 0.02);
         assertEquals(0, p1.distance(ray.get(i++)), 0.02);
 
-        ray = computeRays.computeSideHull(true, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(true, p2, p1);
         i = 0;
         assertEquals(0, p2.distance(ray.get(i++)), 0.02);
         assertEquals(0, new Coordinate(7, 5).distance(ray.get(i++)), 0.02);
@@ -240,13 +240,13 @@ public class TestPathFinder {
         Coordinate p1 = new Coordinate(4.5, 6.5, 1.6);
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
-        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2, profileBuilder);
+        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
         assertTrue(ray.isEmpty());
-        ray = computeRays.computeSideHull(false, p1, p2, profileBuilder);
+        ray = computeRays.computeSideHull(false, p1, p2);
         assertTrue(ray.isEmpty());
-        ray = computeRays.computeSideHull(false, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(false, p2, p1);
         assertTrue(ray.isEmpty());
-        ray = computeRays.computeSideHull(true, p2, p1, profileBuilder);
+        ray = computeRays.computeSideHull(true, p2, p1);
         assertTrue(ray.isEmpty());
     }
 
@@ -278,7 +278,7 @@ public class TestPathFinder {
 
         PathFinder computeRays = new PathFinder(processData);
 
-        List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source, profileBuilder);
+        List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source);
         assertTrue(ray.isEmpty());
 
     }

@@ -12,6 +12,7 @@ package org.noise_planet.noisemodelling.pathfinder;
 
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 
@@ -28,7 +29,7 @@ public class CurvedProfileTest {
      * Test case 28 for favorable propagation conditions between source and receiver
      */
     @Test
-    public void testTC28CurvedProfile() {
+    public void testTC28DirectCurvedProfile() {
 
         //Create obstruction test object
         ProfileBuilder builder = new ProfileBuilder();
@@ -168,5 +169,81 @@ public class CurvedProfileTest {
             double computedZ = curvedCoordinates[i].z;
             assertEquals(expectedZ, computedZ, 0.2);
         }
+    }
+
+
+
+
+    /**
+     * Test case 28 for favorable propagation conditions over left and right curved profiles
+     */
+    @Test
+    public void testTC28LateralCurvedProfile() {
+
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder();
+
+        // Add building
+        builder.addBuilding(new Coordinate[]{
+                        new Coordinate(113, 10, 0),
+                        new Coordinate(127, 16, 0),
+                        new Coordinate(102, 70, 0),
+                        new Coordinate(88, 64, 0)}, 6, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(176, 19, 0),
+                        new Coordinate(164, 88, 0),
+                        new Coordinate(184, 91, 0),
+                        new Coordinate(196, 22, 0)}, 10, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(250, 70, 0),
+                        new Coordinate(250, 180, 0),
+                        new Coordinate(270, 180, 0),
+                        new Coordinate(270, 70, 0)}, 14, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(332, 32, 0),
+                        new Coordinate(348, 126, 0),
+                        new Coordinate(361, 108, 0),
+                        new Coordinate(349, 44, 0)}, 10, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(400, 5, 0),
+                        new Coordinate(400, 85, 0),
+                        new Coordinate(415, 85, 0),
+                        new Coordinate(415, 5, 0)}, 9, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(444, 47, 0),
+                        new Coordinate(436, 136, 0),
+                        new Coordinate(516, 143, 0),
+                        new Coordinate(521, 89, 0),
+                        new Coordinate(506, 87, 0),
+                        new Coordinate(502, 127, 0),
+                        new Coordinate(452, 123, 0),
+                        new Coordinate(459, 48, 0)}, 12, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(773, 12, 0),
+                        new Coordinate(728, 90, 0),
+                        new Coordinate(741, 98, 0),
+                        new Coordinate(786, 20, 0)}, 14, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(972, 82, 0),
+                        new Coordinate(979, 121, 0),
+                        new Coordinate(993, 118, 0),
+                        new Coordinate(986, 79, 0)}, 8, -1)
+                .addGroundEffect(-11, 1011, -300, 300, 0.5);
+
+
+        builder.finishFeeding();
+        Scene scene = new Scene(builder);
+        PathFinder pathFinder = new PathFinder(scene);
+        Coordinate source = new Coordinate(0, 50, 4);
+        Coordinate receiver = new Coordinate(1000, 100, 1);
+        List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver);
+
     }
 }

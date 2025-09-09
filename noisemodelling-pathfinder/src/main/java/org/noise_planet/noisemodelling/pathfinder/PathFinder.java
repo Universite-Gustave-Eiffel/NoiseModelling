@@ -387,7 +387,7 @@ public class PathFinder {
                                                Scene data, ComputationSide side) {
 
         List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(src.position),
-                new Coordinate(rcv.position), data.profileBuilder);
+                new Coordinate(rcv.position));
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -442,9 +442,27 @@ public class PathFinder {
      * @param left If true return the path on the left side between p1 and p2; else on the right side
      * @param p1   First point
      * @param p2   Second point
-     * @return
+     * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
-    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, ProfileBuilder profileBuilder) {
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2) {
+        return computeSideHull(left, p1, p2, false, 0, 0);
+    }
+
+    /**
+     * Compute Side Hull
+     * Create a line between p1 and p2. Find the first intersection of this line with a building then create a ConvexHull
+     * with the points of buildings in intersection. While there is an intersection add more points to the convex hull.
+     * The side diffraction path is found when there is no more intersection.
+     *
+     * @param left If true return the path on the left side between p1 and p2; else on the right side
+     * @param p1   First point
+     * @param p2   Second point
+     * @param curved Used the curved coordinate system between p1 and p2 (favorable conditions in CNOSSOS)
+     * @param p1Height p1 Height above ground for the curved coordinate system
+     * @param p2Height p2 Height above ground for the curved coordinate system
+     * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
+     */
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved, double p1Height, double p2Height) {
         if (p1.equals(p2)) {
             return new ArrayList<>();
         }
@@ -466,7 +484,9 @@ public class PathFinder {
         Plane cutPlane = computeZeroRadPlane(p1, p2);
 
         BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
-                profileBuilder, input, cutPlane);
+                data.profileBuilder, input, cutPlane);
+
+        buildingIntersectionPathVisitor.setCurved(curved, p1Height, p2Height);
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
@@ -534,7 +554,7 @@ public class PathFinder {
                         int inputPointsBefore = input.size();
 
                         // Visit buildings that are between the provided hull points
-                        profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
+                        data.profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
 
                         if (inputPointsBefore == input.size()) {
                             freeFieldSegments.add(freeFieldTestSegment);
@@ -565,16 +585,14 @@ public class PathFinder {
     }
 
     /**
-     *
-     * @param p0
-     * @param p1
-     * @return
+     * Compute the cutting plane with zero radian angle between the segment p0 and p1 (no pivot).
+     * The plane normal is upward.
      */
     public static Plane computeZeroRadPlane(Coordinate p0, Coordinate p1) {
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
         double angle = atan2(p1.y - p0.y, p1.x - p0.x);
-        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        // Compute sPrime, the third point of the plane that is at -PI/2 with SR vector
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(cos(angle - PI / 2), sin(angle - PI / 2), 0));
         Plane p = new Plane(r, s, rPrime, 1e-6);
         // Normal of the cut plane should be upward
