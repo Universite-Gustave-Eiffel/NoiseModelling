@@ -27,21 +27,6 @@ import static java.lang.Math.max;
  */
 public class CurvedProfileGenerator {
 
-    // Method to transform a list of flat coordinates to curved coordinates
-
-
-    public static double computeZp(Coordinate cs, Coordinate cr, double C0, Coordinate p) {
-        double xpp = p.x - (cs.x+cr.x)/2;
-        double ypp = p.y - (cs.y+cr.y)/2;
-        double zpp = p.z - (cs.z+cr.z)/2;
-
-        double xpp2 = xpp*xpp;
-        double ypp2 = ypp*ypp;
-        double zpp2 = zpp*zpp;
-
-        return (C0*(xpp2+ypp2+zpp2+zpp*C0))/(xpp2+ypp2+((C0+zpp)*(C0+zpp)));
-    }
-
     /**
      * Eq.2.5.24 and Eq. 2.5.25
      * @param mn Length of ray
@@ -52,49 +37,21 @@ public class CurvedProfileGenerator {
         return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
     }
 
-/**
-* Salomons, E., Van Maercke, D., Defrance, J., &amp; De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
-* @param cs Source coordinate
-* @param cr Receiver coordinate
-* @param hs Height of source above ground
-* @param hr Height of receiver above ground
-* @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance &lt; 50 m)
-* @return Array of coordinates representing the curved profile
-*/
-    public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr, double hs, double hr,  Coordinate[] flatProfile) {
-        Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
-
-        // Radius of curvature
-        double R_c = Math.max(1000, 8 * cs.distance3D(cr));
-        double C0 = 2*(((hs+hr)/2)+R_c);
-        double zs = computeZp(cs, cr, C0, cs) - cs.z;
-
-        for (int i = 0; i < flatProfile.length; i++) {
-            double zp = computeZp(cs, cr, C0, flatProfile[i]);
-            curvedProfile[i] = new Coordinate(flatProfile[i].x, flatProfile[i].y, zp - zs); // Adjust z to keep the endpoints consistent
-        }
-        return curvedProfile;
-    }
-
     /**
      * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
      * @param flatProfile
      * @return
      */
-
-    public static List<CutPoint> applyTransformation(List<CutPoint> flatProfile) {
-
+    public static List<CutPoint> applyTransformation(List<CutPoint> flatProfile, boolean inversed) {
         // Get chord endpoints
         CutPoint sourcePoint = flatProfile.get(0);
         CutPoint receiverPoint = flatProfile.get(flatProfile.size() - 1);
         Coordinate cs = sourcePoint.getCoordinate();
         Coordinate cr = receiverPoint.getCoordinate();
-        double hs = cs.getZ() - sourcePoint.zGround;
-        double hr = cr.getZ() - receiverPoint.zGround;
 
         List<CutPoint> curvedProfile = new ArrayList<>();
-        Coordinate[] curvedCoords = applyTransformation(cs, cr, hs, hr, flatProfile.stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new));
-        Coordinate[] groundCoords = applyTransformation(cs, cr, hs, hr, flatProfile.stream().map(p -> new Coordinate(p.getCoordinate().x, p.getCoordinate().y, p.zGround)).toArray(Coordinate[]::new));
+        Coordinate[] curvedCoords = applyTransformation(cs, cr, flatProfile.stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new), inversed);
+        Coordinate[] groundCoords = applyTransformation(cs, cr, flatProfile.stream().map(p -> new Coordinate(p.getCoordinate().x, p.getCoordinate().y, p.zGround)).toArray(Coordinate[]::new), inversed);
 
         for (int i = 0; i < curvedCoords.length; i++) {
             CutPoint cp = flatProfile.get(i);
@@ -103,6 +60,41 @@ public class CurvedProfileGenerator {
             newCp.setCoordinate(curvedCoords[i]);
             curvedProfile.add(newCp);
         }
+        return curvedProfile;
+    }
+
+    /**
+     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+     * @param cs Source coordinate
+     * @param cr Receiver coordinate
+     * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance &lt; 50 m)
+     * @param inverse If true, apply the inverse transformation (from curved to flat)
+     * @return Array of coordinates representing the curved profile
+     */
+    public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr, Coordinate[] flatProfile, boolean inverse) {
+        Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
+
+        // Calculate projected distance between source and receiver on the vertical plane
+        double d = cs.distance3D(cr);
+
+        // Calculate radius of curvature (Γ)
+        double radius = Math.max(1000, 8 * d);
+
+        for (int i = 0; i < flatProfile.length; i++) {
+            Coordinate p = flatProfile[i];
+
+            // Apply equation (4) for z coordinate transformation
+            double z = Math.sqrt(radius * radius - d * d / 4) -
+                    Math.sqrt(radius * radius - Math.pow(p.distance3D(cs) - d/2, 2));
+
+            if(inverse) {
+                z = -z;
+            }
+
+            // Create new coordinate with transformed z
+            curvedProfile[i] = new Coordinate(p.x, p.y, p.z + z);
+        }
+
         return curvedProfile;
     }
 

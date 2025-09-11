@@ -566,12 +566,6 @@ public class PathFinder {
                 }
             }
         }
-        // Check for invalid coordinates
-        for (Coordinate p : coordinates) {
-            if (p.z < 0) {
-                return new ArrayList<>();
-            }
-        }
 
         List<Coordinate> sideHullPath;
         if (left) {

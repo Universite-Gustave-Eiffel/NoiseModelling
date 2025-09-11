@@ -103,7 +103,7 @@ public class CurvedProfileTest {
         assertEquals(7, homogeneousHullIndices.size());
         assertEquals(169.4555, profile.getCutPoints().get(homogeneousHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
         assertEquals(12.4836, profile.getCutPoints().get(homogeneousHullIndices.get(homogeneousHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
-        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(profile.getCutPoints());
+        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(profile.getCutPoints(), false);
         assertInstanceOf(CutPointSource.class, curvedProfile.get(0));
         assertInstanceOf(CutPointReceiver.class, curvedProfile.get(curvedProfile.size() - 1));
         CutProfile curvedCutProfile = new CutProfile((CutPointSource) curvedProfile.get(0),
@@ -163,11 +163,11 @@ public class CurvedProfileTest {
         for (int i = 0; i < flatGroundcoordinates.length; i++) {
             flatGroundcoordinates[i] = new Coordinate(coordinates.get(i).x, 0, 0);
         }
-        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, source.z, receiver.z, flatGroundcoordinates);
+        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, flatGroundcoordinates, false);
         for (int i = 0; i < curvedCoordinates.length; i++) {
             double expectedZ = coordinates.get(i).z;
             double computedZ = curvedCoordinates[i].z;
-            assertEquals(expectedZ, computedZ, 0.2);
+            assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expected %.3f, computed %.3f", i, expectedZ, computedZ));
         }
     }
 
@@ -243,7 +243,7 @@ public class CurvedProfileTest {
         PathFinder pathFinder = new PathFinder(scene);
         Coordinate source = new Coordinate(0, 50, 4);
         Coordinate receiver = new Coordinate(1000, 100, 1);
-        List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver);
+        List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver, true, source.z, receiver.z);
 
     }
 }

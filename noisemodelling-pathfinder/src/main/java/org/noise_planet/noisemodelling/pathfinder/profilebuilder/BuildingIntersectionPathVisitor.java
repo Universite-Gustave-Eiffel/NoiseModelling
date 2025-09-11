@@ -123,14 +123,21 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
                 // weird building, no diffraction point
                 return;
             }
-            if(curved) {
+            // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
+            roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
+            if(curved && !roofPoints.isEmpty()) {
                 // Adjust the altitude of the building roof points to be in the curved coordinate system
-                roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2, p1Height, p2Height,
-                        roofPoints.toArray(new Coordinate[0])));
+                roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
+                        roofPoints.toArray(new Coordinate[0]), false));
             }
             // Create a cut of the building volume
-            roofPoints = filterPointsBySide(p1Top2, left, cutRoofPointsWithPlane(cutPlane, roofPoints));
+            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
             if (!roofPoints.isEmpty()) {
+                // inverse the curved transformation to have the correct altitude in the flat coordinate system
+                if (curved) {
+                    roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
+                            roofPoints.toArray(new Coordinate[0]), true));
+                }
                 input.addAll(roofPoints);
                 pushedBuildingsWideAnglePoints.add(processedWall.originId);
                 // Stop iterating bounding boxes
@@ -151,14 +158,21 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             Coordinate extendedP1 = new Coordinate(processedWall.p1.x + translationVector.getX(),
                     processedWall.p1.y + translationVector.getY(), processedWall.p1.z);
             List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
-            if(curved) {
+            // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
+            roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
+            if(curved && !roofPoints.isEmpty()) {
                 // Adjust the altitude of the building roof points to be in the curved coordinate system
-                roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2, p1Height, p2Height,
-                        roofPoints.toArray(new Coordinate[0])));
+                roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
+                        roofPoints.toArray(new Coordinate[0]), false));
             }
             // Create a cut of the building volume
-            roofPoints = filterPointsBySide(p1Top2, left, cutRoofPointsWithPlane(cutPlane, roofPoints));
+            roofPoints = cutRoofPointsWithPlane(cutPlane, roofPoints);
             if (!roofPoints.isEmpty()) {
+                // inverse the curved transformation to have the correct altitude in the flat coordinate system
+                if (curved) {
+                    roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
+                            roofPoints.toArray(new Coordinate[0]), true));
+                }
                 pushedWallsPoints.add(processedWall.originId);
                 input.addAll(roofPoints);
                 // Stop iterating bounding boxes
