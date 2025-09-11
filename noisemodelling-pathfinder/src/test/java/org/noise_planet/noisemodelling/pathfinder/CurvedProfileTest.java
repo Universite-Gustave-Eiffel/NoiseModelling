@@ -126,6 +126,37 @@ public class CurvedProfileTest {
         assertEquals(12.4836, OR, 1e-4);
     }
 
+    @Test
+    public void testInverseCurved() {
+        Coordinate source = new Coordinate(50, 15, 500.5);
+        Coordinate receiver = new Coordinate(950, -25, 502.5);
+        int intermediateSteps = 20;
+        List<Coordinate> flatProfile = new ArrayList<>();
+        flatProfile.add(source);
+        for (int i = 1; i <= intermediateSteps; i++) {
+            double ratio = (double) i / (intermediateSteps + 1);
+            double x = source.x + ratio * (receiver.x - source.x);
+            double y = source.y + ratio * (receiver.y - source.y);
+            flatProfile.add(new Coordinate(x, y, 500));
+        }
+        flatProfile.add(receiver);
+
+        Coordinate[] curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                flatProfile.toArray(new Coordinate[0]), false);
+        Coordinate[] inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                curvedCoordinates, true);
+        for (int i = 0; i < inverseCoordinates.length; i++) {
+            double expectedX = flatProfile.get(i).x;
+            double expectedY = flatProfile.get(i).y;
+            double expectedZ = flatProfile.get(i).z;
+            double computedX = inverseCoordinates[i].x;
+            double computedY = inverseCoordinates[i].y;
+            double computedZ = inverseCoordinates[i].z;
+            assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
+            assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
+            assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
+        }
+    }
 
     @Test
     public void testCurvedGroundFromGraph() {

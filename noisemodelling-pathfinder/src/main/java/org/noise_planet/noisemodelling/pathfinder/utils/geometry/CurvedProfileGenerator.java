@@ -80,16 +80,19 @@ public class CurvedProfileGenerator {
         // Calculate radius of curvature (Γ)
         double radius = Math.max(1000, 8 * d);
 
+        double base = Math.sqrt(radius * radius - d * d / 4);
+
         for (int i = 0; i < flatProfile.length; i++) {
             Coordinate p = flatProfile[i];
 
             // Apply equation (4) for z coordinate transformation
-            double z = Math.sqrt(radius * radius - d * d / 4) -
+            double z = base -
                     Math.sqrt(radius * radius - Math.pow(p.distance3D(cs) - d/2, 2));
 
             if(inverse) {
                 z = -z;
                 // it is a simplification because p.distance3D(cs) is not good if we are not on the curved profile
+                // not mathematically exact, but it gives a close working inverse.
             }
 
             // Create new coordinate with transformed z
