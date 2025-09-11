@@ -258,11 +258,16 @@ public class CurvedProfileTest {
         Coordinate source = new Coordinate(0, 50, 4);
         Coordinate receiver = new Coordinate(1000, 100, 1);
         List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver, true);
-        // Diffraction over a single building (2 corner of the building) near the receiver
+        // Left Diffraction over a single building (2 corner of the building) near the receiver
         assertEquals(4, curvedSideHull.size());
+        assertEquals(0, new Coordinate(979, 121, 0).distance(curvedSideHull.get(1)), 0.1);
+        assertEquals(0, new Coordinate(993, 118, 0).distance(curvedSideHull.get(2)), 0.1);
+
         curvedSideHull = pathFinder.computeSideHull(false, source, receiver, true);
-        // Diffraction over two buildings (one corner for each building) near the receiver
+        // Right Diffraction over two buildings (lowest corner of each building) last two buildings near the receiver
         assertEquals(4, curvedSideHull.size());
+        assertEquals(0, new Coordinate(773, 12, 0).distance(curvedSideHull.get(1)), 0.1);
+        assertEquals(0, new Coordinate(986, 79, 0).distance(curvedSideHull.get(2)), 0.1);
 
     }
 }
