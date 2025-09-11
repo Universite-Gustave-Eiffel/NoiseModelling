@@ -20,8 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CurvedProfileTest {
 
@@ -181,7 +180,7 @@ public class CurvedProfileTest {
             double computedZ = inverseCoordinates[i].z;
             assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
             assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
-            assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
+            assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
         }
     }
 
@@ -254,10 +253,16 @@ public class CurvedProfileTest {
 
         builder.finishFeeding();
         Scene scene = new Scene(builder);
+        scene.maxSrcDist = 5000;
         PathFinder pathFinder = new PathFinder(scene);
         Coordinate source = new Coordinate(0, 50, 4);
         Coordinate receiver = new Coordinate(1000, 100, 1);
-        List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver, true, source.z, receiver.z);
+        List<Coordinate> curvedSideHull = pathFinder.computeSideHull(true, source, receiver, true);
+        // Diffraction over a single building (2 corner of the building) near the receiver
+        assertEquals(4, curvedSideHull.size());
+        curvedSideHull = pathFinder.computeSideHull(false, source, receiver, true);
+        // Diffraction over two buildings (one corner for each building) near the receiver
+        assertEquals(4, curvedSideHull.size());
 
     }
 }

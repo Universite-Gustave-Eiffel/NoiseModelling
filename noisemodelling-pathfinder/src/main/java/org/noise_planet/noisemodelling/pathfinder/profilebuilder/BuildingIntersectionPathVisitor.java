@@ -39,8 +39,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
     LineSegment intersectionLine = new LineSegment();
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
     boolean curved = false;
-    double p1Height = 0;
-    double p2Height = 0;
 
     public BuildingIntersectionPathVisitor(Coordinate p1, Coordinate p2, boolean left, ProfileBuilder profileBuilder,
                                            List<Coordinate> input, Plane cutPlane) {
@@ -59,13 +57,9 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
      * In this case, the curved coordinate system is used and the altitudes of intermediations buildings are modified accordingly.
      * If false, keep the coordinates of the buildings as they are in the input data.
      * @param curved true if the path between p1 and p2 is curved (a segment of circle)
-     * @param p1Height the height of the point p1 relative to the ground in the curved coordinate system
-     * @param p2Height the height of the point p2 relative to the ground in the curved coordinate system
      */
-    public void setCurved(boolean curved, double p1Height, double p2Height) {
+    public void setCurved(boolean curved) {
         this.curved = curved;
-        this.p1Height = p1Height;
-        this.p2Height = p2Height;
     }
 
     /**

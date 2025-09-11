@@ -445,7 +445,7 @@ public class PathFinder {
      * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
     public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2) {
-        return computeSideHull(left, p1, p2, false, 0, 0);
+        return computeSideHull(left, p1, p2, false);
     }
 
     /**
@@ -458,11 +458,9 @@ public class PathFinder {
      * @param p1   First point
      * @param p2   Second point
      * @param curved Used the curved coordinate system between p1 and p2 (favorable conditions in CNOSSOS)
-     * @param p1Height p1 Height above ground for the curved coordinate system
-     * @param p2Height p2 Height above ground for the curved coordinate system
      * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
-    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved, double p1Height, double p2Height) {
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved) {
         if (p1.equals(p2)) {
             return new ArrayList<>();
         }
@@ -486,7 +484,7 @@ public class PathFinder {
         BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
                 data.profileBuilder, input, cutPlane);
 
-        buildingIntersectionPathVisitor.setCurved(curved, p1Height, p2Height);
+        buildingIntersectionPathVisitor.setCurved(curved);
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
