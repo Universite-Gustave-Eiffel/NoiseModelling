@@ -169,6 +169,20 @@ public class CurvedProfileTest {
             double computedZ = curvedCoordinates[i].z;
             assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expected %.3f, computed %.3f", i, expectedZ, computedZ));
         }
+
+        // Compute inverse transformation
+        Coordinate[] inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, curvedCoordinates, true);
+        for (int i = 0; i < inverseCoordinates.length; i++) {
+            double expectedX = flatGroundcoordinates[i].x;
+            double expectedY = flatGroundcoordinates[i].y;
+            double expectedZ = flatGroundcoordinates[i].z;
+            double computedX = inverseCoordinates[i].x;
+            double computedY = inverseCoordinates[i].y;
+            double computedZ = inverseCoordinates[i].z;
+            assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
+            assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
+            assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
+        }
     }
 
 

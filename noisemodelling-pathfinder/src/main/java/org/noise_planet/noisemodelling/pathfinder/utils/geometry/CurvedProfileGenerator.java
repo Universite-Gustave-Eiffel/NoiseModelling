@@ -89,6 +89,7 @@ public class CurvedProfileGenerator {
 
             if(inverse) {
                 z = -z;
+                // it is a simplification because p.distance3D(cs) is not good if we are not on the curved profile
             }
 
             // Create new coordinate with transformed z
