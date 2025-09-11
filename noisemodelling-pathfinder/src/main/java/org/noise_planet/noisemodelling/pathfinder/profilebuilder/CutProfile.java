@@ -33,6 +33,10 @@ public class CutProfile {
     /** True if Source-Receiver linestring is below topography cutting point. */
     public boolean hasTopographyIntersection = false;
 
+    /** True if the path between source and receiver is curved, the coordinates are the original,
+     *  only the cutting planes for left and right are not the same */
+    public boolean curvedPath = false;
+
     /**
      * Empty constructor for deserialization
      */
@@ -42,6 +46,21 @@ public class CutProfile {
     public CutProfile(CutPointSource source, CutPointReceiver receiver) {
         cutPoints.add(source);
         cutPoints.add(receiver);
+    }
+
+    /**
+     * @param curvedPath True if the path between source and receiver is curved, the coordinates are the original,
+     *                   only the cutting planes for left and right are not the same
+     */
+    public void setCurvedPath(boolean curvedPath) {
+        this.curvedPath = curvedPath;
+    }
+
+    /**
+     * @return True if the path between source and receiver is curved
+     */
+    public boolean isCurvedPath() {
+        return curvedPath;
     }
 
     /**

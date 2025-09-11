@@ -358,17 +358,17 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
-            CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
-            if (cutProfileRight != null) {
-                strategy = dataOut.onNewCutPlane(cutProfileRight);
-                if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
-                        strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
-                    return strategy;
+            for(boolean curved : new boolean[]{false, true}) {
+                for(PathFinder.ComputationSide side : PathFinder.ComputationSide.values()) {
+                    CutProfile cutProfileSide = computeVEdgeDiffraction(rcv, src, data, side, curved);
+                    if (cutProfileSide != null) {
+                        strategy = dataOut.onNewCutPlane(cutProfileSide);
+                        if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                                strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
+                            return strategy;
+                        }
+                    }
                 }
-            }
-            CutProfile cutProfileLeft = computeVEdgeDiffraction(rcv, src, data, LEFT);
-            if (cutProfileLeft != null) {
-                strategy = dataOut.onNewCutPlane(cutProfileLeft);
             }
         }
 
@@ -384,10 +384,10 @@ public class PathFinder {
      * @return The propagation path of the horizontal diffraction.
      */
     public CutProfile computeVEdgeDiffraction(ReceiverPointInfo rcv, SourcePointInfo src,
-                                               Scene data, ComputationSide side) {
+                                               Scene data, ComputationSide side, boolean curved) {
 
         List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(src.position),
-                new Coordinate(rcv.position));
+                new Coordinate(rcv.position), curved);
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -412,24 +412,37 @@ public class PathFinder {
                     cutPoints.add(profile.getReceiver());
                 }
             }
-            CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                    (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
-            mainProfile.insertCutPoint(false,
-                    cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
-
-            mainProfile.getReceiver().id = rcv.receiverIndex;
-            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
-            mainProfile.getSource().id = src.sourceIndex;
-            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
-            }
-
-            mainProfile.getSource().orientation = src.orientation;
-            mainProfile.getSource().li = src.li;
-
+            CutProfile mainProfile = resetSourceReceiverAttributes(rcv, src, data, cutPoints);
+            mainProfile.setCurvedPath(curved);
             return mainProfile;
         }
         return null;
+    }
+
+    /**
+     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * @param rcv Receiver information
+     * @param src Source information
+     * @param data Propagation data
+     * @param cutPoints Cut points of the full profile
+     */
+    private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
+                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        mainProfile.insertCutPoint(false,
+                cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
+
+        mainProfile.getReceiver().id = rcv.receiverIndex;
+        mainProfile.getReceiver().receiverPk = rcv.receiverPk;
+        mainProfile.getSource().id = src.sourceIndex;
+        if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+            mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+        }
+
+        mainProfile.getSource().orientation = src.orientation;
+        mainProfile.getSource().li = src.li;
+
+        return mainProfile;
     }
 
 
@@ -787,23 +800,7 @@ public class PathFinder {
             mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size()));
 
             // A valid propagation path as been found (without looking at occlusion)
-            CutProfile mainProfile = new CutProfile((CutPointSource) mainProfileCutPoints.get(0),
-                    (CutPointReceiver) mainProfileCutPoints.get(mainProfileCutPoints.size() - 1));
-
-            mainProfile.insertCutPoint(false, mainProfileCutPoints.subList(1,
-                    mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
-
-            mainProfile.getReceiver().id = rcv.receiverIndex;
-            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
-            mainProfile.getSource().id = src.sourceIndex;
-            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
-            }
-
-            mainProfile.getSource().orientation = src.orientation;
-            mainProfile.getSource().li = src.li;
-
-            strategy = dataOut.onNewCutPlane(mainProfile);
+            strategy = dataOut.onNewCutPlane(resetSourceReceiverAttributes(rcv, src, data, mainProfileCutPoints));
             if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                     strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;
