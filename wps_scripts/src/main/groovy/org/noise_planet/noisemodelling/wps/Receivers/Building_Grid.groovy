@@ -12,6 +12,7 @@
 
 /**
  * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Contributor Ignacio Soto Molina, Ministry for Ecological Transition (MITECO), Spain - Delete Recivers Inside Buildings
  */
 
 
@@ -175,8 +176,6 @@ def exec(Connection connection, input) {
         distance = input['distance'] as Double
     }
 
-
-
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
@@ -211,8 +210,10 @@ def exec(Connection connection, input) {
         if (targetSrid != 0) {
             // Transform fence to the same coordinate system than the buildings & sources
             WKTReader wktReader = new WKTReader()
-            fence = wktReader.read(input['fence'] as String)
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
+            // --- FIX: The variable 'fence' does not exist. We use a local variable and assign it to the reprojected fenceGeom.
+            Geometry wktFence = wktReader.read(input['fence'] as String)
+            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(wktFence, 4326), targetSrid)
+            // --- FIN FIX
         } else {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
@@ -240,7 +241,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
-    sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b.pk and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    // --- FIX: evitar suponer b.pk; usar la PK real
+    sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b." + buildingPk + " and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
+    // --- FIN FIX
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
@@ -294,6 +297,15 @@ def exec(Connection connection, input) {
         sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
+        // --- NEW: Remove receivers left inside buildings (non-POP case)
+        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
+        sql.execute("delete from " + receivers_table_name + " g " +
+                    "where exists (" +
+                    "  select 1 from " + building_table_name + " b " +
+                    "  where b.the_geom && g.the_geom " +
+                    "    and ST_Contains(b.the_geom, g.the_geom) " +
+                    "  limit 1)")
+        // --- END NEW
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -316,6 +328,15 @@ def exec(Connection connection, input) {
         sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
+        // --- NEW: Remove recipients left inside buildings BEFORE distributing POP
+        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
+        sql.execute("delete from tmp_receivers g " +
+                    "where exists (" +
+                    "  select 1 from " + building_table_name + " b " +
+                    "  where b.the_geom && g.the_geom " +
+                    "    and ST_Contains(b.the_geom, g.the_geom) " +
+                    "  limit 1)")
+        // --- END NEW
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -439,3 +460,4 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
         return targetSegmentSize;
     }
 }
+
