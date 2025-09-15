@@ -24,6 +24,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CutProfile {
+
+    /**
+     * Profile type from source to receiver
+     * Left and Right are a path using the convex hull on the intersection plane with buildings
+     */
+    public enum PROFILE_TYPE { DIRECT, LEFT, RIGHT }
+
     /** List of cut points.
      * First point is source, last point is receiver */
     public ArrayList<CutPoint> cutPoints = new ArrayList<>();
@@ -37,6 +44,8 @@ public class CutProfile {
      *  only the cutting planes for left and right are not the same */
     public boolean curvedPath = false;
 
+    public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
+
     /**
      * Empty constructor for deserialization
      */
@@ -46,6 +55,20 @@ public class CutProfile {
     public CutProfile(CutPointSource source, CutPointReceiver receiver) {
         cutPoints.add(source);
         cutPoints.add(receiver);
+    }
+
+    /**
+     * @return Cut Profile type
+     */
+    public PROFILE_TYPE getProfileType() {
+        return profileType;
+    }
+
+    /**
+     * @param profileType The cut profile type
+     */
+    public void setProfileType(PROFILE_TYPE profileType) {
+        this.profileType = profileType;
     }
 
     /**

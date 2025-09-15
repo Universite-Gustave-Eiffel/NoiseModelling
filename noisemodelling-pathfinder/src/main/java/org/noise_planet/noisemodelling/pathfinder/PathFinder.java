@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.*;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
@@ -414,6 +415,7 @@ public class PathFinder {
             }
             CutProfile mainProfile = resetSourceReceiverAttributes(rcv, src, data, cutPoints);
             mainProfile.setCurvedPath(curved);
+            mainProfile.setProfileType(side == LEFT ? CutProfile.PROFILE_TYPE.LEFT : CutProfile.PROFILE_TYPE.RIGHT);
             return mainProfile;
         }
         return null;
@@ -497,6 +499,8 @@ public class PathFinder {
         BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
                 data.profileBuilder, input, cutPlane);
 
+        // The roof vertices of buildings will be moved downward if the curved coordinate system is used
+        // This will return the altered cut plane intersection coordinates, so the coordinate must be restored before returning it
         buildingIntersectionPathVisitor.setCurved(curved);
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
@@ -578,7 +582,14 @@ public class PathFinder {
             }
         }
 
+        if(curved) {
+            // restore real coordinates of the path of the curved plane intersection
+            // Coordinates order have no impact on this function
+            coordinates = CurvedProfileGenerator.applyTransformation(p1, p2, coordinates, true);
+        }
+
         List<Coordinate> sideHullPath;
+        // restore coordinates order from source to receiver
         if (left) {
             sideHullPath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
         } else {
