@@ -46,7 +46,7 @@ public class Path {
     private SegmentPath srSegment; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
-    private boolean favorable; // if true, favorable meteorological condition path TODO move to cnossospathparameters
+    private boolean favorable; // if true, favorable meteorological condition path with curved rays
     private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     Orientation sourceOrientation = new Orientation(0,0,0);
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading

@@ -228,8 +228,6 @@
     "groundCoefficient" : 0.5,
     "receiverPk" : 0
   } ],
-  "hasBuildingIntersection" : false,
-  "hasTopographyIntersection" : false,
   "curvedPath" : true,
   "profileType" : "RIGHT"
 }

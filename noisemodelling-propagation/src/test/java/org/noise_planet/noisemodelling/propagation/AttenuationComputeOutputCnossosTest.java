@@ -5402,7 +5402,7 @@ public class AttenuationComputeOutputCnossosTest {
      */
     @Test
     public void TC28() throws IOException {
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right", "TC28_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right", "TC28_Left", "TC28_Right_Curved", "TC28_Left_Curved");
 
         /* Table 346 */
         List<Coordinate> expectedZProfile = Arrays.asList(
@@ -5462,10 +5462,8 @@ public class AttenuationComputeOutputCnossosTest {
         List<Coordinate> expectedZProfileLeft = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(168.36, 0.0),
-                new Coordinate(256.17, 0.0),
-                new Coordinate(256.17, 14.0),
-                new Coordinate(276.59, 14.0),
-                new Coordinate(276.59, 0.0),
+                //new Coordinate(256.17, 0.0), // building ignored in CNOSSOS
+                //new Coordinate(276.59, 0.0), // building ignored in CNOSSOS
                 new Coordinate(356.24, 0.0),
                 new Coordinate(444.81, 0.0),
                 new Coordinate(525.11, 0.0),
@@ -5557,6 +5555,11 @@ public class AttenuationComputeOutputCnossosTest {
         double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
 
         assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_VERY_HIGH);
+
+
+        CnossosPath leftPropagationPath = propDataOut.getPropagationPaths().get(2);
+
+        assertZProfil(expectedZProfileLeft, Arrays.asList(leftPropagationPath.getSRSegment().getPoints2DGround()));
 
 
     }

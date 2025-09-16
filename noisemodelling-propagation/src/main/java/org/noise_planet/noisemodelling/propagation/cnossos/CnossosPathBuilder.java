@@ -89,35 +89,32 @@ public class CnossosPathBuilder {
                     }
                 }
                 if (rcrit) {
-                    pathParameters.deltaH = deltaH;
-                    pathParameters.deltaPrimeH = deltaPrimeH;
                     seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut), Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
                     seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut, Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
-
-                    if(dSR.orientationIndex(o) == 1) {
-                        pathParameters.deltaF = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-                    else {
-                        Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
-                        pathParameters.deltaF =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
-                    }
-
-                    LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                    double dSPrimeO = seg1.sPrime.distance(o);
-                    double dSPrimeR = seg1.sPrime.distance(rcv);
-                    pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
-
-                    LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                    double dORPrime = o.distance(seg2.rPrime);
-                    double dSRPrime = src.distance(seg2.rPrime);
-                    pathParameters.deltaSRPrimeH = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
-
-                    if(dSPrimeRPrime.orientationIndex(o) == 1) {
-                        pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
-                    }
-                    else {
-                        Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-                        pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                    if(!pathParameters.isFavorable()) {
+                        pathParameters.delta = deltaH;
+                        pathParameters.deltaPrime = deltaPrimeH;
+                        LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
+                        double dSPrimeO = seg1.sPrime.distance(o);
+                        double dSPrimeR = seg1.sPrime.distance(rcv);
+                        pathParameters.deltaSPrimeR = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
+                        LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
+                        double dORPrime = o.distance(seg2.rPrime);
+                        double dSRPrime = src.distance(seg2.rPrime);
+                        pathParameters.deltaSRPrime = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
+                    } else {
+                        if(dSR.orientationIndex(o) == 1) {
+                            pathParameters.delta = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                        } else {
+                            Coordinate pA = dSR.pointAlong((o.x-src.x)/(rcv.x-src.x));
+                            pathParameters.delta =2*toCurve(src.distance(pA), srSeg.d) + 2*toCurve(pA.distance(rcv), srSeg.d) - toCurve(dSO, srSeg.d) - toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
+                        }
+                        if(dSPrimeRPrime.orientationIndex(o) == 1) {
+                            pathParameters.deltaPrime = toCurve(seg1.dPrime, srSeg.dPrime) + toCurve(seg2.dPrime, srSeg.dPrime) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                        } else {
+                            Coordinate pA = dSPrimeRPrime.pointAlong((o.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+                            pathParameters.deltaPrime =2*toCurve(srcPrime.distance(pA), srSeg.dPrime) + 2*toCurve(pA.distance(srcPrime), srSeg.dPrime) - toCurve(seg1.dPrime, srSeg.dPrime) - toCurve(seg2.dPrime, srSeg.d) - toCurve(srSeg.dPrime, srSeg.dPrime);
+                        }
                     }
 
                     segments.add(seg1);
@@ -132,9 +129,9 @@ public class CnossosPathBuilder {
 
     /**
      * Compute the segment path
-     * @param src
-     * @param rcv
-     * @param meanPlane
+     * @param src source coordinate
+     * @param rcv receiver coordinate
+     * @param meanPlane mean plane coefficients
      * @return the calculated segment
      */
     public static SegmentPath computeSegment(Coordinate src, Coordinate rcv, double[] meanPlane) {
@@ -143,11 +140,11 @@ public class CnossosPathBuilder {
 
     /**
      * Compute the segment path with more attribute
-     * @param src
-     * @param rcv
-     * @param meanPlane
-     * @param gPath
-     * @param gS
+     * @param src source coordinate
+     * @param rcv receiver coordinate
+     * @param meanPlane mean plane coefficients
+     * @param gPath ground factor of the path
+     * @param gS ground factor of the source
      * @return the computed segment path
      */
 
@@ -183,15 +180,48 @@ public class CnossosPathBuilder {
     }
 
     /**
-     * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the ray path
-     * following Cnossos specification, or null if there is no valid path.
+     * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the multiple contribution ray paths
+     * following Cnossos specification, or empty if there is no valid path.
      * @param cutProfile Vertical cut of a domain
-     * @param bodyBarrier
+     * @param bodyBarrier True if there is a body barrier on the path
      * @param exactFrequencyArray Expected frequencies
      * @param gS Ground factor of the source area
      * @return The cnossos path or null
      */
-    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
+    public static List<CnossosPath> computeCnossosPathsFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
+        List<CnossosPath> cnossosPaths = new ArrayList<>();
+        if(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT ||
+                cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, false);
+            if(cnossosPath != null) cnossosPaths.add(cnossosPath);
+            cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, true);
+            if(cnossosPath != null) cnossosPaths.add(cnossosPath);
+        } else if (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
+                cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT) {
+            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, cutProfile.curvedPath);
+            if(cnossosPath != null) cnossosPaths.add(cnossosPath);
+        }
+        return cnossosPaths;
+    }
+
+    /**
+     * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the ray path
+     * following Cnossos specification, or null if there is no valid path.
+     * @param cutProfile Vertical cut of a domain
+     * @param bodyBarrier True if there is a body barrier on the path
+     * @param exactFrequencyArray Expected frequencies
+     * @param gS Ground factor of the source area
+     * @param favorable Compute the favorable contribution for the provided profile
+     * @return The cnossos path or null
+     */
+    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favorable) {
+        if(favorable &&
+                (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
+                        cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
+                && !cutProfile.isCurvedPath()) {
+            // TODO reflection cut planes should be also done on curved profile
+            throw new IllegalArgumentException("A favorable path cannot be computed using lateral non curved cut profile");
+        }
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
         final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
@@ -211,7 +241,7 @@ public class CnossosPathBuilder {
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
         CnossosPath pathParameters = new CnossosPath(cutProfile);
-        pathParameters.setFavorable(true);
+        pathParameters.setFavorable(favorable);
         pathParameters.setPointList(points);
         pathParameters.setSegmentList(segments);
         pathParameters.setSRSegment(srPath);
@@ -440,8 +470,7 @@ public class CnossosPathBuilder {
                 long difVPointCount = pathParameters.getPointList().stream().
                         filter(pointPath -> pointPath.type.equals(DIFV)).count();
                 double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
-                pathParameters.deltaH = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - distance;
-                pathParameters.deltaF = pathParameters.deltaH;
+                pathParameters.delta = segments.get(0).d + pathParameters.e + segments.get(segments.size()-1).d - distance;
             } else {
                 segments.addAll(rayleighSegments);
                 points.addAll(1, rayleighPoints);
@@ -471,14 +500,21 @@ public class CnossosPathBuilder {
         for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
             pathParameters.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
         }
-        pathParameters.deltaSPrimeRH = sPrimeR.orientationIndex(c0)*(dSPrimeO + pathParameters.e + dOnR - dSPrimeR);
-        pathParameters.deltaSPrimeRF = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
+        if(favorable) {
+            pathParameters.deltaSPrimeR = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
+        } else {
+            pathParameters.deltaSPrimeR = sPrimeR.orientationIndex(c0)*(dSPrimeO + pathParameters.e + dOnR - dSPrimeR);
+        }
 
         LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
         double dSRPrime = src.distance(seg2.rPrime);
         double dORPrime = cn.distance(seg2.rPrime);
-        pathParameters.deltaSRPrimeH = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + pathParameters.e + dORPrime - dSRPrime);
-        pathParameters.deltaSRPrimeF = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
+
+        if(favorable) {
+            pathParameters.deltaSRPrime = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
+        } else {
+            pathParameters.deltaSRPrime = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + pathParameters.e + dORPrime - dSRPrime);
+        }
 
         Coordinate srcPrime = new Coordinate(src.x + (seg1.sMeanPlane.x - src.x) * 2, src.y + (seg1.sMeanPlane.y - src.y) * 2);
         Coordinate rcvPrime = new Coordinate(rcv.x + (seg2.rMeanPlane.x - rcv.x) * 2, rcv.y + (seg2.rMeanPlane.y - rcv.y) * 2);
@@ -488,28 +524,30 @@ public class CnossosPathBuilder {
         seg1.dPrime = srcPrime.distance(c0);
         seg2.dPrime = cn.distance(rcvPrime);
 
-
-        long difVPointCount = pathParameters.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(DIFV)).count();
-        double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
-        pathParameters.deltaH = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - distance);
-        if (sr.orientationIndex(c0) == 1) {
-            pathParameters.deltaF = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
+        if(!favorable) {
+            long difVPointCount = pathParameters.getPointList().stream().
+                    filter(pointPath -> pointPath.type.equals(DIFV)).count();
+            double distance = difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc;
+            pathParameters.delta = sr.orientationIndex(c0) * (dSO0 + pathParameters.e + dOnR - distance);
         } else {
-            Coordinate pA = sr.pointAlong((c0.x - srcPrime.x) / (rcvPrime.x - srcPrime.x));
-            pathParameters.deltaF = 2 * toCurve(srcPrime.distance(pA), srPath.dPrime) + 2 * toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            if (sr.orientationIndex(c0) == 1) {
+                pathParameters.delta = toCurve(seg1.d, srPath.d) + toCurve(pathParameters.e, srPath.d) + toCurve(seg2.d, srPath.d) - toCurve(srPath.d, srPath.d);
+            } else {
+                Coordinate pA = sr.pointAlong((c0.x - srcPrime.x) / (rcvPrime.x - srcPrime.x));
+                pathParameters.delta = 2 * toCurve(srcPrime.distance(pA), srPath.dPrime) + 2 * toCurve(pA.distance(rcvPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            }
         }
 
-        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + pathParameters.e + seg2.dPrime - srPath.dPrime);
-
-        pathParameters.deltaPrimeH = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + seg2.dPrime - srPath.dPrime);
-        if(dSPrimeRPrime.orientationIndex(c0) == 1) {
-            pathParameters.deltaPrimeF = toCurve(seg1.dPrime, srPath.dPrime) + toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+        if(!favorable) {
+            pathParameters.deltaPrime = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + pathParameters.e + seg2.dPrime - srPath.dPrime);
         } else {
-            Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
-            pathParameters.deltaPrimeF =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
+            if(dSPrimeRPrime.orientationIndex(c0) == 1) {
+                pathParameters.deltaPrime = toCurve(seg1.dPrime, srPath.dPrime) + toCurve(seg2.dPrime, srPath.dPrime) - toCurve(srPath.dPrime, srPath.dPrime);
+            } else {
+                Coordinate pA = dSPrimeRPrime.pointAlong((c0.x-srcPrime.x)/(rcvPrime.x-srcPrime.x));
+                pathParameters.deltaPrime =2*toCurve(srcPrime.distance(pA), srPath.dPrime) + 2*toCurve(pA.distance(srcPrime), srPath.dPrime) - toCurve(seg1.dPrime, srPath.dPrime) - toCurve(seg2.dPrime, srPath.d) - toCurve(srPath.dPrime, srPath.dPrime);
+            }
         }
-
         return pathParameters;
     }
 

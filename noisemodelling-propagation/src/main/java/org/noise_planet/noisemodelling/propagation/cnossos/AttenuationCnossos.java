@@ -875,8 +875,7 @@ public class AttenuationCnossos {
         double[] aRetroDiff;
         //ABoundary computation
         double[] aBoundary;
-        double[] aGlobalMeteoHom = new double[data.getFrequencies().size()];
-        double[] aGlobalMeteoFav = new double[data.getFrequencies().size()];
+        double[] aGlobalMeteo = new double[data.getFrequencies().size()];
         double[] deltaBodyScreen = new double[data.getFrequencies().size()];
 
         List<PointPath> ptList = proPathParameters.getPointList();
@@ -989,36 +988,36 @@ public class AttenuationCnossos {
         Vector3D fieldVectorPropagation = Orientation.rotate(proPathParameters.getSourceOrientation(),
                 Orientation.toVector(proPathParameters.raySourceReceiverDirectivity), false);
         int roseIndex = AttenuationParameters.getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
-        // Homogenous conditions
-        if (data.getWindRose()[roseIndex] != 1) {
-            proPathParameters.setFavorable(false);
-
-
-            aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
-            aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
-            for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-                aGlobalMeteoHom[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
+        if(!proPathParameters.isFavorable()) {
+            // Homogenous conditions
+            if (data.getWindRose()[roseIndex] != 1) {
+                aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
+                aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
+                for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
+                    aGlobalMeteo[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] - deltaBodyScreen[idfreq]); // Eq. 2.5.6
+                }
+                //For testing purpose
+                if(exportAttenuationMatrix) {
+                    proPathParameters.aRetroDiff = aRetroDiff.clone();
+                    proPathParameters.double_aBoundary = aBoundary.clone();
+                    proPathParameters.aGlobalRaw = aGlobalMeteo.clone();
+                }
             }
-            //For testing purpose
-            if(exportAttenuationMatrix) {
-                proPathParameters.aRetroDiffH = aRetroDiff.clone();
-                proPathParameters.double_aBoundaryH = aBoundary.clone();
-                proPathParameters.aGlobalH = aGlobalMeteoHom.clone();
-            }
-        }
-        // Favorable conditions
-        if (data.getWindRose()[roseIndex] != 0) {
-            proPathParameters.setFavorable(true);
-            aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
-            aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
-            for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-                aGlobalMeteoFav[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
-            }
-            //For testing purpose
-            if(exportAttenuationMatrix) {
-                proPathParameters.double_aBoundaryF = aBoundary.clone();
-                proPathParameters.aRetroDiffF = aRetroDiff.clone();
-                proPathParameters.aGlobalF = aGlobalMeteoFav.clone();
+        } else {
+            // Favorable conditions
+            if (data.getWindRose()[roseIndex] != 0) {
+                proPathParameters.setFavorable(true);
+                aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
+                aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
+                for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
+                    aGlobalMeteo[idfreq] = -(aDiv[idfreq] + aAtm[idfreq] + aBoundary[idfreq] - aRef[idfreq] + aRetroDiff[idfreq] -deltaBodyScreen[idfreq]); // Eq. 2.5.8
+                }
+                //For debugging purpose
+                if(exportAttenuationMatrix) {
+                    proPathParameters.double_aBoundary = aBoundary.clone();
+                    proPathParameters.aRetroDiff = aRetroDiff.clone();
+                    proPathParameters.aGlobal = aGlobalMeteo.clone();
+                }
             }
         }
 
@@ -1029,8 +1028,15 @@ public class AttenuationCnossos {
             proPathParameters.aAtm = aAtm.clone();
         }
 
-        // Compute attenuation under the wind conditions using the ray direction
-        double[] aGlobalMeteoRay = sumArrayWithPonderation(aGlobalMeteoFav, aGlobalMeteoHom, data.getWindRose()[roseIndex]);
+        // Compute attenuation under the atmospheric conditions using the ray direction
+        double[] aGlobalMeteoRay = new double[aGlobalMeteo.length];
+        double probability = data.getWindRose()[roseIndex]; // favorable probability
+        if(!proPathParameters.isFavorable()) {
+            probability = 1 - probability;
+        }
+        for (int i = 0; i < aGlobalMeteoRay.length; i++) {
+            aGlobalMeteoRay[i] = wToDb(probability * dBToW(aGlobalMeteo[i]));
+        }
 
         // Apply attenuation due to sound direction
         int sourceId = proPathParameters.getCutProfile().getSource().id;

@@ -66,14 +66,17 @@ public class PathFinderTest {
         for(CutProfile cutProfile : cutProfiles) {
             StringBuilder sb = new StringBuilder(utName);
             switch (cutProfile.getProfileType()) {
+                case DIRECT:
+                    sb.append("_Direct");
+                    break;
                 case LEFT:
                     sb.append("_Left");
                     break;
                 case RIGHT:
                     sb.append("_Right");
                     break;
-                default:
-                    sb.append("_Direct");
+                case REFLECTION:
+                    sb.append("_Reflection");
                     break;
             }
             if(cutProfile.curvedPath) {
@@ -1579,11 +1582,12 @@ public class PathFinderTest {
                         new Coordinate(184, 91, 0),
                         new Coordinate(196, 22, 0)}, 10, -1)
 
-                .addBuilding(new Coordinate[]{
-                        new Coordinate(250, 70, 0),
-                        new Coordinate(250, 180, 0),
-                        new Coordinate(270, 180, 0),
-                        new Coordinate(270, 70, 0)}, 14, -1)
+// this building is ignored in the test case
+//                .addBuilding(new Coordinate[]{
+//                        new Coordinate(250, 70, 0),
+//                        new Coordinate(250, 180, 0),
+//                        new Coordinate(270, 180, 0),
+//                        new Coordinate(270, 70, 0)}, 14, -1)
 
                 .addBuilding(new Coordinate[]{
                         new Coordinate(332, 32, 0),
