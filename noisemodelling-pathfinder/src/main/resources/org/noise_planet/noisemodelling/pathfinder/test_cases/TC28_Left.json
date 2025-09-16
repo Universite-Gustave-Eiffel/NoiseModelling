@@ -60,8 +60,10 @@
     },
     "zGround" : 0.0,
     "groundCoefficient" : 0.5,
-    "receiverPk" : -1
+    "receiverPk" : 0
   } ],
   "hasBuildingIntersection" : false,
-  "hasTopographyIntersection" : false
+  "hasTopographyIntersection" : false,
+  "curvedPath" : false,
+  "profileType" : "LEFT"
 }
