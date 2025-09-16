@@ -766,52 +766,55 @@ public class PathFinder {
                 }
             }
             // Compute direct path between source and first reflection point, add profile to the data
-            CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
+            CutProfile segmentCutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
                     data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-            if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+            if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
             }
 
             // Add points to the main profile, remove the last point, or it will be duplicated later
             List<CutPoint> mainProfileCutPoints = new ArrayList<>(
-                    cutProfile.cutPoints.subList(0, cutProfile.cutPoints.size() - 1));
+                    segmentCutProfile.cutPoints.subList(0, segmentCutProfile.cutPoints.size() - 1));
 
             // Add intermediate reflections
             boolean validReflection = true;
             for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                 MirrorReceiver firstPoint = rayPath.get(idPt);
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
-                cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
+                segmentCutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
                         secondPoint.getReflectionPosition(), data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-                if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+                if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     continue;
                 }
-                if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+                if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     validReflection = false;
                     break;
                 }
-                insertReflectionPointAttributes(cutProfile.cutPoints.get(0), mainProfileCutPoints, firstPoint);
+                insertReflectionPointAttributes(segmentCutProfile.cutPoints.get(0), mainProfileCutPoints, firstPoint);
 
-                mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size() - 1));
+                mainProfileCutPoints.addAll(segmentCutProfile.cutPoints.subList(1, segmentCutProfile.cutPoints.size() - 1));
             }
             if(!validReflection) {
                 continue;
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
-            cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
+            segmentCutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
                     rcv.position, data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-            if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+            if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
             }
-            insertReflectionPointAttributes(cutProfile.cutPoints.get(0), mainProfileCutPoints, rayPath.get(rayPath.size() - 1));
-            mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size()));
+            insertReflectionPointAttributes(segmentCutProfile.cutPoints.get(0), mainProfileCutPoints, rayPath.get(rayPath.size() - 1));
+            mainProfileCutPoints.addAll(segmentCutProfile.cutPoints.subList(1, segmentCutProfile.cutPoints.size()));
 
             // A valid propagation path as been found (without looking at occlusion)
-            strategy = dataOut.onNewCutPlane(resetSourceReceiverAttributes(rcv, src, data, mainProfileCutPoints));
+            CutProfile cutProfileReflexion = resetSourceReceiverAttributes(rcv, src, data, mainProfileCutPoints);
+            cutProfileReflexion.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
+
+            strategy = dataOut.onNewCutPlane(cutProfileReflexion);
             if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                     strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;

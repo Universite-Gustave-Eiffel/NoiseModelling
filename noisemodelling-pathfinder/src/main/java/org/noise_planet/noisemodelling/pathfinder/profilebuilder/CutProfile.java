@@ -29,15 +29,18 @@ public class CutProfile {
      * Profile type from source to receiver
      * Left and Right are a path using the convex hull on the intersection plane with buildings
      */
-    public enum PROFILE_TYPE { DIRECT, LEFT, RIGHT }
+    public enum PROFILE_TYPE { DIRECT, LEFT, RIGHT, REFLECTION }
 
     /** List of cut points.
      * First point is source, last point is receiver */
     public ArrayList<CutPoint> cutPoints = new ArrayList<>();
 
-    /** True if Source-Receiver linestring is below building intersection */
+    /** True if Source-Receiver linestring is below building intersection, only used at the generation of the profile to skip searching for lateral cut planes */
+    @JsonIgnore
     public boolean hasBuildingIntersection = false;
-    /** True if Source-Receiver linestring is below topography cutting point. */
+
+    /** True if Source-Receiver linestring is below topography cutting point., only used at the generation of the profile to skip searching for lateral cut planes */
+    @JsonIgnore
     public boolean hasTopographyIntersection = false;
 
     /** True if the path between source and receiver is curved, the coordinates are the original,

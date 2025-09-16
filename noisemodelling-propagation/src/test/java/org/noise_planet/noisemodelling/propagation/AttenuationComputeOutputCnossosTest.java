@@ -5402,7 +5402,7 @@ public class AttenuationComputeOutputCnossosTest {
      */
     @Test
     public void TC28() throws IOException {
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right", "TC28_Left");
 
         /* Table 346 */
         List<Coordinate> expectedZProfile = Arrays.asList(
