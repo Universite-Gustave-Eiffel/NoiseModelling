@@ -36,45 +36,8 @@ import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POIN
  */
 
 public class AttenuationCnossos {
-    private static double[] freq_lambda;
-    private static double[] aGlobal;
-
-    public static double[] getaGlobal() {
-        return aGlobal;
-    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AttenuationCnossos.class);
-
-    /**
-     * Eq 2.5.21: calculate the value of DeltaDif
-     * @param srpath
-     * @param data
-     * @return double list with the value of DeltaDif
-     */
-    public static double[] getDeltaDif(SegmentPath srpath, AttenuationParameters data) {
-        double[] DeltaDif = new double[data.getFrequencies().size()];
-        double cprime;
-
-        for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-            double Ch = 1; // Eq 2.5.21
-            if (srpath.eLength > 0.3) {
-                double gammaPart = pow((5 * freq_lambda[idfreq]) / srpath.eLength, 2);
-                cprime = (1. + gammaPart) / (1./3. + gammaPart); // Eq. 2.5.23
-            } else {
-                cprime = 1.;
-            }
-
-            //(7.11) NMP2008 P.32
-            double testForm = 40 / freq_lambda[idfreq]* cprime * srpath.delta;
-
-            double deltaDif = 0.;
-            if (testForm >= -2.) {
-                deltaDif = 10 * Ch * log10(Math.max(0, 3 + testForm));
-            }
-            DeltaDif[idfreq] = Math.max(0, deltaDif);
-        }
-        return DeltaDif;
-    }
 
     /**
      * Compute attenuation of sound energy by distance. Minimum distance is one
@@ -168,24 +131,6 @@ public class AttenuationCnossos {
     }
 
     /**
-     * Formulae Eq. 2.5.31 - Eq. 2.5.32
-     * @param aGround        Asol(O,R) or Asol(S,O) (sol mean ground)
-     * @param deltaDifPrim Δdif(S,R') if Asol(S,O) is given or Δdif(S', R) if Asol(O,R)
-     * @param deltaDif     Δdif(S, R)
-     * @return Δsol(S, O) if Asol(S,O) is given or Δsol(O,R) if Asol(O,R) is given
-     */
-    private static double getDeltaGround(double aGround, double deltaDifPrim, double deltaDif) {
-        double attArg = 1 + (pow(10, -aGround / 20) - 1) * pow(10, -(deltaDifPrim - deltaDif) / 20);
-        if(Double.isNaN(attArg)){
-            attArg = Double.MAX_VALUE;
-        }
-        else if (attArg < 0) {
-            attArg = 0;
-        }
-        return -20 * log10(attArg);
-    }
-
-    /**
      * Compute ARef
      * @param pathParameters
      * @param data
@@ -220,23 +165,7 @@ public class AttenuationCnossos {
         if (!(segmentPath.gPath == 0 && data.isgDisc())) {
             return getAGroundCore(pathParameters, segmentPath, data);
         } else {
-            double aGroundMin;
-            //For testing purpose
-            if(pathParameters.keepAbsorption) {
-                //Used to calculate value ignored like Cf
-                getAGroundCore(pathParameters, segmentPath, data);
-            }
-
-            if (pathParameters.isFavorable()) {
-                // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
-                if (segmentPath.testFormF <= 1) {
-                    aGroundMin = -3 * (1 - segmentPath.gm);
-                } else {
-                    aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
-                }
-            } else {
-                aGroundMin = -3;
-            }
+            double aGroundMin = getAGroundMin(segmentPath, pathParameters);
 
             double[] aGround = new double[data.getFrequencies().size()];
             Arrays.fill(aGround, aGroundMin);
@@ -249,122 +178,20 @@ public class AttenuationCnossos {
         }
     }
 
-    /**
-     * Compute ABoundary
-     *
-     * @param pathParameters
-     * @param data
-     * @return list double with the values of ABoundary
-     */
-    private static double[] getABoundary(CnossosPath pathParameters, AttenuationParameters data) {
+    private static double getAGroundMin(SegmentPath segmentPath, CnossosPath pathParameters) {
+        double aGroundMin;
 
-        SegmentPath srPath = pathParameters.getSRSegment();
-        List<SegmentPath> segments = pathParameters.getSegmentList();
-
-        double[] aGround;
-        double[] aDif = new double[data.getFrequencies().size()];
-
-        double[] aBoundary;
-
-        // Set Gm and Gw for AGround SR - Table 2.5.b
         if (pathParameters.isFavorable()) {
-            srPath.gw = srPath.gPath;
-        } else {
-            srPath.gw = srPath.gPathPrime;
-        }
-        srPath.gm = srPath.gPathPrime;
-
-        List<Integer> difBands = new ArrayList<>();
-        List<Integer> noDifBands = new ArrayList<>();
-        double deltaD = srPath.d - (segments.get(0).d + segments.get(1).dp);
-        double deltaDPrime = -srPath.dPrime + segments.get(0).dPrime + segments.get(1).dPrime;
-        for (int freq : data.getFrequencies()) {
-            double lambda = 340.0 / freq;
-            if (deltaD > -lambda / 20) {
-                if (deltaD > (lambda / 4 - deltaDPrime)) {
-                    difBands.add(data.getFrequencies().indexOf(freq));
-                } else {
-                    noDifBands.add(data.getFrequencies().indexOf(freq));
-                }
-            }
-        }
-
-        // Adif is calculated with diffraction. The ground effect is taken into account in the Adif equation itself (Aground = 0 dB). This therefore gives Aboundary = Adif
-        List<SegmentPath> segmentPath = pathParameters.getSegmentList();
-
-        double[] deltaDifSR; // is the attenuation due to the diffraction between the source S and the receiver R
-        double[] DeltaDifSpR;
-        double[] deltaDifSRp;
-        double[] aGroundSO; // is the attenuation due to the ground effect on the source side, weighted by the diffraction on the source side; where it is understood that O = O1 in case of multiple diffractions as in Figure 2.5.f
-        double[] aGroundOR; // is the attenuation due to the ground effect on the receiver side, weighted by the diffraction on the receiver side.
-
-        deltaDifSR = getDeltaDif(srPath, data);
-        DeltaDifSpR = getDeltaDif(segments.get(segments.size() - 2), data);
-        deltaDifSRp = getDeltaDif(segments.get(segments.size() - 1), data);
-
-        // Set Gm and Gw for AGround SO - Table 2.5.b
-        if (pathParameters.isFavorable()) {
-            segmentPath.get(0).gw = segmentPath.get(0).gPath;
-        } else {
-            segmentPath.get(0).gw = segmentPath.get(0).gPathPrime;
-        }
-        segmentPath.get(0).gm = segmentPath.get(0).gPathPrime;
-        aGroundSO = aGround(segmentPath.get(0), pathParameters, data);
-
-        // Set Gm and Gw for AGround OR - Table 2.5.b
-        segmentPath.get(segmentPath.size() - 1).gw = segmentPath.get(segmentPath.size() - 1).gPath;
-        segmentPath.get(segmentPath.size() - 1).gm = segmentPath.get(segmentPath.size() - 1).gPath;
-        aGroundOR = aGround(segmentPath.get(segmentPath.size() - 1), pathParameters, data);
-
-        double[] deltaGroundSO = new double[data.getFrequencies().size()];
-        double[] deltaGroundOR = new double[data.getFrequencies().size()];
-        // Eq 2.5.30 - Eq. 2.5.31 - Eq. 2.5.32
-        for (int idf : difBands) {
-            // if Deltadif > 25: Deltadif = 25 dB for a diffraction on a horizontal edge and only on the term Deltadif which figures in the calculation of Adif. This upper bound shall not be applied in the Deltadif terms that intervene in the calculation of Deltaground, or for a diffraction on a vertical edge (lateral diffraction) in the case of industrial noise mapping
-            if (segmentPath.get(segmentPath.size() - 1).zrH > 0.0000001) {// see 5.3 Equivalent heights from AFNOR document
-                deltaGroundSO[idf] = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf], deltaDifSR[idf]);
-                deltaGroundOR[idf] = getDeltaGround(aGroundOR[idf], deltaDifSRp[idf], deltaDifSR[idf]);
+            // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
+            if (segmentPath.testFormF <= 1) {
+                aGroundMin = -3 * (1 - segmentPath.gm);
             } else {
-                deltaGroundSO[idf] = getDeltaGround(aGroundSO[idf], DeltaDifSpR[idf], deltaDifSR[idf]);
-                deltaGroundOR[idf] = aGroundOR[idf];
+                aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
             }
-            aDif[idf] = Math.min(25, deltaDifSR[idf]) + deltaGroundSO[idf] + deltaGroundOR[idf]; // Eq. 2.5.30
+        } else {
+            aGroundMin = -3;
         }
-
-        // Aground is calculated with no diffraction (Adif = 0 dB) and Aboundary = Aground;
-        // In addition, Aatm and Aground shall be calculated from the total length of the propagation path.
-        aGround = aGround(srPath, pathParameters, data);
-        aBoundary = aGround;
-
-        long difVPointCount = pathParameters.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(DIFV)).count();
-        if (difVPointCount > 0) {
-            aDif = getDeltaDif(srPath, data);
-            // Eq. 2.5.33 - Eq. 2.5.34
-            for (int idf : noDifBands) {
-                aBoundary[idf] = aDif[idf] + aGround[idf];
-            }
-        }
-        return aBoundary;
-    }
-
-    /**
-     * Initialize the instance of AttenuationCnossos
-     * @param data
-     */
-    public static void init(AttenuationParameters data) {
-        // init
-        aGlobal = new double[data.getFrequencies().size()];
-
-        // Init wave length for each frequency
-        freq_lambda = new double[data.getFrequencies().size()];
-        for (int idf = 0; idf < data.getFrequencies().size(); idf++) {
-            if (data.getFrequencies().get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / data.getFrequencies().get(idf);
-            } else {
-                freq_lambda[idf] = 1;
-            }
-        }
+        return aGroundMin;
     }
 
     /**
@@ -395,77 +222,6 @@ public class AttenuationCnossos {
             aAtm[idfreq] = getAAtm(distance, alphaAtmosphericKm[idfreq]);
         }
         return aAtm;
-    }
-
-    /**
-     *
-     * @param pathParameters
-     * @param data
-     * @return
-     */
-    public static double[] evaluateAref(CnossosPath pathParameters, AttenuationParameters data) {
-        return getARef(pathParameters, data);
-    }
-
-    /**
-     * Only for propagation Path Cnossos
-     * // todo erase evaluate
-     * @param pathParameters
-     * @param data
-     * @return
-     */
-    public static double[] evaluate(CnossosPath pathParameters, AttenuationParameters data) {
-        // init
-        aGlobal = new double[data.getFrequencies().size()];
-        double[] aBoundary;
-        double[] aRef;
-
-        // Init wave length for each frequency
-        freq_lambda = new double[data.getFrequencies().size()];
-        for (int idf = 0; idf < data.getFrequencies().size(); idf++) {
-            if (data.getFrequencies().get(idf) > 0) {
-                freq_lambda[idf] = data.getCelerity() / data.getFrequencies().get(idf);
-            } else {
-                freq_lambda[idf] = 1;
-            }
-        }
-
-        // init atmosphere
-        double[] alpha_atmo = data.getAlpha_atmo();
-
-        double aDiv;
-        // divergence
-        long refPointCount = pathParameters.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(REFL)).count();
-        if (refPointCount > 0) {
-            aDiv = getADiv(pathParameters.getSRSegment().dPath);
-        } else {
-            aDiv = getADiv(pathParameters.getSRSegment().d);
-        }
-
-
-        // boundary (ground + diffration)
-        aBoundary = getABoundary(pathParameters, data);
-
-        // reflections
-        aRef = getARef(pathParameters, data);
-
-        for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
-            // atm
-            double aAtm;
-
-            long verticalPivotPointCount = pathParameters.getPointList().stream().
-                    filter(pointPath -> pointPath.type.equals(REFL) || pointPath.type.equals(DIFV)).count();
-            if (verticalPivotPointCount > 0) {
-                aAtm = getAAtm(pathParameters.getSRSegment().dPath, alpha_atmo[idfreq]);
-            } else {
-                aAtm = getAAtm(pathParameters.getSRSegment().d, alpha_atmo[idfreq]);
-            }
-
-            aGlobal[idfreq] = -(aDiv + aAtm + aBoundary[idfreq] + aRef[idfreq]);
-
-        }
-        return aGlobal;
     }
 
     /**
@@ -826,13 +582,13 @@ public class AttenuationCnossos {
             proPathParameters.groundAttenuation.init(data.getFrequencies().size());
             proPathParameters.init(data.getFrequencies().size());
         }
-        AttenuationCnossos.init(data);
+
         //ADiv computation
         double[] aDiv = AttenuationCnossos.aDiv(proPathParameters, data);
         //AAtm computation
         double[] aAtm = AttenuationCnossos.aAtm(data.getAlpha_atmo(), proPathParameters.getSRSegment().d);
         //Reflexion computation
-        double[] aRef = AttenuationCnossos.evaluateAref(proPathParameters, data);
+        double[] aRef = getARef(proPathParameters, data);
         //For testing purpose
         if(exportAttenuationMatrix) {
             proPathParameters.aRef = aRef.clone();
