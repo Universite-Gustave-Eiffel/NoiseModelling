@@ -737,7 +737,7 @@ public class AttenuationCnossos {
                 if(exportAttenuationMatrix) {
                     proPathParameters.double_aBoundary = aBoundary.clone();
                     proPathParameters.aRetroDiff = aRetroDiff.clone();
-                    proPathParameters.aGlobal = aGlobalMeteo.clone();
+                    proPathParameters.aGlobalRaw = aGlobalMeteo.clone();
                 }
             }
         }

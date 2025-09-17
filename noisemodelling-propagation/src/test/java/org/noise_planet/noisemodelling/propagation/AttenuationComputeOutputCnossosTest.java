@@ -5543,7 +5543,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertTrue(cnossosPath.isFavorable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPath.getCutProfile().getProfileType());
         double[] actualABoundaryF = cnossosPath.double_aBoundary;
-        double[] actualLF = addArray(cnossosPath.aGlobal, new double[]{150,150,150,150,150,150,150,150});
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, new double[]{150,150,150,150,150,150,150,150});
         // Global levels
         double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal, homogeneousPath.aGlobal), new double[]{150,150,150,150,150,150,150,150});
         double[] actualLA = addArray(actualL, A_WEIGHTING);
