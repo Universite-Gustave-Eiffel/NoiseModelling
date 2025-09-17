@@ -159,18 +159,10 @@ public class AttenuationCnossos {
 
             //For testing purpose
             if(pathParameters.keepAbsorption) {
-                if(pathParameters.isFavorable()) {
-                    pathParameters.groundAttenuation.wF[idfreq] += w;
-                    pathParameters.groundAttenuation.cfF[idfreq] = cf;
-                    pathParameters.groundAttenuation.aGroundF[idfreq] = aGround[idfreq];
-                }
-                else{
-                    pathParameters.groundAttenuation.wH[idfreq] += w;
-                    pathParameters.groundAttenuation.cfH[idfreq] = cf;
-                    pathParameters.groundAttenuation.aGroundH[idfreq] = aGround[idfreq];
-                }
+                pathParameters.groundAttenuation.w[idfreq] += w;
+                pathParameters.groundAttenuation.cf[idfreq] = cf;
+                pathParameters.groundAttenuation.aGround[idfreq] = aGround[idfreq];
             }
-
         }
         return aGround;
     }
@@ -251,12 +243,7 @@ public class AttenuationCnossos {
 
             //For testing purpose
             if(pathParameters.keepAbsorption) {
-                if(pathParameters.isFavorable()) {
-                    pathParameters.groundAttenuation.aGroundF = aGround;
-                }
-                else{
-                    pathParameters.groundAttenuation.aGroundH = aGround;
-                }
+                pathParameters.groundAttenuation.aGround = aGround;
             }
             return aGround;
         }
@@ -483,16 +470,13 @@ public class AttenuationCnossos {
 
     /**
      *
-     * @param pp
-     * @param freq
-     * @param favorable
-     * @return
+     * @param pp Cnossos path
+     * @param freq Frequency
+     * @return true if the r-criterion is valid
      */
-    private static boolean isValidRcrit(CnossosPath pp, int freq, boolean favorable) {
+    private static boolean isValidRcrit(CnossosPath pp, int freq) {
         double lambda = 340.0/freq;
-        return favorable ?
-                pp.deltaF > -lambda / 20 && pp.deltaF > lambda / 4 - pp.deltaPrimeF || pp.deltaF > 0 :
-                pp.deltaH > -lambda / 20 && pp.deltaH > lambda / 4 - pp.deltaPrimeH || pp.deltaH > 0 ;
+        return pp.delta > -lambda / 20 && pp.delta > lambda / 4 - pp.deltaPrime || pp.delta > 0;
     }
 
     /**
@@ -507,12 +491,11 @@ public class AttenuationCnossos {
         List<PointPath> diffPts = path.getPointList().stream().
                 filter(pointPath -> pointPath.type.equals(DIFH_RCRIT) || pointPath.type.equals(DIFH)
                         || pointPath.type.equals(DIFV)).collect(Collectors.toList());
-        path.aBoundaryH.init(data.getFrequencies().size());
-        path.aBoundaryF.init(data.getFrequencies().size());
+        path.aBoundary.init(data.getFrequencies().size());
         // Without diff
         for(int i=0; i<data.getFrequencies().size(); i++) {
             int finalI = i;
-            boolean isValidRCriterion = isValidRcrit(path, data.getFrequencies().get(finalI), path.isFavorable());
+            boolean isValidRCriterion = isValidRcrit(path, data.getFrequencies().get(finalI));
             PointPath first = diffPts.stream()
                     .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
                             (pp.type.equals(DIFH_RCRIT) && isValidRCriterion ))
@@ -521,12 +504,8 @@ public class AttenuationCnossos {
             aGround[i] = path.isFavorable() ?
                     aGroundF(path, path.getSRSegment(), data, i) :
                     aGroundH(path, path.getSRSegment(), data, i);
-            if(path.groundAttenuation != null && path.groundAttenuation.aGroundF != null) {
-                if (path.isFavorable()) {
-                    path.groundAttenuation.aGroundF[i] = aGround[i];
-                } else {
-                    path.groundAttenuation.aGroundH[i] = aGround[i];
-                }
+            if(path.groundAttenuation != null && path.groundAttenuation.aGround != null) {
+                path.groundAttenuation.aGround[i] = aGround[i];
             }
             if (first != null) {
                 aDif[i] = aDif(path, data, i, first.type);
@@ -539,11 +518,7 @@ public class AttenuationCnossos {
 
         }
         if(path.keepAbsorption) {
-            if (path.isFavorable()) {
-                path.aDifF = aDif;
-            } else {
-                path.aDifH = aDif;
-            }
+            path.aDif = aDif;
         }
         double[] aBoundary = new double[data.getFrequencies().size()];
         for(int i=0; i<data.getFrequencies().size(); i++) {
@@ -646,10 +621,15 @@ public class AttenuationCnossos {
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && difHCount <= 1) || (type.equals(DIFV) && difVCount <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
-        double _delta = proPathParameters.isFavorable() && (type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT)) ? proPathParameters.deltaF : proPathParameters.deltaH;
-        double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime+ proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1).dPrime- proPathParameters.getSRSegment().dPrime);
+        // TODO issue here ?
+        // Favorable need homogeneous delta if !((type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT))
+        double _delta = proPathParameters.delta;
+        double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime +
+                proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size() - 1).dPrime -
+                proPathParameters.getSRSegment().dPrime);
+
         double deltaDiffSR = 0;
-        double testForm = 40/lambda*cSecond*_delta;
+        double testForm = 40 / lambda * cSecond * _delta;
 
         if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
             deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
@@ -659,21 +639,16 @@ public class AttenuationCnossos {
 
         if(type.equals(DIFV)) {
             if(proPathParameters.keepAbsorption) {
-                if(proPathParameters.isFavorable()) {
-                    proPathParameters.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
-                }
-                else {
-                    proPathParameters.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
-                }
+                proPathParameters.aBoundary.deltaDiffSR[i] = deltaDiffSR;
             }
             return deltaDiffSR;
         }
 
-        _delta = proPathParameters.isFavorable() ? proPathParameters.deltaSPrimeRF : proPathParameters.deltaSPrimeRH;
+        _delta = proPathParameters.deltaSPrimeR;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSPrimeR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        _delta = proPathParameters.isFavorable() ? proPathParameters.deltaSRPrimeF : proPathParameters.deltaSRPrimeH;
+        _delta = proPathParameters.deltaSRPrime;
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
@@ -696,26 +671,14 @@ public class AttenuationCnossos {
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPathParameters.keepAbsorption) {
-            if(proPathParameters.isFavorable()) {
-                proPathParameters.aBoundaryF.deltaDiffSR[i] = deltaDiffSR;
-                proPathParameters.aBoundaryF.aGroundSO[i] = aGroundSO;
-                proPathParameters.aBoundaryF.aGroundOR[i] = aGroundOR;
-                proPathParameters.aBoundaryF.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-                proPathParameters.aBoundaryF.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-                proPathParameters.aBoundaryF.deltaGroundSO[i] = deltaGroundSO;
-                proPathParameters.aBoundaryF.deltaGroundOR[i] = deltaGroundOR;
-                proPathParameters.aBoundaryF.aDiff[i] = aDiff;
-            }
-            else {
-                proPathParameters.aBoundaryH.deltaDiffSR[i] = deltaDiffSR;
-                proPathParameters.aBoundaryH.aGroundSO[i] = aGroundSO;
-                proPathParameters.aBoundaryH.aGroundOR[i] = aGroundOR;
-                proPathParameters.aBoundaryH.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-                proPathParameters.aBoundaryH.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-                proPathParameters.aBoundaryH.deltaGroundSO[i] = deltaGroundSO;
-                proPathParameters.aBoundaryH.deltaGroundOR[i] = deltaGroundOR;
-                proPathParameters.aBoundaryH.aDiff[i] = aDiff;
-            }
+            proPathParameters.aBoundary.deltaDiffSR[i] = deltaDiffSR;
+            proPathParameters.aBoundary.aGroundSO[i] = aGroundSO;
+            proPathParameters.aBoundary.aGroundOR[i] = aGroundOR;
+            proPathParameters.aBoundary.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
+            proPathParameters.aBoundary.deltaDiffSRPrime[i] = deltaDiffSRPrime;
+            proPathParameters.aBoundary.deltaGroundSO[i] = deltaGroundSO;
+            proPathParameters.aBoundary.deltaGroundOR[i] = deltaGroundOR;
+            proPathParameters.aBoundary.aDiff[i] = aDiff;
         }
 
         return aDiff;
@@ -782,8 +745,8 @@ public class AttenuationCnossos {
         double k = values[1];
         double w = values[2];
         if(proPathParameters.keepAbsorption && path == proPathParameters.getSRSegment()) {
-            proPathParameters.groundAttenuation.wH[idFreq] = w;
-            proPathParameters.groundAttenuation.cfH[idFreq] = cf;
+            proPathParameters.groundAttenuation.w[idFreq] = w;
+            proPathParameters.groundAttenuation.cf[idFreq] = cf;
         }
         if(path.gPath == 0) {
             return -3;
@@ -819,8 +782,8 @@ public class AttenuationCnossos {
         double k = values[1];
         double w = values[2];
         if(proPathParameters.keepAbsorption && path == proPathParameters.getSRSegment()) {
-            proPathParameters.groundAttenuation.wF[idFreq] = w;
-            proPathParameters.groundAttenuation.cfF[idFreq] = cf;
+            proPathParameters.groundAttenuation.w[idFreq] = w;
+            proPathParameters.groundAttenuation.cf[idFreq] = cf;
         }
         double gm = forceGPath ? path.gPath : path.gPathPrime;
         double aGroundFMin = path.testFormH <= 1 ? -3 * (1 - gm) : -3 * (1 - gm) * (1 + 2 * (1 - (1 / path.testFormH)));
@@ -838,11 +801,13 @@ public class AttenuationCnossos {
         }
     }
 
-
     /**
      * Compute the Attenuation for each frequency with a given sourceId, sourceLi and sourceId
-     * @param data
+     *
+     * @param data Attenuation parameters
      * @param proPathParameters Cnossos paths
+     * @param scene Scene with attenuation data
+     * @param exportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return double list of attenuation
      */
     public static double[] computeCnossosAttenuation(AttenuationParameters data, CnossosPath proPathParameters,
@@ -1032,6 +997,7 @@ public class AttenuationCnossos {
         double[] aGlobalMeteoRay = new double[aGlobalMeteo.length];
         double probability = data.getWindRose()[roseIndex]; // favorable probability
         if(!proPathParameters.isFavorable()) {
+            // compute homogeneous conditions probability from favorable probability
             probability = 1 - probability;
         }
         for (int i = 0; i < aGlobalMeteoRay.length; i++) {

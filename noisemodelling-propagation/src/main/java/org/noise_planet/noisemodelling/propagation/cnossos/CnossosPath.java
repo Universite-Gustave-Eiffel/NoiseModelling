@@ -22,11 +22,15 @@ public class CnossosPath extends Path {
     public  double[] double_aBoundary = new double[0];
     public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction
     /**
+     * Final attenuation (dB)
      * aGlobalRaw but with attenuation (dB) from the ponderation of
      * - the directivity attenuation (favorable or homogeneous atmospheric conditions)
      * - The source directivity attenuation
      */
     public  double[] aGlobal = new double[0];
+    /**
+     * Global attenuation (dB) without source directivity or atmospheric conditions probability ponderation
+     */
     public  double[] aGlobalRaw = new double[0];
     public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation

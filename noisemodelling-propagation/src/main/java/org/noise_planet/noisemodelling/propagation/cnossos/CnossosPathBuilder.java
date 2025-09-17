@@ -369,6 +369,7 @@ public class CnossosPathBuilder {
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfilePoints.get(i0).getCoordinate(), targetPosition);
                 points.get(0).orientation = emissionDirection;
+                // TODO what about favorable path with curved profile ?
                 pathParameters.raySourceReceiverDirectivity = emissionDirection;
                 src = pts2D.get(i0);
             }
