@@ -115,6 +115,8 @@ public class AttenuationComputeOutputCnossosTest {
         //Propagation data building
         SceneWithAttenuation sceneWithAttenuation = new SceneWithAttenuation(profileBuilder);
 
+        // sceneWithAttenuation.sourceGs.put(-1L, 0.5);
+
         //Propagation process path data building
         sceneWithAttenuation.defaultCnossosParameters.setHumidity(HUMIDITY);
         sceneWithAttenuation.defaultCnossosParameters.setTemperature(TEMPERATURE);
@@ -5546,7 +5548,11 @@ public class AttenuationComputeOutputCnossosTest {
         double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal, homogeneousPath.aGlobal), new double[]{150,150,150,150,150,150,150,150});
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
+        // before fix
+        // expected  [71.39, 68.46, 65.00, 61.20, 56.51, 49.54, 26.40, -57.82]
+        // got       [61.56, 58.52, 54.94, 51.69, 49.96, 43.94, 20.81, -63.40]
+        // after fix [68.37, 65.45, 61.99, 58.19, 53.49, 46.52, 23.39, -60.82]
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);

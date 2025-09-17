@@ -102,14 +102,9 @@ public class CurvedProfileTest {
         assertEquals(7, homogeneousHullIndices.size());
         assertEquals(169.4555, profile.getCutPoints().get(homogeneousHullIndices.get(1)).getCoordinate().distance3D(source), 1e-4);
         assertEquals(12.4836, profile.getCutPoints().get(homogeneousHullIndices.get(homogeneousHullIndices.size() - 2)).getCoordinate().distance3D(receiver), 1e-4);
-        List<CutPoint> curvedProfile = CurvedProfileGenerator.applyTransformation(profile.getCutPoints(), false);
-        assertInstanceOf(CutPointSource.class, curvedProfile.get(0));
-        assertInstanceOf(CutPointReceiver.class, curvedProfile.get(curvedProfile.size() - 1));
-        CutProfile curvedCutProfile = new CutProfile((CutPointSource) curvedProfile.get(0),
-                (CutPointReceiver) curvedProfile.get(curvedProfile.size() - 1));
-        curvedCutProfile.cutPoints = new ArrayList<>(curvedProfile);
+
         // Check new convex hull
-        List<Integer> curvatureHullIndices = curvedCutProfile.getConvexHullIndices(curvedCutProfile.computePts2D());
+        List<Integer> curvatureHullIndices = profile.getConvexHullIndices(profile.computePts2D(true));
         // Expected
         // dSR       : 1001.2537
         // dSO       : 991.5540 m

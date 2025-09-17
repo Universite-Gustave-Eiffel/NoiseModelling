@@ -246,69 +246,22 @@ public class CnossosPathBuilder {
         pathParameters.setSegmentList(segments);
         pathParameters.setSRSegment(srPath);
         pathParameters.init(exactFrequencyArray.size());
-        // Extract the first and last points to define the line segment
-        Coordinate firstPt = pts2D.get(0);
-        Coordinate lastPt = pts2D.get(pts2D.size() - 1);
-
-        // Filter out points that are below the line segment
-        List<Coordinate> convexHullInput = new ArrayList<>();
-        // Add source position
-        convexHullInput.add(pts2D.get(0));
-        // Add valid diffraction point, building/walls/dem
-        for (int idPoint=1; idPoint < cutProfilePoints.size() - 1; idPoint++) {
-            CutPoint currentPoint = cutProfilePoints.get(idPoint);
-            // We only add the point at the top of the wall, not the point at the bottom of the wall
-            if(currentPoint instanceof CutPointTopography
-                    || (currentPoint instanceof CutPointWall
-                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
-                convexHullInput.add(pts2D.get(idPoint));
-            }
+        List<Coordinate> hullPts2D = pts2D;
+        if(favorable) {
+            // Compute the altered profile for favorable path
+            hullPts2D = cutProfile.computePts2D(true);
         }
-        // Add receiver position
-        convexHullInput.add(pts2D.get(pts2D.size() - 1));
+        // Compute convex hull of the profile
+        List<Integer> hullPointsIndices = cutProfile.getConvexHullIndices(hullPts2D);
 
-        // Compute the convex hull using JTS
-        List<Coordinate> convexHullPoints = new ArrayList<>();
-        if(convexHullInput.size() > 2) {
-            GeometryFactory geomFactory = new GeometryFactory();
-            Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
-            ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
-            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(firstPt);
-            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(lastPt);
-            if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
-                throw new IllegalArgumentException("Wrong input data " + cutProfile.toString());
-            }
-            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
-            CoordinateSequence coordSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
-            Geometry geom = geomFactory.createLineString(coordSequence);
-            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
-            convexHullCoords = uniqueGeom.getCoordinates();
-            // Convert the result back to your format (List<Point2D> pts)
-            if (convexHullCoords.length == 3) {
-                convexHullPoints = Arrays.asList(convexHullCoords);
-            } else {
-                for (int j = 0; j < convexHullCoords.length; j++) {
-                    // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
-                    if (convexHullCoords[j].y == Double.MAX_VALUE || Double.isInfinite(convexHullCoords[j].y)) {
-                        continue; // Skip this point as it's not part of the hull
-                    }
-                    convexHullPoints.add(convexHullCoords[j]);
-                }
-            }
-        } else {
-            convexHullPoints = convexHullInput;
-        }
-        List<Coordinate> pts = convexHullPoints;
-
+        // Src if perceived source position from the receiver point of view
         Coordinate src = cutProfile.getSource().getCoordinate();
-
         // Move then check reflection height if there is diffraction on the path
-        if(pts.size() > 2) {
-            for (int i = 1; i < pts.size(); i++) {
-                int i0 = pts2D.indexOf(pts.get(i - 1));
-                int i1 = pts2D.indexOf(pts.get(i));
-                LineSegment segmentHull = new LineSegment(pts.get(i - 1), pts.get(i));
+        if(hullPointsIndices.size() > 2) {
+            for (int i = 1; i < hullPointsIndices.size(); i++) {
+                int i0 = hullPointsIndices.get(i - 1);
+                int i1 = hullPointsIndices.get(i);
+                LineSegment segmentHull = new LineSegment(pts2D.get(hullPointsIndices.get(i - 1)), pts2D.get(hullPointsIndices.get(i)));
                 for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                     final CutPoint currentPoint = cutProfilePoints.get(pointIndex);
                     // If the current point is the reflection point (not on the ground level)
@@ -333,9 +286,9 @@ public class CnossosPathBuilder {
         }
 
         // Create segments from each diffraction point to the receiver
-        for (int i = 1; i < pts.size(); i++) {
-            int i0 = pts2D.indexOf(pts.get(i - 1));
-            int i1 = pts2D.indexOf(pts.get(i));
+        for (int i = 1; i < hullPointsIndices.size(); i++) {
+            int i0 = hullPointsIndices.get(i - 1);
+            int i1 = hullPointsIndices.get(i);
             int i0Ground = cut2DGroundIndex.get(i0);
             int i1Ground = cut2DGroundIndex.get(i1);
             final CutPoint cutPt0 = cutProfilePoints.get(i0);
@@ -402,7 +355,7 @@ public class CnossosPathBuilder {
                 }
             }
             points.add(new PointPath(pts2D.get(i1), cutPt1.getzGround(), RECV));
-            if(previousPivotPoint != i0 && i == pts.size() - 1) {
+            if(previousPivotPoint != i0 && i == hullPointsIndices.size() - 1) {
                 // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
                 // diffraction point and we must add the remaining segment between the last horizontal diffraction point
                 // and the last point
@@ -414,7 +367,7 @@ public class CnossosPathBuilder {
                 seg.setPoints2DGround(segmentGroundPoints);
                 segments.add(seg);
             }
-            if(pts.size() == 2) {
+            if(hullPointsIndices.size() == 2) {
                 // no diffraction over buildings/dem, we already computed SR segment
                 break;
             }
@@ -426,7 +379,7 @@ public class CnossosPathBuilder {
             path.dc = cutPt0.getCoordinate().distance3D(cutPt1.getCoordinate());
             path.setPoints2DGround(segmentGroundPoints);
             segments.add(path);
-            if (i != pts.size() - 1) {
+            if (i != hullPointsIndices.size() - 1) {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
                 pt.bodyBarrier = bodyBarrier;

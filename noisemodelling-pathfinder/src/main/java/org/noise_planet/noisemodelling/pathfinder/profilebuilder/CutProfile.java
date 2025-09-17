@@ -16,6 +16,7 @@ import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
@@ -205,16 +206,30 @@ public class CutProfile {
         return computePts2DGround(0, null);
     }
 
+    /**
+     * @return @return the computed coordinate list
+     */
+    public List<Coordinate> computePts2D(boolean curvedPath) {
+        List<Coordinate> pts2D;
+        if(curvedPath) {
+            pts2D = CurvedProfileGenerator.applyTransformation(cutPoints
+                    , false).stream()
+                    .map(CutPoint::getCoordinate)
+                    .collect(Collectors.toList());
+        } else {
+            pts2D = cutPoints.stream()
+                    .map(CutPoint::getCoordinate)
+                    .collect(Collectors.toList());
+        }
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        return pts2D;
+    }
 
     /**
      * @return @return the computed coordinate list
      */
     public List<Coordinate> computePts2D() {
-        List<Coordinate> pts2D = cutPoints.stream()
-                .map(CutPoint::getCoordinate)
-                .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        return pts2D;
+        return computePts2D(false);
     }
 
     public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
