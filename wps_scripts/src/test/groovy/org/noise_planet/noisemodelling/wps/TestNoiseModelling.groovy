@@ -38,13 +38,22 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testRoadEmissionFromDEN() {
 
-        SHPRead.importTable(connection, TestDatabaseManager.getResource("ROADS2.shp").getPath())
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
 
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
 
-
         assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
+
+        def expectedOctaveFields = ["PK","THE_GEOM","HZD63","HZD125","HZD250","HZD500","HZD1000","HZD2000","HZD4000","HZD8000",
+                "HZE63","HZE125","HZE250","HZE500","HZE1000","HZE2000","HZE4000","HZE8000",
+                "HZN63","HZN125","HZN250","HZN500","HZN1000","HZN2000","HZN4000","HZN8000"]
+
+        assertArrayEquals(expectedOctaveFields.toArray(new String[expectedOctaveFields.size()]), fieldNames.toArray(new String[fieldNames.size()]))
+
     }
 
     void testRailWayEmissionFromDEN() {
@@ -303,7 +312,8 @@ class TestNoiseModelling extends JdbcTestCase {
 
     void testLdenFromEmission1khz() {
 
-        SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
 
         new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"])
@@ -360,5 +370,42 @@ class TestNoiseModelling extends JdbcTestCase {
         ["D", "E", "N"].forEach {
             assertTrue(periods.contains(it))
         }
+    }
+
+    void testNoiseEmissionFromPeriod() {
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        // Create SOURCES_EMISSION table by splitting the LW_ROADS table old format period to separate lines
+
+        Sql sql = new Sql(connection)
+        sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
+        sql.execute("CREATE TABLE SOURCES_EMISSION AS SELECT PK AS IDSOURCE, 'D' AS PERIOD," +
+                " TV_D as TV, HV_D as HV, LV_SPD_D as LV_SPD, HV_SPD_D as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'E' AS PERIOD," +
+                " TV_E as TV, HV_E as HV, LV_SPD_E as LV_SPD, HV_SPD_E as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'N' AS PERIOD," +
+                " TV_N as TV, HV_N as HV, LV_SPD_N as LV_SPD, HV_SPD_N as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+
+        // Convert to road emission
+        String res = new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "SOURCES_EMISSION"])
+
+        // Check result table
+        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
+
+        // Output fields export period in a separate field now
+        def gotPeriod = JDBCUtilities.getUniqueFieldValues(connection, "LW_ROADS", "PERIOD")
+        assertEquals(3, gotPeriod.size())
+        assertTrue(gotPeriod.contains("D"))
+        assertTrue(gotPeriod.contains("E"))
+        assertTrue(gotPeriod.contains("N"))
+
+        LOGGER.info(Arrays.toString(fieldNames.toArray()))
     }
 }

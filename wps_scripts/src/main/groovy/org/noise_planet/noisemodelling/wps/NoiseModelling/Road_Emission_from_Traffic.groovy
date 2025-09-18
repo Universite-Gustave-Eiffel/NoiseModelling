@@ -24,9 +24,14 @@ import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.Tuple
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.hsqldb.Table
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -35,6 +40,7 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
+import java.util.stream.Collectors
 
 title = 'Compute road emission noise map from road table.'
 description = '&#10145;&#65039; Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
@@ -48,6 +54,17 @@ inputs = [
                 description: "<b>Name of the Roads table.</b>  </br>  " +
                         "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
                         "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" +
+                        "<li><b> PERIOD </b> Optional, any text that could be time period ex. D, E, N, DEN (Varchar) </li>" +
+                        '<li><b> LV </b>  : Hourly average light vehicle count (DOUBLE)</li>' +
+                        '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
+                        '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
+                        '<li><b> WAV </b>:  Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
+                        '<li><b> WBV </b>:  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
                         "<li><b> LV_D </b><b>LV_E </b><b>LV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> MV_D </b><b>MV_E </b><b>MV_N </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> :  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
@@ -119,6 +136,8 @@ def exec(Connection connection, input) {
         coefficientVersion = Integer.parseInt(input['confHumidity'] as String)
     }
 
+    DBTypes dbType = DBUtils.getDBType(connection)
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -138,26 +157,16 @@ def exec(Connection connection, input) {
     // -------------------
 
     String sources_table_name = input['tableRoads']
+    TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name, dbType)
+
     // do it case-insensitive
     sources_table_name = sources_table_name.toUpperCase()
-    // Check if srid are in metric projection.
-    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
-    if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
-    //Get the geometry field of the source table
-    TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
+    //Get optional geometry field of the source table
     List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
-    if (geomFields.isEmpty()) {
-        throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
-    }
 
     //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse( sources_table_name))
-    if (pkIndex < 1) {
-        throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
-    }
-
+    Tuple<String, Integer> primaryKeyColumn = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection, TableLocation.parse( sources_table_name))
 
     // -------------------
     // Init table LW_ROADS
@@ -166,72 +175,156 @@ def exec(Connection connection, input) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
+    def lowerCaseColumnNames = JDBCUtilities.getColumnNames(connection, sourceTableIdentifier).stream()
+            .map { it.toLowerCase() }
+            .collect(Collectors.toList())
+
+    // If there is a period field, it means that we will not found the D E N fields before traffic fields names
+    boolean hasPeriodField = lowerCaseColumnNames.contains("period")
+    boolean hasIdSourceField = lowerCaseColumnNames.contains("idsource")
+
     // drop table LW_ROADS if exists and the create and prepare the table
     sql.execute("drop table if exists LW_ROADS;")
-    sql.execute("create table LW_ROADS (pk integer, the_geom Geometry, " +
-            "HZD63 double precision, HZD125 double precision, HZD250 double precision, HZD500 double precision, HZD1000 double precision, HZD2000 double precision, HZD4000 double precision, HZD8000 double precision," +
-            "HZE63 double precision, HZE125 double precision, HZE250 double precision, HZE500 double precision, HZE1000 double precision, HZE2000 double precision, HZE4000 double precision, HZE8000 double precision," +
-            "HZN63 double precision, HZN125 double precision, HZN250 double precision, HZN500 double precision, HZN1000 double precision, HZN2000 double precision, HZN4000 double precision, HZN8000 double precision);")
 
-    def qry = 'INSERT INTO LW_ROADS(pk,the_geom, ' +
-            'HZD63, HZD125, HZD250, HZD500, HZD1000,HZD2000, HZD4000, HZD8000,' +
-            'HZE63, HZE125, HZE250, HZE500, HZE1000,HZE2000, HZE4000, HZE8000,' +
-            'HZN63, HZN125, HZN250, HZN500, HZN1000,HZN2000, HZN4000, HZN8000) ' +
-            'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+    def createTableQuery = new StringBuilder("CREATE TABLE LW_ROADS (")
+    def preparedInsertQuery = new StringBuilder("INSERT INTO LW_ROADS(")
+    int fieldCount = 0
 
+    if(primaryKeyColumn != null) {
+        createTableQuery.append(primaryKeyColumn.first())
+        createTableQuery.append(" integer not null, ")
+        preparedInsertQuery.append(primaryKeyColumn.first())
+        preparedInsertQuery.append(", ")
+        fieldCount++
+    }
+
+    if(hasIdSourceField) {
+        createTableQuery.append("IDSOURCE integer, ")
+        preparedInsertQuery.append("IDSOURCE, ")
+        fieldCount++
+    }
+
+    def force3D = false
+    if(geomFields.size() > 0) {
+        createTableQuery.append(geomFields.get(0))
+        createTableQuery.append(" Geometry, ")
+        preparedInsertQuery.append(geomFields.get(0))
+        preparedInsertQuery.append(", ")
+        fieldCount++
+        def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
+        if(tupMeta != null && !tupMeta.second().hasZ()) {
+            force3D = true
+            logger.warn("The geometry field "+geomFields.get(0)+" is not 3D. The z value will be forced to 0.05m height.")
+        }
+    }
+
+    if(!hasPeriodField) {
+        ["D", "E", "N"].each { period ->
+            ["63", "125", "250", "500", "1000", "2000", "4000", "8000"].each { freq ->
+                    createTableQuery.append("HZ")
+                    createTableQuery.append(period)
+                    createTableQuery.append(freq)
+                    createTableQuery.append(" double precision, ")
+                    preparedInsertQuery.append("HZ")
+                    preparedInsertQuery.append(period)
+                    preparedInsertQuery.append(freq)
+                    preparedInsertQuery.append(", ")
+                    fieldCount++
+            }
+        }
+    } else {
+        createTableQuery.append("PERIOD varchar, ")
+        fieldCount++
+        preparedInsertQuery.append("PERIOD, ")
+        ["63", "125", "250", "500", "1000", "2000", "4000", "8000"].each { freq ->
+            createTableQuery.append("HZ")
+            createTableQuery.append(freq)
+            createTableQuery.append(" double precision, ")
+            preparedInsertQuery.append("HZ")
+            preparedInsertQuery.append(freq)
+            preparedInsertQuery.append(", ")
+            fieldCount++
+        }
+    }
+
+    // Create table
+    createTableQuery.setLength(createTableQuery.length() - 2) // remove last comma
+    createTableQuery.append(");")
+    sql.execute(createTableQuery.toString())
+
+    // Prepared insert query
+    preparedInsertQuery.setLength(preparedInsertQuery.length() - 2) // remove last comma
+    preparedInsertQuery.append(") VALUES (")
+    String.join(", ", Collections.nCopies(fieldCount, "?")).each {
+        preparedInsertQuery.append(it)
+    }
+    preparedInsertQuery.append(");")
+    def qry = preparedInsertQuery.toString()
 
     // --------------------------------------
     // Start calculation and fill the table
     // --------------------------------------
 
-    EmissionTableGenerator noiseEmissionMaker = new EmissionTableGenerator()
-
-
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)
     ResultSet rs1 = st.executeQuery().unwrap(ResultSet.class)
-    int nbRoads = 0
     while (rs1.next()) {
-        nbRoads = rs1.getInt("total")
-        logger.info('The table Roads has ' + nbRoads + ' road segments.')
+        def nbRoads = rs1.getInt("total")
+        logger.info('The table '+sources_table_name+' has ' + nbRoads + ' lines.')
     }
 
-    int k = 0
     sql.withBatch(100, qry) { ps ->
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
         SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
 
         Map<String, Integer> sourceFieldsCache = new HashMap<>()
         while (rs.next()) {
-            k++
-            //logger.info(rs)
-            Geometry geo = rs.getGeometry()
-
-            // Compute emission sound level for each road segment
-            double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
-            def lday = AcousticIndicatorsFunctions.wToDb(results[0])
-            def levening = AcousticIndicatorsFunctions.wToDb(results[1])
-            def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
-            // fill the LW_ROADS table
-            ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
-                    lday[0] as Double, lday[1] as Double, lday[2] as Double,
-                    lday[3] as Double, lday[4] as Double, lday[5] as Double,
-                    lday[6] as Double, lday[7] as Double,
-                    levening[0] as Double, levening[1] as Double, levening[2] as Double,
-                    levening[3] as Double, levening[4] as Double, levening[5] as Double,
-                    levening[6] as Double, levening[7] as Double,
-                    lnight[0] as Double, lnight[1] as Double, lnight[2] as Double,
-                    lnight[3] as Double, lnight[4] as Double, lnight[5] as Double,
-                    lnight[6] as Double, lnight[7] as Double)
+            List<Object> parameters = new ArrayList<>()
+            if(primaryKeyColumn != null) {
+                parameters.add(rs.getInt(primaryKeyColumn.first()))
+            }
+            if(hasIdSourceField) {
+                parameters.add(rs.getInt("IDSOURCE"))
+            }
+            if(geomFields.size() > 0) {
+                parameters.add(rs.getGeometry(geomFields.get(0)))
+            }
+            if(hasPeriodField) {
+                parameters.add(rs.getString("PERIOD"))
+                // Slope value will be overwritten if the slope field is present
+                double slope = EmissionTableGenerator.getSlope(rs)
+                double[] emissionValues = EmissionTableGenerator.getEmissionFromTrafficTable(rs, "", slope, coefficientVersion, sourceFieldsCache)
+                for(double val : emissionValues) {
+                    parameters.add(val)
+                }
+            } else {
+                double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+                def lday = AcousticIndicatorsFunctions.wToDb(results[0])
+                def levening = AcousticIndicatorsFunctions.wToDb(results[1])
+                def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
+                for(def val : lday) {
+                    parameters.add(val)
+                }
+                for(def val : levening) {
+                    parameters.add(val)
+                }
+                for(def val : lnight) {
+                    parameters.add(val)
+                }
+            }
+            ps.addBatch(parameters)
         }
     }
 
-    // Add Z dimension to the road segments
-    sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
+    if(force3D) {
+        // Force the Z height to the road segments
+        sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);")
+    }
 
-    // Add primary key to the road table
-    sql.execute("ALTER TABLE LW_ROADS ALTER COLUMN PK INT NOT NULL;")
-    sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY (PK);  ")
+    if(primaryKeyColumn != null) {
+        // Set primary key to the road table
+        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY ("+primaryKeyColumn.first()+");  ")
+    }
 
     resultString = "Calculation Done ! The table LW_ROADS has been created."
 
