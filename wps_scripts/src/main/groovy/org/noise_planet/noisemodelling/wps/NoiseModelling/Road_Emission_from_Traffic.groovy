@@ -52,9 +52,11 @@ inputs = [
                 name       : 'Roads table name',
                 title      : 'Roads table name',
                 description: "<b>Name of the Roads table.</b>  </br>  " +
-                        "<br>  This function recognize the following columns (* mandatory) : </br><ul>" +
-                        "<li><b> PK </b>* : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)</li>" +
-                        "<li><b> PERIOD </b> Optional, any text that could be time period ex. D, E, N, DEN (Varchar) </li>" +
+                        "<br> If you provide the PERIOD field you do not provide the fields with the extension  _D _E _N." +
+                        " This function recognize the following columns (* mandatory) : </br><ul>" +
+                        '<li> <b> PK </b> : If there is a primary key defined, it will be copied with the same name and set as a primary for the output table </li> ' +
+                        '<li><b> IDSOURCE </b> : an identifier, if present will be copied as is. It is expected if you will use LW_ROADS as SOURCES_EMISSION in the Noise_Level_From_Source script input (INTEGER)</li>' +
+                        "<li><b> PERIOD </b> Any text that could be time period ex. D, E, N, DEN (Varchar), if present will be copied as is</li>" +
                         '<li><b> LV </b>  : Hourly average light vehicle count (DOUBLE)</li>' +
                         '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
                         '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
