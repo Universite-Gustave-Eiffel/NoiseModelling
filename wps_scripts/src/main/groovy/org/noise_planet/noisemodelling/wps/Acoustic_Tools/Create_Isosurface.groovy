@@ -136,6 +136,10 @@ def exec(Connection connection, Map input) {
     }
     isoSurface.setPointTable(levelTable)
 
+    if(input.containsKey("keepTriangles")) {
+      isoSurface.setMergeTriangles(!(input['keepTriangles'] as Boolean))
+    }    
+
     if (input.containsKey("smoothCoefficient")) {
         double coefficient = input['smoothCoefficient'] as Double
         if (coefficient < 0.01) {
