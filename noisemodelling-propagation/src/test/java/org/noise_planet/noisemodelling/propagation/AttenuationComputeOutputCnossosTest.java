@@ -5476,29 +5476,23 @@ public class AttenuationComputeOutputCnossosTest {
                 new Coordinate(1022.31, 0.0));
 
         /* Table 348 */
-        double [][] segmentsMeanPlanes0 = new double[][]{
+        double [][] segmentsMeanPlanesDirect = new double[][]{
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.25, 3.75, 9.09, 169.37, 0.45, 0.48},
                 {0.0, 0.0, 8.0, 1.0, 10.34, 0.5, NaN}
         };
 
-        double [][] segmentsMeanPlanes1 = new double[][]{ // Right
+        double [][] segmentsMeanPlanesRight = new double[][]{ // Right
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.0, 4.0, 1.0, 1028.57, 0.5, 0.5}
         };
 
-        double [][] segmentsMeanPlanes2 = new double[][]{ // left
+        double [][] segmentsMeanPlanesLeft = new double[][]{ // left
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.68, 3.32, 1.12, 1022.31, 0.49, 0.49}
         };
 
         assertEquals(6, propDataOut.getPropagationPaths().size());
-
-        // CnossosPath pathLeft = propDataOut.getPropagationPaths().get(2);
-        // Error in CNOSSOS unit test, left diffraction is going over a building but not in their 3D view !
-        // Why the weird left path in homogeneous ? it is not explained.
-        // assertZProfil(expectedZProfileLeft, Arrays.asList(pathLeft.getSRSegment().getPoints2DGround()));
-        // assertPlanes(segmentsMeanPlanes2,propDataOut.getPropagationPaths().get(2).getSRSegment()); // if b = 0.68: -> z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
 
         //Expected values
         //Path0 : vertical plane
@@ -5522,7 +5516,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertZProfil(expectedZProfileOR, Arrays.asList(
                 cnossosPath.getSegmentList().get(cnossosPath.getSegmentList().size() - 1).getPoints2DGround()));
 
-        assertPlanes(segmentsMeanPlanes0,cnossosPath.getSegmentList());
+        assertPlanes(segmentsMeanPlanesDirect,cnossosPath.getSegmentList());
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
         double[] actualAAtm = cnossosPath.aAtm;
@@ -5552,6 +5546,87 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOWEST);
+
+        ///   ///////////////////////////////////////////////////////////////////////
+        // Test Right Path in homogeneous conditions
+
+        cnossosPath = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPath.isFavorable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPath.getCutProfile().getProfileType());
+
+        assertZProfil(expectedZProfileRight, Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanesRight, cnossosPath.getSRSegment());
+
+        assertEquals(883.40, cnossosPath.e, 0.1);
+        assertEquals(1001.25, cnossosPath.getSRSegment().dc, 0.1);
+        assertEquals(27.32, cnossosPath.delta, 0.5);
+
+        // Expected values for the right lateral path
+        double[] expectedRightH_W = {0.00, 0.00, 0.00, 0.01, 0.08, 0.41, 2.10, 10.13};
+        double[] expectedRightH_CF = {1128.10, 1197.38, 730.44, 131.57, 13.31, 2.44, 0.47, 0.10};
+        double[] expectedRightH_Aground = {-1.50, -1.50, -0.70, 15.46, 20.97, 12.75, 5.42, -1.01};
+
+        double[] expectedRightF_W = {0.00, 0.00, 0.00, 0.01, 0.07, 0.36, 1.85, 9.02};
+        double[] expectedRightF_CF = {1111.99, 1195.96, 789.96, 159.31, 15.54, 2.78, 0.54, 0.11};
+        double[] expectedRightF_Aground = {-4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36};
+
+        double[] expectedRightH_aDiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedRightH_adifH = {27.85, 30.82, 33.83, 36.83, 39.84, 42.85, 45.86, 48.87};
+        double[] expectedRightH_aH = {-97.48, -100.75, -105.21, -125.29, -135.58, -136.56, -156.00, -239.09};
+
+        assertDoubleArrayEquals("w (H) - lateral right", expectedRightH_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("Cf (H) - lateral right", expectedRightH_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (H) - lateral right", expectedRightH_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+
+        assertDoubleArrayEquals("ADiv (H) - lateral right", expectedRightH_aDiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (H) - lateral right", expectedRightH_adifH, cnossosPath.aDif, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("A (H) - lateral right", expectedRightH_aH, cnossosPath.aGlobalRaw, ERROR_EPSILON_VERY_LOW);
+
+
+        // Right favorable path
+        cnossosPath = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPath.isFavorable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPath.getCutProfile().getProfileType());
+
+        assertDoubleArrayEquals("w (F) - lateral right", expectedRightF_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("Cf (F) - lateral right", expectedRightF_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (F) - lateral right", expectedRightF_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+
+        double[] expectedRightF_aDiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedRightF_adif = {26.65, 29.70, 32.73, 35.74, 38.75, 41.76, 44.77, 47.78};
+        double[] expectedRightF_aH = {-93.42, -96.77, -100.45, -104.36, -109.14, -118.29, -144.93, -233.94};
+
+        assertDoubleArrayEquals("ADiv (F) - lateral right", expectedRightF_aDiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (F) - lateral right", expectedRightF_adif, cnossosPath.aDif, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("A (F) - lateral right", expectedRightF_aH, cnossosPath.aGlobalRaw, ERROR_EPSILON_LOW);
+
+        // Expected values for the left lateral path
+        double[] expectedLeftH_W = {0.00, 0.00, 0.00, 0.01, 0.07, 0.39, 2.01, 9.71};
+        double[] expectedLeftH_CF = {1117.47, 1192.83, 751.24, 141.43, 14.08, 2.56, 0.50, 0.10};
+        double[] expectedLeftH_Aground = {-1.53, -1.53, -1.25, 15.70, 21.95, 13.29, 5.98, -0.45};
+
+        double[] expectedLeftF_W = {0.00, 0.00, 0.00, 0.01, 0.06, 0.33, 1.73, 8.47};
+        double[] expectedLeftF_CF = {1099.07, 1188.81, 818.96, 176.07, 16.94, 2.99, 0.58, 0.12};
+        double[] expectedLeftF_Aground = {-4.53, -4.53, -4.53, -4.53, -4.53, -4.53, -4.53, -4.53};
+
+        // left non favorable path
+        cnossosPath = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPath.isFavorable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPath.getCutProfile().getProfileType());
+
+        assertZProfil(expectedZProfileLeft, Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
+        //assertPlanes(segmentsMeanPlanesLeft, cnossosPath.getSRSegment());
+
+        assertDoubleArrayEquals("w (H) - lateral left", expectedLeftH_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("Cf (H) - lateral left", expectedLeftH_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (H) - lateral left", expectedLeftH_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+
+
+
+
+
+
+
 
 //
 //        CnossosPath pathRight = propDataOut.getPropagationPaths().get(1);
