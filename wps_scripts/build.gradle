@@ -119,7 +119,6 @@ publishing {
     }
 }
 
-
 repositories {
     mavenLocal() // To test noise modelling updated locally we have to put this first
     maven {
