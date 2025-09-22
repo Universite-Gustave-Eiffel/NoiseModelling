@@ -582,12 +582,6 @@ public class PathFinder {
             }
         }
 
-        if(curved) {
-            // restore real coordinates of the path of the curved plane intersection
-            // Coordinates order have no impact on this function
-            coordinates = CurvedProfileGenerator.applyTransformation(p1, p2, coordinates, true);
-        }
-
         List<Coordinate> sideHullPath;
         // restore coordinates order from source to receiver
         if (left) {
@@ -596,6 +590,20 @@ public class PathFinder {
             List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length));
             Collections.reverse(inversePath);
             sideHullPath = inversePath;
+        }
+        // We have to force Z values as a linear interpolation of the folded path between p1 and p2
+        // CNOSSOS ignore the curved ray path on diffraction ???
+        double totalDist = 0;
+        for (int i = 1; i < sideHullPath.size(); i++) {
+            totalDist += sideHullPath.get(i).distance(sideHullPath.get(i - 1));
+        }
+        if(totalDist > 0) {
+            double accumulatedDist = 0;
+            for (int i = 1; i < sideHullPath.size() - 1; i++) {
+                accumulatedDist += sideHullPath.get(i).distance(sideHullPath.get(i - 1));
+                double ratio = Math.min(1, Math.max(0, accumulatedDist / totalDist));
+                sideHullPath.get(i).z = p1.z + ratio * (p2.z - p1.z);
+            }
         }
         return  sideHullPath;
     }

@@ -1,0 +1,95 @@
+{
+  "cutPoints" : [ {
+    "type" : "Source",
+    "coordinate" : {
+      "x" : 8.0,
+      "y" : 10.0,
+      "z" : 1.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2,
+    "sourcePk" : -1,
+    "li" : 1.0,
+    "orientation" : {
+      "yaw" : 0.0,
+      "pitch" : 0.0,
+      "roll" : 0.0
+    }
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 11.989393398282202,
+      "y" : 18.010606601717797,
+      "z" : 9.898811966895337
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 12.445455108791569,
+      "y" : 18.19305867164045,
+      "z" : 10.387259396747748
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 12.503550431634283,
+      "y" : 18.201420172653712,
+      "z" : 10.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2,
+    "wall" : {
+      "p0" : {
+        "x" : 12.0,
+        "y" : 18.0,
+        "z" : 10.0
+      },
+      "p1" : {
+        "x" : 14.5,
+        "y" : 19.0,
+        "z" : 10.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_ENTER"
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 15.439898272708623,
+      "y" : 18.62404069091655,
+      "z" : 10.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2,
+    "wall" : {
+      "p0" : {
+        "x" : 14.5,
+        "y" : 19.0,
+        "z" : 10.0
+      },
+      "p1" : {
+        "x" : 17.0,
+        "y" : 18.0,
+        "z" : 10.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_EXIT"
+  }, {
+    "type" : "Receiver",
+    "coordinate" : {
+      "x" : 25.0,
+      "y" : 20.0,
+      "z" : 23.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.2,
+    "receiverPk" : 0
+  } ],
+  "curvedPath" : true,
+  "profileType" : "LEFT"
+}

@@ -360,18 +360,18 @@ public class AttenuationCnossos {
 
     /**
      * Compute ADif
-     * @param proPathParameters
-     * @param data
-     * @param i
-     * @param type
+     * @param proPathParameters Cnossos path
+     * @param data Attenuation parameters
+     * @param frequencyIndex Index of frequency
+     * @param type Type of diffraction
      * @return the value of ADiv
      */
-    private static double aDif(CnossosPath proPathParameters, AttenuationParameters data, int i, PointPath.POINT_TYPE type) {
+    private static double aDif(CnossosPath proPathParameters, AttenuationParameters data, int frequencyIndex, PointPath.POINT_TYPE type) {
         SegmentPath first = proPathParameters.getSegmentList().get(0);
         SegmentPath last = proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1);
 
         double ch = 1.;
-        double lambda = 340.0 / data.getFrequencies().get(i);
+        double lambda = 340.0 / data.getFrequencies().get(frequencyIndex);
         long difHCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFH)).count();
         long difVCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFV)).count();
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && difHCount <= 1) || (type.equals(DIFV) && difVCount <= 1) || proPathParameters.e <= 0.3 ? 1. :
@@ -395,7 +395,7 @@ public class AttenuationCnossos {
 
         if(type.equals(DIFV)) {
             if(proPathParameters.keepAbsorption) {
-                proPathParameters.aBoundary.deltaDiffSR[i] = deltaDiffSR;
+                proPathParameters.aBoundary.deltaDiffSR[frequencyIndex] = deltaDiffSR;
             }
             return deltaDiffSR;
         }
@@ -408,8 +408,8 @@ public class AttenuationCnossos {
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        double aGroundSO = proPathParameters.isFavorable() ? aGroundF(proPathParameters, first, data, i) : aGroundH(proPathParameters, first, data, i);
-        double aGroundOR = proPathParameters.isFavorable() ? aGroundF(proPathParameters, last, data, i, true) : aGroundH(proPathParameters, last, data, i, true);
+        double aGroundSO = proPathParameters.isFavorable() ? aGroundF(proPathParameters, first, data, frequencyIndex) : aGroundH(proPathParameters, first, data, frequencyIndex);
+        double aGroundOR = proPathParameters.isFavorable() ? aGroundF(proPathParameters, last, data, frequencyIndex, true) : aGroundH(proPathParameters, last, data, frequencyIndex, true);
 
         //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
         double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
@@ -427,14 +427,14 @@ public class AttenuationCnossos {
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;
         if(proPathParameters.keepAbsorption) {
-            proPathParameters.aBoundary.deltaDiffSR[i] = deltaDiffSR;
-            proPathParameters.aBoundary.aGroundSO[i] = aGroundSO;
-            proPathParameters.aBoundary.aGroundOR[i] = aGroundOR;
-            proPathParameters.aBoundary.deltaDiffSPrimeR[i] = deltaDiffSPrimeR;
-            proPathParameters.aBoundary.deltaDiffSRPrime[i] = deltaDiffSRPrime;
-            proPathParameters.aBoundary.deltaGroundSO[i] = deltaGroundSO;
-            proPathParameters.aBoundary.deltaGroundOR[i] = deltaGroundOR;
-            proPathParameters.aBoundary.aDiff[i] = aDiff;
+            proPathParameters.aBoundary.deltaDiffSR[frequencyIndex] = deltaDiffSR;
+            proPathParameters.aBoundary.aGroundSO[frequencyIndex] = aGroundSO;
+            proPathParameters.aBoundary.aGroundOR[frequencyIndex] = aGroundOR;
+            proPathParameters.aBoundary.deltaDiffSPrimeR[frequencyIndex] = deltaDiffSPrimeR;
+            proPathParameters.aBoundary.deltaDiffSRPrime[frequencyIndex] = deltaDiffSRPrime;
+            proPathParameters.aBoundary.deltaGroundSO[frequencyIndex] = deltaGroundSO;
+            proPathParameters.aBoundary.deltaGroundOR[frequencyIndex] = deltaGroundOR;
+            proPathParameters.aBoundary.aDiff[frequencyIndex] = aDiff;
         }
 
         return aDiff;

@@ -47,7 +47,7 @@
     "coordinate" : {
       "x" : 178.9893933982822,
       "y" : 36.0106066017178,
-      "z" : 13.480369267463196
+      "z" : 11.781473850651707
     },
     "zGround" : 9.075291292043417,
     "groundCoefficient" : 0.2
@@ -65,7 +65,7 @@
     "coordinate" : {
       "x" : 197.0106066017178,
       "y" : 36.0106066017178,
-      "z" : 14.794157314518548
+      "z" : 12.917839989803074
     },
     "zGround" : 10.0,
     "groundCoefficient" : 0.2
@@ -74,7 +74,7 @@
     "coordinate" : {
       "x" : 197.0106066017178,
       "y" : 29.989393398282203,
-      "z" : 14.756967790935844
+      "z" : 13.297520465460002
     },
     "zGround" : 10.0,
     "groundCoefficient" : 0.2
@@ -87,8 +87,8 @@
     },
     "zGround" : 10.0,
     "groundCoefficient" : 0.2,
-    "receiverPk" : -1
+    "receiverPk" : 0
   } ],
-  "hasBuildingIntersection" : false,
-  "hasTopographyIntersection" : false
+  "curvedPath" : false,
+  "profileType" : "LEFT"
 }

@@ -541,11 +541,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC08_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC08_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC08_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC08", propDataOut.cutProfiles);
 
     }
 
@@ -584,11 +582,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC09_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC09_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC09_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC09", propDataOut.cutProfiles);
 
     }
 
@@ -629,11 +625,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC10_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC10_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC10_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC10", propDataOut.cutProfiles);
 
     }
 
@@ -672,11 +666,9 @@ public class PathFinderTest {
         // Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC11_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC11_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC11_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC11", propDataOut.cutProfiles);
     }
 
     /**
@@ -722,11 +714,9 @@ public class PathFinderTest {
 
         //Expected values
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC12_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC12_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC12_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC12", propDataOut.cutProfiles);
     }
 
     /**
@@ -770,11 +760,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC13_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC13_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC13_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC13", propDataOut.cutProfiles);
     }
 
     /**
@@ -815,11 +803,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC14_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC14_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC14_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC14", propDataOut.cutProfiles);
 
     }
 
@@ -871,11 +857,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC15_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC15_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC15_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC15", propDataOut.cutProfiles);
     }
 
     /**
@@ -915,8 +899,7 @@ public class PathFinderTest {
 
         assertEquals(2, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC16_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC16_Reflection", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC16", propDataOut.cutProfiles);
     }
 
     /**
@@ -1121,10 +1104,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC19_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC19_Right", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC19", propDataOut.cutProfiles);
 
         //Different value with the TC because their z-profile left seems to be false, it follows the building top
         // border while it should not
@@ -1269,11 +1251,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC22_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC22_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC22_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC22", propDataOut.cutProfiles);
     }
 
     @Test
@@ -1450,12 +1430,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(4, propDataOut.getCutProfiles().size());
+        assertEquals(6, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC25_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Left", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Reflection", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC25", propDataOut.cutProfiles);
     }
 
     /**

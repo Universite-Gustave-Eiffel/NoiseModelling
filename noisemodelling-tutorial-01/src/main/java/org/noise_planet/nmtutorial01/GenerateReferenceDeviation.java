@@ -272,9 +272,11 @@ public class GenerateReferenceDeviation {
                     verticalCutFileNamesWithoutLateral.add(utName+"_Direct");
                     if(pathsExpected.has("Right")) {
                         verticalCutFileNames.add(utName+"_Right");
+                        verticalCutFileNames.add(utName+"_Right_Curved");
                     }
                     if(pathsExpected.has("Left")) {
                         verticalCutFileNames.add(utName+"_Left");
+                        verticalCutFileNames.add(utName+"_Left_Curved");
                     }
                     if(pathsExpected.has("Reflection")) {
                         verticalCutFileNames.add(utName+"_Reflection");
