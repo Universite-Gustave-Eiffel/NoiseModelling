@@ -74,9 +74,9 @@ inputs = [
                         'The table must contain (* mandatory): </br> <ul>' +
                         '<li> <b> PK *</b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
                         '<li> <b> THE_GEOM *</b> : the 3D geometry of the sources (POINT, MULTIPOINT, LINESTRING, MULTILINESTRING). According to CNOSSOS-EU, you need to set a height of 0.05 m for a road traffic emission </li> ' +
-                        '<li> <b> LWD63, LWD125, LWD250, LWD500, LWD1000, LWD2000, LWD4000, LWD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT) </li> ' +
-                        '<li> <b> LWE </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT) </li> ' +
-                        '<li> <b> LWN </b> : 8 columns giving the night emission sound level for each octave band (FLOAT) </li> ' +
+                        '<li> <b> HZD63, HZD125, HZD250, HZD500, HZD1000, HZD2000, HZD4000, HZD8000 </b> : 8 columns giving the day emission sound level for each octave band (FLOAT) </li> ' +
+                        '<li> <b> HZE </b> : 8 columns giving the evening emission sound level for each octave band (FLOAT) </li> ' +
+                        '<li> <b> HZN </b> : 8 columns giving the night emission sound level for each octave band (FLOAT) </li> ' +
                         '<li> <b> YAW </b> : Source horizontal orientation in degrees. For points 0&#176; North, 90&#176; East. For lines 0&#176; line direction, 90&#176; right of the line direction.  (FLOAT) </li> ' +
                         '<li> <b> PITCH </b> : Source vertical orientation in degrees. 0&#176; front, 90&#176; top, -90&#176; bottom. (FLOAT) </li> ' +
                         '<li> <b> ROLL </b> : Source roll in degrees (FLOAT) </li> ' +
@@ -91,7 +91,7 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +
-                        '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : Emission noise level in dB can be third-octave 50Hz to 10000Hz (FLOAT) </li> ',
+                        '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b> : Emission noise level in dB can be third-octave 50Hz to 10000Hz (FLOAT) </li> ',
                 min        : 0, max: 1, type: String.class
         ],
         tableReceivers          : [
@@ -131,7 +131,7 @@ inputs = [
                         '<li> <b> DIR_ID </b>: identifier of the directivity sphere (INTEGER) </li> ' +
                         '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
                         '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
-                        '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
+                        '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
                 min        : 0, max: 1, type: String.class
         ],
         tablePeriodAtmosphericSettings          : [

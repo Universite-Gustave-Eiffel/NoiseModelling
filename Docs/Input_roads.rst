@@ -96,6 +96,8 @@ Table SOURCES_EMISSION definition
 
 If you have custom time periods (ex. ``8h00-9h00``). You can place the traffic data into another table with the ``PERIOD`` column:
 
+The script ``Road_Emission_from_Traffic`` can convert this traffic into the ``LW_ROADS`` table used for emission (dB for each octave bands) as an input for the ``Noise_level_from_source`` script.
+ Being able to see the noise emission of each roads is very useful for validation and verification of the input data before doing the propagation step.
 
 * ``IDSOURCE`` *
     * Description: An identifier linked to the primary key of the ``SOURCES_GEOM`` table.
