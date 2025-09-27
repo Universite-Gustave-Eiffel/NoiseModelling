@@ -134,11 +134,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
             roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
             if (!roofPoints.isEmpty()) {
-                // inverse the curved transformation to have the correct altitude in the flat coordinate system
-                if (curved) {
-                    roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                            roofPoints.toArray(new Coordinate[0]), true));
-                }
                 input.addAll(roofPoints);
                 pushedBuildingsWideAnglePoints.add(processedWall.originId);
                 // Stop iterating bounding boxes
@@ -175,11 +170,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             // remove points that are not on the correct side of the line p1Top2 (use only x,y coordinates)
             roofPoints = filterPointsBySide(p1Top2, left, roofPoints);
             if (!roofPoints.isEmpty()) {
-                // inverse the curved transformation to have the correct altitude in the flat coordinate system
-                if (curved) {
-                    roofPoints = Arrays.asList(CurvedProfileGenerator.applyTransformation(p1, p2,
-                            roofPoints.toArray(new Coordinate[0]), true));
-                }
                 pushedWallsPoints.add(processedWall.originId);
                 input.addAll(roofPoints);
                 // Stop iterating bounding boxes
