@@ -377,8 +377,6 @@ public class AttenuationCnossos {
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && difHCount <= 1) || (type.equals(DIFV) && difVCount <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
-        // TODO issue here ?
-        // Favorable need homogeneous delta if !((type.equals(PointPath.POINT_TYPE.DIFH) || type.equals(DIFH_RCRIT))
         double _delta = proPathParameters.delta;
         double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime +
                 proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size() - 1).dPrime -

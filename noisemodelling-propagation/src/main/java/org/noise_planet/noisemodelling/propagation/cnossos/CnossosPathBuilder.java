@@ -478,7 +478,7 @@ public class CnossosPathBuilder {
         seg1.dPrime = srcPrime.distance(c0);
         seg2.dPrime = cn.distance(rcvPrime);
 
-        if(!favorable) {
+        if(!favorable || cutProfile.profileType != CutProfile.PROFILE_TYPE.DIRECT) {
             long difVPointCount = cnossosPath.getPointList().stream().
                     filter(pointPath -> pointPath.type.equals(DIFV)).count();
             double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
