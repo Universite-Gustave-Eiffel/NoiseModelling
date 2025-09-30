@@ -91,18 +91,22 @@ public class CnossosPathBuilder {
                 if (rcrit) {
                     seg1.setGpath(cutProfile.getGPath(srcCut, cuts.get(i0Cut), Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
                     seg2.setGpath(cutProfile.getGPath(cuts.get(i0Cut), rcvCut, Scene.DEFAULT_G_BUILDING), srcCut.getGroundCoefficient());
+                    double dSPrimeO = seg1.sPrime.distance(o);
+                    double dSPrimeR = seg1.sPrime.distance(rcv);
+                    double dORPrime = o.distance(seg2.rPrime);
+                    double dSRPrime = src.distance(seg2.rPrime);
                     if(!pathParameters.isFavorable()) {
                         pathParameters.delta = deltaH;
                         pathParameters.deltaPrime = deltaPrimeH;
                         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
-                        double dSPrimeO = seg1.sPrime.distance(o);
-                        double dSPrimeR = seg1.sPrime.distance(rcv);
                         pathParameters.deltaSPrimeR = sPrimeR.orientationIndex(o)*(dSPrimeO + dOR - dSPrimeR);
                         LineSegment sRPrime = new LineSegment(src, seg2.rPrime);
-                        double dORPrime = o.distance(seg2.rPrime);
-                        double dSRPrime = src.distance(seg2.rPrime);
                         pathParameters.deltaSRPrime = sRPrime.orientationIndex(o)*(dSO + dORPrime - dSRPrime);
                     } else {
+                        double dOnR = seg2.d;
+                        double dSO0 = seg1.d;
+                        pathParameters.deltaSPrimeR = toCurve(dSPrimeO, dSPrimeR) + toCurve(pathParameters.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
+                        pathParameters.deltaSRPrime = toCurve(dSO0, dSRPrime) + toCurve(pathParameters.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
                         if(dSR.orientationIndex(o) == 1) {
                             pathParameters.delta = toCurve(dSO, srSeg.d) + toCurve(dOR, srSeg.d) - toCurve(srSeg.d, srSeg.d);
                         } else {

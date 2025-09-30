@@ -50,7 +50,7 @@ public class PathFinderTest {
     /**
      * Overwrite project resource expected test cases
      */
-    public boolean overwriteTestCase = true;
+    public boolean overwriteTestCase = false;
 
     /**
      *  Error for coordinates
@@ -1179,7 +1179,7 @@ public class PathFinderTest {
                 .addSource(10, 10, 1)
                 .addReceiver(200, 25, 14)
                 .hEdgeDiff(true)
-                //.vEdgeDiff(true)
+                .vEdgeDiff(true)
                 .setGs(0.9)
                 .build();
         rayData.reflexionOrder=0;
@@ -1192,11 +1192,10 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        // There is no favorable paths on the left and right sides
         assertEquals(3, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC21_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC21_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC21_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC21", propDataOut.cutProfiles);
     }
 
     @Test
