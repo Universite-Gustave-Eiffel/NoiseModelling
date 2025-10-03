@@ -299,8 +299,8 @@ public class SceneWithEmissionTest {
             computeRays.run(propDataOut);
 
             //Actual values
-            // number of propagation paths between two walls = reflectionOrder * 2 + 1
-            assertEquals(i * 2 + 1, propDataOut.cnossosPathCount.get());
+            // number of propagation paths between two walls = reflectionOrder * 4 + 2
+            assertEquals(i * 4 + 2, propDataOut.cnossosPathCount.get());
 
             double globalPowerAtReceiver = AcousticIndicatorsFunctions.sumDbArray(propDataOut.resultsCache.receiverLevels.pop().levels);
             if(i == 0) {
