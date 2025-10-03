@@ -251,7 +251,7 @@ public class CnossosPathBuilder {
         cnossosPath.setSRSegment(srPath);
         cnossosPath.init(exactFrequencyArray.size());
         List<Coordinate> hullPts2D = pts2D;
-        if(favorable) {
+        if(favorable && cutProfile.profileType != CutProfile.PROFILE_TYPE.REFLECTION) {
             // Compute the altered profile for favorable path
             hullPts2D = cutProfile.computePts2D(true);
         }
