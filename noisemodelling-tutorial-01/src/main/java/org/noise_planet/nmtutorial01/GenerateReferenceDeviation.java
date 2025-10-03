@@ -41,7 +41,7 @@ public class GenerateReferenceDeviation {
             AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     private static final double[] SOUND_POWER_LEVELS = new double[]{93, 93, 93, 93, 93, 93, 93, 93};
     private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
-
+    private static final String[] PATH_NAMES = new String[] {"Vertical Plane", "Left Lateral", "Right Lateral", "Reflection"};
     private static final double HUMIDITY = 70;
     private static final double TEMPERATURE = 10;
     private static final String CHECKED = "☑";
@@ -78,7 +78,7 @@ public class GenerateReferenceDeviation {
         String testCaseFileName = utName + ".json";
         try(InputStream inputStream = PathFinder.class.getResourceAsStream("test_cases/"+testCaseFileName)) {
             if(inputStream == null) {
-                throw new IOException("Document " + testCaseFileName + " not found");
+                return null;
             }
             ObjectMapper mapper = new ObjectMapper();
             return mapper.readValue(inputStream, CutProfile.class);
@@ -119,12 +119,14 @@ public class GenerateReferenceDeviation {
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
-            attenuationVisitor.onNewCutPlane(cutProfile);
-            if(lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
-                // merge attenuation per receiver
-                attenuationVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+            if(cutProfile != null) {
+                attenuationVisitor.onNewCutPlane(cutProfile);
+                if (lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
+                    // merge attenuation per receiver
+                    attenuationVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+                }
+                lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
             }
-            lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
         }
         // merge attenuation per receiver
         attenuationVisitor.finalizeReceiver(lastReceiver);
@@ -202,8 +204,20 @@ public class GenerateReferenceDeviation {
                 utName));
     }
 
-    private static void addUTDeviationDetails(String utName, StringBuilder sb, JsonNode expectedValues, CnossosPath actual, double[] powerLevel) {
-        double[] actualLH = addArray(actual.aGlobalH, powerLevel);
+    private static CnossosPath fetchPath(List<CnossosPath> paths, CutProfile.PROFILE_TYPE profileType, boolean favorable) {
+        for(CnossosPath path : paths) {
+            if(path.getCutProfile().profileType == profileType && path.isFavorable() == favorable) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<CnossosPath> paths, double[] powerLevel) {
+        CnossosPath homogenous = fetchPath(paths, profileType, false);
+        String utName = PATH_NAMES[profileType.ordinal()];
+        assert homogenous != null;
+        double[] actualLH = addArray(homogenous.aGlobalRaw, powerLevel);
         double[] expectedLH = asArray(expectedValues.get("LH"));
         DeviationResult lhDeviation = computeDeviation(expectedLH, actualLH);
         sb.append(String.format(Locale.ROOT, "\n\n%s \n" +
@@ -221,12 +235,19 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            double[] actualLF = addArray(actual.aGlobalF, powerLevel);
-            double[] expectedLF = asArray(expectedValues.get("LF"));
-            DeviationResult lfDeviation = computeDeviation(expectedLF, actualLF);
-            sb.append(String.format(Locale.ROOT,"   * - Lꜰ\n" +
-                    "     - %.2f dB\n" +
-                    "     - %d\n", lfDeviation.deviation, lfDeviation.frequency));
+            CnossosPath favorablePath = fetchPath(paths, profileType, true);
+            if(favorablePath != null) {
+                double[] actualLF = addArray(favorablePath.aGlobalRaw, powerLevel);
+                double[] expectedLF = asArray(expectedValues.get("LF"));
+                DeviationResult lfDeviation = computeDeviation(expectedLF, actualLF);
+                sb.append(String.format(Locale.ROOT, "   * - Lꜰ\n" +
+                        "     - %.2f dB\n" +
+                        "     - %d\n", lfDeviation.deviation, lfDeviation.frequency));
+            } else {
+                sb.append("   * - Lꜰ\n" +
+                        "     - -\n" +
+                        "     - -\n");
+            }
         }
     }
 
@@ -247,7 +268,8 @@ public class GenerateReferenceDeviation {
             LOGGER.error("Working directory {} does not exists", workingDir);
             return;
         }
-        try(FileWriter fileWriter = new FileWriter(new File(workingDirPath, "Cnossos_Report.rst"))) {
+        File documentPath = new File(workingDirPath, "Cnossos_Report.rst");
+        try(FileWriter fileWriter = new FileWriter(documentPath)) {
             fileWriter.write(REPORT_HEADER);
             int total = 0;
             AtomicInteger directPass = new AtomicInteger(0);
@@ -287,16 +309,15 @@ public class GenerateReferenceDeviation {
                     addUTDeviation(utName, stringBuilderTable, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel, fullPass, directPass);
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
-                    addUTDeviationDetails("Vertical Plane", stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths().get(0), powerLevel);
-                    int index = 1;
+                    addUTDeviationDetails(CutProfile.PROFILE_TYPE.DIRECT, stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
                     if(pathsExpected.has("Right")) {
-                        addUTDeviationDetails("Right Lateral", stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getPropagationPaths().get(index++), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.RIGHT, stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
                     }
                     if(pathsExpected.has("Left")) {
-                        addUTDeviationDetails("Left Lateral", stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getPropagationPaths().get(index++), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.LEFT, stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
                     }
                     if(pathsExpected.has("Reflection")) {
-                        addUTDeviationDetails("Reflection", stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths().get(index), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.REFLECTION, stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
                     }
                 }
                 fileWriter.write(String.format(Locale.ROOT, "| Conform\n" +
@@ -315,6 +336,7 @@ public class GenerateReferenceDeviation {
                 fileWriter.write(stringBuilderDetail.toString());
             }
         }
+        LOGGER.info("Document written to {}", documentPath.getAbsolutePath());
     }
 
     static class DeviationResult {
