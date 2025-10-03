@@ -20,7 +20,7 @@ import static java.lang.Math.asin;
 import static java.lang.Math.max;
 
 /**
- * Generate a curved profile (favorable propagation conditions) from a coordinate list and two endpoints (source and receiver)
+ * Generate a curved profile (favourable propagation conditions) from a coordinate list and two endpoints (source and receiver)
  * Based on:
  * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
  * @author Pierre Aumond

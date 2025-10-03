@@ -472,7 +472,7 @@ public class PathFinder {
      * @param left If true return the path on the left side between p1 and p2; else on the right side
      * @param p1   First point
      * @param p2   Second point
-     * @param curved Used the curved coordinate system between p1 and p2 (favorable conditions in CNOSSOS)
+     * @param curved Used the curved coordinate system between p1 and p2 (favourable conditions in CNOSSOS)
      * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
     public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved) {

@@ -24,7 +24,7 @@ public class CnossosPath extends Path {
     /**
      * Final attenuation (dB)
      * aGlobalRaw but with attenuation (dB) from the ponderation of
-     * - the directivity attenuation (favorable or homogeneous atmospheric conditions)
+     * - the directivity attenuation (favourable or homogeneous atmospheric conditions)
      * - The source directivity attenuation
      */
     public  double[] aGlobal = new double[0];

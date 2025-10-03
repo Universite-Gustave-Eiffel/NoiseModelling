@@ -121,7 +121,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         if(exportPeriod) {
             query.append(", PERIOD");
         }
-        query.append(", FAVORABLE");
+        query.append(", FAVOURABLE");
         query.append(") VALUES (?, ?, ?");
         if(databaseParameters.exportCnossosPathWithAttenuation) {
             query.append(", ?");
@@ -167,7 +167,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
-            ps.setBoolean(parameterIndex++, row.isFavorable());
+            ps.setBoolean(parameterIndex++, row.isFavourable());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
@@ -382,7 +382,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 sb.append(", PERIOD VARCHAR");
             }
-            sb.append(", FAVORABLE BOOLEAN");
+            sb.append(", FAVOURABLE BOOLEAN");
             sb.append(");");
             processQuery(sb.toString());
         }

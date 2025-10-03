@@ -59,7 +59,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * MaxError DB Processing variable
-     * Favorable Free Field cumulated global power at receiver, only used to stop looking for far sources
+     * Favourable Free Field cumulated global power at receiver, only used to stop looking for far sources
      * Key source index
      * Value maximum expected noise level in w
      */

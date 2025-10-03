@@ -31,7 +31,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -59,7 +58,7 @@ public class GenerateReferenceDeviation {
             "\n" +
             "During our analysis, we identified several issues within the standard that hinder a complete and reliable comparison. Notably, we observed inconsistencies between 2D and 3D visualizations, preventing us from achieving a coherent assessment. Additionally, discrepancies exist between the geometric description of the scene and the corresponding acoustic response, raising concerns about the accuracy and reliability of the standard’s methodology.\n" +
             "\n" +
-            "Furthermore, with respect to favorable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.\n" +
+            "Furthermore, with respect to favourable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.\n" +
             "\n" +
             "\n" +
             "Conformity table\n" +
@@ -204,9 +203,9 @@ public class GenerateReferenceDeviation {
                 utName));
     }
 
-    private static CnossosPath fetchPath(List<CnossosPath> paths, CutProfile.PROFILE_TYPE profileType, boolean favorable) {
+    private static CnossosPath fetchPath(List<CnossosPath> paths, CutProfile.PROFILE_TYPE profileType, boolean favourable) {
         for(CnossosPath path : paths) {
-            if(path.getCutProfile().profileType == profileType && path.isFavorable() == favorable) {
+            if(path.getCutProfile().profileType == profileType && path.isFavourable() == favourable) {
                 return path;
             }
         }
@@ -235,9 +234,9 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            CnossosPath favorablePath = fetchPath(paths, profileType, true);
-            if(favorablePath != null) {
-                double[] actualLF = addArray(favorablePath.aGlobalRaw, powerLevel);
+            CnossosPath favourablePath = fetchPath(paths, profileType, true);
+            if(favourablePath != null) {
+                double[] actualLF = addArray(favourablePath.aGlobalRaw, powerLevel);
                 double[] expectedLF = asArray(expectedValues.get("LF"));
                 DeviationResult lfDeviation = computeDeviation(expectedLF, actualLF);
                 sb.append(String.format(Locale.ROOT, "   * - Lꜰ\n" +

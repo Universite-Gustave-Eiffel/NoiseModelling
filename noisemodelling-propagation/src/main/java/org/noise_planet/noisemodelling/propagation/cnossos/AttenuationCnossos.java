@@ -17,7 +17,6 @@ import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,7 +91,7 @@ public class AttenuationCnossos {
             double cf = dp * (1 + 3 * w * dp * pow(Math.E, -sqrt(w * dp))) / (1 + w * dp);
             //NF S 31-113 page 41 A sol
 
-            if (pathParameters.isFavorable()) {
+            if (pathParameters.isFavourable()) {
                 if (data.isPrime2520()) {
                     if (segmentPath.testFormF <= 1) {
                         aGroundMin = -3 * (1 - segmentPath.gm);
@@ -181,7 +180,7 @@ public class AttenuationCnossos {
     private static double getAGroundMin(SegmentPath segmentPath, CnossosPath pathParameters) {
         double aGroundMin;
 
-        if (pathParameters.isFavorable()) {
+        if (pathParameters.isFavourable()) {
             // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
             if (segmentPath.testFormF <= 1) {
                 aGroundMin = -3 * (1 - segmentPath.gm);
@@ -257,7 +256,7 @@ public class AttenuationCnossos {
                             (pp.type.equals(DIFH_RCRIT) && isValidRCriterion ))
                     .findFirst()
                     .orElse(null);
-            aGround[i] = path.isFavorable() ?
+            aGround[i] = path.isFavourable() ?
                     aGroundF(path, path.getSRSegment(), data, i) :
                     aGroundH(path, path.getSRSegment(), data, i);
             if(path.groundAttenuation != null && path.groundAttenuation.aGround != null) {
@@ -317,7 +316,7 @@ public class AttenuationCnossos {
                 //Get the point on the top of the obstacle
                 Coordinate p = new Coordinate(pointPath.coordinate.x, pointPath.obstacleZ);
                 double ch = 1.;
-                if (reflect.isFavorable()) {
+                if (reflect.isFavourable()) {
                     double SP = s.distance(p);
                     double PR = p.distance(r);
                     double gamma = 2 * max(1000, 8 * SR);
@@ -406,8 +405,8 @@ public class AttenuationCnossos {
         testForm = 40/lambda*cSecond*_delta;
         double deltaDiffSRPrime = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
 
-        double aGroundSO = proPathParameters.isFavorable() ? aGroundF(proPathParameters, first, data, frequencyIndex) : aGroundH(proPathParameters, first, data, frequencyIndex);
-        double aGroundOR = proPathParameters.isFavorable() ? aGroundF(proPathParameters, last, data, frequencyIndex, true) : aGroundH(proPathParameters, last, data, frequencyIndex, true);
+        double aGroundSO = proPathParameters.isFavourable() ? aGroundF(proPathParameters, first, data, frequencyIndex) : aGroundH(proPathParameters, first, data, frequencyIndex);
+        double aGroundOR = proPathParameters.isFavourable() ? aGroundF(proPathParameters, last, data, frequencyIndex, true) : aGroundH(proPathParameters, last, data, frequencyIndex, true);
 
         //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
         double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
@@ -464,7 +463,7 @@ public class AttenuationCnossos {
         double c = data.getCelerity();
         double dp = path.dp;
         double k = 2*PI*fm/c;
-        double gw = forceGPath ? path.gPath : proPathParameters.isFavorable() ? path.gPath : path.gPathPrime;
+        double gw = forceGPath ? path.gPath : proPathParameters.isFavourable() ? path.gPath : path.gPathPrime;
         double w = 0.0185 * pow(fm, 2.5) * pow(gw, 2.6) /
                 (pow(fm, 1.5) * pow(gw, 2.6) + 1.3e3 * pow(fm, 0.75) * pow(gw, 1.3) + 1.16e6);
         double cf = dp * (1 + 3 * w * dp * exp(-sqrt(w * dp))) / (1 + w * dp);
@@ -516,7 +515,7 @@ public class AttenuationCnossos {
         return max(aGroundHComputed, aGroundHMin);
     }
 
-    //Todo check if the favorable testform should be use instead
+    //Todo check if the favourable testform should be use instead
     public static double aGroundF(CnossosPath proPathParameters, SegmentPath path, AttenuationParameters data, int idFreq) {
         return aGroundF(proPathParameters, path, data, idFreq, false);
     }
@@ -528,7 +527,7 @@ public class AttenuationCnossos {
      * @param data
      * @param idFreq
      * @param forceGPath
-     * @return favorable ground Attenuation in db
+     * @return favourable ground Attenuation in db
      */
     public static double aGroundF(CnossosPath proPathParameters, SegmentPath path, AttenuationParameters data, int idFreq, boolean forceGPath) {
         double[] values = computeCfKValues(proPathParameters, path, data, idFreq);
@@ -707,7 +706,7 @@ public class AttenuationCnossos {
         Vector3D fieldVectorPropagation = Orientation.rotate(proPathParameters.getSourceOrientation(),
                 Orientation.toVector(proPathParameters.raySourceReceiverDirectivity), false);
         int roseIndex = AttenuationParameters.getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
-        if(!proPathParameters.isFavorable()) {
+        if(!proPathParameters.isFavourable()) {
             // Homogenous conditions
             if (data.getWindRose()[roseIndex] != 1) {
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
@@ -723,9 +722,9 @@ public class AttenuationCnossos {
                 }
             }
         } else {
-            // Favorable conditions
+            // Favourable conditions
             if (data.getWindRose()[roseIndex] != 0) {
-                proPathParameters.setFavorable(true);
+                proPathParameters.setFavourable(true);
                 aBoundary = AttenuationCnossos.aBoundary(proPathParameters, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(proPathParameters, data);
                 for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
@@ -749,9 +748,9 @@ public class AttenuationCnossos {
 
         // Compute attenuation under the atmospheric conditions using the ray direction
         double[] aGlobalMeteoRay = new double[aGlobalMeteo.length];
-        double probability = data.getWindRose()[roseIndex]; // favorable probability
-        if(!proPathParameters.isFavorable()) {
-            // compute homogeneous conditions probability from favorable probability
+        double probability = data.getWindRose()[roseIndex]; // favourable probability
+        if(!proPathParameters.isFavourable()) {
+            // compute homogeneous conditions probability from favourable probability
             probability = 1 - probability;
         }
         for (int i = 0; i < aGlobalMeteoRay.length; i++) {

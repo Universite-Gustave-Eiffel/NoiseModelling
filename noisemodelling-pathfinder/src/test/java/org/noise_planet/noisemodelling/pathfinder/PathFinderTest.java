@@ -1192,7 +1192,7 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        // There is no favorable paths on the left and right sides
+        // There is no favourable paths on the left and right sides
         assertEquals(3, propDataOut.getCutProfiles().size());
 
         assertCutProfiles("TC21", propDataOut.cutProfiles);

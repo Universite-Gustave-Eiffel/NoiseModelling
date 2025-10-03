@@ -1,8 +1,6 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
-import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
-import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
@@ -10,7 +8,6 @@ import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointVEdgeDiffraction;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -95,7 +92,7 @@ public class CnossosPathBuilder {
                     double dSPrimeR = seg1.sPrime.distance(rcv);
                     double dORPrime = o.distance(seg2.rPrime);
                     double dSRPrime = src.distance(seg2.rPrime);
-                    if(!pathParameters.isFavorable()) {
+                    if(!pathParameters.isFavourable()) {
                         pathParameters.delta = deltaH;
                         pathParameters.deltaPrime = deltaPrimeH;
                         LineSegment sPrimeR = new LineSegment(seg1.sPrime, rcv);
@@ -215,16 +212,16 @@ public class CnossosPathBuilder {
      * @param bodyBarrier True if there is a body barrier on the path
      * @param exactFrequencyArray Expected frequencies
      * @param gS Ground factor of the source area
-     * @param favorable Compute the favorable contribution for the provided profile
+     * @param favourable Compute the favourable contribution for the provided profile
      * @return The cnossos path or null
      */
-    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favorable) {
-        if(favorable &&
+    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favourable) {
+        if(favourable &&
                 (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                         cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
                 && !cutProfile.isCurvedPath()) {
             // TODO reflection cut planes should be also done on curved profile
-            throw new IllegalArgumentException("A favorable path cannot be computed using lateral non curved cut profile");
+            throw new IllegalArgumentException("A favourable path cannot be computed using lateral non curved cut profile");
         }
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
@@ -245,14 +242,14 @@ public class CnossosPathBuilder {
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
         CnossosPath cnossosPath = new CnossosPath(cutProfile);
-        cnossosPath.setFavorable(favorable);
+        cnossosPath.setFavourable(favourable);
         cnossosPath.setPointList(points);
         cnossosPath.setSegmentList(segments);
         cnossosPath.setSRSegment(srPath);
         cnossosPath.init(exactFrequencyArray.size());
         List<Coordinate> hullPts2D = pts2D;
-        if(favorable && cutProfile.profileType != CutProfile.PROFILE_TYPE.REFLECTION) {
-            // Compute the altered profile for favorable path
+        if(favourable && cutProfile.profileType != CutProfile.PROFILE_TYPE.REFLECTION) {
+            // Compute the altered profile for favourable path
             hullPts2D = cutProfile.computePts2D(true);
         }
         // Compute convex hull of the profile
@@ -326,7 +323,7 @@ public class CnossosPathBuilder {
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfilePoints.get(i0).getCoordinate(), targetPosition);
                 points.get(0).orientation = emissionDirection;
-                // TODO what about favorable path with curved profile ?
+                // TODO what about favourable path with curved profile ?
                 cnossosPath.raySourceReceiverDirectivity = emissionDirection;
                 src = pts2D.get(i0);
             }
@@ -458,7 +455,7 @@ public class CnossosPathBuilder {
         for(int idPoint = 1; idPoint < diffPoints.size() - 2; idPoint++) {
             cnossosPath.e += diffPoints.get(idPoint).coordinate.distance(diffPoints.get(idPoint+1).coordinate);
         }
-        if(favorable) {
+        if(favourable) {
             cnossosPath.deltaSPrimeR = toCurve(dSPrimeO, dSPrimeR) + toCurve(cnossosPath.e, dSPrimeR) + toCurve(dOnR, dSPrimeR) - toCurve(dSPrimeR, dSPrimeR);
         } else {
             cnossosPath.deltaSPrimeR = sPrimeR.orientationIndex(c0)*(dSPrimeO + cnossosPath.e + dOnR - dSPrimeR);
@@ -468,7 +465,7 @@ public class CnossosPathBuilder {
         double dSRPrime = src.distance(seg2.rPrime);
         double dORPrime = cn.distance(seg2.rPrime);
 
-        if(favorable) {
+        if(favourable) {
             cnossosPath.deltaSRPrime = toCurve(dSO0, dSRPrime) + toCurve(cnossosPath.e, dSRPrime) + toCurve(dORPrime, dSRPrime) - toCurve(dSRPrime, dSRPrime);
         } else {
             cnossosPath.deltaSRPrime = (src.x>seg2.rPrime.x?-1:1)*sRPrime.orientationIndex(cn)*(dSO0 + cnossosPath.e + dORPrime - dSRPrime);
@@ -482,7 +479,7 @@ public class CnossosPathBuilder {
         seg1.dPrime = srcPrime.distance(c0);
         seg2.dPrime = cn.distance(rcvPrime);
 
-        if(!favorable || !(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT || cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION)) {
+        if(!favourable || !(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT || cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION)) {
             long difVPointCount = cnossosPath.getPointList().stream().
                     filter(pointPath -> pointPath.type.equals(DIFV)).count();
             double distance = difVPointCount == 0 ? cnossosPath.getSRSegment().d : cnossosPath.getSRSegment().dc;
@@ -496,7 +493,7 @@ public class CnossosPathBuilder {
             }
         }
 
-        if(!favorable) {
+        if(!favourable) {
             cnossosPath.deltaPrime = dSPrimeRPrime.orientationIndex(c0) * (seg1.dPrime + cnossosPath.e + seg2.dPrime - srPath.dPrime);
         } else {
             if(dSPrimeRPrime.orientationIndex(c0) == 1) {

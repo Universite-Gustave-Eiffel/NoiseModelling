@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CurvedProfileTest {
 
     /**
-     * Test case 28 for favorable propagation conditions between source and receiver
+     * Test case 28 for favourable propagation conditions between source and receiver
      */
     @Test
     public void testTC28DirectCurvedProfile() {
@@ -214,7 +214,7 @@ public class CurvedProfileTest {
 
 
     /**
-     * Test case 28 for favorable propagation conditions over left and right curved profiles
+     * Test case 28 for favourable propagation conditions over left and right curved profiles
      */
     @Test
     public void testTC28LateralCurvedProfile() {
