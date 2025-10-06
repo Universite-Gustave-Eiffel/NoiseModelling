@@ -285,9 +285,6 @@ def exec(Connection connection, input) {
         } else {
             fence = JTSUtils.ewkb2geometry(EWKTUtils.ewkt2ewkb(input['fence'] as String))
         }
-        if(fence.getSRID() == 0) {
-            fence.setSRID(srid)
-        }
     }
 
     // Fence handling (two options):
@@ -324,7 +321,7 @@ def exec(Connection connection, input) {
                 fence = ST_SetSRID.setSRID(fence, 4326)
             }
             // Transform fence to the same coordinate system than the buildings & sources
-            fence = ST_Transform.ST_Transform(connection, fence, targetSrid)
+            fence = ST_Transform.ST_Transform(connection, fence, srid)
         }
         delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
     }

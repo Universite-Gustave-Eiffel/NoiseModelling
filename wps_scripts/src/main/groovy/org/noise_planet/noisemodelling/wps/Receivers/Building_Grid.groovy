@@ -23,6 +23,8 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
+import org.h2.util.geometry.EWKTUtils
+import org.h2.util.geometry.JTSUtils
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities
@@ -31,6 +33,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
+import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -200,26 +203,37 @@ def exec(Connection connection, input) {
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
     // Reproject fence
-    int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-    if (targetSrid == 0 && input['sourcesTableName']) {
-        targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (srid == 0 && input['sourcesTableName']) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     }
 
-    Geometry fenceGeom = null
-    if (input['fence'] != null) {
-        if (targetSrid != 0) {
-            // Transform fence to the same coordinate system than the buildings & sources
-            WKTReader wktReader = new WKTReader()
-            // --- FIX: The variable 'fence' does not exist. We use a local variable and assign it to the reprojected fenceGeom.
-            Geometry wktFence = wktReader.read(input['fence'] as String)
-            fenceGeom = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(wktFence, 4326), targetSrid)
-            // --- FIN FIX
+    Geometry fence = null
+    if (input['fence']) {
+        if(input['fence'] instanceof Geometry) {
+            fence = input['fence']
         } else {
-            throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
+            fence = JTSUtils.ewkb2geometry(EWKTUtils.ewkt2ewkb(input['fence'] as String))
         }
-    } else if (input['fenceTableName']) {
-        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
     }
+
+    // Fence handling (two options):
+    //  1) Direct geometry passed as 'fence' (handled above)
+    //  2) Bounding box extracted from another table via 'fenceTableName'
+    // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
+    if (input['fenceTableName']) {
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+    }
+
+    if (fence != null && srid != 0 && fence.getSRID() != srid) {
+        if (fence.getSRID() == 0) {
+            // If the provided srid is not known, it is considered being in the WGS84 projection system
+            fence = ST_SetSRID.setSRID(fence, 4326)
+        }
+        // Transform fence to the same coordinate system than the buildings & sources
+        fence = ST_Transform.ST_Transform(connection, fence, srid)
+    }
+
 
     def buildingPk = JDBCUtilities.getColumnName(connection, building_table_name,
             JDBCUtilities.getIntegerPrimaryKey(connection,
@@ -230,8 +244,8 @@ def exec(Connection connection, input) {
 
     sql.execute("drop table if exists tmp_receivers_lines")
 
-    if (fenceGeom != null) {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fenceGeom, distance_wall : distance])
+    if (fence != null) {
+        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
     } else {
         sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
@@ -260,7 +274,7 @@ def exec(Connection connection, input) {
     logger.info('Collect all lines and convert into points using custom method')
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
-    GeometryFactory factory = new GeometryFactory(new PrecisionModel(), targetSrid);
+    GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
     logger.info('Split line to points')
     int nrows = sql.firstRow('SELECT COUNT(*) FROM TMP_SCREENS_MERGE')[0] as Integer
     RootProgressVisitor progressLogger = new RootProgressVisitor(nrows, true, 1)
@@ -294,11 +308,10 @@ def exec(Connection connection, input) {
 
 
         sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
-        sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+        sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
         // Remove receivers left inside buildings (non-POP case)
-        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g " +
                     "where exists (" +
                     "  select 1 from " + building_table_name + " b " +
@@ -310,13 +323,12 @@ def exec(Connection connection, input) {
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             logger.info('Delete receivers near sources...')
-            sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
             sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
-        if (fenceGeom != null) {
+        if (fence != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fenceGeom])
+            sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fence])
         }
     } else {
         logger.info('create RECEIVERS table...')
@@ -325,11 +337,10 @@ def exec(Connection connection, input) {
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
         sql.execute("create table tmp_receivers(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer not null)")
 
-        sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
+        sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
         // Remove recipients left inside buildings BEFORE distributing POP
-        sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from tmp_receivers g " +
                     "where exists (" +
                     "  select 1 from " + building_table_name + " b " +
@@ -341,13 +352,12 @@ def exec(Connection connection, input) {
         if (input['sourcesTableName']) {
             // Delete receivers near sources
             logger.info('Delete receivers near sources...')
-            sql.execute("Create spatial index on " + sources_table_name + "(the_geom);")
             sql.execute("delete from tmp_receivers g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
         }
 
-        if (fenceGeom != null) {
+        if (fence != null) {
             // delete receiver not in fence filter
-            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fenceGeom])
+            sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fence])
         }
 
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
