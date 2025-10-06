@@ -19,12 +19,12 @@ Conformity table
 | Conform
 
 * Do not the deviate more than ±0,1 dB
-* Percentage of conformity : 75% (21/28)
+* Percentage of conformity : 86% (24/28)
 
 | NLD Conform
 
 * Do not the deviate more than ±0,1 dB neglecting lateral diffraction
-* Percentage of conformity : 83% (23/28)
+* Percentage of conformity : 90% (25/28)
 
 .. list-table::
    :widths: 10 20 20 25 30
@@ -135,9 +135,9 @@ Conformity table
      - 0.00 dB @ 8000 Hz
      - `TC20`_
    * - TC21
-     - □
      - ☑
-     - 0.81 dB @ 63 Hz
+     - ☑
+     - 0.02 dB @ 8000 Hz
      - `TC21`_
    * - TC22
      - ☑
@@ -145,9 +145,9 @@ Conformity table
      - 0.00 dB @ 125 Hz
      - `TC22`_
    * - TC23
-     - □
-     - □
-     - 2.13 dB @ 4000 Hz
+     - ☑
+     - ☑
+     - 0.02 dB @ 63 Hz
      - `TC23`_
    * - TC24
      - □
@@ -170,9 +170,9 @@ Conformity table
      - 1.76 dB @ 500 Hz
      - `TC27`_
    * - TC28
-     - □
-     - □
-     - 4.99 dB @ 250 Hz
+     - ☑
+     - ☑
+     - 0.01 dB @ 4000 Hz
      - `TC28`_
 
 TC01
@@ -1009,8 +1009,8 @@ Right Lateral
      - 0.08 dB
      - 8000
    * - Lꜰ
-     - 0.08 dB
-     - 8000
+     - -
+     - -
 
 
 Left Lateral 
@@ -1027,8 +1027,8 @@ Left Lateral
      - 0.07 dB
      - 500
    * - Lꜰ
-     - 0.33 dB
-     - 500
+     - -
+     - -
 
 TC22
 ^^^^
@@ -1105,8 +1105,8 @@ Vertical Plane
      - 0.02 dB
      - 250
    * - Lꜰ
-     - 3.56 dB
-     - 4000
+     - 0.02 dB
+     - 250
 
 TC24
 ^^^^
@@ -1257,9 +1257,6 @@ Reflection
    * - Lʜ
      - 0.01 dB
      - 4000
-   * - Lꜰ
-     - 15.33 dB
-     - 8000
 
 TC27
 ^^^^
@@ -1300,8 +1297,8 @@ Vertical Plane
      - 0.01 dB
      - 63
    * - Lꜰ
-     - 7.05 dB
-     - 250
+     - 0.01 dB
+     - 8000
 
 
 Right Lateral 
@@ -1318,8 +1315,8 @@ Right Lateral
      - 0.09 dB
      - 2000
    * - Lꜰ
-     - 2.09 dB
-     - 8000
+     - 0.01 dB
+     - 250
 
 
 Left Lateral 
@@ -1333,8 +1330,8 @@ Left Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 5.75 dB
-     - 8000
+     - 1.11 dB
+     - 1000
    * - Lꜰ
-     - 9.57 dB
-     - 63
+     - 0.01 dB
+     - 1000

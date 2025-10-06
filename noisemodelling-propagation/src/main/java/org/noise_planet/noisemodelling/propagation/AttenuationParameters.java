@@ -3,7 +3,6 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
@@ -52,7 +51,7 @@ public class AttenuationParameters {
      */
     public double pressure = Pref;
     public double[] alpha_atmo;
-    public double defaultOccurance = 0.5;
+    public double defaultOccurrence = 0.5;
 
     public boolean gDisc = true;     // choose between accept G discontinuity or not
     public boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
@@ -94,7 +93,7 @@ public class AttenuationParameters {
         this.humidity = other.humidity;
         this.pressure = other.pressure;
         this.alpha_atmo = other.alpha_atmo;
-        this.defaultOccurance = other.defaultOccurance;
+        this.defaultOccurrence = other.defaultOccurrence;
         this.gDisc = other.gDisc;
         this.prime2520 = other.prime2520;
         this.windRose = other.windRose;
@@ -197,19 +196,19 @@ public class AttenuationParameters {
     }
 
     /**
-     * @return Default favorable probability (0-1)
+     * @return Default favourable probability (0-1)
      */
 
-    public double getDefaultOccurance() {
-        return defaultOccurance;
+    public double getDefaultOccurrence() {
+        return defaultOccurrence;
     }
 
     /**
-     * @param defaultOccurance Default favorable probability (0-1)
+     * @param defaultOccurrence Default favourable probability (0-1)
      */
 
-    public void setDefaultOccurance(double defaultOccurance) {
-        this.defaultOccurance = defaultOccurance;
+    public void setDefaultOccurrence(double defaultOccurrence) {
+        this.defaultOccurrence = defaultOccurrence;
     }
 
     public AttenuationParameters setGDisc(boolean gDisc) {

@@ -59,7 +59,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * MaxError DB Processing variable
-     * Favorable Free Field cumulated global power at receiver, only used to stop looking for far sources
+     * Favourable Free Field cumulated global power at receiver, only used to stop looking for far sources
      * Key source index
      * Value maximum expected noise level in w
      */
@@ -133,9 +133,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         cutProfileCount.addAndGet(1);
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        CnossosPath cnossosPath = CnossosPathBuilder.computeCnossosPathFromCutProfile(cutProfile, scene.isBodyBarrier(),
+        List<CnossosPath> cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.profileBuilder.exactFrequencyArray, scene.defaultGroundAttenuation);
-        if(cnossosPath != null) {
+        for (CnossosPath cnossosPath : cnossosPaths) {
             multiThread.cnossosPathCount.addAndGet(1);
             CutPointSource source = cutProfile.getSource();
             CutPointReceiver receiver = cutProfile.getReceiver();

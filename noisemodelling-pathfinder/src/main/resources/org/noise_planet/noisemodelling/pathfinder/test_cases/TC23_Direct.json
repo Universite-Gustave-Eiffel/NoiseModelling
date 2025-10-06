@@ -78,8 +78,8 @@
     },
     "zGround" : 0.0,
     "groundCoefficient" : 0.0,
-    "receiverPk" : -1
+    "receiverPk" : 0
   } ],
-  "hasBuildingIntersection" : false,
-  "hasTopographyIntersection" : true
+  "curvedPath" : false,
+  "profileType" : "DIRECT"
 }

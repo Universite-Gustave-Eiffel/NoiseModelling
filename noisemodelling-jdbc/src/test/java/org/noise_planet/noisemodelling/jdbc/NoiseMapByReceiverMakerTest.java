@@ -214,15 +214,17 @@ public class NoiseMapByReceiverMakerTest {
                 assertFalse(rs.next());
             }
 
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH, IDSOURCE FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER, IDSOURCE")) {
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString(2));
                 // This is source orientation, not relevant to receiver position
+                assertEquals(1, rs.getInt("IDSOURCE"));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), cnossosPath.getSourceOrientation(), 0.01);
                 assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), cnossosPath.raySourceReceiverDirectivity, 0.01);
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
+                assertEquals(1, rs.getInt("IDSOURCE"));
                 cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString(2));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), cnossosPath.getSourceOrientation(), 0.01);
                 assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), cnossosPath.raySourceReceiverDirectivity, 0.01);
@@ -281,7 +283,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<CnossosPath> pathsParameters = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
                     pathsParameters.add(cnossosPath);
@@ -445,7 +447,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<CnossosPath> pathsParameters = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE NOT FAVOURABLE ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosPath cnossosPath = NoiseMapWriter.jsonToPropagationPath(rs.getString("PATH"));
                     pathsParameters.add(cnossosPath);

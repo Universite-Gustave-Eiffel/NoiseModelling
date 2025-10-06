@@ -13,51 +13,46 @@ package org.noise_planet.noisemodelling.propagation.cnossos;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 
 /**
- * All the datas Path of Cnossos
+ * Attenuation computed from vertical Profile and scene settings following CNOSSOS-EU method.
  */
 public class CnossosPath extends Path {
     public  double[] aAtm = new double[0];
     public  double[] aDiv = new double[0];
     public  double[] aRef = new double[0];
-    public  double[] double_aBoundaryH = new double[0];
-    public  double[] double_aBoundaryF = new double[0];
-    public  double[] aRetroDiffH = new double[0]; // Alpha Retro Diffraction homogenous
-    public  double[] aRetroDiffF = new double[0]; // Alpha Retro Diffraction favorable
-    public  double[] aGlobalH = new double[0];
-    public double[] aGlobalF = new double[0];
-    public double[] aDifH = new double[0];
-    public double[] aDifF = new double[0];
-    public double[] aGlobal = new double[0];
+    public  double[] double_aBoundary = new double[0];
+    public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction
+    /**
+     * Final attenuation (dB)
+     * aGlobalRaw but with attenuation (dB) from the ponderation of
+     * - the directivity attenuation (favourable or homogeneous atmospheric conditions)
+     * - The source directivity attenuation
+     */
+    public  double[] aGlobal = new double[0];
+    /**
+     * Global attenuation (dB) without source directivity or atmospheric conditions probability ponderation
+     */
+    public  double[] aGlobalRaw = new double[0];
+    public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
-    public double deltaH = Double.MAX_VALUE;
-    public double deltaF= Double.MAX_VALUE;
-    public double deltaPrimeH= Double.MAX_VALUE;
-    public double deltaPrimeF= Double.MAX_VALUE;
-    public double deltaSPrimeRH= Double.MAX_VALUE;
-    public double deltaSRPrimeH= Double.MAX_VALUE;
-    public ABoundary aBoundaryH = new ABoundary();
-    public ABoundary aBoundaryF = new ABoundary();
+    public double delta = Double.MAX_VALUE;
+    public double deltaPrime= Double.MAX_VALUE;;
+    public double deltaSPrimeR= Double.MAX_VALUE;
+    public double deltaSRPrime= Double.MAX_VALUE;
+    public ABoundary aBoundary = new ABoundary();;
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
-    public double deltaSPrimeRF= Double.MAX_VALUE;
-    public double deltaSRPrimeF= Double.MAX_VALUE;
     public double e=0;
-    public double deltaRetroH= Double.MAX_VALUE;
-    public double deltaRetroF= Double.MAX_VALUE;
+    public double deltaRetro= Double.MAX_VALUE;
 
     public void init(int size) {
         this.aAtm = new double[size];
         this.aDiv = new double[size];
         this.aRef = new double[size];
-        this.double_aBoundaryH = new double[size];
-        this.double_aBoundaryF = new double[size];
-        this.aGlobalH = new double[size];
-        this.aGlobalF = new double[size];
-        this.aDifH = new double[size];
-        this.aDifF = new double[size];
+        this.double_aBoundary = new double[size];;
+        this.aGlobal = new double[size];;
+        this.aDif = new double[size];
         this.aGlobal = new double[size];
         this.aSource = new double[size];
-        this.aRetroDiffH = new double[size];
-        this.aRetroDiffF = new double[size];
+        this.aRetroDiff = new double[size];
     }
 
     public CnossosPath() {
@@ -72,30 +67,19 @@ public class CnossosPath extends Path {
         this.aAtm = other.aAtm;
         this.aDiv = other.aDiv;
         this.aRef = other.aRef;
-        this.double_aBoundaryH = other.double_aBoundaryH;
-        this.double_aBoundaryF = other.double_aBoundaryF;
-        this.aRetroDiffH = other.aRetroDiffH;
-        this.aRetroDiffF = other.aRetroDiffF;
-        this.aGlobalH = other.aGlobalH;
-        this.aGlobalF = other.aGlobalF;
-        this.aDifH = other.aDifH;
-        this.aDifF = other.aDifF;
+        this.double_aBoundary = other.double_aBoundary;
+        this.aRetroDiff = other.aRetroDiff;
         this.aGlobal = other.aGlobal;
+        this.aDif = other.aDif;
         this.aSource = other.aSource;
-        this.deltaH = other.deltaH;
-        this.deltaF = other.deltaF;
-        this.deltaPrimeH = other.deltaPrimeH;
-        this.deltaPrimeF = other.deltaPrimeF;
-        this.deltaSPrimeRH = other.deltaSPrimeRH;
-        this.deltaSRPrimeH = other.deltaSRPrimeH;
-        this.aBoundaryH = other.aBoundaryH;
-        this.aBoundaryF = other.aBoundaryF;
+        this.delta = other.delta;
+        this.deltaPrime = other.deltaPrime;
+        this.deltaSPrimeR = other.deltaSPrimeR;
+        this.deltaSRPrime = other.deltaSRPrime;
+        this.aBoundary = other.aBoundary;
         this.groundAttenuation = other.groundAttenuation;
-        this.deltaSPrimeRF = other.deltaSPrimeRF;
-        this.deltaSRPrimeF = other.deltaSRPrimeF;
         this.e = other.e;
-        this.deltaRetroH = other.deltaRetroH;
-        this.deltaRetroF = other.deltaRetroF;
+        this.deltaRetro = other.deltaRetro;
     }
 
     public static class ABoundary {
@@ -127,32 +111,23 @@ public class CnossosPath extends Path {
 
 
     public static class GroundAttenuation {
-        public double[] wH;
-        public double[] cfH;
-        public double[] aGroundH;
-        public double[] wF;
-        public double[] cfF;
-        public double[] aGroundF;
+        public double[] w;
+        public double[] cf;
+        public double[] aGround;
 
         public void init(int size) {
-            wH = new double[size];
-            cfH = new double[size];
-            aGroundH = new double[size];
-            wF = new double[size];
-            cfF = new double[size];
-            aGroundF = new double[size];
+            w = new double[size];
+            cf = new double[size];
+            aGround = new double[size];
         }
 
         public GroundAttenuation() {
         }
 
         public GroundAttenuation(GroundAttenuation other) {
-            this.wH = other.wH;
-            this.cfH = other.cfH;
-            this.aGroundH = other.aGroundH;
-            this.wF = other.wF;
-            this.cfF = other.cfF;
-            this.aGroundF = other.aGroundF;
+            this.w = other.w;
+            this.cf = other.cf;
+            this.aGround = other.aGround;
         }
     }
 }

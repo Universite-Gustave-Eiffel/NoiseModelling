@@ -8,7 +8,6 @@
  */
 
 package org.noise_planet.noisemodelling.propagation.cnossos;
-import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
@@ -16,15 +15,11 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.pathfinder.utils.documents.GeoJSONDocument;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
-import java.io.ByteArrayOutputStream;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +41,7 @@ public class Path {
     private SegmentPath srSegment; // list of source-receiver path (including prime path)
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
-    private boolean favorable; // if true, favorable meteorological condition path TODO move to cnossospathparameters
+    private boolean favourable; // if true, favourable meteorological condition path with curved rays
     private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     Orientation sourceOrientation = new Orientation(0,0,0);
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
@@ -67,7 +62,7 @@ public class Path {
         this.srSegment = other.srSegment;
         this.pointList = other.pointList;
         this.segmentList = other.segmentList;
-        this.favorable = other.favorable;
+        this.favourable = other.favourable;
         this.timePeriod = other.timePeriod;
         this.sourceOrientation = other.sourceOrientation;
         this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
@@ -202,12 +197,12 @@ public class Path {
         this.segmentList = segmentList;
     }
 
-    public boolean isFavorable() {
-        return favorable;
+    public boolean isFavourable() {
+        return favourable;
     }
 
-    public void setFavorable(boolean favorable) {
-        this.favorable =  favorable;
+    public void setFavourable(boolean favourable) {
+        this.favourable = favourable;
     }
 
     double computeZs(SegmentPath segmentPath) {

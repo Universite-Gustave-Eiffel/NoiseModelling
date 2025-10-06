@@ -82,7 +82,7 @@ class TestAcousticTools extends JdbcTestCase {
         new Noise_level_from_traffic().exec(connection, [tableBuilding :"BUILDINGS", tableRoads: "ROADS2",
                                                          tableReceivers: "RECEIVERS",
                                                          confMaxSrcDist:100, confTemperature:20, confHumidity:50,
-                                                         confFavorableOccurrencesDefault: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
+                                                         confFavourableOccurrencesDefault: "0.5, 0.1, 0.1, 0.1, 0.2, 0.5," +
                                                                  " 0.7, 0.8, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5, 0.5, 0.2"])
 
         new Create_Isosurface().exec(connection, [resultTable : NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])

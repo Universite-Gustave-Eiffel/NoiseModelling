@@ -36,7 +36,7 @@ import java.util.List;
         @JsonSubTypes.Type(value = CutPointTopography.class, name = "Topography"),
         @JsonSubTypes.Type(value = CutPointVEdgeDiffraction.class, name = "VEdgeDiffraction")
 })
-public abstract class CutPoint implements Comparable<CutPoint> {
+public class CutPoint implements Comparable<CutPoint>, Cloneable {
     /** {@link Coordinate} of the cut point. */
     public Coordinate coordinate = new Coordinate();
 
@@ -63,6 +63,17 @@ public abstract class CutPoint implements Comparable<CutPoint> {
         this.coordinate = coordinate;
         this.zGround = zGround;
         this.groundCoefficient = groundCoefficient;
+    }
+
+    @Override
+    public CutPoint clone() {
+        try {
+            CutPoint cloned = (CutPoint) super.clone();
+            cloned.setCoordinate(new Coordinate(coordinate));
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(); // Can't happen
+        }
     }
 
     /**
@@ -99,7 +110,7 @@ public abstract class CutPoint implements Comparable<CutPoint> {
 
     /**
      * Retrieve the coordinate of the point.
-     * @return The coordinate of the point.
+     * @return The coordinate of the point. z is the altitude of the point. (sea level = 0m)
      */
     public Coordinate getCoordinate(){
         return coordinate;
@@ -114,8 +125,8 @@ public abstract class CutPoint implements Comparable<CutPoint> {
     }
 
     /**
-     * Retrieve the topographic height of the point.
-     * @return The topographic height of the point.
+     * Retrieve the topographic height of the ground. (sea level = 0m)
+     * @return The topographic height of the ground. (sea level = 0m)
      */
     public Double getzGround() {
         return zGround;

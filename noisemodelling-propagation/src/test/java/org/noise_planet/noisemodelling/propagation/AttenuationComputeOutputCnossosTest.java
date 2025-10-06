@@ -9,14 +9,13 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.h2gis.api.EmptyProgressVisitor;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
+import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -113,6 +112,8 @@ public class AttenuationComputeOutputCnossosTest {
         //Propagation data building
         SceneWithAttenuation sceneWithAttenuation = new SceneWithAttenuation(profileBuilder);
 
+        // sceneWithAttenuation.sourceGs.put(-1L, 0.5);
+
         //Propagation process path data building
         sceneWithAttenuation.defaultCnossosParameters.setHumidity(HUMIDITY);
         sceneWithAttenuation.defaultCnossosParameters.setTemperature(TEMPERATURE);
@@ -121,19 +122,19 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true,
                 sceneWithAttenuation);
 
-        AttenuationVisitor attenuationVisitor = new AttenuationVisitor(propDataOut);
+        CutPlaneVisitor cutPlaneVisitor = propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());
         for (String utName : utNames) {
             CutProfile cutProfile = loadCutProfile(utName);
-            attenuationVisitor.onNewCutPlane(cutProfile);
+            cutPlaneVisitor.onNewCutPlane(cutProfile);
             if(lastReceiver.receiverPk != -1 && cutProfile.getReceiver().receiverPk != lastReceiver.receiverPk) {
                 // merge attenuation per receiver
-                attenuationVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
+                cutPlaneVisitor.finalizeReceiver(new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()));
             }
             lastReceiver = new PathFinder.ReceiverPointInfo(cutProfile.getReceiver());
         }
         // merge attenuation per receiver
-        attenuationVisitor.finalizeReceiver(lastReceiver);
+        cutPlaneVisitor.finalizeReceiver(lastReceiver);
 
         return propDataOut;
     }
@@ -148,10 +149,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct H,
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct F,
         };
         double[][] gPaths = new double[][]{
-                {0.0} //Path 1 : direct
+                {0.0},{0.0} //Path 1 : direct H and F
         };
 
         //Assertion
@@ -175,38 +177,45 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{39.95, 39.89, 39.77, 39.60, 39.26, 38.09, 33.61, 17.27};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
+        assertEquals(2, propDataOut.getPropagationPaths().size(), "Number of paths");
+
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
 
         //Actual values
-        double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
-        double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
-        double[] actualAGroundH = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundH;
-        double[] actualWF = propDataOut.getPropagationPaths().get(0).groundAttenuation.wF;
-        double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
-        double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
-        double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
-        double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
-        double[] actualABoundaryF = propDataOut.getPropagationPaths().get(0).double_aBoundaryF;
-        double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
-
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
@@ -224,14 +233,17 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct H,
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct F,
         };
         double[][] gPaths = new double[][]{
-                {0.5} //Path 1 : direct
+                {0.5},{0.5} //Path 1 : direct H and F
         };
 
         //Assertion
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+
+        assertEquals(2, propDataOut.getPropagationPaths().size(), "Number of paths");
 
         //Expected values
         double[] expectedWH = new double[]{8.2e-05, 4.5e-04, 2.5e-03, 0.01, 0.08, 0.41, 2.10, 10.13};
@@ -252,40 +264,50 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
-        double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
-        double[] actualAGroundH = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundH;
-        double[] actualWF = propDataOut.getPropagationPaths().get(0).groundAttenuation.wF;
-        double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
-        double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+
+
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
-        double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
-        double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
-        double[] actualABoundaryF = propDataOut.getPropagationPaths().get(0).double_aBoundaryF;
-        double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
-
     }
 
     /**
@@ -299,14 +321,17 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Expected values
         double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct H,
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct F,
         };
         double[][] gPaths = new double[][]{
-                {1.0} //Path 1 : direct
+                {1.0},{1.0} //Path 1 : direct H and F
         };
 
         //Assertion
         assertPaths(pts, gPaths, propDataOut.getPropagationPaths());
+
+        assertEquals(2, propDataOut.getPropagationPaths().size(), "Number of paths");
 
         //Expected values
         double[] expectedWH = new double[]{4.9e-04, 2.7e-03, 1.5e-02, 0.08, 0.41, 2.02, 9.06, 35.59};
@@ -325,38 +350,49 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLF = new double[]{36.21, 36.16, 36.03, 31.63, 35.53, 34.36, 29.87, 13.54};
         double[] expectedL = new double[]{36.21, 36.16, 35.31, 29.71, 33.70, 34.36, 29.87, 13.54};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
+
+
         //Actual values
-        double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
-        double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
-        double[] actualAGroundH = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundH;
-        double[] actualWF = propDataOut.getPropagationPaths().get(0).groundAttenuation.wF;
-        double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
-        double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
-        double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
-        double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
-        double[] actualABoundaryF = propDataOut.getPropagationPaths().get(0).double_aBoundaryF;
-        double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
+
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
@@ -371,12 +407,16 @@ public class AttenuationComputeOutputCnossosTest {
         //Out and computation settings
         AttenuationComputeOutput propDataOut = computeCnossosPath("TC04_Direct");
 
+        assertEquals(2, propDataOut.getPropagationPaths().size(), "Number of paths");
+
         //Expected values
         double[][][] pts = new double[][][]{
-                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct
+                {{0.00, 1.00}, {194.16, 4.00}}, //Path 1 : direct H,
+                {{0.00, 1.00}, {194.16, 4.00}} //Path 1 : direct F,
         };
         double[][] gPaths = new double[][]{
-                {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)} //Path 1 : direct
+                {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)}, //Path 1 : direct H,
+                {0.2*(40.88/194.16) + 0.5*(102.19/194.16) + 0.9*(51.09/194.16)} //Path 1 : direct F,
         };
 
         //Assertion
@@ -386,9 +426,6 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedWH = new double[]{1.0e-04, 5.6e-04, 3.1e-03, 0.02, 0.09, 0.50, 2.53, 11.96};
         double[] expectedCfH = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
         double[] expectedAGroundH = new double[]{-1.37, -1.37, -1.37, 1.77, 6.23, -1.37, -1.37, -1.37};
-        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.02, 0.09, 0.50, 2.53, 11.96};
-        double[] expectedCfF = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
-        double[] expectedAGroundF = new double[]{-2.00, -2.00, -2.00, -2.00, -0.95, -2.00, -2.00, -2.00};
 
         double[] expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
         double[] expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.71, 1.88, 6.36, 22.70};
@@ -399,38 +436,53 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLF = new double[]{38.21, 38.15, 38.03, 37.86, 36.48, 36.36, 31.87, 15.54};
         double[] expectedL = new double[]{37.91, 37.85, 37.73, 36.37, 34.23, 36.06, 31.57, 15.24};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
+
         //Actual values
-        double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
-        double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
-        double[] actualAGroundH = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundH;
-        double[] actualWF = propDataOut.getPropagationPaths().get(0).groundAttenuation.wF;
-        double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
-        double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
-        double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
-        double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
-        double[] actualABoundaryF = propDataOut.getPropagationPaths().get(0).double_aBoundaryF;
-        double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
-
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+        // Direct path (F)
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+        double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.02, 0.09, 0.50, 2.53, 11.96};
+        double[] expectedCfF = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
+        double[] expectedAGroundF = new double[]{-2.00, -2.00, -2.00, -2.00, -0.95, -2.00, -2.00, -2.00};
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
+
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
@@ -460,9 +512,12 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertPaths(pts, gPaths, propDataOut.getPropagationPaths()); // table17
-        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment()); // table 18
-        assertPlanes(meanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList()); // table 18
+        assertPaths(pts, gPaths, Collections.singletonList(propDataOut.getPropagationPaths().get(0))); // table17
+
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+
+        assertPlanes(meanPlanes, cnossosPath.getSRSegment()); // table 18
+        assertPlanes(meanPlanes, cnossosPath.getSegmentList()); // table 18
 
         //Expected values
         double[] expectedWH = new double[]{1.6e-04, 8.7e-04, 4.8e-03, 0.03, 0.14, 0.75, 3.70, 16.77};
@@ -482,44 +537,49 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{37.26, 37.21, 37.08, 36.91, 36.57, 35.41, 30.91, 14.54};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
-        double[] actualWH = propDataOut.getPropagationPaths().get(0).groundAttenuation.wH;
-        double[] actualCfH = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfH;
-        double[] actualAGroundH = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundH;
-        double[] actualWF = propDataOut.getPropagationPaths().get(0).groundAttenuation.wF;
-        double[] actualCfF = propDataOut.getPropagationPaths().get(0).groundAttenuation.cfF;
-        double[] actualAGroundF = propDataOut.getPropagationPaths().get(0).groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = propDataOut.getPropagationPaths().get(0).aAtm;
-        double[] actualADiv = propDataOut.getPropagationPaths().get(0).aDiv;
-        double[] actualABoundaryH = propDataOut.getPropagationPaths().get(0).double_aBoundaryH;
-        double[] actualABoundaryF = propDataOut.getPropagationPaths().get(0).double_aBoundaryF;
-        double[] actualLH = addArray(propDataOut.getPropagationPaths().get(0).aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(propDataOut.getPropagationPaths().get(0).aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(propDataOut.getPropagationPaths().get(0).aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
-
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
+
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
-
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-        double[] valL = getMaxValeurAbsolue(diffL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
 
     }
 
@@ -532,8 +592,14 @@ public class AttenuationComputeOutputCnossosTest {
         //Out and computation settings
         AttenuationComputeOutput propDataOut = computeCnossosPath("TC06_Direct");
 
-        assertEquals(1, propDataOut.getPropagationPaths().size());
-        assertEquals(2, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
+
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+
+        assertFalse(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPath.getCutProfile().getProfileType());
+        assertEquals(2, cnossosPath.getSegmentList().size());
 
         /* Table 23 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -547,8 +613,8 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedRPrime =new Coordinate(194.16,8.5);
 
         assertMirrorPoint(expectedSPrime,expectedRPrime,
-                propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,
-                propDataOut.getPropagationPaths().get(0).getSegmentList().get(1).rPrime);
+                cnossosPath.getSegmentList().get(0).sPrime,
+                cnossosPath.getSegmentList().get(1).rPrime);
 
 
         /* Table 24 */
@@ -563,9 +629,9 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(srMeanPlanes, propDataOut.getPropagationPaths().get(0).getSRSegment());
-        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertZProfil(expectedZProfile, cnossosPath.getCutProfile().computePts2DGround());
+        assertPlanes(srMeanPlanes, cnossosPath.getSRSegment());
+        assertPlanes(segmentsMeanPlanes, cnossosPath.getSegmentList());
 
         //Expected values
         double[] expectedDeltaDiffSR = new double[]{0., 0., 0., 3.16, 0.56, 0., 0., 0.};
@@ -593,39 +659,32 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLF = new double[]{37.53, 37.47, 37.31, 36.89, 36.84, 35.67, 31.18, 14.82};
         double[] expectedL = new double[]{37.53, 37.47, 37.33, 34.99, 36.60, 35.67, 31.18, 14.82};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
-        //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSR = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSO = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundOR = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeR = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrime = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSO = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundOR = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiff = proPath.aBoundaryH.aDiff;
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        //Actual values
+        double[] actualDeltaDiffSR = cnossosPath.aBoundary.deltaDiffSR;
+        double[] actualAGroundSO = cnossosPath.aBoundary.aGroundSO;
+        double[] actualAGroundOR = cnossosPath.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeR = cnossosPath.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrime = cnossosPath.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSO = cnossosPath.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundOR = cnossosPath.aBoundary.deltaGroundOR;
+        double[] actualADiff = cnossosPath.aBoundary.aDiff;
+
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
         //Assertions
 
-        assertEquals(2, proPath.getSegmentList().size());
+        assertEquals(2, cnossosPath.getSegmentList().size());
 
         // Segment S-O
-        SegmentPath SO = proPath.getSegmentList().get(0);
+        SegmentPath SO = cnossosPath.getSegmentList().get(0);
         assertEquals(0.05, SO.a, ERROR_EPSILON_LOWEST);
         assertEquals(-2.33, SO.b, ERROR_EPSILON_LOWEST);
         assertEquals(0.31, SO.sPrime.x, ERROR_EPSILON_LOWEST);
@@ -634,7 +693,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertEquals(10, SO.r.y, ERROR_EPSILON_LOWEST);
 
         // Segment 0-R
-        SegmentPath OR = proPath.getSegmentList().get(1);
+        SegmentPath OR = cnossosPath.getSegmentList().get(1);
         assertEquals(0.0, OR.a, ERROR_EPSILON_LOWEST);
         assertEquals(10.00, OR.b, ERROR_EPSILON_LOWEST);
         assertEquals(178.84, OR.s.x, ERROR_EPSILON_LOWEST);
@@ -643,7 +702,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertEquals(8.50, OR.rPrime.y, ERROR_EPSILON_LOWEST);
 
         // Segment S-R
-        SegmentPath SR = proPath.getSRSegment();
+        SegmentPath SR = cnossosPath.getSRSegment();
         assertEquals(0.05, SR.a, ERROR_EPSILON_LOWEST);
         assertEquals(-2.83, SR.b, ERROR_EPSILON_LOWEST);
 
@@ -660,17 +719,33 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
@@ -687,6 +762,13 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Expected values
 
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
+
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPath.getCutProfile().getProfileType());
+        assertEquals(2, cnossosPath.getSegmentList().size());
         /* Table 33 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
         expectedZProfile.add(new Coordinate(0.00, 0.00));
@@ -696,16 +778,16 @@ public class AttenuationComputeOutputCnossosTest {
         expectedZProfile.add(new Coordinate(194.16, 0.00));
 
         assertZProfil(expectedZProfile,
-                Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment().getPoints2DGround()));
+                Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
 
         /* Table 34 */
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
 
         assertMirrorPoint(expectedSPrime,
-                expectedRPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,
-                propDataOut.getPropagationPaths().get(0).getSegmentList().
-                        get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+                expectedRPrime,cnossosPath.getSegmentList().get(0).sPrime,
+                cnossosPath.getSegmentList().
+                        get(cnossosPath.getSegmentList().size()-1).rPrime);
 
 
 
@@ -722,7 +804,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         //Assertion
-        assertPlanes(segmentsMeanPlanes, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes, cnossosPath.getSegmentList());
 
         //Expected values
         double[] expectedDeltaDiffSRH = new double[]{6.01, 6.96, 8.41, 10.36, 12.72, 15.37, 18.19, 21.10};
@@ -761,47 +843,32 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPath.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPath.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPath.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPath.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPath.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPath.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPath.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPath.aBoundary.aDiff;
 
         //Disabled because only diffraction
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPath.groundAttenuation.w;
+        double[] actualCfH = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPath.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
+
         //Assertions
-        assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
-        assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
-        assertEquals(194.16, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOW);
-        assertEquals(-4.00, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(0.00, cnossosPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-1.00, cnossosPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(194.16, cnossosPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-4.00, cnossosPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("DeltaDiffSRH", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -812,6 +879,36 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORH", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiffH", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
 
+        assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_MEDIUM);
+
+        assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+
+        CnossosPath cnossosPathH = cnossosPath;
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+        double[] actualDeltaDiffSRF = cnossosPath.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPath.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPath.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPath.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPath.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPath.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPath.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPath.aBoundary.aDiff;
+
+
+        double[] actualWF = cnossosPath.groundAttenuation.w;
+        double[] actualCfF = cnossosPath.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPath.groundAttenuation.aGround;
+
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+
         assertDoubleArrayEquals("DeltaDiffSRF", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOF", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundORF", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_LOWEST);
@@ -821,28 +918,23 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORF", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiffF", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
 
-        //Disabled because only diffraction
-        /*assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_LOWEST);*/
-
-        assertDoubleArrayEquals("AlphaAtm", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ADiv", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+        assertDoubleArrayEquals("WF", expectedWF, actualWF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("CfF", expectedCfF, actualCfF, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("AGroundF", expectedAGroundF, actualAGroundF, ERROR_EPSILON_HIGH);
+
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, SOUND_POWER_LEVELS);
         assertDoubleArrayEquals("LF", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal,cnossosPathH.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
         assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-
     }
+
 
     /**
      * Test TC08 -- Flat ground with spatially varying acoustic properties and short barrier
@@ -851,7 +943,36 @@ public class AttenuationComputeOutputCnossosTest {
     public void TC08() throws IOException {
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC08_Direct", "TC08_Right", "TC08_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC08_Direct", "TC08_Right", "TC08_Right_Curved", "TC08_Left", "TC08_Left_Curved");
+
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+
+
+
 
         //Expected values
 
@@ -867,13 +988,10 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedSPrime =new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime =new Coordinate(194.16,-4.00);
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
-
-
         assertMirrorPoint(expectedSPrime,expectedRPrime,
-                propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime,
-                propDataOut.getPropagationPaths().get(0).getSegmentList().
-                        get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+                cnossosPathDirectH.getSegmentList().get(0).sPrime,
+                cnossosPathDirectH.getSegmentList().
+                        get(cnossosPathDirectH.getSegmentList().size()-1).rPrime);
 
         /* Table 43 */
         double [][] segmentsMeanPlanes0 = new double[][]{
@@ -892,12 +1010,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Assertion
 
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertZProfil(expectedZProfile, cnossosPathDirectH.getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
 
         //Expected values
         //Path0 : vertical plane
@@ -929,40 +1046,27 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{32.69, 31.57, 29.97, 27.87, 24.32, 21.42, 14.14, -5.09};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
-
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+
         //Assertions
-        assertEquals(0.13, proPath.deltaH, ERROR_EPSILON_LOWEST);
-        assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
-        assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
-        assertEquals(194.16, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOW);
-        assertEquals(-4.00, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(0.13, cnossosPathDirectH.delta, ERROR_EPSILON_LOWEST);
+        assertEquals(0.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-1.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(194.16, cnossosPathDirectH.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-4.00, cnossosPathDirectH.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -973,6 +1077,21 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORH - vertical plane", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("actualADiffH - vertical plane", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
 
+        assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
+
         assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOF - vertical plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_LOWEST);
@@ -982,14 +1101,17 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORF - vertical plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("actualADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_LOWEST);
 
-        assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, cnossosPathDirectF.double_aBoundary, ERROR_EPSILON_LOWEST);
+
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+
         assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+
+
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal,cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+
+        assertDoubleArrayEquals("L", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
         //Path1 : right lateral
@@ -1009,25 +1131,24 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLF = new double[]{15.77, 12.77, 9.63, 6.43, 1.69, -1.29, -9.41, -31.03};
 
         //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathRightF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
-        assertEquals(27.07, proPath.deltaH, ERROR_EPSILON_LOWEST);
+        assertEquals(27.07, cnossosPathRightH.delta, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
@@ -1061,26 +1182,23 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{28.91, 26.83, 24.28, 18.92, 10.92, 14.14, 6.68, -12.70};
         expectedLF = new double[]{29.59, 27.51, 24.96, 22.09, 17.68, 14.82, 7.36, -12.02};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualDeltaDiffSRH = cnossosPathLeftH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathLeftF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
-        assertEquals(0.61, proPath.deltaH, ERROR_EPSILON_LOWEST);
+        assertEquals(0.61, cnossosPathLeftH.delta, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOW);
@@ -1102,39 +1220,39 @@ public class AttenuationComputeOutputCnossosTest {
         assertArrayEquals(  new double[]{8.17,16.86,22.51,25.46,24.87,23.44,15.93,-5.43},L, ERROR_EPSILON_VERY_LOW);
     }
 
-    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
-        profileBuilder
-                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
-                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
-                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
-    }
-
-    public static void addTopographicTC5Model(ProfileBuilder profileBuilder) {
-        profileBuilder
-                // top horizontal line
-                .addTopographicLine(0, 80, 0, 120, 80, 0)
-                .addTopographicLine(120, 80, 0, 225, 80, 0)
-                // bottom horizontal line
-                .addTopographicLine(225, -20, 0, 120, -20, 0)
-                .addTopographicLine(120, -20, 0, 0, -20, 0)
-                // right vertical line
-                .addTopographicLine(225, 80, 0, 225, -20, 0)
-                // left vertical line
-                .addTopographicLine(0, -20, 0, 0, 80, 0)
-                // center vertical line
-                .addTopographicLine(120, -20, 0, 120, 80, 0)
-                // elevated rectangle
-                .addTopographicLine(185, -5, 10, 205, -5, 10)
-                .addTopographicLine(205, -5, 10, 205, 75, 10)
-                .addTopographicLine(205, 75, 10, 185, 75, 10)
-                .addTopographicLine(185, 75, 10, 185, -5, 10);
-
-                // ramp connection
-                profileBuilder.addTopographicLine(120, 80, 0, 185, 75, 10)
-                .addTopographicLine(120, -20, 0, 185, -5, 10)
-                .addTopographicLine(205, 75, 10, 225, 80, 0)
-                .addTopographicLine(205, -5, 10, 225, -20, 0);
-    }
+//    public static void addGroundAttenuationTC5(ProfileBuilder profileBuilder) {
+//        profileBuilder
+//                .addGroundEffect(0.0, 50.0, -20.0, 80.0, 0.9)
+//                .addGroundEffect(50.0, 150.0, -20.0, 80.0, 0.5)
+//                .addGroundEffect(150.0, 225.0, -20.0, 80.0, 0.2);
+//    }
+//
+//    public static void addTopographicTC5Model(ProfileBuilder profileBuilder) {
+//        profileBuilder
+//                // top horizontal line
+//                .addTopographicLine(0, 80, 0, 120, 80, 0)
+//                .addTopographicLine(120, 80, 0, 225, 80, 0)
+//                // bottom horizontal line
+//                .addTopographicLine(225, -20, 0, 120, -20, 0)
+//                .addTopographicLine(120, -20, 0, 0, -20, 0)
+//                // right vertical line
+//                .addTopographicLine(225, 80, 0, 225, -20, 0)
+//                // left vertical line
+//                .addTopographicLine(0, -20, 0, 0, 80, 0)
+//                // center vertical line
+//                .addTopographicLine(120, -20, 0, 120, 80, 0)
+//                // elevated rectangle
+//                .addTopographicLine(185, -5, 10, 205, -5, 10)
+//                .addTopographicLine(205, -5, 10, 205, 75, 10)
+//                .addTopographicLine(205, 75, 10, 185, 75, 10)
+//                .addTopographicLine(185, 75, 10, 185, -5, 10);
+//
+//                // ramp connection
+//                profileBuilder.addTopographicLine(120, 80, 0, 185, 75, 10)
+//                .addTopographicLine(120, -20, 0, 185, -5, 10)
+//                .addTopographicLine(205, 75, 10, 225, 80, 0)
+//                .addTopographicLine(205, -5, 10, 225, -20, 0);
+//    }
 
     /**
      * Test TC09 -- Ground with spatially varying heights and and acoustic properties and short barrier
@@ -1142,9 +1260,32 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC09() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC09_Direct", "TC09_Right", "TC09_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC09_Direct", "TC09_Right", "TC09_Right_Curved", "TC09_Left", "TC09_Left_Curved");
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
 
         //Expected values
 
@@ -1162,9 +1303,9 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedSPrime =new Coordinate(0.24,-4.92);
         Coordinate expectedRPrime =new Coordinate(194.48,6.59);
 
-        assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).
-                getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).getSegmentList().
-                get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+        assertMirrorPoint(expectedSPrime,expectedRPrime,cnossosPathDirectH.
+                getSegmentList().get(0).sPrime,cnossosPathDirectH.getSegmentList().
+                get(cnossosPathDirectH.getSegmentList().size()-1).rPrime);
 
 
         /* Table 60 */
@@ -1183,11 +1324,11 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment()
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.getSRSegment()
                 .getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -1219,40 +1360,40 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{30.38, 28.44, 26.01, 23.24, 20.11, 16.05, 8.60, -9.89};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
-        assertEquals(0.24, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-4.92, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
-        assertEquals(194.48, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(6.59, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.24, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-4.92, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(194.48, cnossosPathDirectH.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(6.59, cnossosPathDirectH.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -1303,24 +1444,20 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{14.64, 11.63, 8.50, 1.44, 1.91, -2.43, -10.56, -32.21};
         expectedLF = new double[]{14.64, 11.48, 8.31, 5.30, 1.91, -2.43, -10.56, -32.21};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathRightF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -1356,23 +1493,20 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{28.47, 26.39, 23.84, 20.97, 17.79, 13.70, 6.22, -13.19};
         expectedLF = new double[]{28.47, 26.39, 23.84, 20.97, 17.79, 13.70, 6.22, -13.19};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualDeltaDiffSRH = cnossosPathLeftH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathLeftF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
@@ -1403,9 +1537,34 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC10() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC10_Direct", "TC10_Right", "TC10_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC10_Direct", "TC10_Right", "TC10_Right_Curved", "TC10_Left", "TC10_Left_Curved");
 
-        //Expected values
+
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+
 
         /* Table 74 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -1435,11 +1594,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Assertion
 
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0).getSRSegment()
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.getSRSegment()
                 .getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -1472,40 +1631,40 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL, A_WEIGHTING);
 
         //Assertions
-        assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_MEDIUM);
-        assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
-        assertEquals(20.00, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_LOW);
-        assertEquals(-4.00, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(0.00, cnossosPathDirectH.getSRSegment().sPrime.x, ERROR_EPSILON_MEDIUM);
+        assertEquals(-1.00, cnossosPathDirectH.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(20.00, cnossosPathDirectH.getSRSegment().rPrime.x, ERROR_EPSILON_LOW);
+        assertEquals(-4.00, cnossosPathDirectH.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -1550,22 +1709,20 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{41.79, 38.22, 33.80, 29.51, 25.90, 22.57, 18.96, 13.89};
         expectedLF = new double[]{41.79, 38.22, 33.80, 29.51, 25.90, 22.57, 18.96, 13.89};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -1595,19 +1752,16 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{41.79, 38.22, 33.80, 29.51, 25.90, 22.57, 18.96, 13.89};
         expectedLF = new double[]{41.79, 38.22, 33.80, 29.51, 25.90, 22.57, 18.96, 13.89};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         //Values are different because CNOSSOS doesn't seem to use the rubber band methods.
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -1624,26 +1778,51 @@ public class AttenuationComputeOutputCnossosTest {
         assertArrayEquals(  new double[]{46.09,42.49,38.44,35.97,34.67,33.90,33.09,31.20},L, ERROR_EPSILON_LOWEST);
     }
 
-    private static void exportRays(String path, AttenuationComputeOutput attenuationComputeOutput) throws IOException {
-        JsonMapper.Builder builder = JsonMapper.builder();
-        JsonMapper mapper = builder.build();
-        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), attenuationComputeOutput);
-    }
-
+//    private static void exportRays(String path, AttenuationComputeOutput attenuationComputeOutput) throws IOException {
+//        JsonMapper.Builder builder = JsonMapper.builder();
+//        JsonMapper mapper = builder.build();
+//        mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+//                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+//                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+//                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+//                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+//                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+//        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(path), attenuationComputeOutput);
+//    }
+//
     /**
      * Test TC11 -- Flat ground with homogeneous acoustic properties and cubic building – receiver at large height
      */
     @Test
     public void TC11() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC11_Direct", "TC11_Right", "TC11_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC11_Direct", "TC11_Right", "TC11_Right_Curved", "TC11_Left", "TC11_Left_Curved");
 
+
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
 
         /* Table 85 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -1692,14 +1871,14 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertZProfil(expectedZProfile, cnossosPathDirectH.getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
 
-        assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertZProfil(expectedZProfileRight, cnossosPathRightH.getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
 
-        assertZProfil(expectedZProfileLeft, propDataOut.getPropagationPaths().get(2).getCutProfile().computePts2DGround());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertZProfil(expectedZProfileLeft, cnossosPathLeftH.getCutProfile().computePts2DGround());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -1732,40 +1911,40 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
-        assertEquals(0.00, proPath.getSRSegment().sPrime.x, ERROR_EPSILON_HIGH);
-        assertEquals(-1.00, proPath.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
-        assertEquals(5.10, proPath.getSRSegment().rPrime.x, ERROR_EPSILON_HIGHEST);
-        assertEquals(-1.76, proPath.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(0.00, cnossosPathDirectH.getSRSegment().sPrime.x, ERROR_EPSILON_HIGH);
+        assertEquals(-1.00, cnossosPathDirectH.getSRSegment().sPrime.y, ERROR_EPSILON_HIGHEST);
+        assertEquals(5.10, cnossosPathDirectH.getSRSegment().rPrime.x, ERROR_EPSILON_HIGHEST);
+        assertEquals(-1.76, cnossosPathDirectH.getSRSegment().rPrime.y, ERROR_EPSILON_HIGHEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -1809,21 +1988,18 @@ public class AttenuationComputeOutputCnossosTest {
         expectedDeltaDiffSRH = new double[]{14.47, 17.92, 22.26, 26.57, 30.18, 33.37, 36.43, 39.45};
         expectedLH = new double[]{41.28, 37.82, 33.47, 29.14, 25.48, 22.12, 18.43, 13.09};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
@@ -1849,15 +2025,12 @@ public class AttenuationComputeOutputCnossosTest {
         expectedCfF = new double[]{25.05, 25.34, 26.56, 29.11, 23.63, 7.01, 0.74, 0.13};
         expectedAGroundF = new double[]{-1.51, -1.51, -1.51, -1.51, -1.51, -1.51, -1.51, -1.51};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
@@ -1877,7 +2050,7 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC12() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC12_Direct", "TC12_Right", "TC12_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC12_Direct", "TC12_Right", "TC12_Right_Curved", "TC12_Left", "TC12_Left_Curved");
 
         /* Table 100 */
         List<Coordinate> expectedZProfile = Arrays.asList(
@@ -1911,23 +2084,45 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.00, 0.00, 1.00, 6.00, 32.66, 0.50, 0.50}
         };
 
-        //Assertion
-        assertEquals(3, propDataOut.getPropagationPaths().size());
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
-        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
-        assertZProfil(expectedZProfileOnR, Arrays.asList(directPath.getSegmentList().
-                get(directPath.getSegmentList().size() - 1).getPoints2DGround()));
+        assertEquals(6, propDataOut.getPropagationPaths().size());
 
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
 
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
 
-        assertEquals(3, propDataOut.getPropagationPaths().get(0).getSegmentList().size());
-        Coordinate sPrime = propDataOut.getPropagationPaths().get(0).getSegmentList().get(0).sPrime;
-        Coordinate rPrime = propDataOut.getPropagationPaths().get(0).getSegmentList().get(2).rPrime;
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(cnossosPathDirectH.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileOnR, Arrays.asList(cnossosPathDirectH.getSegmentList().
+                get(cnossosPathDirectH.getSegmentList().size() - 1).getPoints2DGround()));
+
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
+
+        assertEquals(3, cnossosPathDirectH.getSegmentList().size());
+        Coordinate sPrime = cnossosPathDirectH.getSegmentList().get(0).sPrime;
+        Coordinate rPrime = cnossosPathDirectH.getSegmentList().get(2).rPrime;
 
         assertCoordinateEquals("TC12 Table 102 S' S->O", new Coordinate(0, -1), sPrime, DELTA_COORDS);
         assertCoordinateEquals("TC12 Table 102 R' O->R", new Coordinate(31.62, -6), rPrime, DELTA_COORDS);
@@ -1963,44 +2158,44 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal),
+                SOUND_POWER_LEVELS);
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
-        assertEquals(3, proPath.getSegmentList().size());
-        SegmentPath SR = proPath.getSRSegment();
-        SegmentPath SO = proPath.getSegmentList().get(0);
-        SegmentPath OR = proPath.getSegmentList().get(2);
+        assertEquals(3, cnossosPathDirectH.getSegmentList().size());
+        SegmentPath SR = cnossosPathDirectH.getSRSegment();
+        SegmentPath SO = cnossosPathDirectH.getSegmentList().get(0);
+        SegmentPath OR = cnossosPathDirectH.getSegmentList().get(2);
         // Table 103
         assertEquals(32.02, SR.d, ERROR_EPSILON_LOWEST);
-        assertEquals(3.17, proPath.deltaH, ERROR_EPSILON_LOWEST);
-        assertEquals(6.55, proPath.e, ERROR_EPSILON_LOW);
+        assertEquals(3.17, cnossosPathDirectH.delta, ERROR_EPSILON_LOWEST);
+        assertEquals(6.55, cnossosPathDirectH.e, ERROR_EPSILON_LOW);
         assertEquals(0.00, SO.sPrime.x, ERROR_EPSILON_LOWEST);
         assertEquals(-1.00, SO.sPrime.y, ERROR_EPSILON_LOWEST);
         assertEquals(31.62, OR.rPrime.x, ERROR_EPSILON_LOWEST);
@@ -2050,28 +2245,25 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{45.22, 43.29, 40.69, 37.20, 32.81, 28.46, 24.22, 18.34};
         expectedLF = new double[]{45.22, 43.29, 40.69, 37.20, 32.81, 28.46, 24.22, 18.34};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathRightH.aGlobal, cnossosPathRightF.aGlobal), SOUND_POWER_LEVELS);
 
         //Assertions
-        assertEquals(2.74, proPath.e, ERROR_EPSILON_LOWEST);
-        assertEquals(0.48, proPath.deltaH, ERROR_EPSILON_LOWEST);
-        assertEquals(0.48, proPath.deltaF, ERROR_EPSILON_LOWEST);
+        assertEquals(2.74, cnossosPathRightH.e, ERROR_EPSILON_LOWEST);
+        assertEquals(0.48, cnossosPathRightH.delta, ERROR_EPSILON_LOWEST);
+        assertEquals(0.48, cnossosPathRightH.delta, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
@@ -2097,20 +2289,17 @@ public class AttenuationComputeOutputCnossosTest {
         expectedCfF = new double[]{32.82, 33.45, 35.78, 38.05, 23.71, 4.62, 0.49, 0.10};
         expectedAGroundF = new double[]{-1.50, -1.50, -1.50, -1.50, -1.50, -1.50, -1.50, -1.50};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         //Assertions
-        assertEquals(2.74, proPath.e, ERROR_EPSILON_LOWEST);
-        assertEquals(1.03, proPath.deltaH, ERROR_EPSILON_LOWEST);
-        assertEquals(1.03, proPath.deltaF, ERROR_EPSILON_LOWEST);
+        assertEquals(2.74, cnossosPathLeftH.e, ERROR_EPSILON_LOWEST);
+        assertEquals(1.03, cnossosPathLeftH.delta, ERROR_EPSILON_LOWEST);
+        assertEquals(1.03, cnossosPathLeftF.delta, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("WH - left lateral", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("CfH - left lateral", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
@@ -2130,8 +2319,33 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC13() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC13_Direct", "TC13_Right", "TC13_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC13_Direct", "TC13_Right", "TC13_Right_Curved", "TC13_Left", "TC13_Left_Curved");
 
+
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
 
         //Expected values
 
@@ -2161,11 +2375,11 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0)
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH
                 .getSRSegment().getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -2198,40 +2412,40 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
-        double[] actualLA = sumArray(actualL,A_WEIGHTING);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
+        double[] actualLA = sumArray(actualL, A_WEIGHTING);
 
         //Assertions
-        assertEquals(0.19, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-4.35, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
-        assertEquals(194.16, proPath.getSegmentList().get(2).rPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-8.50, proPath.getSegmentList().get(2).rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.19, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-4.35, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(194.16, cnossosPathDirectH.getSegmentList().get(2).rPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-8.50, cnossosPathDirectH.getSegmentList().get(2).rPrime.y, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
@@ -2277,20 +2491,19 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{20.65, 17.17, 12.77, 8.14, 4.02, -0.45, -8.20, -28.21};
 
         //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
@@ -2322,21 +2535,18 @@ public class AttenuationComputeOutputCnossosTest {
         expectedDeltaDiffSRH = new double[]{9.89, 12.15, 14.74, 17.53, 20.42, 23.37, 26.35, 29.35};
         expectedLH = new double[]{27.63, 25.32, 22.60, 19.64, 16.40, 12.27, 4.74, -14.83};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualDeltaDiffSRH = cnossosPathLeftH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
@@ -2366,9 +2576,35 @@ public class AttenuationComputeOutputCnossosTest {
     public void TC14() throws IOException {
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC14_Direct", "TC14_Right", "TC14_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC14_Direct", "TC14_Right", "TC14_Right_Curved", "TC14_Left", "TC14_Left_Curved");
 
 
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+
+        
         //Expected values
 
         /* Table 132 */
@@ -2398,11 +2634,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Assertion
         // Wrong value of z1 in Cnossos document for the 3 paths
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0)
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH
                 .getSRSegment().getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -2434,38 +2670,38 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
+
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
-        assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
-        assertEquals(-6.35, proPath.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-2.48, proPath.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(0.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-1.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(-6.35, cnossosPathDirectH.getSegmentList().get(1).rPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-2.48, cnossosPathDirectH.getSegmentList().get(1).rPrime.y, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
@@ -2510,26 +2746,23 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{48.23, 46.85, 44.81, 41.89, 37.86, 33.42, 29.09, 23.37};
         expectedLF = new double[]{48.23, 46.85, 44.81, 41.89, 37.86, 33.42, 29.09, 23.37};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathRightF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
-        assertEquals(2.21, proPath.e, ERROR_EPSILON_LOWEST);
+        assertEquals(2.21, cnossosPathRightH.e, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("CfH", expectedCfH, actualCfH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundH", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
@@ -2563,23 +2796,20 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{43.14, 40.59, 37.77, 34.74, 31.30, 26.99, 21.73, 15.12};
         expectedLF = new double[]{43.14, 40.59, 37.77, 34.74, 31.30, 26.99, 21.73, 15.12};
 
-        //Actual values
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualDeltaDiffSRF = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualDeltaDiffSRH = cnossosPathLeftH.aBoundary.deltaDiffSR;
+        actualDeltaDiffSRF = cnossosPathLeftF.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -2610,7 +2840,33 @@ public class AttenuationComputeOutputCnossosTest {
     public void TC15() throws IOException {
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC15_Direct", "TC15_Right", "TC15_Left");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC15_Direct", "TC15_Right", "TC15_Right_Curved" , "TC15_Left", "TC15_Left_Curved");
+
+
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
 
         /* Table 148 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -2646,10 +2902,10 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         //Assertion
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0).
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.
                 getSRSegment().getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes2, propDataOut.getPropagationPaths().get(2).getSRSegment()); // left
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes2, cnossosPathLeftH.getSRSegment()); // left
         //assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment()); // right : error in value of b cnossos
 
         //Expected values
@@ -2673,31 +2929,31 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{31.67, 27.42, 25.25, 25.20, 25.12, 24.81, 23.65, 19.41};
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
+        
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryH;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = sumArray(actualL,A_WEIGHTING);
 
         //Assertions
-        assertEquals(0.00, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-1.00, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
-        assertEquals(50.25, proPath.getSegmentList().get(proPath.getSegmentList().size()-1).rPrime.x, ERROR_EPSILON_LOWEST);
-        assertEquals(-5.00, proPath.getSegmentList().get(proPath.getSegmentList().size()-1).rPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(0.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-1.00, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_LOWEST);
+        assertEquals(50.25, cnossosPathDirectH.getSegmentList().get(cnossosPathDirectH.getSegmentList().size()-1).rPrime.x, ERROR_EPSILON_LOWEST);
+        assertEquals(-5.00, cnossosPathDirectH.getSegmentList().get(cnossosPathDirectH.getSegmentList().size()-1).rPrime.y, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
@@ -2740,20 +2996,19 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Actual values
         //Actual values - right lateral
-        proPath = propDataOut.getPropagationPaths().get(1);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualDeltaDiffSRH = cnossosPathRightH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH - right lateral", expectedWH, actualWH, ERROR_EPSILON_MEDIUM);
@@ -2788,20 +3043,19 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Actual values
         //Actual values - left lateral
-        proPath = propDataOut.getPropagationPaths().get(2);
 
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualDeltaDiffSRH = cnossosPathLeftH.aBoundary.deltaDiffSR;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
 
         //Assertions
         assertDoubleArrayEquals("WH - left lateral", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -2831,6 +3085,23 @@ public class AttenuationComputeOutputCnossosTest {
         //Out and computation settings
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC16_Direct", "TC16_Reflection");
 
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
+
         /* Table 163 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
         expectedZProfile.add(new Coordinate(0.0, 0.0));
@@ -2852,8 +3123,8 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedSPrime =new Coordinate(0.42,-6.64);
         Coordinate expectedRPrime =new Coordinate(194.84,1.70);
 
-        assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().
-                sPrime,propDataOut.getPropagationPaths().get(0).getSRSegment().rPrime);
+        assertMirrorPoint(expectedSPrime,expectedRPrime,cnossosPathDirectH.getSRSegment().
+                sPrime,cnossosPathDirectH.getSRSegment().rPrime);
 
 
         /* Table 165 */
@@ -2871,15 +3142,15 @@ public class AttenuationComputeOutputCnossosTest {
         //Assertion
 
         // Check SR direct line
-        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
+        List<Coordinate> result = cnossosPathDirectH.getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfile,result);
-        assertEquals(2, propDataOut.getPropagationPaths().size());
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSRSegment());
 
         // Check reflection path
-        result = propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround();
+        result = cnossosPathReflectionH.getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfileReflection, result);
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathReflectionH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -2901,31 +3172,30 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = new double[]{11.06, 21.11, 28.48, 33.71, 36.57, 36.61, 31.91, 13.44};
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
         double[] directLA = actualLA;
 
         //Assertions
-        assertEquals(0.40, proPath.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_VERY_LOW);
-        assertEquals(-6.58, proPath.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_VERY_LOW);
-        assertEquals(198.71, proPath.getSegmentList().get(proPath.getSegmentList().size()-1).rPrime.x, ERROR_EPSILON_VERY_HIGH);
-        assertEquals(1.27, proPath.getSegmentList().get(proPath.getSegmentList().size()-1).rPrime.y, ERROR_EPSILON_LOW);
+        assertEquals(0.40, cnossosPathDirectH.getSegmentList().get(0).sPrime.x, ERROR_EPSILON_VERY_LOW);
+        assertEquals(-6.58, cnossosPathDirectH.getSegmentList().get(0).sPrime.y, ERROR_EPSILON_VERY_LOW);
+        assertEquals(198.71, cnossosPathDirectH.getSegmentList().get(cnossosPathDirectH.getSegmentList().size()-1).rPrime.x, ERROR_EPSILON_VERY_HIGH);
+        assertEquals(1.27, cnossosPathDirectH.getSegmentList().get(cnossosPathDirectH.getSegmentList().size()-1).rPrime.y, ERROR_EPSILON_LOW);
 
         assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - vertical plane", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -2964,23 +3234,21 @@ public class AttenuationComputeOutputCnossosTest {
         expectedL = new double[]{36.30, 36.06, 35.35, 34.51, 33.37, 31.21, 25.37, 10.90};
         expectedLA = new double[]{10.10, 19.96, 26.75, 31.31, 33.37, 32.41, 26.37, 9.80};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathReflectionH.groundAttenuation.w;
+        actualCfH = cnossosPathReflectionH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathReflectionH.groundAttenuation.aGround;
+        actualWF = cnossosPathReflectionF.groundAttenuation.w;
+        actualCfF = cnossosPathReflectionF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathReflectionF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
         double[] reflexionLA = actualLA;
 
@@ -2996,9 +3264,9 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("ADiv - reflexion", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("dLretrodif H - reflexion", expectedRetroDiffH, proPath.aRetroDiffH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("dLretrodif F - reflexion", expectedRetroDiffF, proPath.aRetroDiffF, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("A Labs - reflexion", expectedLabs, proPath.aRef, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("dLretrodif H - reflexion", expectedRetroDiffH, cnossosPathReflectionH.aRetroDiff, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("dLretrodif F - reflexion", expectedRetroDiffF, cnossosPathReflectionF.aRetroDiff, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("A Labs - reflexion", expectedLabs, cnossosPathReflectionH.aRef, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_LOWEST);
@@ -3006,7 +3274,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         double[] LA = sumDbArray(directLA, reflexionLA);
 
-        assertArrayEquals(  new double[]{13.62,23.58,30.71,35.68,38.27,38.01,32.98,15.00},LA, ERROR_EPSILON_LOWEST);
+        assertArrayEquals(new double[]{13.62, 23.58, 30.71, 35.68, 38.27, 38.01, 32.98, 15.00}, LA, ERROR_EPSILON_LOWEST);
     }
 
     /**
@@ -3018,6 +3286,25 @@ public class AttenuationComputeOutputCnossosTest {
         //Out and computation settings
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC17_Direct", "TC17_Reflection");
 
+
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
+
+
         // Expected Values
 
         /* Table 178 */
@@ -3028,7 +3315,7 @@ public class AttenuationComputeOutputCnossosTest {
         expectedZProfile.add(new Coordinate(194.16, 10));
 
         //Assertion
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0).
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.
                 getSRSegment().getPoints2DGround()));
 
         //Expected values
@@ -3060,32 +3347,31 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = new double[]{11.33, 21.37, 28.73, 31.79, 36.60, 36.87, 32.18, 13.72};
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
-        double[] actualDeltaDiffSR = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSO = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundOR = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeR = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrime = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSO = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundOR = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiff = proPath.aBoundaryH.aDiff;
+        double[] actualDeltaDiffSR = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSO = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundOR = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeR = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrime = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSO = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundOR = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiff = cnossosPathDirectH.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
         double[] directLA = actualLA;
 
@@ -3144,30 +3430,28 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLF = new double[]{36.88, 36.31, 35.56, 34.73, 33.62, 31.46, 25.63, 11.17};
         expectedLA = new double[]{10.68, 20.21, 26.98, 29.65, 33.62, 32.66, 26.63, 10.07};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
+        actualWH = cnossosPathReflectionH.groundAttenuation.w;
+        actualCfH = cnossosPathReflectionH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathReflectionH.groundAttenuation.aGround;
+        actualWF = cnossosPathReflectionF.groundAttenuation.w;
+        actualCfF = cnossosPathReflectionF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathReflectionF.groundAttenuation.aGround;
 
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
-
-        actualDeltaDiffSR = proPath.aBoundaryH.deltaDiffSR;
-        actualAGroundSO = proPath.aBoundaryH.aGroundSO;
-        actualAGroundOR = proPath.aBoundaryH.aGroundOR;
-        actualDeltaDiffSPrimeR = proPath.aBoundaryH.deltaDiffSPrimeR;
-        actualDeltaDiffSRPrime = proPath.aBoundaryH.deltaDiffSRPrime;
-        actualDeltaGroundSO = proPath.aBoundaryH.deltaGroundSO;
-        actualDeltaGroundOR = proPath.aBoundaryH.deltaGroundOR;
-        actualADiff = proPath.aBoundaryH.aDiff;
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualDeltaDiffSR = cnossosPathReflectionH.aBoundary.deltaDiffSR;
+        actualAGroundSO = cnossosPathReflectionH.aBoundary.aGroundSO;
+        actualAGroundOR = cnossosPathReflectionH.aBoundary.aGroundOR;
+        actualDeltaDiffSPrimeR = cnossosPathReflectionH.aBoundary.deltaDiffSPrimeR;
+        actualDeltaDiffSRPrime = cnossosPathReflectionH.aBoundary.deltaDiffSRPrime;
+        actualDeltaGroundSO = cnossosPathReflectionH.aBoundary.deltaGroundSO;
+        actualDeltaGroundOR = cnossosPathReflectionH.aBoundary.deltaGroundOR;
+        actualADiff = cnossosPathReflectionH.aBoundary.aDiff;
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
         double[] reflexionLA = actualLA;
 
@@ -3208,9 +3492,23 @@ public class AttenuationComputeOutputCnossosTest {
         //Out and computation settings
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC18_Direct", "TC18_Reflection");
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
 
         // Expected Values
 
@@ -3221,7 +3519,7 @@ public class AttenuationComputeOutputCnossosTest {
         expectedZProfile.add(new Coordinate(178.84, 10));
         expectedZProfile.add(new Coordinate(194.16, 10));
 
-        CutProfile cutProfile = propDataOut.getPropagationPaths().get(0).getCutProfile();
+        CutProfile cutProfile = cnossosPathDirectH.getCutProfile();
         List<Coordinate> result = cutProfile.computePts2DGround();
         assertZProfil(expectedZProfile, result);
 
@@ -3243,15 +3541,14 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         // S-R (not the rayleigh segments SO OR)
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSRSegment());
 
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
         // Check reflexion mean planes
-        assertPlanes(segmentsMeanPlanes1, reflectionPath.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathReflectionH.getSegmentList());
 
-        assertEquals(4,  reflectionPath.getPointList().size());
+        assertEquals(4,  cnossosPathReflectionH.getPointList().size());
 
-        PointPath reflectionPoint = reflectionPath.getPointList().get(2);
+        PointPath reflectionPoint = cnossosPathReflectionH.getPointList().get(2);
         assertEquals(PointPath.POINT_TYPE.REFL, reflectionPoint.type);
 
         assert3DCoordinateEquals("Reflection position TC18 ",
@@ -3279,23 +3576,22 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = new double[]{11.26,21.30,28.68,32.54,36.77,36.80,32.11,13.65};
 
         //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -3315,13 +3611,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-
-        //Actual values - Reflexion left lateral
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-
-        SegmentPath ReflectionSO = proPath.getSegmentList().get(0);
-        SegmentPath ReflectionOnR = proPath.getSegmentList().get(1);
+        SegmentPath ReflectionSO = cnossosPathReflectionH.getSegmentList().get(0);
+        SegmentPath ReflectionOnR = cnossosPathReflectionH.getSegmentList().get(1);
 
         assertEquals(0.7, ReflectionSO.gPath, ERROR_EPSILON_LOWEST);
         assertEquals(0.86, ReflectionSO.gPathPrime, ERROR_EPSILON_LOWEST);
@@ -3339,14 +3630,14 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedDeltaGroundORH = new double[]{-1.75,-1.71,-1.68,-1.66,-1.65,-1.65,-1.64,-1.64};
         double[] expectedADiffH = new double[]{5.62,7.40,9.65,12.22,15.00,17.88,20.83,22.99};
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathReflectionH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathReflectionH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathReflectionH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathReflectionH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathReflectionH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathReflectionH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathReflectionH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathReflectionH.aBoundary.aDiff;
 
         assertDoubleArrayEquals("AGroundSOH - Reflection left lateral", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundORH - Reflection left lateral", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_LOWEST);
@@ -3369,14 +3660,14 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedADiffF = new double[]{5.09,6.70,8.79,11.26,13.97,16.82,19.75,22.72};
 
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathReflectionF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathReflectionF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathReflectionF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathReflectionF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathReflectionF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathReflectionF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathReflectionF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathReflectionF.aBoundary.aDiff;
 
         assertDoubleArrayEquals("DeltaDiffSRF - Reflection left lateral", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("AGroundSOF - Reflection left lateral", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_LOWEST);
@@ -3400,21 +3691,22 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedRetroDiffH = new double[]{2.47, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
         double[] expectedRetroDiffF = new double[]{2.77, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00};
 
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("AAtm - reflexion", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - reflexion", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflexion", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryF - reflexion", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("dLretrodif H - reflexion", expectedRetroDiffH, proPath.aRetroDiffH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("dLretrodif F - reflexion", expectedRetroDiffF, proPath.aRetroDiffF, ERROR_EPSILON_LOWEST);        assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("dLretrodif H - reflexion", expectedRetroDiffH, cnossosPathReflectionH.aRetroDiff, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("dLretrodif F - reflexion", expectedRetroDiffF, cnossosPathReflectionF.aRetroDiff, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - reflexion", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LF - reflexion", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
@@ -3430,10 +3722,33 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC19() throws IOException {
         //Out and computation settings
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC19_Direct", "TC19_Right");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC19_Direct", "TC19_Right",
+                "TC19_Right_Curved", "TC19_Left", "TC19_Left_Curved");
 
-        // Should be 3 but left path could not be defined
-        // assertEquals(3, propDataOut.pathParameters.size());
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
 
 
         //Expected values
@@ -3506,19 +3821,16 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.06, -2.01, 3.00, 5.00, 192.81, 0.46, 0.55}
         };
 
-        // Should be 3 but left path could not be defined
-        assertEquals(2, propDataOut.getPropagationPaths().size());
-
         //Assertion
-        assertZProfil(expectedZProfile, propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround());
-        assertZProfil(expectedZProfileRight, propDataOut.getPropagationPaths().get(1).getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfile, cnossosPathDirectH.getCutProfile().computePts2DGround());
+        assertZProfil(expectedZProfileRight, cnossosPathRightH.getCutProfile().computePts2DGround());
         // Error in ISO
         // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
         // the last wall. The hull is ignoring the 12 meters building on the left side.
         // assertZProfil(expectedZProfileLeft, propDataOut.getPropagationPaths().get(2).getCutProfile().computePts2DGround());
 
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertPlanes(segmentsMeanPlanes1, propDataOut.getPropagationPaths().get(1).getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathRightH.getSRSegment());
 
         // Error in ISO
         // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
@@ -3557,41 +3869,38 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{31.54, 29.56, 26.78, 23.87, 20.74, 16.72, 9.36, -9.20};
         double[] expectedLA = new double[]{5.34, 13.46, 18.18, 20.67, 20.74, 17.92, 10.36, -10.30};
 
-        //Actual values
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-
         // Check gpath
-        assertEquals(3, proPath.getSegmentList().size());
-        assertEquals(0.57, proPath.getSegmentList().get(0).gPath, ERROR_EPSILON_LOWEST);
-        assertEquals(0.2, proPath.getSegmentList().get(2).gPath, ERROR_EPSILON_LOWEST);
+        assertEquals(3, cnossosPathDirectH.getSegmentList().size());
+        assertEquals(0.57, cnossosPathDirectH.getSegmentList().get(0).gPath, ERROR_EPSILON_LOWEST);
+        assertEquals(0.2, cnossosPathDirectH.getSegmentList().get(2).gPath, ERROR_EPSILON_LOWEST);
 
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
         double[] directLA = actualLA;
 
@@ -3642,23 +3951,21 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLF = new double[]{18.77, 14.67, 11.08, 7.77, 4.39, 0.20, -7.35, -26.88};
         expectedLA = new double[]{-7.43, -1.43, 2.41, 4.34, 4.39, 1.40, -6.35, -27.98};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualADiffH = proPath.aDifH;
-        actualADiffF = proPath.aDifF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualADiffH = cnossosPathRightH.aDif;
+        actualADiffF = cnossosPathRightF.aDif;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathRightH.aGlobal, cnossosPathRightF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
         double[] rightLA = actualLA;
 
@@ -3699,20 +4006,20 @@ public class AttenuationComputeOutputCnossosTest {
 
         //proPath = propDataOut.getPropagationPaths().get(2);
         //
-        //actualWH = proPath.groundAttenuation.wH;
-        //actualCfH = proPath.groundAttenuation.cfH;
-        //actualAGroundH = proPath.groundAttenuation.aGroundH;
-        //actualWF = proPath.groundAttenuation.wF;
-        //actualCfF = proPath.groundAttenuation.cfF;
-        //actualAGroundF = proPath.groundAttenuation.aGroundF;
+        //actualWH = proPath.groundAttenuation.w;
+        //actualCfH = proPath.groundAttenuation.cf;
+        //actualAGroundH = proPath.groundAttenuation.aGround;
+        //actualWF = proPath.groundAttenuation.w;
+        //actualCfF = proPath.groundAttenuation.cf;
+        //actualAGroundF = proPath.groundAttenuation.aGround;
         //
         //actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        //actualAAtm = proPath.aAtm;
-        //actualADiv = proPath.aDiv;
-        //actualABoundaryH = proPath.double_aBoundaryF;
-        //actualABoundaryF = proPath.double_aBoundaryF;
-        //actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        //actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        //actualAAtm = cnossosPathDirectH.aAtm;
+        //actualADiv = cnossosPathDirectH.aDiv;
+        //actualABoundaryH = proPath.double_aBoundary;
+        //actualABoundaryF = proPath.double_aBoundary;
+        //actualLH = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        //actualLF = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
         //actualLA = addArray(actualL, A_WEIGHTING);
         //double[] leftLA = actualLA;
         //
@@ -3748,6 +4055,16 @@ public class AttenuationComputeOutputCnossosTest {
     public void TC20() throws IOException {
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC20_Direct");
 
+        assertEquals(2, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
         //Expected values
 
         /* Table 221 */
@@ -3764,9 +4081,9 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0)
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH
                 .getSRSegment().getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
 
         //Expected values
         //Path0 : vertical plane
@@ -3787,23 +4104,21 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{37.41, 37.35, 37.23, 37.06, 36.73, 35.59, 31.17, 15.10};
         double[] expectedLA = new double[]{11.21, 21.25, 28.63, 33.86, 36.73, 36.79, 32.17, 14.00};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
@@ -3835,13 +4150,29 @@ public class AttenuationComputeOutputCnossosTest {
 
     /**
      * TC21 - Building on ground with spatially varying heights and acoustic properties
-     * ERROR_EPSILON_MEDIUM because we add favorable contribution for left and right paths but not in the reference document
+     * ERROR_EPSILON_MEDIUM because we add favourable contribution for left and right paths but not in the reference document
      */
     @Test
     public void TC21() throws IOException {
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC21_Direct", "TC21_Right", "TC21_Left");
 
-        assertEquals(3, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(3);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
 
         /* Table 228 */
         List<Coordinate> expectedZProfileSR = Arrays.asList(
@@ -3896,23 +4227,20 @@ public class AttenuationComputeOutputCnossosTest {
         };
 
         //Assertion Direct
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertZProfil(expectedZProfileSR, Arrays.asList(directPath.getSRSegment().getPoints2DGround()), 0.01);
-        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()),
+        assertZProfil(expectedZProfileSR, Arrays.asList(cnossosPathDirectH.getSRSegment().getPoints2DGround()), 0.01);
+        assertZProfil(expectedZProfileSO, Arrays.asList(cnossosPathDirectH.getSegmentList().get(0).getPoints2DGround()),
                 0.01);
         assertZProfil(expectedZProfileOR, Arrays.asList(
-                        directPath.getSegmentList().get(directPath.getSegmentList().size() - 1).getPoints2DGround()),
+                        cnossosPathDirectH.getSegmentList().get(cnossosPathDirectH.getSegmentList().size() - 1).getPoints2DGround()),
                 0.01);
-        assertPlanes(segmentsMeanPlanes1, directPath.getSRSegment());
-        assertPlanes(segmentsMeanPlanes0,directPath.getSegmentList());
+        assertPlanes(segmentsMeanPlanes1, cnossosPathDirectH.getSRSegment());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
 
         //Assertion Right
-        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
-        assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()), 0.01);
+        assertZProfil(expectedZProfileRight, Arrays.asList(cnossosPathRightH.getSRSegment().getPoints2DGround()), 0.01);
 
         //Assertion Left
-        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
-        assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()), 0.01);
+        assertZProfil(expectedZProfileLeft, Arrays.asList(cnossosPathLeftH.getSRSegment().getPoints2DGround()), 0.01);
 
         //Expected values
         //Path0 : vertical plane
@@ -3952,41 +4280,39 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{35.63, 35.72, 35.39, 35.34, 34.88, 33.57, 28.96, 12.68};
         double[] expectedLA = new double[]{9.43, 19.62, 26.79, 32.14, 34.88, 34.77, 29.96, 11.58};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
-
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -4030,9 +4356,6 @@ public class AttenuationComputeOutputCnossosTest {
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.03, 0.15, 0.76, 3.76, 17.00};
         expectedCfH = new double[]{199.64, 218.28, 203.93, 80.63, 9.47, 1.31, 0.27, 0.06};
         expectedAGroundH = new double[]{-1.06, -1.06, -1.06, -1.06, -1.06, -1.06, -1.06, -1.06};
-        expectedWF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
-        expectedCfF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
-        expectedAGroundF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
 
         expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
         expectedAAtm = new double[]{0.02, 0.08, 0.20, 0.37, 0.70, 1.85, 6.26, 22.33};
@@ -4040,20 +4363,16 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{32.63, 32.56, 32.43, 32.22, 31.82, 30.53, 25.85, 9.29};
         expectedLA = new double[]{3.42, 13.45, 20.82, 26.01, 28.81, 28.72, 23.84, 5.18};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
 
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathRightH.groundAttenuation.w;
+        actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLA = addArray(addArray(cnossosPathRightH.aGlobal, SOUND_POWER_LEVELS), A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -4066,15 +4385,12 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("AAtm - lateral right", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - lateral right", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - lateral right", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
         //Path2 : lateral left
         expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.13, 0.7, 3.48, 15.89};
         expectedCfH = new double[]{209.75, 229.14, 216.34, 87.81, 10.49, 1.42, 0.29, 0.06};
         expectedAGroundH = new double[]{-1.12, -1.12, -1.02, -0.79, -1.12, -1.12, -1.12, -1.12};
-        expectedWF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
-        expectedCfF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
-        expectedAGroundF = new double[]{NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN};
 
         expectedAlphaAtm = new double[]{0.12, 0.41, 1.04, 1.93, 3.66, 9.66, 32.77, 116.88};
         expectedAAtm = new double[]{0.02, 0.08, 0.21, 0.39, 0.74, 1.94, 6.59, 23.49};
@@ -4082,20 +4398,15 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{18.62, 15.68, 12.48, 9.08, 6.07, 1.86, -5.79, -25.71};
         expectedLA = new double[]{-10.59, -3.44, 0.87, 2.87, 3.06, 0.05, -7.81, -29.82};
 
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLA = addArray(addArray(cnossosPathLeftH.aGlobal, SOUND_POWER_LEVELS), A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -4108,11 +4419,12 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("AAtm - lateral left", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv - lateral left", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        //assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - lateral left", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
         double[] LA = addArray(addArray(propDataOut.receiversAttenuationLevels.getFirst().levels, SOUND_POWER_LEVELS),
                 A_WEIGHTING);
-        assertArrayEquals(new double[]{10.44, 20.58, 27.78, 33.09, 35.84, 35.73, 30.91, 12.48},LA, ERROR_EPSILON_MEDIUM);
+
+        assertArrayEquals(new double[]{10.44, 20.58, 27.78, 33.09, 35.84, 35.73, 30.91, 12.48}, LA, ERROR_EPSILON_LOWEST);
     }
 
     /**
@@ -4121,8 +4433,34 @@ public class AttenuationComputeOutputCnossosTest {
      */
     @Test
     public void TC22() throws IOException {
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC22_Direct", "TC22_Right", "TC22_Left");
+        AttenuationComputeOutput propDataOut = computeCnossosPath("TC22_Direct", "TC22_Right",
+                "TC22_Right_Curved", "TC22_Left", "TC22_Left_Curved");
 
+        assertEquals(6, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+        
         // Expected Values
 
         /* Table 248 */
@@ -4178,11 +4516,7 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.06, -3.05, 4.04, 4.93, 206.55, 0.48, 0.58}
         };
 
-        // Must have direct path + diffraction left + diffraction right
-        assertEquals(3, propDataOut.getPropagationPaths().size());
-
-        CnossosPath directPropagationPath = propDataOut.getPropagationPaths().get(0);
-        SegmentPath SRSegment = directPropagationPath.getSRSegment();
+        SegmentPath SRSegment = cnossosPathDirectH.getSRSegment();
 
         // Asserts
         // SR
@@ -4190,25 +4524,23 @@ public class AttenuationComputeOutputCnossosTest {
 
         // SO1
         assertZProfil(expectedZProfileSO1,
-                Arrays.asList(directPropagationPath.getSegmentList().get(0).getPoints2DGround()));
+                Arrays.asList(cnossosPathDirectH.getSegmentList().get(0).getPoints2DGround()));
 
         // OnR
         assertZProfil(expectedZProfileOnR,
-                Arrays.asList(directPropagationPath.getSegmentList().get(
-                        directPropagationPath.getSegmentList().size() - 1).getPoints2DGround()));
+                Arrays.asList(cnossosPathDirectH.getSegmentList().get(
+                        cnossosPathDirectH.getSegmentList().size() - 1).getPoints2DGround()));
 
-        assertPlanes(segmentsMeanPlanes0, directPropagationPath.getSegmentList());
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
 
         // Check diffraction on horizontal plane
-        CnossosPath rightPropagationPath = propDataOut.getPropagationPaths().get(1);
         assertZProfil(expectedZProfileRight,
-                Arrays.asList(rightPropagationPath.getSRSegment().getPoints2DGround()));
-        assertPlanes(SRRightMeanPlanes0, rightPropagationPath.getSRSegment());
+                Arrays.asList(cnossosPathRightH.getSRSegment().getPoints2DGround()));
+        assertPlanes(SRRightMeanPlanes0, cnossosPathRightH.getSRSegment());
 
-        CnossosPath leftPropagationPath = propDataOut.getPropagationPaths().get(2);
         assertZProfil(expectedZProfileLeft,
-                Arrays.asList(leftPropagationPath.getSRSegment().getPoints2DGround()));
-        assertPlanes(SRLeftMeanPlanes0, leftPropagationPath.getSRSegment());
+                Arrays.asList(cnossosPathLeftH.getSRSegment().getPoints2DGround()));
+        assertPlanes(SRLeftMeanPlanes0, cnossosPathLeftH.getSRSegment());
 
         //Expected values
         //Path0 : vertical plane
@@ -4240,34 +4572,32 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{21.94, 18.46, 14.09, 13.93, 13.62, 12.55, 8.43, -6.55};
         double[] expectedLA = new double[]{-4.26, 2.36, 5.49, 10.73, 13.62, 13.75, 9.43, -7.65};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
-
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
@@ -4298,12 +4628,6 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-        double[] valL = getMaxValeurAbsolue(diffL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
-
         //Path1 : lateral right
 
         double[] expectedWH = new double[]{0.00, 0.00, 0.00, 0.02, 0.11, 0.60, 3.00, 13.93};
@@ -4319,20 +4643,18 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{15.12, 11.76, 7.43, 0.88, -1.57, -6.24, -14.10, -34.33};
         expectedLF = new double[]{15.12, 11.69, 7.64, 2.90, -1.57, -6.24, -14.10, -34.33};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathRightH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathRightH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathRightH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathRightF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathRightF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathRightF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         assertDoubleArrayEquals("WH - lateral right", expectedWH, actualWH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("CfH - lateral right", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
@@ -4361,20 +4683,18 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{13.40, 8.86, 4.40, -1.13, -2.50, -6.78, -14.58, -34.97};
         expectedLF = new double[]{13.40, 8.78, 4.61, 0.99, -2.50, -6.78, -14.58, -34.97};
 
-        proPath = propDataOut.getPropagationPaths().get(2);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualWF = proPath.groundAttenuation.wF;
-        actualCfF = proPath.groundAttenuation.cfF;
-        actualAGroundF = proPath.groundAttenuation.aGroundF;
+        actualWH = cnossosPathLeftH.groundAttenuation.w;
+        actualCfH = cnossosPathLeftH.groundAttenuation.cf;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualWF = cnossosPathLeftF.groundAttenuation.w;
+        actualCfF = cnossosPathLeftF.groundAttenuation.cf;
+        actualAGroundF = cnossosPathLeftF.groundAttenuation.aGround;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
 
         assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_VERY_LOW);
@@ -4394,98 +4714,20 @@ public class AttenuationComputeOutputCnossosTest {
 
     }
 
-    private static Coordinate from3DVector(Vector3D vector3D) {
-        return new Coordinate(vector3D.getX(), vector3D.getY(), vector3D.getZ());
-    }
-
-    private static Vector3D to3DVector(Vector2D vector2D) {
-        return new Vector3D(vector2D.getX(), vector2D.getY(), 0);
-    }
-
-    /**
-     * Move linesegment to match the expected distance from source
-     * @param sourceReceiver
-     * @param segmentToMove
-     * @param expectedDistance
-     */
-    private static void fixLineSegment(LineSegment sourceReceiver, LineSegment segmentToMove, double expectedDistance) {
-        Coordinate[] closestPoints = sourceReceiver.closestPoints(segmentToMove);
-        // create a translation vector to fix the distance
-        Vector3D fixVector = to3DVector(Vector2D.create(sourceReceiver.p0, sourceReceiver.p1).normalize()
-                .multiply(expectedDistance-closestPoints[0].distance(sourceReceiver.p0)));
-        segmentToMove.p0 = from3DVector(Vector3D.create(segmentToMove.p0).add(fixVector));
-        segmentToMove.p1 = from3DVector(Vector3D.create(segmentToMove.p1).add(fixVector));
-    }
-
-    public static void makeParallel(LineSegment reference, LineSegment toEdit) {
-        // edit second point position in order to have the second line parallel to the first line
-        toEdit.p1 =
-                Vector2D.create(reference.p0, reference.p1).normalize()
-                        .multiply(toEdit.getLength())
-                        .add(Vector2D.create(toEdit.p0)).toCoordinate();
-        toEdit.p1.z = toEdit.p0.z;
-    }
-
-    public static void addTopographicTC23Model(ProfileBuilder profileBuilder) {
-        // Create parallel lines for the slope edge because unit test table values are rounded and
-        // the rounding make the lines non-parallel and at the wrong distance
-
-        // we will use expected distance on Z Profile to construct the lines
-        Coordinate source = new Coordinate(38, 14, 1);
-        Coordinate receiver = new Coordinate(107, 25.95, 4);
-        LineSegment sourceReceiver = new LineSegment(source, receiver);
-        Double[] expectedDistance = new Double[]{14.21, 22.64, 23.98, 32.3};
-
-        // base line for constructing expected results
-        LineSegment leftTopographicVerticalLine = new LineSegment(new Coordinate(46.27, 36.28, 0),
-                new Coordinate(59.6, -9.87, 0));
-        LineSegment leftShortTopographicVerticalLine = new LineSegment(new Coordinate(54.68, 37.59, 5),
-                new Coordinate(67.35, -6.83, 5));
-        LineSegment rightShortTopographicVerticalLine = new LineSegment(new Coordinate(55.93, 37.93, 5),
-                new Coordinate(68.68, -6.49, 5));
-        LineSegment rightTopographicVerticalLine = new LineSegment(new Coordinate(63.71, 41.16, 0),
-                new Coordinate(76.84, -5.28, 0));
-
-        // Fix lines
-        fixLineSegment(sourceReceiver, leftTopographicVerticalLine, expectedDistance[0]);
-
-        makeParallel(leftTopographicVerticalLine, leftShortTopographicVerticalLine);
-        fixLineSegment(sourceReceiver, leftShortTopographicVerticalLine, expectedDistance[1]);
-
-        makeParallel(leftTopographicVerticalLine, rightShortTopographicVerticalLine);
-        fixLineSegment(sourceReceiver, rightShortTopographicVerticalLine, expectedDistance[2]);
-
-        makeParallel(leftTopographicVerticalLine, rightTopographicVerticalLine);
-        fixLineSegment(sourceReceiver, rightTopographicVerticalLine, expectedDistance[3]);
-
-        profileBuilder.addTopographicLine(30, -14, 0, 122, -14, 0);
-        profileBuilder.addTopographicLine(122, -14, 0, 122, 45, 0);
-        profileBuilder.addTopographicLine(122, 45, 0, 30, 45, 0);
-        profileBuilder.addTopographicLine(30, 45, 0, 30, -14, 0);
-        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, rightTopographicVerticalLine.p0);
-        profileBuilder.addTopographicLine(rightTopographicVerticalLine);
-        profileBuilder.addTopographicLine(rightTopographicVerticalLine.p0, leftTopographicVerticalLine.p0);
-        profileBuilder.addTopographicLine(leftTopographicVerticalLine);
-        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, leftShortTopographicVerticalLine.p0);
-        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine.p0, rightShortTopographicVerticalLine.p0);
-        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine.p0, rightTopographicVerticalLine.p1);
-        profileBuilder.addTopographicLine(leftTopographicVerticalLine.p1, leftShortTopographicVerticalLine.p1);
-        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine.p1, rightShortTopographicVerticalLine.p1);
-        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine.p1, rightTopographicVerticalLine.p0);
-        profileBuilder.addTopographicLine(leftShortTopographicVerticalLine);
-        profileBuilder.addTopographicLine(rightShortTopographicVerticalLine);
-    }
-
-    /**
-     * TC23 – Two buildings behind an earth-berm on flat ground with homogeneous acoustic properties
-     */
-    /** Error Favorable condition delta_rPrimeH # delta_rPrimeF(CNOSSOS ?) */
+    /** Error Favourable condition delta_rPrimeH # delta_rPrimeF(CNOSSOS ?) */
     @Test
     public void TC23() throws IOException {
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC23_Direct");
 
-        assertEquals(1, propDataOut.getPropagationPaths().size());
+        assertEquals(2, propDataOut.getPropagationPaths().size());
 
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
 
         // Expected Value
 
@@ -4505,8 +4747,8 @@ public class AttenuationComputeOutputCnossosTest {
                 {-0.05, 2.89, 3.35, 4.73, 46.04, 0.18, NaN}
         };
 
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
-        assertZProfil(expectedZProfile, Arrays.asList(propDataOut.getPropagationPaths().get(0)
+        assertPlanes(segmentsMeanPlanes0,cnossosPathDirectH.getSegmentList());
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH
                 .getSRSegment().getPoints2DGround()), 0.01);
 
         //Expected values
@@ -4539,41 +4781,35 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{38.90, 37.17, 36.26, 34.68, 31.42, 27.54, 22.75, 15.02};
         double[] expectedLA = new double[]{12.70, 21.07, 27.66, 31.48, 31.42, 28.74, 23.75, 13.92};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath proPath = cnossosPathDirectH;
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-        double[] valL = getMaxValeurAbsolue(diffL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
-
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -4584,25 +4820,26 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORH - vertical plane", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("actualADiffH - vertical plane", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
 
-        assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("DeltaDiffSRF - vertical plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOF - vertical plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_LOW);
-        assertDoubleArrayEquals("DeltaDiffSPrimeRF - vertical plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaDiffSRPrimeF - vertical plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaGroundSOF - vertical plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaGroundORF - vertical plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("AGroundORF - vertical plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("DeltaDiffSPrimeRF - vertical plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("DeltaDiffSRPrimeF - vertical plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("DeltaGroundSOF - vertical plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("DeltaGroundORF - vertical plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ADiffF - vertical plane", expectedADiffF, actualADiffF, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOWEST);
     }
+
 
     /**
      * TC24 – Two buildings behind an earth-berm on flat ground with homogeneous acoustic properties – receiver position modified
@@ -4610,6 +4847,25 @@ public class AttenuationComputeOutputCnossosTest {
     @Test
     public void TC24() throws IOException {
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC24_Direct", "TC24_Reflection");
+
+
+
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
 
         /* Table 279 */
         List<Coordinate> expectedZProfile = new ArrayList<>();
@@ -4638,7 +4894,7 @@ public class AttenuationComputeOutputCnossosTest {
         expectedZProfileOR.add(new Coordinate(43.53, 0.0));
         expectedZProfileOR.add(new Coordinate(70.74, 0.0));
 
-        List<Coordinate> result = propDataOut.getPropagationPaths().get(0).getCutProfile().computePts2DGround();
+        List<Coordinate> result = cnossosPathDirectH.getCutProfile().computePts2DGround();
         assertZProfil(expectedZProfile,result);
 
         /* Table 280 */
@@ -4647,7 +4903,7 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.18, -1.17, 2.13, 1.94, 23.37, 0.37, 0.07},
                 {0.0, 0.0, 6.0, 4.0, 7.57, 0.00, NaN}
         };
-        assertPlanes(segmentsMeanPlanes0,propDataOut.getPropagationPaths().get(0).getSegmentList());
+        assertPlanes(segmentsMeanPlanes0,cnossosPathDirectH.getSegmentList());
 
         //Expected values
         //Path0 : vertical plane
@@ -4679,38 +4935,33 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{37.16, 32.95, 30.06, 28.23, 25.11, 22.66, 21.08, 15.34};
         double[] expectedLA = new double[]{10.96, 16.85, 21.46, 25.03, 25.11, 23.86, 22.08, 14.24};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
-
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-        double[] directLA = actualLA;
-        double[] diffLV = diffArray(expectedL, actualL);
-
 
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
@@ -4769,34 +5020,32 @@ public class AttenuationComputeOutputCnossosTest {
         expectedL = new double[]{37.81, 36.06, 35.20, 33.61, 30.36, 26.47, 21.67, 13.89};
         expectedLA = new double[]{11.61, 19.96, 26.60, 30.41, 30.36, 27.67, 22.67, 12.79};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
+        actualDeltaDiffSRH = cnossosPathReflectionH.aBoundary.deltaDiffSR;
+        actualAGroundSOH = cnossosPathReflectionH.aBoundary.aGroundSO;
+        actualAGroundORH = cnossosPathReflectionH.aBoundary.aGroundOR;
+        actualDeltaDiffSPrimeRH = cnossosPathReflectionH.aBoundary.deltaDiffSPrimeR;
+        actualDeltaDiffSRPrimeH = cnossosPathReflectionH.aBoundary.deltaDiffSRPrime;
+        actualDeltaGroundSOH = cnossosPathReflectionH.aBoundary.deltaGroundSO;
+        actualDeltaGroundORH = cnossosPathReflectionH.aBoundary.deltaGroundOR;
+        actualADiffH = cnossosPathReflectionH.aBoundary.aDiff;
 
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        actualADiffH = proPath.aBoundaryH.aDiff;
-
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        actualADiffF = proPath.aBoundaryF.aDiff;
+        actualDeltaDiffSRF = cnossosPathReflectionF.aBoundary.deltaDiffSR;
+        actualAGroundSOF = cnossosPathReflectionF.aBoundary.aGroundSO;
+        actualAGroundORF = cnossosPathReflectionF.aBoundary.aGroundOR;
+        actualDeltaDiffSPrimeRF = cnossosPathReflectionF.aBoundary.deltaDiffSPrimeR;
+        actualDeltaDiffSRPrimeF = cnossosPathReflectionF.aBoundary.deltaDiffSRPrime;
+        actualDeltaGroundSOF = cnossosPathReflectionF.aBoundary.deltaGroundSO;
+        actualDeltaGroundORF = cnossosPathReflectionF.aBoundary.deltaGroundOR;
+        actualADiffF = cnossosPathReflectionF.aBoundary.aDiff;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("DeltaDiffSRH reflection plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
@@ -4835,10 +5084,40 @@ public class AttenuationComputeOutputCnossosTest {
      */
     @Test
     public void TC25() throws IOException {
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC25_Direct", "TC25_Right", "TC25_Left", "TC25_Reflection");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC25_Direct", "TC25_Right", "TC25_Right_Curved", "TC25_Left", "TC25_Left_Curved", "TC25_Reflection");
 
-        // Should find Direct,Left/Right diffraction and one reflection
-        assertEquals(4, propDataOut.getPropagationPaths().size());
+        assertEquals(8, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathRightH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathRightF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathRightF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPathRightF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftH = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPathLeftH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathLeftF = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPathLeftF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPathLeftF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(6);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(7);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
 
         // Expected Values
 
@@ -4879,9 +5158,9 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedSPrime = new Coordinate(0.00,-1.00);
         Coordinate expectedRPrime = new Coordinate(68.15,-4.0);
 
-        assertMirrorPoint(expectedSPrime,expectedRPrime,propDataOut.getPropagationPaths().get(0)
-                .getSegmentList().get(0).sPrime,propDataOut.getPropagationPaths().get(0).
-                getSegmentList().get(propDataOut.getPropagationPaths().get(0).getSegmentList().size()-1).rPrime);
+        assertMirrorPoint(expectedSPrime,expectedRPrime,cnossosPathDirectH
+                .getSegmentList().get(0).sPrime,cnossosPathDirectH.
+                getSegmentList().get(cnossosPathDirectH.getSegmentList().size()-1).rPrime);
 
 
         /* Table 303 */
@@ -4898,23 +5177,18 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.0, 0.0, 5.0, 4.0, 47.49, 0.0, NaN}
         };
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
-        assertZProfil(expectedZProfile, Arrays.asList(directPath.getSRSegment().getPoints2DGround()));
-        assertZProfil(expectedZProfileSO, Arrays.asList(directPath.getSegmentList().get(0).getPoints2DGround()));
-        assertZProfil(expectedZProfileONR, Arrays.asList(directPath.getSegmentList().get(
-                directPath.getSegmentList().size() - 1).getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes0, directPath.getSegmentList());
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPathDirectH.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(cnossosPathDirectH.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileONR, Arrays.asList(cnossosPathDirectH.getSegmentList().get(
+                cnossosPathDirectH.getSegmentList().size() - 1).getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
 
-        CnossosPath rightPath = propDataOut.getPropagationPaths().get(1);
-        assertZProfil(expectedZProfileRight, Arrays.asList(rightPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileRight, Arrays.asList(cnossosPathRightH.getSRSegment().getPoints2DGround()));
 
 
-        CnossosPath leftPath = propDataOut.getPropagationPaths().get(2);
-        assertZProfil(expectedZProfileLeft, Arrays.asList(leftPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileLeft, Arrays.asList(cnossosPathLeftH.getSRSegment().getPoints2DGround()));
 
-
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(3);
-        assertPlanes(segmentsMeanPlanesReflection, reflectionPath.getSegmentList());
+        assertPlanes(segmentsMeanPlanesReflection, cnossosPathReflectionH.getSegmentList());
 
         //Expected values
         //Path0 : vertical plane
@@ -4946,37 +5220,34 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{39.13, 35.50, 32.07, 28.91, 25.78, 23.26, 21.68, 15.94};
         double[] expectedLA = new double[]{12.93, 19.40, 23.47, 25.71, 25.78, 24.46, 22.68, 14.84};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        double[] actualDeltaDiffSRH = cnossosPathDirectH.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOH = cnossosPathDirectH.aBoundary.aGroundSO;
+        double[] actualAGroundORH = cnossosPathDirectH.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRH = cnossosPathDirectH.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeH = cnossosPathDirectH.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOH = cnossosPathDirectH.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORH = cnossosPathDirectH.aBoundary.deltaGroundOR;
+        double[] actualADiffH = cnossosPathDirectH.aBoundary.aDiff;
 
-        double[] actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        double[] actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        double[] actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        double[] actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        double[] actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        double[] actualADiffH = proPath.aBoundaryH.aDiff;
-
-        double[] actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        double[] actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        double[] actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        double[] actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        double[] actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        double[] actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        double[] actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        double[] actualADiffF = proPath.aBoundaryF.aDiff;
+        double[] actualDeltaDiffSRF = cnossosPathDirectF.aBoundary.deltaDiffSR;
+        double[] actualAGroundSOF = cnossosPathDirectF.aBoundary.aGroundSO;
+        double[] actualAGroundORF = cnossosPathDirectF.aBoundary.aGroundOR;
+        double[] actualDeltaDiffSPrimeRF = cnossosPathDirectF.aBoundary.deltaDiffSPrimeR;
+        double[] actualDeltaDiffSRPrimeF = cnossosPathDirectF.aBoundary.deltaDiffSRPrime;
+        double[] actualDeltaGroundSOF = cnossosPathDirectF.aBoundary.deltaGroundSO;
+        double[] actualDeltaGroundORF = cnossosPathDirectF.aBoundary.deltaGroundOR;
+        double[] actualADiffF = cnossosPathDirectF.aBoundary.aDiff;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-        double[] directLA = actualLA;
-        double[] diffVerticalL = diffArray(expectedL,actualL);
+
         assertDoubleArrayEquals("DeltaDiffSRH - vertical plane", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AGroundSOH - vertical plane", expectedAGroundSOH, actualAGroundSOH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("AGroundORH - vertical plane", expectedAGroundORH, actualAGroundORH, ERROR_EPSILON_VERY_LOW);
@@ -5014,16 +5285,21 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{20.84, 17.03, 13.68, 10.51, 7.31, 3.68, -1.66, -13.18};
         expectedLF = new double[]{20.84, 17.03, 13.68, 10.51, 7.31, 3.68, -1.66, -13.18};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathRightH.aAtm;
+        actualADiv = cnossosPathRightH.aDiv;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        actualLH = addArray(cnossosPathRightH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathRightF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathRightH.aGlobal, cnossosPathRightF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
+
+        assertDoubleArrayEquals("AlphaAtm - lateral right", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AAtm - lateral right", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiv - lateral right", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
         //Path2 : lateral left
 
@@ -5034,23 +5310,21 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLH = new double[]{34.73, 32.02, 29.13, 26.13, 23.04, 19.63, 14.99, 6.02};
         expectedLF = new double[]{34.73, 32.02, 29.13, 26.13, 23.04, 19.63, 14.99, 6.02};
 
-        proPath = propDataOut.getPropagationPaths().get(2);
-
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualAGroundH = proPath.groundAttenuation.aGroundH;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathLeftH.aAtm;
+        actualADiv = cnossosPathLeftH.aDiv;
+        actualAGroundH = cnossosPathLeftH.groundAttenuation.aGround;
+        actualLH = addArray(cnossosPathLeftH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathLeftF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathLeftH.aGlobal, cnossosPathLeftF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
-        assertDoubleArrayEquals("AlphaAtm - lateral right", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("AAtm - lateral right", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ADiv - lateral right", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("AGroundH - lateral right", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("LH - lateral right", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - lateral right", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AlphaAtm - lateral left", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("AAtm - lateral left", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiv - lateral left", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundH - lateral left", expectedAGroundH, actualAGroundH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - lateral left", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LF - lateral left", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
 
         //Path3 : reflexion
         expectedDeltaDiffSRH = new double[]{7.11, 8.60, 10.60, 13.01, 15.68, 18.51, 21.42, 24.39};
@@ -5081,34 +5355,32 @@ public class AttenuationComputeOutputCnossosTest {
         expectedL = new double[]{41.70, 39.90, 37.63, 35.03, 32.16, 28.86, 24.29, 15.36};
         expectedLA = new double[]{15.5, 23.80, 29.03, 31.83, 32.16, 30.06, 25.29, 14.26};
 
-        proPath = propDataOut.getPropagationPaths().get(3);
+        actualDeltaDiffSRH = cnossosPathReflectionH.aBoundary.deltaDiffSR;
+        actualAGroundSOH = cnossosPathReflectionH.aBoundary.aGroundSO;
+        actualAGroundORH = cnossosPathReflectionH.aBoundary.aGroundOR;
+        actualDeltaDiffSPrimeRH = cnossosPathReflectionH.aBoundary.deltaDiffSPrimeR;
+        actualDeltaDiffSRPrimeH = cnossosPathReflectionH.aBoundary.deltaDiffSRPrime;
+        actualDeltaGroundSOH = cnossosPathReflectionH.aBoundary.deltaGroundSO;
+        actualDeltaGroundORH = cnossosPathReflectionH.aBoundary.deltaGroundOR;
+        actualADiffH = cnossosPathReflectionH.aBoundary.aDiff;
 
-        actualDeltaDiffSRH = proPath.aBoundaryH.deltaDiffSR;
-        actualAGroundSOH = proPath.aBoundaryH.aGroundSO;
-        actualAGroundORH = proPath.aBoundaryH.aGroundOR;
-        actualDeltaDiffSPrimeRH = proPath.aBoundaryH.deltaDiffSPrimeR;
-        actualDeltaDiffSRPrimeH = proPath.aBoundaryH.deltaDiffSRPrime;
-        actualDeltaGroundSOH = proPath.aBoundaryH.deltaGroundSO;
-        actualDeltaGroundORH = proPath.aBoundaryH.deltaGroundOR;
-        actualADiffH = proPath.aBoundaryH.aDiff;
-
-        actualDeltaDiffSRF = proPath.aBoundaryF.deltaDiffSR;
-        actualAGroundSOF = proPath.aBoundaryF.aGroundSO;
-        actualAGroundORF = proPath.aBoundaryF.aGroundOR;
-        actualDeltaDiffSPrimeRF = proPath.aBoundaryF.deltaDiffSPrimeR;
-        actualDeltaDiffSRPrimeF = proPath.aBoundaryF.deltaDiffSRPrime;
-        actualDeltaGroundSOF = proPath.aBoundaryF.deltaGroundSO;
-        actualDeltaGroundORF = proPath.aBoundaryF.deltaGroundOR;
-        actualADiffF = proPath.aBoundaryF.aDiff;
+        actualDeltaDiffSRF = cnossosPathReflectionF.aBoundary.deltaDiffSR;
+        actualAGroundSOF = cnossosPathReflectionF.aBoundary.aGroundSO;
+        actualAGroundORF = cnossosPathReflectionF.aBoundary.aGroundOR;
+        actualDeltaDiffSPrimeRF = cnossosPathReflectionF.aBoundary.deltaDiffSPrimeR;
+        actualDeltaDiffSRPrimeF = cnossosPathReflectionF.aBoundary.deltaDiffSRPrime;
+        actualDeltaGroundSOF = cnossosPathReflectionF.aBoundary.deltaGroundSO;
+        actualDeltaGroundORF = cnossosPathReflectionF.aBoundary.deltaGroundOR;
+        actualADiffF = cnossosPathReflectionF.aBoundary.aDiff;
 
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("DeltaDiffSRH - reflexion", expectedDeltaDiffSRH, actualDeltaDiffSRH, ERROR_EPSILON_LOWEST);
@@ -5139,7 +5411,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - reflexion", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LA - reflexion", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels,
+                new double[]{93 - 26.2, 93 - 16.1, 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
 
         assertArrayEquals(new double[]{17.96, 25.65, 30.56, 33.22, 33.48, 31.52, 27.51, 17.80}, L, ERROR_EPSILON_LOWEST);
     }
@@ -5147,14 +5420,29 @@ public class AttenuationComputeOutputCnossosTest {
 
     /**
      * TC26 – Road source with influence of retrodiffraction
-     * Issue we compute and add favorable contribution, on reflexion path but not in test case reference
+     * Issue we compute and add favourable contribution, on reflexion path but not in test case reference
      * */
     @Test
     public void TC26() throws IOException {
 
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC26_Direct", "TC26_Reflection");
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
 
         //Expected values
         //Path0 : vertical plane
@@ -5175,31 +5463,22 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{43.14, 43.10, 43.03, 42.92, 42.72, 42.02, 38.99, 29.44};
         double[] expectedLA = new double[]{16.94, 27.00, 34.43, 39.72, 42.72, 43.22, 39.99, 28.34};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-
-        double[] actualWH = proPath.groundAttenuation.wH;
-        double[] actualCfH = proPath.groundAttenuation.cfH;
-        double[] actualAGroundH = proPath.groundAttenuation.aGroundH;
-        double[] actualWF = proPath.groundAttenuation.wF;
-        double[] actualCfF = proPath.groundAttenuation.cfF;
-        double[] actualAGroundF = proPath.groundAttenuation.aGroundF;
+        double[] actualWH = cnossosPathDirectH.groundAttenuation.w;
+        double[] actualCfH = cnossosPathDirectH.groundAttenuation.cf;
+        double[] actualAGroundH = cnossosPathDirectH.groundAttenuation.aGround;
+        double[] actualWF = cnossosPathDirectF.groundAttenuation.w;
+        double[] actualCfF = cnossosPathDirectF.groundAttenuation.cf;
+        double[] actualAGroundF = cnossosPathDirectF.groundAttenuation.aGround;
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
-        double[] directLA = actualLA;
-        double[] diffVerticalL = diffArray(expectedL,actualL);
-
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-        double[] valL = getMaxValeurAbsolue(diffL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
 
         assertDoubleArrayEquals("WH - vertical plane", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("CfH - vertical plane", expectedCfH, actualCfH, ERROR_EPSILON_LOWEST);
@@ -5230,16 +5509,14 @@ public class AttenuationComputeOutputCnossosTest {
         expectedL = new double[]{34.59, 34.09, 33.53, 32.94, 32.33, 31.56, 30.33, 22.54};
         expectedLA = new double[]{8.39, 17.99, 24.93, 29.74, 32.33, 32.76, 31.33, 21.44};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        actualWH = proPath.groundAttenuation.wH;
-        actualCfH = proPath.groundAttenuation.cfH;
+        actualWH = cnossosPathReflectionH.groundAttenuation.w;
+        actualCfH = cnossosPathReflectionH.groundAttenuation.cf;
         actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
 
         assertDoubleArrayEquals("WH - reflexion", expectedWH, actualWH, ERROR_EPSILON_LOWEST);
@@ -5259,6 +5536,7 @@ public class AttenuationComputeOutputCnossosTest {
     }
 
 
+
     /**
      * TC27 – Road source with influence of retrodiffraction
      * Issue with wrong agroundF for reflection path
@@ -5267,7 +5545,23 @@ public class AttenuationComputeOutputCnossosTest {
     public void TC27() throws IOException {
         AttenuationComputeOutput propDataOut =  computeCnossosPath("TC27_Direct", "TC27_Reflection");
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
+
+        final CnossosPath cnossosPathDirectH = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPathDirectH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectH.getCutProfile().getProfileType());
+        CnossosPath cnossosPathDirectF = propDataOut.getPropagationPaths().get(1);
+        assertTrue(cnossosPathDirectF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPathDirectF.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionH = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPathReflectionH.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionH.getCutProfile().getProfileType());
+
+        CnossosPath cnossosPathReflectionF = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPathReflectionF.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, cnossosPathReflectionF.getCutProfile().getProfileType());
+
 
         /* Table 331 */
         Coordinate expectedSPrime =new Coordinate(0.01,-0.69);
@@ -5280,7 +5574,7 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.0, 0.0, 0.0, 4.0, 90.10, 1.0, 1.0}
         };
 
-        CnossosPath directPath = propDataOut.getPropagationPaths().get(0);
+        CnossosPath directPath = cnossosPathDirectH;
 
         assertPlanes(segmentsMeanPlanesH, directPath.getSegmentList());
         assertMirrorPoint(expectedSPrime,expectedRPrime,directPath.getSegmentList().get(0).sPrime,
@@ -5296,17 +5590,15 @@ public class AttenuationComputeOutputCnossosTest {
         Coordinate expectedSPrimeSO =new Coordinate(0.01,-0.69);
         Coordinate expectedRPrimeOR =new Coordinate(100.65,-4.0);
 
-        CnossosPath reflectionPath = propDataOut.getPropagationPaths().get(1);
+        assertPlanes(segmentsMeanPlanesH, cnossosPathReflectionH.getSegmentList());
 
-        assertPlanes(segmentsMeanPlanesH, reflectionPath.getSegmentList());
-
-        SegmentPath sr = reflectionPath.getSRSegment();
+        SegmentPath sr = cnossosPathReflectionF.getSRSegment();
         assertMirrorPoint(expectedSPrimeSR,expectedRPrimeSR,sr.sPrime,
                 sr.rPrime);
-        assertEquals(2, reflectionPath.getSegmentList().size());
+        assertEquals(2, cnossosPathReflectionF.getSegmentList().size());
 
-        SegmentPath so = reflectionPath.getSegmentList().get(0);
-        SegmentPath or = reflectionPath.getSegmentList().get(reflectionPath.getSegmentList().size() - 1);
+        SegmentPath so = cnossosPathReflectionF.getSegmentList().get(0);
+        SegmentPath or = cnossosPathReflectionF.getSegmentList().get(cnossosPathReflectionH.getSegmentList().size() - 1);
 
         assertMirrorPoint(expectedSPrimeSO,expectedRPrimeOR,so.sPrime,
                 or.rPrime);
@@ -5325,16 +5617,14 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{41.85, 41.81, 41.71, 41.55, 37.01, 35.78, 37.53, 29.24};
         double[] expectedLA = new double[]{15.65, 25.71, 33.11, 38.35, 37.01, 36.98, 38.53, 28.14};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
-
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        double[] actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        double[] actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        double[] actualAAtm = cnossosPathDirectH.aAtm;
+        double[] actualADiv = cnossosPathDirectH.aDiv;
+        double[] actualABoundaryH = cnossosPathDirectH.double_aBoundary;
+        double[] actualABoundaryF = cnossosPathDirectF.double_aBoundary;
+        double[] actualLH = addArray(cnossosPathDirectH.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualLF = addArray(cnossosPathDirectF.aGlobalRaw, SOUND_POWER_LEVELS);
+        double[] actualL = addArray(sumDbArray(cnossosPathDirectH.aGlobal, cnossosPathDirectF.aGlobal), SOUND_POWER_LEVELS);
         double[] actualLA = addArray(actualL, A_WEIGHTING);
         double[] diffVerticalL = diffArray(expectedL,actualL);
         double[] directLA = actualLA;
@@ -5349,8 +5639,6 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOW);
 
-        double[] diff = diffArray(expectedLA, actualLA);
-
         //Path1 : reflexion
         expectedAlphaAtm = new double[]{0.1, 0.4, 1, 1.9, 3.7, 9.7, 32.8, 116.9};
         expectedAAtm = new double[]{0.01, 0.04, 0.11, 0.19, 0.37, 0.97, 3.3, 11.78};
@@ -5362,47 +5650,44 @@ public class AttenuationComputeOutputCnossosTest {
         expectedLF = new double[]{37.83, 37.89, 38.82, 40.11, 34.12, 34.00, 32.98, 27.54};
         expectedLA = new double[]{10.64, 21.00, 29.97, 35.68, 33.36, 33.45, 31.76, 24.17};
 
-        proPath = propDataOut.getPropagationPaths().get(1);
-
-        actualAAtm = proPath.aAtm;
-        actualADiv = proPath.aDiv;
-        actualABoundaryH = proPath.double_aBoundaryH;
-        actualABoundaryF = proPath.double_aBoundaryF;
-        actualLH = addArray(proPath.aGlobalH, SOUND_POWER_LEVELS);
-        actualLF = addArray(proPath.aGlobalF, SOUND_POWER_LEVELS);
-        actualL = addArray(proPath.aGlobal, SOUND_POWER_LEVELS);
+        actualAAtm = cnossosPathReflectionH.aAtm;
+        actualADiv = cnossosPathReflectionH.aDiv;
+        actualABoundaryH = cnossosPathReflectionH.double_aBoundary;
+        actualABoundaryF = cnossosPathReflectionF.double_aBoundary;
+        actualLH = addArray(cnossosPathReflectionH.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualLF = addArray(cnossosPathReflectionF.aGlobalRaw, SOUND_POWER_LEVELS);
+        actualL = addArray(sumDbArray(cnossosPathReflectionH.aGlobal, cnossosPathReflectionF.aGlobal), SOUND_POWER_LEVELS);
         actualLA = addArray(actualL, A_WEIGHTING);
-        double[] diffReflexionL = diffArray(expectedL,actualL);
+        double[] LA = sumDbArray(directLA, actualLA);
+        double[] expectedFullLA = new double[]{16.84, 26.97, 34.79, 40.23, 38.57, 38.58, 39.36, 29.60};
+        double[] diffLa = diffArray(expectedFullLA, LA);
 
         assertDoubleArrayEquals("AAtm - reflection", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - reflection", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflection", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryF - reflection", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("dLabs - reflection", expectedDLabs, proPath.aRef, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("dLabs - reflection", expectedDLabs, cnossosPathReflectionH.aRef, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - reflection", expectedLH, actualLH, ERROR_EPSILON_LOW);
         assertDoubleArrayEquals("LF - reflection", expectedLF, actualLF, ERROR_EPSILON_HIGH);
         assertDoubleArrayEquals("LA - reflection", expectedLA, actualLA, ERROR_EPSILON_HIGH);
 
-        double[] LA = sumDbArray(directLA,actualLA);
-        double[] diffLa = diffArray(new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60}, LA);
-        double[] valLV = getMaxValeurAbsolue(diffVerticalL);
-        double[] valLR = getMaxValeurAbsolue(diffReflexionL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93-26.2,93-16.1,93-8.6,93-3.2,93,93+1.2,93+1.0,93-1.1});
+        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{93 - 26.2, 93 - 16.1, 93 - 8.6, 93 - 3.2, 93, 93 + 1.2, 93 + 1.0, 93 - 1.1});
 
-        assertArrayEquals(  new double[]{16.84,26.97,34.79,40.23,38.57,38.58,39.36,29.60},L, ERROR_EPSILON_LOW);
+        assertArrayEquals(expectedFullLA, L, ERROR_EPSILON_LOW);
     }
 
     /**
      * TC28 Propagation over a large distance with many buildings between source and
      * receiver
      *
-     * Issue with favorable paths
+     * Issue with favourable paths
      */
     @Test
     public void TC28() throws IOException {
-        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right");
+        AttenuationComputeOutput propDataOut =  computeCnossosPath("TC28_Direct", "TC28_Right", "TC28_Right_Curved", "TC28_Left", "TC28_Left_Curved");
+
+        double[] LW_SOURCE = new double[]{150, 150, 150, 150, 150, 150, 150, 150};
 
         /* Table 346 */
         List<Coordinate> expectedZProfile = Arrays.asList(
@@ -5462,10 +5747,8 @@ public class AttenuationComputeOutputCnossosTest {
         List<Coordinate> expectedZProfileLeft = Arrays.asList(
                 new Coordinate(0.0, 0.0),
                 new Coordinate(168.36, 0.0),
-                new Coordinate(256.17, 0.0),
-                new Coordinate(256.17, 14.0),
-                new Coordinate(276.59, 14.0),
-                new Coordinate(276.59, 0.0),
+                //new Coordinate(256.17, 0.0), // building ignored in CNOSSOS
+                //new Coordinate(276.59, 0.0), // building ignored in CNOSSOS
                 new Coordinate(356.24, 0.0),
                 new Coordinate(444.81, 0.0),
                 new Coordinate(525.11, 0.0),
@@ -5474,43 +5757,23 @@ public class AttenuationComputeOutputCnossosTest {
                 new Coordinate(1022.31, 0.0));
 
         /* Table 348 */
-        double [][] segmentsMeanPlanes0 = new double[][]{
+        double [][] segmentsMeanPlanesDirect = new double[][]{
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.25, 3.75, 9.09, 169.37, 0.45, 0.48},
                 {0.0, 0.0, 8.0, 1.0, 10.34, 0.5, NaN}
         };
 
-        double [][] segmentsMeanPlanes1 = new double[][]{ // Right
+        double [][] segmentsMeanPlanesRight = new double[][]{ // Right
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.0, 4.0, 1.0, 1028.57, 0.5, 0.5}
         };
 
-        double [][] segmentsMeanPlanes2 = new double[][]{ // left
+        double [][] segmentsMeanPlanesLeft = new double[][]{ // left
                 //  a     b     zs    zr      dp    Gp   Gp'
                 {0.0, 0.68, 3.32, 1.12, 1022.31, 0.49, 0.49}
         };
 
-        CnossosPath SR = propDataOut.getPropagationPaths().get(0);
-
-        assertZProfil(expectedZProfile, Arrays.asList(SR.getSRSegment().getPoints2DGround()));
-        assertZProfil(expectedZProfileSO, Arrays.asList(SR.getSegmentList().get(0).getPoints2DGround()));
-        assertZProfil(expectedZProfileOR, Arrays.asList(
-                SR.getSegmentList().get(SR.getSegmentList().size() - 1).getPoints2DGround()));
-
-
-
-        assertPlanes(segmentsMeanPlanes0,SR.getSegmentList());
-
-        CnossosPath pathRight = propDataOut.getPropagationPaths().get(1);
-        assertZProfil(expectedZProfileRight, Arrays.asList(pathRight.getSRSegment().getPoints2DGround()));
-        assertPlanes(segmentsMeanPlanes1, pathRight.getSRSegment());
-
-
-        // CnossosPath pathLeft = propDataOut.getPropagationPaths().get(2);
-        // Error in CNOSSOS unit test, left diffraction is going over a building but not in their 3D view !
-        // Why the weird left path in homogeneous ? it is not explained.
-        // assertZProfil(expectedZProfileLeft, Arrays.asList(pathLeft.getSRSegment().getPoints2DGround()));
-        // assertPlanes(segmentsMeanPlanes2,propDataOut.getPropagationPaths().get(2).getSRSegment()); // if b = 0.68: -> z2 = 0.32. In Cnossos z2 = 1.32 if b = 0.68
+        assertEquals(6, propDataOut.getPropagationPaths().size());
 
         //Expected values
         //Path0 : vertical plane
@@ -5524,40 +5787,150 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedL = new double[]{69.11, 66.17, 62.69, 59.08, 55.10, 48.45, 25.31, -58.90};
         double[] expectedLA = new double[]{42.91, 50.07, 54.09, 55.88, 55.10, 49.65, 26.31, -60.00};
 
-        CnossosPath proPath = propDataOut.getPropagationPaths().get(0);
+        // Test Direct Path in homogeneous conditions
+        CnossosPath cnossosPath = propDataOut.getPropagationPaths().get(0);
+        assertFalse(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPath.getCutProfile().getProfileType());
+
+        assertZProfil(expectedZProfile, Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
+        assertZProfil(expectedZProfileSO, Arrays.asList(cnossosPath.getSegmentList().get(0).getPoints2DGround()));
+        assertZProfil(expectedZProfileOR, Arrays.asList(
+                cnossosPath.getSegmentList().get(cnossosPath.getSegmentList().size() - 1).getPoints2DGround()));
+
+        assertPlanes(segmentsMeanPlanesDirect,cnossosPath.getSegmentList());
 
         double[] actualAlphaAtm = propDataOut.scene.defaultCnossosParameters.getAlpha_atmo();
-        double[] actualAAtm = proPath.aAtm;
-        double[] actualADiv = proPath.aDiv;
-        double[] actualABoundaryH = proPath.double_aBoundaryH;
-        double[] actualABoundaryF = proPath.double_aBoundaryF;
-        double[] actualLH = addArray(proPath.aGlobalH, new double[]{150,150,150,150,150,150,150,150});
-        double[] actualLF = addArray(proPath.aGlobalF, new double[]{150,150,150,150,150,150,150,150});
-        double[] actualL = addArray(proPath.aGlobal, new double[]{150,150,150,150,150,150,150,150});
-        double[] actualLA = addArray(actualL, A_WEIGHTING);
+        double[] actualAAtm = cnossosPath.aAtm;
+        double[] actualADiv = cnossosPath.aDiv;
+        double[] actualABoundaryH = cnossosPath.double_aBoundary;
+        double[] actualLH = addArray(cnossosPath.aGlobalRaw, LW_SOURCE);
+        CnossosPath homogeneousPath = cnossosPath;
 
         assertDoubleArrayEquals("AlphaAtm - vertical plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm - vertical plane", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - vertical plane", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("ABoundaryH - vertical plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
+
+        // Retrieve and test favourable direct path
+        cnossosPath = propDataOut.getPropagationPaths().get(1);
+
+        assertTrue(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, cnossosPath.getCutProfile().getProfileType());
+        double[] actualABoundaryF = cnossosPath.double_aBoundary;
+        double[] actualLF = addArray(cnossosPath.aGlobalRaw, new double[]{150,150,150,150,150,150,150,150});
+        // Global levels
+        double[] actualL = addArray(sumDbArray(cnossosPath.aGlobal, homogeneousPath.aGlobal), new double[]{150,150,150,150,150,150,150,150});
+        double[] actualLA = addArray(actualL, A_WEIGHTING);
+
+        assertDoubleArrayEquals("LF - vertical plane", expectedLF, actualLF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("ABoundaryF - vertical plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("L - vertical plane", expectedL, actualL, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("LA - vertical plane", expectedLA, actualLA, ERROR_EPSILON_LOWEST);
+
+        ///   ///////////////////////////////////////////////////////////////////////
+        // Test Right Path in homogeneous conditions
+
+        cnossosPath = propDataOut.getPropagationPaths().get(2);
+        assertFalse(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPath.getCutProfile().getProfileType());
+
+        assertZProfil(expectedZProfileRight, Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
+        assertPlanes(segmentsMeanPlanesRight, cnossosPath.getSRSegment());
+
+        assertEquals(883.40, cnossosPath.e, 0.1);
+        assertEquals(1001.25, cnossosPath.getSRSegment().dc, 0.1);
+        assertEquals(27.32, cnossosPath.delta, 0.5);
+
+        // Expected values for the right lateral path
+        double[] expectedRightH_W = {0.00, 0.00, 0.00, 0.01, 0.08, 0.41, 2.10, 10.13};
+        double[] expectedRightH_CF = {1128.10, 1197.38, 730.44, 131.57, 13.31, 2.44, 0.47, 0.10};
+        double[] expectedRightH_Aground = {-1.50, -1.50, -0.70, 15.46, 20.97, 12.75, 5.42, -1.01};
+
+        double[] expectedRightF_W = {0.00, 0.00, 0.00, 0.01, 0.07, 0.36, 1.85, 9.02};
+        double[] expectedRightF_CF = {1111.99, 1195.96, 789.96, 159.31, 15.54, 2.78, 0.54, 0.11};
+        double[] expectedRightF_Aground = {-4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36, -4.36};
+
+        double[] expectedRightH_aDiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedRightH_adifH = {27.85, 30.82, 33.83, 36.83, 39.84, 42.85, 45.86, 48.87};
+        double[] expectedRightH_aH = {-97.48, -100.75, -105.21, -125.29, -135.58, -136.56, -156.00, -239.09};
+
+        assertDoubleArrayEquals("w (H) - lateral right", expectedRightH_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("Cf (H) - lateral right", expectedRightH_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (H) - lateral right", expectedRightH_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+
+        assertDoubleArrayEquals("ADiv (H) - lateral right", expectedRightH_aDiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (H) - lateral right", expectedRightH_adifH, cnossosPath.aDif, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("A (H) - lateral right", expectedRightH_aH, cnossosPath.aGlobalRaw, ERROR_EPSILON_VERY_LOW);
 
 
-        double[] diffL = diffArray(expectedL, actualL);
-        double[] diffLa = diffArray(expectedLA, actualLA);
-        double[] valL = getMaxValeurAbsolue(diffL);
-        double[] valLA = getMaxValeurAbsolue(diffLa);
+        // Right favourable path
+        cnossosPath = propDataOut.getPropagationPaths().get(3);
+        assertTrue(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.RIGHT, cnossosPath.getCutProfile().getProfileType());
+
+        assertDoubleArrayEquals("w (F) - lateral right", expectedRightF_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOWEST);
+        assertDoubleArrayEquals("Cf (F) - lateral right", expectedRightF_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (F) - lateral right", expectedRightF_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+
+        double[] expectedRightF_aDiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedRightF_adif = {26.65, 29.70, 32.73, 35.74, 38.75, 41.76, 44.77, 47.78};
+        double[] expectedRightF_aH = {-93.42, -96.77, -100.45, -104.36, -109.14, -118.29, -144.93, -233.94};
+
+        assertDoubleArrayEquals("ADiv (F) - lateral right", expectedRightF_aDiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (F) - lateral right", expectedRightF_adif, cnossosPath.aDif, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("A (F) - lateral right", expectedRightF_aH, cnossosPath.aGlobalRaw, ERROR_EPSILON_LOW);
+
+        // Expected values for the left lateral path
+        double[] expectedLeftH_W = {0.00, 0.00, 0.00, 0.01, 0.07, 0.39, 2.01, 9.71};
+        double[] expectedLeftH_CF = {1117.47, 1192.83, 751.24, 141.43, 14.08, 2.56, 0.50, 0.10};
+        double[] expectedLeftH_Aground = {-1.53, -1.53, -1.25, 15.70, 21.95, 13.29, 5.98, -0.45};
 
 
+        // left non favourable path
+        cnossosPath = propDataOut.getPropagationPaths().get(4);
+        assertFalse(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPath.getCutProfile().getProfileType());
 
-        double[] L = addArray(propDataOut.getVerticesSoundLevel().get(0).levels, new double[]{150-26.2,150-16.1,150-8.6,150-3.2,150,150+1.2,150+1.0,150-1.1});
+        assertZProfil(expectedZProfileLeft, Arrays.asList(cnossosPath.getSRSegment().getPoints2DGround()));
+        // TODO Weird plane, A B not at 0 (there is no DEM)
+        //assertPlanes(segmentsMeanPlanesLeft, cnossosPath.getSRSegment());
 
-        assertArrayEquals(  new double[]{43.56,50.59,54.49,56.14,55.31,49.77,23.37,-59.98},L, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("w (H) - lateral left", expectedLeftH_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("Cf (H) - lateral left", expectedLeftH_CF, cnossosPath.groundAttenuation.cf, 50);
+        assertDoubleArrayEquals("AGround (H) - lateral left", expectedLeftH_Aground, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_HIGH);
 
+        double[] expectedLeftADiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedLeftAGroundH = {-1.53, -1.53, -1.25, 15.70, 21.95, 13.29, 5.98, -0.45};
+        double[] expectedLeftADifH = {26.72, 29.69, 32.70, 35.71, 38.71, 41.72, 44.73, 47.74};
+        double[] expectedLeftLH = {53.67, 50.41, 46.48, 25.62, 14.59, 14.10, -5.22, -87.79};
+
+        assertDoubleArrayEquals("ADiv (H) - lateral left", expectedLeftADiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (H) - lateral left", expectedLeftADifH, cnossosPath.aDif, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("AGround (H) - lateral left", expectedLeftAGroundH, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("L (H) - lateral left", expectedLeftLH, sumArray(cnossosPath.aGlobalRaw, LW_SOURCE), ERROR_EPSILON_HIGH);
+
+        // Left favourable path
+        cnossosPath = propDataOut.getPropagationPaths().get(5);
+        assertTrue(cnossosPath.isFavourable());
+        assertEquals(CutProfile.PROFILE_TYPE.LEFT, cnossosPath.getCutProfile().getProfileType());
+
+
+        double[] expectedLeftF_W = {0.00, 0.00, 0.00, 0.01, 0.06, 0.33, 1.73, 8.47};
+        double[] expectedLeftF_CF = {1099.07, 1188.81, 818.96, 176.07, 16.94, 2.99, 0.58, 0.12};
+
+        assertDoubleArrayEquals("w (F) - lateral left", expectedLeftF_W, cnossosPath.groundAttenuation.w, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("Cf (F) - lateral left", expectedLeftF_CF, cnossosPath.groundAttenuation.cf, ERROR_EPSILON_VERY_LOW);
+
+        double[] expectedLeftFavourableADiv = {71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01, 71.01};
+        double[] expectedLeftFavourableAGroundF = {-4.53, -4.53, -4.53, -4.53, -4.53, -4.53, -4.53, -4.53};
+        double[] expectedLeftFavourableADifF = {20.96, 25.05, 29.57, 33.49, 36.82, 39.92, 42.95, 45.97};
+        double[] expectedLeftFavourableLF = {62.44, 58.05, 52.89, 48.07, 42.98, 33.79, 7.30, -81.11};
+
+        assertDoubleArrayEquals("ADiv (F) - lateral left", expectedLeftFavourableADiv, cnossosPath.aDiv, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGround (F) - lateral left", expectedLeftFavourableAGroundF, cnossosPath.groundAttenuation.aGround, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADif (F) - lateral left", expectedLeftFavourableADifF, cnossosPath.aDif, ERROR_EPSILON_LOW);
+        assertDoubleArrayEquals("L (F) - lateral left", expectedLeftFavourableLF, sumArray(cnossosPath.aGlobalRaw, LW_SOURCE), ERROR_EPSILON_VERY_LOW);
 
     }
 
@@ -5674,10 +6047,10 @@ public class AttenuationComputeOutputCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
 
         SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
-        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(2).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -5865,10 +6238,10 @@ public class AttenuationComputeOutputCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(2, propDataOut.getPropagationPaths().size());
+        assertEquals(4, propDataOut.getPropagationPaths().size());
 
         SegmentPath s0 = propDataOut.getPropagationPaths().get(0).getSRSegment();
-        SegmentPath s1 = propDataOut.getPropagationPaths().get(1).getSRSegment();
+        SegmentPath s1 = propDataOut.getPropagationPaths().get(2).getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -5914,10 +6287,10 @@ public class AttenuationComputeOutputCnossosTest {
     }
 
     /**
-     * Check if favorable propagation condition is well processed on each direction provided in the wind rose
+     * Check if favourable propagation condition is well processed on each direction provided in the wind rose
      */
     @Test
-    public void TestFavorableConditionAttenuationRose() {
+    public void TestFavourableConditionAttenuationRose() {
         //Create obstruction test object
         ProfileBuilder builder = new ProfileBuilder();
 
@@ -5946,7 +6319,7 @@ public class AttenuationComputeOutputCnossosTest {
         }
 
         double[][] windRoseTest = new double[receivers.size()][];
-        // generate favorable condition for each direction
+        // generate favourable condition for each direction
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
             windRoseTest[idReceiver] = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length];
             double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
@@ -5955,12 +6328,12 @@ public class AttenuationComputeOutputCnossosTest {
             windRoseTest[idReceiver][roseIndex] = 0.5;
         }
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
-            double[] favorableConditionDirections = windRoseTest[idReceiver];
+            double[] favourableConditionDirections = windRoseTest[idReceiver];
             //Propagation process path data building
             AttenuationParameters attData = scene.defaultCnossosParameters;
             attData.setHumidity(HUMIDITY);
             attData.setTemperature(TEMPERATURE);
-            attData.setWindRose(favorableConditionDirections);
+            attData.setWindRose(favourableConditionDirections);
 
             //Out and computation settings
             AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);

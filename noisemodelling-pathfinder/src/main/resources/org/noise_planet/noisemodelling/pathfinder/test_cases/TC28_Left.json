@@ -18,18 +18,36 @@
   }, {
     "type" : "VEdgeDiffraction",
     "coordinate" : {
-      "x" : 249.9893933982822,
-      "y" : 180.0106066017178,
-      "z" : 3.2324491060497658
+      "x" : 163.9878343051629,
+      "y" : 88.00877472900609,
+      "z" : 3.503576240274473
     },
     "zGround" : 0.0,
     "groundCoefficient" : 0.5
   }, {
     "type" : "VEdgeDiffraction",
     "coordinate" : {
-      "x" : 270.0106066017178,
-      "y" : 180.0106066017178,
-      "z" : 3.172535251076891
+      "x" : 347.9966030659161,
+      "y" : 126.01461029906707,
+      "z" : 2.947239899508617
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 435.98849781235185,
+      "y" : 136.0096280672675,
+      "z" : 2.682426994865687
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 516.009612630621,
+      "y" : 143.01151509151265,
+      "z" : 2.4419146482238476
     },
     "zGround" : 0.0,
     "groundCoefficient" : 0.5
@@ -60,8 +78,8 @@
     },
     "zGround" : 0.0,
     "groundCoefficient" : 0.5,
-    "receiverPk" : -1
+    "receiverPk" : 0
   } ],
-  "hasBuildingIntersection" : false,
-  "hasTopographyIntersection" : false
+  "curvedPath" : false,
+  "profileType" : "LEFT"
 }

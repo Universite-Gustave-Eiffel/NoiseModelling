@@ -10,8 +10,13 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
@@ -20,14 +25,30 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CutProfile {
+
+    /**
+     * Profile type from source to receiver
+     * Left and Right are a path using the convex hull on the intersection plane with buildings
+     */
+    public enum PROFILE_TYPE { DIRECT, LEFT, RIGHT, REFLECTION }
+
     /** List of cut points.
      * First point is source, last point is receiver */
     public ArrayList<CutPoint> cutPoints = new ArrayList<>();
 
-    /** True if Source-Receiver linestring is below building intersection */
+    /** True if Source-Receiver linestring is below building intersection, only used at the generation of the profile to skip searching for lateral cut planes */
+    @JsonIgnore
     public boolean hasBuildingIntersection = false;
-    /** True if Source-Receiver linestring is below topography cutting point. */
+
+    /** True if Source-Receiver linestring is below topography cutting point., only used at the generation of the profile to skip searching for lateral cut planes */
+    @JsonIgnore
     public boolean hasTopographyIntersection = false;
+
+    /** True if the path between source and receiver is curved, the coordinates are the original,
+     *  only the cutting planes for left and right are not the same */
+    public boolean curvedPath = false;
+
+    public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
 
     /**
      * Empty constructor for deserialization
@@ -38,6 +59,42 @@ public class CutProfile {
     public CutProfile(CutPointSource source, CutPointReceiver receiver) {
         cutPoints.add(source);
         cutPoints.add(receiver);
+    }
+
+    /**
+     * @return Cut Profile type
+     */
+    public PROFILE_TYPE getProfileType() {
+        return profileType;
+    }
+
+    /**
+     * @param profileType The cut profile type
+     */
+    public void setProfileType(PROFILE_TYPE profileType) {
+        this.profileType = profileType;
+    }
+
+    /**
+     * @param curvedPath True if the path between source and receiver is curved, the coordinates are the original,
+     *                   only the cutting planes for left and right are not the same
+     */
+    public void setCurvedPath(boolean curvedPath) {
+        this.curvedPath = curvedPath;
+    }
+
+    /**
+     * @return True if the path between source and receiver is curved
+     */
+    public boolean isCurvedPath() {
+        return curvedPath;
+    }
+
+    /**
+     * @return the cutPoints
+     */
+    public ArrayList<CutPoint> getCutPoints() {
+        return cutPoints;
     }
 
     /**
@@ -149,16 +206,86 @@ public class CutProfile {
         return computePts2DGround(0, null);
     }
 
+    /**
+     * @return @return the computed coordinate list
+     */
+    public List<Coordinate> computePts2D(boolean curvedPath) {
+        List<Coordinate> pts2D;
+        if(curvedPath) {
+            pts2D = CurvedProfileGenerator.applyTransformation(cutPoints
+                    , false).stream()
+                    .map(CutPoint::getCoordinate)
+                    .collect(Collectors.toList());
+        } else {
+            pts2D = cutPoints.stream()
+                    .map(CutPoint::getCoordinate)
+                    .collect(Collectors.toList());
+        }
+        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
+        return pts2D;
+    }
 
     /**
      * @return @return the computed coordinate list
      */
     public List<Coordinate> computePts2D() {
-        List<Coordinate> pts2D = cutPoints.stream()
-                .map(CutPoint::getCoordinate)
-                .collect(Collectors.toList());
-        pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
-        return pts2D;
+        return computePts2D(false);
+    }
+
+    public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
+        if(coordinates2d.size() != cutPoints.size()) {
+            throw new IllegalArgumentException("Coordinates size must be equal to cut points size");
+        }
+        // Filter out points that are below the line segment
+        List<Coordinate> convexHullInput = new ArrayList<>();
+        // Add source position
+        convexHullInput.add(coordinates2d.get(0));
+        // Add valid diffraction point, building/walls/dem
+        for (int idPoint=1; idPoint < cutPoints.size() - 1; idPoint++) {
+            CutPoint currentPoint = cutPoints.get(idPoint);
+            // We only add the point at the top of the wall, not the point at the bottom of the wall
+            if(currentPoint instanceof CutPointTopography
+                    || (currentPoint instanceof CutPointWall
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
+                convexHullInput.add(coordinates2d.get(idPoint));
+            }
+        }
+        // Add receiver position
+        convexHullInput.add(coordinates2d.get(coordinates2d.size() - 1));
+
+        // Compute the convex hull using JTS
+        List<Coordinate> convexHullPoints = new ArrayList<>();
+        if(convexHullInput.size() > 2) {
+            GeometryFactory geomFactory = new GeometryFactory();
+            Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
+            ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
+            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
+            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(coordinates2d.get(0));
+            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(coordinates2d.get(coordinates2d.size() - 1));
+            if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
+                throw new IllegalArgumentException("Wrong input data ");
+            }
+            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
+            CoordinateSequence coordinatesSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
+            Geometry geom = geomFactory.createLineString(coordinatesSequence);
+            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
+            convexHullCoords = uniqueGeom.getCoordinates();
+            // Convert the result back to your format (List<Point2D> pts)
+            if (convexHullCoords.length == 3) {
+                convexHullPoints = Arrays.asList(convexHullCoords);
+            } else {
+                for (Coordinate convexHullCoordinates : convexHullCoords) {
+                    // Check if the y-coordinate is valid (not equal to Double.MAX_VALUE and not infinite)
+                    if (convexHullCoordinates.y == Double.MAX_VALUE || Double.isInfinite(convexHullCoordinates.y)) {
+                        continue; // Skip this point as it's not part of the hull
+                    }
+                    convexHullPoints.add(convexHullCoordinates);
+                }
+            }
+        } else {
+            convexHullPoints = convexHullInput;
+        }
+        return convexHullPoints.stream().map(coordinates2d::indexOf).collect(Collectors.toList());
     }
 
     /**

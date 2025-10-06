@@ -64,7 +64,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
      * @return an instance of the interface IComputePathsOut
      */
     @Override
-    public CutPlaneVisitor subProcess(ProgressVisitor visitor) {
+    public CutPlaneVisitor subProcess(ProgressVisitor progressVisitor) {
         return new AttenuationVisitor(this);
     }
 

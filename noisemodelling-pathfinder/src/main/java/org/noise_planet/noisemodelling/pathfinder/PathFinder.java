@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.*;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
@@ -358,17 +359,17 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
-            CutProfile cutProfileRight = computeVEdgeDiffraction(rcv, src, data, RIGHT);
-            if (cutProfileRight != null) {
-                strategy = dataOut.onNewCutPlane(cutProfileRight);
-                if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
-                        strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
-                    return strategy;
+            for(boolean curved : new boolean[]{false, true}) {
+                for(PathFinder.ComputationSide side : PathFinder.ComputationSide.values()) {
+                    CutProfile cutProfileSide = computeVEdgeDiffraction(rcv, src, data, side, curved);
+                    if (cutProfileSide != null) {
+                        strategy = dataOut.onNewCutPlane(cutProfileSide);
+                        if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
+                                strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
+                            return strategy;
+                        }
+                    }
                 }
-            }
-            CutProfile cutProfileLeft = computeVEdgeDiffraction(rcv, src, data, LEFT);
-            if (cutProfileLeft != null) {
-                strategy = dataOut.onNewCutPlane(cutProfileLeft);
             }
         }
 
@@ -384,10 +385,10 @@ public class PathFinder {
      * @return The propagation path of the horizontal diffraction.
      */
     public CutProfile computeVEdgeDiffraction(ReceiverPointInfo rcv, SourcePointInfo src,
-                                               Scene data, ComputationSide side) {
+                                               Scene data, ComputationSide side, boolean curved) {
 
         List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(src.position),
-                new Coordinate(rcv.position), data.profileBuilder);
+                new Coordinate(rcv.position), curved);
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -412,24 +413,38 @@ public class PathFinder {
                     cutPoints.add(profile.getReceiver());
                 }
             }
-            CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
-                    (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
-            mainProfile.insertCutPoint(false,
-                    cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
-
-            mainProfile.getReceiver().id = rcv.receiverIndex;
-            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
-            mainProfile.getSource().id = src.sourceIndex;
-            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
-            }
-
-            mainProfile.getSource().orientation = src.orientation;
-            mainProfile.getSource().li = src.li;
-
+            CutProfile mainProfile = resetSourceReceiverAttributes(rcv, src, data, cutPoints);
+            mainProfile.setCurvedPath(curved);
+            mainProfile.setProfileType(side == LEFT ? CutProfile.PROFILE_TYPE.LEFT : CutProfile.PROFILE_TYPE.RIGHT);
             return mainProfile;
         }
         return null;
+    }
+
+    /**
+     * Recover lost attributes of source and receiver that are lost when creating intermediate profiles
+     * @param rcv Receiver information
+     * @param src Source information
+     * @param data Propagation data
+     * @param cutPoints Cut points of the full profile
+     */
+    private CutProfile resetSourceReceiverAttributes(ReceiverPointInfo rcv, SourcePointInfo src, Scene data, List<CutPoint> cutPoints) {
+        CutProfile mainProfile = new CutProfile((CutPointSource) cutPoints.get(0),
+                (CutPointReceiver) cutPoints.get(cutPoints.size() -  1));
+        mainProfile.insertCutPoint(false,
+                cutPoints.subList(1, cutPoints.size() - 1).toArray(CutPoint[]::new));
+
+        mainProfile.getReceiver().id = rcv.receiverIndex;
+        mainProfile.getReceiver().receiverPk = rcv.receiverPk;
+        mainProfile.getSource().id = src.sourceIndex;
+        if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
+            mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
+        }
+
+        mainProfile.getSource().orientation = src.orientation;
+        mainProfile.getSource().li = src.li;
+
+        return mainProfile;
     }
 
 
@@ -442,9 +457,25 @@ public class PathFinder {
      * @param left If true return the path on the left side between p1 and p2; else on the right side
      * @param p1   First point
      * @param p2   Second point
-     * @return
+     * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
-    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, ProfileBuilder profileBuilder) {
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2) {
+        return computeSideHull(left, p1, p2, false);
+    }
+
+    /**
+     * Compute Side Hull
+     * Create a line between p1 and p2. Find the first intersection of this line with a building then create a ConvexHull
+     * with the points of buildings in intersection. While there is an intersection add more points to the convex hull.
+     * The side diffraction path is found when there is no more intersection.
+     *
+     * @param left If true return the path on the left side between p1 and p2; else on the right side
+     * @param p1   First point
+     * @param p2   Second point
+     * @param curved Used the curved coordinate system between p1 and p2 (favourable conditions in CNOSSOS)
+     * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
+     */
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved) {
         if (p1.equals(p2)) {
             return new ArrayList<>();
         }
@@ -466,7 +497,11 @@ public class PathFinder {
         Plane cutPlane = computeZeroRadPlane(p1, p2);
 
         BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
-                profileBuilder, input, cutPlane);
+                data.profileBuilder, input, cutPlane);
+
+        // The roof vertices of buildings will be moved downward if the curved coordinate system is used
+        // This will return the altered cut plane intersection coordinates, so the coordinate must be restored before returning it
+        buildingIntersectionPathVisitor.setCurved(curved);
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
@@ -534,7 +569,7 @@ public class PathFinder {
                         int inputPointsBefore = input.size();
 
                         // Visit buildings that are between the provided hull points
-                        profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
+                        data.profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
 
                         if (inputPointsBefore == input.size()) {
                             freeFieldSegments.add(freeFieldTestSegment);
@@ -546,35 +581,26 @@ public class PathFinder {
                 }
             }
         }
-        // Check for invalid coordinates
-        for (Coordinate p : coordinates) {
-            if (p.z < 0) {
-                return new ArrayList<>();
-            }
-        }
 
-        List<Coordinate> sideHullPath;
+        // restore coordinates order from source to receiver
         if (left) {
-            sideHullPath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
+            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
         } else {
             List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length));
             Collections.reverse(inversePath);
-            sideHullPath = inversePath;
+            return inversePath;
         }
-        return  sideHullPath;
     }
 
     /**
-     *
-     * @param p0
-     * @param p1
-     * @return
+     * Compute the cutting plane with zero radian angle between the segment p0 and p1 (no pivot).
+     * The plane normal is upward.
      */
     public static Plane computeZeroRadPlane(Coordinate p0, Coordinate p1) {
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D s = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p0.x, p0.y, p0.z);
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D r = new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(p1.x, p1.y, p1.z);
         double angle = atan2(p1.y - p0.y, p1.x - p0.x);
-        // Compute rPrime, the third point of the plane that is at -PI/2 with SR vector
+        // Compute sPrime, the third point of the plane that is at -PI/2 with SR vector
         org.apache.commons.math3.geometry.euclidean.threed.Vector3D rPrime = s.add(new org.apache.commons.math3.geometry.euclidean.threed.Vector3D(cos(angle - PI / 2), sin(angle - PI / 2), 0));
         Plane p = new Plane(r, s, rPrime, 1e-6);
         // Normal of the cut plane should be upward
@@ -732,68 +758,55 @@ public class PathFinder {
                 }
             }
             // Compute direct path between source and first reflection point, add profile to the data
-            CutProfile cutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
+            CutProfile segmentCutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
                     data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-            if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+            if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
             }
 
             // Add points to the main profile, remove the last point, or it will be duplicated later
             List<CutPoint> mainProfileCutPoints = new ArrayList<>(
-                    cutProfile.cutPoints.subList(0, cutProfile.cutPoints.size() - 1));
+                    segmentCutProfile.cutPoints.subList(0, segmentCutProfile.cutPoints.size() - 1));
 
             // Add intermediate reflections
             boolean validReflection = true;
             for (int idPt = 0; idPt < rayPath.size() - 1; idPt++) {
                 MirrorReceiver firstPoint = rayPath.get(idPt);
                 MirrorReceiver secondPoint = rayPath.get(idPt + 1);
-                cutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
+                segmentCutProfile = data.profileBuilder.getProfile(firstPoint.getReflectionPosition(),
                         secondPoint.getReflectionPosition(), data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-                if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+                if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     continue;
                 }
-                if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+                if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                     // (maybe there is a blocking building/dem, and we disabled diffraction)
                     validReflection = false;
                     break;
                 }
-                insertReflectionPointAttributes(cutProfile.cutPoints.get(0), mainProfileCutPoints, firstPoint);
+                insertReflectionPointAttributes(segmentCutProfile.cutPoints.get(0), mainProfileCutPoints, firstPoint);
 
-                mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size() - 1));
+                mainProfileCutPoints.addAll(segmentCutProfile.cutPoints.subList(1, segmentCutProfile.cutPoints.size() - 1));
             }
             if(!validReflection) {
                 continue;
             }
             // Compute direct path between receiver and last reflection point, add profile to the data
-            cutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
+            segmentCutProfile = data.profileBuilder.getProfile(rayPath.get(rayPath.size() - 1).getReflectionPosition(),
                     rcv.position, data.defaultGroundAttenuation, !data.computeVerticalDiffraction);
-            if(!cutProfile.isFreeField() && !data.computeVerticalDiffraction) {
+            if(!segmentCutProfile.isFreeField() && !data.computeVerticalDiffraction) {
                 // (maybe there is a blocking building/dem, and we disabled diffraction)
                 continue;
             }
-            insertReflectionPointAttributes(cutProfile.cutPoints.get(0), mainProfileCutPoints, rayPath.get(rayPath.size() - 1));
-            mainProfileCutPoints.addAll(cutProfile.cutPoints.subList(1, cutProfile.cutPoints.size()));
+            insertReflectionPointAttributes(segmentCutProfile.cutPoints.get(0), mainProfileCutPoints, rayPath.get(rayPath.size() - 1));
+            mainProfileCutPoints.addAll(segmentCutProfile.cutPoints.subList(1, segmentCutProfile.cutPoints.size()));
 
             // A valid propagation path as been found (without looking at occlusion)
-            CutProfile mainProfile = new CutProfile((CutPointSource) mainProfileCutPoints.get(0),
-                    (CutPointReceiver) mainProfileCutPoints.get(mainProfileCutPoints.size() - 1));
+            CutProfile cutProfileReflexion = resetSourceReceiverAttributes(rcv, src, data, mainProfileCutPoints);
+            cutProfileReflexion.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
 
-            mainProfile.insertCutPoint(false, mainProfileCutPoints.subList(1,
-                    mainProfileCutPoints.size() - 1).toArray(CutPoint[]::new));
-
-            mainProfile.getReceiver().id = rcv.receiverIndex;
-            mainProfile.getReceiver().receiverPk = rcv.receiverPk;
-            mainProfile.getSource().id = src.sourceIndex;
-            if(src.sourceIndex >= 0 && src.sourceIndex < data.sourcesPk.size()) {
-                mainProfile.getSource().sourcePk = data.sourcesPk.get(src.sourceIndex);
-            }
-
-            mainProfile.getSource().orientation = src.orientation;
-            mainProfile.getSource().li = src.li;
-
-            strategy = dataOut.onNewCutPlane(mainProfile);
+            strategy = dataOut.onNewCutPlane(cutProfileReflexion);
             if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
                     strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_RECEIVER)) {
                 return strategy;

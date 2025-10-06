@@ -62,6 +62,30 @@ public class PathFinderTest {
      */
     public static final double DELTA_PLANES = 0.1;
 
+    private void assertCutProfiles(String utName, Collection<CutProfile> cutProfiles) throws IOException {
+        for(CutProfile cutProfile : cutProfiles) {
+            StringBuilder sb = new StringBuilder(utName);
+            switch (cutProfile.getProfileType()) {
+                case DIRECT:
+                    sb.append("_Direct");
+                    break;
+                case LEFT:
+                    sb.append("_Left");
+                    break;
+                case RIGHT:
+                    sb.append("_Right");
+                    break;
+                case REFLECTION:
+                    sb.append("_Reflection");
+                    break;
+            }
+            if(cutProfile.curvedPath) {
+                sb.append("_Curved");
+            }
+            assertCutProfile(sb.toString(), cutProfile);
+        }
+    }
+
     private void assertCutProfile(String utName, CutProfile cutProfile) throws IOException {
         String testCaseFileName = utName + ".json";
         if(overwriteTestCase) {
@@ -88,6 +112,7 @@ public class PathFinderTest {
 
     public static void assertCutProfile(InputStream expected, CutProfile got) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
+        assertNotNull(expected);
         CutProfile cutProfile = mapper.readValue(expected, CutProfile.class);
         assertCutProfile(cutProfile, got);
     }
@@ -96,43 +121,45 @@ public class PathFinderTest {
         assertNotNull(expected);
         assertNotNull(got);
         assertEquals(expected.cutPoints.size(), got.cutPoints.size(), "Not the same number of cut points");
+        assertEquals(expected.profileType, got.profileType, "Not the same profile type");
+        assertEquals(expected.curvedPath, got.curvedPath, "Not the same curved path attribute value");
+
         for (int i = 0; i < expected.cutPoints.size(); i++) {
             CutPoint expectedCutPoint = expected.cutPoints.get(i);
             CutPoint gotCutPoint = got.cutPoints.get(i);
             assertInstanceOf(expectedCutPoint.getClass(), gotCutPoint);
-            assert3DCoordinateEquals(expectedCutPoint+"!="+gotCutPoint, expectedCutPoint.coordinate,
+            assert3DCoordinateEquals(expectedCutPoint + "!=" + gotCutPoint, expectedCutPoint.coordinate,
                     gotCutPoint.coordinate, DELTA_COORDS);
             assertEquals(expectedCutPoint.zGround, gotCutPoint.zGround, 0.01, "zGround");
             assertEquals(expectedCutPoint.groundCoefficient, gotCutPoint.groundCoefficient, 0.01, "groundCoefficient");
 
-            if(expectedCutPoint instanceof CutPointSource) {
+            if (expectedCutPoint instanceof CutPointSource) {
                 CutPointSource expectedCutPointSource = (CutPointSource) expectedCutPoint;
                 CutPointSource gotCutPointSource = (CutPointSource) gotCutPoint;
-                assertEquals(expectedCutPointSource.li, gotCutPointSource.li,0.01);
-                assertEquals(expectedCutPointSource.orientation.yaw, gotCutPointSource.orientation.yaw,0.01);
-                assertEquals(expectedCutPointSource.orientation.pitch, gotCutPointSource.orientation.pitch,0.01);
-                assertEquals(expectedCutPointSource.orientation.roll, gotCutPointSource.orientation.roll,0.01);
+                assertEquals(expectedCutPointSource.li, gotCutPointSource.li, 0.01);
+                assertEquals(expectedCutPointSource.orientation.yaw, gotCutPointSource.orientation.yaw, 0.01);
+                assertEquals(expectedCutPointSource.orientation.pitch, gotCutPointSource.orientation.pitch, 0.01);
+                assertEquals(expectedCutPointSource.orientation.roll, gotCutPointSource.orientation.roll, 0.01);
             } else if (expectedCutPoint instanceof CutPointWall) {
                 CutPointWall expectedCutPointWall = (CutPointWall) expectedCutPoint;
                 CutPointWall gotCutPointWall = (CutPointWall) gotCutPoint;
-                assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p0,
+                assert3DCoordinateEquals(expectedCutPointWall + "!=" + gotCutPointWall, expectedCutPointWall.wall.p0,
                         gotCutPointWall.wall.p0, DELTA_COORDS);
-                assert3DCoordinateEquals(expectedCutPointWall+"!="+gotCutPointWall, expectedCutPointWall.wall.p1,
+                assert3DCoordinateEquals(expectedCutPointWall + "!=" + gotCutPointWall, expectedCutPointWall.wall.p1,
                         gotCutPointWall.wall.p1, DELTA_COORDS);
-                if(!expectedCutPointWall.wallAlpha.isEmpty()) {
+                if (!expectedCutPointWall.wallAlpha.isEmpty()) {
                     assertArrayEquals(expectedCutPointWall.alphaAsArray(), gotCutPointWall.alphaAsArray(), 0.01, "expectedCutPointWall.alpha");
                 }
             } else if (expectedCutPoint instanceof CutPointReflection) {
                 CutPointReflection expectedCutPointReflection = (CutPointReflection) expectedCutPoint;
                 CutPointReflection gotCutPointReflection = (CutPointReflection) gotCutPoint;
-                assert3DCoordinateEquals(expectedCutPointReflection+"!="+gotCutPointReflection,
+                assert3DCoordinateEquals(expectedCutPointReflection + "!=" + gotCutPointReflection,
                         expectedCutPointReflection.wall.p0, gotCutPointReflection.wall.p0, DELTA_COORDS);
-                assert3DCoordinateEquals(expectedCutPointReflection+"!="+gotCutPointReflection,
+                assert3DCoordinateEquals(expectedCutPointReflection + "!=" + gotCutPointReflection,
                         expectedCutPointReflection.wall.p1, gotCutPointReflection.wall.p1, DELTA_COORDS);
                 assertArrayEquals(expectedCutPointReflection.alphaAsArray(), gotCutPointReflection.alphaAsArray(), 0.01, "expectedCutPointReflection.alphaAsArray");
             }
         }
-
     }
 
 
@@ -514,11 +541,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC08_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC08_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC08_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC08", propDataOut.cutProfiles);
 
     }
 
@@ -557,11 +582,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC09_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC09_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC09_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC09", propDataOut.cutProfiles);
 
     }
 
@@ -602,11 +625,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC10_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC10_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC10_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC10", propDataOut.cutProfiles);
 
     }
 
@@ -645,11 +666,9 @@ public class PathFinderTest {
         // Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC11_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC11_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC11_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC11", propDataOut.cutProfiles);
     }
 
     /**
@@ -695,11 +714,9 @@ public class PathFinderTest {
 
         //Expected values
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC12_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC12_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC12_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC12", propDataOut.cutProfiles);
     }
 
     /**
@@ -743,11 +760,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC13_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC13_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC13_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC13", propDataOut.cutProfiles);
     }
 
     /**
@@ -788,11 +803,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC14_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC14_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC14_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC14", propDataOut.cutProfiles);
 
     }
 
@@ -844,11 +857,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC15_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC15_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC15_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC15", propDataOut.cutProfiles);
     }
 
     /**
@@ -888,8 +899,7 @@ public class PathFinderTest {
 
         assertEquals(2, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC16_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC16_Reflection", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC16", propDataOut.cutProfiles);
     }
 
     /**
@@ -1094,10 +1104,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC19_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC19_Right", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC19", propDataOut.cutProfiles);
 
         //Different value with the TC because their z-profile left seems to be false, it follows the building top
         // border while it should not
@@ -1170,7 +1179,7 @@ public class PathFinderTest {
                 .addSource(10, 10, 1)
                 .addReceiver(200, 25, 14)
                 .hEdgeDiff(true)
-                //.vEdgeDiff(true)
+                .vEdgeDiff(true)
                 .setGs(0.9)
                 .build();
         rayData.reflexionOrder=0;
@@ -1183,11 +1192,10 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
+        // There is no favourable paths on the left and right sides
         assertEquals(3, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC21_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC21_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC21_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC21", propDataOut.cutProfiles);
     }
 
     @Test
@@ -1242,11 +1250,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC22_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC22_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC22_Left", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC22", propDataOut.cutProfiles);
     }
 
     @Test
@@ -1423,12 +1429,9 @@ public class PathFinderTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(4, propDataOut.getCutProfiles().size());
+        assertEquals(6, propDataOut.getCutProfiles().size());
 
-        assertCutProfile("TC25_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Right", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Left", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC25_Reflection", propDataOut.cutProfiles.poll());
+        assertCutProfiles("TC25", propDataOut.cutProfiles);
     }
 
     /**
@@ -1555,11 +1558,12 @@ public class PathFinderTest {
                         new Coordinate(184, 91, 0),
                         new Coordinate(196, 22, 0)}, 10, -1)
 
-                .addBuilding(new Coordinate[]{
-                        new Coordinate(250, 70, 0),
-                        new Coordinate(250, 180, 0),
-                        new Coordinate(270, 180, 0),
-                        new Coordinate(270, 70, 0)}, 14, -1)
+// this building is ignored in the test case
+//                .addBuilding(new Coordinate[]{
+//                        new Coordinate(250, 70, 0),
+//                        new Coordinate(250, 180, 0),
+//                        new Coordinate(270, 180, 0),
+//                        new Coordinate(270, 70, 0)}, 14, -1)
 
                 .addBuilding(new Coordinate[]{
                         new Coordinate(332, 32, 0),
@@ -1615,17 +1619,9 @@ public class PathFinderTest {
         computeRays.run(propDataOut);
 
         // Expected Values
+        assertEquals(5, propDataOut.getCutProfiles().size());
 
-        assertEquals(3, propDataOut.getCutProfiles().size());
-
-        assertCutProfile("TC28_Direct", propDataOut.cutProfiles.poll());
-        assertCutProfile("TC28_Right", propDataOut.cutProfiles.poll());
-
-
-        // Error in CNOSSOS unit test, left diffraction is going over a building but not in their 3D view !
-        // Why the weird left path in homogeneous ? it is not explained.
-        //assertCutProfile("TC28_Left", propDataOut.cutProfiles.poll());
-
+        assertCutProfiles("TC28", propDataOut.cutProfiles);
     }
 
 
@@ -1643,22 +1639,6 @@ public class PathFinderTest {
         }
     }
 
-    public static void assertMirrorPoint(Coordinate expectedSprime, Coordinate expectedRprime,Coordinate actualSprime, Coordinate actualRprime) {
-        assertCoordinateEquals("Sprime ",expectedSprime, actualSprime, DELTA_COORDS);
-        assertCoordinateEquals("Rprime ",expectedRprime, actualRprime, DELTA_COORDS);
-    }
-
-    public static void assertCoordinateEquals(String message,Coordinate expected, Coordinate actual, double toleranceX) {
-        double diffX = Math.abs(expected.getX() - actual.getX());
-        double diffY = Math.abs(expected.getY() - actual.getY());
-
-        if (diffX > toleranceX || diffY > toleranceX) {
-            String result = String.format(Locale.ROOT, "Expected coordinate: (%.3f, %.3f), Actual coordinate: (%.3f, %.3f)",
-                    expected.getX(), expected.getY(), actual.getX(), actual.getY());
-            throw new AssertionError(message+result);
-        }
-    }
-
     public static void assert3DCoordinateEquals(String message,Coordinate expected, Coordinate actual, double tolerance) {
 
         if (CGAlgorithms3D.distance(expected, actual) > tolerance) {
@@ -1667,32 +1647,6 @@ public class PathFinderTest {
             throw new AssertionError(message+result);
         }
     }
-//
-//    private void exportScene(String name, ProfileBuilder builder, PathFinderVisitor result) throws IOException {
-//        try {
-//            Coordinate proj = new Coordinate( 351714.794877, 6685824.856402, 0);
-//            FileOutputStream outData = new FileOutputStream(name);
-//            KMLDocument kmlDocument = new KMLDocument(outData);
-//            //kmlDocument.doTransform(builder.getTriangles());
-//            kmlDocument.setInputCRS("EPSG:2154");
-//            //kmlDocument.setInputCRS("EPSG:" + crs);
-//            kmlDocument.setOffset(proj);
-//            kmlDocument.writeHeader();
-//            if(builder != null) {
-//                kmlDocument.writeTopographic(builder.getTriangles(), builder.getVertices());
-//                kmlDocument.writeBuildings(builder);
-//                kmlDocument.writeWalls(builder);
-//                //kmlDocument.writeProfile(PathFinder.getData().profileBuilder.getProfile(rayData.sourceGeometries.get(0).getCoordinate(), rayData.receivers.get(0), computeRays.getData().gS);
-//                //kmlDocument.writeProfile("S:0 R:0", builder.getProfile(result.getInputData().sourceGeometries.get(0).getCoordinate(),result.getInputData().receivers.get(0)));
-//            }
-//            if(result != null) {
-//                kmlDocument.writeRays(result.getCutPlanes());
-//            }
-//            kmlDocument.writeFooter();
-//        } catch (XMLStreamException | CoordinateOperationException | CRSException ex) {
-//            throw new IOException(ex);
-//        }
-//    }
 
     @Test
     public void setOverwriteTestCase() {
