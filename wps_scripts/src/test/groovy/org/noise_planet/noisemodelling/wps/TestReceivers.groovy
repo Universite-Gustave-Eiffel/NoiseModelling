@@ -20,10 +20,12 @@ import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.wps.Receivers.Building_Grid3D
 import org.noise_planet.noisemodelling.wps.Receivers.Delaunay_Grid
@@ -239,7 +241,9 @@ class TestReceivers extends JdbcTestCase {
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
-        sql.execute("CREATE SPATIAL INDEX ON RECEIVERS(THE_GEOM)")
+        assertTrue(JDBCUtilities.isSpatialIndexed(connection, "RECEIVERS", "THE_GEOM"))
+
+        assertTrue(JDBCUtilities.isSpatialIndexed(connection, "TRIANGLES", "THE_GEOM"))
 
         // Check if index and geoms is corresponding
         def res = sql.firstRow("SELECT MAX((SELECT ST_DISTANCE(T.THE_GEOM, R.THE_GEOM) D FROM RECEIVERS R WHERE R.PK = T.PK_1)) D1," +
@@ -251,6 +255,39 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0.0, max_dist_a, 1e-6d);
         assertEquals(0.0, max_dist_b, 1e-6d);
         assertEquals(0.0, max_dist_c, 1e-6d);
+    }
+
+    void testDelaunayGridTableFence() {
+        def sql = new Sql(connection)
+
+        SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
+        SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestReceivers.getResource("dem.geojson").getPath(),
+                "inputSRID" : 2154])
+
+        sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
+        sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
+
+        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
+                                              "sourcesTableName" : "ROADS",
+                                              "fenceTableName": "DEM"]);
+
+        def geomFence = GeometryTableUtilities.getEstimatedExtent(connection, "DEM", "THE_GEOM")
+
+        def expectedArea = geomFence.getArea()
+
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        assertTrue(JDBCUtilities.isSpatialIndexed(connection, "RECEIVERS", "THE_GEOM"))
+
+        assertTrue(JDBCUtilities.isSpatialIndexed(connection, "TRIANGLES", "THE_GEOM"))
+
+        // Check if the area of the envelope of triangles is the same as the fence table DEM
+        def res = sql.firstRow("SELECT ST_AREA(ST_EXTENT(THE_GEOM)) AREA FROM TRIANGLES T")
+
+        assertEquals(expectedArea, res["area"], 5)
     }
 
     void testDelaunayGridClean() {

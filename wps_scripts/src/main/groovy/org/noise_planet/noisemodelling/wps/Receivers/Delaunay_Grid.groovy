@@ -13,6 +13,7 @@
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
+ * @Contributor Ignacio Soto, Ministry for the Ecological Transition, Spain
  */
 
 
@@ -22,22 +23,23 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2.util.geometry.EWKTUtils
+import org.h2.util.geometry.JTSUtils
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.io.WKTReader
-
-import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -56,6 +58,14 @@ description = '&#10145;&#65039; Computes a <a href="https://en.wikipedia.org/wik
               '<img src="/wps_images/delaunay_grid_output.png" alt="Delaunay grid output" width="95%" align="center">'
 
 inputs = [
+        fenceTableName: [
+                name       : 'Fence table name',
+                title      : 'Fence table name',
+                description: 'Use the extent of a geometry table (e.g., from a shapefile) to limit receiver area',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+
         tableBuilding      : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
@@ -96,6 +106,16 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
+
+        buildingBuffer      : [
+                name       : 'Building buffer',
+                title      : 'Minimum distance to buildings (m)',
+                description: 'Do not add receivers closer than this distance to buildings (in meters). ' +
+                             'Default value: 2',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
+
         maxArea            : [
                 name       : 'Maximum Area',
                 title      : 'Maximum Area',
@@ -177,7 +197,17 @@ def run(input) {
 }
 
 
+// Create a spatial index if it does not exist yet on table(geomCol)
+def ensureSpatialIndex(Connection connection, String table) {
+    def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, table).first()
+    if(!JDBCUtilities.isSpatialIndexed(connection, table, geomCol)) {
+        JDBCUtilities.createSpatialIndex(connection, table, geomCol)
+    }
+}
+
 def exec(Connection connection, input) {
+
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     // output string, the information given back to the user
     String resultString = null
@@ -211,10 +241,9 @@ def exec(Connection connection, input) {
     building_table_name = building_table_name.toUpperCase()
 
     boolean isoSurfaceInBuildings = false;
-    if(input['isoSurfaceInBuildings)']) {
+    if(input['isoSurfaceInBuildings']) {
         isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
     }
-
 
     Double maxCellDist = 600.0
     if (input['maxCellDist']) {
@@ -231,24 +260,52 @@ def exec(Connection connection, input) {
         roadWidth = input['roadWidth'] as Double
     }
 
+    // Receiver-to-building minimum distance (meters).
+    // New parameter: prevents adding receivers too close to building footprints.
+    // Default: 2.0 m.
+    Double buildingBuffer = 2.0
+    if (input['buildingBuffer']) {
+        buildingBuffer = input['buildingBuffer'] as Double
+    }
+
     Double maxArea = 2500
     if (input.containsKey('maxArea')) {
         maxArea = input['maxArea'] as Double
     }
 
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (srid == 0) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    }
 
     Geometry fence = null
-    WKTReader wktReader = new WKTReader()
     if (input['fence']) {
-        fence = wktReader.read(input['fence'] as String)
+        if(input['fence'] instanceof Geometry) {
+            fence = input['fence']
+        } else {
+            fence = JTSUtils.ewkb2geometry(EWKTUtils.ewkt2ewkb(input['fence'] as String))
+        }
+    }
+
+    // Fence handling (two options):
+    //  1) Direct geometry passed as 'fence' (handled above)
+    //  2) Bounding box extracted from another table via 'fenceTableName'
+    // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
+    if (input['fenceTableName']) {
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        if(fence.getSRID() == 0) {
+            fence.setSRID(srid)
+        }
     }
 
     //Statement sql = connection.createStatement()
     Sql sql = new Sql(connection)
+
+
     connection = new ConnectionWrapper(connection)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
+    // Clean previous outputs so we can regenerate a fresh grid.
     // Delete previous receivers grid
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
     sql.execute("DROP TABLE IF EXISTS TRIANGLES")
@@ -257,20 +314,17 @@ def exec(Connection connection, input) {
     DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
 
     if (fence != null) {
-        // Reproject fence
-        int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-        if (targetSrid == 0) {
-            targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-        }
-        if (targetSrid != 0) {
+        // If the fence must be reprojected into the input srid
+        if (srid != 0 && fence.getSRID() != srid) {
+            if(fence.getSRID() == 0) {
+                // If the provided srid is not known, it is considered being in the WGS84 projection system
+                fence = ST_SetSRID.setSRID(fence, 4326)
+            }
             // Transform fence to the same coordinate system than the buildings & sources
-            fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
-            delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
-        } else {
-            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            fence = ST_Transform.ST_Transform(connection, fence, srid)
         }
+        delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
     }
-
 
     // Avoid loading to much geometries when doing Delaunay triangulation
     delaunayReceiversMaker.setMaximumPropagationDistance(maxCellDist)
@@ -280,7 +334,11 @@ def exec(Connection connection, input) {
     delaunayReceiversMaker.setRoadWidth(roadWidth)
     // No triangles larger than provided area
     delaunayReceiversMaker.setMaximumArea(maxArea)
+    // Do not add receivers closer to buildings than this distance
+    delaunayReceiversMaker.setBuildingBuffer(buildingBuffer)
 
+
+    // Allow isosurfaces to be present over buildings if requested.
     delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
     logger.info("Delaunay initialize")
@@ -319,13 +377,15 @@ def exec(Connection connection, input) {
         throw ex
     }
 
-    logger.info("Create spatial index on "+receivers_table_name+" table")
-    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
+    // Ensure spatial indexes on output tables (if missing)
+    ensureSpatialIndex(connection, receivers_table_name)
+    ensureSpatialIndex(connection, 'TRIANGLES')
+
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created. "
+    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created."
 
     // print to command window
     logger.info('Result : ' + resultString)
@@ -333,6 +393,7 @@ def exec(Connection connection, input) {
 
     // print to WPS Builder
     return resultString
+
 
 }
 
