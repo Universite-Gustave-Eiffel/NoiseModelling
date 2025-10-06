@@ -241,9 +241,9 @@ def exec(Connection connection, input) {
     sql.execute("drop table if exists tmp_relation_screen_building;")
     sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
     logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
-    // --- FIX: evitar suponer b.pk; usar la PK real
+
     sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b." + buildingPk + " and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
-    // --- FIN FIX
+
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
     sql.execute("drop table if exists tmp_screen_truncated;")
@@ -297,7 +297,7 @@ def exec(Connection connection, input) {
         sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
-        // --- NEW: Remove receivers left inside buildings (non-POP case)
+        // Remove receivers left inside buildings (non-POP case)
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from " + receivers_table_name + " g " +
                     "where exists (" +
@@ -305,7 +305,7 @@ def exec(Connection connection, input) {
                     "  where b.the_geom && g.the_geom " +
                     "    and ST_Contains(b.the_geom, g.the_geom) " +
                     "  limit 1)")
-        // --- END NEW
+
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources
@@ -328,7 +328,7 @@ def exec(Connection connection, input) {
         sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + targetSrid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
-        // --- NEW: Remove recipients left inside buildings BEFORE distributing POP
+        // Remove recipients left inside buildings BEFORE distributing POP
         sql.execute("Create spatial index on " + building_table_name + "(the_geom);")
         sql.execute("delete from tmp_receivers g " +
                     "where exists (" +
@@ -336,7 +336,7 @@ def exec(Connection connection, input) {
                     "  where b.the_geom && g.the_geom " +
                     "    and ST_Contains(b.the_geom, g.the_geom) " +
                     "  limit 1)")
-        // --- END NEW
+
 
         if (input['sourcesTableName']) {
             // Delete receivers near sources

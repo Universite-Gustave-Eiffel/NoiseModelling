@@ -19,34 +19,27 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
-/**
- * Modifications by IsotoCedex:
- *  - Added 'buildingBuffer' parameter and enforced minimum distance to buildings.
- *  - Added safe spatial index helper (ensureSpatialIndex) and applied it to inputs/outputs.
- *  - Implemented 'fenceTableName' handling (use table bounding box as fence), aligned with Building_Grid.groovy.
- */
-
-
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
+import org.h2.util.geometry.EWKTUtils
+import org.h2.util.geometry.JTSUtils
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.io.WKTReader
-
-import org.noise_planet.noisemodelling.emission.*
+import org.noise_planet.noisemodelling.jdbc.DelaunayReceiversMaker
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
-import org.noise_planet.noisemodelling.propagation.*
-import org.noise_planet.noisemodelling.jdbc.*
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -204,7 +197,17 @@ def run(input) {
 }
 
 
+// Create a spatial index if it does not exist yet on table(geomCol)
+def ensureSpatialIndex(Connection connection, String table) {
+    def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, table).first()
+    if(!JDBCUtilities.isSpatialIndexed(connection, table, geomCol)) {
+        JDBCUtilities.createSpatialIndex(connection, table, geomCol)
+    }
+}
+
 def exec(Connection connection, input) {
+
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     // output string, the information given back to the user
     String resultString = null
@@ -237,12 +240,10 @@ def exec(Connection connection, input) {
     }
     building_table_name = building_table_name.toUpperCase()
 
-    // Fix: correct key name for 'isoSurfaceInBuildings' (typo in original code).
     boolean isoSurfaceInBuildings = false;
     if(input['isoSurfaceInBuildings']) {
         isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
     }
-
 
     Double maxCellDist = 600.0
     if (input['maxCellDist']) {
@@ -273,45 +274,36 @@ def exec(Connection connection, input) {
     }
 
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    if (srid == 0) {
+        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    }
 
     Geometry fence = null
-    WKTReader wktReader = new WKTReader()
     if (input['fence']) {
-        fence = wktReader.read(input['fence'] as String)
+        if(input['fence'] instanceof Geometry) {
+            fence = input['fence']
+        } else {
+            fence = JTSUtils.ewkb2geometry(EWKTUtils.ewkt2ewkb(input['fence'] as String))
+        }
+        if(fence.getSRID() == 0) {
+            fence.setSRID(srid)
+        }
     }
 
     // Fence handling (two options):
     //  1) Direct geometry passed as 'fence' (handled above)
     //  2) Bounding box extracted from another table via 'fenceTableName'
     // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
-    Geometry fenceGeom = null
     if (input['fenceTableName']) {
-        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        if(fence.getSRID() == 0) {
+            fence.setSRID(srid)
+        }
     }
 
     //Statement sql = connection.createStatement()
     Sql sql = new Sql(connection)
 
-    // Crea un índice espacial si no existe ya sobre table(geomCol)
-    def ensureSpatialIndex = { Sql s, String table, String geomCol ->
-        // ¿Existe algún índice (espacial o normal) sobre esa columna?
-        def row = s.firstRow("""
-            SELECT COUNT(*) AS C
-            FROM INFORMATION_SCHEMA.INDEXES I
-            JOIN INFORMATION_SCHEMA.INDEX_COLUMNS C
-              ON I.TABLE_NAME = C.TABLE_NAME AND I.INDEX_NAME = C.INDEX_NAME
-            WHERE UPPER(I.TABLE_NAME) = UPPER(?) AND UPPER(C.COLUMN_NAME) = UPPER(?)
-        """.stripIndent(), [table, geomCol])
-        int exists = (row?.C ?: 0) as int
-        if (exists == 0) {
-            logger.info("Create spatial index on ${table}(${geomCol})")
-            // nombre de índice seguro (sin puntos ni caracteres no válidos)
-            String idxName = ("IDX_${table}_${geomCol}").replaceAll('[^A-Za-z0-9_]', '_')
-            s.execute("CREATE INDEX " + idxName + " ON " + table + "(" + geomCol + ")")
-        } else {
-            logger.info("Spatial index already exists on ${table}(${geomCol})")
-        }
-    }
 
     connection = new ConnectionWrapper(connection)
     RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
@@ -321,34 +313,21 @@ def exec(Connection connection, input) {
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
     sql.execute("DROP TABLE IF EXISTS TRIANGLES")
 
-    // Ensure spatial indexes on input tables (if missing)
-    ensureSpatialIndex(sql, building_table_name, 'THE_GEOM')
-    ensureSpatialIndex(sql, sources_table_name, 'THE_GEOM')
-
     // Generate receivers grid for noise map rendering
     DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
 
     if (fence != null) {
-        // Reproject fence
-        int targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-        if (targetSrid == 0) {
-            targetSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-        }
-        if (targetSrid != 0) {
+        // If the fence must be reprojected into the input srid
+        if (srid != 0 && fence.getSRID() != srid) {
+            if(fence.getSRID() == 0) {
+                // If the provided srid is not known, it is considered being in the WGS84 projection system
+                fence = ST_SetSRID.setSRID(fence, 4326)
+            }
             // Transform fence to the same coordinate system than the buildings & sources
-            fence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(fence, 4326), targetSrid)
-            delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
-        } else {
-            System.err.println("Unable to find buildings or sources SRID, ignore fence parameters")
+            fence = ST_Transform.ST_Transform(connection, fence, targetSrid)
         }
+        delaunayReceiversMaker.setMainEnvelope(fence.getEnvelopeInternal())
     }
-    // If a fence table name was provided, apply its envelope as main extent as well.
-    // This complements the direct 'fence' geometry option.
-    if (fenceGeom != null) {
-        delaunayReceiversMaker.setMainEnvelope(fenceGeom.getEnvelopeInternal())
-    }
-
-
 
     // Avoid loading to much geometries when doing Delaunay triangulation
     delaunayReceiversMaker.setMaximumPropagationDistance(maxCellDist)
@@ -402,8 +381,8 @@ def exec(Connection connection, input) {
     }
 
     // Ensure spatial indexes on output tables (if missing)
-    ensureSpatialIndex(sql, receivers_table_name, 'THE_GEOM')
-    ensureSpatialIndex(sql, 'TRIANGLES', 'THE_GEOM')
+    ensureSpatialIndex(connection, receivers_table_name)
+    ensureSpatialIndex(connection, 'TRIANGLES')
 
 
     int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
