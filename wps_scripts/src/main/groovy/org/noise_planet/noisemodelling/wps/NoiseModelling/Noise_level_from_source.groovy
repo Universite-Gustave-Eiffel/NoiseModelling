@@ -21,7 +21,6 @@ package org.noise_planet.noisemodelling.wps.NoiseModelling
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
@@ -299,7 +298,6 @@ def run(input) {
 }
 
 // main function of the script
-@CompileStatic
 def exec(Connection connection, Map input) {
     long startCompute = System.currentTimeMillis()
 
