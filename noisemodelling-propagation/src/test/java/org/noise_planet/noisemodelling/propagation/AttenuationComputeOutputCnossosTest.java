@@ -3824,9 +3824,6 @@ public class AttenuationComputeOutputCnossosTest {
         //Assertion
         assertZProfil(expectedZProfile, cnossosPathDirectH.getCutProfile().computePts2DGround());
         assertZProfil(expectedZProfileRight, cnossosPathRightH.getCutProfile().computePts2DGround());
-        // Error in ISO
-        // The iso is making the ray do a diffraction on the horizontal edge of the building then a diffraction on
-        // the last wall. The hull is ignoring the 12 meters building on the left side.
         assertZProfil(expectedZProfileLeft, cnossosPathLeftH.getCutProfile().computePts2DGround());
 
         assertPlanes(segmentsMeanPlanes0, cnossosPathDirectH.getSegmentList());
@@ -4022,8 +4019,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         double[] LA = sumDbArray(directLA,rightLA);
 
-        //Different value with the TC because their z-profile left seems to be false, it follows the building top
-        // border while it should not
+        assertEquals(2, cnossosPathLeftH.getSegmentList().size());
+        assertEquals(167.27, cnossosPathLeftH.getSegmentList().get(0).d, ERROR_EPSILON_LOWEST);
+        assertEquals(25.55, cnossosPathLeftH.getSegmentList().get(1).d, ERROR_EPSILON_LOWEST);
+        assertEquals(0, cnossosPathLeftH.e, ERROR_EPSILON_LOWEST);
+        assertEquals(1.33, cnossosPathLeftH.delta, ERROR_EPSILON_LOWEST);
 
         assertDoubleArrayEquals("WH - lateral left", expectedWH, actualWH, ERROR_EPSILON_VERY_HIGH);
         assertDoubleArrayEquals("CfH - lateral left", expectedCfH, actualCfH, ERROR_EPSILON_HIGHEST);

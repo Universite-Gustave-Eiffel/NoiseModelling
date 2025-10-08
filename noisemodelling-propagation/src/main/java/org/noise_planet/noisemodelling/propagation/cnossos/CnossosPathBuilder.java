@@ -252,8 +252,11 @@ public class CnossosPathBuilder {
             // Compute the altered profile for favourable path
             hullPts2D = cutProfile.computePts2D(true);
         }
+        boolean ignoreBuildingsInConvexHull = (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
+                cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT);
+
         // Compute convex hull of the profile
-        List<Integer> hullPointsIndices = cutProfile.getConvexHullIndices(hullPts2D);
+        List<Integer> hullPointsIndices = cutProfile.getConvexHullIndices(hullPts2D, ignoreBuildingsInConvexHull);
 
         // Src if perceived source position from the receiver point of view
         Coordinate src = cutProfile.getSource().getCoordinate();
