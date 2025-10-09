@@ -5066,25 +5066,25 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("DeltaGroundORH reflection plane", expectedDeltaGroundORH, actualDeltaGroundORH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("actualADiffH reflection plane", expectedADiffH, actualADiffH, ERROR_EPSILON_VERY_LOW);
 
-        assertDoubleArrayEquals("DeltaDiffSRF reflection plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("AGroundSOF reflection plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("AGroundORF reflection plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaDiffSPrimeRF reflection plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaDiffSRPrimeF reflection plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaGroundSOF reflection plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("DeltaGroundORF reflection plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("ADiffF reflection plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("DeltaDiffSRF reflection plane", expectedDeltaDiffSRF, actualDeltaDiffSRF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundSOF reflection plane", expectedAGroundSOF, actualAGroundSOF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("AGroundORF reflection plane", expectedAGroundORF, actualAGroundORF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaDiffSPrimeRF reflection plane", expectedDeltaDiffSPrimeRF, actualDeltaDiffSPrimeRF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaDiffSRPrimeF reflection plane", expectedDeltaDiffSRPrimeF, actualDeltaDiffSRPrimeF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaGroundSOF reflection plane", expectedDeltaGroundSOF, actualDeltaGroundSOF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("DeltaGroundORF reflection plane", expectedDeltaGroundORF, actualDeltaGroundORF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("ADiffF reflection plane", expectedADiffF, actualADiffF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("AlphaAtm reflection plane", expectedAlphaAtm, actualAlphaAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("AAtm reflection plane", expectedAAtm, actualAAtm, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ADiv reflection plane", expectedADiv, actualADiv, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("ABoundaryH reflection plane", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("ABoundaryF reflection plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_HIGH);
+        assertDoubleArrayEquals("ABoundaryF reflection plane", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
 
         assertDoubleArrayEquals("LH - Reflection plane", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF reflection plane", expectedLF, actualLF, ERROR_EPSILON_VERY_HIGH);
-        assertDoubleArrayEquals("L reflection plane", expectedL, actualL, ERROR_EPSILON_HIGH);
-        assertDoubleArrayEquals("LA reflection plane", expectedLA, actualLA, ERROR_EPSILON_HIGH);
+        assertDoubleArrayEquals("LF reflection plane", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("L reflection plane", expectedL, actualL, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA reflection plane", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
     }
 
