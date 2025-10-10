@@ -489,8 +489,6 @@ public class PathFinder {
         int indexp1 = 0;
         int indexp2 = 0;
 
-        boolean convexHullIntersects = true;
-
         input.add(p1);
         input.add(p2);
 
@@ -506,80 +504,56 @@ public class PathFinder {
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
         int k;
-        while (convexHullIntersects) {
-            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
-            Geometry convexhull = convexHull.getConvexHull();
 
-            coordinates = convexhull.getCoordinates();
-            // for the length we do not count the return ray from receiver to source (closed polygon here)
-            double convexHullLength = Length.ofLine(
-                    CoordinateArraySequenceFactory.instance()
-                            .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
-            if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
-                    convexHullLength >= data.maxSrcDist) {
-                return new ArrayList<>();
+        ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
+        Geometry convexhull = convexHull.getConvexHull();
+
+        coordinates = convexhull.getCoordinates();
+        // for the length we do not count the return ray from receiver to source (closed polygon here)
+        double convexHullLength = Length.ofLine(
+                CoordinateArraySequenceFactory.instance()
+                        .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
+        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
+                convexHullLength >= data.maxSrcDist) {
+            return new ArrayList<>();
+        }
+
+        input.clear();
+        input.addAll(Arrays.asList(coordinates));
+
+        indexp1 = -1;
+        for (int i = 0; i < coordinates.length - 1; i++) {
+            if (coordinates[i].equals(p1)) {
+                indexp1 = i;
+                break;
             }
-
-            convexHullIntersects = false;
-
-            input.clear();
-            input.addAll(Arrays.asList(coordinates));
-
-            indexp1 = -1;
-            for (int i = 0; i < coordinates.length - 1; i++) {
-                if (coordinates[i].equals(p1)) {
-                    indexp1 = i;
-                    break;
-                }
+        }
+        if (indexp1 == -1) {
+            // P1 does not belong to convex vertices, cannot compute diffraction
+            // TODO handle concave path
+            return new ArrayList<>();
+        }
+        // Transform array to set p1 at index=0
+        Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
+        // Copy from P1 to end in beginning of new array
+        int len = (coordinates.length - 1) - indexp1;
+        System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
+        // Copy from 0 to P1 in the end of array
+        System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
+        coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
+        coordinates = coordinatesShifted;
+        indexp1 = 0;
+        indexp2 = -1;
+        for (int i = 1; i < coordinates.length - 1; i++) {
+            if (coordinates[i].equals(p2)) {
+                indexp2 = i;
+                break;
             }
-            if (indexp1 == -1) {
-                // P1 does not belong to convex vertices, cannot compute diffraction
-                // TODO handle concave path
-                return new ArrayList<>();
-            }
-            // Transform array to set p1 at index=0
-            Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
-            // Copy from P1 to end in beginning of new array
-            int len = (coordinates.length - 1) - indexp1;
-            System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
-            // Copy from 0 to P1 in the end of array
-            System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
-            coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
-            coordinates = coordinatesShifted;
-            indexp1 = 0;
-            indexp2 = -1;
-            for (int i = 1; i < coordinates.length - 1; i++) {
-                if (coordinates[i].equals(p2)) {
-                    indexp2 = i;
-                    break;
-                }
-            }
-            if (indexp2 == -1) {
-                // P2 does not belong to convex vertices, cannot compute diffraction
-                // TODO handle concave path
-                return new ArrayList<>();
-            }
-            for (k = 0; k < coordinates.length - 1; k++) {
-                LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
-
-                // Ignore intersection if iterating over other side (not parts of what is returned)
-                if (left && k < indexp2 || !left && k >= indexp2) {
-                    if (!freeFieldSegments.contains(freeFieldTestSegment)) {
-
-                        int inputPointsBefore = input.size();
-
-                        // Visit buildings that are between the provided hull points
-                        data.profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
-
-                        if (inputPointsBefore == input.size()) {
-                            freeFieldSegments.add(freeFieldTestSegment);
-                        } else {
-                            convexHullIntersects = true;
-                            break;
-                        }
-                    }
-                }
-            }
+        }
+        if (indexp2 == -1) {
+            // P2 does not belong to convex vertices, cannot compute diffraction
+            // TODO handle concave path
+            return new ArrayList<>();
         }
 
         // restore coordinates order from source to receiver

@@ -136,8 +136,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             if (!roofPoints.isEmpty()) {
                 input.addAll(roofPoints);
                 pushedBuildingsWideAnglePoints.add(processedWall.originId);
-                // Stop iterating bounding boxes
-                throw new IllegalStateException();
             }
         } else if(processedWall.type == ProfileBuilder.IntersectionType.WALL) {
             // A wall not related to a building (polygon)
@@ -172,8 +170,6 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             if (!roofPoints.isEmpty()) {
                 pushedWallsPoints.add(processedWall.originId);
                 input.addAll(roofPoints);
-                // Stop iterating bounding boxes
-                throw new IllegalStateException();
             }
         }
     }

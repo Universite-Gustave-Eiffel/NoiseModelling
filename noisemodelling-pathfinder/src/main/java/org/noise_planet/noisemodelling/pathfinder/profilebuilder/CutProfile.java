@@ -61,6 +61,22 @@ public class CutProfile {
         cutPoints.add(receiver);
     }
 
+//    public CutProfile withoutBuildingsIntersections() {
+//        CutProfile cutProfile = new CutProfile();
+//        cutProfile.cutPoints = new ArrayList<>(this.cutPoints.size());
+//        cutProfile.hasBuildingIntersection = this.hasBuildingIntersection;
+//        cutProfile.hasTopographyIntersection = this.hasTopographyIntersection;
+//        cutProfile.profileType = this.profileType;
+//        cutProfile.curvedPath = this.curvedPath;
+//        for (int i = 0; i < cutPoints.size(); i++) {
+//            CutPoint cutPoint = cutPoints.get(i);
+//            if(!(cutPoint instanceof CutPointWall)) {
+//                cutProfile.cutPoints.add(cutPoint);
+//            }
+//        }
+//        return cutProfile;
+//    }
+
     /**
      * @return Cut Profile type
      */
@@ -233,6 +249,11 @@ public class CutProfile {
     }
 
     public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
+        return getConvexHullIndices(coordinates2d, false);
+    }
+
+
+    public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d, boolean ignoreWall) {
         if(coordinates2d.size() != cutPoints.size()) {
             throw new IllegalArgumentException("Coordinates size must be equal to cut points size");
         }
@@ -246,7 +267,7 @@ public class CutProfile {
             // We only add the point at the top of the wall, not the point at the bottom of the wall
             if(currentPoint instanceof CutPointTopography
                     || (currentPoint instanceof CutPointWall
-                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0 && !ignoreWall)) {
                 convexHullInput.add(coordinates2d.get(idPoint));
             }
         }
