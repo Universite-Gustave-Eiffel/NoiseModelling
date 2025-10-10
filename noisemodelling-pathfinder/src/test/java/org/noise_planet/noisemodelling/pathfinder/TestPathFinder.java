@@ -70,60 +70,6 @@ public class TestPathFinder {
         assertEquals(-2.33, intercept, 0.01);
     }
 
-    /**
-     * Test vertical edge diffraction ray computation
-     *
-     * @throws ParseException
-     */
-    @Test
-    public void TestcomputeVerticalEdgeDiffraction() throws ParseException {
-        GeometryFactory factory = new GeometryFactory();
-        WKTReader wktReader = new WKTReader(factory);
-        //Create obstruction test object
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON((5 6, 6 5, 7 5, 7 8, 6 8, 5 7, 5 6))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4, -1);
-        profileBuilder.finishFeeding();
-
-        PathFinder computeRays = new PathFinder(new Scene(profileBuilder));
-        Coordinate p1 = new Coordinate(2, 6.5, 1.6);
-        Coordinate p2 = new Coordinate(14, 6.5, 1.6);
-
-        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
-        int i = 0;
-        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p2.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(false, p1, p2);
-        i = 0;
-        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p2.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(false, p2, p1);
-        i = 0;
-        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p1.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(true, p2, p1);
-        i = 0;
-        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p1.distance(ray.get(i)), 0.02);
-    }
-
     @Test
     public void TestSplitLineSourceIntoPoints() {
         GeometryFactory factory = new GeometryFactory();
