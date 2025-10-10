@@ -19,12 +19,12 @@ Conformity table
 | Conform
 
 * Do not the deviate more than ±0,1 dB
-* Percentage of conformity : 90% (25/28)
+* Percentage of conformity : 93% (26/28)
 
 | NLD Conform
 
 * Do not the deviate more than ±0,1 dB neglecting lateral diffraction
-* Percentage of conformity : 90% (25/28)
+* Percentage of conformity : 93% (26/28)
 
 .. list-table::
    :widths: 10 20 20 25 30
@@ -150,9 +150,9 @@ Conformity table
      - 0.02 dB @ 63 Hz
      - `TC23`_
    * - TC24
-     - □
-     - □
-     - 1.04 dB @ 2000 Hz
+     - ☑
+     - ☑
+     - 0.01 dB @ 250 Hz
      - `TC24`_
    * - TC25
      - ☑
@@ -1144,8 +1144,8 @@ Reflection
      - 0.02 dB
      - 63
    * - Lꜰ
-     - 3.53 dB
-     - 4000
+     - 0.02 dB
+     - 63
 
 TC25
 ^^^^
