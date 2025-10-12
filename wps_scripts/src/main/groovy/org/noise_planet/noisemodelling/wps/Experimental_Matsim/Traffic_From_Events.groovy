@@ -25,6 +25,7 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.io.WKTWriter
 import org.matsim.api.core.v01.Coord
 import org.matsim.api.core.v01.Id
+import org.matsim.api.core.v01.Scenario
 import org.matsim.api.core.v01.events.*
 import org.matsim.api.core.v01.events.handler.*
 import org.matsim.api.core.v01.network.Link
@@ -36,7 +37,10 @@ import org.matsim.core.events.EventsUtils
 import org.matsim.core.events.MatsimEventsReader
 import org.matsim.core.network.io.MatsimNetworkReader
 import org.matsim.core.scenario.ScenarioUtils
+import org.matsim.vehicles.MatsimVehicleReader
 import org.matsim.vehicles.Vehicle
+import org.matsim.vehicles.VehicleType
+import org.matsim.vehicles.Vehicles
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
 import org.slf4j.Logger
@@ -51,97 +55,98 @@ title = 'Import traffic data from Mastim simultaion output folder'
 description = 'Read Mastim events output file in order to get traffic NoiseModelling input'
 
 inputs = [
-    folder: [
-        name: 'Path of the Matsim output folder',
-        title: 'Path of the Matsim output folder',
-        description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
-                '<br/>The folder must contain at least the following files: ' +
-                '<br/><br/> - output_network.xml.gz' +
-                '<br/><br/> - output_events.xml.gz',
-        type: String.class
-    ],
-    timeBinSize: [
-            name: 'The size of time bins in seconds.',
-            title: 'The size of time bins in seconds.',
-            description: 'This parameter dictates the time resolution of the resulting data ' +
-                    '<br/>The time information stored will be the starting time of the time bins ' +
-                    '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
-                    '<br/>0, 3600, 7200, ..., 79200, 82800' +
-                    '<br/>Default: 3600',
-            min: 0,
-            max: 1,
-            type: Integer.class
-    ],
-    populationFactor: [
-            name: 'Population Factor',
-            title: 'Population Factor',
-            description: 'Set the population factor of the MATSim simulation' +
-                    '<br/>Must be a decimal number between 0 and 1' +
-                    '<br/>Default: 1.0',
-            min: 0,
-            max: 1,
-            type: String.class
-    ],
-    link2GeometryFile: [
-        name: 'Network CSV file',
-        title: 'Network CSV file',
-        description: 'The path of the pt2matsim CSV file generated when importing OSM network. Ignored if not set.' +
-                '<br/>The file must contain at least two columns : ' +
-                '<br/><br/> - The link ID' +
-                '<br/><br/> - The WKT geometry',
-        min: 0,
-        max: 1,
-        type: String.class
-    ],
-    SRID : [
-            name: 'Projection identifier',
-            title: 'Projection identifier',
-            description: 'Projection identifier (also called SRID) of the geometric data.' +
-                    'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
-                    '</br><b> Default value : 4326 </b> ',
-            min: 0,
-            max: 1,
-            type: Integer.class
-    ],
-    exportTraffic: [
-            name: 'Export additionnal traffic data ?',
-            title: 'Export additionnal traffic data ?',
-            description: 'Define if you want to output average speed and flow per vehicle category in an additional table' +
-                    '<br/>Default: False',
-            min: 0,
-            max: 1,
-            type: Boolean.class
-    ],
-    skipUnused: [
-        name: 'Skip unused links ?',
-        title: 'Skip unused links ?',
-        description: 'Define if links with unused traffic should be omitted in the output table.' +
-                '<br/>Default: True',
-        min: 0,
-        max: 1,
-        type: Boolean.class
-    ],
-    outTableName: [
-        name: 'Output table name',
-        title: 'Output table name',
-        description: 'Name of the table you want to create.' +
-                '<br/>A table with this name will be created plus another with a "_LW" suffix' +
-                '<br/>For exemple if set to "MATSIM_ROADS (default value)":' +
-                '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
-                '<br/><br/> - the table MATSIM_ROADS_LW, with the link ID and the traffic data',
-        min: 0,
-        max: 1,
-        type: String.class
-    ]
+        folder           : [
+                name       : 'Path of the Matsim output folder',
+                title      : 'Path of the Matsim output folder',
+                description: 'Path of the Matsim output folder </br> For example : /home/mastim/simulation_output' +
+                        '<br/>The folder must contain at least the following files: ' +
+                        '<br/><br/> - output_network.xml.gz' +
+                        '<br/><br/> - output_allVehicles.xml.gz' +
+                        '<br/><br/> - output_events.xml.gz',
+                type       : String.class
+        ],
+        timeBinSize      : [
+                name       : 'The size of time bins in seconds.',
+                title      : 'The size of time bins in seconds.',
+                description: 'This parameter dictates the time resolution of the resulting data ' +
+                        '<br/>The time information stored will be the starting time of the time bins ' +
+                        '<br/>For exemple with a timeBinSize of 3600, the data will be analysed using the following timeBins: ' +
+                        '<br/>0, 3600, 7200, ..., 79200, 82800' +
+                        '<br/>Default: 3600',
+                min        : 0,
+                max        : 1,
+                type       : Integer.class
+        ],
+        populationFactor : [
+                name       : 'Population Factor',
+                title      : 'Population Factor',
+                description: 'Set the population factor of the MATSim simulation' +
+                        '<br/>Must be a decimal number between 0 and 1' +
+                        '<br/>Default: 1.0',
+                min        : 0,
+                max        : 1,
+                type       : String.class
+        ],
+        link2GeometryFile: [
+                name       : 'Network CSV file',
+                title      : 'Network CSV file',
+                description: 'The path of the pt2matsim CSV file generated when importing OSM network. Ignored if not set.' +
+                        '<br/>The file must contain at least two columns : ' +
+                        '<br/><br/> - The link ID' +
+                        '<br/><br/> - The WKT geometry',
+                min        : 0,
+                max        : 1,
+                type       : String.class
+        ],
+        SRID             : [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: 'Projection identifier (also called SRID) of the geometric data.' +
+                        'It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).' +
+                        '</br><b> Default value : 4326 </b> ',
+                min        : 0,
+                max        : 1,
+                type       : Integer.class
+        ],
+        exportTraffic    : [
+                name       : 'Export additionnal traffic data ?',
+                title      : 'Export additionnal traffic data ?',
+                description: 'Define if you want to output average speed and flow per vehicle category in an additional table' +
+                        '<br/>Default: False',
+                min        : 0,
+                max        : 1,
+                type       : Boolean.class
+        ],
+        skipUnused       : [
+                name       : 'Skip unused links ?',
+                title      : 'Skip unused links ?',
+                description: 'Define if links with unused traffic should be omitted in the output table.' +
+                        '<br/>Default: True',
+                min        : 0,
+                max        : 1,
+                type       : Boolean.class
+        ],
+        outTableName     : [
+                name       : 'Output table name',
+                title      : 'Output table name',
+                description: 'Name of the table you want to create.' +
+                        '<br/>A table with this name will be created plus another with a "_LW" suffix' +
+                        '<br/>For exemple if set to "MATSIM_ROADS (default value)":' +
+                        '<br/><br/> - the table MATSIM_ROADS, with the link ID and the geometry field' +
+                        '<br/><br/> - the table MATSIM_ROADS_LW, with the link ID and the traffic data',
+                min        : 0,
+                max        : 1,
+                type       : String.class
+        ]
 ]
 
 outputs = [
-    result: [
-        name: 'Result output string',
-        title: 'Result output string',
-        description: 'This type of result does not allow the blocks to be linked together.',
-        type: String.class
-    ]
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
 ]
 
 // Open Connection to Geoserver
@@ -238,17 +243,22 @@ static def exec(Connection connection, input) {
     File f
     String eventFile = folder + "/output_events.xml.gz"
     f = new File(eventFile)
-    if(!f.exists() || f.isDirectory()) {
+    if (!f.exists() || f.isDirectory()) {
         throw new FileNotFoundException("output_events.xml.gz not found in MATSim folder")
     }
     String networkFile = folder + "/output_network.xml.gz"
     f = new File(networkFile)
-    if(!f.exists() || f.isDirectory()) {
+    if (!f.exists() || f.isDirectory()) {
         throw new FileNotFoundException("output_network.xml.gz not found in MATSim folder")
+    }
+    String vehiclesFile = folder + "/output_allVehicles.xml.gz"
+    f = new File(vehiclesFile)
+    if (!f.exists() || f.isDirectory()) {
+        throw new FileNotFoundException("output_allVehicles.xml.gz not found in MATSim folder")
     }
     if (link2GeometryFile != "") {
         f = new File(link2GeometryFile)
-        if(!f.exists() || f.isDirectory()) {
+        if (!f.exists() || f.isDirectory()) {
             throw new FileNotFoundException(link2GeometryFile + " not found")
         }
     }
@@ -282,6 +292,10 @@ static def exec(Connection connection, input) {
             MV_SPD_D double precision,
             HGV_D double precision,
             HGV_SPD_D double precision,
+            WAV_D double precision,
+            WAV_SPD_D double precision,
+            WBV_D double precision,
+            WBV_SPD_D double precision,
             TIME int
         );''')
     }
@@ -301,7 +315,7 @@ static def exec(Connection connection, input) {
     PreparedStatement lwStatement = connection.prepareStatement("INSERT INTO " + lwTableName + " (LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     PreparedStatement trafficStatement;
     if (exportTraffic) {
-        trafficStatement = connection.prepareStatement("INSERT INTO " + trafficTableName + " (LINK_ID, LV_D, LV_SPD_D, MV_D, MV_SPD_D, HGV_D, HGV_SPD_D, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+        trafficStatement = connection.prepareStatement("INSERT INTO " + trafficTableName + " (LINK_ID, LV_D, LV_SPD_D, MV_D, MV_SPD_D, HGV_D, HGV_SPD_D, WAV_D, WAV_SPD_D, WBV_D, WBV_SPD_D, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     }
     PreparedStatement contribStatement;
     if (keepVehicleContrib) {
@@ -309,13 +323,23 @@ static def exec(Connection connection, input) {
     }
     logger.info("Done Creating SQL tables")
 
-    Network network = ScenarioUtils.loadScenario(ConfigUtils.createConfig()).getNetwork()
+    Scenario scenario = ScenarioUtils.loadScenario(ConfigUtils.createConfig());
+
+    Network network = scenario.getNetwork()
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network)
     logger.info("Start reading network file ... ")
     networkReader.readFile(networkFile)
     logger.info("Done reading network file ")
 
     Map<Id<Link>, Link> links = (Map<Id<Link>, Link>) network.getLinks()
+
+    Vehicles vehicles = scenario.getVehicles();
+    MatsimVehicleReader vehicleReader = new MatsimVehicleReader(vehicles);
+    logger.info("Start reading vehicles file ... ")
+    vehicleReader.readFile(vehiclesFile);
+    logger.info("Done reading vehicles file ")
+
+    Map<Id<Vehicle>, Vehicle> vehicles_definitions = vehicles.getVehicles();
 
     EventsManager evMgr = EventsUtils.createEventsManager()
     ProcessOutputEventHandler evHandler = new ProcessOutputEventHandler()
@@ -326,6 +350,7 @@ static def exec(Connection connection, input) {
     evHandler.setSRID(SRID)
     evHandler.setPopulationFactor(populationFactor)
     evHandler.initLinks((Map<Id<Link>, Link>) links)
+    evHandler.initVehicles((Map<Id<Vehicle>, Vehicle>) vehicles_definitions)
 
     evMgr.addHandler(evHandler)
 
@@ -359,10 +384,10 @@ static def exec(Connection connection, input) {
         if (counter >= doprint) {
             double elapsed = (System.currentTimeMillis() - start + 1) / 1000
             logger.info(String.format("Processing Link %d (max:%d) - elapsed : %ss (%.1fit/s) - eta : %ss",
-                    counter, evHandler.links.size(), elapsed, counter/elapsed, (evHandler.links.size() - counter) / (counter / elapsed)))
+                    counter, evHandler.links.size(), elapsed, counter / elapsed, (evHandler.links.size() - counter) / (counter / elapsed)))
             doprint *= 2
         }
-        counter ++
+        counter++
 
         if (skipUnused && !linkStatStruct.isUsed) {
             continue
@@ -380,36 +405,36 @@ static def exec(Connection connection, input) {
         roadStatement.setString(2, linkStatStruct.getOsmId())
         roadStatement.setString(3, geomString)
         roadStatement.execute()
-        for (int timeBin = timeBinMin ; timeBin < timeBinMax; timeBin += timeBinSize) {
+        for (int timeBin = timeBinMin; timeBin < timeBinMax; timeBin += timeBinSize) {
             int index = 1
             lwStatement.setString(index, linkId)
             List<Double> levels = linkStatStruct.getSourceLevels(timeBin)
-            for (Double level: levels) {
-                index ++
+            for (Double level : levels) {
+                index++
                 lwStatement.setDouble(index, level)
             }
-            index ++
+            index++
             lwStatement.setInt(index, timeBin)
             lwStatement.addBatch()
         }
         lwStatement.executeBatch()
         if (exportTraffic) {
-            for (int timeBin = timeBinMin ; timeBin < timeBinMax; timeBin += timeBinSize) {
+            for (int timeBin = timeBinMin; timeBin < timeBinMax; timeBin += timeBinSize) {
                 int index = 1
                 trafficStatement.setString(index, linkId)
-                Trip.Type[] types = [Trip.Type.LV, Trip.Type.MV, Trip.Type.HV]
+                Trip.Type[] types = [Trip.Type.LV, Trip.Type.MV, Trip.Type.HV, Trip.Type.WAV, Trip.Type.WBV]
                 for (Trip.Type type in types) {
                     int count = linkStatStruct.getVehicleCount(type, timeBin)
                     double speed = 0.0
                     if (count > 0) {
                         speed = Math.round(3.6 * linkStatStruct.link.getLength() / linkStatStruct.getMeanTravelTime(type, timeBin))
                     }
-                    index ++
+                    index++
                     trafficStatement.setInt(index, count)
-                    index ++
+                    index++
                     trafficStatement.setDouble(index, speed)
                 }
-                index ++
+                index++
                 trafficStatement.setInt(index, timeBin)
                 trafficStatement.addBatch()
             }
@@ -417,22 +442,22 @@ static def exec(Connection connection, input) {
         }
         if (keepVehicleContrib) {
 //            sql.execute(linkStatStruct.toSqlInsertContrib(contribTableName));
-            for (int timeBin = 0 ; timeBin < 86400; timeBin += timeBinSize) {
+            for (int timeBin = 0; timeBin < 86400; timeBin += timeBinSize) {
                 for (PersonContribFreq person_contrib : linkStatStruct.contributions.get(timeBin)) {
                     String personId = person_contrib.personId.toString()
                     String vehicleId = person_contrib.vehicleId.toString()
                     List<Double> contributions = person_contrib.contributions
                     int index = 1
                     contribStatement.setString(index, linkId)
-                    index ++
+                    index++
                     contribStatement.setString(index, personId)
-                    index ++
+                    index++
                     contribStatement.setString(index, vehicleId)
-                    for (Double contrib: contributions) {
-                        index ++
+                    for (Double contrib : contributions) {
+                        index++
                         contribStatement.setDouble(index, contrib)
                     }
-                    index ++
+                    index++
                     contribStatement.setInt(index, timeBin)
                     contribStatement.addBatch()
                 }
@@ -470,6 +495,7 @@ class ProcessOutputEventHandler implements
         PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler {
 
     Map<Id<Link>, LinkStatStruct> links = new HashMap<Id<Link>, LinkStatStruct>()
+    Map<Id<Vehicle>, Vehicle> vehicles = new HashMap<Id<Vehicle>, Vehicle>()
     Map<Id<Vehicle>, List<Id<Person>>> personsInVehicle = new HashMap<Id<Vehicle>, List<Id<Person>>>()
     int timeBinSize = 3600;
     int timeBinMin = 0;
@@ -484,9 +510,11 @@ class ProcessOutputEventHandler implements
     void setTimeBinSize(int timeBinSize) {
         this.timeBinSize = timeBinSize
     }
+
     void setTimeBinMin(int timeBinMin) {
         this.timeBinMin = timeBinMin
     }
+
     void setTimeBinMax(int timeBinMax) {
         this.timeBinMax = timeBinMax
     }
@@ -557,6 +585,7 @@ class ProcessOutputEventHandler implements
 
         Id<Link> linkId = event.getLinkId()
         Id<Vehicle> vehicleId = event.getVehicleId()
+        Vehicle vehicle = this.vehicles.get(vehicleId);
         double time = event.getTime()
 
         if (!links.containsKey(linkId)) {
@@ -565,12 +594,12 @@ class ProcessOutputEventHandler implements
         }
 
         LinkStatStruct stats = links.get(linkId)
-        stats.vehicleLeaveAt(vehicleId, time, personsInVehicle.get(vehicleId))
+        stats.vehicleLeaveAt(vehicle, time, personsInVehicle.get(vehicleId))
         links.put(linkId, stats)
     }
 
     void initLinks(Map<Id<Link>, Link> netLinks) {
-        for (Map.Entry<Id<Link>, Link> entry: netLinks.entrySet()) {
+        for (Map.Entry<Id<Link>, Link> entry : netLinks.entrySet()) {
             Id<Link> linkId = entry.getKey()
             Link link = entry.getValue()
 
@@ -582,11 +611,19 @@ class ProcessOutputEventHandler implements
         }
     }
 
+    def void initVehicles(Map<Id<Vehicle>, Vehicle> idVehicleMap) {
+        vehicles = idVehicleMap
+    }
 }
 
 class Trip {
     enum Type {
-        LV, MV, HV
+        LV, // Light vehicles
+        MV, // Medium vehicles
+        HV, // Heavy vehicles
+        WAV, // 2 Wheeler, 125cc or smaller
+        WBV, // 2 Wheeler, more than 125cc
+        Unknown
     };
 
     public int timeBin
@@ -601,6 +638,42 @@ class Trip {
         this.type = type
         this.travelTime = travelTime
         this.persons = persons
+    }
+
+    static Type getTypeFromVehicle(Vehicle vehicle) {
+        Id<Vehicle> vehicleId = vehicle.getId();
+        VehicleType vehicleType = vehicle.getType();
+        Id<VehicleType> vehicleTypeId = vehicleType.getId()
+        Map<String, Object> vehicleAttributes = vehicleType.getAttributes().getAsMap();
+        if (vehicleAttributes.containsKey("CnossosCategory")) {
+            String cnossos = (String) vehicleAttributes.get("CnossosCategory")
+            switch (cnossos) {
+                case "1":
+                    return Type.LV;
+                case "2":
+                    return Type.MV;
+                case "3":
+                    return Type.HV;
+                case "4a":
+                    return Type.WAV;
+                case "4b":
+                    return Type.WBV;
+            }
+        }
+        if (vehicleTypeId.toString() == "Bus") {
+            return Type.MV
+        }
+        if (vehicleTypeId.toString().toLowerCase().contains("car") | vehicleId.toString().toLowerCase().contains("car")) {
+            return Type.LV
+        }
+        if (vehicleTypeId.toString().toLowerCase().contains("bus") | vehicleId.toString().toLowerCase().contains("bus")) {
+            return Type.MV
+        }
+        if (vehicleTypeId.toString().toLowerCase().contains("truck") | vehicleId.toString().toLowerCase().contains("truck")) {
+            return Type.HV
+        }
+
+        return Type.Unknown
     }
 }
 
@@ -630,7 +703,7 @@ class PersonContribFreq {
 
 class LinkStatStruct {
 
-    public Map<Integer, ArrayList<Trip>> trips = new HashMap<Integer, ArrayList<Trip> >()
+    public Map<Integer, ArrayList<Trip>> trips = new HashMap<Integer, ArrayList<Trip>>()
     public Map<Id<Vehicle>, Double> enterTimes = new HashMap<Id<Vehicle>, Double>()
 
     public Link link
@@ -668,7 +741,8 @@ class LinkStatStruct {
         vehicleLeaveAt(vehicleId, time, new ArrayList<Id<Person>>())
     }
 
-    void vehicleLeaveAt(Id<Vehicle> vehicleId, double time, List<Id<Person>> persons) {
+    void vehicleLeaveAt(Vehicle vehicle, double time, List<Id<Person>> persons) {
+        Id<Vehicle> vehicleId = vehicle.getId();
         int timeBin = getTimeBin(time)
         if (!trips.containsKey(timeBin)) {
             trips.put(timeBin, new ArrayList<Trip>())
@@ -676,15 +750,9 @@ class LinkStatStruct {
         if (enterTimes.containsKey(vehicleId)) {
             double enterTime = enterTimes.get(vehicleId)
             double travelTime = time - enterTime
-            Trip.Type type = Trip.Type.LV
-            if (vehicleId.toString().contains("bus")) {
-                type = Trip.Type.MV
-            }
-            if (vehicleId.toString().contains("tram")) {
-                return
-            }
-            if (vehicleId.toString().contains("rail")) {
-                return
+            Trip.Type type = Trip.getTypeFromVehicle(vehicle);
+            if (type == Trip.Type.Unknown) {
+                return;
             }
             Trip trip = new Trip(timeBin, vehicleId, type, travelTime, new ArrayList<Id<Person>>(persons))
             trips.get(timeBin).add(trip)
@@ -750,6 +818,7 @@ class LinkStatStruct {
         }
         return min
     }
+
     private int getTimeBin(double time) {
         return (time - time % timeBinSize) % 86400;
     }
@@ -762,7 +831,13 @@ class LinkStatStruct {
         return levels.get(timeBin)
     }
 
-    static double[] calculateSourceLevels(double LVCount, double LVAvgSpeed, double MVCount, double MVAvgSpeed, double HVCount, double HVAvgSpeed) {
+    static double[] calculateSourceLevels(
+            double LVCount, double LVAvgSpeed,
+            double MVCount, double MVAvgSpeed,
+            double HVCount, double HVAvgSpeed,
+            double WAVCount, double WAVAvgSpeed,
+            double WBVCount, double WBVAvgSpeed
+        ) {
         int[] freqs = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         double[] result = new double[freqs.length]
         if (LVCount == 0 && MVCount == 0 && HVCount == 0) {
@@ -773,18 +848,24 @@ class LinkStatStruct {
         }
         for (int i = 0; i < freqs.length; i++) {
             RoadCnossosParameters rsParametersCnossos = new RoadCnossosParameters(
-                    LVAvgSpeed,MVAvgSpeed,HVAvgSpeed,0.0,0.0,
-                    LVCount,MVCount,HVCount,0.0,0.0,
-                    freqs[i],20.0,"NL08",0.0,0.0,
-                    100,2)
+                    LVAvgSpeed, MVAvgSpeed, HVAvgSpeed, WAVAvgSpeed, WBVAvgSpeed,
+                    LVCount, MVCount, HVCount, WAVCount, WBVCount,
+                    freqs[i], 20.0, "NL08", 0.0, 0.0,
+                    100, 2)
 
             result[i] = RoadCnossos.evaluate(rsParametersCnossos)
         }
         return result
     }
 
-    static double calculateSourceLeq(double LVCount, double LVAvgSpeed, double MVCount, double MVAvgSpeed, double HVCount, double HVAvgSpeed) {
-        double[] levels = calculateSourceLevels(LVCount, LVAvgSpeed, MVCount, MVAvgSpeed, HVCount, HVAvgSpeed)
+    static double calculateSourceLeq(
+            double LVCount, double LVAvgSpeed,
+            double MVCount, double MVAvgSpeed,
+            double HVCount, double HVAvgSpeed,
+            double WAVCount, double WAVAvgSpeed,
+            double WBVCount, double WBVAvgSpeed
+    ) {
+        double[] levels = calculateSourceLevels(LVCount, LVAvgSpeed, MVCount, MVAvgSpeed, HVCount, HVAvgSpeed, WAVCount, WAVAvgSpeed, WBVCount, WBVAvgSpeed)
         double leq = -99.0
         for (double level : levels) {
             leq = Math.log10(Math.pow(10, leq / 10.0) + Math.pow(10, level / 10.0))
@@ -792,8 +873,14 @@ class LinkStatStruct {
         return leq
     }
 
-    static double calculateSourceLAeq(double LVCount, double LVAvgSpeed, double MVCount, double MVAvgSpeed, double HVCount, double HVAvgSpeed) {
-        double[] levels = calculateSourceLevels(LVCount, LVAvgSpeed, MVCount, MVAvgSpeed, HVCount, HVAvgSpeed)
+    static double calculateSourceLAeq(
+            double LVCount, double LVAvgSpeed,
+            double MVCount, double MVAvgSpeed,
+            double HVCount, double HVAvgSpeed,
+            double WAVCount, double WAVAvgSpeed,
+            double WBVCount, double WBVAvgSpeed
+    ) {
+        double[] levels = calculateSourceLevels(LVCount, LVAvgSpeed, MVCount, MVAvgSpeed, HVCount, HVAvgSpeed, WAVCount, WAVAvgSpeed, WBVCount, WBVAvgSpeed)
         double[] aWeights = [-26.2, -16.1, -8.6, -3.2, 0, 1.2, 1.0, -1.1]
         double leq = -99.0
         for (int i = 0; i < levels.length; i++) {
@@ -825,6 +912,7 @@ class LinkStatStruct {
             return result
         }
     }
+
     String getGeometryString() {
         Coordinate[] points = getGeometry()
         return WKTWriter.toLineString(points);
@@ -855,20 +943,31 @@ class LinkStatStruct {
             }
             for (Trip trip in trips.get(timeBin)) {
                 double speed = Math.round(3.6 * link.getLength() / trip.travelTime)
-                List<Double> trip_levels = new ArrayList<Double>(empty_levels)
+                double lvCount = 0.0, lvSpeed = 0.0, mvCount = 0.0, mvSpeed = 0.0, hvCount = 0.0, hvSpeed = 0.0, wavCount = 0.0, wavSpeed = 0.0, wbvCount = 0.0, wbvSpeed = 0.0;
                 if (trip.type == Trip.Type.LV) {
-                    trip_levels = calculateSourceLevels(vehicleCount, speed, 0, 0, 0, 0)
+                    lvCount = vehicleCount;
+                    lvSpeed = speed;
                 } else if (trip.type == Trip.Type.MV) {
-                    trip_levels = calculateSourceLevels(0, 0, 0, 0, vehicleCount, speed)
+                    mvCount = vehicleCount;
+                    mvSpeed = speed;
                 } else if (trip.type == Trip.Type.HV) {
-                    trip_levels = calculateSourceLevels(0, 0, vehicleCount, speed, 0, 0)
+                    hvCount = vehicleCount;
+                    hvSpeed = speed;
+                } else if (trip.type == Trip.Type.WAV) {
+                    wavCount = vehicleCount;
+                    wavSpeed = speed;
+                } else if (trip.type == Trip.Type.WBV) {
+                    wbvCount = vehicleCount;
+                    wbvSpeed = speed;
                 }
+                List<Double> trip_levels = calculateSourceLevels(lvCount, lvSpeed, mvCount, mvSpeed, hvCount, hvSpeed, wavCount, wavSpeed, wbvCount, wbvSpeed)
+
                 List<Double> contribution_levels = new ArrayList<Double>(empty_levels)
                 for (int freq = 0; freq < empty_levels.size(); freq++) {
                     levels[timeBin][freq] = 10 * Math.log10(Math.pow(10, levels[timeBin][freq] / 10) + Math.pow(10, trip_levels[freq] / 10))
                     contribution_levels[freq] = trip_levels[freq] - 10 * Math.log10(trip.persons.size())
                 }
-                for (Id<Person> person_id: trip.persons) {
+                for (Id<Person> person_id : trip.persons) {
                     contributions.get(timeBin).add(new PersonContribFreq(person_id, trip.vehicleId, contribution_levels))
                 }
             }
