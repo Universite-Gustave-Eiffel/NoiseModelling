@@ -65,14 +65,14 @@ public class RoadCnossosParameters {
      *
      * @param lv_speed    Average light vehicle speed
      * @param mv_speed    Average medium vehicle speed
-     * @param hgv_speed   Average heavy goods vehicle speed
+     * @param hgv_speed   Average heavy vehicle speed
      * @param wav_speed   Average light 2 wheels vehicle speed
      * @param wbv_speed   Average heavy 2 wheels vehicle speed
      * @param lvPerHour   Average light vehicle per hour
-     * @param mvPerHour   Average heavy vehicle per hour
-     * @param hgvPerHour  Average heavy vehicle per hour
-     * @param wavPerHour  Average heavy vehicle per hour
-     * @param wbvPerHour  Average heavy vehicle per hour
+     * @param mvPerHour   Average medium vehicles per hour
+     * @param hgvPerHour  Average heavy vehicles per hour
+     * @param wavPerHour  Average light 2 wheels vehicles per hour
+     * @param wbvPerHour  Average heavy 2 wheels vehicles per hour
      * @param frequency   Studied Frequency (must be octave band)
      * @param Temperature Temperature (Celsius)
      * @param roadSurface roadSurface empty default, NL01 FR01 .. (look at src/main/resources/org/noise_planet/noisemodelling/emission/RoadCnossos_2020.json)
