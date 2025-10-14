@@ -75,7 +75,7 @@ public class CurvedProfileGenerator {
         Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
 
         // Calculate projected distance between source and receiver on the vertical plane
-        double d = cs.distance3D(cr);
+        double d = cs.distance(cr);
 
         // Calculate radius of curvature (Γ)
         double radius = Math.max(1000, 8 * d);
@@ -87,7 +87,7 @@ public class CurvedProfileGenerator {
 
             // Apply equation (4) for z coordinate transformation
             double z = base -
-                    Math.sqrt(radius * radius - Math.pow(p.distance3D(cs) - d/2, 2));
+                    Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
 
             if(inverse) {
                 z = -z;
