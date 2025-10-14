@@ -87,7 +87,7 @@ public class CurvedProfileGenerator {
 
             // Apply equation (4) for z coordinate transformation
             double z = base -
-                    Math.sqrt(radius * radius - Math.pow(p.distance3D(cs) - d/2, 2));
+                    Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
 
             if(inverse) {
                 z = -z;
