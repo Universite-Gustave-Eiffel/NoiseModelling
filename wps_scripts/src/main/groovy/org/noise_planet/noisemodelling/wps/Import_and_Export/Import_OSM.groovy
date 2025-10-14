@@ -1296,8 +1296,12 @@ public class Building {
                 h = h - 4 + Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", "")) * 3.0;
             }
             if ("height".equalsIgnoreCase(tag.getKey())) {
-                h = Double.parseDouble(tag.getValue().replaceAll("[^0-9]+", ""));
-                trueHeightFound = true;
+                String cleanHeight = tag.getValue().replaceAll("[^0-9.]+", "")
+                try {
+                    h = Double.parseDouble(cleanHeight);
+                    trueHeightFound = true;
+                }
+                catch (NumberFormatException e) {}
             }
         }
         this.height = h;
