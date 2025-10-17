@@ -31,6 +31,7 @@ The data folder should contain the following files :
 
 - ``nantes_mini.osm.pbf`` : the Openstreetmap data of the area. We'll use it to import buildings into NoiseModelling.
 - ``detailed_network.csv`` : A file containing the 'true' geometries of the road segments (called "links" in MATSim)
+- ``output_allVehicles.xml.gz`` : A file containing the various vehicles used by the agents in the simulation.
 - ``output_events.xml.gz`` : A file containing the list of MATSim events from the simulation.
 - ``output_facilities.xml.gz`` : A file containing the list of facilities, the agent's activity locations.
 - ``output_network.xml.gz`` : A file containing the MATSim road network, a list of nodes and links.
