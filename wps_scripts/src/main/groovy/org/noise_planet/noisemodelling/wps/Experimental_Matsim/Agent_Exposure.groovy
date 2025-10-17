@@ -76,7 +76,7 @@ inputs = [
                 title: 'Table containing the noise data',
                 description: 'Table containing the noise data' +
                         '<br/>The table must contain the following fields :' +
-                        '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, TIME',
+                        '<br/>PK, IDRECEIVER, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ000, HZ8000, PERIOD',
                 type: String.class
         ],
         timeBinSize: [
@@ -200,21 +200,21 @@ static def exec(Connection connection, input) {
         String column = rs.getString("COLUMN_NAME");
         if (column == "IDRECEIVER") {
             indexIDRECEIVER = true;
-            logger.info("index on data table IDSOURCE found")
+            logger.info("index on column IDSOURCE found")
         }
-        else if (column == "TIME") {
+        else if (column == "PERIOD") {
             indexTIMESTRING = true;
-            logger.info("index on data table TIME found")
+            logger.info("index on column PERIOD found")
         }
     }
 
     if (!indexIDRECEIVER) {
-        logger.info("index on data table IDRECEIVER, NOT found, creating one...")
+        logger.info("index on column IDRECEIVER, NOT found, creating one...")
         sql.execute("CREATE INDEX ON " + dataTable + " (IDRECEIVER)");
     }
     if (!indexTIMESTRING) {
-        logger.info("index on data table TIME, NOT found, creating one...")
-        sql.execute("CREATE INDEX ON " + dataTable + " (TIME)");
+        logger.info("index on column PERIOD, NOT found, creating one...")
+        sql.execute("CREATE INDEX ON " + dataTable + " (PERIOD)");
     }
 
     logger.info("searching index on receivers table... ")
@@ -224,12 +224,12 @@ static def exec(Connection connection, input) {
         String column = rs.getString("COLUMN_NAME");
         if (column == "FACILITY") {
             indexFACILITY = true;
-            logger.info("index on receivers table FACILITY found")
+            logger.info("index on column FACILITY found")
         }
     }
 
     if (!indexFACILITY) {
-        logger.info("index on receivers table FACILITY, NOT found, creating one...")
+        logger.info("index on column FACILITY, NOT found, creating one...")
         sql.execute("CREATE INDEX ON " + receiversTable + " (FACILITY)");
     }
 
@@ -358,17 +358,18 @@ static def exec(Connection connection, input) {
             }
 
             String query = '''
-                        SELECT D.LEQA, D.TIME
+                        SELECT D.LAEQ, D.PERIOD
                         FROM ''' + dataTable + ''' D
                         INNER JOIN ''' + receiversTable + ''' R
                         ON D.IDRECEIVER = R.PK
                         WHERE R.FACILITY = \'''' + activityId + '''\'
+                        AND D.PERIOD != ''
                     '''
             ResultSet result = stmt.executeQuery(query)
             Map<Integer, Double> timeSeries = new HashMap<Integer, Double>()
             while(result.next()) {
-                int timeBin = result.getInt("TIME")
-                Double value = result.getDouble("LEQA")
+                int timeBin = Integer.parseInt(result.getString("PERIOD"));
+                Double value = result.getDouble("LAEQ")
                 timeSeries.put(timeBin, value)
             }
             activitiesTimeSeries.put(activityId, timeSeries)

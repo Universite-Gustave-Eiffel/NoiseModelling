@@ -23,7 +23,6 @@ import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Agent_Exposure
 import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Import_Activities
-import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Noise_From_Attenuation_Matrix_MatSim
 import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Receivers_From_Activities_Closest
 import org.noise_planet.noisemodelling.wps.Experimental_Matsim.Traffic_From_Events
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
@@ -264,7 +263,7 @@ class TestTutorials extends JdbcTestCase {
         String matsimFolder = tempDataDir.toString();
         String resultsFolder = tempDataDir.toString() + "/results/";
         Files.createDirectories(Path.of(resultsFolder));
-        String populationFactor = "0.001"; // 0.001 for 1/1000 of the population
+        String populationFactor = "0.01"; // 0.001 for 1/1000 of the population
 
         int timeBinSize = 900;
         int timeBinMin = 0;
@@ -355,31 +354,21 @@ class TestTutorials extends JdbcTestCase {
         params.put("tableBuilding", "BUILDINGS");
         params.put("tableReceivers", "ACTIVITIES_RECEIVERS");
         params.put("tableSources", "MATSIM_ROADS");
+        params.put("tableSourcesEmission", "MATSIM_ROADS_LW");
         params.put("confMaxSrcDist", 50);
         params.put("confMaxReflDist", 10);
         params.put("confReflOrder", 0);
         params.put("confSkipLevening", true);
         params.put("confSkipLnight", true);
         params.put("confSkipLden", true);
-        params.put("confExportSourceId", true);
+        params.put("confExportSourceId", false);
         params.put("confDiffVertical", false);
         params.put("confDiffHorizontal", false);
 
         new Noise_level_from_source().exec(connection, params);
 
-        sql.execute("DROP TABLE IF EXISTS ATTENUATION_TRAFFIC");
-        sql.execute("ALTER TABLE RECEIVERS_LEVEL RENAME TO ATTENUATION_TRAFFIC");
-
-        new Noise_From_Attenuation_Matrix_MatSim().exec(connection, Map.of(
-                "matsimRoads", "MATSIM_ROADS",
-                "matsimRoadsLw", "MATSIM_ROADS_LW",
-                "attenuationTable", "ATTENUATION_TRAFFIC",
-                "receiversTable", "ACTIVITIES_RECEIVERS",
-                "outTableName", "RESULT_GEOM",
-                "timeBinSize", timeBinSize,
-                "timeBinMin", timeBinMin,
-                "timeBinMax", timeBinMax
-        ));
+        sql.execute("DROP TABLE IF EXISTS ACTIVITIES_RECEIVERS_LEVEL");
+        sql.execute("ALTER TABLE RECEIVERS_LEVEL RENAME TO ACTIVITIES_RECEIVERS_LEVEL");
 
         params = new HashMap<>();
         params.put("experiencedPlansFile", Paths.get(matsimFolder, "output_experienced_plans.xml.gz"));
@@ -388,7 +377,7 @@ class TestTutorials extends JdbcTestCase {
         params.put("SRID", srid);
         params.put("receiversTable", "ACTIVITIES_RECEIVERS");
         params.put("outTableName", "EXPOSURES");
-        params.put("dataTable", "RESULT_GEOM");
+        params.put("dataTable", "ACTIVITIES_RECEIVERS_LEVEL");
         params.put("timeBinSize", timeBinSize);
         params.put("timeBinMin", timeBinMin);
         params.put("timeBinMax", timeBinMax);
@@ -401,11 +390,17 @@ class TestTutorials extends JdbcTestCase {
         ));
 
         new Export_Table().exec(connection, Map.of(
-                "tableToExport", "RESULT_GEOM",
-                "exportPath", Paths.get(resultsFolder, "RESULT_GEOM.shp")
+                "tableToExport", "ACTIVITIES_RECEIVERS_LEVEL",
+                "exportPath", Paths.get(resultsFolder, "ACTIVITIES_RECEIVERS_LEVEL.shp")
         ));
 
-        assertTrue(Paths.get(resultsFolder, "RESULT_GEOM.shp").toFile().exists());
+        new Export_Table().exec(connection, Map.of(
+                "tableToExport", "EXPOSURES",
+                "exportPath", Paths.get(resultsFolder, "EXPOSURES.shp")
+        ));
+
+        assertTrue(Paths.get(resultsFolder, "ACTIVITIES_RECEIVERS_LEVEL.shp").toFile().exists());
+        assertTrue(Paths.get(resultsFolder, "EXPOSURES.shp").toFile().exists());
         assertTrue(buildingsPath.toFile().exists());
         assertTrue(roadsPath.toFile().exists());
     }
