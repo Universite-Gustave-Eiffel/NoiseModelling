@@ -80,7 +80,7 @@ You can explore the other options by reading their descriptions. Here we are goi
 - Network CSV file: ``/path/to/your/scenario_matsim/detailed_network.csv``
 - Export additional traffic data ? : ``true``
 - Path of the Matsim output folder: ``/path/to/your/scenario_matsim``
-- populationFactor: ``0.001``
+- populationFactor: ``0.01``
 - The size of time bins in seconds: ``900``
 - outTableName: "" (not set, use default)
 - Skip unused links ?: ``true``
@@ -155,71 +155,32 @@ You can inspect the results to see where each activity is placed now.
    :align: center
 
 
-Step 5 : Calculate Noise Attenuation Matrix
+Step 5 : Calculate Noise Receiver Levels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this step, we want to calculate and store the noise propagation part of NoiseModelling.
-We need this because we actually have several power spectrum for every road segment, one for every timestep of 15min.
-In the end we want to have a noise map every 15 minutes (96 maps in total). If we do that directly, by calling something like ``Noise_level_from_source`` WPS bloc 96 times, we would be calculating the exact same noise propagation 96 times.
+In this step, we want to calculate a noise level for every receiver, every 15 minutes (96 maps in total).
 
-So the process is as follows :
-
-1. we use the ``MATSIM_ROADS`` table as a SOURCE table. It only contains geometries, without any power levels, so the ``Noise_level_from_source`` bloc will compute acoustic attenuation by virtually attributing a power level of 0dB for every road link.
-2. We use the ``Noise_level_from_source`` WPS bloc and setting the ``confExportSourceId`` input paramter.
-
-The ``confExportSourceId`` parameter will actually ouput, for every recevier, the list of sources that contribute to the resulting levels, with the source-receiver noise attenuation.
-
-We'll then use this attenuation matrix in the next steps to get the 96 noise maps.
-
-Calculate the attenuation matrix
-----------------------------------
+We'll use the ``Noise_level_from_source`` WPS bloc. When the using the ``Sources emission table name``, the WPS bloc will automatically take into account the time bins defined in the emission table.
+For more details about the different parameters, browse the NoiseModelling general documentation.
 
 Let's use the previously generated table to launch our propagation calculation.
-
-As explained before, we'll use the ``Noise_level_from_source`` WPS bloc with the ``Separate receiver level by source identifier`` parameter enabled.
-For more details about the different parameters, browse the NoiseModelling general documentation.
 
 The parameters we will use are the following :
 
 - Buildings table name: ``BUILDINGS``
 - Receivers table name: ``ACTIVITY_RECEIVERS``
-- Sources table name: ``MATSIM_ROADS``
+- Sources geometry table name: ``MATSIM_ROADS``
+- Sources emission table name: ``MATSIM_ROADS_LW``
 - Maximum source-receiver distance: ``250``
 - Maximum source reflexion distance: ``50``
 - Order of reflexion: ``1``
-- Separate receiver level by source identifier: ``true``
 - Diffraction on vertical edges: ``false``
 - Diffraction on horizontal edges: ``true``
 
 .. figure:: images/matsim/noise_from_source_wps.png
    :align: center
 
-We should end up with a table called ``RECEIVERS_LEVEL`` that contains a list of contributing source attenuation for every receiver.
-We can see such a list for the receiver n°1 in the figure below:
-
-.. figure:: images/matsim/lday_geom_table.png
-   :align: center
-
-
-Step 6 : Calculate Noise Maps
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-We have noise power levels every 15 minutes in the ``MATSIM_ROADS_LW`` table, and a source-receiver noise attenuation matrix in the ``RECEIVERS_LEVEL`` table.
-We just need to combine the two to get receivers noise levels every 15 minutes.
-
-This is the purpose of the ``Noise_From_Attenuation_Matrix_MatSim`` WPS bloc.
-We just have set the right tables as input as follows :
-
-- Attenuation matrix table name: ``RECEIVERS_LEVEL``
-- Output table name: ``RESULT_GEOM``
-- Table name of the MATSIM table containing the roads LW stats per timeBin: ``MATSIM_ROADS_LW``
-- Table name of the MATSIM table containing the roads geometries: ``MATSIM_ROADS``
-- Table name of the MATSIM table containing the receivers: ``ACTIVITY_RECEIVERS``
-
-.. figure:: images/matsim/noise_from_attenuation_wps.png
-   :align: center
-
-It takes some time but in the end you should get a noise spectrum for every receiver every 15 minutes in the table ``RESULT_GEOM``.
+We should end up with a table called ``RECEIVERS_LEVEL`` that contains a list of noise levels for every receiver, at every 15-minute interval.
 
 We have our noise maps !
 
@@ -231,10 +192,10 @@ Export the data
 
 Here we'll look at a nice way to look at the results with QGIS.
 
-First we need to export the ``RESULT_GEOM`` table data into a Shapefile.
+First we need to export the ``RECEIVERS_LEVEL`` table data into a Shapefile.
 We'll simply use the ``Export_Table WPS`` bloc with the following parameters :
 
-- Name of the table: ``RESULT_GEOM``
+- Name of the table: ``RECEIVERS_LEVEL``
 - Path of the file you want to export: ``/path/to/wherever/results.shp``
 
 .. figure:: images/matsim/results_export_wps.png
@@ -283,11 +244,11 @@ Going Further
 Now maybe we just want to compute actual noise maps instead of just the noise levels at some specific points.
 In this case we'd want to use a different receiver grid using the ``Delaunay_Grid`` WPS bloc.
 
-Then we can use the same ``Noise_level_from_source`` and ``Noise_From_Attenuation_Matrix_MatSim`` WPS blocs to calculate the noise levels at every receiver at every timestep.
+Then we can use the same ``Noise_level_from_source`` WPS blocs to calculate the noise levels at every receiver at every timestep.
 
-If you then select a specific timeBin you can then run a ``Create_Isosurface`` WPS bloc to create a noise map.
+You can then run a ``Create_Isosurface`` WPS bloc to create a noise map, it will also automatically detect the PERIOD and produce one noise map per time bin.
 
-Here is an example of a noise map for the 10h00_10h15 time period :
+Here is an example of a noise map for the 10h to 10h15 time period :
 
 .. figure:: images/matsim/map_10h_qgis.png
    :align: center
