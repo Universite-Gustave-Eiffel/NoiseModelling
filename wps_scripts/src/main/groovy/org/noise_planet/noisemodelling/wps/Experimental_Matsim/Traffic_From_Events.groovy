@@ -276,16 +276,16 @@ static def exec(Connection connection, input) {
     sql.execute("DROP TABLE IF EXISTS " + lwTableName)
     sql.execute("CREATE TABLE " + lwTableName + '''( 
         PK integer PRIMARY KEY AUTO_INCREMENT, 
-        LINK_ID varchar(255),
-        LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision,
-        TIME int
+        IDSOURCE integer NOT NULL,
+        HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision,
+        PERIOD varchar(50)
     );''')
 
     if (exportTraffic) {
         sql.execute("DROP TABLE IF EXISTS " + trafficTableName)
         sql.execute("CREATE TABLE " + trafficTableName + '''( 
             PK integer PRIMARY KEY AUTO_INCREMENT, 
-            LINK_ID varchar(255),
+            IDSOURCE integer NOT NULL,
             LV_D double precision,
             LV_SPD_D double precision,
             MV_D double precision,
@@ -296,30 +296,30 @@ static def exec(Connection connection, input) {
             WAV_SPD_D double precision,
             WBV_D double precision,
             WBV_SPD_D double precision,
-            TIME int
+            PERIOD varchar(50)
         );''')
     }
     if (keepVehicleContrib) {
         sql.execute("DROP TABLE IF EXISTS " + contribTableName)
         sql.execute("CREATE TABLE " + contribTableName + '''( 
             PK integer PRIMARY KEY AUTO_INCREMENT, 
-            LINK_ID varchar(255),
+            IDSOURCE integer NOT NULL,
             PERSON_ID varchar(255),
             VEHICLE_ID varchar(255),
-            LW63 double precision, LW125 double precision, LW250 double precision, LW500 double precision, LW1000 double precision, LW2000 double precision, LW4000 double precision, LW8000 double precision,
-            TIME int
+            HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision,
+            PERIOD varchar(50)
         );''')
     }
 
     PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.05))")
-    PreparedStatement lwStatement = connection.prepareStatement("INSERT INTO " + lwTableName + " (LINK_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    PreparedStatement lwStatement = connection.prepareStatement("INSERT INTO " + lwTableName + " (IDSOURCE, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, PERIOD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     PreparedStatement trafficStatement;
     if (exportTraffic) {
-        trafficStatement = connection.prepareStatement("INSERT INTO " + trafficTableName + " (LINK_ID, LV_D, LV_SPD_D, MV_D, MV_SPD_D, HGV_D, HGV_SPD_D, WAV_D, WAV_SPD_D, WBV_D, WBV_SPD_D, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        trafficStatement = connection.prepareStatement("INSERT INTO " + trafficTableName + " (IDSOURCE, LV_D, LV_SPD_D, MV_D, MV_SPD_D, HGV_D, HGV_SPD_D, WAV_D, WAV_SPD_D, WBV_D, WBV_SPD_D, PERIOD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     }
     PreparedStatement contribStatement;
     if (keepVehicleContrib) {
-        contribStatement = connection.prepareStatement("INSERT INTO " + contribTableName + " (LINK_ID, PERSON_ID, VEHICLE_ID, LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000, TIME) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        contribStatement = connection.prepareStatement("INSERT INTO " + contribTableName + " (IDSOURCE, PERSON_ID, VEHICLE_ID, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, PERIOD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     }
     logger.info("Done Creating SQL tables")
 
@@ -414,7 +414,7 @@ static def exec(Connection connection, input) {
                 lwStatement.setDouble(index, level)
             }
             index++
-            lwStatement.setInt(index, timeBin)
+            lwStatement.setString(index, timeBin.toString())
             lwStatement.addBatch()
         }
         lwStatement.executeBatch()
@@ -435,7 +435,7 @@ static def exec(Connection connection, input) {
                     trafficStatement.setDouble(index, speed)
                 }
                 index++
-                trafficStatement.setInt(index, timeBin)
+                trafficStatement.setString(index, timeBin.toString())
                 trafficStatement.addBatch()
             }
             trafficStatement.executeBatch()
@@ -458,7 +458,7 @@ static def exec(Connection connection, input) {
                         contribStatement.setDouble(index, contrib)
                     }
                     index++
-                    contribStatement.setInt(index, timeBin)
+                    contribStatement.setString(index, timeBin.toString())
                     contribStatement.addBatch()
                 }
             }
@@ -468,19 +468,25 @@ static def exec(Connection connection, input) {
     logger.info("DONE Inserting Into SQL tables...")
 
     logger.info("Start Creating indexes on tables ...")
-    logger.info("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
-    sql.execute("CREATE INDEX " + outTableName + "_LINK_ID_IDX ON " + outTableName + " (LINK_ID);")
-    logger.info("CREATE INDEX " + lwTableName + "_LINK_ID_IDX ON " + lwTableName + " (LINK_ID);")
-    sql.execute("CREATE INDEX " + lwTableName + "_LINK_ID_IDX ON " + lwTableName + " (LINK_ID);")
-    logger.info("CREATE INDEX " + lwTableName + "_TIME_IDX ON " + lwTableName + " (TIME);")
-    sql.execute("CREATE INDEX " + lwTableName + "_TIME_IDX ON " + lwTableName + " (TIME);")
+    String indexSql = "CREATE SPATIAL INDEX " + outTableName + "_GEOM_IDX ON " + outTableName + " (THE_GEOM);"
+    logger.info(indexSql)
+    sql.execute(indexSql)
+    indexSql = "CREATE INDEX " + lwTableName + "_IDSOURCE_IDX ON " + lwTableName + " (IDSOURCE);"
+    logger.info(indexSql)
+    sql.execute(indexSql)
+    indexSql = "CREATE INDEX " + lwTableName + "_PERIOD_IDX ON " + lwTableName + " (PERIOD);"
+    logger.info(indexSql)
+    sql.execute(indexSql)
     if (keepVehicleContrib) {
-        logger.info("CREATE INDEX " + contribTableName + "_LINK_ID_IDX ON " + contribTableName + " (LINK_ID);")
-        sql.execute("CREATE INDEX " + contribTableName + "_LINK_ID_IDX ON " + contribTableName + " (LINK_ID);")
-        logger.info("CREATE INDEX " + contribTableName + "_TIME_IDX ON " + contribTableName + " (TIME);")
-        sql.execute("CREATE INDEX " + contribTableName + "_TIME_IDX ON " + contribTableName + " (TIME);")
-        logger.info("CREATE INDEX " + contribTableName + "_PERSON_ID_IDX ON " + contribTableName + " (PERSON_ID);")
-        sql.execute("CREATE INDEX " + contribTableName + "_PERSON_ID_IDX ON " + contribTableName + " (PERSON_ID);")
+        indexSql = "CREATE INDEX " + contribTableName + "_IDSOURCE_IDX ON " + contribTableName + " (IDSOURCE);"
+        logger.info(indexSql)
+        sql.execute(indexSql)
+        indexSql = "CREATE INDEX " + contribTableName + "_PERIOD_IDX ON " + contribTableName + " (PERIOD);"
+        logger.info(indexSql)
+        sql.execute(indexSql)
+        indexSql = "CREATE INDEX " + contribTableName + "_PERSON_ID_IDX ON " + contribTableName + " (PERSON_ID);"
+        logger.info(indexSql)
+        sql.execute(indexSql)
     }
 
     logger.info("Done Creating indexes on tables.")
