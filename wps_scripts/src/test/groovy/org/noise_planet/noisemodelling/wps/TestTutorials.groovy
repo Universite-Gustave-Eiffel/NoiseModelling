@@ -254,7 +254,7 @@ class TestTutorials extends JdbcTestCase {
         Files.createDirectories(tempDataDir);
 
         // URL of the file to download
-        String fileUrl = "https://github.com/Symexpo/matsim-noisemodelling/releases/download/v5.0.0/scenario_matsim.zip";
+        String fileUrl = "https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/download/v5.X-Matsim-Test-Scenario/scenario_matsim.zip";
 
         // Create a temporary directory
         Path zipFilePath = tempDataDir.resolve("scenario_matsim.zip");
