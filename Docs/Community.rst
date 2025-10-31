@@ -81,11 +81,11 @@ Other
 ------------------
 
 * `Direction générale de la prévention des risques (DGPR)`_ - (🇫🇷)
-* `Centre National d’Incendie et de Secours`_ - CNIS (🇱🇺)
+* `Corps grand-ducal d’incendie et de secours`_ - CGDIS (G.D. Luxembourg 🇱🇺)
 * `Ministerio para la Transición Ecológica y el Reto Demográfico`_ (🇪🇸)
 
 .. _Direction générale de la prévention des risques (DGPR): https://www.ecologie.gouv.fr/direction-generale-prevention-risques-dgpr
-.. _Centre National d’Incendie et de Secours: https://112.public.lu/fr/organisation/cnis0.html
+.. _Corps grand-ducal d’incendie et de secours:  https://112.public.lu/fr.html
 .. _Ministerio para la Transición Ecológica y el Reto Demográfico: https://www.miteco.gob.es
 
 
