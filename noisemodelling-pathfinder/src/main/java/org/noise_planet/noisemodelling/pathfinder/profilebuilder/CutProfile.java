@@ -226,10 +226,25 @@ public class CutProfile {
      * @return @return the computed coordinate list
      */
     public List<Coordinate> computePts2D(boolean curvedPath) {
+        return computePts2D(curvedPath, null);
+    }
+
+    /**
+     * Compute 2D coordinates, optionally applying curved transformation
+     * @param curvedPath Whether to apply curved transformation
+     * @param transformedCutPointsOut If not null and curvedPath is true, will be populated with transformed CutPoints
+     * @return The computed 2D coordinate list
+     */
+    public List<Coordinate> computePts2D(boolean curvedPath, List<CutPoint> transformedCutPointsOut) {
         List<Coordinate> pts2D;
         if(curvedPath) {
-            pts2D = CurvedProfileGenerator.applyTransformation(cutPoints
-                    , false).stream()
+            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints, false);
+            // If caller wants the transformed cut points, populate the output list
+            if (transformedCutPointsOut != null) {
+                transformedCutPointsOut.clear();
+                transformedCutPointsOut.addAll(transformedCutPoints);
+            }
+            pts2D = transformedCutPoints.stream()
                     .map(CutPoint::getCoordinate)
                     .collect(Collectors.toList());
         } else {

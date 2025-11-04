@@ -224,9 +224,15 @@ public class CnossosPathBuilder {
         }
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
-        final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
 
-        List<Coordinate> pts2D = cutProfile.computePts2D();
+        // Get transformed cutPoints if favourable (without modifying the original cutProfile)
+        List<CutPoint> cutProfilePoints = new ArrayList<>();
+
+        List<Coordinate> pts2D = cutProfile.computePts2D(favourable, cutProfilePoints);
+        // If not favourable, use original cutPoints
+        if (!favourable || cutProfilePoints.isEmpty()) {
+            cutProfilePoints = cutProfile.cutPoints;
+        }
         if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
@@ -259,6 +265,40 @@ public class CnossosPathBuilder {
 
         // Src if perceived source position from the receiver point of view
         Coordinate src = cutProfile.getSource().getCoordinate();
+        
+        // For reflection paths without diffraction points, check if reflection is valid
+        // In favorable conditions, the wall is transformed (lowered), and we need to verify
+        // the reflection point is actually on the wall, not above it
+        if (cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION && hullPointsIndices.size() == 2) {
+            // No diffraction points, just source -> reflection -> receiver
+            for (int i = 0; i < cutProfilePoints.size(); i++) {
+                CutPoint cutPoint = cutProfilePoints.get(i);
+                if (cutPoint instanceof CutPointReflection &&
+                        Double.compare(cutPoint.getCoordinate().z, cutPoint.getzGround()) != 0) {
+                    CutPointReflection cutPointReflection = (CutPointReflection) cutPoint;
+                    
+                    // Get the wall altitude at the reflection point (now properly transformed in favorable conditions)
+                    double wallAltitudeAtReflection = Vertex.interpolateZ(cutPoint.coordinate,
+                            cutPointReflection.wall.p0, cutPointReflection.wall.p1);
+                    
+                    // Get the direct line altitude from source to receiver at this reflection X position
+                    Coordinate srcCoord = cutProfilePoints.get(0).getCoordinate();
+                    Coordinate rcvCoord = cutProfilePoints.get(cutProfilePoints.size() - 1).getCoordinate();
+                    double reflectionX = pts2D.get(i).x;
+                    double srcX = pts2D.get(0).x;
+                    double rcvX = pts2D.get(cutProfilePoints.size() - 1).x;
+                    double t = (reflectionX - srcX) / (rcvX - srcX);
+                    double directLineAltitude = srcCoord.z + t * (rcvCoord.z - srcCoord.z);
+                    
+                    // If the direct line clears the wall (goes above it), reject the reflection
+                    if (directLineAltitude > wallAltitudeAtReflection + EPSILON) {
+                        // Ray passes over the wall, reflection is not valid
+                        return null;
+                    }
+                }
+            }
+        }
+        
         // Move then check reflection height if there is diffraction on the path
         if(hullPointsIndices.size() > 2) {
             for (int i = 1; i < hullPointsIndices.size(); i++) {
@@ -271,10 +311,21 @@ public class CnossosPathBuilder {
                     if (currentPoint instanceof CutPointReflection &&
                             Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0) {
                         CutPointReflection cutPointReflection = (CutPointReflection) currentPoint;
-                        Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
-                        // Check if the new elevation of the reflection point is not higher than the wall
+                         Coordinate interpolatedReflectionPoint = segmentHull.closestPoint(pts2D.get(pointIndex));
+                        
+                        // Get the actual wall altitude at the reflection point
                         double wallAltitudeAtReflexionPoint = Vertex.interpolateZ(currentPoint.coordinate,
                                 cutPointReflection.wall.p0, cutPointReflection.wall.p1);
+                        
+                        // In favorable conditions, if the convex hull (lowered profile) places the reflection
+                        // point ABOVE the actual wall, it means the path diffracts OVER the wall,
+                        // so the reflection is invalid (you can't reflect on a wall you're going over)
+                        if (favourable && interpolatedReflectionPoint.y > wallAltitudeAtReflexionPoint + EPSILON) {
+                            // The path goes over the wall (diffraction), cannot also reflect on it
+                            return null;
+                        }
+                        
+                        // Check if the new elevation of the reflection point is not higher than the wall
                         if(wallAltitudeAtReflexionPoint + EPSILON >= interpolatedReflectionPoint.y) {
                             // update the reflection position
                             currentPoint.getCoordinate().setZ(interpolatedReflectionPoint.y);
