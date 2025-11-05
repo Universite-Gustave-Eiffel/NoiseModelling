@@ -194,6 +194,42 @@ public class CutProfile {
     }
 
     /**
+     * Compute the G coefficient for path segment using indices instead of CutPoint references.
+     * This avoids indexOf() calls that fail when using transformed CutPoints.
+     * @param i0 Index of first CutPoint in segment
+     * @param i1 Index of last CutPoint in segment  
+     * @param buildingRoofG Ground absorption coefficient for building roofs
+     * @return Weighted average of ground absorption coefficients along the segment
+     */
+    public double getGPathByIndex(int i0, int i1, double buildingRoofG) {
+        if(i0 == -1 || i1 == -1 || i1 < i0 || i0 >= cutPoints.size() || i1 >= cutPoints.size()) {
+            return 0.0;
+        }
+
+        double totalLength = 0;
+        double rsLength = 0.0;
+
+        boolean aboveRoof = false;
+        for(int index = 0; index < i1; index++) {
+            CutPoint current = cutPoints.get(index);
+            if(current instanceof CutPointWall) {
+                CutPointWall currentWall = (CutPointWall) current;
+                if(!aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                    aboveRoof = true;
+                } else if(aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    aboveRoof = false;
+                }
+            }
+            if(index >= i0) {
+                double segmentLength = current.getCoordinate().distance(cutPoints.get(index + 1).getCoordinate());
+                rsLength += segmentLength * (aboveRoof ? buildingRoofG : current.getGroundCoefficient());
+                totalLength += segmentLength;
+            }
+        }
+        return rsLength / totalLength;
+    }
+
+    /**
      *
      * @return
      */
