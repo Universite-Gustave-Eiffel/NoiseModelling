@@ -36,22 +36,55 @@ If you are not using the ``.exe`` file, you have to launch NoiseModelling thanks
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html
 
 
-Linux or Mac 
+Linux or Mac
 -------------
 
 If not already done, you have to install the Java version v11.x.
 
+#. Check whether Java 11 is already installed::
+
+      java -version
+
+   The command should print a version starting with ``11``. Otherwise, install
+   Java 11 first.
 
 #. Download and install Java: choose between `OpenJDK`_ or `Oracle`_ versions.
 
-#. You can check if ``JAVA_HOME`` environnement variable is well settled to your installed v11.x Java folder using ``echo $JAVA_HOME`` in your command prompt. You should have a result similar to ``/usr/lib/jvm/java-11-openjdk-amd64/``.
+#. Find the installation path to use for ``JAVA_HOME``.
 
-#. If you don't have this result, it is probably because your ``JAVA_HOME`` environnement variable is not well settled. In this case, you are invited to follow the steps `proposed here`_.
+   *On Linux*::
 
-#. Once done, you may have to reboot your command prompt (or maybe disconnect/reconnect your session) after using the precedent command line before printing again ``echo $JAVA_HOME``.
+      readlink -f "$(command -v java)"
+
+   This prints a path ending with ``/bin/java`` (for example
+   ``/usr/lib/jvm/java-11-openjdk-amd64/bin/java``); ``JAVA_HOME`` is the parent
+   directory of ``bin`` (here ``/usr/lib/jvm/java-11-openjdk-amd64``).
+
+   *On macOS*::
+
+      /usr/libexec/java_home -v 11
+
+   This prints the directory that must be used as ``JAVA_HOME`` for Java 11.
+
+#. Set the ``JAVA_HOME`` environment variable and update your ``PATH`` (adapt the
+   path with the one found above)::
+
+      export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      export PATH="$JAVA_HOME/bin:$PATH"
+
+   On macOS you can also use::
+
+      export JAVA_HOME=$(/usr/libexec/java_home -v 11)
+      export PATH="$JAVA_HOME/bin:$PATH"
+
+#. Verify that ``JAVA_HOME`` is correctly set::
+
+      echo $JAVA_HOME
+
+   You should get the Java 11 directory (for example
+   ``/usr/lib/jvm/java-11-openjdk-amd64/``). If this is not the case, you are
+   invited to follow the steps `proposed here`_.
 
 .. _proposed here: https://stackoverflow.com/questions/24641536/how-to-set-java-home-in-linux-for-all-users
-
-
 .. _OpenJDK : https://jdk.java.net/archive/
 .. _Oracle : https://www.oracle.com/fr/java/technologies/javase/jdk11-archive-downloads.html
