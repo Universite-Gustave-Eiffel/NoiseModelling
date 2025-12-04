@@ -11,8 +11,10 @@ NoiseModelling v5.0 User Guide
 
 Welcome on the **official NoiseModelling v5.0 User Guide**.
 
-NoiseModelling is a library capable of producing noise maps. 
-It can be freely used either for research and education, as well as by experts in a professional use.
+NoiseModelling is a free and open-source Java library for producing environmental noise maps from local to national scales, implementing CNOSSOS‑EU road and rail noise emission and propagation methods while linking to H2GIS and PostGIS for spatial analysis.
+It responds to the need for robust noise assessment in public health and environmental planning by enabling simulation and prediction of noise propagation for mitigation design and compliance with EU regulations.
+The software can be used independently or through a graphical interface and is openly available to the research, education, and professional communities.
+It has been widely used for strategic noise mapping, dynamic maps driven by traffic models or sensors, sensitivity studies, and investigations of particular sources such as emergency sirens and drones.
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 

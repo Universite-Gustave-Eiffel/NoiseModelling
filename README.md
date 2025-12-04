@@ -5,29 +5,47 @@
 
 <img src="https://noisemodelling.readthedocs.io/en/latest/_images/NoiseModelling_banner.png" width="90%">
 
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/noise-planet/)
+
 NoiseModelling
 ===============
 
-NoiseModelling is a library capable of producing noise maps. 
-It can be freely used either for research and education, as well as by experts in a professional use.
+NoiseModelling is a free and open-source Java library for producing environmental noise maps from local to national scales, implementing CNOSSOS‑EU road and rail noise emission and propagation methods while linking to H2GIS and PostGIS for spatial analysis.
 
-* for **more information** on NoiseModelling, [visit the online documentation](https://noisemodelling.readthedocs.io/en/latest/)
-* to **contribute to NoiseModelling** source code, follow the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
-* to **contact the support / development team**, 
-    - open an issue : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues or a write a message : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions *(we prefer these two options)*
-    - send us an email at ``contact@noise-planet.org``
-* follow us on [LinkedIn](https://www.linkedin.com/company/noise-planet/)
+It responds to the need for robust noise assessment in public health and environmental planning by enabling simulation and prediction of noise propagation for mitigation design and compliance with EU regulations.
 
-Stable release
----------------------------
+The software can be used independently or through a graphical interface and is openly available to the research, education, and professional communities.
 
-The current stable version is v5.0.0 (see [latest release](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest) page)
-
+It has been widely used for strategic noise mapping, dynamic maps driven by traffic models or sensors, sensitivity studies, and investigations of particular sources such as emergency sirens and drones.
 
 Documentation
 ---------------------------
 
-An online documentation is available [here](https://noisemodelling.readthedocs.io/en/latest/). Here you'll find a wealth of useful information, including numerous step-by-step tutorials on how to use NoiseModelling.
+An online documentation is available : [NOISEMODELLING DOCUMENTATION](https://noisemodelling.readthedocs.io/en/latest/).
+
+Here you'll find a wealth of useful information, including numerous step-by-step tutorials on how to use NoiseModelling.
+
+
+Stable release
+---------------------------
+
+The current stable version of NoiseModelling can be found here: [latest release](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest)
+
+
+Contribute
+---------------------------
+
+To **contribute to NoiseModelling** source code, follow the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
+
+
+Help & Support
+---------------------------
+
+To ask for help or contact the development team, you can either:
+
+- open an issue : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues or a write a message : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/discussions *(we prefer these two options)*
+- send us an email at ``contact@noise-planet.org``
+
 
 Authors
 ---------------------------
@@ -36,10 +54,12 @@ NoiseModelling project is leaded by acousticians from the *Joint Research Unit i
 
 The NoiseModelling team owns the majority of the authorship of this application, but any external contributions are warmly welcomed.
 
+
 Licence
 ---------------------------
 
 NoiseModelling and its documentation are distributed for free and under the open-source [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html) licence. 
+
 
 Publications & Fundings
 --------------------------------------
