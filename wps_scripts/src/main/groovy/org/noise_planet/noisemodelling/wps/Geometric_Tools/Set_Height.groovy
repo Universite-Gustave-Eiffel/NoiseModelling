@@ -111,7 +111,7 @@ def exec(Connection connection, input) {
     connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(ST_UPDATEZ(%s, %f),%d)",
             TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM" , metaData.getSQL(),"THE_GEOM", h,srid))
 
-    resultString = "Process done. Table of receivers " + table_name + " has now a new height set to " + h + "."
+    resultString = "Process done. Table of " + table_name + " has now a new height set to " + h + "."
 
     logger.info('End : Set new height')
 
