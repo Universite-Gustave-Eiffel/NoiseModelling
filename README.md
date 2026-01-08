@@ -35,7 +35,7 @@ The current stable version of NoiseModelling can be found here: [latest release]
 Contribute
 ---------------------------
 
-To **contribute to NoiseModelling** source code, follow the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
+To **contribute to NoiseModelling** source code, please read our [CONTRIBUTING](CONTRIBUTING.md) guide and the ["Get Started Dev"](https://noisemodelling.readthedocs.io/en/latest/Get_Started_Dev.html) page
 
 
 Help & Support
@@ -58,11 +58,11 @@ The NoiseModelling team owns the majority of the authorship of this application,
 Licence
 ---------------------------
 
-NoiseModelling and its documentation are distributed for free and under the open-source [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html) licence. 
+NoiseModelling and its documentation are distributed for free and under the open-source [GPL v3](https://noisemodelling.readthedocs.io/en/latest/License.html) licence.
 
 
 Publications & Fundings
 --------------------------------------
 
-* [Scientific production](https://noisemodelling.readthedocs.io/en/latest/Scientific_production.html) 
+* [Scientific production](https://noisemodelling.readthedocs.io/en/latest/Scientific_production.html)
 * [Fundings](https://noisemodelling.readthedocs.io/en/latest/index.html#fundings)
