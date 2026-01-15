@@ -33,7 +33,9 @@ In this tutorial, we will use the default, already configured H2GIS database.
 
 These tools (GeoServer, WPS Builder and H2GIS) are already included in the archive, so you don't have to install them separately.
 
-To launch NoiseModelling with the GUI, please execute:
+To launch NoiseModelling with the GUI, start it from a command prompt (terminal). This will start a local server on your computer, which provides the GUI as a web application.
+
+Please execute:
 
 * Windows: ``NoiseModelling.exe`` or ``NoiseModelling_xxx\bin\startup_windows.bat``
 * Linux or Mac: ``NoiseModelling_xxx/bin/startup_linux_mac.sh`` *(make sure the file is allowed to be executed before running it)*
@@ -47,7 +49,7 @@ and wait until ``INFO:oejs.Server:main:Started`` appears in your command prompt.
 NoiseModelling with GUI is now started.
 
 .. tip::
-    NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and you will not be able to continue with the tutorial.
+    NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and the GUI will no longer be available.
 
 
 .. _GeoServer : http://geoserver.org/
@@ -56,7 +58,9 @@ NoiseModelling with GUI is now started.
 Step 3: Open NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The NoiseModelling GUI is built using the :doc:`WPS_Builder` component. To open it, go to http://localhost:9580 using your preferred web browser.
+The NoiseModelling GUI is built using the :doc:`WPS_Builder` component and runs as a web application provided by the local server started in Step 2.
+
+To open it, go to http://localhost:9580 using your preferred web browser.
 
 .. figure:: images/tutorial/Tutorial1_nm_open.png
     :align: center
