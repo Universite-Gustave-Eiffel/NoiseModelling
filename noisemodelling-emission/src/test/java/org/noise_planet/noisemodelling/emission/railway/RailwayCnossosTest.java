@@ -541,7 +541,7 @@ public class RailwayCnossosTest {
         int nTracks = 2;
         int trackTransfer = 7;
         int railRoughness = 2;
-        int impactNoise = 1;
+        int impactNoise = 0;
         int curvature = 0;
         double vMaxInfra = 160;
         double vehicleCommercial = 120;
