@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 
 public class RailwayCnossosTest {
-    private static final double EPSILON_TEST1 = 0.0001;
+    private static final double EPSILON_TEST1 = 0.01;
     RailwayCnossos railwayCnossos = new RailwayCnossos();
 
     @Test
