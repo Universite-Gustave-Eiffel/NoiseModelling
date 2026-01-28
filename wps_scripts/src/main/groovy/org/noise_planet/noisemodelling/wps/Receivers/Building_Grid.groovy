@@ -301,7 +301,7 @@ def exec(Connection connection, input) {
             progressLogger.endStep()
         }
     }
-    sql.execute("drop table if exists TMP_SCREENS_MERGE")
+    //sql.execute("drop table if exists TMP_SCREENS_MERGE")
     sql.execute("drop table if exists " + receivers_table_name)
 
     if (!hasPop) {
@@ -372,7 +372,7 @@ def exec(Connection connection, input) {
     }
     // cleaning
     sql.execute("drop table TMP_SCREENS")
-    sql.execute("drop table tmp_screen_truncated")
+    //sql.execute("drop table tmp_screen_truncated")
     sql.execute("drop table tmp_relation_screen_building")
     sql.execute("drop table tmp_receivers_lines")
     sql.execute("drop table if exists tmp_buildings;")

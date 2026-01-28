@@ -465,7 +465,7 @@ class TestReceivers extends JdbcTestCase {
     }
 
     /**
-     * Fix regression issue, when building are surrounded by other buildings some buildings may not have a single receiver attached to it
+     * Fix regression issue, when buffer linestring length is inferior than the delta and the building polygon are in 2D
      */
     public void testMissingReceivers() {
         def sql = new Sql(connection)
@@ -489,5 +489,31 @@ class TestReceivers extends JdbcTestCase {
         }
         assertEquals(expected, got)
 
+    }
+
+
+    /**
+     * Fix regression issue, receivers points are too close from other buildings facades
+     */
+    public void testBuildingsReceiversTooClose() {
+        def sql = new Sql(connection)
+
+        GeoJsonRead.importTable(connection, TestReceivers.getResource("regression_receivers/BUILDINGS_RECEIVERS_TOO_CLOSE.geojson").getPath())
+
+        // Update the field pk, set it not null and as the primary key of the table
+        sql.execute("ALTER TABLE BUILDINGS_RECEIVERS_TOO_CLOSE ALTER COLUMN pk SET NOT NULL")
+        sql.execute("ALTER TABLE BUILDINGS_RECEIVERS_TOO_CLOSE ADD CONSTRAINT pk_building PRIMARY KEY (pk)")
+
+
+        new Building_Grid().exec(connection, ["tableBuilding" : "BUILDINGS_RECEIVERS_TOO_CLOSE",
+                                              "delta" : 5,
+                                              "distance" : 2])
+
+        SHPWrite.exportTable(connection, "build/TMP_SCREENS_MERGE.shp" ,"TMP_SCREENS_MERGE", ValueBoolean.get(true))
+        SHPWrite.exportTable(connection, "build/tmp_screen_truncated.shp" ,"tmp_screen_truncated", ValueBoolean.get(true))
+
+
+        def minDistance = sql.firstRow("SELECT ST_DISTANCE(p.the_geom, b.the_geom) receiver_building_distance FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B ORDER BY receiver_building_distance")[0] as Double
+        assertTrue("Error, receiver should be at least from 2 meters from a building but it is placed at " + minDistance + " m !" , minDistance > 1.99)
     }
 }
