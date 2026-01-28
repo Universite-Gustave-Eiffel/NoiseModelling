@@ -12,7 +12,7 @@
 
 /**
  * @Author Nicolas Fortin, Université Gustave Eiffel
- * @Contributor Ignacio Soto Molina, Ministry for Ecological Transition (MITECO), Spain - Delete Recivers Inside Buildings
+ * @Contributor Ignacio Soto Molina, Ministry for Ecological Transition (MITECO), Spain - Delete Receivers Inside Buildings
  */
 
 
@@ -22,6 +22,7 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
+import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
@@ -43,7 +44,7 @@ import java.sql.Connection
 title = 'Buildings Grid'
 description = '&#10145;&#65039; Generates receivers, 2m around the building facades, at a given height. </br>' +
               '<hr>' +
-              '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
+              '&#x2705; The output table is called <b>RECEIVERS</b> and contain a field <b>build_pk</b> corresponding to the primary key of the buildings table</br></br>'+
               '<img src="/wps_images/building_grid_output.png" alt="Building grid output" width="95%" align="center">'
 
 inputs = [
@@ -238,8 +239,8 @@ def exec(Connection connection, input) {
     def buildingPk = JDBCUtilities.getColumnName(connection, building_table_name,
             JDBCUtilities.getIntegerPrimaryKey(connection,
                     TableLocation.parse(building_table_name, DBUtils.getDBType(connection))))
-    if (buildingPk == "") {
-        return "Buildings table must have a primary key"
+    if (!buildingPk || buildingPk == "") {
+        throw new IllegalArgumentException(building_table_name + " table must have a primary key")
     }
 
     sql.execute("drop table if exists tmp_receivers_lines")
@@ -395,6 +396,7 @@ def exec(Connection connection, input) {
  * @param [out]pts computed points
  * @return Fixed distance between points
  */
+@CompileStatic
 double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                                  List<Coordinate> pts) {
     // If the linear sound source length is inferior than half the distance between the nearest point of the sound
@@ -408,12 +410,15 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
         for (int i = 0; i < points.length - 1; i++) {
             Coordinate a = points[i];
             final Coordinate b = points[i + 1];
-            double length = a.distance3D(b);
+            double length = a.distance3D(b)
+            if(Double.isNaN(length)) {
+                length = a.distance(b)
+            }
             if (length + segmentLength > targetSegmentSize) {
                 double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                 Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
                         a.y + segmentLengthFraction * (b.y - a.y),
-                        a.z + segmentLengthFraction * (b.z - a.z));
+                        Double.isNaN(a.z) || Double.isNaN(b.z) ? Double.NaN : a.z + segmentLengthFraction * (b.z - a.z));
                 pts.add(midPoint);
                 break;
             }
@@ -421,7 +426,7 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
         }
         return geom.getLength();
     } else {
-        double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
+        double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint as double);
         Coordinate[] points = geom.getCoordinates();
         double segmentLength = 0.0;
 

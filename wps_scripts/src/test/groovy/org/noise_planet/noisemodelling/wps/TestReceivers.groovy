@@ -12,9 +12,11 @@
 
 package org.noise_planet.noisemodelling.wps
 
+import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import org.h2.value.ValueBoolean
 import org.h2.value.ValueGeometry
+import org.h2gis.functions.io.geojson.GeoJsonRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.functions.io.shp.SHPWrite
 import org.h2gis.functions.spatial.crs.ST_SetSRID
@@ -460,5 +462,32 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
         assertEquals(1920, sql.firstRow("SELECT COUNT(*) FROM TRIANGLES")[0] as Integer)
+    }
+
+    /**
+     * Fix regression issue, when building are surrounded by other buildings some buildings may not have a single receiver attached to it
+     */
+    public void testMissingReceivers() {
+        def sql = new Sql(connection)
+
+        GeoJsonRead.importTable(connection, TestReceivers.getResource("regression_receivers/SMALL_BUILDING_NORECEIVER.geojson").getPath())
+
+        // Update the field pk, set it not null and as the primary key of the table
+        sql.execute("ALTER TABLE SMALL_BUILDING_NORECEIVER ALTER COLUMN pk SET NOT NULL")
+        sql.execute("ALTER TABLE SMALL_BUILDING_NORECEIVER ADD CONSTRAINT pk_small_building_noreceiver PRIMARY KEY (pk)")
+
+
+        new Building_Grid().exec(connection, ["tableBuilding" : "SMALL_BUILDING_NORECEIVER",
+                                              "delta" : 5])
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        Set<Integer> expected = new HashSet<>(Arrays.asList(1797, 1798, 1800, 1801))
+        Set<Integer> got = new HashSet<>()
+        sql.rows("SELECT DISTINCT build_pk from RECEIVERS").each {
+            GroovyRowResult rs ->
+                got.add(rs["build_pk"] as Integer)
+        }
+        assertEquals(expected, got)
+
     }
 }
