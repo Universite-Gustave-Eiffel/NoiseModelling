@@ -493,9 +493,9 @@ class TestReceivers extends JdbcTestCase {
 
 
     /**
-     * Fix regression issue, receivers points are too close from other buildings facades
+     * Fix regression issue, receivers points should be placed when neighbors buildings have an height inferior than the receiver height
      */
-    public void testBuildingsReceiversTooClose() {
+    public void testBuildingsReceiversOnTopOfShortBuildings() {
         def sql = new Sql(connection)
 
         GeoJsonRead.importTable(connection, TestReceivers.getResource("regression_receivers/BUILDINGS_RECEIVERS_TOO_CLOSE.geojson").getPath())
@@ -509,11 +509,11 @@ class TestReceivers extends JdbcTestCase {
                                               "delta" : 5,
                                               "distance" : 2])
 
-        SHPWrite.exportTable(connection, "build/TMP_SCREENS_MERGE.shp" ,"TMP_SCREENS_MERGE", ValueBoolean.get(true))
-        SHPWrite.exportTable(connection, "build/tmp_screen_truncated.shp" ,"tmp_screen_truncated", ValueBoolean.get(true))
+        SHPWrite.exportTable(connection, "build/RECEIVERS.shp" ,"RECEIVERS", ValueBoolean.get(true))
 
-
-        def minDistance = sql.firstRow("SELECT ST_DISTANCE(p.the_geom, b.the_geom) receiver_building_distance FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B ORDER BY receiver_building_distance")[0] as Double
-        assertTrue("Error, receiver should be at least from 2 meters from a building but it is placed at " + minDistance + " m !" , minDistance > 1.99)
+        def row= sql.firstRow("SELECT ST_Z(p.the_geom) - b.height relativeHeight, b.pk FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B WHERE ST_INTERSECTS(p.the_geom, b.the_geom) ORDER BY relativeHeight")
+        def minRelativeHeight = row[0] as Double
+        def buildingId = row[1] as Integer
+        assertTrue("Error, receiver should be at least 0 meters (excluded) above the building roof but it is placed at " + minRelativeHeight + " m ! building:" + buildingId , minRelativeHeight > 0)
     }
 }
