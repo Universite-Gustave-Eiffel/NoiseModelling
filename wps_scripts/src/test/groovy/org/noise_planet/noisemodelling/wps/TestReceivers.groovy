@@ -509,8 +509,6 @@ class TestReceivers extends JdbcTestCase {
                                               "delta" : 5,
                                               "distance" : 2])
 
-        SHPWrite.exportTable(connection, "build/RECEIVERS.shp" ,"RECEIVERS", ValueBoolean.get(true))
-
         def row= sql.firstRow("SELECT ST_Z(p.the_geom) - b.height relativeHeight, b.pk FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B WHERE ST_INTERSECTS(p.the_geom, b.the_geom) ORDER BY relativeHeight")
         def minRelativeHeight = row[0] as Double
         def buildingId = row[1] as Integer

@@ -18,11 +18,8 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
@@ -62,7 +59,7 @@ inputs = [
                 name       : 'Fence geometry',
                 title      : 'Extent filter',
                 description: 'Create receivers only in the provided polygon (fence)',
-                min        : 0, 
+                min        : 0,
                 max        : 1,
                 type       : Geometry.class
         ],
@@ -125,29 +122,6 @@ outputs = [
         ]
 ]
 
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
-
-
-def run(input) {
-
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}
 
 
 def exec(Connection connection, input) {
@@ -243,39 +217,57 @@ def exec(Connection connection, input) {
         throw new IllegalArgumentException(building_table_name + " table must have a primary key")
     }
 
-    sql.execute("drop table if exists tmp_receivers_lines")
+    //---------------------------------------------------------------------
+    logger.info('Create line of receivers')
+
+    sql.execute("DROP TABLE IF EXISTS tmp_receivers_lines")
 
     if (fence != null) {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
     } else {
-        sql.execute("create table tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
+    sql.execute("CREATE SPATIAL INDEX ON tmp_receivers_lines(the_geom)")
 
-    logger.info('create line of receivers')
+    //---------------------------------------------------------------------
+    logger.info('List buildings that will remove receivers (if height is superior than receiver height)')
 
-    sql.execute("drop table if exists tmp_relation_screen_building;")
-    sql.execute("create spatial index on tmp_receivers_lines(the_geom)")
-    logger.info('list buildings that will remove receivers (if height is superior than receiver height)')
-
-    sql.execute("create table tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b." + buildingPk + " and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
-
+    sql.execute("DROP TABLE IF EXISTS tmp_relation_screen_building;")
+    sql.execute("CREATE SPATIAL INDEX ON tmp_receivers_lines(the_geom)")
+    sql.execute("CREATE TABLE tmp_relation_screen_building as select b." + buildingPk + " as PK_building, s.pk as pk_screen from " + building_table_name + " b, tmp_receivers_lines s where b.the_geom && s.the_geom and s.pk != b." + buildingPk + " and ST_Intersects(b.the_geom, s.the_geom) and b.height > " + h)
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(PK_building);")
     sql.execute("CREATE INDEX ON tmp_relation_screen_building(pk_screen);")
-    sql.execute("drop table if exists tmp_screen_truncated;")
-    
-    logger.info('truncate receiver lines')
-    sql.execute("create table tmp_screen_truncated(pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(ST_ACCUM(b.the_geom), :distance_wall)) the_geom from tmp_relation_screen_building r, " + building_table_name + " b, tmp_receivers_lines s WHERE PK_building = b." + buildingPk + " AND pk_screen = s.pk  GROUP BY pk_screen, s.the_geom;", [distance_wall : distance])
 
+    //---------------------------------------------------------------------
+    logger.info('Truncate receiver lines')
 
-    logger.info('Add primary key')
+    // First, for each screen, the aggregate geometry of the associated buildings is calculated.
+    sql.execute("DROP TABLE IF EXISTS tmp_screen_buildings_geom;")
+    sql.execute("CREATE TABLE tmp_screen_buildings_geom (pk_screen integer not null, the_geom geometry) as select r.pk_screen, ST_ACCUM(b.the_geom) as the_geom FROM tmp_relation_screen_building r JOIN " + building_table_name + " b ON r.PK_building = b." + buildingPk + " GROUP BY r.pk_screen;")
+    sql.execute("ALTER TABLE tmp_screen_buildings_geom add primary key(pk_screen)")
+    sql.execute("CREATE INDEX ON tmp_screen_buildings_geom (pk_screen);")
+    sql.execute("CREATE SPATIAL INDEX ON tmp_screen_buildings_geom (the_geom)")
+
+    // We now apply the buffer and the difference with the geometry of the screens.
+    sql.execute("DROP TABLE IF EXISTS tmp_screen_truncated;")
+    sql.execute("CREATE TABLE tmp_screen_truncated (pk_screen integer not null, the_geom geometry) AS SELECT s.pk as pk_screen, ST_DIFFERENCE(s.the_geom, ST_BUFFER(b.the_geom, :distance_wall)) as the_geom FROM tmp_receivers_lines s JOIN tmp_screen_buildings_geom b ON s.pk = b.pk_screen;", [distance_wall : distance])
+
+    logger.info('Add primary key on tmp_screen_truncated')
     sql.execute("ALTER TABLE tmp_screen_truncated add primary key(pk_screen)")
+
+    //---------------------------------------------------------------------
+    logger.info('Union of truncated and non truncated receivers')
+
     sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE;")
-    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
-    logger.info('union of truncated receivers and non tructated')
-    sql.execute("create table TMP_SCREENS_MERGE (pk integer not null, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
-    logger.info('Add primary key')
+    sql.execute("CREATE TABLE TMP_SCREENS_MERGE (pk integer not null, the_geom geometry) as select s.pk, s.the_geom the_geom from tmp_receivers_lines s where not st_isempty(s.the_geom) and pk not in (select pk_screen from tmp_screen_truncated) UNION ALL select pk_screen, the_geom from tmp_screen_truncated where not st_isempty(the_geom);")
+
+    logger.info('Add primary key on TMP_SCREENS_MERGE')
     sql.execute("ALTER TABLE TMP_SCREENS_MERGE add primary key(pk)")
+
+    //---------------------------------------------------------------------
     logger.info('Collect all lines and convert into points using custom method')
+
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS;")
     sql.execute("CREATE TABLE TMP_SCREENS(pk integer, the_geom geometry)")
     def qry = 'INSERT INTO TMP_SCREENS(pk , the_geom) VALUES (?,?);'
     GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
@@ -304,14 +296,15 @@ def exec(Connection connection, input) {
             progressLogger.endStep()
         }
     }
-    //sql.execute("drop table if exists TMP_SCREENS_MERGE")
-    sql.execute("drop table if exists " + receivers_table_name)
+    sql.execute("DROP TABLE IF EXISTS TMP_SCREENS_MERGE")
+    sql.execute("DROP TABLE IF EXISTS " + receivers_table_name)
 
     if (!hasPop) {
-        logger.info('create RECEIVERS table...')
+        logger.info('Create RECEIVERS table...')
 
-        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
-        sql.execute("insert into " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
+
+        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
+        sql.execute("INSERT INTO " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
 
@@ -322,17 +315,17 @@ def exec(Connection connection, input) {
         }
 
         if (fence != null) {
-            // delete receiver not in fence filter
+            // Delete receiver not in fence filter
             sql.execute("delete from " + receivers_table_name + " g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fence])
         }
     } else {
-        logger.info('create RECEIVERS table...')
-        // building have population attribute
-        // set population attribute divided by number of receiver to each receiver
+        logger.info('Create RECEIVERS table...')
+        // Building have population attribute
+        // Set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("create table tmp_receivers(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer not null)")
+        sql.execute("CREATE TABLE tmp_receivers(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer not null)")
 
-        sql.execute("insert into tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + "), pk building_pk from TMP_SCREENS;")
+        sql.execute("INSERT INTO tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE tmp_receivers add primary key(pk)")
 
@@ -346,24 +339,35 @@ def exec(Connection connection, input) {
             // delete receiver not in fence filter
             sql.execute("delete from tmp_receivers g where not ST_INTERSECTS(g.the_geom , :fenceGeom);", [fenceGeom : fence])
         }
-
+        logger.info('Create index on build_pk')
         sql.execute("CREATE INDEX ON tmp_receivers(build_pk)")
+
+        //---------------------------------------------------------------------
         logger.info('Distribute population over receivers')
-        sql.execute("create table " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop real)");
-        sql.execute("insert into "+receivers_table_name+"(the_geom, build_pk, pop) select a.the_geom, a.build_pk, b.pop/COUNT(DISTINCT aa.pk)::float from tmp_receivers a, " + building_table_name + " b,tmp_receivers aa where b." + buildingPk + " = a.build_pk and a.build_pk = aa.build_pk GROUP BY a.the_geom, a.build_pk, b.pop;")
-        logger.info('Add primary key')
+
+        sql.execute("DROP TABLE IF EXISTS BUILDINGS_RECEIVERS_POP")
+        sql.execute("CREATE TABLE BUILDINGS_RECEIVERS_POP(" + buildingPk + " integer primary key, pop float) AS SELECT b." + buildingPk + ", b.pop / COUNT(a.PK)::float FROM tmp_receivers a, " + building_table_name + " b where b." + buildingPk + " = a.build_pk GROUP BY b." + buildingPk)
+        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop float)");
+        sql.execute("INSERT INTO "+receivers_table_name+"(the_geom, build_pk, pop) select a.the_geom, a.build_pk, b.pop from tmp_receivers a,  BUILDINGS_RECEIVERS_POP b where b." + buildingPk + " = a.build_pk;");
+
+        logger.info('Add primary key on ' +receivers_table_name)
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
 
-        sql.execute("drop table if exists tmp_receivers")
+        sql.execute("DROP TABLE IF EXISTS tmp_receivers")
+        sql.execute("DROP TABLE BUILDINGS_RECEIVERS_POP;")
     }
-    // cleaning
-    sql.execute("drop table TMP_SCREENS")
-    //sql.execute("drop table tmp_screen_truncated")
-    sql.execute("drop table tmp_relation_screen_building")
-    sql.execute("drop table tmp_receivers_lines")
-    sql.execute("drop table if exists tmp_buildings;")
+
+    //---------------------------------------------------------------------
+    // Cleaning
+    sql.execute("DROP TABLE TMP_SCREENS")
+    sql.execute("DROP TABLE tmp_screen_truncated")
+    sql.execute("DROP TABLE tmp_relation_screen_building")
+    sql.execute("DROP TABLE tmp_receivers_lines")
+    sql.execute("DROP TABLE TMP_SCREEN_BUILDINGS_GEOM;")
+
+    //---------------------------------------------------------------------
     // Process Done
-    resultString = "Process done. Table of receivers " + receivers_table_name + " created !"
+    resultString = "Process done. The table of receivers " + receivers_table_name + " has been created !"
 
     // print to command window
     logger.info('Result : ' + resultString)
@@ -382,7 +386,6 @@ def exec(Connection connection, input) {
  * @param [out]pts computed points
  * @return Fixed distance between points
  */
-@CompileStatic
 double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
                                  List<Coordinate> pts) {
     // If the linear sound source length is inferior than half the distance between the nearest point of the sound
@@ -461,4 +464,3 @@ double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
         return targetSegmentSize;
     }
 }
-
