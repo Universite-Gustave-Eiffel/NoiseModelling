@@ -14,6 +14,7 @@ import org.locationtech.jts.algorithm.Orientation;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.io.WKTWriter;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.*;
@@ -32,7 +33,6 @@ public class LayerTinfour implements LayerDelaunay {
     public String dumpFolder = "";
 
     List<IConstraint> constraints = new ArrayList<>();
-    List<Integer> constraintIndex = new ArrayList<>();
 
     Quadtree ptsIndex = new Quadtree();
     private boolean computeNeighbors = false;
@@ -42,7 +42,8 @@ public class LayerTinfour implements LayerDelaunay {
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
     private List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
-
+    private QueryRTree polygonRtree = new QueryRTree();
+    private Map<Integer, Polygon> polygonMap = new HashMap<>();
 
     /**
      *
@@ -226,17 +227,28 @@ public class LayerTinfour implements LayerDelaunay {
             vertices.add(toCoordinate(v));
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
+        GeometryFactory gf = new GeometryFactory();
         for(SimpleTriangle t : simpleTriangles) {
-            int triangleAttribute = 0;
-            if(t.getContainingRegion() != null) {
-                if(t.getContainingRegion().getConstraintIndex() < constraintIndex.size()) {
-                    triangleAttribute = constraintIndex.get(t.getContainingRegion().getConstraintIndex());
+            Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
+            // Look for associated polygon area
+            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(vertices.get(newTriangle.getA()),
+                    vertices.get(newTriangle.getB()), vertices.get(newTriangle.getC()));
+            Point inCenterPoint = gf.createPoint(inCenter);
+            Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(new Envelope(inCenter));
+            while (polygonIntersectsTriangleList.hasNext()) {
+                Integer polygonIndex = polygonIntersectsTriangleList.next();
+                Polygon polygon = polygonMap.get(polygonIndex);
+                if(polygon.contains(inCenterPoint)) {
+                    newTriangle.setAttribute(polygonIndex);
+                    break;
                 }
             }
-            triangles.add(new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()),vertIndex.get(t.getVertexC()), triangleAttribute));
-            edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
-            edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
-            edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
+            triangles.add(newTriangle);
+            if(computeNeighbors) {
+                edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
+                edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
+                edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
+            }
         }
         if(computeNeighbors) {
             for(SimpleTriangle t : simpleTriangles) {
@@ -272,27 +284,27 @@ public class LayerTinfour implements LayerDelaunay {
             polygonConstraint.complete();
             if(polygonConstraint.isValid()) {
                 constraints.add(polygonConstraint);
-                constraintIndex.add(buildingId);
-            }
-        }
-        // Append holes
-        final int holeCount = newPoly.getNumInteriorRing();
-        for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
-            LineString holeLine = newPoly.getInteriorRingN(holeIndex);
-            final Coordinate[] hCoordinates = holeLine.getCoordinates();
-            // Holes must be CW
-            if(Orientation.isCCW(hCoordinates)) {
-                CoordinateArrays.reverse(hCoordinates);
-            }
-            List<Vertex> vertexList = new ArrayList<>(hCoordinates.length);
-            for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
-                vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
-            }
-            PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
-            polygonConstraint.complete();
-            if(polygonConstraint.isValid()) {
-                constraints.add(polygonConstraint);
-                constraintIndex.add(buildingId);
+                polygonRtree.appendGeometry(newPoly, buildingId);
+                polygonMap.put(buildingId, newPoly);
+                // Append holes
+                final int holeCount = newPoly.getNumInteriorRing();
+                for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
+                    LineString holeLine = newPoly.getInteriorRingN(holeIndex);
+                    final Coordinate[] hCoordinates = holeLine.getCoordinates();
+                    // Holes must be CW
+                    if(Orientation.isCCW(hCoordinates)) {
+                        CoordinateArrays.reverse(hCoordinates);
+                    }
+                    vertexList = new ArrayList<>(hCoordinates.length);
+                    for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
+                        vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
+                    }
+                    polygonConstraint = new PolygonConstraint(vertexList);
+                    polygonConstraint.complete();
+                    if(polygonConstraint.isValid()) {
+                        constraints.add(polygonConstraint);
+                    }
+                }
             }
         }
     }
@@ -356,7 +368,6 @@ public class LayerTinfour implements LayerDelaunay {
         linearConstraint.complete();
         if(linearConstraint.isValid()) {
             constraints.add(linearConstraint);
-            constraintIndex.add(buildingID);
         }
     }
     //add buildingID to edge property and to points property

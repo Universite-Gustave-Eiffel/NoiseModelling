@@ -9,6 +9,8 @@
 
 package org.noise_planet.noisemodelling.pathfinder.delaunay;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Polygon;
 import org.tinfour.common.SimpleTriangle;
 
 import java.util.ArrayList;
@@ -16,93 +18,101 @@ import java.util.function.Consumer;
 
 /**
  * A triangle built from the combination of the 3 vertices index.
- * 
+ *
  * @author Nicolas Fortin
  */
 public class Triangle {
-	private int a = 0;
-	private int b = 0;
-	private int c = 0;
-	private int attribute =-1;
+    private int a = 0;
+    private int b = 0;
+    private int c = 0;
+    private int attribute = -1;
 
-	public int getA() {
-		return a;
-	}
+    public int getA() {
+        return a;
+    }
 
-	public int get(int id) {
-		switch (id) {
-		case 0:
-			return a;
-		case 1:
-			return b;
-		default:
-			return c;
-		}
-	}
-        public int getAttribute(){
-                return this.attribute;
+    public int get(int id) {
+        switch (id) {
+            case 0:
+                return a;
+            case 1:
+                return b;
+            default:
+                return c;
         }
-        
+    }
 
-	public void set(int id,int index) {
-		switch (id) {
-		case 0:
-			a=index;
-			break;
-		case 1:
-			b=index;
-			break;
-		default:
-			c=index;
-		}
+    public int getAttribute() {
+        return this.attribute;
+    }
+
+	/**
+	 * @param attribute new Attribute value for this triangle
+	 */
+	public void setAttribute(int attribute) {
+		this.attribute = attribute;
 	}
 
-	public void setA(int a) {
-		this.a = a;
-	}
+    public void set(int id, int index) {
+        switch (id) {
+            case 0:
+                a = index;
+                break;
+            case 1:
+                b = index;
+                break;
+            default:
+                c = index;
+        }
+    }
 
-	public int getB() {
-		return b;
-	}
+    public void setA(int a) {
+        this.a = a;
+    }
 
-	public void setB(int b) {
-		this.b = b;
-	}
+    public int getB() {
+        return b;
+    }
 
-	public int getC() {
-		return c;
-	}
+    public void setB(int b) {
+        this.b = b;
+    }
 
-	public void setC(int c) {
-		this.c = c;
-	}
+    public int getC() {
+        return c;
+    }
 
-	public Triangle(int a, int b, int c, int attribute) {
-		super();
-		this.a = a;
-		this.b = b;
-		this.c = c;
-                this.attribute = attribute;
-	}
-        
-        public Triangle(int a, int b, int c) {
-		super();
-		this.a = a;
-		this.b = b;
-		this.c = c;
-             
-	}
+    public void setC(int c) {
+        this.c = c;
+    }
 
-	public static class TriangleBuilder implements Consumer<SimpleTriangle> {
-		ArrayList<SimpleTriangle> triangles;
 
-		public TriangleBuilder(ArrayList<SimpleTriangle> triangles) {
-			this.triangles = triangles;
-		}
+    public Triangle(int a, int b, int c, int attribute) {
+        super();
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.attribute = attribute;
+    }
 
-		@Override
-		public void accept(SimpleTriangle triangle) {
-			triangles.add(triangle);
-		}
-	}
+    public Triangle(int a, int b, int c) {
+        super();
+        this.a = a;
+        this.b = b;
+        this.c = c;
+
+    }
+
+    public static class TriangleBuilder implements Consumer<SimpleTriangle> {
+        ArrayList<SimpleTriangle> triangles;
+
+        public TriangleBuilder(ArrayList<SimpleTriangle> triangles) {
+            this.triangles = triangles;
+        }
+
+        @Override
+        public void accept(SimpleTriangle triangle) {
+            triangles.add(triangle);
+        }
+    }
 }
