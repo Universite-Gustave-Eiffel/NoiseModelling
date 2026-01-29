@@ -31,19 +31,25 @@ public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
     public String dumpFolder = "";
-
     List<IConstraint> constraints = new ArrayList<>();
-
     Quadtree ptsIndex = new Quadtree();
     private boolean computeNeighbors = false;
     private double maxArea = 0;
-
+    private boolean verbose = true;
     // Output data
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
     private List<Triangle> triangles = new ArrayList<Triangle>();
     private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
     private QueryRTree polygonRtree = new QueryRTree();
     private Map<Integer, Polygon> polygonMap = new HashMap<>();
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
 
     /**
      *
@@ -189,6 +195,9 @@ public class LayerTinfour implements LayerDelaunay {
         boolean refine;
         List<SimpleTriangle> simpleTriangles = new ArrayList<>();
         do {
+            if(verbose) {
+                LOGGER.info("Refining delauney with {} points", meshPoints.size());
+            }
             // Triangulate
             tin = new IncrementalTin();
             // Add points

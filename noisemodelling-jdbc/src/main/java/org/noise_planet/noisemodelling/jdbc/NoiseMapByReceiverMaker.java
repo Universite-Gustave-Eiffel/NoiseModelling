@@ -322,12 +322,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /**
      * Initializes the noise map computation process.
      * @param connection Active connection
-     * @param progression
      * @throws SQLException
      */
     @Override
-    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
-        super.initialize(connection, progression);
+    public void initialize(Connection connection) throws SQLException {
+        super.initialize(connection);
         tableLoader.initialize(connection, this);
         computeRaysOutFactory.initialize(connection, this);
     }
@@ -336,7 +335,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * Run NoiseModelling with provided parameters, return when computation is done
      */
     public void run(Connection connection, ProgressVisitor progressLogger) throws SQLException {
-        initialize(connection, progressLogger);
+        initialize(connection);
 
         // Set of already processed receivers
         Set<Long> receivers = new HashSet<>();

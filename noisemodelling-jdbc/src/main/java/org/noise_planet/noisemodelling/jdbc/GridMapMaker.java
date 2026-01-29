@@ -10,6 +10,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
@@ -52,7 +53,6 @@ public abstract class GridMapMaker {
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
-
     protected GeometryFactory geometryFactory;
 
     // Initialised attributes
@@ -141,7 +141,7 @@ public abstract class GridMapMaker {
      * @param connection Active connection
      * @throws java.sql.SQLException
      */
-    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
+    public void initialize(Connection connection) throws SQLException {
         if(soundReflectionOrder > 0 && maximumPropagationDistance < maximumReflectionDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));

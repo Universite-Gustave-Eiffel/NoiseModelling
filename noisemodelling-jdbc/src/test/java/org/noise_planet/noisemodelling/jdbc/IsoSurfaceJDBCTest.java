@@ -9,9 +9,11 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
+import org.h2gis.functions.io.shp.SHPWrite;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
@@ -110,7 +112,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1);
+                0, 0, 1, false);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -157,7 +159,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1);
+                0, 0, 1, false);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -192,7 +194,7 @@ public class IsoSurfaceJDBCTest {
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
             noisemap.setSourceHasAbsoluteZCoordinates(false);
             noisemap.setHeightField("HEIGHT");
-            noisemap.initialize(connection, new EmptyProgressVisitor());
+            noisemap.initialize(connection);
 
             AtomicInteger pk = new AtomicInteger(0);
             for(int i=0; i < noisemap.getGridDim(); i++) {
@@ -215,8 +217,9 @@ public class IsoSurfaceJDBCTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setVerbose(false);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable());
+            delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
@@ -257,6 +260,40 @@ public class IsoSurfaceJDBCTest {
             assertTrue(periods.contains("N"));
             assertTrue(periods.contains(EmissionTableGenerator.DEN_PERIOD));
         }
+
+    }
+
+    @Test
+    public void testDelaunayReceiverSkipCells() throws SQLException, IOException {
+        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("SPARSE_BUILDINGS.geojson").getFile());
+        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("SPARSE_ROADS.geojson").getFile());
+        try(Statement st = connection.createStatement()) {
+            st.execute("ALTER TABLE SPARSE_BUILDINGS ALTER COLUMN PK INTEGER NOT NULL");
+            st.execute("ALTER TABLE SPARSE_BUILDINGS ADD PRIMARY KEY (PK)");
+            st.execute("ALTER TABLE SPARSE_ROADS ALTER COLUMN PK INTEGER NOT NULL");
+            st.execute("ALTER TABLE SPARSE_ROADS ADD PRIMARY KEY (PK)");
+        }
+
+        DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("SPARSE_BUILDINGS", "SPARSE_ROADS");
+
+        delaunayReceiversMaker.setMinimalSourceGeometriesDistanceToComputeCell(1000);
+        delaunayReceiversMaker.setMaximumPropagationDistance(500);
+        delaunayReceiversMaker.setMaximumArea(2000);
+        delaunayReceiversMaker.setVerbose(false);
+        delaunayReceiversMaker.setExportTrianglesGeometries(false);
+        delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
+
+        // Count the number of unique cell_id values
+        int rowCount = 0;
+        try(Statement st = connection.createStatement()) {
+            try (ResultSet rs = st.executeQuery("SELECT COUNT(DISTINCT CELL_ID) AS CNT FROM TRIANGLES")) {
+                if (rs.next()) {
+                    rowCount = rs.getInt("CNT");
+                }
+            }
+        }
+        // 16 instead of 4096
+        assertEquals(16, rowCount);
 
     }
 }

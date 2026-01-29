@@ -97,6 +97,13 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
+        skipCellNoSourcesMinimalDistance        : [
+                name       : 'Skip cell no sources minimal distance',
+                title      : 'Skip cell no sources minimal distance',
+                description: 'If provided, a sub-domain will not be computed if no sources geometries are near x meters from the sub-domain area',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
         roadWidth          : [
                 name       : 'Road width',
                 title      : 'Road width',
@@ -341,9 +348,6 @@ def exec(Connection connection, input) {
     // Allow isosurfaces to be present over buildings if requested.
     delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
-    logger.info("Delaunay initialize")
-    delaunayReceiversMaker.initialize(connection, new EmptyProgressVisitor())
-
     // Apply negative envelope parameter
     if (input.containsKey('fenceNegativeBuffer')) {
         double negativeBuffer = input['fenceNegativeBuffer'] as Double
@@ -361,28 +365,26 @@ def exec(Connection connection, input) {
     }
 
     AtomicInteger pk = new AtomicInteger(0)
-    ProgressVisitor progressVisitorNM = progressLogger.subProcess(delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
 
     try {
-        for (int i = 0; i < delaunayReceiversMaker.getGridDim(); i++) {
-            for (int j = 0; j < delaunayReceiversMaker.getGridDim(); j++) {
-                logger.info("Compute cell " + (i * delaunayReceiversMaker.getGridDim() + j + 1) + " of " + delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
-                delaunayReceiversMaker.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
-                progressVisitorNM.endStep()
-            }
-        }
+        delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
                 "input geometries for debugging purpose")
         throw ex
     }
 
+    logger.info("Generating spatial index on " + receivers_table_name)
     // Ensure spatial indexes on output tables (if missing)
     ensureSpatialIndex(connection, receivers_table_name)
-    ensureSpatialIndex(connection, 'TRIANGLES')
+
+    if(exportTriangles) {
+        logger.info("Generating spatial index on TRIANGLES")
+        ensureSpatialIndex(connection, 'TRIANGLES')
+    }
 
 
-    int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
+    long nbReceivers = delaunayReceiversMaker.getReceiversCount()
 
     // Process Done
     resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created."

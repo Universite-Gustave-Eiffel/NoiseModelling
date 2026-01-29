@@ -70,7 +70,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setSoilTableName("LAND_G");
             noiseMapByReceiverMaker.setFrequencyFieldPrepend("DB_M");
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            noiseMapByReceiverMaker.initialize(connection);
 
             Set<Long> processedReceivers = new HashSet<>();
             Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
@@ -330,7 +330,7 @@ public class NoiseMapByReceiverMakerTest {
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(800);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
@@ -375,7 +375,7 @@ public class NoiseMapByReceiverMakerTest {
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES_GEOM");
             delaunayReceiversMaker.setMaximumArea(800);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
