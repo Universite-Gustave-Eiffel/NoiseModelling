@@ -1,0 +1,43 @@
+{
+    "type": "FeatureCollection",
+    "name": "TrainNetwork",
+    "crs": {
+        "type": "name",
+        "properties": {
+            "name": "urn:ogc:def:crs:EPSG::32635"
+        }
+    },
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "PK": 1,
+                "IDSECTION": 1,
+                "nTrack": 1,
+                "speedTrack": 300,
+                "trackTrans": 4,
+                "railRoughn": 2,
+                "impactNois": 1,
+                "curvature": 0,
+                "bridgeTran": 0,
+                "speedComme": 300,
+                "isTunnel": false
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        1000.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            }
+        }
+    ]
+}
