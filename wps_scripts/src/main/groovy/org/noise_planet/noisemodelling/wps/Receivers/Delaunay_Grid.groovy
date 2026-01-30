@@ -221,11 +221,6 @@ def ensureSpatialIndex(Connection connection, String table) {
 
 def exec(Connection connection, Map input) {
 
-    DBTypes dbType = DBUtils.getDBType(connection)
-
-    // output string, the information given back to the user
-    String resultString = null
-
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
@@ -396,6 +391,7 @@ def exec(Connection connection, Map input) {
         delaunayReceiversMaker.setExceptionDumpFolder(input['errorDumpFolder'] as String)
     }
 
+    long startTime = System.currentTimeMillis()
     try {
         delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
     } catch (LayerDelaunayError ex) {
@@ -414,10 +410,15 @@ def exec(Connection connection, Map input) {
     }
 
 
+    long processTime = System.currentTimeMillis() - startTime
+    logger.info("Delaunay grid computed in " + (processTime / 1000) + " seconds.")
+
     long nbReceivers = delaunayReceiversMaker.getReceiversCount()
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created."
+    resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
+            (exportTriangles ? " and triangles in table TRIANGLES" : "" )+ "."
+    resultString += " Process time: " + (processTime / 1000) + " seconds."
 
     // print to command window
     logger.info('Result : ' + resultString)
