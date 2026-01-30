@@ -374,7 +374,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @throws SQLException if a database access error occurs.
      */
     @Override
-    protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
+    public Envelope getComputationEnvelope(Connection connection) throws SQLException {
         Envelope computationEnvelope = new Envelope();
         DBTypes dbTypes = DBUtils.getDBType(connection);
         if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {

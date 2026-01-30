@@ -238,7 +238,8 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
         new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-        "sourcesTableName" : "ROADS"]);
+        "sourcesTableName" : "ROADS",
+        "exportTrianglesGeometries": true]);
 
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
@@ -274,7 +275,8 @@ class TestReceivers extends JdbcTestCase {
 
         new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
                                               "sourcesTableName" : "ROADS",
-                                              "fenceTableName": "DEM"]);
+                                              "fenceTableName": "DEM",
+                                              "exportTrianglesGeometries": true]);
 
         def geomFence = GeometryTableUtilities.getEstimatedExtent(connection, "DEM", "THE_GEOM")
 
@@ -304,7 +306,8 @@ class TestReceivers extends JdbcTestCase {
         new Clean_Buildings_Table().exec(connection, ["tableName": "buildings"])
 
         new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-                                              "sourcesTableName" : "ROADS"]);
+                                              "sourcesTableName" : "ROADS",
+                                              "exportTrianglesGeometries": true]);
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 

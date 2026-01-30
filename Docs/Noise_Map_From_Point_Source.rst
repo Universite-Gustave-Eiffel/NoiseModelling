@@ -150,7 +150,7 @@ Use the ``Receivers:Delaunay_Grid`` WPS script. Fill the two following mandatory
 * ``Source table name`` : ``POINT_SOURCE``
 * ``Buildings table name`` : ``BUILDINGS``
 
-Once done, you should have two new tables : ``RECEIVERS`` *(illustrated below with the purple small points)* and ``TRIANGLES``
+Once done, you should have a new table : ``RECEIVERS`` *(illustrated below with the purple small points)*
 
 .. figure:: images/Noise_Map_From_Point_Source/table_receivers.png
    :align: center

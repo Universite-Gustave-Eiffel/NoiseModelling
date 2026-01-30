@@ -65,7 +65,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : String.class
         ],
-
         tableBuilding      : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
@@ -108,12 +107,13 @@ inputs = [
                 name       : 'Road width',
                 title      : 'Road width',
                 description: 'Set Road Width (in meters) (FLOAT).</br> </br>' +
-                             'No receivers closer than road width distance will be created.</br> </br>' +
+                             'No receivers closer than road width distance will be created.</br>' +
+                        ' </br> You can set 0m if you don\'t want to insert roads in the output but still want' +
+                        ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter' +
                              '&#128736; Default value: <b>2 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-
         buildingBuffer      : [
                 name       : 'Building buffer',
                 title      : 'Minimum distance to buildings (m)',
@@ -122,7 +122,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-
         maxArea            : [
                 name       : 'Maximum Area',
                 title      : 'Maximum Area',
@@ -166,7 +165,15 @@ inputs = [
                         '&#128736; Default value: <b>0 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
-        ]
+        ],
+        exportTrianglesGeometries: [
+                name        : 'In the triangles table, export triangles geometries',
+                title       : 'In the triangles table, export triangles geometries',
+                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle. </br></br>' +
+                              '&#128736; Default value: <b>false </b>',
+                min         : 0, max: 1,
+                type        : Boolean.class
+        ],
 ]
 
 outputs = [
@@ -212,7 +219,7 @@ def ensureSpatialIndex(Connection connection, String table) {
     }
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     DBTypes dbType = DBUtils.getDBType(connection)
 
@@ -280,6 +287,20 @@ def exec(Connection connection, input) {
         maxArea = input['maxArea'] as Double
     }
 
+    boolean exportTriangles = false
+    if(input.containsKey('exportTrianglesGeometries')) {
+        exportTriangles = input['exportTrianglesGeometries'] as Boolean
+    }
+
+    boolean skipCellNoSources = false
+    Double skipCellNoSourcesMinimalDistance = 0.0
+    if (input.containsKey('skipCellNoSourcesMinimalDistance')) {
+        skipCellNoSourcesMinimalDistance = input['skipCellNoSourcesMinimalDistance'] as Double
+        if(skipCellNoSourcesMinimalDistance > 0) {
+            skipCellNoSources = true
+        }
+    }
+
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (srid == 0) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
@@ -320,6 +341,12 @@ def exec(Connection connection, input) {
     // Generate receivers grid for noise map rendering
     DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
 
+    if(skipCellNoSources) {
+        delaunayReceiversMaker.setMinimalSourceGeometriesDistanceToComputeCell(skipCellNoSourcesMinimalDistance)
+    }
+
+    delaunayReceiversMaker.setExportTrianglesGeometries(exportTriangles)
+
     if (fence != null) {
         // If the fence must be reprojected into the input srid
         if (srid != 0 && fence.getSRID() != srid) {
@@ -352,7 +379,12 @@ def exec(Connection connection, input) {
     if (input.containsKey('fenceNegativeBuffer')) {
         double negativeBuffer = input['fenceNegativeBuffer'] as Double
         if(negativeBuffer > 0) {
-            Envelope envelope = delaunayReceiversMaker.getMainEnvelope()
+            Envelope envelope;
+            if(fence != null) {
+                envelope = fence.getEnvelopeInternal()
+            } else {
+                envelope = delaunayReceiversMaker.getComputationEnvelope(connection);
+            }
             envelope.expandBy(-negativeBuffer)
             delaunayReceiversMaker.setMainEnvelope(envelope)
         }
@@ -363,8 +395,6 @@ def exec(Connection connection, input) {
         // help debugging delaunay triangulation
         delaunayReceiversMaker.setExceptionDumpFolder(input['errorDumpFolder'] as String)
     }
-
-    AtomicInteger pk = new AtomicInteger(0)
 
     try {
         delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)

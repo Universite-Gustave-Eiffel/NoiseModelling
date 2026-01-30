@@ -224,7 +224,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @throws SQLException if an SQL exception occurs while retrieving the envelope.
      */
     @Override
-    protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
+    public Envelope getComputationEnvelope(Connection connection) throws SQLException {
         DBTypes dbTypes = DBUtils.getDBType(connection);
         Envelope envelopeInternal = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(receiverTableName, dbTypes)).getEnvelopeInternal();
         envelopeInternal.expandBy(maximumPropagationDistance);

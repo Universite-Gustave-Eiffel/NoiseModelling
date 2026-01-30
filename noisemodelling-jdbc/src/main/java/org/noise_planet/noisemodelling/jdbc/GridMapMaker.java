@@ -134,7 +134,7 @@ public abstract class GridMapMaker {
         return mainEnvelope.getHeight() / gridDim;
     }
 
-    abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
+    abstract public Envelope getComputationEnvelope(Connection connection) throws SQLException;
 
     /**
      * Fetch scene attributes, compute best computation cell size.
