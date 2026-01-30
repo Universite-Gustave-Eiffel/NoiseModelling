@@ -279,7 +279,7 @@ public class IsoSurfaceJDBCTest {
         delaunayReceiversMaker.setMinimalSourceGeometriesDistanceToComputeCell(1000);
         delaunayReceiversMaker.setMaximumPropagationDistance(500);
         delaunayReceiversMaker.setMaximumArea(2000);
-        delaunayReceiversMaker.setVerbose(false);
+        delaunayReceiversMaker.setVerbose(true);
         delaunayReceiversMaker.setExportTrianglesGeometries(false);
         delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
 

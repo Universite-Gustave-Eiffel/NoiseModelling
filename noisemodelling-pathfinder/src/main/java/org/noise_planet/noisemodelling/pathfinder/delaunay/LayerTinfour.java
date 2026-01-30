@@ -79,18 +79,6 @@ public class LayerTinfour implements LayerDelaunay {
 
 
     /**
-     *
-     * @param incrementalTin
-     * @return
-     */
-    private List<SimpleTriangle> computeTriangles(IncrementalTin incrementalTin) {
-        ArrayList<SimpleTriangle> triangles = new ArrayList<>(incrementalTin.countTriangles().getCount());
-        Triangle.TriangleBuilder triangleBuilder = new Triangle.TriangleBuilder(triangles);
-        TriangleCollector.visitSimpleTriangles(incrementalTin, triangleBuilder);
-        return triangles;
-    }
-
-    /**
      * @return When an exception occur, this folder with receiver the input data
      */
     public String getDumpFolder() {
@@ -206,36 +194,30 @@ public class LayerTinfour implements LayerDelaunay {
         triangles.clear();
         vertices.clear();
 
-        List<Vertex> meshPoints = ptsIndex.queryAll();
-
         IncrementalTin tin;
         boolean refine;
-        List<SimpleTriangle> simpleTriangles = new ArrayList<>();
+        // Triangulate
+        tin = new IncrementalTin();
+        // Add points
+        tin.add(ptsIndex.queryAll(), null);
+        // Add constraints
+        try {
+            tin.addConstraints(constraints, false);
+        }catch (IllegalStateException ex) {
+            // Got error
+            // Dump input data
+            if(!dumpFolder.isEmpty()) {
+                dumpData();
+            }
+            throw new LayerDelaunayError(ex);
+        }
         do {
-            if(verbose) {
-                LOGGER.info("Refining delauney with {} points", meshPoints.size());
-            }
-            // Triangulate
-            tin = new IncrementalTin();
-            // Add points
-            tin.add(meshPoints, null);
-            // Add constraints
-            try {
-                tin.addConstraints(constraints, false);
-            }catch (IllegalStateException ex) {
-                // Got error
-                // Dump input data
-                if(!dumpFolder.isEmpty()) {
-                    dumpData();
-                }
-                throw new LayerDelaunayError(ex);
-            }
             refine = false;
 
-            simpleTriangles = computeTriangles(tin);
             // Will triangulate multiple time if refinement is necessary
             if(maxArea > 0) {
-                for (SimpleTriangle triangle : simpleTriangles) {
+                ArrayList<Vertex> newSteinerPoints = new ArrayList<>();
+                for (SimpleTriangle triangle : tin.triangles()) {
                     if(triangle.getArea() > maxArea) {
                         // Insert steiner point in circumcircle
                         Coordinate centroid = getCentroid(triangle);
@@ -244,8 +226,14 @@ public class LayerTinfour implements LayerDelaunay {
                             // do not insert point inside polygon (no receivers into buildings)
                             continue;
                         }
-                        meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
+                        newSteinerPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
                         refine = true;
+                    }
+                }
+                if(!newSteinerPoints.isEmpty()) {
+                    tin.add(newSteinerPoints, null);
+                    if(verbose) {
+                        LOGGER.info("Refining delauney with {} points", newSteinerPoints.size());
                     }
                 }
             }
@@ -259,7 +247,7 @@ public class LayerTinfour implements LayerDelaunay {
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         GeometryFactory gf = new GeometryFactory();
-        for(SimpleTriangle t : simpleTriangles) {
+        for(SimpleTriangle t : tin.triangles()) {
             Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
             // Look for associated polygon area
             Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(vertices.get(newTriangle.getA()),
@@ -277,7 +265,7 @@ public class LayerTinfour implements LayerDelaunay {
             }
         }
         if(computeNeighbors) {
-            for(SimpleTriangle t : simpleTriangles) {
+            for(SimpleTriangle t : tin.triangles()) {
                 Integer neighA = edgeIndexToTriangleIndex.get(t.getEdgeA().getDual().getIndex());
                 Integer neighB = edgeIndexToTriangleIndex.get(t.getEdgeB().getDual().getIndex());
                 Integer neighC = edgeIndexToTriangleIndex.get(t.getEdgeC().getDual().getIndex());
