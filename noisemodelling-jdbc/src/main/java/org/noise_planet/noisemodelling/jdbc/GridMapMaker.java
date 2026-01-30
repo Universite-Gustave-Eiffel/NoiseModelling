@@ -139,7 +139,7 @@ public abstract class GridMapMaker {
     /**
      * Fetch scene attributes, compute best computation cell size.
      * @param connection Active connection
-     * @throws java.sql.SQLException
+     * @throws java.sql.SQLException If some table are not found or parameters are invalid
      */
     public void initialize(Connection connection) throws SQLException {
         if(soundReflectionOrder > 0 && maximumPropagationDistance < maximumReflectionDistance) {

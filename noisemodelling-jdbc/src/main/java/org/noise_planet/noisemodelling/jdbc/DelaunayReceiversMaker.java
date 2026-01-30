@@ -302,7 +302,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param maxSrcDist Maximum propagation distance
      * @param minRecDist Minimal distance receiver-source
      * @param maximumArea Maximum area of triangles
-     * @throws LayerDelaunayError
+     * @throws LayerDelaunayError if an error occurs during the Delaunay triangulation process.
      */
     public void computeDelaunay(LayerDelaunay cellMesh,
                                 Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist, Collection<Geometry> sources,
@@ -371,7 +371,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * Retrieves the computation envelope based on data stored in the database tables.
      * @param connection the database connection.
      * @return the computation envelope containing the bounding box of the data stored in the specified tables.
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs.
      */
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
@@ -480,7 +480,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param fetchEnvelope Fetch envelope
      * @param doIntersection Truncate geometris
      * @param sourceGeometries List to feed
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, boolean doIntersection, List<Geometry> sourceGeometries)
             throws SQLException {
@@ -620,15 +620,18 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         this.roadWidth = roadWidth;
     }
 
+    /**
+     * @return Do not evaluate a computation cell if there is no source geometries at least at x meters from the cell envelope
+     */
     public double getMinimalSourceGeometriesDistanceToComputeCell() {
         return minimalSourceGeometriesDistanceToComputeCell;
     }
 
     /**
      * Do not evaluate a computation cell if there is no source geometries at least at x meters from the cell envelope.
-     * Evaluated on {@link #run(Connection, String, String)}
+     * Evaluated on {@link #run(Connection, String, String, ProgressVisitor)}
      * It is ignored if it is NaN or if source table name is not provided or does not exists
-     * @param minimalSourceGeometriesDistanceToComputeCell
+     * @param minimalSourceGeometriesDistanceToComputeCell Distance in meters
      */
     public void setMinimalSourceGeometriesDistanceToComputeCell(double minimalSourceGeometriesDistanceToComputeCell) {
         this.minimalSourceGeometriesDistanceToComputeCell = minimalSourceGeometriesDistanceToComputeCell;
@@ -642,7 +645,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param fetchEnvelope Fetch envelope
      * @param minimalDistance Minimal distance from envelope
      * @return True if there is at least one source geometry near the envelope
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs
      */
     public boolean hasSourcesNearEnvelope(Connection connection, Envelope fetchEnvelope, double minimalDistance)
             throws SQLException {

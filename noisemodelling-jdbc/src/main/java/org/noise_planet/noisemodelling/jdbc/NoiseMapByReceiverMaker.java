@@ -156,12 +156,15 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         this.profilerThread = profilerThread;
     }
 
+    /**
+     * @param computeRaysOutFactory Factory to create output data handler for each cell
+     */
     public void setComputeRaysOutFactory(IComputeRaysOutFactory computeRaysOutFactory) {
         this.computeRaysOutFactory = computeRaysOutFactory;
     }
 
     /**
-     * Do not call this method after {@link #initialize(Connection, ProgressVisitor)} has been called
+     * Do not call this method after {@link #initialize(Connection)} has been called
      * @param tableLoader Object that generate scene for each sub-cell using database data
      */
     public void setPropagationProcessDataFactory(TableLoader tableLoader) {
@@ -175,10 +178,16 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         return tableLoader;
     }
 
+    /**
+     * @return Number of threads used for ray propagation, 0 means automatic detection of number of CPU cores
+     */
     public int getThreadCount() {
         return threadCount;
     }
 
+    /**
+     * @param threadCount Number of threads used for ray propagation, 0 means automatic detection of number of CPU cores
+     */
     public void setThreadCount(int threadCount) {
         this.threadCount = threadCount;
     }
@@ -189,7 +198,8 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * @param cellIndex Computation area index
      * @param skipReceivers Do not process the receivers primary keys in this set and once included add the new receivers primary in it
      * @return Data input for cell evaluation
-     * @throws SQLException
+     * @throws SQLException SQL exception instance
+     * @throws IOException IO exception instance
      */
     public SceneWithEmission prepareCell(Connection connection, CellIndex cellIndex,
                                          Set<Long> skipReceivers) throws SQLException, IOException {
@@ -211,7 +221,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
      * Retrieves the computation envelope based on data stored in the database tables.
      * @param connection the database connection.
      * @return the computation envelope containing the bounding box of the data stored in the specified tables.
-     * @throws SQLException
+     * @throws SQLException if an SQL exception occurs while retrieving the envelope.
      */
     @Override
     protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
@@ -223,9 +233,9 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
 
     /**
      * Fetch all receivers and compute cells that contains receivers
-     * @param connection
+     * @param connection JDBC Connection
      * @return Cell index with number of receivers
-     * @throws SQLException
+     * @throws SQLException SQL exception instance
      */
     public Map<CellIndex, Integer> searchPopulatedCells(Connection connection) throws SQLException {
         if(mainEnvelope == null) {
@@ -322,7 +332,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /**
      * Initializes the noise map computation process.
      * @param connection Active connection
-     * @throws SQLException
+     * @throws SQLException if an SQL exception occurs during initialization.
      */
     @Override
     public void initialize(Connection connection) throws SQLException {
@@ -399,7 +409,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         /**
          * Called before the first sub cell is being computed
          * @param progressLogger Main progression information, this method will not update the progression
-         * @throws SQLException
+         * @throws SQLException If an SQL exception occurs
          */
         void start(ProgressVisitor progressLogger) throws SQLException;
 

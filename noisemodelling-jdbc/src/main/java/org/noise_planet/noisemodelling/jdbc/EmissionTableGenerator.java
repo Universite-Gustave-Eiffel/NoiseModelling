@@ -47,7 +47,7 @@ public class EmissionTableGenerator {
      * Cache table fields in upper case in Map
      * @param sourceFieldsCache map
      * @param rs table to load
-     * @throws SQLException If error
+     * @throws SQLException If error occurred
      */
     public static void cacheFields(Map<String, Integer> sourceFieldsCache, ResultSet rs) throws SQLException {
         if (sourceFieldsCache.isEmpty()) {
@@ -244,11 +244,12 @@ public class EmissionTableGenerator {
 
     /**
      * Generate Train emission from train geometry tracks and train traffic
-     * @param connection
-     * @param railSectionTableName
-     * @param railTrafficTableName
-     * @param outputTable
-     * @throws SQLException
+     * @param connection Database connection
+     * @param railSectionTableName Table name of rail sections
+     * @param railTrafficTableName Table name of rail traffic
+     * @param outputTable Output table name
+     * @param frequencyPrepend Prepend to frequency columns (e.g. "HZ_")
+     * @throws SQLException If error occurred
      */
     public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
 
