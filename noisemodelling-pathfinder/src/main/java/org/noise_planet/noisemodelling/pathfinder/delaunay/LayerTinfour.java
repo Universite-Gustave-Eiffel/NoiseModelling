@@ -182,6 +182,23 @@ public class LayerTinfour implements LayerDelaunay {
     }
 
     /**
+     * Find polygon index by point
+     * @param point Point to search
+     * @return Polygon index or -1 if not found
+     */
+    public int findPolygonIndexByPoint(Point point) {
+        Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(point.getEnvelopeInternal());
+        while (polygonIntersectsTriangleList.hasNext()) {
+            Integer polygonIndex = polygonIntersectsTriangleList.next();
+            Polygon polygon = polygonMap.get(polygonIndex);
+            if(polygon.contains(point)) {
+                return polygonIndex;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Launch delaunay process
      */
     @Override
@@ -222,6 +239,11 @@ public class LayerTinfour implements LayerDelaunay {
                     if(triangle.getArea() > maxArea) {
                         // Insert steiner point in circumcircle
                         Coordinate centroid = getCentroid(triangle);
+                        // Check if this point is not inside a polygon
+                        if(findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) != -1) {
+                            // do not insert point inside polygon (no receivers into buildings)
+                            continue;
+                        }
                         meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
                         refine = true;
                     }
@@ -243,14 +265,9 @@ public class LayerTinfour implements LayerDelaunay {
             Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(vertices.get(newTriangle.getA()),
                     vertices.get(newTriangle.getB()), vertices.get(newTriangle.getC()));
             Point inCenterPoint = gf.createPoint(inCenter);
-            Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(new Envelope(inCenter));
-            while (polygonIntersectsTriangleList.hasNext()) {
-                Integer polygonIndex = polygonIntersectsTriangleList.next();
-                Polygon polygon = polygonMap.get(polygonIndex);
-                if(polygon.contains(inCenterPoint)) {
-                    newTriangle.setAttribute(polygonIndex);
-                    break;
-                }
+            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
+            if(polygonIndex != -1) {
+                newTriangle.setAttribute(polygonIndex);
             }
             triangles.add(newTriangle);
             if(computeNeighbors) {
