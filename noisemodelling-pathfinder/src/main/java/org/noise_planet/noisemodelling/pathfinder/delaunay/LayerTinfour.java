@@ -11,20 +11,29 @@
 package org.noise_planet.noisemodelling.pathfinder.delaunay;
 
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateArrays;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tinfour.common.*;
+import org.tinfour.common.IConstraint;
+import org.tinfour.common.LinearConstraint;
+import org.tinfour.common.PolygonConstraint;
+import org.tinfour.common.SimpleTriangle;
+import org.tinfour.common.Vertex;
 import org.tinfour.standard.IncrementalTin;
-import org.tinfour.utils.TriangleCollector;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class LayerTinfour implements LayerDelaunay {
@@ -122,11 +131,11 @@ public class LayerTinfour implements LayerDelaunay {
         return new Coordinate( cx, cy, cz);
     }
 
-    public void dumpData() {
+    public void dumpData(File destinationCsv) {
         GeometryFactory factory = new GeometryFactory();
         WKTWriter wktWriter = new WKTWriter(3);
         try {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(dumpFolder, "tinfour_dump.csv")))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(destinationCsv))) {
                 for(Object vObj : ptsIndex.queryAll()) {
                     if(vObj instanceof Vertex) {
                         final Vertex v = (Vertex)vObj;
@@ -187,6 +196,31 @@ public class LayerTinfour implements LayerDelaunay {
     }
 
     /**
+     * Read dump file
+     * @param dumpPath Path to dump file
+     * @throws IOException Read error
+     * @throws LayerDelaunayError Error in delaunay processing
+     * @throws ParseException Error in WKT parsing
+     */
+    public void readDump(File dumpPath) throws IOException, LayerDelaunayError, ParseException {
+        WKTReader wktReader = new WKTReader();
+        try(BufferedReader reader = new BufferedReader(new FileReader(dumpPath))) {
+            String line;
+            int index = 0;
+            while ((line = reader.readLine()) != null) {
+                Geometry obj = wktReader.read(line);
+                if(obj instanceof Point) {
+                    addVertex(obj.getCoordinate());
+                } else if(obj instanceof Polygon) {
+                    addPolygon((Polygon)obj, index++);
+                } else if (obj instanceof LineString) {
+                    addLineString((LineString)obj, index++);
+                }
+            }
+        }
+    }
+
+    /**
      * Launch delaunay process
      */
     @Override
@@ -197,7 +231,7 @@ public class LayerTinfour implements LayerDelaunay {
         IncrementalTin tin;
         boolean refine;
         // Triangulate
-        tin = new IncrementalTin();
+        tin = new IncrementalTin(epsilon);
         // Add points
         tin.add(ptsIndex.queryAll(), null);
         // Add constraints
@@ -207,7 +241,7 @@ public class LayerTinfour implements LayerDelaunay {
             // Got error
             // Dump input data
             if(!dumpFolder.isEmpty()) {
-                dumpData();
+                dumpData(new File(dumpFolder, "tinfour_dump.csv"));
             }
             throw new LayerDelaunayError(ex);
         }
