@@ -30,6 +30,7 @@ import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import static org.h2gis.utilities.dbtypes.DBUtils.getDBType;
 import static org.noise_planet.noisemodelling.emission.utils.Utils.dbaToW;
 
 
@@ -522,6 +523,25 @@ public class IsoSurface {
     }
 
     /**
+     * Retrieve all unique time periods in receivers level table
+     * @param connection SQL connection
+     * @return List of unique periods
+     * @throws SQLException Error during SQL query
+     */
+    public List<String> getUniquePeriods(Connection connection) throws SQLException {
+        List<String> fieldValues = new ArrayList<>();
+        try(Statement statement = connection.createStatement()) {
+            try (ResultSet result =
+                         statement.executeQuery(String.format("SELECT DISTINCT period FROM %s ORDER BY period", pointTable))) {
+                while (result.next()) {
+                    fieldValues.add(result.getString(1));
+                }
+            }
+        }
+        return fieldValues;
+    }
+
+    /**
      * @param connection
      * @param pkField Field name in point table to join with Triangle table and point table
      * @throws SQLException
@@ -571,7 +591,7 @@ public class IsoSurface {
             if(!aggregateByPeriod) {
                 periods.add("");
             } else {
-                periods.addAll(JDBCUtilities.getUniqueFieldValues(connection, pointTable, periodField));
+                periods.addAll(getUniquePeriods(connection));
             }
             for (String period : periods) {
                 if(aggregateByPeriod) {

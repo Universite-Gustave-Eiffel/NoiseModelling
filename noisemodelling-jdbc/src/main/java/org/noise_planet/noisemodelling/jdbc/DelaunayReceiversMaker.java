@@ -141,6 +141,10 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                     }
                     generateReceivers(connection, i, j, verticesTableName,
                             triangleTableName, pk);
+                    if(verbose) {
+                        int ij = i * gridDim + j + 1;
+                        logger.info("End processing of cell {} / {}", ij, gridDim * gridDim);
+                    }
                     progressVisitorNM.endOfProgress();
                 } catch (IOException | LayerDelaunayError ex) {
                     throw new SQLException(ex);
@@ -531,11 +535,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName,
                                   String trianglesTableName, AtomicInteger receiverPK)
             throws SQLException, LayerDelaunayError, IOException {
-
-        int ij = cellI * gridDim + cellJ + 1;
-        if(verbose) {
-            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
-        }
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders
