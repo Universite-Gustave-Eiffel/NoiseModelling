@@ -167,7 +167,7 @@ Conformity table
    * - TC27
      - □
      - □
-     - 1.76 dB @ 500 Hz
+     - 1.20 dB @ 2000 Hz
      - `TC27`_
    * - TC28
      - ☑
@@ -1278,6 +1278,24 @@ Vertical Plane
    * - Lꜰ
      - 0.18 dB
      - 125
+
+
+Reflection 
+
+================
+
+.. list-table::
+   :widths: 25 25 25
+
+   * - Parameters
+     - Maximum Difference
+     - Frequency
+   * - Lʜ
+     - 0.03 dB
+     - 125
+   * - Lꜰ
+     - 3.76 dB
+     - 2000
 
 TC28
 ^^^^
