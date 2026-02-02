@@ -19,6 +19,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -49,10 +50,16 @@ public class LayerTinfour implements LayerDelaunay {
     private boolean verbose = true;
     // Output data
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
-    private List<Triangle> triangles = new ArrayList<Triangle>();
-    private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
-    private QueryRTree polygonRtree = new QueryRTree();
-    private Map<Integer, Polygon> polygonMap = new HashMap<>();
+    private final List<Triangle> triangles = new ArrayList<Triangle>();
+    private final List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
+    /**
+     * RTree for polygon spatial index
+     */
+    private final QueryRTree polygonRtree = new QueryRTree();
+    /**
+     * Use PreparedPolygon for faster point-in-polygon tests
+     */
+    private final Map<Integer, PreparedPolygon> polygonMap = new HashMap<>();
 
     public boolean isVerbose() {
         return verbose;
@@ -189,7 +196,7 @@ public class LayerTinfour implements LayerDelaunay {
         Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(point.getEnvelopeInternal());
         while (polygonIntersectsTriangleList.hasNext()) {
             Integer polygonIndex = polygonIntersectsTriangleList.next();
-            Polygon polygon = polygonMap.get(polygonIndex);
+            PreparedPolygon polygon = polygonMap.get(polygonIndex);
             if(polygon.contains(point)) {
                 return polygonIndex;
             }
@@ -346,7 +353,7 @@ public class LayerTinfour implements LayerDelaunay {
             if(polygonConstraint.isValid()) {
                 constraints.add(polygonConstraint);
                 polygonRtree.appendGeometry(newPoly, buildingId);
-                polygonMap.put(buildingId, newPoly);
+                polygonMap.put(buildingId, new PreparedPolygon(newPoly));
                 // Append holes
                 final int holeCount = newPoly.getNumInteriorRing();
                 for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
