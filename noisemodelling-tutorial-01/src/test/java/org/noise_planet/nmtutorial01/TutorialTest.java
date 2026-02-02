@@ -34,6 +34,7 @@ public class TutorialTest {
         p.setProperty("user", "noisemodelling");
         p.setProperty("password", "noisemodelling");
         try(Connection connection = JDBCUtilities.wrapConnection(dataSourceFactory.createDataSource(p).getConnection())) {
+            LOGGER.info("Running PostGIS noise modelling tutorial test");
             connection.createStatement().execute("DROP TABLE IF EXISTS receivers_level");
             connection.createStatement().execute("DROP TABLE IF EXISTS contouring_noise_map");
             NoiseMapByReceiverMaker map = Main.mainWithConnection(connection, "target/postgis");

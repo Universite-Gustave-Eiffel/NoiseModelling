@@ -35,6 +35,8 @@ import org.tinfour.standard.IncrementalTin;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
@@ -250,24 +252,17 @@ public class LayerTinfour implements LayerDelaunay {
 
             // Will triangulate multiple time if refinement is necessary
             if(maxArea > 0) {
-                ArrayList<Vertex> newSteinerPoints = new ArrayList<>();
-                for (SimpleTriangle triangle : tin.triangles()) {
-                    if(triangle.getArea() > maxArea) {
-                        // Insert steiner point in circumcircle
-                        Coordinate centroid = getCentroid(triangle);
-                        // Check if this point is not inside a polygon
-                        if(findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) != -1) {
-                            // do not insert point inside polygon (no receivers into buildings)
-                            continue;
-                        }
-                        newSteinerPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
-                        refine = true;
-                    }
-                }
-                if(!newSteinerPoints.isEmpty()) {
+                ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
+                        .filter(triangle -> triangle.getArea() > maxArea)
+                        .map(LayerTinfour::getCentroid)
+                        .filter(centroid -> findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) == -1)
+                        .map(c -> new Vertex(c.x, c.y, c.z))
+                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+                if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
-                    if(verbose) {
-                        LOGGER.info("Refining delauney with {} points", newSteinerPoints.size());
+                    refine = true;
+                    if (verbose) {
+                        LOGGER.info("Refining Delaunay with {} points", newSteinerPoints.size());
                     }
                 }
             }
@@ -280,17 +275,8 @@ public class LayerTinfour implements LayerDelaunay {
             vertices.add(toCoordinate(v));
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
-        GeometryFactory gf = new GeometryFactory();
         for(SimpleTriangle t : tin.triangles()) {
             Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
-            // Look for associated polygon area
-            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(vertices.get(newTriangle.getA()),
-                    vertices.get(newTriangle.getB()), vertices.get(newTriangle.getC()));
-            Point inCenterPoint = gf.createPoint(inCenter);
-            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
-            if(polygonIndex != -1) {
-                newTriangle.setAttribute(polygonIndex);
-            }
             triangles.add(newTriangle);
             if(computeNeighbors) {
                 edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
@@ -308,6 +294,33 @@ public class LayerTinfour implements LayerDelaunay {
                         neighC != null ? neighC : -1));
             }
         }
+        // Update triangle polygon association
+        GeometryFactory gf = new GeometryFactory();
+        IntStream.range(0, triangles.size()).parallel().forEach(i -> {
+            Triangle triangle = triangles.get(i);
+            // Look for associated polygon area
+            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(
+                    vertices.get(triangle.getA()),
+                    vertices.get(triangle.getB()),
+                    vertices.get(triangle.getC()));
+            Point inCenterPoint = gf.createPoint(inCenter);
+            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
+            if (polygonIndex != -1) {
+                triangle.setAttribute(polygonIndex);
+            }
+        });
+
+    }
+
+    private static void addEdgeToMap(Map<String, Integer> edgeMap, int v1, int v2, int triangleIndex) {
+        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
+        edgeMap.put(key, triangleIndex);
+    }
+
+    private static int findNeighbor(Map<String, Integer> edgeMap, int v1, int v2, int currentTriangleIndex) {
+        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
+        Integer neighbor = edgeMap.get(key);
+        return neighbor != null && neighbor != currentTriangleIndex ? neighbor : -1;
     }
 
     /**
