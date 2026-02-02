@@ -61,22 +61,6 @@ public class CutProfile {
         cutPoints.add(receiver);
     }
 
-//    public CutProfile withoutBuildingsIntersections() {
-//        CutProfile cutProfile = new CutProfile();
-//        cutProfile.cutPoints = new ArrayList<>(this.cutPoints.size());
-//        cutProfile.hasBuildingIntersection = this.hasBuildingIntersection;
-//        cutProfile.hasTopographyIntersection = this.hasTopographyIntersection;
-//        cutProfile.profileType = this.profileType;
-//        cutProfile.curvedPath = this.curvedPath;
-//        for (int i = 0; i < cutPoints.size(); i++) {
-//            CutPoint cutPoint = cutPoints.get(i);
-//            if(!(cutPoint instanceof CutPointWall)) {
-//                cutProfile.cutPoints.add(cutPoint);
-//            }
-//        }
-//        return cutProfile;
-//    }
-
     /**
      * @return Cut Profile type
      */
