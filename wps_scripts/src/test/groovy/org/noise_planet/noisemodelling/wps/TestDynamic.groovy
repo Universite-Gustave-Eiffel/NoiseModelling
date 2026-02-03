@@ -28,13 +28,13 @@ class TestDynamic extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/buildings_nm_ready_pop_heights.shp").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Road/buildings_nm_ready_pop_heights.shp").getPath() ,
                 "inputSRID": "32635",
                 "tableName": "buildings"])
 
         // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("Dynamic/receivers_python_method0_50m_pop.shp").getPath() ,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/Road/receivers_python_method0_50m_pop.shp").getPath() ,
                 "inputSRID": "32635",
                 "tableName": "receivers"])
 
@@ -46,7 +46,7 @@ class TestDynamic extends JdbcTestCase {
 
         // Import the road network
         new Import_File().exec(connection,
-                ["pathFile" :TestDatabaseManager.getResource("Dynamic/network_tartu_32635_.geojson").getPath() ,
+                ["pathFile" :TestDatabaseManager.getResource("Dynamic/Road/network_tartu_32635_.geojson").getPath() ,
                 "inputSRID": "32635",
                 "tableName": "network_tartu"])
 
@@ -57,7 +57,7 @@ class TestDynamic extends JdbcTestCase {
 
         // Import the vehicles trajectories
         new Import_File().exec(connection,
-                ["pathFile" : TestDatabaseManager.getResource("Dynamic/SUMO.geojson").getPath() ,
+                ["pathFile" : TestDatabaseManager.getResource("Dynamic/Road/SUMO.geojson").getPath() ,
                 "inputSRID": "32635",
                 "tableName": "vehicle"])
 
@@ -361,13 +361,13 @@ class TestDynamic extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Z_EXPORT_TEST_BUILDINGS.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Road/Z_EXPORT_TEST_BUILDINGS.geojson").getPath() ,
                 "inputSRID": "2154",
                 "tableName": "buildings"])
 
         // Import the road network
         new Import_File().exec(connection,
-                ["pathFile" :TestDatabaseManager.getResource("Dynamic/Z_EXPORT_TEST_TRAFFIC.geojson").getPath() ,
+                ["pathFile" :TestDatabaseManager.getResource("Dynamic/Road/Z_EXPORT_TEST_TRAFFIC.geojson").getPath() ,
                 "inputSRID": "2154",
                 "tableName": "ROADS"])
 

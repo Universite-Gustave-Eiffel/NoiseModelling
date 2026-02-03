@@ -24,10 +24,10 @@ class TestDynamicRail extends JdbcTestCase {
      */
     void testDynamicTrainGeneration() {
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_GEOM.geojson").getPath()])
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainTrafficSource/RAILS_GEOM.geojson").getPath()])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainTrafficSource/RAILS_TRAFFIC.csv").getPath()])
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainTrafficSource/RAILS_TRAFFIC.csv").getPath()])
 
         def columns  = JDBCUtilities.getColumnNames(connection, "RAILS_TRAFFIC")
 
@@ -63,24 +63,21 @@ class TestDynamicRail extends JdbcTestCase {
     }
     void testFusionGeojson() {
         new RailWayNetworkFusion().exec(connection, [
-                file1Path: "Dynamic/TrainExport/test_Fret_200.geojson",
-                file2Path: "Dynamic/TrainExport/test_TGVSE10U2_300.geojson",
-                nameFile: "Dynamic/TrainExport/test_TrainTraffic_Fusion"
+                file1Path: "Dynamic/Rail/TrainExport/test_Fret_200.geojson",
+                file2Path: "Dynamic/Rail/TrainExport/test_TGVSE10U2_300.geojson",
+                nameFile: "Dynamic/Rail/TrainExport/test_TrainTraffic_Fusion"
         ])
     }
-
-
-
 
     /**
      * Test the generation of multiple wagons sources from engine train position
      */
     void testDynamicTrainSourcesPlacement() {
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/R4E/vehicleR4E.geojson").getPath()])
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/pointTrainDynamic.geojson").getPath()])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/R4E/railTrackR4E.geojson").getPath()])
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/train_network_32635.geojson").getPath()])
 
 
         new TrainSourcesFromPosition().exec(connection, [
@@ -107,22 +104,22 @@ class TestDynamicRail extends JdbcTestCase {
     void testDynamicIndividualTrainCas1() {
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/TrainDynamicTest/testBati.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Rail/TrainDynamicTest/testBati.geojson").getPath() ,
                      "inputSRID": "32635",
                  "tableName": "buildings"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/receiverTest.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/receiverTest.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "RECEIVERS"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/vehicle/vehicleCasTest1.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/vehicle/vehicleCasTest1.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "vehicle"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/rail_track/railTrackCasTest1.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/rail_track/railTrackCasTest1.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "rail_track"])
 
@@ -160,22 +157,22 @@ class TestDynamicRail extends JdbcTestCase {
     void testDynamicIndividualTrainCas2() {
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/TrainDynamicTest/testBati.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Rail/TrainDynamicTest/testBati.geojson").getPath() ,
                  "inputSRID": "32635",
                  "tableName": "buildings"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/receiverTest.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/receiverTest.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "RECEIVERS"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/vehicle/vehicleCasTest2.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/vehicle/vehicleCasTest2.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "vehicle"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/rail_track/railTrackCasTest2.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/rail_track/railTrackCasTest2.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "rail_track"])
 
@@ -365,23 +362,23 @@ class TestDynamicRail extends JdbcTestCase {
         def orientation = ["EO", "OE"]
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/R4E/R4E_receivers.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/R4E/R4E_receivers.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "RECEIVERS"])
 
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/R4E/R4E_buildings.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Rail/R4E/R4E_buildings.geojson").getPath() ,
                  "inputSRID": "32635",
                  "tableName": "buildings"])
 
         orientation.each { direction ->
-            def railfile = "Dynamic/R4E/R4E_rail_${direction}.geojson"
+            def railfile = "Dynamic/Rail/R4E/R4E_rail_${direction}.geojson"
             vehUse.each { veh ->
                 speedUse.each { speed ->
                     def vehfile = "Dynamic/R4E/veh/${veh}_${direction}_${speed}.geojson"
-                    def exportSourceGeom = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/R4E/Resultats/Sources/SOURCES_GEOM_R4E_${veh}_${direction}_${speed}.csv"
-                    def exportSourceEmission = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/R4E/Resultats/Sources/SOURCES_EMISSION_R4E_${veh}_${direction}_${speed}.csv"
-                    def exportReceiversLevel = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/R4E/Resultats/Receivers/receiversResultsR4E_${veh}_${direction}_${speed}.csv"
+                    def exportSourceGeom = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/Rail/R4E/Resultats/Sources/SOURCES_GEOM_R4E_${veh}_${direction}_${speed}.csv"
+                    def exportSourceEmission = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/Rail/R4E/Resultats/Sources/SOURCES_EMISSION_R4E_${veh}_${direction}_${speed}.csv"
+                    def exportReceiversLevel = "src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/Rail/R4E/Resultats/Receivers/receiversResultsR4E_${veh}_${direction}_${speed}.csv"
                     new Import_File().exec(connection, [
                             pathFile: TestDynamic.getResource(vehfile).getPath(),
                             "inputSRID": "32635",
@@ -436,24 +433,24 @@ class TestDynamicRail extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/TrainDynamicTest/testBati.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Rail/TrainDynamicTest/testBati.geojson").getPath() ,
                  "inputSRID": "32635",
                  "tableName": "buildings"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/receiverTest.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/receiverTest.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "RECEIVERS"])
 
         new Import_File().exec(connection, [
 //                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/PointFastTrain.geojson").getPath(),
 //                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/SimplePointFastTrain.geojson").getPath(),
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/test_TrainTraffic_Fusion.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/test_TrainTraffic_Fusion.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "vehicle"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/test_RailwayNetwork_Fusion.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/test_RailwayNetwork_Fusion.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "rail_track"])
 
@@ -493,23 +490,23 @@ class TestDynamicRail extends JdbcTestCase {
 
         // Import Buildings for your study area
         new Import_File().exec(connection,
-                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/TrainDynamicTest/testBati.geojson").getPath() ,
+                ["pathFile" :  TestDatabaseManager.getResource("Dynamic/Rail/TrainDynamicTest/testBati.geojson").getPath() ,
                  "inputSRID": "32635",
                  "tableName": "buildings"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainDynamicTest/receiverTest.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainDynamicTest/receiverTest.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "RECEIVERS"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/test_TrainTraffic_Fusion.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/test_TrainTraffic_Fusion.geojson").getPath(),
 //                pathFile: TestDynamic.getResource("Dynamic/TrainExport/test_FRET_200.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "vehicle"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainExport/test_RailwayNetwork_Fusion.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainExport/test_RailwayNetwork_Fusion.geojson").getPath(),
                 "inputSRID": "32635",
                 "tableName": "rail_track"])
 
@@ -554,11 +551,11 @@ class TestDynamicRail extends JdbcTestCase {
                  "tableName": "buildings"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/pointTrainDynamic.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainSourceDistribution/pointTrainDynamic.geojson").getPath(),
                 "tableName": "vehicle"])
 
         new Import_File().exec(connection, [
-                pathFile: TestDynamic.getResource("Dynamic/TrainSourceDistribution/train_network_32635.geojson").getPath(),
+                pathFile: TestDynamic.getResource("Dynamic/Rail/TrainSourceDistribution/train_network_32635.geojson").getPath(),
                 "tableName": "rail_track"])
 
 
