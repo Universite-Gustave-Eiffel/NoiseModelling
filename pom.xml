@@ -223,22 +223,28 @@
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>h2gis</artifactId>
-                <version>2.2.3</version>
+                <version>[2.2.5, 3)</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.tinfour</groupId>
+                        <artifactId>TinfourCore</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>h2gis-api</artifactId>
-                <version>2.2.3</version>
+                <version>[2.2.5, 3)</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>postgis-jts-osgi</artifactId>
-                <version>2.2.3</version>
+                <version>[2.2.5, 3)</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
                 <artifactId>h2gis-utilities</artifactId>
-                <version>2.2.3</version>
+                <version>[2.2.5, 3)</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -283,7 +289,7 @@
             <dependency>
                 <groupId>org.tinfour</groupId>
                 <artifactId>TinfourCore</artifactId>
-                <version>2.1.7</version>
+                <version>2.1.9</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

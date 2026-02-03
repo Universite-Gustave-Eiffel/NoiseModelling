@@ -79,7 +79,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * Initializes the NoiseMap parameters and attenuation data based on the input mode specified in the NoiseMap parameters.
      * @param connection   the database connection to be used for initialization.
      * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs during initialization.
      */
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
@@ -335,7 +335,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param tableName Table name
      * @param defaultInterpolation Interpolation if applicable
      * @param frequencyFieldPrepend Frequency field name ex. HZ for HZ1000
-     * @return
+     * @return Map of directivity spheres
      */
     public static Map<Integer, DirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation, String frequencyFieldPrepend) throws SQLException {
         Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();

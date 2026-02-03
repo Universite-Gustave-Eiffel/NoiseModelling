@@ -170,7 +170,7 @@ def exec(Connection connection, input) {
         
         -- Alter that small area buildings by removing shared area
         DROP TABLE IF EXISTS tmp_buildings_truncated;
-        CREATE TABLE tmp_buildings_truncated AS SELECT PK_BUILDING, ST_DIFFERENCE(s1.the_geom, ST_BUFFER(ST_Collect(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
+        CREATE TABLE tmp_buildings_truncated AS SELECT PK_BUILDING, ST_DIFFERENCE(s1.the_geom, ST_BUFFER(ST_ACCUM(s2.the_geom), 0.1, 'join=mitre')) the_geom, s1.HEIGHT HEIGHT from tmp_relation_buildings_buildings r, MAP_BUILDINGS_GEOM s1, MAP_BUILDINGS_GEOM s2 WHERE PK_BUILDING = S1.ID_WAY AND PK2_BUILDING = S2.ID_WAY  GROUP BY PK_BUILDING;
         
         -- Merge original buildings with altered buildings 
         DROP TABLE IF EXISTS BUILDINGS;

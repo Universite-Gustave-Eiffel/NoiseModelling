@@ -11,38 +11,63 @@
 package org.noise_planet.noisemodelling.pathfinder.delaunay;
 
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateArrays;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tinfour.common.*;
+import org.tinfour.common.IConstraint;
+import org.tinfour.common.LinearConstraint;
+import org.tinfour.common.PolygonConstraint;
+import org.tinfour.common.SimpleTriangle;
+import org.tinfour.common.Vertex;
 import org.tinfour.standard.IncrementalTin;
-import org.tinfour.utils.TriangleCollector;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
     public String dumpFolder = "";
-
     List<IConstraint> constraints = new ArrayList<>();
-    List<Integer> constraintIndex = new ArrayList<>();
-
     Quadtree ptsIndex = new Quadtree();
     private boolean computeNeighbors = false;
     private double maxArea = 0;
-
+    private boolean verbose = true;
     // Output data
     private List<Coordinate> vertices = new ArrayList<Coordinate>();
-    private List<Triangle> triangles = new ArrayList<Triangle>();
-    private List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
+    private final List<Triangle> triangles = new ArrayList<Triangle>();
+    private final List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
+    /**
+     * RTree for polygon spatial index
+     */
+    private final QueryRTree polygonRtree = new QueryRTree();
+    /**
+     * Use PreparedPolygon for faster point-in-polygon tests
+     */
+    private final Map<Integer, PreparedPolygon> polygonMap = new HashMap<>();
 
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
 
     /**
      *
@@ -70,18 +95,6 @@ public class LayerTinfour implements LayerDelaunay {
         return found;
     }
 
-
-    /**
-     *
-     * @param incrementalTin
-     * @return
-     */
-    private List<SimpleTriangle> computeTriangles(IncrementalTin incrementalTin) {
-        ArrayList<SimpleTriangle> triangles = new ArrayList<>(incrementalTin.countTriangles().getCount());
-        Triangle.TriangleBuilder triangleBuilder = new Triangle.TriangleBuilder(triangles);
-        TriangleCollector.visitSimpleTriangles(incrementalTin, triangleBuilder);
-        return triangles;
-    }
 
     /**
      * @return When an exception occur, this folder with receiver the input data
@@ -127,11 +140,11 @@ public class LayerTinfour implements LayerDelaunay {
         return new Coordinate( cx, cy, cz);
     }
 
-    public void dumpData() {
+    public void dumpData(File destinationCsv) {
         GeometryFactory factory = new GeometryFactory();
         WKTWriter wktWriter = new WKTWriter(3);
         try {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(dumpFolder, "tinfour_dump.csv")))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(destinationCsv))) {
                 for(Object vObj : ptsIndex.queryAll()) {
                     if(vObj instanceof Vertex) {
                         final Vertex v = (Vertex)vObj;
@@ -175,6 +188,48 @@ public class LayerTinfour implements LayerDelaunay {
     }
 
     /**
+     * Find polygon index by point
+     * @param point Point to search
+     * @return Polygon index or -1 if not found
+     */
+    public int findPolygonIndexByPoint(Point point) {
+        Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(point.getEnvelopeInternal());
+        while (polygonIntersectsTriangleList.hasNext()) {
+            Integer polygonIndex = polygonIntersectsTriangleList.next();
+            PreparedPolygon polygon = polygonMap.get(polygonIndex);
+            if(polygon.contains(point)) {
+                return polygonIndex;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Read dump file
+     * @param dumpPath Path to dump file
+     * @throws IOException Read error
+     * @throws LayerDelaunayError Error in delaunay processing
+     * @throws ParseException Error in WKT parsing
+     */
+    public void readDump(File dumpPath) throws IOException, LayerDelaunayError, ParseException {
+        WKTReader wktReader = new WKTReader();
+        try(BufferedReader reader = new BufferedReader(new FileReader(dumpPath))) {
+            String line;
+            int index = 0;
+            while ((line = reader.readLine()) != null) {
+                Geometry obj = wktReader.read(line);
+                if(obj instanceof Point) {
+                    addVertex(obj.getCoordinate());
+                } else if(obj instanceof Polygon) {
+                    addPolygon((Polygon)obj, index++);
+                } else if (obj instanceof LineString) {
+                    addLineString((LineString)obj, index++);
+                }
+            }
+        }
+    }
+
+    /**
      * Launch delaunay process
      */
     @Override
@@ -182,38 +237,39 @@ public class LayerTinfour implements LayerDelaunay {
         triangles.clear();
         vertices.clear();
 
-        List<Vertex> meshPoints = ptsIndex.queryAll();
-
         IncrementalTin tin;
         boolean refine;
-        List<SimpleTriangle> simpleTriangles = new ArrayList<>();
-        do {
-            // Triangulate
-            tin = new IncrementalTin();
-            // Add points
-            tin.add(meshPoints, null);
-            // Add constraints
-            try {
-                tin.addConstraints(constraints, false);
-            }catch (IllegalStateException ex) {
-                // Got error
-                // Dump input data
-                if(!dumpFolder.isEmpty()) {
-                    dumpData();
-                }
-                throw new LayerDelaunayError(ex);
+        // Triangulate
+        tin = new IncrementalTin(epsilon);
+        // Add points
+        tin.add(ptsIndex.queryAll(), null);
+        // Add constraints
+        try {
+            tin.addConstraints(constraints, false);
+        }catch (IllegalStateException ex) {
+            // Got error
+            // Dump input data
+            if(!dumpFolder.isEmpty()) {
+                dumpData(new File(dumpFolder, "tinfour_dump.csv"));
             }
+            throw new LayerDelaunayError(ex);
+        }
+        do {
             refine = false;
 
-            simpleTriangles = computeTriangles(tin);
             // Will triangulate multiple time if refinement is necessary
             if(maxArea > 0) {
-                for (SimpleTriangle triangle : simpleTriangles) {
-                    if(triangle.getArea() > maxArea) {
-                        // Insert steiner point in circumcircle
-                        Coordinate centroid = getCentroid(triangle);
-                        meshPoints.add(new Vertex(centroid.x, centroid.y, centroid.z));
-                        refine = true;
+                ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
+                        .filter(triangle -> triangle.getArea() > maxArea)
+                        .map(LayerTinfour::getCentroid)
+                        .filter(centroid -> findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) == -1)
+                        .map(c -> new Vertex(c.x, c.y, c.z))
+                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+                if (!newSteinerPoints.isEmpty()) {
+                    tin.add(newSteinerPoints, null);
+                    refine = true;
+                    if (verbose) {
+                        LOGGER.info("Refining Delaunay with {} points", newSteinerPoints.size());
                     }
                 }
             }
@@ -226,20 +282,17 @@ public class LayerTinfour implements LayerDelaunay {
             vertices.add(toCoordinate(v));
         }
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
-        for(SimpleTriangle t : simpleTriangles) {
-            int triangleAttribute = 0;
-            if(t.getContainingRegion() != null) {
-                if(t.getContainingRegion().getConstraintIndex() < constraintIndex.size()) {
-                    triangleAttribute = constraintIndex.get(t.getContainingRegion().getConstraintIndex());
-                }
+        for(SimpleTriangle t : tin.triangles()) {
+            Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
+            triangles.add(newTriangle);
+            if(computeNeighbors) {
+                edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
+                edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
+                edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
             }
-            triangles.add(new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()),vertIndex.get(t.getVertexC()), triangleAttribute));
-            edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
-            edgeIndexToTriangleIndex.put(t.getEdgeB().getIndex(), triangles.size() - 1);
-            edgeIndexToTriangleIndex.put(t.getEdgeC().getIndex(), triangles.size() - 1);
         }
         if(computeNeighbors) {
-            for(SimpleTriangle t : simpleTriangles) {
+            for(SimpleTriangle t : tin.triangles()) {
                 Integer neighA = edgeIndexToTriangleIndex.get(t.getEdgeA().getDual().getIndex());
                 Integer neighB = edgeIndexToTriangleIndex.get(t.getEdgeB().getDual().getIndex());
                 Integer neighC = edgeIndexToTriangleIndex.get(t.getEdgeC().getDual().getIndex());
@@ -248,6 +301,33 @@ public class LayerTinfour implements LayerDelaunay {
                         neighC != null ? neighC : -1));
             }
         }
+        // Update triangle polygon association
+        GeometryFactory gf = new GeometryFactory();
+        IntStream.range(0, triangles.size()).parallel().forEach(i -> {
+            Triangle triangle = triangles.get(i);
+            // Look for associated polygon area
+            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(
+                    vertices.get(triangle.getA()),
+                    vertices.get(triangle.getB()),
+                    vertices.get(triangle.getC()));
+            Point inCenterPoint = gf.createPoint(inCenter);
+            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
+            if (polygonIndex != -1) {
+                triangle.setAttribute(polygonIndex);
+            }
+        });
+
+    }
+
+    private static void addEdgeToMap(Map<String, Integer> edgeMap, int v1, int v2, int triangleIndex) {
+        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
+        edgeMap.put(key, triangleIndex);
+    }
+
+    private static int findNeighbor(Map<String, Integer> edgeMap, int v1, int v2, int currentTriangleIndex) {
+        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
+        Integer neighbor = edgeMap.get(key);
+        return neighbor != null && neighbor != currentTriangleIndex ? neighbor : -1;
     }
 
     /**
@@ -272,27 +352,27 @@ public class LayerTinfour implements LayerDelaunay {
             polygonConstraint.complete();
             if(polygonConstraint.isValid()) {
                 constraints.add(polygonConstraint);
-                constraintIndex.add(buildingId);
-            }
-        }
-        // Append holes
-        final int holeCount = newPoly.getNumInteriorRing();
-        for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
-            LineString holeLine = newPoly.getInteriorRingN(holeIndex);
-            final Coordinate[] hCoordinates = holeLine.getCoordinates();
-            // Holes must be CW
-            if(Orientation.isCCW(hCoordinates)) {
-                CoordinateArrays.reverse(hCoordinates);
-            }
-            List<Vertex> vertexList = new ArrayList<>(hCoordinates.length);
-            for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
-                vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
-            }
-            PolygonConstraint polygonConstraint = new PolygonConstraint(vertexList);
-            polygonConstraint.complete();
-            if(polygonConstraint.isValid()) {
-                constraints.add(polygonConstraint);
-                constraintIndex.add(buildingId);
+                polygonRtree.appendGeometry(newPoly, buildingId);
+                polygonMap.put(buildingId, new PreparedPolygon(newPoly));
+                // Append holes
+                final int holeCount = newPoly.getNumInteriorRing();
+                for (int holeIndex = 0; holeIndex < holeCount; holeIndex++) {
+                    LineString holeLine = newPoly.getInteriorRingN(holeIndex);
+                    final Coordinate[] hCoordinates = holeLine.getCoordinates();
+                    // Holes must be CW
+                    if(Orientation.isCCW(hCoordinates)) {
+                        CoordinateArrays.reverse(hCoordinates);
+                    }
+                    vertexList = new ArrayList<>(hCoordinates.length);
+                    for(int vId = 0; vId < hCoordinates.length - 1 ; vId++) {
+                        vertexList.add(addCoordinate(hCoordinates[vId], buildingId));
+                    }
+                    polygonConstraint = new PolygonConstraint(vertexList);
+                    polygonConstraint.complete();
+                    if(polygonConstraint.isValid()) {
+                        constraints.add(polygonConstraint);
+                    }
+                }
             }
         }
     }
@@ -356,7 +436,6 @@ public class LayerTinfour implements LayerDelaunay {
         linearConstraint.complete();
         if(linearConstraint.isValid()) {
             constraints.add(linearConstraint);
-            constraintIndex.add(buildingID);
         }
     }
     //add buildingID to edge property and to points property

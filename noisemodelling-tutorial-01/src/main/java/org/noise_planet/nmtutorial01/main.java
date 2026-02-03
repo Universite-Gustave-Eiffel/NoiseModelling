@@ -83,7 +83,8 @@ class Main {
         sql.execute("DROP TABLE IF EXISTS RECEIVERS;");
         sql.execute("DROP TABLE IF EXISTS TRIANGLES;");
 
-        noiseMap.run(connection, "RECEIVERS", "TRIANGLES");
+        RootProgressVisitor progressLogger = new RootProgressVisitor(2, true, 1);
+        noiseMap.run(connection, "RECEIVERS", "TRIANGLES", progressLogger.subProcess(1));
 
         // Import MNT
 
@@ -110,7 +111,6 @@ class Main {
         // Point cloud height above sea level POINT(X Y Z)
         noiseMapByReceiverMaker.setDemTable(tableDemLorient.toString());
 
-        RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1);
 
         String atmosphericSettingsTableName = "ATMOSPHERIC_SETTINGS";
 
@@ -127,7 +127,7 @@ class Main {
         noiseMapByReceiverMaker.setGridDim(1);
         noiseMapByReceiverMaker.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(atmosphericSettingsTableName);
 
-        noiseMapByReceiverMaker.run(connection, progressLogger);
+        noiseMapByReceiverMaker.run(connection, progressLogger.subProcess(1));
 
         logger.info("Create iso contours");
         int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("LW_ROADS", DBTypes.H2GIS));

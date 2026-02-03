@@ -65,7 +65,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : String.class
         ],
-
         tableBuilding      : [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
@@ -97,16 +96,24 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
+        skipCellNoSourcesMinimalDistance        : [
+                name       : 'Skip cell no sources minimal distance',
+                title      : 'Skip cell no sources minimal distance',
+                description: 'If provided, a sub-domain will not be computed if no sources geometries are near x meters from the sub-domain area',
+                min        : 0, max: 1,
+                type       : Double.class
+        ],
         roadWidth          : [
                 name       : 'Road width',
                 title      : 'Road width',
                 description: 'Set Road Width (in meters) (FLOAT).</br> </br>' +
-                             'No receivers closer than road width distance will be created.</br> </br>' +
+                             'No receivers closer than road width distance will be created.</br>' +
+                        ' </br> You can set 0m if you don\'t want to insert roads in the output but still want' +
+                        ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter' +
                              '&#128736; Default value: <b>2 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-
         buildingBuffer      : [
                 name       : 'Building buffer',
                 title      : 'Minimum distance to buildings (m)',
@@ -115,7 +122,6 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Double.class
         ],
-
         maxArea            : [
                 name       : 'Maximum Area',
                 title      : 'Maximum Area',
@@ -159,7 +165,15 @@ inputs = [
                         '&#128736; Default value: <b>0 </b>',
                 min        : 0, max: 1,
                 type       : Double.class
-        ]
+        ],
+        exportTrianglesGeometries: [
+                name        : 'In the triangles table, export triangles geometries',
+                title       : 'In the triangles table, export triangles geometries',
+                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle. </br></br>' +
+                              '&#128736; Default value: <b>false </b>',
+                min         : 0, max: 1,
+                type        : Boolean.class
+        ],
 ]
 
 outputs = [
@@ -205,12 +219,7 @@ def ensureSpatialIndex(Connection connection, String table) {
     }
 }
 
-def exec(Connection connection, input) {
-
-    DBTypes dbType = DBUtils.getDBType(connection)
-
-    // output string, the information given back to the user
-    String resultString = null
+def exec(Connection connection, Map input) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -273,6 +282,20 @@ def exec(Connection connection, input) {
         maxArea = input['maxArea'] as Double
     }
 
+    boolean exportTriangles = false
+    if(input.containsKey('exportTrianglesGeometries')) {
+        exportTriangles = input['exportTrianglesGeometries'] as Boolean
+    }
+
+    boolean skipCellNoSources = false
+    Double skipCellNoSourcesMinimalDistance = 0.0
+    if (input.containsKey('skipCellNoSourcesMinimalDistance')) {
+        skipCellNoSourcesMinimalDistance = input['skipCellNoSourcesMinimalDistance'] as Double
+        if(skipCellNoSourcesMinimalDistance > 0) {
+            skipCellNoSources = true
+        }
+    }
+
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (srid == 0) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
@@ -313,6 +336,12 @@ def exec(Connection connection, input) {
     // Generate receivers grid for noise map rendering
     DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker(building_table_name, sources_table_name)
 
+    if(skipCellNoSources) {
+        delaunayReceiversMaker.setMinimalSourceGeometriesDistanceToComputeCell(skipCellNoSourcesMinimalDistance)
+    }
+
+    delaunayReceiversMaker.setExportTrianglesGeometries(exportTriangles)
+
     if (fence != null) {
         // If the fence must be reprojected into the input srid
         if (srid != 0 && fence.getSRID() != srid) {
@@ -341,14 +370,16 @@ def exec(Connection connection, input) {
     // Allow isosurfaces to be present over buildings if requested.
     delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
-    logger.info("Delaunay initialize")
-    delaunayReceiversMaker.initialize(connection, new EmptyProgressVisitor())
-
     // Apply negative envelope parameter
     if (input.containsKey('fenceNegativeBuffer')) {
         double negativeBuffer = input['fenceNegativeBuffer'] as Double
         if(negativeBuffer > 0) {
-            Envelope envelope = delaunayReceiversMaker.getMainEnvelope()
+            Envelope envelope;
+            if(fence != null) {
+                envelope = fence.getEnvelopeInternal()
+            } else {
+                envelope = delaunayReceiversMaker.getComputationEnvelope(connection);
+            }
             envelope.expandBy(-negativeBuffer)
             delaunayReceiversMaker.setMainEnvelope(envelope)
         }
@@ -360,32 +391,34 @@ def exec(Connection connection, input) {
         delaunayReceiversMaker.setExceptionDumpFolder(input['errorDumpFolder'] as String)
     }
 
-    AtomicInteger pk = new AtomicInteger(0)
-    ProgressVisitor progressVisitorNM = progressLogger.subProcess(delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
-
+    long startTime = System.currentTimeMillis()
     try {
-        for (int i = 0; i < delaunayReceiversMaker.getGridDim(); i++) {
-            for (int j = 0; j < delaunayReceiversMaker.getGridDim(); j++) {
-                logger.info("Compute cell " + (i * delaunayReceiversMaker.getGridDim() + j + 1) + " of " + delaunayReceiversMaker.getGridDim() * delaunayReceiversMaker.getGridDim())
-                delaunayReceiversMaker.generateReceivers(connection, i, j, receivers_table_name, "TRIANGLES", pk)
-                progressVisitorNM.endStep()
-            }
-        }
+        delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
                 "input geometries for debugging purpose")
         throw ex
     }
 
+    logger.info("Generating spatial index on " + receivers_table_name)
     // Ensure spatial indexes on output tables (if missing)
     ensureSpatialIndex(connection, receivers_table_name)
-    ensureSpatialIndex(connection, 'TRIANGLES')
+
+    if(exportTriangles) {
+        logger.info("Generating spatial index on TRIANGLES")
+        ensureSpatialIndex(connection, 'TRIANGLES')
+    }
 
 
-    int nbReceivers = sql.firstRow("SELECT COUNT(*) FROM " + receivers_table_name)[0] as Integer
+    long processTime = System.currentTimeMillis() - startTime
+    logger.info("Delaunay grid computed in " + (processTime / 1000) + " seconds.")
+
+    long nbReceivers = delaunayReceiversMaker.getReceiversCount()
 
     // Process Done
-    resultString = "Process done. " + receivers_table_name + " (" + nbReceivers + " receivers) and TRIANGLES tables created."
+    resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
+            (exportTriangles ? " and triangles in table TRIANGLES" : "" )+ "."
+    resultString += " Process time: " + (processTime / 1000) + " seconds."
 
     // print to command window
     logger.info('Result : ' + resultString)

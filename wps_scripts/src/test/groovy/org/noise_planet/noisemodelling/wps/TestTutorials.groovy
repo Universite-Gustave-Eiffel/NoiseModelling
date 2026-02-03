@@ -214,7 +214,6 @@ class TestTutorials extends JdbcTestCase {
 
 
         new Export_Table().exec(connection, [exportPath:"build/tmp/receivers.shp", tableToExport: "RECEIVERS"])
-        new Export_Table().exec(connection, [exportPath:"build/tmp/TRIANGLES.shp", tableToExport: "TRIANGLES"])
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
