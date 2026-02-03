@@ -251,7 +251,7 @@ def exec(Connection connection, Map input) {
 
     def geojsonString = JsonOutput.prettyPrint(JsonOutput.toJson(geojson))
     def pathUse = new File("").absolutePath
-    def folderUse = "/src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/TrainExport/"
+    def folderUse = "/src/test/resources/org/noise_planet/noisemodelling/wps/Dynamic/Rail/TrainExport/"
     def file = new File(pathUse+folderUse+nameFile)
 
     file.write(geojsonString)
