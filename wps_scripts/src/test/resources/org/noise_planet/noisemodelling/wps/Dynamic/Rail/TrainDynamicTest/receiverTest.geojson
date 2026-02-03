@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"name": "receiverTest",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32635" } },
+"features": [
+{ "type": "Feature", "properties": { "pk": 1, "id": 1, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 500.0, 7.5, 1.5 ] } },
+{ "type": "Feature", "properties": { "pk": 2, "id": 2, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 500.0, 25, 1.5 ] } },
+{ "type": "Feature", "properties": { "pk": 3, "id": 3, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 500.0, 250, 1.5 ] } },
+{ "type": "Feature", "properties": { "pk": 4, "id": 4, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 500.0, 500, 1.5 ] } }
+]
+}
