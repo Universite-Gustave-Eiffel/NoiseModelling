@@ -1,4 +1,3 @@
-
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
@@ -223,7 +222,7 @@ def exec(Connection connection, Map input) {
     try {
         URL trainTrainsetDataUrl = new URL(trainTrainsetData)
         trainTrainsetDataUrl.withInputStream { InputStream stream ->
-            railway.setTrainSetDataFile(stream)
+            railway.setTrainSetDataFile(stream as String)
         }
     } catch (MalformedURLException ignored) {
         railway.setTrainSetDataFile(trainTrainsetData)
@@ -231,7 +230,7 @@ def exec(Connection connection, Map input) {
     try {
         URL trainVehicleDataUrl = new URL(trainVehicleData)
         trainVehicleDataUrl.withInputStream { InputStream stream ->
-            railway.setVehicleDataFile(stream)
+            railway.setVehicleDataFile(stream as String)
         }
     } catch (MalformedURLException ignored) {
         railway.setVehicleDataFile(trainVehicleData)
@@ -239,7 +238,7 @@ def exec(Connection connection, Map input) {
     try {
         URL trainCoefficientsDataUrl = new URL(trainCoefficientsData)
         trainCoefficientsDataUrl.withInputStream { InputStream stream ->
-            railway.setRailwayDataFile(stream)
+            railway.setRailwayDataFile(stream as String)
         }
     } catch (MalformedURLException ignored) {
         railway.setRailwayDataFile(trainCoefficientsData)
