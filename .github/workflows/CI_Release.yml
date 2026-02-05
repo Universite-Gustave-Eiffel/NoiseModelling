@@ -17,6 +17,8 @@ jobs:
       # Checkout the source code of the project
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
       # Setup the jdk using version 11 of Adoptium Temurin
       - name: Setup java 11 using Adoptium Temurin
         uses: actions/setup-java@v4
@@ -34,18 +36,6 @@ jobs:
         run: |
           git config user.email "contact@noise-planet.org"
           git config user.name Noise-Planet
-
-      # Test build
-      - name: Build test
-        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
-
-      - name: Install xmlstarlet (if needed)
-        run: sudo apt-get update && sudo apt-get install -y libxml-xpath-perl
-      - name: Update version in build.gradle
-        run: |
-          bash update_gradle_version.sh
-          git commit -am "Update groovy wps version"
-        working-directory: wps_scripts
       # Create the release :
       #   - move from Snapshot version to Release
       #   - commit and tag release
@@ -59,6 +49,8 @@ jobs:
             --batch-mode \
             -Dmaven.test.skip=true \
             release:prepare release:perform \
+            -Dusername=ignored \
+            -Dpassword=${{ secrets.RELEASE_TOKEN }} \
             -Dusername=$GITHUB_ACTOR -Dpassword=$GITHUB_TOKEN ${VERSION:+"-DdevelopmentVersion="$VERSION"-SNAPSHOT"}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -77,7 +69,7 @@ jobs:
           bodyFile: "README.md"
           draft: false
           prerelease: false
-          artifacts: "wps_scripts/build/distributions/scriptrunner.zip"
+          artifacts: "noisemodelling-scripts/target/*.zip"
 
       # If the version change is a major or minor, create a branch from the previous tag for future revisions.
       - name: Branch fork
