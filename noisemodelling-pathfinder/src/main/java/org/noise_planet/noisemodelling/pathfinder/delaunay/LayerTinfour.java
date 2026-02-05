@@ -261,9 +261,7 @@ public class LayerTinfour implements LayerDelaunay {
             if(maxArea > 0) {
                 ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
                         .filter(triangle -> triangle.getArea() > maxArea)
-                        .map(LayerTinfour::getCentroid)
-                        .filter(centroid -> findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) == -1)
-                        .map(c -> new Vertex(c.x, c.y, c.z))
+                        .map(simpleTriangle -> simpleTriangle.getCircumcircle().getCircumcenter())
                         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
@@ -276,9 +274,11 @@ public class LayerTinfour implements LayerDelaunay {
         } while (refine);
         List<Vertex> verts = tin.getVertices();
         Map<Vertex, Integer> vertIndex = new HashMap<>();
+        this.vertices = new ArrayList<>(verts.size());
         for (int i = 0; i < verts.size(); i++) {
             Vertex v = verts.get(i);
             vertIndex.put(v, i);
+            this.vertices.add(toCoordinate(v));
         }
         // Collect triangles but with tin index of vertices
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
@@ -316,30 +316,8 @@ public class LayerTinfour implements LayerDelaunay {
                 }
             });
         }
-        // Keep only referenced vertices
-        Map<Integer, Integer> tinFourIndexToListIndex = new HashMap<>(); // Tinfour vertex index to our vertex index
-        this.vertices = new ArrayList<>(verts.size());
-        for(Triangle triangle : triangles) {
-            for(int i = 0; i < 3; i++) {
-                updateTriangle(triangle, tinFourIndexToListIndex, i, verts, this.vertices);
-            }
-        }
-
     }
 
-    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex, int cornerIndex, List<Vertex> verts, List<Coordinate> vertices) {
-        // get the original vertex index
-        int tinFourVertexIndex = triangle.get(cornerIndex);
-        // find if this vertex is already in our vertices list
-        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
-            // use the vertex index inserted by a previous triangle
-            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
-        } else {
-            // Not found, create a new vertex
-            vertices.add(toCoordinate(verts.get(tinFourVertexIndex)));
-            triangle.set(cornerIndex, vertices.size() - 1);
-        }
-    }
 
     /**
      * Append a polygon into the triangulation

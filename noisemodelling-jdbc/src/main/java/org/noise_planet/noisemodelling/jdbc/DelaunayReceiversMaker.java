@@ -10,7 +10,6 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
@@ -30,13 +29,11 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tinfour.common.Vertex;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
@@ -591,10 +588,19 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             triangles = new ArrayList<>(cellMesh.getTriangles().size());
             for (Triangle triangle : cellMesh.getTriangles()) {
                 if (triangle.getAttribute() == 0) {
-                    // place only triangles not associated to a building
+                    // Keep only triangles that aren't associated with a building
                     triangles.add(triangle);
                 }
             }
+            // Keep only referenced vertices
+            Map<Integer, Integer> verticesIndexCorrespondence = new HashMap<>(); // Tinfour vertex index to our vertex index
+            List<Coordinate> filteredVertices = new ArrayList<>(vertices.size());
+            for(Triangle triangle : triangles) {
+                for(int i = 0; i < 3; i++) {
+                    updateTriangle(triangle, verticesIndexCorrespondence, i, vertices, filteredVertices);
+                }
+            }
+            vertices = filteredVertices;
         } else {
             triangles = cellMesh.getTriangles();
         }
@@ -602,6 +608,33 @@ public class DelaunayReceiversMaker extends GridMapMaker {
 
         generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
                 triangles, cellI, cellJ, gridDim, exportTrianglesGeometries);
+    }
+
+    /**
+     * Insert into the new vertice list only vertices referenced in the triangles. If the vertex already exists
+     * in the mapping, its corresponding index is used; otherwise, the vertex is added to
+     * the vertices list and mapped to its new index.
+     *
+     * @param triangle The triangle to be updated, where vertex indices are modified as needed.
+     * @param tinFourIndexToListIndex A mapping of original vertex indices to their corresponding
+     *                                indices in the updated vertices list.
+     * @param cornerIndex The corner index of the triangle to update (0, 1, or 2).
+     * @param oldVerticesList The list of original vertices, from which new vertices are sourced if needed.
+     * @param vertices The list of updated vertices, where new vertices are added if they do not exist.
+     */
+    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex,
+                                       int cornerIndex, List<Coordinate> oldVerticesList, List<Coordinate> vertices) {
+        // get the original vertex index
+        int tinFourVertexIndex = triangle.get(cornerIndex);
+        // find if this vertex is already in our vertices list
+        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
+            // use the vertex index inserted by a previous triangle
+            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
+        } else {
+            // Not found, create a new vertex
+            vertices.add(oldVerticesList.get(tinFourVertexIndex));
+            triangle.set(cornerIndex, vertices.size() - 1);
+        }
     }
 
     public double getRoadWidth() {
