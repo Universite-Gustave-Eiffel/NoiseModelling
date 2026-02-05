@@ -274,14 +274,16 @@ public class LayerTinfour implements LayerDelaunay {
                 }
             }
         } while (refine);
-        Map<Integer, Vertex> vertexMap = new HashMap<>();
-        for(Vertex v : tin.getVertices()) {
-            vertexMap.put(v.getIndex(), v);
+        List<Vertex> verts = tin.getVertices();
+        Map<Vertex, Integer> vertIndex = new HashMap<>();
+        for (int i = 0; i < verts.size(); i++) {
+            Vertex v = verts.get(i);
+            vertIndex.put(v, i);
         }
         // Collect triangles but with tin index of vertices
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : tin.triangles()) {
-            Triangle newTriangle = new Triangle(t.getVertexA().getIndex(), t.getVertexB().getIndex(), t.getVertexC().getIndex(), 0);
+            Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
             triangles.add(newTriangle);
             if(computeNeighbors) {
                 edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
@@ -305,8 +307,8 @@ public class LayerTinfour implements LayerDelaunay {
             IntStream.range(0, triangles.size()).parallel().forEach(i -> {
                 Triangle triangle = triangles.get(i);
                 // Look for associated polygon area
-                Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(toCoordinate(vertexMap.get(triangle.getA())),
-                        toCoordinate(vertexMap.get(triangle.getB())), toCoordinate(vertexMap.get(triangle.getC())));
+                Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(toCoordinate(verts.get(triangle.getA())),
+                        toCoordinate(verts.get(triangle.getB())), toCoordinate(verts.get(triangle.getC())));
                 Point inCenterPoint = gf.createPoint(inCenter);
                 int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
                 if (polygonIndex != -1) {
@@ -314,23 +316,27 @@ public class LayerTinfour implements LayerDelaunay {
                 }
             });
         }
-        // Add final vertices indices
+        // Keep only referenced vertices
         Map<Integer, Integer> tinFourIndexToListIndex = new HashMap<>(); // Tinfour vertex index to our vertex index
-        this.vertices = new ArrayList<>(vertexMap.size());
+        this.vertices = new ArrayList<>(verts.size());
         for(Triangle triangle : triangles) {
             for(int i = 0; i < 3; i++) {
-                updateTriangle(triangle, tinFourIndexToListIndex, i, vertexMap, this.vertices);
+                updateTriangle(triangle, tinFourIndexToListIndex, i, verts, this.vertices);
             }
         }
 
     }
 
-    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex, int cornerIndex, Map<Integer, Vertex> vertexMap, List<Coordinate> vertices) {
+    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex, int cornerIndex, List<Vertex> verts, List<Coordinate> vertices) {
+        // get the original vertex index
         int tinFourVertexIndex = triangle.get(cornerIndex);
+        // find if this vertex is already in our vertices list
         if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
+            // use the vertex index inserted by a previous triangle
             triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
         } else {
-            vertices.add(toCoordinate(vertexMap.get(tinFourVertexIndex)));
+            // Not found, create a new vertex
+            vertices.add(toCoordinate(verts.get(tinFourVertexIndex)));
             triangle.set(cornerIndex, vertices.size() - 1);
         }
     }

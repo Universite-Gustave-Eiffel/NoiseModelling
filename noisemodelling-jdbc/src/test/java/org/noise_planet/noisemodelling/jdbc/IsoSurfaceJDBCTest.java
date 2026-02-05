@@ -334,8 +334,7 @@ public class IsoSurfaceJDBCTest {
         try(Statement st = connection.createStatement()) {
             try (ResultSet rs = st.executeQuery("SELECT MIN(ST_DISTANCE(RECEIVERS.THE_GEOM, BUILDINGS.THE_GEOM)) AS MINDIST FROM RECEIVERS, BUILDINGS WHERE ST_EXPAND(RECEIVERS.THE_GEOM, 10) && BUILDINGS.THE_GEOM")) {
                 if (rs.next()) {
-                    LOGGER.info("Minimal distance between receivers and buildings: {}", rs.getDouble("MINDIST"));
-                    assertEquals(0, rs.getDouble("MINDIST"), 0.01);
+                    assertTrue(rs.getDouble("MINDIST") > 1, "Minimal distance between receivers and buildings should be greater than 1m");
                 }
             }
         }
