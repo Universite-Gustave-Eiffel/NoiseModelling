@@ -21,6 +21,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
@@ -55,7 +56,7 @@ public class LayerTinfour implements LayerDelaunay {
     /**
      * RTree for polygon spatial index
      */
-    private final QueryRTree polygonRtree = new QueryRTree();
+    private final STRtree polygonRtree = new STRtree();
     /**
      * Use PreparedPolygon for faster point-in-polygon tests
      */
@@ -193,9 +194,7 @@ public class LayerTinfour implements LayerDelaunay {
      * @return Polygon index or -1 if not found
      */
     public int findPolygonIndexByPoint(Point point) {
-        Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(point.getEnvelopeInternal());
-        while (polygonIntersectsTriangleList.hasNext()) {
-            Integer polygonIndex = polygonIntersectsTriangleList.next();
+        for(Integer polygonIndex : (List<Integer>)polygonRtree.query(point.getEnvelopeInternal())) {
             PreparedPolygon polygon = polygonMap.get(polygonIndex);
             if(polygon.contains(point)) {
                 return polygonIndex;
@@ -234,6 +233,7 @@ public class LayerTinfour implements LayerDelaunay {
      */
     @Override
     public void processDelaunay() throws LayerDelaunayError {
+        polygonRtree.build(); // build the rtree as it must not be built when using a multi-thread query
         triangles.clear();
         vertices.clear();
 
@@ -274,16 +274,14 @@ public class LayerTinfour implements LayerDelaunay {
                 }
             }
         } while (refine);
-        List<Vertex> verts = tin.getVertices();
-        vertices = new ArrayList<>(verts.size());
-        Map<Vertex, Integer> vertIndex = new HashMap<>();
-        for(Vertex v : verts) {
-            vertIndex.put(v, vertices.size());
-            vertices.add(toCoordinate(v));
+        Map<Integer, Vertex> vertexMap = new HashMap<>();
+        for(Vertex v : tin.getVertices()) {
+            vertexMap.put(v.getIndex(), v);
         }
+        // Collect triangles but with tin index of vertices
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : tin.triangles()) {
-            Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
+            Triangle newTriangle = new Triangle(t.getVertexA().getIndex(), t.getVertexB().getIndex(), t.getVertexC().getIndex(), 0);
             triangles.add(newTriangle);
             if(computeNeighbors) {
                 edgeIndexToTriangleIndex.put(t.getEdgeA().getIndex(), triangles.size() - 1);
@@ -302,32 +300,39 @@ public class LayerTinfour implements LayerDelaunay {
             }
         }
         // Update triangle polygon association
-        GeometryFactory gf = new GeometryFactory();
-        IntStream.range(0, triangles.size()).parallel().forEach(i -> {
-            Triangle triangle = triangles.get(i);
-            // Look for associated polygon area
-            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(
-                    vertices.get(triangle.getA()),
-                    vertices.get(triangle.getB()),
-                    vertices.get(triangle.getC()));
-            Point inCenterPoint = gf.createPoint(inCenter);
-            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
-            if (polygonIndex != -1) {
-                triangle.setAttribute(polygonIndex);
+        if(!polygonMap.isEmpty()) {
+            GeometryFactory gf = new GeometryFactory();
+            IntStream.range(0, triangles.size()).parallel().forEach(i -> {
+                Triangle triangle = triangles.get(i);
+                // Look for associated polygon area
+                Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(toCoordinate(vertexMap.get(triangle.getA())),
+                        toCoordinate(vertexMap.get(triangle.getB())), toCoordinate(vertexMap.get(triangle.getC())));
+                Point inCenterPoint = gf.createPoint(inCenter);
+                int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
+                if (polygonIndex != -1) {
+                    triangle.setAttribute(polygonIndex);
+                }
+            });
+        }
+        // Add final vertices indices
+        Map<Integer, Integer> tinFourIndexToListIndex = new HashMap<>(); // Tinfour vertex index to our vertex index
+        this.vertices = new ArrayList<>(vertexMap.size());
+        for(Triangle triangle : triangles) {
+            for(int i = 0; i < 3; i++) {
+                updateTriangle(triangle, tinFourIndexToListIndex, i, vertexMap, this.vertices);
             }
-        });
+        }
 
     }
 
-    private static void addEdgeToMap(Map<String, Integer> edgeMap, int v1, int v2, int triangleIndex) {
-        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
-        edgeMap.put(key, triangleIndex);
-    }
-
-    private static int findNeighbor(Map<String, Integer> edgeMap, int v1, int v2, int currentTriangleIndex) {
-        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
-        Integer neighbor = edgeMap.get(key);
-        return neighbor != null && neighbor != currentTriangleIndex ? neighbor : -1;
+    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex, int cornerIndex, Map<Integer, Vertex> vertexMap, List<Coordinate> vertices) {
+        int tinFourVertexIndex = triangle.get(cornerIndex);
+        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
+            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
+        } else {
+            vertices.add(toCoordinate(vertexMap.get(tinFourVertexIndex)));
+            triangle.set(cornerIndex, vertices.size() - 1);
+        }
     }
 
     /**
@@ -352,7 +357,7 @@ public class LayerTinfour implements LayerDelaunay {
             polygonConstraint.complete();
             if(polygonConstraint.isValid()) {
                 constraints.add(polygonConstraint);
-                polygonRtree.appendGeometry(newPoly, buildingId);
+                polygonRtree.insert(newPoly.getEnvelopeInternal(), buildingId);
                 polygonMap.put(buildingId, new PreparedPolygon(newPoly));
                 // Append holes
                 final int holeCount = newPoly.getNumInteriorRing();

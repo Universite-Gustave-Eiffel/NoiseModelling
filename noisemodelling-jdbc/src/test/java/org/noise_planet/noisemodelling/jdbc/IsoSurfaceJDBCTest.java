@@ -14,6 +14,7 @@ import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
 import org.h2gis.functions.io.shp.SHPWrite;
+import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
@@ -294,6 +295,50 @@ public class IsoSurfaceJDBCTest {
         }
         // 16 instead of 4096
         assertEquals(16, rowCount);
+
+    }
+
+
+    @Test
+    public void testDelaunayNoReceiverInBuildings() throws SQLException, IOException {
+        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("delaunaytest/buildings.geojson.gz").getFile(), "BUILDINGS", ValueBoolean.TRUE);
+        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("delaunaytest/sources.geojson.gz").getFile(), "SOURCES", ValueBoolean.TRUE);
+        try(Statement st = connection.createStatement()) {
+            // Add primary keys
+            st.execute("ALTER TABLE buildings ALTER COLUMN PK INTEGER NOT NULL");
+            st.execute("ALTER TABLE buildings ADD PRIMARY KEY (PK)");
+            st.execute("ALTER TABLE sources ALTER COLUMN PK INTEGER NOT NULL");
+            st.execute("ALTER TABLE sources ADD PRIMARY KEY (PK)");
+            // Create spatial indexes
+            st.execute("CREATE SPATIAL INDEX ON sources(THE_GEOM)");
+            st.execute("CREATE SPATIAL INDEX ON buildings(THE_GEOM)");
+        }
+
+
+
+        DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES");
+
+        delaunayReceiversMaker.setMaximumPropagationDistance(5000);
+        delaunayReceiversMaker.setMaximumArea(500);
+        delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
+
+        // Check if there is no receiver in buildings
+        try(Statement st = connection.createStatement()) {
+            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) AS CNT FROM RECEIVERS R, BUILDINGS B WHERE R.THE_GEOM && B.THE_GEOM AND ST_CONTAINS(B.THE_GEOM, R.THE_GEOM)")) {
+                if (rs.next()) {
+                    assertEquals(0, rs.getInt("CNT"));
+                }
+            }
+        }
+        // Check the minimal distance of receivers to buildings
+        try(Statement st = connection.createStatement()) {
+            try (ResultSet rs = st.executeQuery("SELECT MIN(ST_DISTANCE(RECEIVERS.THE_GEOM, BUILDINGS.THE_GEOM)) AS MINDIST FROM RECEIVERS, BUILDINGS WHERE ST_EXPAND(RECEIVERS.THE_GEOM, 10) && BUILDINGS.THE_GEOM")) {
+                if (rs.next()) {
+                    LOGGER.info("Minimal distance between receivers and buildings: {}", rs.getDouble("MINDIST"));
+                    assertEquals(0, rs.getDouble("MINDIST"), 0.01);
+                }
+            }
+        }
 
     }
 }
