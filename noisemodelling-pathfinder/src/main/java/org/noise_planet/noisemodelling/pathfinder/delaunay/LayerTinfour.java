@@ -254,17 +254,26 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
+        // Keep a quadtree of inserted points to not insert multiple time the same point
+        Quadtree insertedPoints = new Quadtree();
         do {
             refine = false;
 
             // Will triangulate multiple time if refinement is necessary
-            if(maxArea > 0) {
-                ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
-                        .filter(triangle -> triangle.getArea() > maxArea)
-                        .map(simpleTriangle -> simpleTriangle.getCircumcircle().getCircumcenter())
-                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+            if (maxArea > 0) {
+                ArrayList<Vertex> newSteinerPoints =
+                        StreamSupport.stream(tin.triangles().spliterator(), true)
+                                .filter(triangle -> triangle.getArea() > maxArea)
+                                .map(simpleTriangle -> simpleTriangle.getCircumcircle().getCircumcenter())
+                                .filter(vertex ->
+                                        insertedPoints.query(new Envelope(toCoordinate(vertex)))
+                                                .stream()
+                                                .noneMatch(v -> ((Vertex) v).getDistance(vertex) < epsilon))
+                                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
+                    newSteinerPoints.forEach(vertex -> insertedPoints.insert(new Envelope(toCoordinate(vertex)),
+                            vertex));
                     refine = true;
                     if (verbose) {
                         LOGGER.info("Refining Delaunay with {} points", newSteinerPoints.size());
