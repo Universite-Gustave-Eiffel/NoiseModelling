@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
-import static java.lang.Math.max;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator.toCurve;
 import static org.noise_planet.noisemodelling.propagation.cnossos.PointPath.POINT_TYPE.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnLine;
@@ -248,12 +247,15 @@ public class CnossosPathBuilder {
         cnossosPath.setSRSegment(srPath);
         cnossosPath.init(exactFrequencyArray.size());
         List<Coordinate> hullPts2D = pts2D;
-        if(favourable && cutProfile.profileType != CutProfile.PROFILE_TYPE.REFLECTION) {
+        if(favourable) {
             // Compute the altered profile for favourable path
             hullPts2D = cutProfile.computePts2D(true);
         }
+        boolean ignoreBuildingsInConvexHull = (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
+                cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT);
+
         // Compute convex hull of the profile
-        List<Integer> hullPointsIndices = cutProfile.getConvexHullIndices(hullPts2D);
+        List<Integer> hullPointsIndices = cutProfile.getConvexHullIndices(hullPts2D, ignoreBuildingsInConvexHull);
 
         // Src if perceived source position from the receiver point of view
         Coordinate src = cutProfile.getSource().getCoordinate();
@@ -508,11 +510,11 @@ public class CnossosPathBuilder {
 
 
     /**
-     *
-     * @param sourceOrientation
-     * @param src
-     * @param next
-     * @return
+     * Compute the orientation from a source orientation and two coordinates
+     * @param sourceOrientation Source orientation
+     * @param src Source coordinate
+     * @param next Next coordinate
+     * @return The computed orientation or null if the source orientation is null
      */
     private static Orientation computeOrientation(Orientation sourceOrientation, Coordinate src, Coordinate next){
         if(sourceOrientation == null) {

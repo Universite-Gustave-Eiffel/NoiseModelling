@@ -233,6 +233,11 @@ public class CutProfile {
     }
 
     public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
+        return getConvexHullIndices(coordinates2d, false);
+    }
+
+
+    public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d, boolean ignoreWall) {
         if(coordinates2d.size() != cutPoints.size()) {
             throw new IllegalArgumentException("Coordinates size must be equal to cut points size");
         }
@@ -246,7 +251,7 @@ public class CutProfile {
             // We only add the point at the top of the wall, not the point at the bottom of the wall
             if(currentPoint instanceof CutPointTopography
                     || (currentPoint instanceof CutPointWall
-                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0 && !ignoreWall)) {
                 convexHullInput.add(coordinates2d.get(idPoint));
             }
         }

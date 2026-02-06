@@ -11,7 +11,7 @@ It is important to note that the ISO standard provides recommendations rather th
 
 During our analysis, we identified several issues within the standard that hinder a complete and reliable comparison. Notably, we observed inconsistencies between 2D and 3D visualizations, preventing us from achieving a coherent assessment. Additionally, discrepancies exist between the geometric description of the scene and the corresponding acoustic response, raising concerns about the accuracy and reliability of the standard’s methodology.
 
-Furthermore, with respect to favorable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.
+Furthermore, with respect to favourable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.
 
 
 Conformity table
@@ -19,12 +19,12 @@ Conformity table
 | Conform
 
 * Do not the deviate more than ±0,1 dB
-* Percentage of conformity : 86% (24/28)
+* Percentage of conformity : 93% (26/28)
 
 | NLD Conform
 
 * Do not the deviate more than ±0,1 dB neglecting lateral diffraction
-* Percentage of conformity : 90% (25/28)
+* Percentage of conformity : 93% (26/28)
 
 .. list-table::
    :widths: 10 20 20 25 30
@@ -87,7 +87,7 @@ Conformity table
    * - TC11
      - ☑
      - ☑
-     - 0.02 dB @ 125 Hz
+     - 0.01 dB @ 125 Hz
      - `TC11`_
    * - TC12
      - ☑
@@ -125,9 +125,9 @@ Conformity table
      - 0.02 dB @ 500 Hz
      - `TC18`_
    * - TC19
-     - □
      - ☑
-     - 0.77 dB @ 250 Hz
+     - ☑
+     - 0.02 dB @ 63 Hz
      - `TC19`_
    * - TC20
      - ☑
@@ -150,9 +150,9 @@ Conformity table
      - 0.02 dB @ 63 Hz
      - `TC23`_
    * - TC24
-     - □
-     - □
-     - 1.04 dB @ 2000 Hz
+     - ☑
+     - ☑
+     - 0.01 dB @ 250 Hz
      - `TC24`_
    * - TC25
      - ☑
@@ -167,7 +167,7 @@ Conformity table
    * - TC27
      - □
      - □
-     - 1.76 dB @ 500 Hz
+     - 1.20 dB @ 2000 Hz
      - `TC27`_
    * - TC28
      - ☑
@@ -526,11 +526,11 @@ Right Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 0.05 dB
-     - 250
+     - 0.03 dB
+     - 500
    * - Lꜰ
-     - 0.05 dB
-     - 250
+     - 0.03 dB
+     - 500
 
 
 Left Lateral 
@@ -544,11 +544,11 @@ Left Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 0.05 dB
-     - 250
+     - 0.03 dB
+     - 500
    * - Lꜰ
-     - 0.05 dB
-     - 250
+     - 0.03 dB
+     - 500
 
 TC12
 ^^^^
@@ -946,10 +946,10 @@ Left Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 6.46 dB
-     - 8000
+     - 0.04 dB
+     - 500
    * - Lꜰ
-     - 6.46 dB
+     - 0.01 dB
      - 8000
 
 TC20
@@ -1144,8 +1144,8 @@ Reflection
      - 0.02 dB
      - 63
    * - Lꜰ
-     - 3.53 dB
-     - 4000
+     - 0.02 dB
+     - 63
 
 TC25
 ^^^^
@@ -1278,6 +1278,24 @@ Vertical Plane
    * - Lꜰ
      - 0.18 dB
      - 125
+
+
+Reflection 
+
+================
+
+.. list-table::
+   :widths: 25 25 25
+
+   * - Parameters
+     - Maximum Difference
+     - Frequency
+   * - Lʜ
+     - 0.03 dB
+     - 125
+   * - Lꜰ
+     - 3.76 dB
+     - 2000
 
 TC28
 ^^^^
