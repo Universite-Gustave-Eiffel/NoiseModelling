@@ -28,6 +28,7 @@ import org.tinfour.common.SimpleTriangle;
 import org.tinfour.common.Vertex;
 import org.tinfour.standard.IncrementalTin;
 
+import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -248,6 +249,8 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
+        Rectangle2D tinBounds = tin.getBounds();
+        
         Set<Coordinate> alreadyRefined = new HashSet<>();
         do {
             refine = false;
@@ -278,9 +281,17 @@ public class LayerTinfour implements LayerDelaunay {
                         double minY = Math.min(va.getY(), Math.min(vb.getY(), vc.getY()));
                         double maxY = Math.max(va.getY(), Math.max(vb.getY(), vc.getY()));
 
+                        // Align grid to tinBounds origin for regular grid point location
+                        double gridOriginX = tinBounds.getMinX();
+                        double gridOriginY = tinBounds.getMinY();
+
+                        // Calculate starting grid coordinates aligned to tinBounds
+                        double startX = gridOriginX + Math.floor((minX - gridOriginX) / gridSpacing) * gridSpacing;
+                        double startY = gridOriginY + Math.floor((minY - gridOriginY) / gridSpacing) * gridSpacing;
+
                         // Generate grid points
-                        for (double x = minX; x <= maxX; x += gridSpacing) {
-                            for (double y = minY; y <= maxY; y += gridSpacing) {
+                        for (double x = startX; x <= maxX; x += gridSpacing) {
+                            for (double y = startY; y <= maxY; y += gridSpacing) {
                                 Coordinate p = new Coordinate(x, y);
                                 // Check if point is inside triangle
                                 boolean isInside = org.locationtech.jts.geom.Triangle.intersects(va, vb, vc, p);
