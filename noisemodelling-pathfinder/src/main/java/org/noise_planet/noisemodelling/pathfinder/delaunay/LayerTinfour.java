@@ -11,20 +11,13 @@
 package org.noise_planet.noisemodelling.pathfinder.delaunay;
 
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateArrays;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.IConstraint;
@@ -49,13 +42,13 @@ public class LayerTinfour implements LayerDelaunay {
     private double maxArea = 0;
     private boolean verbose = true;
     // Output data
-    private List<Coordinate> vertices = new ArrayList<Coordinate>();
+    private List<Coordinate> vertices = new ArrayList<>();
     private final List<Triangle> triangles = new ArrayList<Triangle>();
     private final List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
     /**
      * RTree for polygon spatial index
      */
-    private final QueryRTree polygonRtree = new QueryRTree();
+    private final STRtree polygonRtree = new STRtree();
     /**
      * Use PreparedPolygon for faster point-in-polygon tests
      */
@@ -193,9 +186,7 @@ public class LayerTinfour implements LayerDelaunay {
      * @return Polygon index or -1 if not found
      */
     public int findPolygonIndexByPoint(Point point) {
-        Iterator<Integer> polygonIntersectsTriangleList = polygonRtree.query(point.getEnvelopeInternal());
-        while (polygonIntersectsTriangleList.hasNext()) {
-            Integer polygonIndex = polygonIntersectsTriangleList.next();
+        for(Integer polygonIndex : (List<Integer>)polygonRtree.query(point.getEnvelopeInternal())) {
             PreparedPolygon polygon = polygonMap.get(polygonIndex);
             if(polygon.contains(point)) {
                 return polygonIndex;
@@ -234,6 +225,7 @@ public class LayerTinfour implements LayerDelaunay {
      */
     @Override
     public void processDelaunay() throws LayerDelaunayError {
+        polygonRtree.build(); // build the rtree as it must not be built when using a multi-thread query
         triangles.clear();
         vertices.clear();
 
@@ -254,16 +246,14 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
+
         do {
             refine = false;
-
             // Will triangulate multiple time if refinement is necessary
-            if(maxArea > 0) {
+            if (maxArea > 0) {
                 ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
                         .filter(triangle -> triangle.getArea() > maxArea)
-                        .map(LayerTinfour::getCentroid)
-                        .filter(centroid -> findPolygonIndexByPoint(new GeometryFactory().createPoint(centroid)) == -1)
-                        .map(c -> new Vertex(c.x, c.y, c.z))
+                        .map(SimpleTriangle::getCentroid)
                         .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
@@ -275,12 +265,14 @@ public class LayerTinfour implements LayerDelaunay {
             }
         } while (refine);
         List<Vertex> verts = tin.getVertices();
-        vertices = new ArrayList<>(verts.size());
         Map<Vertex, Integer> vertIndex = new HashMap<>();
-        for(Vertex v : verts) {
-            vertIndex.put(v, vertices.size());
-            vertices.add(toCoordinate(v));
+        this.vertices = new ArrayList<>(verts.size());
+        for (int i = 0; i < verts.size(); i++) {
+            Vertex v = verts.get(i);
+            vertIndex.put(v, i);
+            this.vertices.add(toCoordinate(v));
         }
+        // Collect triangles but with tin index of vertices
         Map<Integer, Integer> edgeIndexToTriangleIndex = new HashMap<>();
         for(SimpleTriangle t : tin.triangles()) {
             Triangle newTriangle = new Triangle(vertIndex.get(t.getVertexA()), vertIndex.get(t.getVertexB()), vertIndex.get(t.getVertexC()), 0);
@@ -302,33 +294,22 @@ public class LayerTinfour implements LayerDelaunay {
             }
         }
         // Update triangle polygon association
-        GeometryFactory gf = new GeometryFactory();
-        IntStream.range(0, triangles.size()).parallel().forEach(i -> {
-            Triangle triangle = triangles.get(i);
-            // Look for associated polygon area
-            Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(
-                    vertices.get(triangle.getA()),
-                    vertices.get(triangle.getB()),
-                    vertices.get(triangle.getC()));
-            Point inCenterPoint = gf.createPoint(inCenter);
-            int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
-            if (polygonIndex != -1) {
-                triangle.setAttribute(polygonIndex);
-            }
-        });
-
+        if(!polygonMap.isEmpty()) {
+            GeometryFactory gf = new GeometryFactory();
+            IntStream.range(0, triangles.size()).parallel().forEach(i -> {
+                Triangle triangle = triangles.get(i);
+                // Look for associated polygon area
+                Coordinate inCenter = org.locationtech.jts.geom.Triangle.inCentre(toCoordinate(verts.get(triangle.getA())),
+                        toCoordinate(verts.get(triangle.getB())), toCoordinate(verts.get(triangle.getC())));
+                Point inCenterPoint = gf.createPoint(inCenter);
+                int polygonIndex = findPolygonIndexByPoint(inCenterPoint);
+                if (polygonIndex != -1) {
+                    triangle.setAttribute(polygonIndex);
+                }
+            });
+        }
     }
 
-    private static void addEdgeToMap(Map<String, Integer> edgeMap, int v1, int v2, int triangleIndex) {
-        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
-        edgeMap.put(key, triangleIndex);
-    }
-
-    private static int findNeighbor(Map<String, Integer> edgeMap, int v1, int v2, int currentTriangleIndex) {
-        String key = Math.min(v1, v2) + "-" + Math.max(v1, v2);
-        Integer neighbor = edgeMap.get(key);
-        return neighbor != null && neighbor != currentTriangleIndex ? neighbor : -1;
-    }
 
     /**
      * Append a polygon into the triangulation
@@ -352,7 +333,7 @@ public class LayerTinfour implements LayerDelaunay {
             polygonConstraint.complete();
             if(polygonConstraint.isValid()) {
                 constraints.add(polygonConstraint);
-                polygonRtree.appendGeometry(newPoly, buildingId);
+                polygonRtree.insert(newPoly.getEnvelopeInternal(), buildingId);
                 polygonMap.put(buildingId, new PreparedPolygon(newPoly));
                 // Append holes
                 final int holeCount = newPoly.getNumInteriorRing();
