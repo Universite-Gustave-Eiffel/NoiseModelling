@@ -115,8 +115,8 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         initialize(connection);
         AtomicInteger pk = new AtomicInteger(0);
         ProgressVisitor progressVisitorNM = progressVisitor.subProcess(getGridDim() * getGridDim());
-        for(int i=0; i < getGridDim(); i++) {
-            for(int j=0; j < getGridDim(); j++) {
+        for(int i=0; i < getGridDim() && !progressVisitorNM.isCanceled(); i++) {
+            for(int j=0; j < getGridDim() && !progressVisitorNM.isCanceled(); j++) {
 
                 if(!Double.isNaN(minimalSourceGeometriesDistanceToComputeCell) && !sourcesTableName.isEmpty()) {
                     // Check if there is a source near fence
@@ -127,7 +127,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                             int ij = i * gridDim + j + 1;
                             logger.info("Skip processing of cell {} / {} no source near cell", ij, gridDim * gridDim);
                         }
-                        progressVisitorNM.endOfProgress();
+                        progressVisitorNM.endStep();
                         continue;
                     }
                 }
@@ -142,7 +142,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                         int ij = i * gridDim + j + 1;
                         logger.info("End processing of cell {} / {}", ij, gridDim * gridDim);
                     }
-                    progressVisitorNM.endOfProgress();
+                    progressVisitorNM.endStep();
                 } catch (IOException | LayerDelaunayError ex) {
                     throw new SQLException(ex);
                 }
