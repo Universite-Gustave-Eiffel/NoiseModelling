@@ -18,7 +18,6 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinfour.common.IConstraint;
@@ -28,7 +27,6 @@ import org.tinfour.common.SimpleTriangle;
 import org.tinfour.common.Vertex;
 import org.tinfour.standard.IncrementalTin;
 
-import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -36,7 +34,6 @@ import java.util.stream.StreamSupport;
 
 public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
-    private static final int DEFAULT_RESERVER_STEINER_POINTS = 500;
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
     public String dumpFolder = "";
     List<IConstraint> constraints = new ArrayList<>();
@@ -45,7 +42,7 @@ public class LayerTinfour implements LayerDelaunay {
     private double maxArea = 0;
     private boolean verbose = true;
     // Output data
-    private List<Coordinate> vertices = new ArrayList<Coordinate>();
+    private List<Coordinate> vertices = new ArrayList<>();
     private final List<Triangle> triangles = new ArrayList<Triangle>();
     private final List<Triangle> neighbors = new ArrayList<Triangle>(); // The first neighbor triangle is opposite the first corner of triangle  i
     /**
@@ -249,78 +246,15 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
-        Rectangle2D tinBounds = tin.getBounds();
-        
-        Set<Coordinate> alreadyRefined = new HashSet<>();
+
         do {
             refine = false;
-
             // Will triangulate multiple time if refinement is necessary
             if (maxArea > 0) {
-                ArrayList<Vertex> newSteinerPoints = new ArrayList<>(DEFAULT_RESERVER_STEINER_POINTS);
-                for (SimpleTriangle triangle : tin.triangles()) {
-                    if(triangle.getArea() > maxArea && !alreadyRefined.contains(toCoordinate(triangle.getCentroid()))) {
-                        alreadyRefined.add(toCoordinate(triangle.getCentroid()));
-                        // Will split this triangle with multiple steiner points
-                        // using the maxArea constraint value in the form of a grid intersecting the triangle space
-                        // it will add point on edge only if the edge are not constraints (ex:triangle.getEdgeA().isConstrained())
-                        // Calculate grid spacing from maxArea (area = spacing^2)
-                        final double gridSpacing = Math.floor(Math.sqrt(maxArea));
-
-                        // Get triangle vertices
-                        Coordinate va = toCoordinate(triangle.getVertexA());
-                        Coordinate vb = toCoordinate(triangle.getVertexB());
-                        Coordinate vc = toCoordinate(triangle.getVertexC());
-
-                        org.locationtech.jts.geom.Triangle triangleGeom =
-                                new org.locationtech.jts.geom.Triangle(va, vb, vc);
-
-                        // Calculate bounding box of triangle
-                        double minX = Math.min(va.getX(), Math.min(vb.getX(), vc.getX()));
-                        double maxX = Math.max(va.getX(), Math.max(vb.getX(), vc.getX()));
-                        double minY = Math.min(va.getY(), Math.min(vb.getY(), vc.getY()));
-                        double maxY = Math.max(va.getY(), Math.max(vb.getY(), vc.getY()));
-
-                        // Align grid to tinBounds origin for regular grid point location
-                        double gridOriginX = tinBounds.getMinX();
-                        double gridOriginY = tinBounds.getMinY();
-
-                        // Calculate starting grid coordinates aligned to tinBounds
-                        double startX = gridOriginX + Math.floor((minX - gridOriginX) / gridSpacing) * gridSpacing;
-                        double startY = gridOriginY + Math.floor((minY - gridOriginY) / gridSpacing) * gridSpacing;
-
-                        // Generate grid points
-                        for (double x = startX; x <= maxX; x += gridSpacing) {
-                            for (double y = startY; y <= maxY; y += gridSpacing) {
-                                Coordinate p = new Coordinate(x, y);
-                                // Check if point is inside triangle
-                                boolean isInside = org.locationtech.jts.geom.Triangle.intersects(va, vb, vc, p);
-
-                                if (isInside) {
-                                    // Check if the point is on a constrained edge
-                                    boolean onConstrainedEdge = false;
-
-                                    // Check distance to edges and if they are constrained
-                                    if (triangle.getEdgeA().isConstrained() && new LineSegment(vb, vc)
-                                            .distance(new Coordinate(x, y)) < epsilon) {
-                                        onConstrainedEdge = true;
-                                    } else if (triangle.getEdgeB().isConstrained() && new LineSegment(va, vc)
-                                            .distance(new Coordinate(x, y)) < epsilon) {
-                                        onConstrainedEdge = true;
-                                    } else if (triangle.getEdgeC().isConstrained() && new LineSegment(va, vb)
-                                            .distance(new Coordinate(x, y)) < epsilon) {
-                                        onConstrainedEdge = true;
-                                    }
-                                    // Only add point if not on a constrained edge
-                                    if (!onConstrainedEdge) {
-                                        // Interpolate Z coordinate using barycentric coordinates
-                                        newSteinerPoints.add(new Vertex(x, y, triangleGeom.interpolateZ(p), 0));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                ArrayList<Vertex> newSteinerPoints = StreamSupport.stream(tin.triangles().spliterator(), true)
+                        .filter(triangle -> triangle.getArea() > maxArea)
+                        .map(SimpleTriangle::getCentroid)
+                        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
                     refine = true;
