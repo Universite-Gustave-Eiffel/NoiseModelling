@@ -248,6 +248,7 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
+        Set<Coordinate> alreadyRefined = new HashSet<>();
         do {
             refine = false;
 
@@ -255,12 +256,13 @@ public class LayerTinfour implements LayerDelaunay {
             if (maxArea > 0) {
                 ArrayList<Vertex> newSteinerPoints = new ArrayList<>(DEFAULT_RESERVER_STEINER_POINTS);
                 for (SimpleTriangle triangle : tin.triangles()) {
-                    if(triangle.getArea() > maxArea) {
+                    if(triangle.getArea() > maxArea && !alreadyRefined.contains(toCoordinate(triangle.getCentroid()))) {
+                        alreadyRefined.add(toCoordinate(triangle.getCentroid()));
                         // Will split this triangle with multiple steiner points
                         // using the maxArea constraint value in the form of a grid intersecting the triangle space
                         // it will add point on edge only if the edge are not constraints (ex:triangle.getEdgeA().isConstrained())
                         // Calculate grid spacing from maxArea (area = spacing^2)
-                        final double gridSpacing = Math.sqrt(maxArea);
+                        final double gridSpacing = Math.floor(Math.sqrt(maxArea));
 
                         // Get triangle vertices
                         Coordinate va = toCoordinate(triangle.getVertexA());

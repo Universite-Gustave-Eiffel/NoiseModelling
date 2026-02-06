@@ -218,7 +218,7 @@ public class IsoSurfaceJDBCTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(800);
-            delaunayReceiversMaker.setVerbose(false);
+            delaunayReceiversMaker.setVerbose(true);
             delaunayReceiversMaker.setGridDim(1);
             delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
