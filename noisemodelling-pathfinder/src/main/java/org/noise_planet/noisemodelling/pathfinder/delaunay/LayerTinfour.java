@@ -11,14 +11,7 @@
 package org.noise_planet.noisemodelling.pathfinder.delaunay;
 
 import org.locationtech.jts.algorithm.Orientation;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateArrays;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.locationtech.jts.index.quadtree.Quadtree;
 import org.locationtech.jts.index.strtree.STRtree;
@@ -42,6 +35,7 @@ import java.util.stream.StreamSupport;
 
 public class LayerTinfour implements LayerDelaunay {
     private double epsilon = 0.001; // merge of Vertex instances below this distance
+    private static final int DEFAULT_RESERVER_STEINER_POINTS = 500;
     private static final Logger LOGGER = LoggerFactory.getLogger(LayerTinfour.class);
     public String dumpFolder = "";
     List<IConstraint> constraints = new ArrayList<>();
@@ -254,26 +248,68 @@ public class LayerTinfour implements LayerDelaunay {
             }
             throw new LayerDelaunayError(ex);
         }
-        // Keep a quadtree of inserted points to not insert multiple time the same point
-        Quadtree insertedPoints = new Quadtree();
         do {
             refine = false;
 
             // Will triangulate multiple time if refinement is necessary
             if (maxArea > 0) {
-                ArrayList<Vertex> newSteinerPoints =
-                        StreamSupport.stream(tin.triangles().spliterator(), true)
-                                .filter(triangle -> triangle.getArea() > maxArea)
-                                .map(simpleTriangle -> simpleTriangle.getCircumcircle().getCircumcenter())
-                                .filter(vertex ->
-                                        insertedPoints.query(new Envelope(toCoordinate(vertex)))
-                                                .stream()
-                                                .noneMatch(v -> ((Vertex) v).getDistance(vertex) < epsilon))
-                                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+                ArrayList<Vertex> newSteinerPoints = new ArrayList<>(DEFAULT_RESERVER_STEINER_POINTS);
+                for (SimpleTriangle triangle : tin.triangles()) {
+                    if(triangle.getArea() > maxArea) {
+                        // Will split this triangle with multiple steiner points
+                        // using the maxArea constraint value in the form of a grid intersecting the triangle space
+                        // it will add point on edge only if the edge are not constraints (ex:triangle.getEdgeA().isConstrained())
+                        // Calculate grid spacing from maxArea (area = spacing^2)
+                        final double gridSpacing = Math.sqrt(maxArea);
+
+                        // Get triangle vertices
+                        Coordinate va = toCoordinate(triangle.getVertexA());
+                        Coordinate vb = toCoordinate(triangle.getVertexB());
+                        Coordinate vc = toCoordinate(triangle.getVertexC());
+
+                        org.locationtech.jts.geom.Triangle triangleGeom =
+                                new org.locationtech.jts.geom.Triangle(va, vb, vc);
+
+                        // Calculate bounding box of triangle
+                        double minX = Math.min(va.getX(), Math.min(vb.getX(), vc.getX()));
+                        double maxX = Math.max(va.getX(), Math.max(vb.getX(), vc.getX()));
+                        double minY = Math.min(va.getY(), Math.min(vb.getY(), vc.getY()));
+                        double maxY = Math.max(va.getY(), Math.max(vb.getY(), vc.getY()));
+
+                        // Generate grid points
+                        for (double x = minX; x <= maxX; x += gridSpacing) {
+                            for (double y = minY; y <= maxY; y += gridSpacing) {
+                                Coordinate p = new Coordinate(x, y);
+                                // Check if point is inside triangle
+                                boolean isInside = org.locationtech.jts.geom.Triangle.intersects(va, vb, vc, p);
+
+                                if (isInside) {
+                                    // Check if the point is on a constrained edge
+                                    boolean onConstrainedEdge = false;
+
+                                    // Check distance to edges and if they are constrained
+                                    if (triangle.getEdgeA().isConstrained() && new LineSegment(vb, vc)
+                                            .distance(new Coordinate(x, y)) < epsilon) {
+                                        onConstrainedEdge = true;
+                                    } else if (triangle.getEdgeB().isConstrained() && new LineSegment(va, vc)
+                                            .distance(new Coordinate(x, y)) < epsilon) {
+                                        onConstrainedEdge = true;
+                                    } else if (triangle.getEdgeC().isConstrained() && new LineSegment(va, vb)
+                                            .distance(new Coordinate(x, y)) < epsilon) {
+                                        onConstrainedEdge = true;
+                                    }
+                                    // Only add point if not on a constrained edge
+                                    if (!onConstrainedEdge) {
+                                        // Interpolate Z coordinate using barycentric coordinates
+                                        newSteinerPoints.add(new Vertex(x, y, triangleGeom.interpolateZ(p), 0));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 if (!newSteinerPoints.isEmpty()) {
                     tin.add(newSteinerPoints, null);
-                    newSteinerPoints.forEach(vertex -> insertedPoints.insert(new Envelope(toCoordinate(vertex)),
-                            vertex));
                     refine = true;
                     if (verbose) {
                         LOGGER.info("Refining Delaunay with {} points", newSteinerPoints.size());
