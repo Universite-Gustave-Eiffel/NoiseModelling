@@ -11,7 +11,9 @@
 package org.noise_planet.noisemodelling.pathfinder.utils.geometry;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -58,6 +60,23 @@ public class CurvedProfileGenerator {
             CutPoint newCp = cp.clone();
             newCp.setZGround(groundCoords[i].z);
             newCp.setCoordinate(curvedCoords[i]);
+            
+            // If this is a reflection point, also transform the wall coordinates
+            if (newCp instanceof CutPointReflection) {
+                CutPointReflection reflectionPoint = (CutPointReflection) newCp;
+                if (reflectionPoint.wall != null) {
+                    // Transform wall endpoints using the same curved transformation
+                    Coordinate[] wallCoords = new Coordinate[]{
+                            new Coordinate(reflectionPoint.wall.p0),
+                            new Coordinate(reflectionPoint.wall.p1)
+                    };
+                    Coordinate[] transformedWallCoords = applyTransformation(cs, cr, wallCoords, inversed);
+                    
+                    // Create a NEW LineSegment with transformed coordinates
+                    reflectionPoint.wall = new LineSegment(transformedWallCoords[0], transformedWallCoords[1]);
+                }
+            }
+            
             curvedProfile.add(newCp);
         }
         return curvedProfile;

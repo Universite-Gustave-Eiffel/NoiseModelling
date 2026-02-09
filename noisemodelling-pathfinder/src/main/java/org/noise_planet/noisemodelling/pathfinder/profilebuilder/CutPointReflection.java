@@ -71,6 +71,19 @@ public class CutPointReflection extends CutPoint {
     }
 
     @Override
+    public CutPoint clone() {
+        CutPointReflection cloned = (CutPointReflection) super.clone();
+        // Deep copy the wall LineSegment
+        if (this.wall != null) {
+            cloned.wall = new LineSegment(
+                    new Coordinate(this.wall.p0),
+                    new Coordinate(this.wall.p1)
+            );
+        }
+        return cloned;
+    }
+
+    @Override
     public String toString() {
         return "CutPointReflection{" +
                 "\nwall=" + wall +
