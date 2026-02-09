@@ -378,6 +378,7 @@ public class CnossosPathBuilder {
             }
             // Add reflection/vertical edge diffraction points/segments between i0 i1
             int previousPivotPoint = i0;
+            int previousPivotGround = i0Ground;
             for (int pointIndex = i0 + 1; pointIndex < i1; pointIndex++) {
                 final CutPoint currentPoint = cutProfile.cutPoints.get(pointIndex);
                 if (currentPoint instanceof CutPointReflection &&
@@ -395,11 +396,12 @@ public class CnossosPathBuilder {
                     PointPath diffractionPoint = new PointPath(pts2D.get(pointIndex),currentPoint.getzGround(), new ArrayList<>(), DIFV);
                     points.add(diffractionPoint);
                     // Compute additional segment
-                    Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i0Ground,cut2DGroundIndex.get(pointIndex) + 1);
+                    Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, previousPivotGround, cut2DGroundIndex.get(pointIndex) + 1);
                     meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                     SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pointIndex),
-                            meanPlane, cutProfile.getGPathByIndex(i0, pointIndex, Scene.DEFAULT_G_BUILDING), gS);
+                            meanPlane, cutProfile.getGPathByIndex(previousPivotPoint, pointIndex, Scene.DEFAULT_G_BUILDING), gS);
                     seg.setPoints2DGround(segmentGroundPoints);
+                    previousPivotGround = cut2DGroundIndex.get(pointIndex);
                     previousPivotPoint = pointIndex;
                     segments.add(seg);
                 }
@@ -409,10 +411,10 @@ public class CnossosPathBuilder {
                 // we added segments before i1 vertical plane diffraction point, but it is the last vertical plane
                 // diffraction point and we must add the remaining segment between the last horizontal diffraction point
                 // and the last point
-                Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, i1Ground, pts2DGround.length);
+                Coordinate[] segmentGroundPoints = Arrays.copyOfRange(pts2DGround, previousPivotGround, pts2DGround.length);
                 meanPlane = JTSUtility.getMeanPlaneCoefficients(segmentGroundPoints);
                 SegmentPath seg = computeSegment(pts2D.get(previousPivotPoint), pts2D.get(pts2D.size() - 1),
-                        meanPlane, cutProfile.getGPathByIndex(i1, cutProfile.cutPoints.size() - 1, Scene.DEFAULT_G_BUILDING),
+                        meanPlane, cutProfile.getGPathByIndex(previousPivotPoint, cutProfile.cutPoints.size() - 1, Scene.DEFAULT_G_BUILDING),
                         gS);
                 seg.setPoints2DGround(segmentGroundPoints);
                 segments.add(seg);
