@@ -474,9 +474,10 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
             roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId,  trackFileVersion, idLambda) / 10);
 
             contactFilter[idLambda] = getContactFilter(typeVehicle,  idLambda);
-            roughnessLtot[idLambda] = 10 * Math.log10(roughnessTotLambda[idLambda]) + contactFilter[idLambda];
             if (impactId != 0) {
-                roughnessLtot[idLambda] =  10 * Math.log10(Math.pow(10,roughnessLtot[idLambda]/ 10) + Math.pow(10, getImpactNoise(impactId,  idLambda) / 10));
+                roughnessLtot[idLambda] =  10 * Math.log10(roughnessTotLambda[idLambda]+ Math.pow(10, getImpactNoise(impactId,  idLambda) / 10))+ contactFilter[idLambda];
+            }else{
+                roughnessLtot[idLambda] = 10 * Math.log10(roughnessTotLambda[idLambda]) + contactFilter[idLambda];
             }
             roughnessLtot[idLambda] = Math.pow(10, roughnessLtot[idLambda] / 10);
             m--;
