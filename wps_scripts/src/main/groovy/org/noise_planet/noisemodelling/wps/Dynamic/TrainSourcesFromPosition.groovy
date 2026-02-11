@@ -1,3 +1,4 @@
+
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
@@ -41,6 +42,8 @@ import org.locationtech.jts.triangulate.quadedge.Vertex
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosParameters
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayCnossos
 import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayTrackCnossosParameters
+import org.noise_planet.noisemodelling.emission.railway.cnossos.RailwayVehicleCnossosParameters
+
 import org.noise_planet.noisemodelling.emission.railway.cnossosvar.RailwayCnossosvar;
 import org.noise_planet.noisemodelling.emission.railway.cnossosvar.RailwayVehicleCnossosParametersvar;
 
@@ -53,7 +56,7 @@ import java.sql.SQLException
 
 title = 'Map Difference'
 description = '&#10145;&#65039; Computes the difference between two noise maps'
-// TODO edit for specfic source position
+
 inputs = [
         trainsPosition : [
                 name: 'Trains position table',
@@ -219,13 +222,13 @@ def exec(Connection connection, Map input) {
     RailwayCnossos railway = new RailwayCnossos()
 
     // Fetch configuration
-    try {
+/*    try {
         URL trainTrainsetDataUrl = new URL(trainTrainsetData)
         trainTrainsetDataUrl.withInputStream { InputStream stream ->
-            railway.setTrainSetDataFile(stream as String)
+            railway.setTrainSetDataFile("RailwayTrainsets.json")
         }
     } catch (MalformedURLException ignored) {
-        railway.setTrainSetDataFile(trainTrainsetData)
+        railway.setTrainSetDataFile("RailwayTrainsets.json")
     }
     try {
         URL trainVehicleDataUrl = new URL(trainVehicleData)
@@ -238,11 +241,15 @@ def exec(Connection connection, Map input) {
     try {
         URL trainCoefficientsDataUrl = new URL(trainCoefficientsData)
         trainCoefficientsDataUrl.withInputStream { InputStream stream ->
-            railway.setRailwayDataFile(stream as String)
+            railway.setRailwayDataFile(stream)
         }
     } catch (MalformedURLException ignored) {
         railway.setRailwayDataFile(trainCoefficientsData)
-    }
+    }*/
+
+    railway.setTrainSetDataFile(trainTrainsetData)
+    railway.setVehicleDataFile(trainVehicleData)
+    railway.setRailwayDataFile(trainCoefficientsData)
 
     // Cache distance in metres when fetching all rails nearby the train position
     final double queryCacheDistance = 500
@@ -268,7 +275,7 @@ def exec(Connection connection, Map input) {
     sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_GEOM(IDSOURCE,TIMESTEP,THE_GEOM, DIR_ID, YAW, PITCH, ROLL) VALUES (?, ?, ?, ?, ?, ?, 0)") { BatchingPreparedStatementWrapper sourceGeomBatch ->
         sql.withBatch(BATCH_SIZE, "INSERT INTO SOURCES_EMISSION(IDSOURCE, PERIOD, DIR_ID,${bands.join(", ")}) VALUES (?, ?, ?," +
                 " ${(["?"] * bands.size()).join(", ")})") { BatchingPreparedStatementWrapper sourcePowerBatch ->
-           sql.eachRow('SELECT v.THE_GEOM, v.TRAIN_ID, v.TIMESTEP, v.TRAIN_SET, v.SPEED, r.NTRACK, r.TRACKTRANS, r.RAILROUGHN, r.IMPACTNOIS, r.CURVATURE, r.BRIDGETRAN FROM ' + trainsPosition + ' v INNER JOIN ' + railwayGeometries + ' r ON v.IDSECTION = r.IDSECTION;') { rs ->
+            sql.eachRow('SELECT v.THE_GEOM, v.TRAIN_ID, v.TIMESTEP, v.TRAIN_SET, v.SPEED, r.NTRACK, r.TRACKTRANS, r.RAILROUGHN, r.IMPACTNOIS, r.CURVATURE, r.BRIDGETRAN FROM ' + trainsPosition + ' v INNER JOIN ' + railwayGeometries + ' r ON v.IDSECTION = r.IDSECTION;') { rs ->
 
                 String trainset = rs.getString(fieldTrainset)
                 String trainId = rs.getString(fieldTrainId)
@@ -647,7 +654,7 @@ class VehicleInfo {
     double[] bridge = new double[24]
 
 
-            PositionAndOrientation source = new PositionAndOrientation()
+    PositionAndOrientation source = new PositionAndOrientation()
 
     private LineString currentRail = null
     double currentRailLength = 0
@@ -734,4 +741,3 @@ class AreaRails {
     }
 
 }
-
