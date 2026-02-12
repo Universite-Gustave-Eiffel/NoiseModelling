@@ -18,6 +18,7 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -226,7 +227,7 @@ def exec(Connection connection, input) {
     }
 
     logger.info('Add Primary Key column...')
-    sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE " + receivers_table_name + " ADD pk INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;")
 
     // Process Done
     resultString = "Process done. Table of receivers " + receivers_table_name + " created !"

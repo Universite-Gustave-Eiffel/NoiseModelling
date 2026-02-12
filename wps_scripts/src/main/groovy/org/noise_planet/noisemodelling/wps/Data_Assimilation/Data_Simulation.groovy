@@ -16,7 +16,6 @@ import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters
@@ -27,6 +26,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Data Simulation'
@@ -130,7 +130,7 @@ def exec(Connection connection,input) {
             int coefficientVersion = 2
             sql.withBatch( 100, qry) { ps ->
 
-                SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+                ResultSet rs = st.executeQuery()
 
                 double lvPerHour
                 double hgvPerHour

@@ -12,6 +12,7 @@
 
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -94,7 +95,7 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, Map input) {
 
-    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+    DBTypes dbType = DBUtils.getDBType(DatabaseHelper.resolveConnection(connection))
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)

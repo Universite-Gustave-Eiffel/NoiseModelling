@@ -18,6 +18,7 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import groovy.sql.Sql
 import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
@@ -303,7 +304,7 @@ def exec(Connection connection, input) {
         logger.info('Create RECEIVERS table...')
 
 
-        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer)")
+        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null " + DatabaseHelper.autoIncrement(connection) + ", the_geom geometry,build_pk integer)")
         sql.execute("INSERT INTO " + receivers_table_name + "(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + ") , pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
         sql.execute("ALTER TABLE "+receivers_table_name+" add primary key(pk)")
@@ -323,7 +324,7 @@ def exec(Connection connection, input) {
         // Building have population attribute
         // Set population attribute divided by number of receiver to each receiver
         sql.execute("DROP TABLE IF EXISTS tmp_receivers")
-        sql.execute("CREATE TABLE tmp_receivers(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer not null)")
+        sql.execute("CREATE TABLE tmp_receivers(pk integer not null " + DatabaseHelper.autoIncrement(connection) + ", the_geom geometry,build_pk integer not null)")
 
         sql.execute("INSERT INTO tmp_receivers(the_geom, build_pk) select ST_SetSRID(the_geom," + srid.toInteger() + "), pk building_pk from TMP_SCREENS;")
         logger.info('Add primary key')
@@ -347,7 +348,7 @@ def exec(Connection connection, input) {
 
         sql.execute("DROP TABLE IF EXISTS BUILDINGS_RECEIVERS_POP")
         sql.execute("CREATE TABLE BUILDINGS_RECEIVERS_POP(" + buildingPk + " integer primary key, pop float) AS SELECT b." + buildingPk + ", b.pop / COUNT(a.PK)::float FROM tmp_receivers a, " + building_table_name + " b where b." + buildingPk + " = a.build_pk GROUP BY b." + buildingPk)
-        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null AUTO_INCREMENT, the_geom geometry,build_pk integer, pop float)");
+        sql.execute("CREATE TABLE " + receivers_table_name + "(pk integer not null " + DatabaseHelper.autoIncrement(connection) + ", the_geom geometry,build_pk integer, pop float)");
         sql.execute("INSERT INTO "+receivers_table_name+"(the_geom, build_pk, pop) select a.the_geom, a.build_pk, b.pop from tmp_receivers a,  BUILDINGS_RECEIVERS_POP b where b." + buildingPk + " = a.build_pk;");
 
         logger.info('Add primary key on ' +receivers_table_name)

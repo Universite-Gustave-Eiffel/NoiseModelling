@@ -19,7 +19,6 @@ import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
@@ -29,6 +28,7 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 import java.sql.SQLException
 /**
  * @Author Pierre Aumond,  Univ Gustave Eiffel
@@ -149,7 +149,7 @@ def exec(Connection connection, input) {
 
     // Get size of the table (number of rail segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_geom_table_name)
-    SpatialResultSet rs1 = st.executeQuery().unwrap(SpatialResultSet.class)
+    ResultSet rs1 = st.executeQuery()
 
     while (rs1.next()) {
         nSection = rs1.getInt("total")

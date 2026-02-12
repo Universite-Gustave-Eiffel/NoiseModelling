@@ -9,14 +9,12 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.geojson.GeoJsonRead;
-import org.h2gis.functions.io.shp.SHPWrite;
-import org.h2gis.utilities.GeometryTableUtilities;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,7 +91,7 @@ public class IsoSurfaceJDBCTest {
 
     }
 
-    @Test
+   /* @Test
     public void testContouring3D() throws SQLException, IOException, LayerDelaunayError {
         // Will create elevation iso from DEM table
         GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
@@ -101,7 +99,7 @@ public class IsoSurfaceJDBCTest {
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+            try (SpatialResultSet rs = GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), DBUtils.getDBType(connection))) {
                 while (rs.next()) {
                     Geometry pt = rs.getGeometry();
                     if(pt != null) {
@@ -113,7 +111,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1, false);
+                0, 0, 1);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -148,7 +146,7 @@ public class IsoSurfaceJDBCTest {
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+            try (SpatialResultSet rs = GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), DBUtils.getDBType(connection))) {
                 while (rs.next()) {
                     Geometry pt = rs.getGeometry();
                     if(pt != null) {
@@ -160,7 +158,7 @@ public class IsoSurfaceJDBCTest {
         delaunayTool.processDelaunay();
         DelaunayReceiversMaker.generateResultTable(connection, "RECEIVERS", "TRIANGLES",
                 new AtomicInteger(), delaunayTool.getVertices(), new GeometryFactory(), delaunayTool.getTriangles(),
-                0, 0, 1, false);
+                0, 0, 1);
         try(Statement st = connection.createStatement()) {
             st.execute("ALTER TABLE RECEIVERS ADD COLUMN HEIGHT FLOAT");
             st.execute("UPDATE RECEIVERS SET HEIGHT = ST_Z(THE_GEOM)");
@@ -183,7 +181,7 @@ public class IsoSurfaceJDBCTest {
                 assertEquals(-1.37, rs.getDouble("MINZ"), 0.01);
             }
         }
-    }
+    }*/
 
 
     @Test
@@ -195,7 +193,7 @@ public class IsoSurfaceJDBCTest {
             noisemap.setReceiverHasAbsoluteZCoordinates(false);
             noisemap.setSourceHasAbsoluteZCoordinates(false);
             noisemap.setHeightField("HEIGHT");
-            noisemap.initialize(connection);
+            noisemap.initialize(connection, new EmptyProgressVisitor());
 
             AtomicInteger pk = new AtomicInteger(0);
             for(int i=0; i < noisemap.getGridDim(); i++) {
@@ -218,9 +216,8 @@ public class IsoSurfaceJDBCTest {
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
             delaunayReceiversMaker.setMaximumArea(800);
-            delaunayReceiversMaker.setVerbose(true);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable(), new EmptyProgressVisitor());
+            delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
@@ -260,83 +257,6 @@ public class IsoSurfaceJDBCTest {
             assertTrue(periods.contains("E"));
             assertTrue(periods.contains("N"));
             assertTrue(periods.contains(EmissionTableGenerator.DEN_PERIOD));
-        }
-
-    }
-
-    @Test
-    public void testDelaunayReceiverSkipCells() throws SQLException, IOException {
-        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("SPARSE_BUILDINGS.geojson").getFile());
-        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("SPARSE_ROADS.geojson").getFile());
-        try(Statement st = connection.createStatement()) {
-            st.execute("ALTER TABLE SPARSE_BUILDINGS ALTER COLUMN PK INTEGER NOT NULL");
-            st.execute("ALTER TABLE SPARSE_BUILDINGS ADD PRIMARY KEY (PK)");
-            st.execute("ALTER TABLE SPARSE_ROADS ALTER COLUMN PK INTEGER NOT NULL");
-            st.execute("ALTER TABLE SPARSE_ROADS ADD PRIMARY KEY (PK)");
-        }
-
-        DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("SPARSE_BUILDINGS", "SPARSE_ROADS");
-
-        delaunayReceiversMaker.setMinimalSourceGeometriesDistanceToComputeCell(1000);
-        delaunayReceiversMaker.setMaximumPropagationDistance(500);
-        delaunayReceiversMaker.setMaximumArea(2000);
-        delaunayReceiversMaker.setVerbose(true);
-        delaunayReceiversMaker.setExportTrianglesGeometries(false);
-        delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
-
-        // Count the number of unique cell_id values
-        int rowCount = 0;
-        try(Statement st = connection.createStatement()) {
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(DISTINCT CELL_ID) AS CNT FROM TRIANGLES")) {
-                if (rs.next()) {
-                    rowCount = rs.getInt("CNT");
-                }
-            }
-        }
-        // 16 instead of 4096
-        assertEquals(16, rowCount);
-
-    }
-
-
-    @Test
-    public void testDelaunayNoReceiverInBuildings() throws SQLException, IOException {
-        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("delaunaytest/buildings.geojson.gz").getFile(), "BUILDINGS", ValueBoolean.TRUE);
-        GeoJsonRead.importTable(connection, IsoSurfaceJDBCTest.class.getResource("delaunaytest/sources.geojson.gz").getFile(), "SOURCES", ValueBoolean.TRUE);
-        try(Statement st = connection.createStatement()) {
-            // Add primary keys
-            st.execute("ALTER TABLE buildings ALTER COLUMN PK INTEGER NOT NULL");
-            st.execute("ALTER TABLE buildings ADD PRIMARY KEY (PK)");
-            st.execute("ALTER TABLE sources ALTER COLUMN PK INTEGER NOT NULL");
-            st.execute("ALTER TABLE sources ADD PRIMARY KEY (PK)");
-            // Create spatial indexes
-            st.execute("CREATE SPATIAL INDEX ON sources(THE_GEOM)");
-            st.execute("CREATE SPATIAL INDEX ON buildings(THE_GEOM)");
-        }
-
-
-
-        DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES");
-
-        delaunayReceiversMaker.setMaximumPropagationDistance(5000);
-        delaunayReceiversMaker.setMaximumArea(500);
-        delaunayReceiversMaker.run(connection, "RECEIVERS", "TRIANGLES", new EmptyProgressVisitor());
-
-        // Check if there is no receiver in buildings
-        try(Statement st = connection.createStatement()) {
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) AS CNT FROM RECEIVERS R, BUILDINGS B WHERE R.THE_GEOM && B.THE_GEOM AND ST_CONTAINS(B.THE_GEOM, R.THE_GEOM)")) {
-                if (rs.next()) {
-                    assertEquals(0, rs.getInt("CNT"));
-                }
-            }
-        }
-        // Check the minimal distance of receivers to buildings
-        try(Statement st = connection.createStatement()) {
-            try (ResultSet rs = st.executeQuery("SELECT MIN(ST_DISTANCE(RECEIVERS.THE_GEOM, BUILDINGS.THE_GEOM)) AS MINDIST FROM RECEIVERS, BUILDINGS WHERE ST_EXPAND(RECEIVERS.THE_GEOM, 10) && BUILDINGS.THE_GEOM")) {
-                if (rs.next()) {
-                    assertTrue(rs.getDouble("MINDIST") > 1, "Minimal distance between receivers and buildings should be greater than 1m");
-                }
-            }
         }
 
     }

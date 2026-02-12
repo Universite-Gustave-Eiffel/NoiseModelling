@@ -243,6 +243,11 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis</groupId>
+                <artifactId>postgis-jts</artifactId>
+                <version>[2.2.5, 3)</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis</groupId>
                 <artifactId>h2gis-utilities</artifactId>
                 <version>[2.2.5, 3)</version>
             </dependency>

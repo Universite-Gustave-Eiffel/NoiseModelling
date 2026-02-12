@@ -34,6 +34,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import groovy.transform.CompileStatic
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.sql.*
@@ -269,8 +270,8 @@ static def exec(Connection connection, input) {
 
     sql.execute("DROP TABLE IF EXISTS " + outTableName)
     sql.execute("DROP TABLE IF EXISTS " + outTableName + "_SEQUENCE")
-    sql.execute("CREATE TABLE " + outTableName + ''' (
-        PK integer PRIMARY KEY AUTO_INCREMENT,
+    sql.execute("CREATE TABLE " + outTableName + """ (
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)},
         PERSON_ID varchar(255),
         AGE int,
         SEX varchar,
@@ -281,9 +282,9 @@ static def exec(Connection connection, input) {
         WORK_FACILITY varchar(255),
         WORK_GEOM geometry,
         LAEQ real
-    );''')
-    sql.execute("CREATE TABLE " + outTableName + '''_SEQUENCE (
-        PK integer PRIMARY KEY AUTO_INCREMENT,
+    );""".toString())
+    sql.execute("CREATE TABLE " + outTableName + """_SEQUENCE (
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)},
         PERSON_ID varchar(255),
         TIME int,
         LEVEL double,
@@ -296,7 +297,7 @@ static def exec(Connection connection, input) {
         END_ACTIVITY_ID varchar,
         END_ACTIVITY_TYPE varchar,
         END_ACTIVITY_GEOM geometry
-    );''')
+    );""".toString())
     Statement stmt = connection.createStatement();
 
     int doprint = 1

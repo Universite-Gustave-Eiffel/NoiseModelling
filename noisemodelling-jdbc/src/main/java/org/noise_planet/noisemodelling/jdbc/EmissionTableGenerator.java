@@ -4,6 +4,8 @@ import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.SpatialResultSet;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -13,6 +15,7 @@ import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParamete
 import org.noise_planet.noisemodelling.emission.utils.Utils;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
+import org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
@@ -207,6 +210,31 @@ public class EmissionTableGenerator {
         return new double[][] {ld, le, ln};
     }
 
+    /**
+     * Computes the sound levels (Lw) for different periods based on the provided result set.
+     * This overload works with both H2GIS and PostGIS connections.
+     * @param rs Result set on a road record
+     * @param dbType Database type for geometry extraction
+     * @param coefficientVersion Cnossos coefficient version  (1 = 2015, 2 = 2020)
+     * @param sourceFieldsCache SQL Fields cache
+     * @return a two-dimensional array containing the sound levels (Ld, Le, Ln) for each frequency level.
+     * @throws SQLException Exception while evaluating the lw
+     */
+    public static double[][] computeLw(ResultSet rs, DBTypes dbType, int coefficientVersion, Map<String, Integer> sourceFieldsCache) throws SQLException {
+        Geometry g = GeometrySqlHelper.getGeometry(rs, "THE_GEOM", dbType);
+        double slope = getSlope(g);
+        // Day
+        double[] ld = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_D", slope, coefficientVersion, sourceFieldsCache));
+
+        // Evening
+        double[] le = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_E", slope, coefficientVersion, sourceFieldsCache));
+
+        // Night
+        double[] ln = AcousticIndicatorsFunctions.dBToW(getEmissionFromTrafficTable(rs, "_N", slope, coefficientVersion, sourceFieldsCache));
+
+        return new double[][] {ld, le, ln};
+    }
+
     public static double getSlope(SpatialResultSet rs) {
         double slope = 0;
         try {
@@ -253,19 +281,35 @@ public class EmissionTableGenerator {
      */
     public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
 
+        Connection dialectConnection = connection;
+        try {
+            Connection unwrapped = connection.unwrap(Connection.class);
+            if (unwrapped != null) {
+                dialectConnection = unwrapped;
+            }
+        } catch (SQLException ignored) {
+            // Keep original connection when unwrap is not supported
+        }
+
+        DBTypes dbType = DBUtils.getDBType(dialectConnection);
+        boolean isPostgreSQL = GeometrySqlHelper.isPostgreSQL(dbType);
+
+        String doubleKeyword = isPostgreSQL ? "DOUBLE PRECISION" : "DOUBLE";
+
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (PK_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int, GS double");
+                " the_geom GEOMETRY, DIR_ID int, GS " + doubleKeyword);
+        String geomPlaceholder = GeometrySqlHelper.geometryInsertExpression(dbType);
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
                 " DIR_ID, GS");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
+        StringBuilder insertIntoValuesQuery = new StringBuilder("?," + geomPlaceholder + ",?,?");
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", ").append(frequencyPrepend).append("D");
             createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
+            createTableQuery.append(" ").append(doubleKeyword);
             insertIntoQuery.append(", ").append(frequencyPrepend).append("D");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
@@ -273,7 +317,7 @@ public class EmissionTableGenerator {
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", ").append(frequencyPrepend).append("E");
             createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
+            createTableQuery.append(" ").append(doubleKeyword);
             insertIntoQuery.append(", ").append(frequencyPrepend).append("E");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
@@ -281,7 +325,7 @@ public class EmissionTableGenerator {
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", ").append(frequencyPrepend).append("N");
             createTableQuery.append(thirdOctave);
-            createTableQuery.append(" double precision");
+            createTableQuery.append(" ").append(doubleKeyword);
             insertIntoQuery.append(", ").append(frequencyPrepend).append("N");
             insertIntoQuery.append(thirdOctave);
             insertIntoValuesQuery.append(", ?");
@@ -294,7 +338,7 @@ public class EmissionTableGenerator {
         connection.createStatement().execute(createTableQuery.toString());
 
         // Get Class to compute HZ
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName);
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(dialectConnection, railSectionTableName, railTrafficTableName);
 
         while (railWayLWIterator.hasNext()) {
             RailWayLWGeom railWayLWGeom = railWayLWIterator.next();
@@ -371,7 +415,7 @@ public class EmissionTableGenerator {
 
                     int cursor = 1;
                     ps.setInt(cursor++, pk);
-                    ps.setObject(cursor++, sourceGeometry);
+                    cursor = GeometrySqlHelper.setGeometryParameter(ps, cursor, sourceGeometry, dbType);
                     ps.setInt(cursor++, directivityId);
                     ps.setDouble(cursor++, railWayLWGeom.getGs());
                     for (double v : LWDay) {
@@ -391,7 +435,13 @@ public class EmissionTableGenerator {
         }
 
         // Add primary key to the LW table
-        connection.createStatement().execute("ALTER TABLE "+outputTable+" ADD PK INT AUTO_INCREMENT PRIMARY KEY;");
+        String addPkSql;
+        if (isPostgreSQL) {
+            addPkSql = "ALTER TABLE " + outputTable + " ADD COLUMN PK SERIAL PRIMARY KEY;";
+        } else {
+            addPkSql = "ALTER TABLE " + outputTable + " ADD PK INT AUTO_INCREMENT PRIMARY KEY;";
+        }
+        connection.createStatement().execute(addPkSql);
     }
 
 

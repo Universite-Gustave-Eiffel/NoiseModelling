@@ -34,11 +34,13 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.ResultSet
+import java.sql.SQLException
 import java.sql.Statement
 
 title = 'Import File'
@@ -159,8 +161,8 @@ def exec(Connection connection, input) {
         tableName = fileName
     }
 
-    // do it case-insensitive
-    tableName = tableName.toUpperCase()
+    // Normalize table name for the target database (uppercase for H2, lowercase for PostgreSQL)
+    tableName = DatabaseHelper.normalizeTableName(connection, tableName)
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
@@ -231,7 +233,7 @@ def exec(Connection connection, input) {
     if (spatialFieldNames.isEmpty()) {
         logger.warn("The table " + tableName + " does not contain a geometry field.")
     } else {
-        stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + tableName + '_INDEX ON ' + tableName + '(the_geom);')
+        stmt.execute(DatabaseHelper.createSpatialIndex(connection, tableName, 'the_geom'))
 
         // Get the SRID of the table
         Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
@@ -263,10 +265,22 @@ def exec(Connection connection, input) {
 
     if (pkIndex == 0) {
         if (pkUserIndex > 0) {
-            stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
-            stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
-            resultString = resultString + String.format(tableName + " has a new primary key constraint on PK")
-            logger.info(String.format(tableName + " has a new primary key constraint on PK"))
+            try {
+                if (DatabaseHelper.isPostgreSQL(connection)) {
+                    stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK SET NOT NULL;")
+                } else {
+                    stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
+                }
+                stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
+                resultString = resultString + String.format(tableName + " has a new primary key constraint on PK")
+                logger.info(String.format(tableName + " has a new primary key constraint on PK"))
+            } catch (SQLException e) {
+                // Primary key might already exist (e.g., in PostGIS after reimport)
+                if (!e.getMessage().contains("multiple primary keys")) {
+                    throw e
+                }
+                logger.info("Primary key already exists on table " + tableName)
+            }
         }
     }
 

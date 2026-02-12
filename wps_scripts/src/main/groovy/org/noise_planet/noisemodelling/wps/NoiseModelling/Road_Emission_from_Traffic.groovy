@@ -16,18 +16,19 @@
 
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.Tuple
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper
 import org.hsqldb.Table
 import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
@@ -161,8 +162,8 @@ def exec(Connection connection, input) {
     String sources_table_name = input['tableRoads']
     TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name, dbType)
 
-    // do it case-insensitive
-    sources_table_name = sources_table_name.toUpperCase()
+    // Normalize table name for the target database (uppercase for H2, lowercase for PostgreSQL)
+    sources_table_name = DatabaseHelper.normalizeTableName(connection, sources_table_name)
 
     //Get optional geometry field of the source table
     List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
@@ -185,11 +186,16 @@ def exec(Connection connection, input) {
     boolean hasPeriodField = lowerCaseColumnNames.contains("period")
     boolean hasIdSourceField = lowerCaseColumnNames.contains("idsource")
 
-    // drop table LW_ROADS if exists and the create and prepare the table
-    sql.execute("drop table if exists LW_ROADS;")
+    // Output table name (normalized for target database)
+    String outputTableName = DatabaseHelper.normalizeTableName(connection, "LW_ROADS")
+    TableLocation outputTableIdentifier = TableLocation.parse(outputTableName, dbType)
+    String outputTableSql = outputTableIdentifier.toString()
 
-    def createTableQuery = new StringBuilder("CREATE TABLE LW_ROADS (")
-    def preparedInsertQuery = new StringBuilder("INSERT INTO LW_ROADS(")
+    // drop table LW_ROADS if exists and the create and prepare the table
+    sql.execute("drop table if exists " + outputTableSql + ";")
+
+    def createTableQuery = new StringBuilder("CREATE TABLE " + outputTableSql + " (")
+    def preparedInsertQuery = new StringBuilder("INSERT INTO " + outputTableSql + "(")
     int fieldCount = 0
 
     if(primaryKeyColumn != null) {
@@ -250,12 +256,12 @@ def exec(Connection connection, input) {
     }
 
     // Create table
-    createTableQuery.setLength(createTableQuery.length() - 2) // remove last comma
+    createTableQuery.delete(createTableQuery.length() - 2, createTableQuery.length()) // remove last comma
     createTableQuery.append(");")
     sql.execute(createTableQuery.toString())
 
     // Prepared insert query
-    preparedInsertQuery.setLength(preparedInsertQuery.length() - 2) // remove last comma
+    preparedInsertQuery.delete(preparedInsertQuery.length() - 2, preparedInsertQuery.length()) // remove last comma
     preparedInsertQuery.append(") VALUES (")
     String.join(", ", Collections.nCopies(fieldCount, "?")).each {
         preparedInsertQuery.append(it)
@@ -269,7 +275,7 @@ def exec(Connection connection, input) {
 
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)
-    ResultSet rs1 = st.executeQuery().unwrap(ResultSet.class)
+    ResultSet rs1 = st.executeQuery()
     while (rs1.next()) {
         def nbRoads = rs1.getInt("total")
         logger.info('The table '+sources_table_name+' has ' + nbRoads + ' lines.')
@@ -277,7 +283,7 @@ def exec(Connection connection, input) {
 
     sql.withBatch(100, qry) { ps ->
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
-        SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+        ResultSet rs = st.executeQuery()
 
         Map<String, Integer> sourceFieldsCache = new HashMap<>()
         while (rs.next()) {
@@ -289,18 +295,19 @@ def exec(Connection connection, input) {
                 parameters.add(rs.getInt("IDSOURCE"))
             }
             if(geomFields.size() > 0) {
-                parameters.add(rs.getGeometry(geomFields.get(0)))
+                parameters.add(DatabaseHelper.getGeometry(rs, geomFields.get(0)))
             }
             if(hasPeriodField) {
                 parameters.add(rs.getString("PERIOD"))
                 // Slope value will be overwritten if the slope field is present
-                double slope = EmissionTableGenerator.getSlope(rs)
+                def geom = DatabaseHelper.getGeometry(rs, "THE_GEOM")
+                double slope = EmissionTableGenerator.getSlope(geom)
                 double[] emissionValues = EmissionTableGenerator.getEmissionFromTrafficTable(rs, "", slope, coefficientVersion, sourceFieldsCache)
                 for(double val : emissionValues) {
                     parameters.add(val)
                 }
             } else {
-                double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+                double[][] results = EmissionTableGenerator.computeLw(rs, dbType, coefficientVersion, sourceFieldsCache)
                 def lday = AcousticIndicatorsFunctions.wToDb(results[0])
                 def levening = AcousticIndicatorsFunctions.wToDb(results[1])
                 def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
@@ -318,14 +325,28 @@ def exec(Connection connection, input) {
         }
     }
 
+    if (DatabaseHelper.isPostgreSQL(connection)) {
+        int sourceSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+        if (sourceSrid > 0) {
+            sql.execute("ALTER TABLE " + outputTableSql + " ALTER COLUMN THE_GEOM TYPE geometry(GeometryZ, " + sourceSrid + ") USING ST_Force3D(ST_SetSRID(THE_GEOM, " + sourceSrid + "));")
+        }
+    }
+
     if(force3D) {
         // Force the Z height to the road segments
-        sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);")
+        sql.execute("UPDATE " + outputTableSql + " SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);")
     }
 
     if(primaryKeyColumn != null) {
-        // Set primary key to the road table
-        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY ("+primaryKeyColumn.first()+");  ")
+        // Set primary key to the road table (copied from source table)
+        sql.execute("ALTER TABLE " + outputTableSql + " ADD PRIMARY KEY (" + primaryKeyColumn.first() + ");")
+    } else {
+        // Fallback: guarantee a PK on output table for downstream scripts (e.g. Delaunay_Grid)
+        if (DatabaseHelper.isPostgreSQL(connection)) {
+            sql.execute("ALTER TABLE " + outputTableSql + " ADD COLUMN PK SERIAL PRIMARY KEY;")
+        } else {
+            sql.execute("ALTER TABLE " + outputTableSql + " ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+        }
     }
 
     resultString = "Calculation Done ! The table LW_ROADS has been created."

@@ -19,8 +19,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
-
 /**
  * Add emission information for each source in the computation scene
  * This is input data, not thread safe, never update anything here during propagation
@@ -103,6 +101,8 @@ public class SceneWithEmission extends SceneWithAttenuation {
             case INPUT_MODE_LW_DEN:
                 processEmissionDEN(pk, rs);
                 break;
+            default:
+                break;
         }
     }
 
@@ -136,6 +136,8 @@ public class SceneWithEmission extends SceneWithAttenuation {
                 break;
             case INPUT_MODE_LW:
                 processEmission(pk, rs);
+                break;
+            default:
                 break;
         }
     }

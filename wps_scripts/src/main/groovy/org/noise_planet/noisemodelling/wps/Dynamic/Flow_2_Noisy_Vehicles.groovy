@@ -17,6 +17,7 @@
 
 package org.noise_planet.noisemodelling.wps.Dynamic
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -24,7 +25,6 @@ import groovy.time.TimeCategory
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
@@ -176,7 +176,7 @@ def exec(Connection connection, input) {
 
     sql.execute("drop table SOURCES_GEOM if exists;" +
             "create table SOURCES_GEOM as SELECT ST_UpdateZ(the_geom,0.05) the_geom,ROAD_ID, LV , LV_SPD , HV , HV_SPD from ST_Explode('ROAD_POINTS');" +
-            "alter table SOURCES_GEOM add PK INT AUTO_INCREMENT  PRIMARY KEY;")
+            "alter table SOURCES_GEOM add PK INT " + DatabaseHelper.autoIncrement(connection) + "  PRIMARY KEY;")
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS")
 
 
@@ -234,7 +234,7 @@ def exec(Connection connection, input) {
 
         sql.query("SELECT * FROM    "+sources_table_name+"   ;    ", { ResultSet result ->
 
-            SpatialResultSet rs = result.unwrap(SpatialResultSet.class)
+            ResultSet rs = result
             int k=1
 
             while (rs.next()) {
@@ -245,7 +245,7 @@ def exec(Connection connection, input) {
                 road.setRoad(
                         rs.getLong('PK'),
                         "",
-                        rs.getGeometry('THE_GEOM'),
+                        DatabaseHelper.getGeometry(rs, 'THE_GEOM'),
                         rs.getInt('LV_D'),
                         rs.getDouble('LV_SPD_D'),
                         rs.getInt('HGV_D'),
@@ -253,11 +253,11 @@ def exec(Connection connection, input) {
                 )
 
                 sql.query("SELECT * FROM SOURCES_GEOM WHERE ROAD_ID = " + road.id, { ResultSet result2 ->
-                    SpatialResultSet rs2 = result2.unwrap(SpatialResultSet.class)
+                    ResultSet rs2 = result2
                     while (rs2.next()) {
                         road.source_points.add(new SourcePoint(
                                 rs2.getLong('PK'),
-                                rs2.getGeometry('THE_GEOM')
+                                DatabaseHelper.getGeometry(rs2, 'THE_GEOM')
                         ))
                     }
                 })

@@ -17,13 +17,13 @@ import geoserver.catalog.Store
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 
 
 title = 'Extraction of the best configurations'
@@ -118,7 +118,7 @@ static def exec(Connection connection, input){
 
     List<Integer> tValues = new ArrayList<>();
     PreparedStatement st = connection.prepareStatement("SELECT DISTINCT EPOCH FROM " + observationTable);
-    SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+    ResultSet rs = st.executeQuery()
     while (rs.next()) {
         tValues.add(rs.getInt("EPOCH"))
     }

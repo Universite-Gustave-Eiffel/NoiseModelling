@@ -15,6 +15,7 @@
 
 package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.GroovyRowResult
@@ -143,13 +144,13 @@ static def exec(Connection connection, input) {
 
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
 
-    String create_query = "CREATE TABLE " + outTableName + '''( 
-        PK integer PRIMARY KEY AUTO_INCREMENT,
+    String create_query = ("CREATE TABLE " + outTableName + """( 
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)},
         FACILITY varchar(255),
         THE_GEOM geometry,
         ORIGIN_GEOM geometry,
         TYPES varchar(255)
-    )'''
+    )""").toString()
     sql.execute(create_query)
 
     PreparedStatement insert_stmt = connection.prepareStatement(

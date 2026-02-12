@@ -15,6 +15,7 @@
 
 package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -266,25 +267,25 @@ static def exec(Connection connection, input) {
     logger.info("Create SQL tables : " + outTableName + " & " + lwTableName)
     // Open connection
     sql.execute("DROP TABLE IF EXISTS " + outTableName)
-    sql.execute("CREATE TABLE " + outTableName + '''( 
-        PK integer PRIMARY KEY AUTO_INCREMENT, 
+    sql.execute("CREATE TABLE " + outTableName + """( 
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)}, 
         LINK_ID varchar(255),
         OSM_ID varchar(255),
         THE_GEOM geometry
-    );''')
+    );""".toString())
 
     sql.execute("DROP TABLE IF EXISTS " + lwTableName)
-    sql.execute("CREATE TABLE " + lwTableName + '''( 
-        PK integer PRIMARY KEY AUTO_INCREMENT, 
+    sql.execute("CREATE TABLE " + lwTableName + """( 
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)}, 
         IDSOURCE integer NOT NULL,
         HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision,
         PERIOD varchar(50)
-    );''')
+    );""".toString())
 
     if (exportTraffic) {
         sql.execute("DROP TABLE IF EXISTS " + trafficTableName)
-        sql.execute("CREATE TABLE " + trafficTableName + '''( 
-            PK integer PRIMARY KEY AUTO_INCREMENT, 
+        sql.execute("CREATE TABLE " + trafficTableName + """( 
+            PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)}, 
             IDSOURCE integer NOT NULL,
             LV_D double precision,
             LV_SPD_D double precision,
@@ -297,18 +298,18 @@ static def exec(Connection connection, input) {
             WBV_D double precision,
             WBV_SPD_D double precision,
             PERIOD varchar(50)
-        );''')
+        );""".toString())
     }
     if (keepVehicleContrib) {
         sql.execute("DROP TABLE IF EXISTS " + contribTableName)
-        sql.execute("CREATE TABLE " + contribTableName + '''( 
-            PK integer PRIMARY KEY AUTO_INCREMENT, 
+        sql.execute("CREATE TABLE " + contribTableName + """( 
+            PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)}, 
             IDSOURCE integer NOT NULL,
             PERSON_ID varchar(255),
             VEHICLE_ID varchar(255),
             HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision,
             PERIOD varchar(50)
-        );''')
+        );""".toString())
     }
 
     PreparedStatement roadStatement = connection.prepareStatement("INSERT INTO " + outTableName + " (LINK_ID, OSM_ID, THE_GEOM) VALUES (?, ?, ST_UpdateZ(ST_GeomFromText(?, " + SRID + "),0.05))")

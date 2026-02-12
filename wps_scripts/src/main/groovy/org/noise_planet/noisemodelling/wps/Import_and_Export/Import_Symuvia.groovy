@@ -4,6 +4,7 @@
 
 package org.noise_planet.noisemodelling.wps.Import_and_Export
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import jdk.internal.org.xml.sax.SAXException
@@ -220,7 +221,7 @@ def exec(Connection connection, input) {
         stmt.execute("ALTER TABLE " + tableNameTraj + " ALTER COLUMN PK INT NOT NULL;")
         stmt.execute("ALTER TABLE " + tableNameTraj + " ADD PRIMARY KEY (PK);  ")
     } else {
-        stmt.execute("ALTER TABLE " + tableNameTraj + " ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+        stmt.execute("ALTER TABLE " + tableNameTraj + " ADD PK INT ${DatabaseHelper.autoIncrement(connection)} PRIMARY KEY;")
     }
 
     resultString = "The table " + tableNameTraj + " has been uploaded to database!"

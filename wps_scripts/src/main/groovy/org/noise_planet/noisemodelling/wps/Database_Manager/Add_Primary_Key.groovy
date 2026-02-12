@@ -16,6 +16,7 @@
 
 package org.noise_planet.noisemodelling.wps.Database_Manager
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -112,7 +113,7 @@ def exec(Connection connection, input) {
         stmt.execute("ALTER TABLE " + table + " ADD PRIMARY KEY (" + pkName + ");  ")
         resultString = resultString + String.format(table + " has a new primary key constraint on " + pkName + ".")
     } else {
-        stmt.execute("ALTER TABLE " + table + " ADD " + pkName + " INT AUTO_INCREMENT PRIMARY KEY;")
+        stmt.execute("ALTER TABLE " + table + " ADD " + pkName + " INT ${DatabaseHelper.autoIncrement(connection)} PRIMARY KEY;")
         resultString = resultString + String.format(table + " has a new primary key column which is called " + pkName + ".")
     }
 

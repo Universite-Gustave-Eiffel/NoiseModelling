@@ -44,6 +44,10 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
+            <artifactId>postgis-jts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis</groupId>
             <artifactId>h2gis</artifactId>
         </dependency>
         <dependency>

@@ -17,6 +17,7 @@
  */
 
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -344,7 +345,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_oro;
     CREATE TABLE dem_oro AS SELECT THE_GEOM FROM $inputOro;
     CREATE SPATIAL INDEX ON dem_oro(THE_GEOM);
-    ALTER TABLE dem_oro ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_oro ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_oro add primary key(PK_LINE);
     
     -- Orography: layer $inputOro imported
@@ -357,7 +358,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_hydro;
     CREATE TABLE dem_hydro AS SELECT THE_GEOM FROM $inputHydro;
     CREATE SPATIAL INDEX ON dem_hydro(THE_GEOM);
-    ALTER TABLE dem_hydro ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_hydro ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_hydro add primary key(PK_LINE);
     
     -- Hydrography: layer $inputHydro imported
@@ -372,7 +373,7 @@ def exec(Connection connection, input) {
     CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
         FROM $inputRoad WHERE POS_SOL = '0' AND st_zmin(THE_GEOM) > 0;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
-    ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_roads ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_roads add primary key(PK_LINE);
     
     -- Roads: layer $inputRoad imported
@@ -385,7 +386,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_rail;    
     CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE st_zmin(THE_GEOM) > 0;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
-    ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_rail ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
     
     -- Railways: layer $inputRail imported

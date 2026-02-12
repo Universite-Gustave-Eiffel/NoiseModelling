@@ -15,6 +15,7 @@
 
 package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.GroovyRowResult
@@ -231,8 +232,8 @@ static def exec(Connection connection, input) {
         counter ++
     });
 
-    query = "CREATE TABLE " + outTableName + '''( 
-        PK integer PRIMARY KEY AUTO_INCREMENT,
+    query = ("CREATE TABLE " + outTableName + """( 
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)},
         FACILITY varchar(255),
         THE_GEOM geometry,
         ORIGIN_GEOM geometry,
@@ -240,8 +241,8 @@ static def exec(Connection connection, input) {
     ) AS
     SELECT A.PK, A.FACILITY, R.THE_GEOM AS THE_GEOM, A.THE_GEOM AS ORIGIN_GEOM, A.TYPES
     FROM TMP_ACT_BUILD_REC ABR
-    INNER JOIN ''' + activitiesTable + ''' A ON A.PK = ABR.ACTIVITY_PK
-    INNER JOIN ''' + receiversTable + ''' R ON R.PK = ABR.RECEIVER_PK''';
+    INNER JOIN """ + activitiesTable + """ A ON A.PK = ABR.ACTIVITY_PK
+    INNER JOIN """ + receiversTable + """ R ON R.PK = ABR.RECEIVER_PK""").toString();
 
     sql.execute(query);
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");

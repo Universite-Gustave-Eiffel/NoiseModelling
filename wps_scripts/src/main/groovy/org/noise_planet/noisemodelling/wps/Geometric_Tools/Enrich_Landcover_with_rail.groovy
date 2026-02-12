@@ -17,6 +17,7 @@
  */
 
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -302,7 +303,7 @@ def exec(Connection connection, input) {
         WHERE st_zmin(a.THE_GEOM) > 0 AND p.idplatform ='SNCF';
 
     CREATE SPATIAL INDEX ON landcover_rail(THE_GEOM);
-    ALTER TABLE landcover_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE landcover_rail ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE landcover_rail add primary key(PK_LINE);
     
     -- Railways: layer $inputRail imported

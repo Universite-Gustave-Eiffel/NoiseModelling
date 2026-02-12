@@ -17,7 +17,10 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
+import org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
@@ -60,6 +63,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
     Writer writer;
     ObjectWriter jsonWriter;
     int srid;
+    DBTypes dbType;
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public double[] aWeightingArray = Arrays.stream(
                     asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE)).
@@ -78,6 +82,11 @@ public class NoiseMapWriter implements Callable<Boolean> {
         databaseParameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
         this.resultsCache = ResultsCache;
         this.srid = noiseMapByReceiverMaker.getGeometryFactory().getSRID();
+        try {
+            this.dbType = GeometrySqlHelper.resolveDbType(connection);
+        } catch (SQLException e) {
+            this.dbType = DBTypes.H2GIS;
+        }
         if(noiseMapByReceiverMaker.getPropagationProcessDataFactory() instanceof DefaultTableLoader) {
             aWeightingArray = ((DefaultTableLoader)noiseMapByReceiverMaker.getPropagationProcessDataFactory()).
                     aWeightingArray.stream().mapToDouble(value -> value).toArray();
@@ -122,7 +131,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             query.append(", PERIOD");
         }
         query.append(", FAVOURABLE");
-        query.append(") VALUES (?, ?, ?");
+        query.append(") VALUES (").append(GeometrySqlHelper.geometryInsertExpression(dbType)).append(", ?, ?");
         if(databaseParameters.exportCnossosPathWithAttenuation) {
             query.append(", ?");
         }
@@ -148,7 +157,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             int parameterIndex = 1;
             LineString lineString = row.asGeom();
             lineString.setSRID(srid);
-            ps.setObject(parameterIndex++, lineString);
+            parameterIndex = GeometrySqlHelper.setGeometryParameter(ps, parameterIndex, lineString, dbType);
             ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
             ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
             if(databaseParameters.exportCnossosPathWithAttenuation) {
@@ -206,7 +215,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             query.append(", ?"); // PERIOD
         }
         if(databaseParameters.exportReceiverPosition) {
-            query.append(", ?"); // THE_GEOM
+            query.append(", ").append(GeometrySqlHelper.geometryInsertExpression(dbType)); // THE_GEOM
         }
         if (!databaseParameters.computeLAEQOnly) {
             query.append(", ?".repeat(aWeightingArray.length)); // freq value LWXX
@@ -234,9 +243,11 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 ps.setString(parameterIndex++, row.period);
             }
             if(databaseParameters.exportReceiverPosition) {
-                ps.setObject(parameterIndex++,  row.receiver.position != null ?
+                Geometry receiverGeom = row.receiver.position != null ?
                         factory.createPoint(row.receiver.position):
-                        factory.createPoint());
+                        factory.createPoint();
+                receiverGeom.setSRID(srid);
+                parameterIndex = GeometrySqlHelper.setGeometryParameter(ps, parameterIndex, receiverGeom, dbType);
             }
             if (!databaseParameters.computeLAEQOnly){
                 for(int idfreq = 0; idfreq < aWeightingArray.length; idfreq++) {
@@ -369,7 +380,9 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 String q = String.format("DROP TABLE IF EXISTS %s;", databaseParameters.raysTable);
                 processQuery(q);
             }
-            StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS " + databaseParameters.raysTable + "(pk bigint auto_increment, the_geom " +
+            boolean isPostgreSQL = GeometrySqlHelper.isPostgreSQL(dbType);
+            String pkDef = isPostgreSQL ? "pk BIGSERIAL PRIMARY KEY" : "pk bigint auto_increment";
+            StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS " + databaseParameters.raysTable + "(" + pkDef + ", the_geom " +
                     "geometry(LINESTRING Z,");
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
@@ -377,7 +390,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 sb.append(", PATH VARCHAR");
             }
             if(databaseParameters.exportAttenuationMatrix) {
-                sb.append(", LEQ DOUBLE");
+                sb.append(", LEQ DOUBLE PRECISION");
             }
             if(exportPeriod) {
                 sb.append(", PERIOD VARCHAR");

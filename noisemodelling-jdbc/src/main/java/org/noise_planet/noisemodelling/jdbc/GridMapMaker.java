@@ -10,7 +10,6 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
@@ -18,13 +17,10 @@ import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper;
 
 import java.sql.*;
 
-import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
-import static org.h2gis.utilities.GeometryTableUtilities.getSRID;
 /**
  * Common attributes and functions across DelaunayGrid and NoiseMap receiver computation
  * @author Nicolas Fortin
@@ -53,6 +49,7 @@ public abstract class GridMapMaker {
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
+
     protected GeometryFactory geometryFactory;
 
     // Initialised attributes
@@ -134,25 +131,25 @@ public abstract class GridMapMaker {
         return mainEnvelope.getHeight() / gridDim;
     }
 
-    abstract public Envelope getComputationEnvelope(Connection connection) throws SQLException;
+    abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
 
     /**
      * Fetch scene attributes, compute best computation cell size.
      * @param connection Active connection
-     * @throws java.sql.SQLException If some table are not found or parameters are invalid
+     * @throws java.sql.SQLException
      */
-    public void initialize(Connection connection) throws SQLException {
+    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
         if(soundReflectionOrder > 0 && maximumPropagationDistance < maximumReflectionDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
         }
         int srid = 0;
-        DBTypes dbTypes = DBUtils.getDBType(connection.unwrap(Connection.class));
+        DBTypes dbTypes = DBUtils.getDBType(GeometrySqlHelper.resolveConnection(connection));
         if(!sourcesTableName.isEmpty()) {
-            srid = getSRID(connection, TableLocation.parse(sourcesTableName, dbTypes));
+            srid = GeometrySqlHelper.getTableSRID(connection, TableLocation.parse(sourcesTableName, dbTypes));
         }
         if(srid == 0) {
-            srid = getSRID(connection, TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes));
+            srid = GeometrySqlHelper.getTableSRID(connection, TableLocation.parse(buildingTableParameters.buildingsTableName, dbTypes));
         }
         geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
 
