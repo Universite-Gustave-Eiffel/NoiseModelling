@@ -17,6 +17,7 @@
  */
 
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -287,7 +288,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_linestring;
     CREATE TABLE dem_linestring AS SELECT THE_GEOM FROM $inputLine;
     CREATE SPATIAL INDEX ON dem_linestring(THE_GEOM);
-    ALTER TABLE dem_linestring ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_linestring ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_linestring add primary key(PK_LINE);
     
     -- Linestrings: layer $inputLine imported

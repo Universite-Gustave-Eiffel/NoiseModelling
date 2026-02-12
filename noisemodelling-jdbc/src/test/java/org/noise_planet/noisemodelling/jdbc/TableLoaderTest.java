@@ -392,7 +392,7 @@ public class TableLoaderTest {
 
         noiseMap.setFrequencyFieldPrepend("LW");
 
-        noiseMap.initialize(connection);
+        noiseMap.initialize(connection, new EmptyProgressVisitor());
 
         DefaultTableLoader tableLoader = (DefaultTableLoader)noiseMap.getTableLoader();
 
@@ -421,7 +421,7 @@ public class TableLoaderTest {
                 "LW_ROADS_FENCE",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.initialize(connection);
+        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
 
         Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
 

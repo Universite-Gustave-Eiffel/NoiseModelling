@@ -15,6 +15,7 @@
 
 package org.noise_planet.noisemodelling.wps.Experimental_Matsim
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.transform.CompileStatic
@@ -120,12 +121,12 @@ static def exec(Connection connection, input) {
 
     //Delete previous receivers
     sql.execute(String.format("DROP TABLE IF EXISTS %s", outTableName))
-    sql.execute("CREATE TABLE " + outTableName + '''( 
-        PK integer PRIMARY KEY AUTO_INCREMENT,
+    sql.execute("CREATE TABLE " + outTableName + """( 
+        PK integer PRIMARY KEY ${DatabaseHelper.autoIncrement(connection)},
         FACILITY varchar(255),
         THE_GEOM geometry,
         TYPES varchar(255)
-    );''')
+    );""".toString())
     sql.execute("CREATE INDEX ON " + outTableName + "(FACILITY)");
     sql.execute("CREATE SPATIAL INDEX ON " + outTableName + "(THE_GEOM)");
 

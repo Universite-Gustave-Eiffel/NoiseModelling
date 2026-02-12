@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.wps.Experimental
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 
@@ -11,7 +12,6 @@ import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -21,6 +21,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Compute Road Emission'
@@ -117,10 +118,10 @@ def exec(connection, input) {
     // fill the table LW_ROADS
     sql.withBatch(100, qry) { ps ->
         PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
-        SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+        ResultSet rs = st.executeQuery()
         while (rs.next()) {
             //System.println(rs)
-            Geometry geo = rs.getGeometry()
+            Geometry geo = DatabaseHelper.getGeometry(rs)
             def results = computeLw(rs.getLong(pkIndex), geo, rs)
 
             ps.addBatch(rs.getLong(pkIndex) as Integer,geo as Geometry,
@@ -137,7 +138,7 @@ def exec(connection, input) {
     }
 
     sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
-    sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;" )
+    sql.execute("ALTER TABLE LW_ROADS ADD pk INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;" )
 
     long computationTime = System.currentTimeMillis() - start;
     output = "The Table LW_ROADS have been created"
@@ -146,7 +147,7 @@ def exec(connection, input) {
 
 }
 
-static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+static double[][] computeLw(Long pk, Geometry geom, ResultSet rs) throws SQLException {
 
     String AAFD_FIELD_NAME = "AADF"
 

@@ -16,6 +16,7 @@
 
 package org.noise_planet.noisemodelling.wps.Dynamic
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -119,7 +120,7 @@ def exec(connection, Map input) {
             " ST_TOMULTIPOINT(ST_Densify(r.THE_GEOM, "+gridStep+"))AS THE_GEOM FROM "+roadsTableName+" r;");
     sql.execute("DROP TABLE IF EXISTS SOURCES_GEOM")
     sql.execute("CREATE TABLE SOURCES_GEOM AS SELECT * FROM ST_EXPLODE('SOURCES_POINTS');");
-    sql.execute("ALTER TABLE SOURCES_GEOM ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE SOURCES_GEOM ADD PK INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;")
     sql.execute("DROP TABLE IF EXISTS SOURCES_POINTS")
     sql.execute("CREATE SPATIAL INDEX ON SOURCES_GEOM(THE_GEOM);")
 

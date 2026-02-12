@@ -20,6 +20,7 @@ package org.noise_planet.noisemodelling.wps.Geometric_Tools
 
 
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -241,7 +242,7 @@ def exec(Connection connection, input) {
     CREATE TABLE dem_roads AS SELECT THE_GEOM, 'ROAD' as SOURCE, (CASE WHEN $roadWidth IS NOT NULL AND $roadWidth>3 THEN $roadWidth/2 ELSE 1.5 END) as WIDTH 
         FROM $inputRoad WHERE st_zmin(THE_GEOM) > 0;
     CREATE SPATIAL INDEX ON dem_roads(THE_GEOM);
-    ALTER TABLE dem_roads ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_roads ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_roads add primary key(PK_LINE);
     
     -- Roads: layer $inputRoad imported

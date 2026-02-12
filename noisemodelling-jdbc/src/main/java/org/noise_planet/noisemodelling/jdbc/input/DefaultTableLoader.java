@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.emission.railway.cnossos.RailWayCnossosPa
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -90,13 +91,15 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
             if(!inputSettings.sourcesEmissionTableName.isEmpty()) {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
-                if(sourceFields.contains("LV_SPD")) {
+                Set<String> normalizedSourceFields = normalizeColumnNames(sourceFields);
+                if(normalizedSourceFields.contains("LV_SPD")) {
                     inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
                 } else {
                     inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
                 }
             } else {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
+                Set<String> normalizedSourceFields = normalizeColumnNames(sourceFields);
                 for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                     String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                     List<Integer> frequencyValues = readFrequenciesFromLwTable(
@@ -106,7 +109,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                         inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN;
                         break;
                     } else {
-                        if(sourceFields.contains("LV_SPD_" + periodFieldName)) {
+                        if(normalizedSourceFields.contains("LV_SPD_" + periodFieldName)) {
                             inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN;
                             break;
                         }
@@ -219,10 +222,11 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
 
     private static List<Integer> readFrequenciesFromLwTable(String frequencyPrepend, List<String> sourceField) throws SQLException {
         List<Integer> frequencyValues = new ArrayList<>();
+        String normalizedPrefix = frequencyPrepend == null ? "" : frequencyPrepend.toUpperCase(Locale.ROOT);
         for (String fieldName : sourceField) {
-            if (fieldName.toUpperCase(Locale.ROOT).startsWith(frequencyPrepend)) {
+            if (fieldName.toUpperCase(Locale.ROOT).startsWith(normalizedPrefix)) {
                 try {
-                    int freq = Integer.parseInt(fieldName.substring(frequencyPrepend.length()));
+                    int freq = Integer.parseInt(fieldName.substring(normalizedPrefix.length()));
                     int index = Arrays.binarySearch(ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE, freq);
                     if (index >= 0) {
                         frequencyValues.add(freq);
@@ -235,10 +239,20 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         return frequencyValues;
     }
 
+    private static Set<String> normalizeColumnNames(List<String> columnNames) {
+        Set<String> normalized = new HashSet<>();
+        for (String columnName : columnNames) {
+            if (columnName != null) {
+                normalized.add(columnName.toUpperCase(Locale.ROOT));
+            }
+        }
+        return normalized;
+    }
+
     @Override
     public SceneWithEmission create(Connection connection, CellIndex cellIndex,
                                     Set<Long> skipReceivers) throws SQLException {
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        DBTypes dbType = DBUtils.getDBType(org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.resolveConnection(connection));
         GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
 
         Envelope cellEnvelope = noiseMapByReceiverMaker.getCellEnv(cellIndex);
@@ -288,19 +302,25 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String receiverTableName = noiseMapByReceiverMaker.getReceiverTableName();
         String receiverGeomName = GeometryTableUtilities.getGeometryColumnNames(connection,
                 TableLocation.parse(receiverTableName)).get(0);
-        int intPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(receiverTableName, dbType));
-        String pkSelect = "";
-        if(intPk >= 1) {
-            pkSelect = ", " + TableLocation.quoteIdentifier(JDBCUtilities.getColumnName(connection, receiverTableName, intPk), dbType);
-        } else {
+        
+        // Get PK column name using cross-database helper
+        Tuple<String, Integer> pkInfo = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getIntegerPrimaryKey(
+                connection, TableLocation.parse(receiverTableName, dbType));
+        if (pkInfo == null || pkInfo.first() == null || pkInfo.first().isEmpty()) {
             throw new SQLException(String.format("Table %s missing primary key for receiver identification", receiverTableName));
         }
+        String pkColumnName = pkInfo.first();
+        
+        String pkSelect = ", " + TableLocation.quoteIdentifier(pkColumnName, dbType);
+        String receiverTableSql = TableLocation.parse(receiverTableName, dbType).toString();
+        String receiverPredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                connection, TableLocation.quoteIdentifier(receiverGeomName, dbType));
+        Geometry receiverEnvelope = geometryFactory.toGeometry(cellEnvelope);
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT " + TableLocation.quoteIdentifier(receiverGeomName, dbType ) + pkSelect + " FROM " +
-                        receiverTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(receiverGeomName, dbType) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(cellEnvelope));
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                        receiverTableSql + " WHERE " + receiverPredicate)) {
+            org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, receiverEnvelope, dbType);
+            try (SpatialResultSet rs = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), dbType)) {
                 while (rs.next()) {
                     long receiverPk = rs.getLong(2);
                     if(skipReceivers.contains(receiverPk)) {
@@ -308,9 +328,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                     } else {
                         skipReceivers.add(receiverPk);
                     }
-                    Geometry pt = rs.getGeometry();
+                    // With PostgisConnectionWrapper, PostgreSQL returns JTS Geometry directly
+                    Geometry pt = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getGeometry(rs, receiverGeomName);
                     if(pt != null && !pt.isEmpty()) {
-                        // check z value
                         if(pt.getCoordinate().getZ() == Coordinate.NULL_ORDINATE) {
                             throw new IllegalArgumentException("The table " + receiverTableName +
                                     " contain at least one receiver without Z ordinate." +
@@ -444,31 +464,66 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                           List<Wall> walls,
                                           GeometryFactory geometryFactory) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
-        boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
-                buildingTableParameters.alphaFieldName);
         String additionalQuery = "";
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        DBTypes dbType = GeometrySqlHelper.resolveDbType(connection);
+
+        // Resolve column names once taking into account Postgres lowercase normalisation
+        String heightFieldName = buildingTableParameters.heightField;
+        String alphaFieldName = buildingTableParameters.alphaFieldName;
+        if (GeometrySqlHelper.isPostgreSQL(dbType)) {
+            if (heightFieldName != null && heightFieldName.equals(heightFieldName.toUpperCase(Locale.ROOT))
+                    && heightFieldName.matches("[A-Z_]+")) {
+                heightFieldName = heightFieldName.toLowerCase(Locale.ROOT);
+            }
+            if (alphaFieldName != null && alphaFieldName.equals(alphaFieldName.toUpperCase(Locale.ROOT))
+                    && alphaFieldName.matches("[A-Z_]+")) {
+                alphaFieldName = alphaFieldName.toLowerCase(Locale.ROOT);
+            }
+        }
+
+        boolean fetchAlpha = false;
+        if (alphaFieldName != null && !alphaFieldName.isEmpty()) {
+            fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
+                    alphaFieldName);
+            // On PostgreSQL try the original identifier as a fallback when metadata still uses uppercase
+            if (!fetchAlpha && GeometrySqlHelper.isPostgreSQL(dbType)
+                    && !alphaFieldName.equals(buildingTableParameters.alphaFieldName)) {
+                fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
+                        buildingTableParameters.alphaFieldName);
+                if (fetchAlpha) {
+                    alphaFieldName = buildingTableParameters.alphaFieldName;
+                }
+            }
+        }
+        
         if(!buildingTableParameters.heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(buildingTableParameters.heightField, dbType);
+            additionalQuery += ", " + TableLocation.quoteIdentifier(heightFieldName, dbType);
         }
         if(fetchAlpha) {
-            additionalQuery += ", " + buildingTableParameters.alphaFieldName;
+            additionalQuery += ", " + TableLocation.quoteIdentifier(alphaFieldName, dbType);
         }
         String pkBuilding = "";
-        final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class),
-                new TableLocation(buildingTableParameters.buildingsTableName, dbType));
+        Tuple<String, Integer> pkInfo = GeometrySqlHelper.getIntegerPrimaryKey(connection,
+                TableLocation.parse(buildingTableParameters.buildingsTableName, dbType));
+        int indexPk = 0;
+        if(pkInfo != null) {
+            pkBuilding = pkInfo.first();
+            indexPk = pkInfo.second();
+        }
         if(indexPk > 0) {
-            pkBuilding = JDBCUtilities.getColumnName(connection, buildingTableParameters.buildingsTableName, indexPk);
-            additionalQuery += ", " + pkBuilding;
+            additionalQuery += ", " + TableLocation.quoteIdentifier(pkBuilding, dbType);
         }
         String buildingGeomName = getGeometryColumnNames(connection,
                 TableLocation.parse(buildingTableParameters.buildingsTableName, dbType)).get(0);
+        String buildingTableSql = TableLocation.parse(buildingTableParameters.buildingsTableName, dbType).toString();
+        String buildingPredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                connection, TableLocation.quoteIdentifier(buildingGeomName, dbType));
+    Geometry fetchGeometry = geometryFactory.toGeometry(fetchEnvelope);
         try (PreparedStatement st = connection.prepareStatement(
-                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName) + additionalQuery + " FROM " +
-                        buildingTableParameters.buildingsTableName + " WHERE " +
-                        TableLocation.quoteIdentifier(buildingGeomName, dbType) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                "SELECT " + TableLocation.quoteIdentifier(buildingGeomName, dbType) + additionalQuery + " FROM " +
+                        buildingTableSql + " WHERE " + buildingPredicate)) {
+            org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, fetchGeometry, dbType);
+            try (ResultSet rs = st.executeQuery()) {
                 int columnIndex = 0;
                 if(!pkBuilding.isEmpty()) {
                     columnIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), pkBuilding);
@@ -476,7 +531,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 double oldAlpha = buildingTableParameters.defaultWallAbsorption;
                 while (rs.next()) {
                     //if we don't have height of building
-                    Geometry building = rs.getGeometry();
+                    Geometry building = GeometrySqlHelper.getGeometry(rs, buildingGeomName);
                     if(building != null) {
                         Geometry intersectedGeometry = null;
                         try {
@@ -486,8 +541,10 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                             LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
+                            double buildingHeightValue = buildingTableParameters.heightField.isEmpty() ?
+                                    Double.MAX_VALUE : rs.getDouble(heightFieldName);
                             if(fetchAlpha) {
-                                oldAlpha = rs.getDouble(buildingTableParameters.alphaFieldName);
+                                oldAlpha = rs.getDouble(alphaFieldName);
                             }
 
                             long pk = -1;
@@ -498,9 +555,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                 Geometry geometry = intersectedGeometry.getGeometryN(i);
                                 if(geometry instanceof Polygon && !geometry.isEmpty()) {
                                     Building poly = new Building((Polygon) geometry,
-                                            buildingTableParameters.heightField.isEmpty() ?
-                                                    Double.MAX_VALUE :
-                                                    rs.getDouble(buildingTableParameters.heightField),
+                                            buildingHeightValue,
                                             oldAlpha, pk, buildingTableParameters.zBuildings);
                                     buildings.add(poly);
                                 } else if (geometry instanceof LineString) {
@@ -512,8 +567,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                                 -1, ProfileBuilder.IntersectionType.WALL);
                                         wall.setG(oldAlpha);
                                         wall.setPrimaryKey(pk);
-                                        wall.setHeight(buildingTableParameters.heightField.isEmpty() ?
-                                                Double.MAX_VALUE : rs.getDouble(buildingTableParameters.heightField));
+                                        wall.setHeight(buildingHeightValue);
                                         walls.add(wall);
                                     }
                                 }
@@ -582,7 +636,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String demTable = noiseMapByReceiverMaker.getDemTable();
         if(!demTable.isEmpty()) {
             GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
-            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+            DBTypes dbType = DBUtils.getDBType(org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.resolveConnection(connection));
             List<String> geomFields = getGeometryColumnNames(connection,
                     TableLocation.parse(demTable, dbType));
             if(geomFields.isEmpty()) {
@@ -591,14 +645,17 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             String topoGeomName = geomFields.get(0);
             double sumZ = 0;
             int topoCount = 0;
-            try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
-                            demTable + " WHERE " +
-                            TableLocation.quoteIdentifier(topoGeomName, dbType) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+        String demTableSql = TableLocation.parse(demTable, dbType).toString();
+        String topoPredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                connection, TableLocation.quoteIdentifier(topoGeomName, dbType));
+        Geometry demEnvelope = geometryFactory.toGeometry(fetchEnvelope);
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT " + TableLocation.quoteIdentifier(topoGeomName, dbType) + " FROM " +
+                        demTableSql + " WHERE " + topoPredicate)) {
+            org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, demEnvelope, dbType);
+                try (SpatialResultSet rs = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), dbType)) {
                     while (rs.next()) {
-                        Geometry pt = rs.getGeometry();
+                        Geometry pt = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getGeometry(rs, topoGeomName);
                         if(pt != null) {
                             Coordinate ptCoordinate = pt.getCoordinate();
                             profileBuilder.addTopographicPoint(ptCoordinate);
@@ -638,19 +695,22 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String soilTableName = noiseMapByReceiverMaker.getSoilTableName();
         if(!soilTableName.isEmpty()){
             GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
-            DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+            DBTypes dbType = DBUtils.getDBType(org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.resolveConnection(connection));
             double startX = Math.floor(fetchEnvelope.getMinX() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
             double startY = Math.floor(fetchEnvelope.getMinY() / groundSurfaceSplitSideLength) * groundSurfaceSplitSideLength;
             String soilGeomName = getGeometryColumnNames(connection,
                     TableLocation.parse(soilTableName, dbType)).get(0);
-            try (PreparedStatement st = connection.prepareStatement(
-                    "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
-                            soilTableName + " WHERE " +
-                            TableLocation.quoteIdentifier(soilGeomName, dbType) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
-                try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+        String soilTableSql = TableLocation.parse(soilTableName, dbType).toString();
+        String soilPredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                connection, TableLocation.quoteIdentifier(soilGeomName, dbType));
+        Geometry soilEnvelope = geometryFactory.toGeometry(fetchEnvelope);
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT " + TableLocation.quoteIdentifier(soilGeomName, dbType) + ", G FROM " +
+                        soilTableSql + " WHERE " + soilPredicate)) {
+            org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, soilEnvelope, dbType);
+                try (SpatialResultSet rs = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), dbType)) {
                     while (rs.next()) {
-                        Geometry mainPolygon = rs.getGeometry();
+                        Geometry mainPolygon = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getGeometry(rs, soilGeomName);
                         if(mainPolygon != null) {
                             for (int idPoly = 0; idPoly < mainPolygon.getNumGeometries(); idPoly++) {
                                 Geometry poly = mainPolygon.getGeometryN(idPoly);
@@ -703,7 +763,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             throws SQLException {
         String sourcesTableName = noiseMapByReceiverMaker.getSourcesTableName();
         GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        DBTypes dbType = DBUtils.getDBType(org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.resolveConnection(connection));
         TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
         List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
         if (geomFields.isEmpty()) {
@@ -711,24 +771,27 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         }
         String sourceGeomName = geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
-        Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
-                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
+        Tuple<String, Integer> primaryKey = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getIntegerPrimaryKey(
+                GeometrySqlHelper.resolveConnection(connection), TableLocation.parse(sourcesTableName, dbType));
         if (primaryKey == null) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
         int pkIndex = primaryKey.second();
-        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourcesTableName + " WHERE "
-                + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
-            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+        Geometry envelopeGeometry = geometryFactory.toGeometry(fetchEnvelope);
+        String sourcePredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                connection, TableLocation.quoteIdentifier(sourceGeomName, dbType));
+        try (PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sourceTableIdentifier.toString() + " WHERE "
+                + sourcePredicate)) {
+            org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, envelopeGeometry, dbType);
             st.setFetchSize(fetchSize);
             boolean autoCommit = connection.getAutoCommit();
             if (autoCommit) {
                 connection.setAutoCommit(false);
             }
             st.setFetchDirection(ResultSet.FETCH_FORWARD);
-            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+            try (SpatialResultSet rs = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.unwrapSpatialResultSet(st.executeQuery(), dbType)) {
                 while (rs.next()) {
-                    Geometry geo = rs.getGeometry();
+                    Geometry geo = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.getGeometry(rs, sourceGeomName);
                     if (geo != null) {
                         if (doIntersection) {
                             geo = domainConstraint.intersection(geo);
@@ -756,11 +819,12 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         // Fetch emission table data for the sources in this area
         String emissionTableName = scene.sceneDatabaseInputSettings.sourcesEmissionTableName;
         if (!emissionTableName.isEmpty()) {
-            try (PreparedStatement st = connection.prepareStatement("SELECT E.* FROM " + sourcesTableName +
-                    " S INNER JOIN "+emissionTableName+" E ON S."+primaryKey.first()+" = E." +
-                    scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField+" WHERE S."
-                    + TableLocation.quoteIdentifier(sourceGeomName) + " && ?::geometry")) {
-                st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            String emissionPredicate = org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.buildEnvelopePredicate(
+                    connection, "S." + TableLocation.quoteIdentifier(sourceGeomName, dbType));
+            try (PreparedStatement st = connection.prepareStatement("SELECT E.* FROM " + sourceTableIdentifier.toString() +
+                    " S INNER JOIN " + TableLocation.parse(emissionTableName, dbType) + " E ON S." + primaryKey.first() + " = E." +
+                    scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField + " WHERE " + emissionPredicate)) {
+                org.noise_planet.noisemodelling.jdbc.utils.GeometrySqlHelper.setGeometryParameter(st, 1, envelopeGeometry, dbType);
                 st.setFetchSize(fetchSize);
                 boolean autoCommit = connection.getAutoCommit();
                 if (autoCommit) {

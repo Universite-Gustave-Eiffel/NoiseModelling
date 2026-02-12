@@ -17,6 +17,7 @@
  */
 
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -290,7 +291,7 @@ def exec(Connection connection, input) {
     DROP TABLE IF EXISTS dem_rail;    
     CREATE TABLE dem_rail AS SELECT THE_GEOM, 'RAIL' as SOURCE, $railWidth as WIDTH FROM $inputRail WHERE st_zmin(THE_GEOM) > 0;
     CREATE SPATIAL INDEX ON dem_rail(THE_GEOM);
-    ALTER TABLE dem_rail ADD PK_LINE INT AUTO_INCREMENT NOT NULL;
+    ALTER TABLE dem_rail ADD PK_LINE INT ${DatabaseHelper.autoIncrement(connection)} NOT NULL;
     ALTER TABLE dem_rail add primary key(PK_LINE);
     
     -- Railways: layer $inputRail imported

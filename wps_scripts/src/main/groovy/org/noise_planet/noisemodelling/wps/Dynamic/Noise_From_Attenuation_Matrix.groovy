@@ -16,6 +16,7 @@
 
 package org.noise_planet.noisemodelling.wps.Dynamic
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import org.geotools.jdbc.JDBCDataStore
@@ -102,7 +103,7 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, input) {
 
-    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+    DBTypes dbType = DBUtils.getDBType(DatabaseHelper.resolveConnection(connection))
 
     connection = new ConnectionWrapper(connection)
 

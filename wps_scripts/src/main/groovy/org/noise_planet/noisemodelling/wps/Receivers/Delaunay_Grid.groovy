@@ -19,6 +19,7 @@
 
 package org.noise_planet.noisemodelling.wps.Receivers
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -233,7 +234,7 @@ def exec(Connection connection, Map input) {
     if (input['outputTableName']) {
         receivers_table_name = input['outputTableName']
     }
-    receivers_table_name = receivers_table_name.toUpperCase()
+    receivers_table_name = DatabaseHelper.normalizeTableName(connection, receivers_table_name)
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
@@ -241,13 +242,13 @@ def exec(Connection connection, Map input) {
     } else {
         return "Source table must be specified"
     }
-    sources_table_name = sources_table_name.toUpperCase()
+    sources_table_name = DatabaseHelper.normalizeTableName(connection, sources_table_name)
 
     String building_table_name = "BUILDINGS"
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
-    building_table_name = building_table_name.toUpperCase()
+    building_table_name = DatabaseHelper.normalizeTableName(connection, building_table_name)
 
     boolean isoSurfaceInBuildings = false;
     if(input['isoSurfaceInBuildings']) {

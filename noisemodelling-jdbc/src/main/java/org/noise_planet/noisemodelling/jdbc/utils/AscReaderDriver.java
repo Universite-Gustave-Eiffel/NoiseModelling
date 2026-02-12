@@ -17,6 +17,7 @@ import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.io.WKBWriter;
 
 import java.io.*;
 import java.sql.*;
@@ -260,11 +261,43 @@ public class AscReaderDriver {
             readHeader(scanner);
             // Read values
             connection.setAutoCommit(false);
-            Statement st = connection.createStatement();
             PreparedStatement preparedStatement;
+            boolean isPostgreSQL = false;
+            try {
+                String productName = connection.getMetaData().getDatabaseProductName();
+                if (productName != null) {
+                    isPostgreSQL = productName.toLowerCase().contains("postgres");
+                }
+            } catch (SQLException metaEx) {
+                isPostgreSQL = false;
+            }
+
+            Connection statementConnection = connection;
+            if (isPostgreSQL) {
+                try {
+                    statementConnection = connection.unwrap(Connection.class);
+                } catch (SQLException unwrapEx) {
+                    statementConnection = connection;
+                }
+            }
+
+            Statement st = statementConnection.createStatement();
 
             int index=0;
-            if (!JDBCUtilities.tableExists(connection,outputTable)) {
+            boolean tableExists;
+            if (isPostgreSQL) {
+                String existsSql = "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ?)";
+                try (PreparedStatement existsStatement = statementConnection.prepareStatement(existsSql)) {
+                    existsStatement.setString(1, outputTable.toLowerCase());
+                    try (ResultSet rs = existsStatement.executeQuery()) {
+                        tableExists = rs.next() && rs.getBoolean(1);
+                    }
+                }
+            } else {
+                tableExists = JDBCUtilities.tableExists(statementConnection, outputTable);
+            }
+
+            if (!tableExists) {
                 if (as3DPoint) {
                     if (zType == 1) {
                         st.execute("CREATE TABLE " + outputTable + "(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, " + srid + "), Z integer)");
@@ -290,8 +323,15 @@ public class AscReaderDriver {
                     }
                 }
             }
-            preparedStatement = connection.prepareStatement("INSERT INTO " + outputTable
-                    + "(PK, the_geom, Z) VALUES (?, ?, ?)");
+            String insertSql;
+            if (isPostgreSQL) {
+                insertSql = "INSERT INTO " + outputTable + "(PK, the_geom, Z) VALUES (?, ST_SetSRID(ST_GeomFromWKB(?), ?), ?)";
+            } else {
+                insertSql = "INSERT INTO " + outputTable + "(PK, the_geom, Z) VALUES (?, ?, ?)";
+            }
+
+            preparedStatement = statementConnection.prepareStatement(insertSql);
+            WKBWriter wkbWriter = isPostgreSQL ? new WKBWriter(3) : null;
 
             // Read data
             GeometryFactory factory = new GeometryFactory(new PrecisionModel(),srid);
@@ -325,33 +365,29 @@ public class AscReaderDriver {
                         double y = yValue - i * cellSize;
                         if (as3DPoint) {
                             //Set the PK
-                            preparedStatement.setObject(1, index++);
+                            preparedStatement.setInt(1, index++);
                             Point cell = factory.createPoint(new Coordinate(x + cellSize / 2, y - cellSize / 2, z));
                             cell.setSRID(srid);
                             if (Math.abs(noData - z) != 0) {
-                                preparedStatement.setObject(2, cell);
-                                preparedStatement.setObject(3, z);
+                                bindGeometry(preparedStatement, cell, z, srid, isPostgreSQL, wkbWriter);
                                 preparedStatement.addBatch();
                                 batchSize++;
                             } else if (importNodata) {
-                                preparedStatement.setObject(2, cell);
-                                preparedStatement.setObject(3, noData);
+                                bindGeometry(preparedStatement, cell, noData, srid, isPostgreSQL, wkbWriter);
                                 preparedStatement.addBatch();
                                 batchSize++;
                             }
                         } else {
                             //Set the PK
-                            preparedStatement.setObject(1, index++);
+                            preparedStatement.setInt(1, index++);
                             Polygon cell = factory.createPolygon(new Coordinate[]{new Coordinate(x, y, z), new Coordinate(x, y - cellSize * downScale, z), new Coordinate(x + cellSize * downScale, y - cellSize * downScale, z), new Coordinate(x + cellSize * downScale, y, z), new Coordinate(x, y, z)});
                             cell.setSRID(srid);
                             if (Math.abs(noData - z) != 0) {
-                                preparedStatement.setObject(2, cell);
-                                preparedStatement.setObject(3, z);
+                                bindGeometry(preparedStatement, cell, z, srid, isPostgreSQL, wkbWriter);
                                 preparedStatement.addBatch();
                                 batchSize++;
                             } else if (importNodata) {
-                                preparedStatement.setObject(2, cell);
-                                preparedStatement.setObject(3, noData);
+                                bindGeometry(preparedStatement, cell, noData, srid, isPostgreSQL, wkbWriter);
                                 preparedStatement.addBatch();
                                 batchSize++;
                             }
@@ -374,9 +410,31 @@ public class AscReaderDriver {
                 connection.commit();
             }
             connection.setAutoCommit(true);
+            preparedStatement.close();
+            st.close();
             return outputTable;
         } catch (NoSuchElementException | NumberFormatException | IOException | SQLException ex) {
             throw new SQLException("Unexpected word " + lastWord, ex);
+        }
+    }
+
+    private void bindGeometry(PreparedStatement preparedStatement, Geometry geometry, double zValue, int srid,
+                              boolean isPostgreSQL, WKBWriter wkbWriter) throws SQLException {
+        if (isPostgreSQL) {
+            preparedStatement.setBytes(2, wkbWriter.write(geometry));
+            preparedStatement.setInt(3, srid);
+            if (zType == 1) {
+                preparedStatement.setInt(4, (int) Math.round(zValue));
+            } else {
+                preparedStatement.setDouble(4, zValue);
+            }
+        } else {
+            preparedStatement.setObject(2, geometry);
+            if (zType == 1) {
+                preparedStatement.setInt(3, (int) Math.round(zValue));
+            } else {
+                preparedStatement.setDouble(3, zValue);
+            }
         }
     }
 

@@ -13,7 +13,6 @@ import org.h2gis.functions.spatial.convert.ST_Force2D;
 import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
-import org.h2gis.utilities.TableUtilities;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.h2gis.utilities.jts_utils.Contouring;
@@ -30,7 +29,6 @@ import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
-import static org.h2gis.utilities.dbtypes.DBUtils.getDBType;
 import static org.noise_planet.noisemodelling.emission.utils.Utils.dbaToW;
 
 
@@ -376,6 +374,9 @@ public class IsoSurface {
         // First step
         // Smoothing of polygons
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), srid);
+        Connection detectionConnection = GeometrySqlHelper.resolveConnection(connection);
+        DBTypes dbType = DBUtils.getDBType(detectionConnection);
+        final String periodColumn = aggregateByPeriod ? TableLocation.capsIdentifier("PERIOD", dbType) : null;
         if(smooth) {
             Quadtree segmentTree = new Quadtree();
             // Merge triangles and create an index of all segments
@@ -428,16 +429,16 @@ public class IsoSurface {
         }
         // Second step insertion
         int batchSize = 0;
-        StringBuilder insertQuery = new StringBuilder().append("INSERT INTO ").append(TableLocation.parse(outputTable))
+        StringBuilder insertQuery = new StringBuilder().append("INSERT INTO ").append(TableLocation.parse(outputTable, dbType))
                 .append("(cell_id");
         if(aggregateByPeriod) {
-            insertQuery.append(", PERIOD");
+            insertQuery.append(", ").append(periodColumn);
         }
         insertQuery.append(", the_geom, ISOLVL, ISOLABEL) VALUES (?");
         if(aggregateByPeriod) {
             insertQuery.append(", ?");
         }
-        insertQuery.append(", ?, ?, ?);");
+        insertQuery.append(", ").append(GeometrySqlHelper.geometryInsertExpression(dbType)).append(", ?, ?);");
         try(PreparedStatement ps = connection.prepareStatement(insertQuery.toString())) {
             for (Map.Entry<Short, ArrayList<Geometry>> entry : polys.entrySet()) {
                 ArrayList<Polygon> polygons = new ArrayList<>();
@@ -483,12 +484,13 @@ public class IsoSurface {
                             polygon.setSRID(srid);
                         }
                     }
+                    polygon.setSRID(srid);
                     int parameterIndex = 1;
                     ps.setInt(parameterIndex++, cellId);
                     if(aggregateByPeriod) {
                         ps.setString(parameterIndex++, period);
                     }
-                    ps.setObject(parameterIndex++, polygon);
+                    parameterIndex = GeometrySqlHelper.setGeometryParameter(ps, parameterIndex, polygon, dbType);
                     ps.setInt(parameterIndex++, entry.getKey());
                     ps.setString(parameterIndex++, isoLabels.get(entry.getKey()));
                     ps.addBatch();
@@ -512,9 +514,23 @@ public class IsoSurface {
      * @throws SQLException
      */
     public void createTable(Connection connection) throws SQLException {
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable, dbType));
-        int pk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(pointTable, dbType));
+        Connection unwrappedConnection = GeometrySqlHelper.resolveConnection(connection);
+        DBTypes dbType = DBUtils.getDBType(unwrappedConnection);
+        TableLocation pointTableLocation = TableLocation.parse(pointTable, dbType);
+        List<String> fields;
+        try {
+            fields = JDBCUtilities.getColumnNames(connection, pointTableLocation);
+        } catch (SQLException columnReadException) {
+            log.error("Failed to load column metadata for point table {}", pointTableLocation.toString(), columnReadException);
+            throw columnReadException;
+        }
+        int pk;
+        try {
+            pk = JDBCUtilities.getIntegerPrimaryKey(GeometrySqlHelper.resolveConnection(connection), pointTableLocation);
+        } catch (SQLException primaryKeyException) {
+            log.error("Failed to resolve primary key for point table {}", pointTableLocation.toString(), primaryKeyException);
+            throw primaryKeyException;
+        }
         if(pk == 0) {
             throw new SQLException(pointTable+" does not contain a primary key");
         }
@@ -523,34 +539,17 @@ public class IsoSurface {
     }
 
     /**
-     * Retrieve all unique time periods in receivers level table
-     * @param connection SQL connection
-     * @return List of unique periods
-     * @throws SQLException Error during SQL query
-     */
-    public List<String> getUniquePeriods(Connection connection) throws SQLException {
-        List<String> fieldValues = new ArrayList<>();
-        try(Statement statement = connection.createStatement()) {
-            try (ResultSet result =
-                         statement.executeQuery(String.format("SELECT DISTINCT period FROM %s ORDER BY period", pointTable))) {
-                while (result.next()) {
-                    fieldValues.add(result.getString(1));
-                }
-            }
-        }
-        return fieldValues;
-    }
-
-    /**
      * @param connection
      * @param pkField Field name in point table to join with Triangle table and point table
      * @throws SQLException
      */
     public void createTable(Connection connection, String pkField) throws SQLException {
-        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        final String periodField = TableLocation.capsIdentifier("PERIOD", dbType);
+    DBTypes dbType = DBUtils.getDBType(GeometrySqlHelper.resolveConnection(connection));
+    final String periodField = TableLocation.capsIdentifier("PERIOD", dbType);
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
-        boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, periodField);
+        TableLocation pointTableLocation = TableLocation.parse(pointTable, dbType);
+        String pointTableName = pointTableLocation.toString(dbType);
+        boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTableLocation, periodField);
         int lastCellId = -1;
         try(Statement st = connection.createStatement()) {
             String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
@@ -565,7 +564,7 @@ public class IsoSurface {
             createTableQuery.append("CREATE TABLE ").append(TableLocation.parse(outputTable, dbType))
                     .append("(PK SERIAL");
             if(aggregateByPeriod) {
-                createTableQuery.append(", PERIOD VARCHAR");
+                createTableQuery.append(", ").append(periodField).append(" VARCHAR");
             }
             createTableQuery.append(", CELL_ID INTEGER, THE_GEOM ")
                     .append(geometryType).append(", ISOLVL INTEGER, ISOLABEL VARCHAR);");
@@ -577,21 +576,37 @@ public class IsoSurface {
                     .append("ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, ST_Z(p3.the_geom) zc,")
                     .append(" p1.").append(pointTableField).append(" lvla, p2.").append(pointTableField)
                     .append(" lvlb, p3.").append(pointTableField).append(" lvlc FROM ").append(triangleTable)
-                    .append(" t, ").append(pointTable).append(" p1,").append(pointTable).append(" p2,")
-                    .append(pointTable).append(" p3 WHERE t.PK_1 = p1.").append(pkField).append(" and t.PK_2 = p2.")
+                    .append(" t, ").append(pointTableName).append(" p1,").append(pointTableName).append(" p2,")
+                    .append(pointTableName).append(" p3 WHERE t.PK_1 = p1.").append(pkField).append(" and t.PK_2 = p2.")
                     .append(pkField).append(" AND t.PK_3 = p3.").append(pkField);
             if(aggregateByPeriod) {
-                selectQuery.append(" AND p1.PERIOD = ? AND p1.PERIOD=p2.period AND p1.period = p3.period");
+                selectQuery.append(" AND p1.").append(periodField).append(" = ?")
+                        .append(" AND p1.").append(periodField).append(" = p2.").append(periodField)
+                        .append(" AND p1.").append(periodField).append(" = p3.").append(periodField);
             }
             selectQuery.append(" order by cell_id;");
 
-            PreparedStatement statement = connection.prepareStatement(selectQuery.toString());
+            String selectSql = selectQuery.toString();
+            PreparedStatement statement = connection.prepareStatement(selectSql);
 
             List<String> periods = new ArrayList<>();
             if(!aggregateByPeriod) {
                 periods.add("");
             } else {
-                periods.addAll(getUniquePeriods(connection));
+                StringBuilder distinctPeriodQuery = new StringBuilder()
+                        .append("SELECT DISTINCT ")
+                        .append(periodField)
+                        .append(" FROM ")
+                        .append(pointTableName)
+                        .append(" WHERE ")
+                        .append(periodField)
+                        .append(" IS NOT NULL ORDER BY 1");
+                try (Statement periodStatement = connection.createStatement();
+                     ResultSet periodResultSet = periodStatement.executeQuery(distinctPeriodQuery.toString())) {
+                    while (periodResultSet.next()) {
+                        periods.add(periodResultSet.getString(1));
+                    }
+                }
             }
             for (String period : periods) {
                 if(aggregateByPeriod) {

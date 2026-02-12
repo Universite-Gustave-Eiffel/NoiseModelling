@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import com.opencsv.CSVReader
 import geoserver.GeoServer
 import geoserver.catalog.Store
@@ -105,7 +106,7 @@ static def exec(Connection connection,input){
             "USING ST_SetSRID(ST_Force3D(THE_GEOM), "+targetSRID+")")
 
     // Create the RECEIVERS table with unique sensor data from measurement (SENSORS_MEASUREMENTS_TRAINING: training data) table.
-    sql.execute("ALTER TABLE SENSORS_LOCATION ADD PK INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE SENSORS_LOCATION ADD PK INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;")
 
 
     sql.execute("ALTER TABLE SENSORS_MEASUREMENTS ADD COLUMN THE_GEOM GEOMETRY(PointZ,"+targetSRID+")")

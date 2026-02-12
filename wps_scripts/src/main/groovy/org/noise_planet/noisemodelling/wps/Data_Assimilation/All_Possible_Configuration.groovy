@@ -1,5 +1,6 @@
 package org.noise_planet.noisemodelling.wps.Data_Assimilation
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.BatchingPreparedStatementWrapper
@@ -112,7 +113,7 @@ def getAllConfig(Connection connection,double[] vals,double[] temps) {
     Sql sql = new Sql(connection)
 
     sql.execute("DROP TABLE ALL_CONFIGURATIONS IF EXISTS")
-    sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY AUTO_INCREMENT,PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL double)")
+    sql.execute("CREATE TABLE ALL_CONFIGURATIONS(IT INTEGER PRIMARY KEY " + DatabaseHelper.autoIncrement(connection) + ",PRIMARY_VAL FLOAT,SECONDARY_VAL FLOAT,TERTIARY_VAL FLOAT,OTHERS_VAL FLOAT,TEMP_VAL DOUBLE PRECISION)")
 
     String insertQuery = "INSERT INTO ALL_CONFIGURATIONS (PRIMARY_VAL, SECONDARY_VAL, TERTIARY_VAL, OTHERS_VAL, TEMP_VAL) VALUES (?, ?, ?, ?, ?)"
     int totalCombinations = vals.length * vals.length * vals.length * vals.length * temps.length

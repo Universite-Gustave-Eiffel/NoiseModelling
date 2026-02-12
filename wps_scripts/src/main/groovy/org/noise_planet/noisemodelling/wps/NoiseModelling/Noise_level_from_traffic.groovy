@@ -16,6 +16,7 @@
  */
 package org.noise_planet.noisemodelling.wps.NoiseModelling
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -334,7 +335,7 @@ def run(input) {
 def exec(Connection connection, Map input) {
     int maximumRaysToExport = 5000
 
-    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+    DBTypes dbType = DBUtils.getDBType(DatabaseHelper.resolveConnection(connection))
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -354,8 +355,8 @@ def exec(Connection connection, Map input) {
     // -------------------
 
     String sources_table_name = input['tableRoads']
-    // do it case-insensitive
-    sources_table_name = sources_table_name.toUpperCase()
+    // Normalize table name for the target database
+    sources_table_name = DatabaseHelper.normalizeTableName(connection, sources_table_name)
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
@@ -368,15 +369,15 @@ def exec(Connection connection, Map input) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
 
-    //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name))
-    if (pkIndex < 1) {
+        //Get the primary key field of the source table
+        String sourcePk = DatabaseHelper.getIntegerPrimaryKey(connection, sources_table_name)
+        if (sourcePk == null || sourcePk.isEmpty()) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
 
     String receivers_table_name = input['tableReceivers']
-    // do it case-insensitive
-    receivers_table_name = receivers_table_name.toUpperCase()
+    // Normalize table name for the target database
+    receivers_table_name = DatabaseHelper.normalizeTableName(connection, receivers_table_name)
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
     List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
@@ -390,15 +391,15 @@ def exec(Connection connection, Map input) {
     if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
 
 
-    //Get the primary key field of the receiver table
-    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name))
-    if (pkIndexRecv < 1) {
+        //Get the primary key field of the receiver table
+        String receiverPk = DatabaseHelper.getIntegerPrimaryKey(connection, receivers_table_name)
+        if (receiverPk == null || receiverPk.isEmpty()) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
     }
 
     String building_table_name = input['tableBuilding']
-    // do it case-insensitive
-    building_table_name = building_table_name.toUpperCase()
+    // Normalize table name for the target database
+    building_table_name = DatabaseHelper.normalizeTableName(connection, building_table_name)
     // Check if srid are in metric projection and are all the same.
     int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (sridBuildings == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
@@ -408,8 +409,8 @@ def exec(Connection connection, Map input) {
     String dem_table_name = ""
     if (input['tableDEM']) {
         dem_table_name = input['tableDEM']
-        // do it case-insensitive
-        dem_table_name = dem_table_name.toUpperCase()
+        // Normalize table name for the target database
+        dem_table_name = DatabaseHelper.normalizeTableName(connection, dem_table_name)
         // Check if srid are in metric projection and are all the same.
         int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
         if (sridDEM == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
@@ -420,8 +421,8 @@ def exec(Connection connection, Map input) {
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
-        // do it case-insensitive
-        ground_table_name = ground_table_name.toUpperCase()
+        // Normalize table name for the target database
+        ground_table_name = DatabaseHelper.normalizeTableName(connection, ground_table_name)
         // Check if srid are in metric projection and are all the same.
         int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
         if (sridGROUND == 3785 || sridReceivers == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
@@ -432,8 +433,8 @@ def exec(Connection connection, Map input) {
     String tableSourceDirectivity = ""
     if (input['tableSourceDirectivity']) {
         tableSourceDirectivity = input['tableSourceDirectivity']
-        // do it case-insensitive
-        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
+        // Normalize table name for the target database
+        tableSourceDirectivity = DatabaseHelper.normalizeTableName(connection, tableSourceDirectivity)
     }
 
     boolean recordProfile = false

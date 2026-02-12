@@ -18,6 +18,7 @@
 
 package org.noise_planet.noisemodelling.wps.Geometric_Tools
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
@@ -196,7 +197,7 @@ def exec(Connection connection, input) {
     }
 
     sql.execute("Create spatial index on BUILDINGS_SCREENS(the_geom);")
-    sql.execute("ALTER TABLE BUILDINGS_SCREENS ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
+    sql.execute("ALTER TABLE BUILDINGS_SCREENS ADD pk INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;")
 
     resultString = "The table BUILDINGS_SCREENS has been created."
 

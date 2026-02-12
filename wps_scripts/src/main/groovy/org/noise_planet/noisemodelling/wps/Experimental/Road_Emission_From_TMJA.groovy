@@ -4,13 +4,13 @@
 
 package org.noise_planet.noisemodelling.wps.Experimental
 
+import org.noise_planet.noisemodelling.wps.Database_Manager.DatabaseHelper
 import geoserver.GeoServer
 import geoserver.catalog.Store
 import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.SpatialResultSet
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Geometry
@@ -20,6 +20,7 @@ import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 
 import java.sql.Connection
 import java.sql.PreparedStatement
+import java.sql.ResultSet
 import java.sql.SQLException
 
 title = 'Compute Road Emission'
@@ -109,10 +110,10 @@ def run(input) {
         // fill the table LW_ROADS
         sql.withBatch(100, qry) { ps ->
             PreparedStatement st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
-            SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
+            ResultSet rs = st.executeQuery()
             while (rs.next()) {
                 System.println(rs)
-                Geometry geo = rs.getGeometry()
+                Geometry geo = DatabaseHelper.getGeometry(rs)
                 def results = computeLw(rs.getLong(pkIndex), geo, rs)
 
                 ps.addBatch(rs.getLong(pkIndex) as Integer, geo as Geometry,
@@ -129,7 +130,7 @@ def run(input) {
         }
 
         sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom,0.05);")
-        sql.execute("ALTER TABLE LW_ROADS ADD pk INT AUTO_INCREMENT PRIMARY KEY;")
+        sql.execute("ALTER TABLE LW_ROADS ADD pk INT " + DatabaseHelper.autoIncrement(connection) + " PRIMARY KEY;")
         long computationTime = System.currentTimeMillis() - start;
         output = "The Table LW_ROADS have been created"
         return [result: output]
@@ -139,7 +140,7 @@ def run(input) {
 
 }
 
-static double[][] computeLw(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
+static double[][] computeLw(Long pk, Geometry geom, ResultSet rs) throws SQLException {
 
     def lv_hourly_distribution = [0.56, 0.3, 0.21, 0.26, 0.69, 1.8, 4.29, 7.56, 7.09, 5.5, 4.96, 5.04,
                                   5.8, 6.08, 6.23, 6.67, 7.84, 8.01, 7.12, 5.44, 3.45, 2.26, 1.72, 1.12];
