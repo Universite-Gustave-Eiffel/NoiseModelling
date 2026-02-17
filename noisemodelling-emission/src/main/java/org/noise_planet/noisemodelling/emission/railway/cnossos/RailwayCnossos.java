@@ -188,7 +188,7 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      * @return
      */
     public Double getBridgeStructural(int bridgeId, int freqId) {
-        return getRailWayData().get("Track").get("BridgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
+        return getRailWayData().get("Track").get("BrgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
     }
 
 

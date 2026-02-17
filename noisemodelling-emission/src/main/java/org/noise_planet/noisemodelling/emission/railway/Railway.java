@@ -60,7 +60,7 @@ public class Railway {
         this.railWayData = parse(Railway.class.getResourceAsStream(RailWayData));
     }
     /**
-     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json">RailwayVehiclesCnossos.json</a>
+     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayVehiclesCnossos.json">RailwayVehiclesCnossosSNCF_2022.json</a>
      * @param VehicleData Coefficients related to the characteristics of vehicles
      */
     public void setVehicleDataFile(InputStream VehicleData) {
@@ -76,7 +76,7 @@ public class Railway {
     }
 
     /**
-     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayCnossosSNCF_2021.json">RailwayCnossosSNCF_2021.json</a>
+     * ex: <a href="https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/v5.0.0/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayCnossosSNCF_2021.json">RailwayCnossosSNCF_2022.json</a>
      * @param RailWayData CNOSSOS coefficients
      */
     public void setRailwayDataFile(InputStream RailWayData) {

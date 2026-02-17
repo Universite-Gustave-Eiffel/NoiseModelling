@@ -1803,14 +1803,34 @@
     },
     "BrgeConstant": {
       "1": {
-        "Description": "Tout-type-de-pont-hors-ponts-metalliques-avec-voies-non-ballastees",
-        "Reference": "SNCF Juin 2021",
-        "Values": 0
-      },
-      "2": {
-        "Description": "Ponts-metalliques-avec-voies-non-ballastees",
-        "Reference": "SNCF Juin 2021",
-        "Values": 5
+        "Description": "",
+        "Reference": "",
+        "Spectre": [
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99,
+          -99
+        ]
       }
     }
   }

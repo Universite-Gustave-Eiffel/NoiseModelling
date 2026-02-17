@@ -191,7 +191,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @return
      */
     public Double getBridgeStructural(int bridgeId, int freqId) {
-        return getRailWayData().get("Track").get("BridgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
+        return getRailWayData().get("Track").get("BrgeConstant").get(String.valueOf(bridgeId)).get("Values").get(freqId).doubleValue();
     }
 
 
@@ -436,6 +436,13 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         }
         if (trackFileVersion == "EU") {
             if (bridgeId == 3 || bridgeId == 4) {
+                for (int idFreq = 0; idFreq < 24; idFreq++) {
+                    lWBridge[idFreq] = getBridgeStructural(bridgeId, idFreq);
+                    lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
+                }
+            }
+        }else if (trackFileVersion == "FR") {
+            if (bridgeId == 1) {
                 for (int idFreq = 0; idFreq < 24; idFreq++) {
                     lWBridge[idFreq] = getBridgeStructural(bridgeId, idFreq);
                     lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
