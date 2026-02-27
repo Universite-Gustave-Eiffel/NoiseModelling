@@ -345,9 +345,7 @@ def exec(Connection connection, Map input) {
                             sourcePowerBatch.addBatch(sourcePower)
                             def sourceGeom = [idSource, timeStep, point, directivityId, vehicleInfo.source.yaw, vehicleInfo.source.pitch] as List<Object>
                             sourceGeomBatch.addBatch(sourceGeom)
-
                         }
-
                     }
                 }
             }

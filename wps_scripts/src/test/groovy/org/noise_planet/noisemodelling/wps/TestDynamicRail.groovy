@@ -102,9 +102,9 @@ class TestDynamicRail extends JdbcTestCase {
                 fieldTrainset: "train_set",
                 fieldTrainId: "train_id",
                 fieldTimeStep: "timestep",
-                trainTrainsetData: Railway.class.getResource("RailwayTrainsets.json").toString(),
-                trainVehicleData: Railway.class.getResource("RailwayVehiclesCnossosSNCF_2022.json").toString(),
-                trainCoefficientsData: Railway.class.getResource("RailwayCnossosSNCF_2022.json").toString()
+                trainTrainsetData: "RailwayTrainsets.json",
+                trainVehicleData: "RailwayVehiclesCnossosSNCF_2022.json",
+                trainCoefficientsData: "RailwayCnossosSNCF_2022.json"
         ])
 
 

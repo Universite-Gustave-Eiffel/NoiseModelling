@@ -11,1176 +11,1064 @@
   {
    "type": "Feature",
    "properties": {
-    "field_1": 1,
-    "id": 1,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 1,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297900
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      488055.2234125795,
-     6469702.90564969
+     6469702.90564969,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 2,
-    "id": 2,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 2,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297901
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487979.11272139807,
-     6469679.000026778
+     6469679.000026778,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 3,
-    "id": 3,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 3,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297902
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487903.51488026464,
-     6469653.522047523
+     6469653.522047523,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 4,
-    "id": 4,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 4,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297903
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487828.4615111937,
-     6469626.482388077
+     6469626.482388077,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 5,
-    "id": 5,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 5,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297904
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487753.9840187974,
-     6469597.892348064
+     6469597.892348064,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 6,
-    "id": 6,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 6,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297905
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487680.2039401934,
-     6469567.547946043
+     6469567.547946043,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 7,
-    "id": 7,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 7,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297906
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487607.08364972734,
-     6469535.6481608385
+     6469535.6481608385,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 8,
-    "id": 8,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 8,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297907
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487534.64053318126,
-     6469502.239491578
+     6469502.239491578,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 9,
-    "id": 9,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 9,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297908
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487462.904902474,
-     6469467.335906731
+     6469467.335906731,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 10,
-    "id": 10,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 10,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297909
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487391.9989482973,
-     6469430.776295356
+     6469430.776295356,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 11,
-    "id": 11,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 11,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297910
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487321.9005415656,
-     6469392.692161462
+     6469392.692161462,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 12,
-    "id": 12,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 12,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297911
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487252.6069610456,
-     6469353.163191275
+     6469353.163191275,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 13,
-    "id": 13,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 13,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297912
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487184.1471996538,
-     6469312.205917819
+     6469312.205917819,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 14,
-    "id": 14,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 14,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297913
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487116.63771126774,
-     6469269.700442138
+     6469269.700442138,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 15,
-    "id": 15,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 15,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297914
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      487050.0830280797,
-     6469225.71545291
+     6469225.71545291,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 16,
-    "id": 16,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 16,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297915
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486984.45482197084,
-     6469180.360449208
+     6469180.360449208,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 17,
-    "id": 17,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 17,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297916
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486919.7805503954,
-     6469133.654405175
+     6469133.654405175,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 18,
-    "id": 18,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 18,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297917
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486856.164852458,
-     6469085.516202058
+     6469085.516202058,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 19,
-    "id": 19,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 19,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297918
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486793.6493550059,
-     6469035.957776895
+     6469035.957776895,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 20,
-    "id": 20,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 20,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297919
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486732.1750769662,
-     6468985.11437522
+     6468985.11437522,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 21,
-    "id": 21,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 21,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297920
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486671.76773533394,
-     6468933.007270634
+     6468933.007270634,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 22,
-    "id": 22,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 22,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297921
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486612.5144737628,
-     6468879.590962921
+     6468879.590962921,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 23,
-    "id": 23,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 23,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297922
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486554.50355858234,
-     6468824.828010255
+     6468824.828010255,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 24,
-    "id": 24,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 24,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297923
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486497.6408410155,
-     6468768.874701097
+     6468768.874701097,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 25,
-    "id": 25,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 25,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297924
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486441.9501055932,
-     6468711.754449682
+     6468711.754449682,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 26,
-    "id": 26,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 26,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297925
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486387.4957966553,
-     6468653.453534916
+     6468653.453534916,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 27,
-    "id": 27,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 27,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297926
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486334.4213303557,
-     6468593.893706388
+     6468593.893706388,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 28,
-    "id": 28,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 28,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297927
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486282.59347802936,
-     6468533.247017919
+     6468533.247017919,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 29,
-    "id": 29,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 29,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297928
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486232.03391416895,
-     6468471.538849562
+     6468471.538849562,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 30,
-    "id": 30,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 30,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297929
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486182.77973010606,
-     6468408.782802527
+     6468408.782802527,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 31,
-    "id": 31,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 31,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297930
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486135.0368346505,
-     6468344.869458794
+     6468344.869458794,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 32,
-    "id": 32,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 32,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297931
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486088.6296738186,
-     6468279.980856476
+     6468279.980856476,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 33,
-    "id": 33,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 33,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297932
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      486043.5776502414,
-     6468214.144151963
+     6468214.144151963,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 34,
-    "id": 34,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 34,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297933
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485999.8996255304,
-     6468147.386880163
+     6468147.386880163,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 35,
-    "id": 35,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 35,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297934
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485957.83057654893,
-     6468079.604173088
+     6468079.604173088,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 36,
-    "id": 36,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 36,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297935
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485917.1895830241,
-     6468010.956699249
+     6468010.956699249,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 37,
-    "id": 37,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 37,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297936
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485877.9804704128,
-     6467941.48157081
+     6467941.48157081,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 38,
-    "id": 38,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 38,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297937
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485840.219652934,
-     6467871.207848126
+     6467871.207848126,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 39,
-    "id": 39,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 39,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297938
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485804.11841043376,
-     6467800.067341972
+     6467800.067341972,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 40,
-    "id": 40,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 40,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297939
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485769.54613798676,
-     6467728.172020337
+     6467728.172020337,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 41,
-    "id": 41,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 41,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297940
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485736.4718127329,
-     6467655.575663472
+     6467655.575663472,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 42,
-    "id": 42,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 42,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297941
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485704.90927895095,
-     6467582.308640212
+     6467582.308640212,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 43,
-    "id": 43,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 43,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297942
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485675.0417706827,
-     6467508.334425001
+     6467508.334425001,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 44,
-    "id": 44,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 44,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297943
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485646.7955989088,
-     6467433.726456962
+     6467433.726456962,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 45,
-    "id": 45,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 45,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297944
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485620.1022705927,
-     6467358.549300682
+     6467358.549300682,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 46,
-    "id": 46,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 46,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297945
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485594.9729567126,
-     6467282.834406748
+     6467282.834406748,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 47,
-    "id": 47,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 47,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297946
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485571.55919702956,
-     6467206.571441696
+     6467206.571441696,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 48,
-    "id": 48,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 48,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297947
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485549.8494154452,
-     6467129.806222604
+     6467129.806222604,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 49,
-    "id": 49,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 49,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297948
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485529.73579421896,
-     6467052.607906757
+     6467052.607906757,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 50,
-    "id": 50,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 50,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297949
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485511.2267476272,
-     6466975.008791678
+     6466975.008791678,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 51,
-    "id": 51,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 51,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297950
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485494.43921750615,
-     6466897.018892311
+     6466897.018892311,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 52,
-    "id": 52,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 52,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297951
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485479.4274601334,
-     6466818.667877467
+     6466818.667877467,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 53,
-    "id": 53,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 53,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297952
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485466.04327764636,
-     6466740.0230870675
+     6466740.0230870675,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 54,
-    "id": 54,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 54,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297953
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485454.29226479796,
-     6466661.117424438
+     6466661.117424438,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 55,
-    "id": 55,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 55,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297954
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485444.25464179483,
-     6466581.975125633
+     6466581.975125633,
+    0
     ]
    }
   },
   {
    "type": "Feature",
    "properties": {
-    "field_1": 56,
-    "id": 56,
-    "idSection": 1,
-    "x": 0,
-    "y": 0,
-    "angle": 0,
+    "idsection": 1,
+    "pk": 56,
+    "train_set": "FRET",
+    "train_id": 5480,
     "speed": 200,
-    "typetrain": "FRET",
     "timestep": 1734297955
    },
    "geometry": {
     "type": "Point",
     "coordinates": [
      485436.052683889,
-     6466502.621576725
+     6466502.621576725,
+    0
     ]
    }
   }
