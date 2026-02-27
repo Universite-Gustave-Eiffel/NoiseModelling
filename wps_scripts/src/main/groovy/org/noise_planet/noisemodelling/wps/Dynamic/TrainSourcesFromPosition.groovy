@@ -195,12 +195,12 @@ def exec(Connection connection, Map input) {
         trainTrainsetData = input["trainTrainsetData"] as String
     }
 
-    String trainVehicleData = "RailwayVehiclesCnossos.json" as String
+    String trainVehicleData = "RailwayVehiclesCnossosSNCF_2022.json" as String
     if(input["trainVehicleData"]) {
         trainVehicleData = input["trainVehicleData"] as String
     }
 
-    String trainCoefficientsData = "RailwayCnossosSNCF_2021.json" as String
+    String trainCoefficientsData = "RailwayCnossosSNCF_2022.json" as String
     if(input["trainCoefficientsData"]) {
         trainCoefficientsData = input["trainCoefficientsData"] as String
     }
@@ -417,9 +417,9 @@ class TrainInfo {
 
                 RailwayVehicleCnossosParametersvar vehicleParametersIdentifier = new RailwayVehicleCnossosParametersvar(vehicleIdentifier, trainSpeed, 0, 0);
 
-                railwayCnossosvar.setVehicleDataFile("RailwayVehiclesCnossos.json");
+                railwayCnossosvar.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
                 railwayCnossosvar.setTrainSetDataFile("RailwayTrainsets.json");
-                railwayCnossosvar.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+                railwayCnossosvar.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
                 trainSourceLevel = railwayCnossosvar.evaluate(vehicleParametersIdentifier, trackParameters);
 
                 double[] ROLLING = getSourceLevel("ROLLING", trainSourceLevel);
