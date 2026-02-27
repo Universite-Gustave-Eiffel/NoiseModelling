@@ -66,7 +66,7 @@ public class TableLoaderTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossosSNCF_2022.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2022.json");
 
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
@@ -175,7 +175,7 @@ public class TableLoaderTest {
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossosSNCF_2022.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2022.json");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {

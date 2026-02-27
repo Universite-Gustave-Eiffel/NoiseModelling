@@ -47,9 +47,9 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param tableTrainTraffic Train traffic associated with tracks
      */
     public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) {
-        this.railway.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        this.railway.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         this.railway.setTrainSetDataFile("RailwayTrainsets.json");
-        this.railway.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        this.railway.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;

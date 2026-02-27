@@ -69,8 +69,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         directionAttributes.clear();
         directionAttributes.put(0, new OmnidirectionalDirection());
         int i=1;
+        double[] height=new double[]{0.5,0.5,4,0.5,4,0.5};
         for(String typeSource : RailWayCnossosParameters.sourceType) {
-            directionAttributes.put(i, new RailwayCnossosDirectivitySphere(new LineSource(typeSource)));
+            directionAttributes.put(i, new RailwayCnossosDirectivitySphere(new LineSource(height[i-1],typeSource)));
             i++;
         }
     }

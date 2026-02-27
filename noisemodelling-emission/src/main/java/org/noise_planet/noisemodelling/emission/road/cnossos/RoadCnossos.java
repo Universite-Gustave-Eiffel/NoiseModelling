@@ -43,7 +43,7 @@ public class RoadCnossos {
 
     /**
      * Get the CNOSSOS coefficients from a specific file version.
-     * @param fileVersion 1=RailwayCnossosEU_2020.json; other = RailwayCnossosSNCF_2021.json
+     * @param fileVersion 1=RailwayCnossosEU_2020.json; other = RailwayCnossosSNCF_2022.json
      * @return
      */
     public static JsonNode getCnossosData(int fileVersion) {

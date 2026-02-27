@@ -599,7 +599,7 @@ public class AttenuationCnossos {
         List<PointPath> ptList = proPathParameters.getPointList();
 
         // todo get hRail from input data
-        double hRail = 0.5;
+        double hRail = 0.15;
         Coordinate src = ptList.get(0).coordinate;
         PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
