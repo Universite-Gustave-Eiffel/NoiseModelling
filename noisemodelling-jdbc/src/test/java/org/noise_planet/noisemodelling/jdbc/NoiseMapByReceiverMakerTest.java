@@ -31,6 +31,7 @@ import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -469,11 +470,11 @@ public class NoiseMapByReceiverMakerTest {
 
 
     /**
-     * Place a point source into a building to check if the source is ignored
+     * Place a point source into a building to check if the source is still computed but a warning will be logged
      * @throws Exception
      */
     @Test
-    public void testIgnoredSourceInBuilding() throws Exception {
+    public void testSourceInBuilding() throws Exception {
         try (Statement st = connection.createStatement()) {
             // Import shape file
             // org/noise_planet/noisemodelling/jdbc/PointSource/DEM_Fence.shp
@@ -520,7 +521,12 @@ public class NoiseMapByReceiverMakerTest {
                     pathsParameters.add(cnossosPath);
                 }
             }
-            assertEquals(0 , pathsParameters.size());
+            // Diffraction over the walls of the building, but no direct path
+            assertEquals(2 , pathsParameters.size());
+            // Homogenous path with diffraction over the building wall
+            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(0).getPointList().get(1).type);
+            // Favorable path with diffraction over the building wall
+            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(1).getPointList().get(1).type);
         }
     }
 }

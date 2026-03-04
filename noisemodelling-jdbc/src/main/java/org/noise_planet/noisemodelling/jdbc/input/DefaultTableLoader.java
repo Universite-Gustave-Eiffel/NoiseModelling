@@ -316,6 +316,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
+                        if(!noiseMapByReceiverMaker.isReceiverHasAbsoluteZCoordinates()) {
+                            pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
+                        }
                         scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
                     }
                 }
@@ -741,6 +744,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     throw new IllegalArgumentException("The table " + sourcesTableName +
                                             " contain at least one source without Z ordinate." +
                                             " You must specify X,Y,Z for each source");
+                                }
+                            }
+                            if(!noiseMapByReceiverMaker.isSourceHasAbsoluteZCoordinates()) {
+                                if(scene.profileBuilder.hasDem()) {
+                                    // Coordinates are supposed to be relative to the digital elevation model
+                                    // So we must compute the altitude values
+                                    geo = scene.profileBuilder.makeGeometryRelativeZToAbsolute(geo, true);
                                 }
                             }
                             scene.addSource(rs.getLong(pkIndex), geo, rs);

@@ -24,10 +24,8 @@ import org.noise_planet.noisemodelling.pathfinder.path.*;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 import org.slf4j.Logger;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
-import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
 
 /**
  * @author Nicolas Fortin
@@ -896,110 +893,6 @@ public class PathFinder {
         }
     }
 
-
-    /**
-     * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
-     * @param lineString
-     * @param profileBuilder
-     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
-     * @return computed lineString
-     */
-    private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder, double epsilon) {
-        boolean warned = false;
-        ArrayList<Coordinate> newGeomCoordinates = new ArrayList<>();
-        Coordinate[] coordinates = lineString.getCoordinates();
-        for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
-            Coordinate p0 = coordinates[idPoint];
-            Coordinate p1 = coordinates[idPoint + 1];
-            List<Coordinate> groundProfileCoordinates = new ArrayList<>();
-            profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
-            newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
-            if(groundProfileCoordinates.size() < 2) {
-                if(profileBuilder.hasDem()) {
-                    if(!warned) {
-                        LOGGER.warn( "Source line out of DEM area {}",
-                                new WKTWriter(3).write(lineString));
-                        warned = true;
-                    }
-                }
-                newGeomCoordinates.add(p0);
-                newGeomCoordinates.add(p1);
-            } else {
-                if (idPoint == 0) {
-                    newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
-                }
-                Coordinate previous = groundProfileCoordinates.get(0);
-                for (int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
-                    final Coordinate current = groundProfileCoordinates.get(groundPoint);
-                    final Coordinate next = groundProfileCoordinates.get(groundPoint + 1);
-                    // Do not add topographic points which are simply the linear interpolation between two points
-                    // triangulation add a lot of interpolated lines from line segment DEM
-                    if (CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
-                        // interpolate the Z (height) values of the source then add the altitude
-                        previous = current;
-                        newGeomCoordinates.add(
-                                new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
-                    }
-                }
-                newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
-                        groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
-            }
-        }
-        return GEOMETRY_FACTORY.createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
-    }
-
-    /**
-     * Update ground Z coordinates of sound sources absolute to sea levels
-     */
-    public void makeSourceRelativeZToAbsolute() {
-        List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
-        for (Geometry source : data.sourceGeometries) {
-            Geometry offsetGeometry;
-            if (source instanceof LineString) {
-                offsetGeometry = splitLineSource((LineString) source, data.profileBuilder, ProfileBuilder.MILLIMETER);
-            } else if (source instanceof MultiLineString) {
-                LineString[] newGeom = new LineString[source.getNumGeometries()];
-                for (int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
-                    newGeom[idGeom] = splitLineSource((LineString) source.getGeometryN(idGeom),
-                            data.profileBuilder, ProfileBuilder.MILLIMETER);
-                }
-                offsetGeometry = GEOMETRY_FACTORY.createMultiLineString(newGeom);
-            } else if (source instanceof Point) {
-                Coordinate sourceCoord = source.getCoordinate();
-                offsetGeometry = GEOMETRY_FACTORY.createPoint(new Coordinate(sourceCoord.x, sourceCoord.y,
-                        sourceCoord.z + data.profileBuilder.getZGround(sourceCoord)));
-                // Check if the source is into a building
-                Building building = data.profileBuilder.getBuildingAtCoordinate(sourceCoord);
-                if(building != null && building.getHeight() >= sourceCoord.z) {
-                    LOGGER.warn("Point source has been ignored as it is inside a building (building height {} m), it should be moved higher SOURCE: {}",
-                            building.getHeight(),new WKTWriter(3).write(source));
-                    continue;
-                }
-            } else {
-                throw new IllegalArgumentException("Unsupported source geometry " + source.getGeometryType());
-            }
-            // Offset the geometry with value of elevation for each coordinate
-            sourceCopy.add(offsetGeometry);
-        }
-        data.setSources(sourceCopy);
-    }
-
-    /**
-     * Update ground Z coordinates of sound sources and receivers absolute to sea levels
-     */
-    public void makeRelativeZToAbsolute() {
-        makeSourceRelativeZToAbsolute();
-        makeReceiverRelativeZToAbsolute();
-    }
-
-    /**
-     * Update ground Z coordinates of receivers absolute to sea levels
-     */
-    public void makeReceiverRelativeZToAbsolute() {
-        for(Coordinate receiver : data.receivers) {
-            receiver.setZ(receiver.getZ() + data.profileBuilder.getZGround(receiver));
-        }
-    }
 
     /**
      * Compute li to equation 4.1 NMPB 2008 (June 2009)
