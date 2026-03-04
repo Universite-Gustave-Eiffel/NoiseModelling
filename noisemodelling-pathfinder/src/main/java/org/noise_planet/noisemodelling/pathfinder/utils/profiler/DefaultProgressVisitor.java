@@ -57,6 +57,7 @@ public class DefaultProgressVisitor implements ProgressVisitor {
 
     @Override
     public void endOfProgress() {
+        pushProgression(subprocessSize - subprocessDone);
     }
 
     @Override
