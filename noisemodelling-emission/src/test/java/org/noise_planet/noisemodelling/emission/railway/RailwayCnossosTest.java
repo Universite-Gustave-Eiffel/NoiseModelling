@@ -35,7 +35,7 @@ public class RailwayCnossosTest {
 
         railwayCnossos.setVehicleDataFile("RailwayVehiclesNMPB.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
 
 
         String vehCat = "notsupported";
@@ -405,9 +405,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_6() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
 
         double[] expectedValuesLWRolling = new double[]{48.5606, 49.5910, 51.5763, 56.4920, 55.5831, 55.4623, 55.2207, 56.4663, 56.3912,
                 56.7350, 56.4837, 59.9648, 62.8745, 62.6585, 59.6990, 57.3252, 59.7649, 61.1898, 60.5615, 58.7027, 55.6686, 49.3786, 48.0600, 45.9195};
@@ -454,9 +454,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC1() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         // Expected values
         double[] expectedValuesLWRolling = new double[]{48.5605583070706, 49.591094876553, 51.5763357483898, 56.4920337262433, 55.5830577481227, 55.4623526520535, 55.2207102517505, 56.4663370258577, 56.3912193484322, 56.7349538148708, 56.4837006351883, 59.9647735129824, 62.8744986704598, 62.6584506699844, 59.6990085689524, 57.3251971450722, 59.7649235057108, 61.1897948776294, 60.5615433617675, 58.7027221858109, 55.6685855421802, 49.378644576175, 48.0600152459358, 45.9195251325526};
         double[] expectedValuesLW_Traction_A = new double[]{49.8691001300806, 49.7691001300806, 49.6691001300806, 50.1691001300806, 47.0691001300806, 54.1691001300806, 50.7691001300806, 44.2691001300806, 46.8691001300806, 47.0691001300806, 45.6691001300806, 44.9691001300806, 43.4691001300806, 44.5691001300806, 41.5691001300806, 41.1691001300806, 38.9691001300806, 37.3691001300806, 36.4691001300806, 35.3691001300806, 31.7691001300806, 27.6691001300806, 22.4691001300806, 20.4691001300806};
@@ -518,9 +518,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC2() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         // Expected values
         double[] expectedValuesLWRolling = new double[]{43.8903627967019, 44.9655697489009, 48.9478577301374, 55.5479496503529, 55.435644216130996, 56.28918949883372, 57.76517536242085, 59.857189090598624, 60.9673183839427, 61.989589714413825, 61.667715524758066, 64.86050810840895, 67.79089584625551, 65.62626998386897, 62.18314392899565, 59.57968136675302, 61.08640983016812, 62.20761878325611, 61.49143701879498, 59.61042465277447, 56.53747558356267, 50.41901289738583, 49.0315804220768, 46.79550354867328};
         double[] expectedValuesLW_Traction_A = new double[]{49.8691001300806, 49.7691001300806, 49.6691001300806, 50.1691001300806, 47.0691001300806, 54.1691001300806, 50.7691001300806, 44.2691001300806, 46.8691001300806, 47.0691001300806, 45.6691001300806, 44.9691001300806, 43.4691001300806, 44.5691001300806, 41.5691001300806, 41.1691001300806, 38.9691001300806, 37.3691001300806, 36.4691001300806, 35.3691001300806, 31.7691001300806, 27.6691001300806, 22.4691001300806, 20.4691001300806};
@@ -583,9 +583,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC3() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
 
         // Expected values
         double[] expectedValuesLWRolling = new double[]{59.3823815386426, 59.7740042542256, 61.6645074704619, 66.5651015825184, 64.9236256151963, 63.9195646659437, 63.0633891427656, 63.1703959172873, 62.0842218312365, 61.5507094539991, 59.9458124597247, 62.0451549860138, 63.5063034095735, 61.62742572976, 57.591356100339, 54.8777141322954, 57.2745023554145, 58.7784762578773, 58.2320686591241, 56.3534564010822, 53.2240832593016, 46.6986552124813, 45.4591519061876, 43.3326357315674};
@@ -648,9 +648,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC4() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         // Expected values
         double[] expectedValuesLWRollingD = new double[]{44.5811582203502, 45.6116947898327, 47.5969356616694, 52.5126336395229, 51.6036576614023, 51.4829525653331, 51.2413101650301, 52.4869369391373, 52.4118192617118, 52.7555537281504, 52.5043005484679, 55.985373426262, 58.8950985837394, 58.679050583264, 55.7196084822321, 53.3457970583518, 55.7855234189905, 57.210394790909, 56.5821432750471, 54.7233220990906, 51.6891854554598, 45.3992444894546, 44.0806151592154, 41.9401250458322};
         double[] expectedValuesLWRollingE = new double[]{43.3317708542672, 44.3623074237497, 46.3475482955864, 51.2632462734399, 50.3542702953193, 50.2335651992501, 49.9919227989471, 51.2375495730543, 51.1624318956288, 51.5061663620674, 51.2549131823849, 54.735986060179, 57.6457112176564, 57.429663217181, 54.4702211161491, 52.0964096922688, 54.5361360529075, 55.961007424826, 55.3327559089641, 53.4739347330076, 50.4397980893768, 44.1498571233716, 42.8312277931324, 40.6907376797492};
@@ -724,9 +724,9 @@ public class RailwayCnossosTest {
 
     @Test
     public void Test_Cnossos_Rail_emission_OC5() throws IOException {
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         // Expected values
         double[] expectedValuesLWRollingD = new double[]{47.1552955205404, 48.8498299106887, 52.6506665062211, 59.9189540729727, 57.9682560825282, 58.5872885355725, 59.0528160959685, 60.1904875304058, 60.6442541026117, 62.4955801250664, 64.9184365575419, 70.5236596616762, 75.9091586312107, 76.6780384718047, 74.8656580571925, 71.8258438346925, 69.0422555458139, 66.2590037381391, 64.4635730861252, 62.3174294364882, 58.0523015636309, 51.1818941714616, 49.4692864131497, 47.5870164960235};
         double[] expectedValuesLWRollingE = new double[]{46.7153189292102, 48.5400035435940, 52.5625340892052, 60.0787091329295, 57.9923893388288, 58.6495173688799, 59.0916185428417, 60.1979886666328, 60.6185205324881, 62.4960038970257, 64.9683137433641, 70.5625482161490, 75.9313127158166, 76.6869876714216, 74.8713872507045, 71.8271267251379, 69.0163596754784, 66.1966324248387, 64.3988216929349, 62.2298468109704, 57.9544897520346, 51.0604922061408, 49.3019210916908, 47.4515242894244};
@@ -828,9 +828,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC6() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
 
         // Expected values
         double[] expectedValues = new double[]{-140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140, -140};
@@ -874,9 +874,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_OC7() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossosSNCF_2022.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2022.json");
         // Expected values
         double[] expectedValuesLWRollingD = new double[]{33.6733596010837, 34.95169576625, 38.2539731975929, 44.1801059537931, 42.888610835611, 44.0148743871629, 45.6800277990472, 47.6677743937925, 48.7556304666653, 51.3814838437463, 52.4049926613164, 57.631720998909, 63.3357285948357, 66.1337582772167, 66.4000139556384, 66.2606389650649, 67.9407445637443, 68.7526472395718, 67.7497360005367, 64.0167245325835, 58.7017301999714, 52.2571748232612, 52.5279874725351, 50.9834474448221};
         double[] expectedValuesLWRollingE = new double[]{32.4239722350007, 33.702308400167, 37.0045858315099, 42.9307185877101, 41.639223469528, 42.7654870210799, 44.4306404329642, 46.4183870277095, 47.5062431005823, 50.1320964776633, 51.1556052952334, 56.382333632826, 62.0863412287527, 64.8843709111337, 65.1506265895554, 65.0112515989819, 66.6913571976613, 67.5032598734888, 66.5003486344537, 62.7673371665005, 57.4523428338884, 51.0077874571782, 51.2786001064521, 49.7340600787391};
