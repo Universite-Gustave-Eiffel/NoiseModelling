@@ -10,16 +10,12 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.api.EmptyProgressVisitor;
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 
@@ -39,9 +35,14 @@ public abstract class GridMapMaker {
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
-    // True if Z of sound source and receivers are relative to the ground
-    protected boolean receiverHasAbsoluteZCoordinates = false;
-    protected boolean sourceHasAbsoluteZCoordinates = false;
+    /** True if Z of receivers geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
+     * When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
+     */
+    protected boolean receiverHasSeaLevelZCoordinates = false;
+    /** True if Z of sources geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
+     *  When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
+     */
+    protected boolean sourceHasSeaLevelZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected double gs = 0;
@@ -228,7 +229,7 @@ public abstract class GridMapMaker {
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
     public boolean isReceiverHasAbsoluteZCoordinates() {
-        return receiverHasAbsoluteZCoordinates;
+        return receiverHasSeaLevelZCoordinates;
     }
 
     /**
@@ -236,21 +237,21 @@ public abstract class GridMapMaker {
      * @param receiverHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
      */
     public void setReceiverHasAbsoluteZCoordinates(boolean receiverHasAbsoluteZCoordinates) {
-        this.receiverHasAbsoluteZCoordinates = receiverHasAbsoluteZCoordinates;
+        this.receiverHasSeaLevelZCoordinates = receiverHasAbsoluteZCoordinates;
     }
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
     public boolean isSourceHasAbsoluteZCoordinates() {
-        return sourceHasAbsoluteZCoordinates;
+        return sourceHasSeaLevelZCoordinates;
     }
 
     /**
      * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
      */
     public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
-        this.sourceHasAbsoluteZCoordinates = sourceHasAbsoluteZCoordinates;
+        this.sourceHasSeaLevelZCoordinates = sourceHasAbsoluteZCoordinates;
     }
 
     public boolean iszBuildings() {

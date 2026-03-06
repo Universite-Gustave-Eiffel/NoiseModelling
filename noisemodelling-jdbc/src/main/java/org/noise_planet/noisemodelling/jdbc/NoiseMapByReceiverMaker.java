@@ -309,14 +309,6 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
             computeRays.setThreadCount(threadCount);
         }
 
-        if(!receiverHasAbsoluteZCoordinates) {
-            computeRays.makeReceiverRelativeZToAbsolute();
-        }
-
-        if(!sourceHasAbsoluteZCoordinates) {
-            computeRays.makeSourceRelativeZToAbsolute();
-        }
-
         computeRays.run(computeRaysOut);
 
         return computeRaysOut;

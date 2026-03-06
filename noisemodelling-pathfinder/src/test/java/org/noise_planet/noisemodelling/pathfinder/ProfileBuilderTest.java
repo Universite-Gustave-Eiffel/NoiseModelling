@@ -286,10 +286,8 @@ public class ProfileBuilderTest {
         Scene scene = new Scene(profileBuilder);
         WKTReader wktReader = new WKTReader();
         Geometry geometry = wktReader.read("MultiLineStringZ ((10 10 1, 200 50 1))");
-        scene.addSource(1L, geometry);
-        PathFinder pathFinder = new PathFinder(scene);
-        assertEquals(2, scene.sourceGeometries.get(0).getNumPoints());
-        pathFinder.makeSourceRelativeZToAbsolute();
+        scene.addSource(1L, profileBuilder.makeGeometryRelativeZToAbsolute(geometry, false));
+        assertEquals(2, geometry.getNumPoints());
         // The source line should now be made of 4 points (2 points being created by the elevated DEM)
         assertEquals(4, scene.sourceGeometries.get(0).getNumPoints());
         List<Coordinate> expectedProfile = Arrays.asList(

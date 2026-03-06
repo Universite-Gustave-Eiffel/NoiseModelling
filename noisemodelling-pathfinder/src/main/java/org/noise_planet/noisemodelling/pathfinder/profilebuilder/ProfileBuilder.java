@@ -13,6 +13,7 @@ import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.math.Vector3D;
 import org.locationtech.jts.operation.distance.DistanceOp;
@@ -282,6 +283,131 @@ public class ProfileBuilder {
         return addBuilding(coords, height, new ArrayList<>(), id);
     }
 
+
+    /**
+     * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
+     * @param lineString
+     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
+     * @return computed lineString
+     */
+    public LineString splitGeometryLineToDem(LineString lineString, double epsilon) {
+        boolean warned = false;
+        ArrayList<Coordinate> newGeomCoordinates = new ArrayList<>();
+        Coordinate[] coordinates = lineString.getCoordinates();
+        for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
+            Coordinate p0 = coordinates[idPoint];
+            Coordinate p1 = coordinates[idPoint + 1];
+            List<Coordinate> groundProfileCoordinates = new ArrayList<>();
+            fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
+            newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
+            if(groundProfileCoordinates.size() < 2) {
+                if(hasDem()) {
+                    if(!warned) {
+                        LOGGER.warn( "Source line out of DEM area {}",
+                                new WKTWriter(3).write(lineString));
+                        warned = true;
+                    }
+                }
+                newGeomCoordinates.add(p0);
+                newGeomCoordinates.add(p1);
+            } else {
+                if (idPoint == 0) {
+                    newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
+                }
+                Coordinate previous = groundProfileCoordinates.get(0);
+                for (int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
+                    final Coordinate current = groundProfileCoordinates.get(groundPoint);
+                    final Coordinate next = groundProfileCoordinates.get(groundPoint + 1);
+                    // Do not add topographic points which are simply the linear interpolation between two points
+                    // triangulation add a lot of interpolated lines from line segment DEM
+                    if (CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
+                        // interpolate the Z (height) values of the source then add the altitude
+                        previous = current;
+                        newGeomCoordinates.add(
+                                new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
+                    }
+                }
+                newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
+                        groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
+            }
+        }
+        return lineString.getFactory().createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
+    }
+
+    /**
+     * Update ground Z coordinates of sound sources absolute to sea levels
+     * @param geometry Geometry to offset the Z value
+     * @param checkForBuildingVolumes If true, this function will print a warning if the geometry contain at least one point under a building roof
+     */
+    public Geometry makeGeometryRelativeZToAbsolute(Geometry geometry, boolean checkForBuildingVolumes) {
+        Geometry offsetGeometry;
+        if (geometry instanceof LineString) {
+            offsetGeometry = splitGeometryLineToDem((LineString) geometry, ProfileBuilder.MILLIMETER);
+            if (checkForBuildingVolumes) {
+                Coordinate[] coordinates = offsetGeometry.getCoordinates();
+                logWarningIfCoordinatesIntoBuildings(coordinates);
+            }
+        } else if (geometry instanceof MultiLineString) {
+            LineString[] newGeom = new LineString[geometry.getNumGeometries()];
+            for (int idGeom = 0; idGeom < geometry.getNumGeometries(); idGeom++) {
+                newGeom[idGeom] = splitGeometryLineToDem((LineString) geometry.getGeometryN(idGeom),
+                        MILLIMETER);
+            }
+            offsetGeometry = geometry.getFactory().createMultiLineString(newGeom);
+            if (checkForBuildingVolumes) {
+                Coordinate[] coordinates = offsetGeometry.getCoordinates();
+                logWarningIfCoordinatesIntoBuildings(coordinates);
+            }
+        } else if (geometry instanceof Point) {
+            Coordinate geometryCoordinate = geometry.getCoordinate();
+            offsetGeometry = geometry.getFactory().createPoint(offsetCoordinateToAltitudeUsingDigitalElevationModel(geometryCoordinate, checkForBuildingVolumes));
+        } else {
+            throw new IllegalArgumentException("Unsupported source geometry " + geometry.getGeometryType());
+        }
+        return offsetGeometry;
+    }
+
+    /**
+     * Update ground Z coordinates of sound sources absolute to sea levels
+     * @param geometryCoordinates Geometry coordinates to offset the Z value
+     * @param checkForBuildingVolumes If true, this function will print a warning if the geometry contain at least one point under a building roof
+     */
+    public Coordinate[] offsetCoordinatesToAltitudeUsingDigitalElevationModel(Coordinate[] geometryCoordinates, boolean checkForBuildingVolumes) {
+        Coordinate[] offsetCoordinates = new Coordinate[geometryCoordinates.length];
+        for (int i = 0; i < geometryCoordinates.length; i++) {
+            offsetCoordinates[i] = offsetCoordinateToAltitudeUsingDigitalElevationModel(geometryCoordinates[i], checkForBuildingVolumes);
+        }
+        return offsetCoordinates;
+    }
+
+    /**
+     * Offset a coordinate to altitude using the digital elevation model. The Z value of the coordinate is updated with the ground elevation at this point.
+     * @param geometryCoordinate Coordinate to offset
+     * @param checkForBuildingVolumes If true, this function will print a warning if the geometry contain at least one point under a building roof
+     * @return
+     */
+    public Coordinate offsetCoordinateToAltitudeUsingDigitalElevationModel(Coordinate geometryCoordinate, boolean checkForBuildingVolumes) {
+        Coordinate offsetCoordinate = new Coordinate(geometryCoordinate.x, geometryCoordinate.y, geometryCoordinate.z + getZGround(geometryCoordinate));
+        if(checkForBuildingVolumes) {
+            logWarningIfCoordinatesIntoBuildings(geometryCoordinate);
+        }
+        return offsetCoordinate;
+    }
+
+    private void logWarningIfCoordinatesIntoBuildings(Coordinate... coordinates) {
+        for (Coordinate coordinate : coordinates) {
+            // Check if the source is into a building
+            Building building = getBuildingAtCoordinate(coordinate);
+            if (building != null && building.getHeight() >= coordinate.z) {
+                LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
+                                " (building height {} m), it should be moved higher Geometry: {}",
+                        building.getHeight(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                break;
+            }
+        }
+    }
+
+
     /**
      * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
      * @param geom   Building footprint.
@@ -397,15 +523,6 @@ public class ProfileBuilder {
     public ProfileBuilder addWall(Coordinate[] coords, double height, int id) {
         return addWall(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
     }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param geom   Wall footprint.
-     * @param id     Database key.
-     */
-    /*public ProfileBuilder addWall(LineString geom, int id) {
-        return addWall(geom, 0.0, new ArrayList<>(), id);
-    }*/
 
     /**
      * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
