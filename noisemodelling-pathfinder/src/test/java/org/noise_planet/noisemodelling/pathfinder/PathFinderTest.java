@@ -120,7 +120,7 @@ public class PathFinderTest {
     public static void assertCutProfile(CutProfile expected, CutProfile got) {
         assertNotNull(expected);
         assertNotNull(got);
-        assertEquals(expected.cutPoints.size(), got.cutPoints.size(), "Not the same number of cut points");
+        assertEquals(expected.cutPoints.size(), got.cutPoints.size(), got.getProfileType()+ " Not the same number of cut points");
         assertEquals(expected.profileType, got.profileType, "Not the same profile type");
         assertEquals(expected.curvedPath, got.curvedPath, "Not the same curved path attribute value");
 
@@ -1107,10 +1107,6 @@ public class PathFinderTest {
         assertEquals(5, propDataOut.getCutProfiles().size());
 
         assertCutProfiles("TC19", propDataOut.cutProfiles);
-
-        //Different value with the TC because their z-profile left seems to be false, it follows the building top
-        // border while it should not
-        // assertCutProfile("TC19_Left", propDataOut.cutProfiles.poll());
     }
 
     /**
