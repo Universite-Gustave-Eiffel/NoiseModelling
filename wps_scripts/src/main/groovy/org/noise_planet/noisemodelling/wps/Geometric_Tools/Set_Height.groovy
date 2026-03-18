@@ -43,12 +43,14 @@ inputs = [
                 name       : 'New height',
                 title      : 'New height',
                 description: 'New height for the input table (in meters) (FLOAT)',
+                min        : 0, max: 1,
                 type       : Double.class
         ],
         heightColumn: [
                 name       : 'heightColumn',
                 title      : 'heightColumn',
                 description: 'The column name in the input table that contains the heights',
+                min        : 0, max: 1,
                 type       : String.class
         ]
 ]
