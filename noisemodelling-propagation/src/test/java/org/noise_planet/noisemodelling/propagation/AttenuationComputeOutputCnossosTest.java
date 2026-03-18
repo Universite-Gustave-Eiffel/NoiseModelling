@@ -6080,14 +6080,14 @@ public class AttenuationComputeOutputCnossosTest {
         //Propagation data building
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
 
-        scene.addSource(f.createPoint(new Coordinate(0.5, 0, 0.)));
+        scene.addSource(0L, f.createPoint(new Coordinate(0.5, 0, 0.)));
         scene.addReceiver(new Coordinate(25, 0, 4));
         scene.defaultGroundAttenuation = 1.0;
         scene.reflexionOrder=1;
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
         scene.setComputeVerticalDiffraction(true);
-        scene.setBodyBarrier(true);
+        scene.sourceCref.put(0L, 1.0);
 
         //Propagation process path data building
         AttenuationParameters attData = new AttenuationParameters();
@@ -6105,7 +6105,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] values0 = propDataOut0.receiversAttenuationLevels.pop().levels;
 
         // Barrier, no interaction
-        scene.setBodyBarrier(false);
+        scene.sourceCref.put(0L, 0.0);
         AttenuationComputeOutput propDataOut1 = new AttenuationComputeOutput(true, true, scene);
         PathFinder computeRays1 = new PathFinder(scene);
         computeRays1.setThreadCount(1);
@@ -6120,7 +6120,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
         scene.setComputeVerticalDiffraction(true);
-        scene.setBodyBarrier(true);
+        scene.sourceCref.put(0L, 1.0);
 
         AttenuationComputeOutput propDataOut2 = new AttenuationComputeOutput(true, true, scene);
         PathFinder computeRays2 = new PathFinder(scene);
@@ -6134,7 +6134,7 @@ public class AttenuationComputeOutputCnossosTest {
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
         scene.setComputeVerticalDiffraction(true);
-        scene.setBodyBarrier(false);
+        scene.sourceCref.put(0L, 0.0);
         AttenuationComputeOutput propDataOut3 = new AttenuationComputeOutput(true, true, scene);
         PathFinder computeRays3 = new PathFinder(scene);
         computeRays3.run(propDataOut3);

@@ -43,6 +43,17 @@ public class CnossosPath extends Path {
     public double e=0;
     public double deltaRetro= Double.MAX_VALUE;
 
+    /**
+     * Height of the rail above ballast (m), used in body barrier calculation.
+     * Ballast is considered as ground reference. Default = 0.18m.
+     */
+    private double hRail = 0.18;
+
+    /** Vehicle body reflection coefficient (Cref), used in body barrier calculation.
+     *  0 = no body barrier (road sources, or open freight), 1 = fully reflecting body.
+     *  Computed as length-weighted average of ReflectingBarrierEffect from vehicle JSON. */
+    private double cref = 0;
+
     public void init(int size) {
         this.aAtm = new double[size];
         this.aDiv = new double[size];
@@ -80,6 +91,31 @@ public class CnossosPath extends Path {
         this.groundAttenuation = other.groundAttenuation;
         this.e = other.e;
         this.deltaRetro = other.deltaRetro;
+        this.hRail = other.hRail;
+        this.cref = other.cref;
+    }
+
+    public double getHRail() {
+        return hRail;
+    }
+
+    public void setHRail(double hRail) {
+        this.hRail = hRail;
+    }
+
+    /**
+     * @return Vehicle body reflection coefficient (0-1) for body barrier calculation
+     */
+    public double getCref() {
+        return cref;
+    }
+
+    /**
+     * Set the vehicle body reflection coefficient.
+     * @param cref 0 = no reflection (road/open freight), 1 = full reflection
+     */
+    public void setCref(double cref) {
+        this.cref = cref;
     }
 
     public static class ABoundary {

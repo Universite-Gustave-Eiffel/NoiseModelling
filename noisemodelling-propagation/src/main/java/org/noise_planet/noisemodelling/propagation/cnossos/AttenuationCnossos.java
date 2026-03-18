@@ -598,13 +598,15 @@ public class AttenuationCnossos {
 
         List<PointPath> ptList = proPathParameters.getPointList();
 
-        // todo get hRail from input data
-        double hRail = 0.5;
+        // Get hRail from CnossosPath (set by AttenuationVisitor/AttenuationOutputSingleThread from HRAIL column)
+        // Default is 0.18m (rail above ballast; ballast is considered as ground reference)
+        double hRail = proPathParameters.getHRail();
         Coordinate src = ptList.get(0).coordinate;
         PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
 
         if (pDif != null && !pDif.alphaWall.isEmpty()) {
-            if (pDif.bodyBarrier){
+            double Cref = proPathParameters.getCref();
+            if (Cref > 0){
 
                 int n = 3;
                 Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
@@ -621,7 +623,6 @@ public class AttenuationCnossos {
                 double hb = pDif.coordinate.y;
                 Coordinate B = new Coordinate(db,hb);
 
-                double Cref = 1;
                 double dr = rcv.x;
                 double h0 = ptList.get(0).altitude+hRail;
                 double hs = ptList.get(0).altitude+src.y-hRail;

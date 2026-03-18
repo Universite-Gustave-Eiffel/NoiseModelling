@@ -48,6 +48,12 @@ public class RailWayCnossosParameters extends RailWayParameters {
     private double[] lWAerodynamicB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
     private double[] lWBridge = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
 
+    /** Reflection coefficient of the vehicle body barrier, length-weighted average of ReflectingBarrierEffect
+     *  from vehicle JSON. 0 = no body barrier (open freight), 1 = fully reflecting body. */
+    private double cref = 1.0;
+    /** Accumulated weight for cref averaging (nbUnits * vehicleLength). Used to merge across vehicles/trainsets. */
+    private double crefTotalWeight = 0;
+
     public RailWayCnossosParameters() {
         Arrays.fill(lWRolling, -99.99);
         Arrays.fill(lWTractionA, -99.99);
@@ -80,6 +86,13 @@ public class RailWayCnossosParameters extends RailWayParameters {
                 double[]  lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
                 lineSource1.getRailwaySourceList().get(railwaySourceEntry.getKey()).setlW(sumDbArray(lW1, lW2));
             }
+        }
+        // Merge cref using length-weighted average
+        double totalWeight = lineSource1.crefTotalWeight + lineSource2.crefTotalWeight;
+        if (totalWeight > 0) {
+            lineSource1.cref = (lineSource1.cref * lineSource1.crefTotalWeight
+                    + lineSource2.cref * lineSource2.crefTotalWeight) / totalWeight;
+            lineSource1.crefTotalWeight = totalWeight;
         }
         return lineSource1;
     }
@@ -167,6 +180,36 @@ public class RailWayCnossosParameters extends RailWayParameters {
             }
         }
         return attHorizontal + attVertical;
+    }
+
+    /**
+     * @return Reflection coefficient of the vehicle body barrier (0-1), length-weighted average.
+     */
+    public double getCref() {
+        return cref;
+    }
+
+    /**
+     * Set the reflection coefficient of the vehicle body barrier.
+     * @param cref 0 = open freight (no reflection), 1 = fully reflecting body
+     */
+    public void setCref(double cref) {
+        this.cref = cref;
+    }
+
+    /**
+     * @return Accumulated weight for cref averaging
+     */
+    public double getCrefTotalWeight() {
+        return crefTotalWeight;
+    }
+
+    /**
+     * Set the accumulated weight for cref averaging.
+     * @param crefTotalWeight typically nbUnits * vehicleLength
+     */
+    public void setCrefTotalWeight(double crefTotalWeight) {
+        this.crefTotalWeight = crefTotalWeight;
     }
 
 }

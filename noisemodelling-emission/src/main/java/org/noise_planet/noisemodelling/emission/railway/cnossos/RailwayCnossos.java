@@ -127,6 +127,33 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
     }
 
     /**
+     * Get the reflecting barrier effect flag for a vehicle (0 or 1).
+     * Open flat freight wagons have 0 (no body to reflect sound), all others have 1.
+     * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
+     * @return 0 or 1
+     */
+    public int getReflectingBarrierEffect(String typeVehicle) {
+        try {
+            return getVehicleNode(typeVehicle).get("ReflectingBarrierEffect").intValue();
+        } catch (Exception e) {
+            return 1; // default: reflecting barrier effect is active
+        }
+    }
+
+    /**
+     * Get the total length of a vehicle in meters.
+     * @param typeVehicle Vehicle type identifier (e.g. "SNCF2")
+     * @return Vehicle length in meters
+     */
+    public double getVehicleLength(String typeVehicle) {
+        try {
+            return getVehicleNode(typeVehicle).get("Length").doubleValue();
+        } catch (Exception e) {
+            return 1.0; // default fallback
+        }
+    }
+
+    /**
      *
      * @param typeVehicle
      * @param runningCondition

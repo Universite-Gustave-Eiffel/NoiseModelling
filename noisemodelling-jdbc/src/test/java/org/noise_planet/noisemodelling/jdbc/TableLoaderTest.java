@@ -66,7 +66,7 @@ public class TableLoaderTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json", "RailwayPlatforms.json");
 
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
@@ -175,7 +175,7 @@ public class TableLoaderTest {
 
         HashMap<String, double[]> Resultats = new HashMap<>();
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json", "RailwayPlatforms.json");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {
@@ -335,8 +335,8 @@ public class TableLoaderTest {
         List<String> frequenciesFields = loader.frequencyArray.stream()
                 .map(frequency -> noiseMapByReceiverMaker.getFrequencyFieldPrepend()+frequency)
                 .collect(Collectors.toList());
-        double[] expected = new double[]{20.58, 22.12, 27.88, 26.74, 29.35, 31.23, 33.66, 31.61, 31.11, 32.4, 34.65,
-                38.23, 40.41, 40.55, 39.36, 33.4, 29.58, 26.43, 24.06, 17.67, 8.04, -6.12, -23.11, -47.51};
+        double[] expected = new double[]{20.92, 22.45, 28.20, 27.02, 29.60, 31.44, 33.84, 31.74, 31.20, 32.43, 34.63,
+                38.16, 40.28, 40.38, 39.15, 33.14, 29.30, 26.11, 23.72, 17.31, 7.67, -6.51, -23.50, -47.91};
         try(ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
                 + parameters.receiversLevelTable +
                 "  WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
@@ -427,6 +427,33 @@ public class TableLoaderTest {
 
         // Check if all receivers are found
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
+    }
+
+
+    /**
+     * Test that HRAIL column is properly created in LW_RAILWAY output
+     * and that the default value matches the default platform hRail (h2 = 0.18).
+     */
+    @Test
+    public void testRailWithScreenBodyBarrier() throws SQLException, IOException {
+        // --- Common setup ---
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Verify HRAIL column was created in LW_RAILWAY
+        assertTrue(JDBCUtilities.hasField(connection, "LW_RAILWAY", "HRAIL"),
+                "LW_RAILWAY should have HRAIL column");
+
+        // Verify HRAIL value is the default platform hRail (h2 = 0.18)
+        try (ResultSet rs = connection.createStatement().executeQuery(
+                "SELECT HRAIL FROM LW_RAILWAY LIMIT 1")) {
+            assertTrue(rs.next());
+            assertEquals(0.18, rs.getDouble("HRAIL"), 0.001,
+                    "Default HRAIL should be 0.18 (h2 = rail above ballast)");
+        }
     }
 
 }

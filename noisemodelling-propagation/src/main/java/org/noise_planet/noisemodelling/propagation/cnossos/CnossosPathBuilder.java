@@ -184,22 +184,21 @@ public class CnossosPathBuilder {
      * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the multiple contribution ray paths
      * following Cnossos specification, or empty if there is no valid path.
      * @param cutProfile Vertical cut of a domain
-     * @param bodyBarrier True if there is a body barrier on the path
      * @param exactFrequencyArray Expected frequencies
      * @param gS Ground factor of the source area
      * @return The cnossos path or null
      */
-    public static List<CnossosPath> computeCnossosPathsFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
+    public static List<CnossosPath> computeCnossosPathsFromCutProfile(CutProfile cutProfile , List<Double> exactFrequencyArray, double gS) {
         List<CnossosPath> cnossosPaths = new ArrayList<>();
         if(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
-            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, false);
+            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, exactFrequencyArray, gS, false);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
-            cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, true);
+            cnossosPath = computeCnossosPathFromCutProfile(cutProfile, exactFrequencyArray, gS, true);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
         } else if (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT) {
-            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, cutProfile.curvedPath);
+            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, exactFrequencyArray, gS, cutProfile.curvedPath);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
         }
         return cnossosPaths;
@@ -209,13 +208,12 @@ public class CnossosPathBuilder {
      * Given the vertical cut profile (can be a single plane or multiple like a folding panel) return the ray path
      * following Cnossos specification, or null if there is no valid path.
      * @param cutProfile Vertical cut of a domain
-     * @param bodyBarrier True if there is a body barrier on the path
      * @param exactFrequencyArray Expected frequencies
      * @param gS Ground factor of the source area
      * @param favourable Compute the favourable contribution for the provided profile
      * @return The cnossos path or null
      */
-    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favourable) {
+    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , List<Double> exactFrequencyArray, double gS, boolean favourable) {
         if(favourable &&
                 (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                         cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
@@ -383,7 +381,6 @@ public class CnossosPathBuilder {
             if (i != hullPointsIndices.size() - 1) {
                 PointPath pt = points.get(points.size() - 1);
                 pt.type = DIFH;
-                pt.bodyBarrier = bodyBarrier;
                 if(cutPt1 instanceof CutPointWall) {
                     pt.alphaWall = ((CutPointWall) cutPt1).wallAlpha;
                 }
