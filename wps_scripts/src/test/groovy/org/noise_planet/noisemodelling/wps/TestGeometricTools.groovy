@@ -27,6 +27,9 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import static org.junit.jupiter.api.Assertions.assertEquals
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -115,6 +118,60 @@ class TestGeometricTools extends JdbcTestCase {
 
         // Check if there is remaining intersecting buildings
         assertEquals(0, sql.firstRow("select COUNT(*) COUNTINTERS FROM buildings S1, buildings S2 WHERE ST_AREA(S1.THE_GEOM) < ST_AREA(S2.THE_GEOM) AND S1.THE_GEOM && S2.THE_GEOM AND ST_DISTANCE(S1.THE_GEOM, S2.THE_GEOM) <= 0.05;")[0] as Integer)
+    }
+
+    void testSetHeightByColumnName1() {
+        new Import_File().exec(connection,[
+                "pathFile": TestGeometricTools.getResource("dem_test_height.geojson").getPath(),
+                "inputSRID": 2154,
+                "tableName": "DEM"
+        ])
+        def sql = new Sql(connection)
+
+        new Set_Height().exec(connection,
+                ["tableName": "DEM",
+                 "inputSRID":2154,
+                 "heightColumn": "ELEVATION"])
+
+        assertEquals(
+                71.0,
+                sql.firstRow("SELECT ST_Z(THE_GEOM) AS z FROM DEM WHERE ID=41.0")[0]
+        )
+    }
+
+    @org.junit.jupiter.api.Test
+    void testSetHeightByColumnName2() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE RECEIVER (
+                ID INT PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                ELEVATION DOUBLE
+            )
+            """)
+        sql.execute("""
+                INSERT INTO RECEIVER (ID, THE_GEOM, ELEVATION) VALUES
+                (1, ST_GeomFromText('POINT(654305.1 6853353.699999999)'), 12),
+                (2, ST_GeomFromText('POINT(654330.1 6853353.699999999)'), 57),
+                (3, ST_GeomFromText('POINT(654355.1 6853353.699999999)'), 89),
+                (4, ST_GeomFromText('POINT(654380.1 6853353.699999999)'), 10),
+                (5, ST_GeomFromText('POINT(654405.1 6853353.699999999)'), 25),
+                (6, ST_GeomFromText('POINT(654430.1 6853353.699999999)'), 0)
+        """)
+
+        new Set_Height().exec(connection, [
+                'tableName': 'RECEIVER',
+                'heightColumn': 'ELEVATION',
+                "inputSRID":2154
+        ])
+        sql.eachRow("SELECT ID, ELEVATION, ST_Z(THE_GEOM) AS Z FROM RECEIVER ORDER BY ID") { row ->
+            println("The heigh ${row.Z} of the ID ${row.ID} must be equal to Elevation: ${row.ELEVATION}")
+            assertEquals(
+                    row.ELEVATION,
+                    row.Z
+            )
+        }
+
     }
 
     @Test

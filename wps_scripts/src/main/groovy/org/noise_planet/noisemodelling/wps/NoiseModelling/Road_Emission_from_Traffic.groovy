@@ -135,7 +135,7 @@ def exec(Connection connection, input) {
 
     int coefficientVersion = 2
     if (input.containsKey('coefficientVersion')) {
-        coefficientVersion = Integer.parseInt(input['confHumidity'] as String)
+        coefficientVersion = Integer.parseInt(input['coefficientVersion'] as String)
     }
 
     DBTypes dbType = DBUtils.getDBType(connection)
