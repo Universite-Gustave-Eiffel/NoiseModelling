@@ -1,0 +1,14 @@
+{
+  "DEFAULT": {
+    "Description": "Default SNCF platform - ballasted track",
+    "d1": 1.8,
+    "d2_0": 3.3,
+    "d3_0": 4.8,
+    "d4_0": 8.3,
+    "g1": 0,
+    "g2": 1,
+    "g3": 1,
+    "h1": 0.5,
+    "h2": 0.18
+  }
+}

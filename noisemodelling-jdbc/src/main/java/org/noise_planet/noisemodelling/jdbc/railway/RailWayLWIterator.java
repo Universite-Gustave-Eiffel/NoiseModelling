@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.Map;
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
@@ -38,6 +39,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     private String tableTrainTraffic;
     private SpatialResultSet spatialResultSet;
     public Map<String, Integer> sourceFields = null;
+    private Map<String, RailwayPlatform> platformMap;
 
 
     /**
@@ -50,6 +52,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
         this.railway.setVehicleDataFile("RailwayVehiclesCnossos.json");
         this.railway.setTrainSetDataFile("RailwayTrainsets.json");
         this.railway.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        this.setPlatformDataFile("RailwayPlatforms.json");
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
@@ -63,10 +66,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param tableTrackGeometry Track geometry and metadata
      * @param tableTrainTraffic Train traffic associated with tracks
      */
-    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayDataFile) {
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayDataFile, String platformDataFile) {
        this.railway.setVehicleDataFile(vehicleDataFile);
         this.railway.setTrainSetDataFile(trainSetDataFile);
         this.railway.setRailwayDataFile(railwayDataFile);
+        this.setPlatformDataFile(platformDataFile);
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
@@ -75,6 +79,35 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
     @Override
     public boolean hasNext() {
         return railWayLWComplete != null;
+    }
+
+    /**
+     * Set a custom platform data file (JSON resource next to Railway class).
+     * @param platformDataFile name of the JSON file (e.g. "RailwayPlatforms.json")
+     */
+    public void setPlatformDataFile(String platformDataFile) {
+        this.platformMap = RailwayPlatform.loadFromJSON(platformDataFile);
+    }
+
+    /**
+     * Read platform info for a rail section from the result set.
+     * Looks up the PLATFORM column (name -> JSON lookup), defaults to DEFAULT if no column present.
+     * @throws IllegalArgumentException if the platform name is not found in the JSON library
+     */
+    private RailwayPlatform readPlatform(SpatialResultSet rs) throws SQLException {
+        if (sourceFields.containsKey("PLATFORM")) {
+            String platformName = rs.getString("PLATFORM");
+            if (!rs.wasNull() && platformName != null && !platformName.isEmpty()) {
+                RailwayPlatform p = platformMap.get(platformName.toUpperCase());
+                if (p == null) {
+                    throw new IllegalArgumentException(
+                            "Platform '" + platformName + "' not found in platform data file. " +
+                            "Available platforms: " + platformMap.keySet());
+                }
+                return p;
+            }
+        }
+        return RailwayPlatform.DEFAULT_PLATFORM;
     }
 
 
@@ -166,6 +199,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 if (hasColumn(spatialResultSet, "GS")) {
                     incompleteRecord.gs = spatialResultSet.getDouble("GS");
                 }
+                incompleteRecord.platform = readPlatform(spatialResultSet);
                 incompleteRecord.pk = spatialResultSet.getInt("trackid");
                 incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
             }
@@ -197,6 +231,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     if (hasColumn(spatialResultSet, "GS")) {
                         incompleteRecord.gs = spatialResultSet.getDouble("GS");
                     }
+                    incompleteRecord.platform = readPlatform(spatialResultSet);
                     incompleteRecord.pk = spatialResultSet.getInt("trackid");
                     incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
                     break;

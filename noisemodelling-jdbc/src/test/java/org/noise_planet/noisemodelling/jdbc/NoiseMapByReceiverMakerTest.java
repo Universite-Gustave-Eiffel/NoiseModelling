@@ -33,11 +33,13 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorptio
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.noise_planet.noisemodelling.jdbc.Utils.getRunScriptRes;
@@ -528,5 +530,103 @@ public class NoiseMapByReceiverMakerTest {
             // Favorable path with diffraction over the building wall
             assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(1).getPointList().get(1).type);
         }
+    }
+
+    /**
+     * Test that bodyBarrier (train/screen multi-reflection) produces different results
+     * compared to standard computation without body barrier.
+     * Uses a simple programmatic geometry: source line at x=0.5, screen at x=3, receiver at x=25.
+     */
+    @Test
+    public void testBodyBarrierRailJDBC() throws SQLException, IOException {
+        // Create a simple LW source table with one source line at x=0.5
+        // Columns: PK, THE_GEOM, GS, HRAIL, + frequency columns for D/E/N periods
+        StringBuilder createSql = new StringBuilder();
+        createSql.append("CREATE TABLE LW_RAILWAY(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, DIR_ID INT, GS DOUBLE, HRAIL DOUBLE");
+        int[] frequencies = {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+                800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
+        for (String period : new String[]{"D", "E", "N"}) {
+            for (int freq : frequencies) {
+                createSql.append(", HZ").append(period).append(freq).append(" DOUBLE");
+            }
+        }
+        createSql.append(")");
+        connection.createStatement().execute(createSql.toString());
+
+        // Insert a source line at x=0.5, z=0.68 (ROLLING: 0.5m above rail at 0.18m), from y=-10 to y=10
+        StringBuilder insertSql = new StringBuilder();
+        insertSql.append("INSERT INTO LW_RAILWAY VALUES(1, ");
+        insertSql.append("ST_SetSRID(ST_GeomFromText('LINESTRING Z(0.5 -10 0.68, 0.5 10 0.68)'), 2154)");
+        insertSql.append(", 1, 0.0, 0.18");
+        // Set 90 dB for all frequencies and periods
+        for (int i = 0; i < 3 * frequencies.length; i++) {
+            insertSql.append(", 90.0");
+        }
+        insertSql.append(")");
+        connection.createStatement().execute(insertSql.toString());
+
+        // Create a screen wall at x=3, height 2.5, g=0 (reflective)
+        connection.createStatement().execute(
+                "CREATE TABLE SCREENS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE, G DOUBLE)");
+        connection.createStatement().execute(
+                "INSERT INTO SCREENS VALUES(1, " +
+                        "ST_SetSRID(ST_Buffer(ST_GeomFromText('LINESTRING(3 -100, 3 100)'), 0.1, 'join=mitre endcap=flat'), 2154)" +
+                        ", 2.5, 0.0)");
+
+        // Create a receiver at x=25, z=4
+        connection.createStatement().execute(
+                "CREATE TABLE RECEPTEURS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY)");
+        connection.createStatement().execute(
+                "INSERT INTO RECEPTEURS VALUES(1, " +
+                        "ST_SetSRID(ST_GeomFromText('POINT Z(25 0 4)'), 2154))");
+
+        // --- Case A: bodyBarrier = false ---
+        NoiseMapByReceiverMaker noiseMapNoBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        noiseMapNoBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapNoBody.setBodyBarrier(false);
+        noiseMapNoBody.run(connection, new EmptyProgressVisitor());
+
+        DefaultTableLoader loaderNoBody = (DefaultTableLoader) noiseMapNoBody.getTableLoader();
+        List<String> frequenciesFields = loaderNoBody.frequencyArray.stream()
+                .map(frequency -> noiseMapNoBody.getFrequencyFieldPrepend() + frequency)
+                .collect(Collectors.toList());
+
+        double[] levelsNoBody;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapNoBody.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsNoBody = frequenciesFields.stream().mapToDouble(field -> {
+                try { return rs.getDouble(field); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        connection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL");
+
+        // --- Case B: bodyBarrier = true ---
+        NoiseMapByReceiverMaker noiseMapWithBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
+        noiseMapWithBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapWithBody.setBodyBarrier(true);
+        noiseMapWithBody.run(connection, new EmptyProgressVisitor());
+
+        double[] levelsWithBody;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapWithBody.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsWithBody = frequenciesFields.stream().mapToDouble(field -> {
+                try { return rs.getDouble(field); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Body barrier (multi-reflection) should produce different levels
+        boolean different = false;
+        for (int i = 0; i < levelsNoBody.length; i++) {
+            if (Math.abs(levelsNoBody[i] - levelsWithBody[i]) > 0.01) {
+                different = true;
+                break;
+            }
+        }
+        assertTrue(different, "Body barrier ON vs OFF should produce different receiver levels");
     }
 }

@@ -31,6 +31,7 @@ public class RailWayLWGeom {
     String idSection;
     double distance = 2;
     double gs = 1.0;
+    RailwayPlatform platform = RailwayPlatform.DEFAULT_PLATFORM;
 
     // Default constructor
     public RailWayLWGeom() {
@@ -39,7 +40,7 @@ public class RailWayLWGeom {
 
 
     /**
-     * Constructs a new ailWayLWGeom object by copying the attributes of another RailWayLWGeom object.
+     * Constructs a new RailWayLWGeom object by copying the attributes of another RailWayLWGeom object.
      *  * <p>
      * @param other
      */
@@ -54,6 +55,15 @@ public class RailWayLWGeom {
         this.idSection = other.idSection;
         this.distance = other.distance;
         this.gs = other.gs;
+        this.platform = other.platform;
+    }
+
+    public RailwayPlatform getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(RailwayPlatform platform) {
+        this.platform = platform;
     }
 
     public double getGs() {

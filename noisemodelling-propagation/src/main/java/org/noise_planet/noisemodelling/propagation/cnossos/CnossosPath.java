@@ -43,6 +43,12 @@ public class CnossosPath extends Path {
     public double e=0;
     public double deltaRetro= Double.MAX_VALUE;
 
+    /**
+     * Height of the rail above ballast (m), used in body barrier calculation.
+     * Ballast is considered as ground reference. Default = 0.18m.
+     */
+    private double hRail = 0.18;
+
     public void init(int size) {
         this.aAtm = new double[size];
         this.aDiv = new double[size];
@@ -80,6 +86,15 @@ public class CnossosPath extends Path {
         this.groundAttenuation = other.groundAttenuation;
         this.e = other.e;
         this.deltaRetro = other.deltaRetro;
+        this.hRail = other.hRail;
+    }
+
+    public double getHRail() {
+        return hRail;
+    }
+
+    public void setHRail(double hRail) {
+        this.hRail = hRail;
     }
 
     public static class ABoundary {

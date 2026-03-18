@@ -35,6 +35,14 @@ public class SceneWithAttenuation extends Scene {
     public Map<Long, Double> sourceGs = new HashMap<>();
 
     /**
+     * Link between sources PK and hRail (rail platform height).
+     * Used in body barrier calculation for train noise propagation.
+     */
+    public Map<Long, Double> sourceHRail = new HashMap<>();
+
+    public static final String HRAIL_DATABASE_FIELD = "HRAIL";
+
+    /**
      * Cached source table fields
      */
     public Map<String, Integer> sourceFieldNames = new HashMap<>();
@@ -146,6 +154,11 @@ public class SceneWithAttenuation extends Scene {
         if(sourceFieldNames.containsKey(GS_DATABASE_FIELD)) {
             sourceGs.put(pk, rs.getDouble(gsField));
         }
+
+        int hRailField = JDBCUtilities.getFieldIndex(rs.getMetaData(), HRAIL_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(HRAIL_DATABASE_FIELD)) {
+            sourceHRail.put(pk, rs.getDouble(hRailField));
+        }
     }
 
     /**
@@ -188,6 +201,7 @@ public class SceneWithAttenuation extends Scene {
         sourceEmissionAttenuation.clear();
         sourceFieldNames.clear();
         sourceGs.clear();
+        sourceHRail.clear();
         directionAttributes.clear();
     }
 }
