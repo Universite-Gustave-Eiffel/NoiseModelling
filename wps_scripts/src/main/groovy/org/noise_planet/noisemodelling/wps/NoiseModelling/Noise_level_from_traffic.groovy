@@ -293,6 +293,14 @@ inputs = [
                 description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.' +
                         '&#128736; Default value: <b>HZ</b>',
                 min        : 0, max: 1, type: String.class
+        ],
+        coefficientVersion            : [
+                name       : 'Coefficient version',
+                title      : 'Coefficient version',
+                description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020) </br> </br>' +
+                        '&#128736; Default value: <b>2</b>',
+                min        : 0, max: 1,
+                type       : Integer.class
         ]
 ]
 
@@ -490,6 +498,12 @@ def exec(Connection connection, Map input) {
     if (input['frequencyFieldPrepend']) {
         frequencyFieldPrepend = input['frequencyFieldPrepend'] as String
     }
+    int coefficientVersion =2
+    if (input['coefficientVersion']) {
+        coefficientVersion = Integer.valueOf(input['coefficientVersion'] as String)
+    }
+
+
 
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
@@ -569,6 +583,7 @@ def exec(Connection connection, Map input) {
     }
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
+    pointNoiseMap.getNoiseMapDatabaseParameters().setCoefficientVersion(coefficientVersion)
     pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
