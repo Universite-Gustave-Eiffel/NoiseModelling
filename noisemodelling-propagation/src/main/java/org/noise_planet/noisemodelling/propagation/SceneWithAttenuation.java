@@ -40,7 +40,15 @@ public class SceneWithAttenuation extends Scene {
      */
     public Map<Long, Double> sourceHRail = new HashMap<>();
 
+    /**
+     * Link between sources PK and Cref (vehicle body reflection coefficient).
+     * 0 = no body barrier (road sources or open freight), 1 = fully reflecting body.
+     * Used in body barrier calculation.
+     */
+    public Map<Long, Double> sourceCref = new HashMap<>();
+
     public static final String HRAIL_DATABASE_FIELD = "HRAIL";
+    public static final String CREF_DATABASE_FIELD = "CREF";
 
     /**
      * Cached source table fields
@@ -158,6 +166,11 @@ public class SceneWithAttenuation extends Scene {
         int hRailField = JDBCUtilities.getFieldIndex(rs.getMetaData(), HRAIL_DATABASE_FIELD);
         if(sourceFieldNames.containsKey(HRAIL_DATABASE_FIELD)) {
             sourceHRail.put(pk, rs.getDouble(hRailField));
+        }
+
+        int crefField = JDBCUtilities.getFieldIndex(rs.getMetaData(), CREF_DATABASE_FIELD);
+        if(sourceFieldNames.containsKey(CREF_DATABASE_FIELD)) {
+            sourceCref.put(pk, rs.getDouble(crefField));
         }
     }
 

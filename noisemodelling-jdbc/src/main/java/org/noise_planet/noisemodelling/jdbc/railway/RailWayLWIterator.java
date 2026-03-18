@@ -194,12 +194,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                 incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
                 incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                 incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                 incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                incompleteRecord.platform = readPlatform(spatialResultSet);
+                // GS from explicit column, otherwise use platform g3 (ground factor between rails)
                 if (hasColumn(spatialResultSet, "GS")) {
                     incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                } else {
+                    incompleteRecord.gs = incompleteRecord.platform.g3;
                 }
-                incompleteRecord.platform = readPlatform(spatialResultSet);
                 incompleteRecord.pk = spatialResultSet.getInt("trackid");
                 incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
             }
@@ -214,7 +218,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     incompleteRecord.setRailWayLWEvening(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWEvening, getRailwayEmissionFromResultSet(spatialResultSet, "EVENING")));
                     incompleteRecord.setRailWayLWNight(RailWayCnossosParameters.sumRailwaySource(incompleteRecord.railWayLWNight, getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT")));
                 } else {
-                    // railWayLWIncomplete is complete
+                    // railWayLWIncomplete is complete — sync cref from accumulated emissions
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     completeRecord = new RailWayLWGeom(incompleteRecord);
                     // read next (incomplete) instance attributes for the next() call
                     incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
@@ -226,12 +231,16 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                     incompleteRecord.setRailWayLWDay(getRailwayEmissionFromResultSet(spatialResultSet, "DAY"));
                     incompleteRecord.setRailWayLWEvening(getRailwayEmissionFromResultSet(spatialResultSet, "EVENING"));
                     incompleteRecord.setRailWayLWNight(getRailwayEmissionFromResultSet(spatialResultSet, "NIGHT"));
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     incompleteRecord.nbTrack = spatialResultSet.getInt("NTRACK");
                     incompleteRecord.idSection = spatialResultSet.getString("IDSECTION");
+                    incompleteRecord.platform = readPlatform(spatialResultSet);
+                    // GS from explicit column, otherwise use platform g3 (ground factor between rails)
                     if (hasColumn(spatialResultSet, "GS")) {
                         incompleteRecord.gs = spatialResultSet.getDouble("GS");
+                    } else {
+                        incompleteRecord.gs = incompleteRecord.platform.g3;
                     }
-                    incompleteRecord.platform = readPlatform(spatialResultSet);
                     incompleteRecord.pk = spatialResultSet.getInt("trackid");
                     incompleteRecord.geometry = splitGeometry(spatialResultSet.getGeometry());
                     break;
@@ -241,6 +250,8 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 incompleteRecord.pk = -1;
             } else {
                 if (completeRecord == null) {
+                    // Sync cref from accumulated emissions before creating final record
+                    incompleteRecord.cref = incompleteRecord.railWayLWDay.getCref();
                     completeRecord = new RailWayLWGeom(incompleteRecord);
                 }
             }
@@ -341,9 +352,18 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
        // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
             int i = 0;
+            double rbeWeightedSum = 0;
+            double totalLengthWeight = 0;
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
-                double vehiclePerHouri = vehiclePerHour * entry.getValue();
+                int unitCount = entry.getValue();
+                double vehiclePerHouri = vehiclePerHour * unitCount;
+                // Accumulate length-weighted ReflectingBarrierEffect
+                double vehLength = railway.getVehicleLength(typeTrain);
+                int rbe = railway.getReflectingBarrierEffect(typeTrain);
+                double weight = unitCount * vehLength;
+                rbeWeightedSum += rbe * weight;
+                totalLengthWeight += weight;
                 if (vehiclePerHouri>0) {
                     RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(typeTrain, vehicleSpeed,
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
@@ -356,6 +376,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 }
                 i++;
             }
+            // Set length-weighted Cref on the combined emission result
+            if (totalLengthWeight > 0) {
+                lWRailWay.setCref(rbeWeightedSum / totalLengthWeight);
+                lWRailWay.setCrefTotalWeight(totalLengthWeight);
+            }
 
         }else if (railway.isInVehicleList(train)){
             if (vehiclePerHour>0) {
@@ -363,6 +388,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
                 lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
             }
+            // Set Cref from single vehicle
+            double vehLength = railway.getVehicleLength(train);
+            int rbe = railway.getReflectingBarrierEffect(train);
+            lWRailWay.setCref(rbe);
+            lWRailWay.setCrefTotalWeight(vehLength);
         }
 
         return lWRailWay;

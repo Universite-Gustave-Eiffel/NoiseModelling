@@ -30,8 +30,12 @@ public class RailWayLWGeom {
     int nbTrack;
     String idSection;
     double distance = 2;
-    double gs = 1.0;
+    /** Ground factor at the source. Defaults to platform g3 (ground factor between rails). */
+    double gs = RailwayPlatform.DEFAULT_PLATFORM.g3;
     RailwayPlatform platform = RailwayPlatform.DEFAULT_PLATFORM;
+    /** Vehicle body reflection coefficient (length-weighted average of ReflectingBarrierEffect).
+     *  0 = no body barrier (open freight), 1 = fully reflecting body. */
+    double cref = 1;
 
     // Default constructor
     public RailWayLWGeom() {
@@ -56,6 +60,7 @@ public class RailWayLWGeom {
         this.distance = other.distance;
         this.gs = other.gs;
         this.platform = other.platform;
+        this.cref = other.cref;
     }
 
     public RailwayPlatform getPlatform() {
@@ -72,6 +77,21 @@ public class RailWayLWGeom {
 
     public void setGs(double gs) {
         this.gs = gs;
+    }
+
+    /**
+     * @return Vehicle body reflection coefficient (length-weighted average of ReflectingBarrierEffect)
+     */
+    public double getCref() {
+        return cref;
+    }
+
+    /**
+     * Set the vehicle body reflection coefficient.
+     * @param cref 0 = no body barrier, 1 = fully reflecting
+     */
+    public void setCref(double cref) {
+        this.cref = cref;
     }
 
     public double getDistance() {

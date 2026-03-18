@@ -11,6 +11,8 @@ package org.noise_planet.noisemodelling.jdbc;
 
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
+import org.h2gis.functions.io.dbf.DBFRead;
+import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,7 +190,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -266,7 +267,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -443,7 +443,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
 
@@ -510,7 +509,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = false;
             noiseMapByReceiverMaker.setDemTable("DEM");
-            noiseMapByReceiverMaker.setBodyBarrier(true);
 
             noiseMapByReceiverMaker.run(connection, new EmptyProgressVisitor());
 
@@ -542,7 +540,7 @@ public class NoiseMapByReceiverMakerTest {
         // Create a simple LW source table with one source line at x=0.5
         // Columns: PK, THE_GEOM, GS, HRAIL, + frequency columns for D/E/N periods
         StringBuilder createSql = new StringBuilder();
-        createSql.append("CREATE TABLE LW_RAILWAY(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, DIR_ID INT, GS DOUBLE, HRAIL DOUBLE");
+        createSql.append("CREATE TABLE LW_RAILWAY(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, DIR_ID INT, GS DOUBLE, HRAIL DOUBLE, CREF DOUBLE");
         int[] frequencies = {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
                 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
         for (String period : new String[]{"D", "E", "N"}) {
@@ -557,7 +555,7 @@ public class NoiseMapByReceiverMakerTest {
         StringBuilder insertSql = new StringBuilder();
         insertSql.append("INSERT INTO LW_RAILWAY VALUES(1, ");
         insertSql.append("ST_SetSRID(ST_GeomFromText('LINESTRING Z(0.5 -10 0.68, 0.5 10 0.68)'), 2154)");
-        insertSql.append(", 1, 0.0, 0.18");
+        insertSql.append(", 1, 0.0, 0.18, 0.0");
         // Set 90 dB for all frequencies and periods
         for (int i = 0; i < 3 * frequencies.length; i++) {
             insertSql.append(", 90.0");
@@ -580,10 +578,9 @@ public class NoiseMapByReceiverMakerTest {
                 "INSERT INTO RECEPTEURS VALUES(1, " +
                         "ST_SetSRID(ST_GeomFromText('POINT Z(25 0 4)'), 2154))");
 
-        // --- Case A: bodyBarrier = false ---
+        // --- Case A: CREF = 0 (no body barrier) ---
         NoiseMapByReceiverMaker noiseMapNoBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
         noiseMapNoBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-        noiseMapNoBody.setBodyBarrier(false);
         noiseMapNoBody.run(connection, new EmptyProgressVisitor());
 
         DefaultTableLoader loaderNoBody = (DefaultTableLoader) noiseMapNoBody.getTableLoader();
@@ -603,10 +600,10 @@ public class NoiseMapByReceiverMakerTest {
 
         connection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL");
 
-        // --- Case B: bodyBarrier = true ---
+        // --- Case B: CREF = 1 (body barrier active) ---
+        connection.createStatement().execute("UPDATE LW_RAILWAY SET CREF = 1.0");
         NoiseMapByReceiverMaker noiseMapWithBody = new NoiseMapByReceiverMaker("SCREENS", "LW_RAILWAY", "RECEPTEURS");
         noiseMapWithBody.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-        noiseMapWithBody.setBodyBarrier(true);
         noiseMapWithBody.run(connection, new EmptyProgressVisitor());
 
         double[] levelsWithBody;
@@ -628,5 +625,90 @@ public class NoiseMapByReceiverMakerTest {
             }
         }
         assertTrue(different, "Body barrier ON vs OFF should produce different receiver levels");
+    }
+
+    /**
+     * Test that using a different platform (testPlatform with h2=0) on a rail section
+     * produces different propagation levels compared to DEFAULT platform (h2=0.18),
+     * because source heights change with hRail.
+     */
+    @Test
+    public void testPlatformChangeAffectsPropagation() throws SQLException, IOException {
+        // Import rail section + traffic
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+
+        // Add PLATFORM column to rail section (initially DEFAULT)
+        connection.createStatement().execute("ALTER TABLE Rail_Section2 ADD COLUMN PLATFORM VARCHAR(50)");
+        connection.createStatement().execute("UPDATE Rail_Section2 SET PLATFORM = 'DEFAULT'");
+
+        // Emission with DEFAULT platform (hRail=0.18)
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+
+        // Setup buildings (empty) and receiver
+        connection.createStatement().execute("CREATE TABLE BUILDINGS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY, HEIGHT DOUBLE)");
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Recepteurs.shp").getFile());
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('RECEPTEURS', 'THE_GEOM', 2154)");
+        connection.createStatement().execute("UPDATE RECEPTEURS SET THE_GEOM = ST_UPDATEZ(THE_GEOM, 4.0)");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154)");
+
+        // Propagation with DEFAULT platform
+        NoiseMapByReceiverMaker noiseMapDefault = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_RAILWAY", "RECEPTEURS");
+        noiseMapDefault.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapDefault.run(connection, new EmptyProgressVisitor());
+
+        DefaultTableLoader loaderDefault = (DefaultTableLoader) noiseMapDefault.getTableLoader();
+        List<String> freqFields = loaderDefault.frequencyArray.stream()
+                .map(f -> noiseMapDefault.getFrequencyFieldPrepend() + f)
+                .collect(Collectors.toList());
+
+        double[] levelsDefault;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapDefault.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsDefault = freqFields.stream().mapToDouble(f -> {
+                try { return rs.getDouble(f); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Cleanup output + emission tables
+        connection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL");
+        connection.createStatement().execute("DROP TABLE IF EXISTS LW_RAILWAY");
+
+        // Switch to testPlatform (h2=0, so hRail=0 => different source heights)
+        connection.createStatement().execute("UPDATE Rail_Section2 SET PLATFORM = 'testPlatform'");
+
+        EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
+                "LW_RAILWAY", "HZ");
+        connection.createStatement().execute("SELECT UpdateGeometrySRID('LW_RAILWAY', 'THE_GEOM', 2154)");
+
+        // Propagation with testPlatform
+        NoiseMapByReceiverMaker noiseMapTest = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_RAILWAY", "RECEPTEURS");
+        noiseMapTest.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
+        noiseMapTest.run(connection, new EmptyProgressVisitor());
+
+        double[] levelsTest;
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT * FROM "
+                + noiseMapTest.getNoiseMapDatabaseParameters().receiversLevelTable
+                + " WHERE PERIOD='D' ORDER BY IDRECEIVER")) {
+            assertTrue(rs.next());
+            levelsTest = freqFields.stream().mapToDouble(f -> {
+                try { return rs.getDouble(f); } catch (SQLException e) { throw new RuntimeException(e); }
+            }).toArray();
+        }
+
+        // Different platform => different source heights => different levels
+        boolean different = false;
+        for (int i = 0; i < levelsDefault.length; i++) {
+            if (Math.abs(levelsDefault[i] - levelsTest[i]) > 0.01) {
+                different = true;
+                break;
+            }
+        }
+        assertTrue(different, "Changing platform (DEFAULT vs testPlatform) should produce different receiver levels");
     }
 }

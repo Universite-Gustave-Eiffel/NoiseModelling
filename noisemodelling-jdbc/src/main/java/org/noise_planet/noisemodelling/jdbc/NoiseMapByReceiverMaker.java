@@ -125,13 +125,6 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
-     * true if train propagation is computed (multiple reflection between the train and a screen)
-     */
-    public boolean isBodyBarrier() {
-        return bodyBarrier;
-    }
-
-    /**
      * Computation stacks and timing are collected by this class in order
      * to profile the execution of the simulation
      * @return Instance of ProfilerThread or null

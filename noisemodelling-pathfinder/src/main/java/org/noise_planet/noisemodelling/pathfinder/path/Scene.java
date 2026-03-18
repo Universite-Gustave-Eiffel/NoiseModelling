@@ -68,17 +68,6 @@ public class Scene {
         this.profileBuilder = profileBuilder;
     }
 
-    public boolean isBodyBarrier() {
-        return bodyBarrier;
-    }
-
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
-
-    /** bodyBarrier effet */
-    boolean bodyBarrier = false;
-
     /** Compute horizontal diffraction rays over vertical edges */
     public boolean computeHorizontalDiffraction = true;
 

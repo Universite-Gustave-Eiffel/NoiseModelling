@@ -258,10 +258,10 @@ public class EmissionTableGenerator {
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (PK_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int, GS double, HRAIL double");
+                " the_geom GEOMETRY, DIR_ID int, GS double, HRAIL double, CREF double");
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
-                " DIR_ID, GS, HRAIL");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?,?");
+                " DIR_ID, GS, HRAIL, CREF");
+        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?,?,?");
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", ").append(frequencyPrepend).append("D");
             createTableQuery.append(thirdOctave);
@@ -376,6 +376,7 @@ public class EmissionTableGenerator {
                     ps.setInt(cursor++, directivityId);
                     ps.setDouble(cursor++, railWayLWGeom.getGs());
                     ps.setDouble(cursor++, hRail);
+                    ps.setDouble(cursor++, railWayLWGeom.getCref());
                     for (double v : LWDay) {
                         ps.setDouble(cursor++, v);
                     }
