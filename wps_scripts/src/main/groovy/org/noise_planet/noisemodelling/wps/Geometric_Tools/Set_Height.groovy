@@ -43,13 +43,15 @@ inputs = [
                 name       : 'New height',
                 title      : 'New height',
                 description: 'New height for the input table (in meters) (FLOAT)',
-                type       : Double.class
+                type       : Double.class,
+                min        : 0, max: 1,
         ],
         heightColumn: [
                 name       : 'heightColumn',
                 title      : 'heightColumn',
                 description: 'The column name in the input table that contains the heights',
-                type       : String.class
+                type       : String.class,
+                min        : 0, max: 1,
         ],
         inputSRID: [
                 name       : 'Projection identifier',
@@ -62,6 +64,7 @@ inputs = [
                         '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +
                         '&#128736; Default value: <b>4326 </b> ',
                 type       : Integer.class,
+                min        : 0, max: 1,
         ]
 ]
 
