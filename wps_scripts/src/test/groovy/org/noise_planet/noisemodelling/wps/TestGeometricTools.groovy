@@ -138,6 +138,41 @@ class TestGeometricTools extends JdbcTestCase {
         )
     }
 
+    @org.junit.jupiter.api.Test
+    void testSetHeightByColumnName2() {
+        def sql = new Sql(connection)
+        sql.execute("""
+            CREATE TABLE RECEIVER (
+                ID INT PRIMARY KEY,
+                THE_GEOM GEOMETRY,
+                ELEVATION DOUBLE
+            )
+            """)
+        sql.execute("""
+                INSERT INTO RECEIVER (ID, THE_GEOM, ELEVATION) VALUES
+                (1, ST_GeomFromText('POINT(654305.1 6853353.699999999)'), 12),
+                (2, ST_GeomFromText('POINT(654330.1 6853353.699999999)'), 57),
+                (3, ST_GeomFromText('POINT(654355.1 6853353.699999999)'), 89),
+                (4, ST_GeomFromText('POINT(654380.1 6853353.699999999)'), 10),
+                (5, ST_GeomFromText('POINT(654405.1 6853353.699999999)'), 25),
+                (6, ST_GeomFromText('POINT(654430.1 6853353.699999999)'), 0)
+        """)
+        new Change_SRID().exec(connection,[
+                "newSRID":2154,
+                "tableName":"RECEIVER"
+        ])
+
+        new Set_Height().exec(connection, [
+                'tableName': 'RECEIVER',
+                'heightColumn': 'ELEVATION'
+        ])
+        def row = sql.firstRow("SELECT ST_Z(THE_GEOM) AS z FROM RECEIVER WHERE ID=2")
+        double actual = row.z
+
+        assertEquals(57.0, actual)
+
+    }
+
     @Test
     void testCleanBuildingsPop() {
         SHPRead.importTable(connection, TestGeometricTools.getResource("buildings.shp").getPath())
