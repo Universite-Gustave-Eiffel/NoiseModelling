@@ -52,20 +52,8 @@ inputs = [
                 description: 'The column name in the input table that contains the heights',
                 type       : String.class,
                 min        : 0, max: 1,
-        ],
-        inputSRID: [
-                name       : 'Projection identifier',
-                title      : 'Projection identifier',
-                description: '&#127757; Original projection identifier (also called SRID) of your table. </br> </br>' +
-                        'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
-                        'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
-                        'If the table is geometric and if this parameter is not filled and:</br>' +
-                        '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
-                        '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +
-                        '&#128736; Default value: <b>4326 </b> ',
-                type       : Integer.class,
-                min        : 0, max: 1,
         ]
+
 ]
 
 outputs = [
@@ -141,13 +129,7 @@ def exec(Connection connection, input) {
     if(input['heightColumn']){
         String height_column = input['heightColumn'] as String
         height_column = height_column.toUpperCase()
-        def srid
-        if (input['inputSRID']) {
-            srid = input['inputSRID'] as Integer
-        }else{
-            srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(table_name))
-        }
-
+        def srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(table_name))
         if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
         if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 

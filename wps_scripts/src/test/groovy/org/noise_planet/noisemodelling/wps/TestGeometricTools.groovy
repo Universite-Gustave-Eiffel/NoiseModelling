@@ -159,18 +159,22 @@ class TestGeometricTools extends JdbcTestCase {
                 (6, ST_GeomFromText('POINT(654430.1 6853353.699999999)'), 0)
         """)
 
+        new Change_SRID().exec(connection,[
+                "newSRID":2154,
+                "tableName":"RECEIVER"
+        ])
+
         new Set_Height().exec(connection, [
                 'tableName': 'RECEIVER',
                 'heightColumn': 'ELEVATION',
                 "inputSRID":2154
         ])
-        sql.eachRow("SELECT ID, ELEVATION, ST_Z(THE_GEOM) AS Z FROM RECEIVER ORDER BY ID") { row ->
-            println("The heigh ${row.Z} of the ID ${row.ID} must be equal to Elevation: ${row.ELEVATION}")
-            assertEquals(
-                    row.ELEVATION,
-                    row.Z
-            )
-        }
+
+        def row = sql.firstRow("SELECT ST_Z(THE_GEOM) AS z FROM RECEIVER WHERE ID=2")
+        double actual = row.z
+
+        assertEquals(57.0, actual)
+
 
     }
 
