@@ -105,7 +105,7 @@ def exec(Connection connection, input) {
 
     String table_name = input['tableName']  as String
     table_name = table_name.toUpperCase()
-    String geometryColumnName = GeometryTableUtilities.getGeometryColumnNames(connection, table_name).first
+    String geometryColumnName = GeometryTableUtilities.getGeometryColumnNames(connection, table_name).getFirst()
 
     if(input['height']){
         Double h = input['height'] as Double
