@@ -105,47 +105,35 @@ def exec(Connection connection, input) {
 
     String table_name = input['tableName']  as String
     table_name = table_name.toUpperCase()
+    String geometryColumnName = GeometryTableUtilities.getGeometryColumnNames(connection, table_name).first
+
     if(input['height']){
-        Double h = input['height']
-
-        //get SRID of the table
-        int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(table_name))
-        if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
-        if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
-
+        Double h = input['height'] as Double
         GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
-        metaData.setSRID(srid)
         metaData.setHasZ(true)
         metaData.initGeometryType()
-        connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(ST_UPDATEZ(%s, %f),%d)",
-                TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM" , metaData.getSQL(),"THE_GEOM", h,srid))
+        connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_UPDATEZ(%s, %f)",
+                TableLocation.parse(table_name, DBUtils.getDBType(connection)), geometryColumnName , metaData.getSQL(), geometryColumnName, h))
 
         resultString = "Process done. Table of " + table_name + " has now a new height set to " + h + "."
 
         logger.info('End : Set new height')
 
         return resultString
-    }
-    if(input['heightColumn']){
+    } else if(input['heightColumn']){
+        def st = connection.createStatement()
         String height_column = input['heightColumn'] as String
-        height_column = height_column.toUpperCase()
-        def srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(table_name))
-        if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
-        if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
-
+        height_column = st.enquoteIdentifier(height_column, false)
         GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
-        metaData.setSRID(srid)
         metaData.setHasZ(true)
         metaData.initGeometryType()
-
-
         String sqlUpdate = String.format(Locale.ROOT,
-                "ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(ST_UPDATEZ(THE_GEOM, %s), %d)",
+                "ALTER TABLE %s ALTER COLUMN %s %s USING ST_UPDATEZ(%s, %s)",
                 TableLocation.parse(table_name, DBUtils.getDBType(connection)),
-                "THE_GEOM",
+                geometryColumnName,
                 metaData.getSQL(),
-                height_column,
-                srid
+                geometryColumnName,
+                height_column
         )
 
         connection.createStatement().execute(sqlUpdate)

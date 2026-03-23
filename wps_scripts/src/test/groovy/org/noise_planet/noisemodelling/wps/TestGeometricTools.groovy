@@ -100,12 +100,12 @@ class TestGeometricTools extends JdbcTestCase {
     void testSetHeight2() {
         SHPRead.importTable(connection, TestGeometricTools.getResource("roads.shp").getPath())
         def sql = new Sql(connection)
-
+        def srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS"))
         new Set_Height().exec(connection,
                 ["height": 0.05,
                  "tableName": "roads"])
-
         assertEquals(0.05, sql.firstRow("SELECT ST_Z(THE_GEOM) FROM ROADS")[0])
+        assertEquals(srid, GeometryTableUtilities.getSRID(connection, TableLocation.parse("ROADS")))
     }
 
     @Test
@@ -123,11 +123,9 @@ class TestGeometricTools extends JdbcTestCase {
     void testSetHeightByColumnName1() {
         new Import_File().exec(connection,[
                 "pathFile": TestGeometricTools.getResource("dem_test_height.geojson").getPath(),
-                "inputSRID": 2154,
                 "tableName": "DEM"
         ])
         def sql = new Sql(connection)
-
         new Set_Height().exec(connection,
                 ["tableName": "DEM",
                  "heightColumn": "ELEVATION"])
@@ -136,6 +134,7 @@ class TestGeometricTools extends JdbcTestCase {
                 71.0,
                 sql.firstRow("SELECT ST_Z(THE_GEOM) AS z FROM DEM WHERE ID=41.0")[0]
         )
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("DEM")))
     }
 
     @org.junit.jupiter.api.Test
