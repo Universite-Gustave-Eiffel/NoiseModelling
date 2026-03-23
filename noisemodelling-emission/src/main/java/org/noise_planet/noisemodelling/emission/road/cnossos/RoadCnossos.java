@@ -350,17 +350,19 @@ public class RoadCnossos {
          */
         // Effect of the acceleration and deceleration of vehicles
         // Todo Here, we should get the Junc_dist by another way that we are doing now to be more precise issue #524
-        double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
-        // Effect of the acceleration and deceleration of vehicles - Rolling Noise Eq 2.2.17
-        lvRoadLvl = lvRoadLvl + getCr("1", Junc_type, coeffVer) * coefficientJunctionDistance;
-        medRoadLvl = medRoadLvl + getCr("2", Junc_type, coeffVer) * coefficientJunctionDistance;
-        hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type, coeffVer) * coefficientJunctionDistance;
-        // Effect of the acceleration and deceleration of vehicles - Propulsion Noise Eq 2.2.18
-        lvMotorLvl = lvMotorLvl + getCp("1", Junc_type, coeffVer) * coefficientJunctionDistance;
-        medMotorLvl = medMotorLvl + getCp("2", Junc_type, coeffVer) * coefficientJunctionDistance;
-        hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type, coeffVer) * coefficientJunctionDistance;
-        wheelaMotorLvl = wheelaMotorLvl + getCp("4a", Junc_type, coeffVer) * coefficientJunctionDistance;
-        wheelbMotorLvl = wheelbMotorLvl + getCp("4b", Junc_type, coeffVer) * coefficientJunctionDistance;
+        if(Junc_type > 0) { // Junc_type = 0, no junction
+            double coefficientJunctionDistance = Math.max(1 - Math.abs(Junc_dist) / 100, 0);
+            // Effect of the acceleration and deceleration of vehicles - Rolling Noise Eq 2.2.17
+            lvRoadLvl = lvRoadLvl + getCr("1", Junc_type, coeffVer) * coefficientJunctionDistance;
+            medRoadLvl = medRoadLvl + getCr("2", Junc_type, coeffVer) * coefficientJunctionDistance;
+            hgvRoadLvl = hgvRoadLvl + getCr("3", Junc_type, coeffVer) * coefficientJunctionDistance;
+            // Effect of the acceleration and deceleration of vehicles - Propulsion Noise Eq 2.2.18
+            lvMotorLvl = lvMotorLvl + getCp("1", Junc_type, coeffVer) * coefficientJunctionDistance;
+            medMotorLvl = medMotorLvl + getCp("2", Junc_type, coeffVer) * coefficientJunctionDistance;
+            hgvMotorLvl = hgvMotorLvl + getCp("3", Junc_type, coeffVer) * coefficientJunctionDistance;
+            wheelaMotorLvl = wheelaMotorLvl + getCp("4a", Junc_type, coeffVer) * coefficientJunctionDistance;
+            wheelbMotorLvl = wheelbMotorLvl + getCp("4b", Junc_type, coeffVer) * coefficientJunctionDistance;
+        }
 
         // Effect of the type of road surface - Eq. 2.2.19
         lvRoadLvl = lvRoadLvl + getNoiseLvl(getA_RoadSurfaceCoeff(freqParam, "1", roadCnossosParameters.getRoadSurface(), coeffVer), getB_RoadSurfaceCoeff("1", roadSurface, coeffVer), roadCnossosParameters.getSpeedLv(), 70.);
