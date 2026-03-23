@@ -269,8 +269,8 @@ public class RoadCnossosTest {
         String RoadSurface = "FR_R2";
         double Pm_stud = 0;
         double Ts_stud = 0;
-        double Junc_dist = 100;
-        int Junc_type = 2;
+        double Junc_dist = 0;
+        int Junc_type = 0;
         double globalLw = 0;
         for(int i = 0; i < FREQUENCIES.length; i++){
             RoadCnossosParameters rsParameters = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed, wbv_speed, lv_per_hour, mv_per_hour, hgv_per_hour, wav_per_hour, wbv_per_hour, FREQUENCIES[i], Temperature, RoadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
