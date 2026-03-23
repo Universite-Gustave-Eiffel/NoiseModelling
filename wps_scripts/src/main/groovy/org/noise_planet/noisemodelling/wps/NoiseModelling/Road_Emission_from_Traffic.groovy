@@ -85,7 +85,8 @@ inputs = [
                         "<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>" +
                         "<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>" +
                         "</ul></br><b> This table can be generated from the WPS Block 'Import_OSM'. </b>.",
-                type       : String.class,
+                type       : String.class
+                ],
                 coefficientVersion            : [
                         name       : 'Coefficient version',
                         title      : 'Coefficient version',
@@ -93,9 +94,9 @@ inputs = [
                                 '&#128736; Default value: <b>2</b>',
                         min        : 0, max: 1,
                         type       : Double.class
-                ],
-        ]
+                ]
 ]
+
 
 outputs = [
         result: [

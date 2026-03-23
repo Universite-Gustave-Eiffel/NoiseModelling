@@ -581,6 +581,7 @@ def exec(Connection connection, Map input) {
     }
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
+    pointNoiseMap.getNoiseMapDatabaseParameters().setCoefficientVersion(coefficientVersion)
     pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
