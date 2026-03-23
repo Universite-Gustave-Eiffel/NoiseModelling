@@ -13,6 +13,7 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import java.io.IOException;
@@ -38,12 +40,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 public class TableLoaderTest {
 
     private Connection connection;
+    public static double[] aWeightingArray = Arrays.stream(
+            asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE)).
+            mapToDouble(value -> value).toArray();
 
     @BeforeEach
     public void tearUp() throws Exception {
@@ -429,4 +433,22 @@ public class TableLoaderTest {
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
     }
 
+    @Test
+    public void testRoadNoiseEmission() throws SQLException, IOException {
+        try(Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS TRAFFIC_TEST (PK SERIAL, LV_D REAL, LV_SPD_D REAL, HGV_D REAL, HGV_SPD_D REAL, PVMT VARCHAR);\n"
+                    + "INSERT INTO TRAFFIC_TEST(LV_D, LV_SPD_D, HGV_D, HGV_SPD_D, PVMT) VALUES (3747.23, 50, 479.02, 50, 'FR_R2');");
+        }
+        Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
+        double globalLevel = 0;
+        try(SpatialResultSet rs = connection.createStatement().executeQuery("SELECT * FROM TRAFFIC_TEST").unwrap(SpatialResultSet.class)) {
+            assertTrue(rs.next());
+            // new double[][] {ld, le, ln}
+            double[][] lw = EmissionTableGenerator.computeLw(rs, 1, sourceEmissionFieldsCache);
+            double[] dbLw = AcousticIndicatorsFunctions.wToDb(lw[0]);
+            double[] dbALw = AcousticIndicatorsFunctions.sumArray(dbLw, aWeightingArray);
+            globalLevel = AcousticIndicatorsFunctions.sumArray(AcousticIndicatorsFunctions.dBToW(dbALw)); // add day value only
+        }
+        assertEquals(89.6, AcousticIndicatorsFunctions.wToDb(globalLevel), 0.1);
+    }
 }
