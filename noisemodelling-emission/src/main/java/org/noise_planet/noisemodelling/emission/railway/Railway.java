@@ -78,6 +78,29 @@ public class Railway {
     }
 
     /**
+     * Resolve a track parameter key with fallback for backward compatibility.
+     * When using the merged RailwayEmissionCnossos.json, keys are prefixed (e.g. "SNCF5", "EU7").
+     * For backward compatibility with old data that uses plain numeric keys (e.g. "5"),
+     * this method tries the direct key first, then with "SNCF" prefix, then "EU" prefix.
+     * @param section The JSON section node (e.g. TrackTransfer, RailRoughness)
+     * @param key The key to look up (may be prefixed like "SNCF5" or plain like "5")
+     * @return The matching JsonNode, or null if not found
+     */
+    public static JsonNode resolveTrackNode(JsonNode section, String key) {
+        if (section == null || key == null) {
+            return null;
+        }
+        JsonNode node = section.get(key);
+        if (node == null && !key.startsWith("SNCF") && !key.startsWith("EU")) {
+            node = section.get("SNCF" + key);
+            if (node == null) {
+                node = section.get("EU" + key);
+            }
+        }
+        return node;
+    }
+
+    /**
      * Get the vehicles attributes
      * @return Coefficients related to the characteristics of vehicles
      */

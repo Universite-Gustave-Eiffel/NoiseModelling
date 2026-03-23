@@ -62,11 +62,11 @@ inputs = [
                         '<li><b>IDSECTION</b>* : A section identifier (PRIMARY KEY) (INTEGER)</li>' +
                         '<li><b>NTRACK</b>* : Number of tracks (INTEGER)</li>' +
                         '<li><b>TRACKSPD</b>* : Maximum speed on the section (in km/h) (DOUBLE)</li>' +
-                        '<li><b>TRANSFER</b> : Track transfer function identifier (INTEGER)</li>' +
-                        '<li><b>ROUGHNESS</b> : Rail roughness identifier (INTEGER)</li>' +
-                        '<li><b>IMPACT</b> : Impact noise coefficient identifier (INTEGER)</li>' +
+                        '<li><b>TRANSFER</b> : Track transfer function identifier, e.g. "SNCF5" or "EU7" (VARCHAR)</li>' +
+                        '<li><b>ROUGHNESS</b> : Rail roughness identifier, e.g. "SNCF1" or "EU3" (VARCHAR)</li>' +
+                        '<li><b>IMPACT</b> : Impact noise coefficient identifier, e.g. "SNCF1" or "EU1", empty for none (VARCHAR)</li>' +
                         '<li><b>CURVATURE</b> : Listed code describing the curvature of the section (INTEGER)</li>' +
-                        '<li><b>BRIDGE</b> : Bridge transfer function identifier (INTEGER)</li>' +
+                        '<li><b>BRIDGE</b> : Bridge transfer function identifier, e.g. "EU3", empty for none (VARCHAR)</li>' +
                         '<li><b>TRACKSPD</b> : Commercial speed on the section (in km/h) (DOUBLE)</li>' +
                         '<li><b>ISTUNNEL</b> : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN) </li></ul>',
                 type: String.class
