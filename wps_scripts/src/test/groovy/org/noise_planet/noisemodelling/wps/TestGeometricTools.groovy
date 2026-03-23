@@ -130,7 +130,6 @@ class TestGeometricTools extends JdbcTestCase {
 
         new Set_Height().exec(connection,
                 ["tableName": "DEM",
-                 "inputSRID":2154,
                  "heightColumn": "ELEVATION"])
 
         assertEquals(
@@ -166,8 +165,7 @@ class TestGeometricTools extends JdbcTestCase {
 
         new Set_Height().exec(connection, [
                 'tableName': 'RECEIVER',
-                'heightColumn': 'ELEVATION',
-                "inputSRID":2154
+                'heightColumn': 'ELEVATION'
         ])
 
         def row = sql.firstRow("SELECT ST_Z(THE_GEOM) AS z FROM RECEIVER WHERE ID=2")
