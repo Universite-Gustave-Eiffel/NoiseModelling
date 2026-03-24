@@ -238,7 +238,7 @@ public class RailwayNMPB {
     public double getSpectre(String typeVehicle, String ref, int runningCondition, String sourceHeight, int spectreVer, int freqId) { //
         int refId = getNMPBVehicleNode(typeVehicle).get(ref).intValue();
         if (ref.equals("RefTraction")) {
-            double tractionSpectre = 0;
+            double tractionSpectrum = 0;
             String condition = "ConstantSpeed";
             if (refId != 0) {
                 switch (runningCondition) {
@@ -256,14 +256,14 @@ public class RailwayNMPB {
                         break;
                 }
                 try {
-                    tractionSpectre = getNMPBRailWayData(spectreVer).get("Vehicle").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
+                    tractionSpectrum = getNMPBRailWayData(spectreVer).get("Vehicle").get(condition).get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();
                 } catch (NullPointerException ex) {
                     throw new IllegalArgumentException(String.format(Locale.ROOT, "Could not find traction spectrum for the following parameters " +
                             "getNMPBRailWayData(%d).get(\"Vehicle\").get(%s).get(String.valueOf" +
                             "(%d)).get(\"Values\").get(%s).get(%d)", spectreVer, condition, refId, sourceHeight, freqId));
                 }
             }
-            return tractionSpectre;
+            return tractionSpectrum;
         } else if (ref.equals("RefAerodynamic")) {
             double aerodynamicNoise;
             aerodynamicNoise = getNMPBRailWayData(spectreVer).get("Vehicle").get("AerodynamicNoise").get(String.valueOf(refId)).get("Values").get(sourceHeight).get(freqId).doubleValue();

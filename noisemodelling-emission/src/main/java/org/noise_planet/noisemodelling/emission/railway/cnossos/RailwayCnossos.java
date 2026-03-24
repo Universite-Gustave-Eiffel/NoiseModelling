@@ -16,6 +16,7 @@ import org.noise_planet.noisemodelling.emission.LineSource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -152,10 +153,10 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
      */
     public double getTractionNoise(String typeVehicle, int runningCondition, String sourceHeightId, String fileVersion, int freqId) { //
         String refId = getRefValue(getVehicleNode(typeVehicle), "RefTraction");
-        double tractionSpectre =0;
+        double tractionSpectrum = 0;
 
-        String condition = "ConstantSpeed";
-        if (refId != null && !refId.isEmpty() && !"0".equals(refId)) {
+        if (refId != null && !refId.isEmpty()) {
+            String condition = "ConstantSpeed";
             switch (runningCondition) {
                 case 0:
                     condition = "ConstantSpeed";
@@ -170,15 +171,19 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
                     condition = "IdlingSpeed";
                     break;
             }
-            try {
-                tractionSpectre = getRailWayData().get("Vehicle").get(condition).get(refId).get("Values").get(sourceHeightId).get(freqId).doubleValue();
-            } catch (NullPointerException ex) {
-                throw new IllegalArgumentException(String.format(Locale.ROOT, "Could not find traction spectrum for the following parameters " +
-                        "getRailWayData(%s).get(\"Vehicle\").get(%s).get" +
-                        "(%s).get(\"Values\").get(%s).get(%d)", fileVersion, condition, refId, sourceHeightId, freqId));
+            // Resolve traction node dynamically from JSON data
+            JsonNode tractionNode = resolveTrackNode(getRailWayData().get("Vehicle").get(condition), refId);
+            if (tractionNode != null) {
+                try {
+                    tractionSpectrum = tractionNode.get("Values").get(sourceHeightId).get(freqId).doubleValue();
+                } catch (NullPointerException ex) {
+                    throw new IllegalArgumentException(String.format(Locale.ROOT, "Could not find traction spectrum for the following parameters " +
+                            "getRailWayData(%s).get(\"Vehicle\").get(%s).get" +
+                            "(%s).get(\"Values\").get(%s).get(%d)", fileVersion, condition, refId, sourceHeightId, freqId));
+                }
             }
         }
-        return tractionSpectre;
+        return tractionSpectrum;
     }
 
     /**
@@ -356,16 +361,26 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
     private double[] getLWAero(String typeVehicle, double speed, String height, String fileVersion) {
         double[] lWSpectre = new double[24];
 
-        for (int idFreq = 0; idFreq < 24; idFreq++) {
+        String refId = getRefValue(getVehicleNode(typeVehicle), "RefAerodynamic");
 
-            String refId = getRefValue(getVehicleNode(typeVehicle), "RefAerodynamic");
-            if (speed < 200 || refId == null || refId.isEmpty() || "0".equals(refId) || "SNCF0".equals(refId)) {
-                lWSpectre[idFreq] = -99;
-            } else {
-                lWSpectre[idFreq] = getAerodynamicNoise(typeVehicle,  height, fileVersion, idFreq);
-                double v0Aero = Double.parseDouble(getRailWayData().get("Vehicle").get("AerodynamicNoise").get(refId).get("V0").asText());
-                double alphaAero = Double.parseDouble(getRailWayData().get("Vehicle").get("AerodynamicNoise").get(refId).get("Alpha").asText());
-                lWSpectre[idFreq] = lWSpectre[idFreq] + alphaAero * Math.log10(speed / v0Aero);
+        // Resolve the aerodynamic noise node from JSON data
+        JsonNode aeroNode = (refId != null && !refId.isEmpty()) ?
+                resolveTrackNode(getRailWayData().get("Vehicle").get("AerodynamicNoise"), refId) : null;
+
+        // Check V0 value from JSON - if 0 or node not found, no aerodynamic noise
+        double v0Aero = 0;
+        double alphaAero = 0;
+        if (aeroNode != null) {
+            v0Aero = Double.parseDouble(aeroNode.get("V0").asText());
+            alphaAero = Double.parseDouble(aeroNode.get("Alpha").asText());
+        }
+
+        if (speed < 200 || aeroNode == null || v0Aero == 0) {
+            Arrays.fill(lWSpectre, -99);
+        } else {
+            for (int idFreq = 0; idFreq < 24; idFreq++) {
+                lWSpectre[idFreq] = getAerodynamicNoise(typeVehicle, height, fileVersion, idFreq)
+                        + alphaAero * Math.log10(speed / v0Aero);
             }
         }
 
@@ -444,15 +459,32 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
         // roughnessLtot = CNOSSOS p.19 (2.3.7)
         double[] roughnessLtot = checkNanValue(getLWRoughness(typeVehicle, trackRoughnessId, impactId, speed, trackFileVersion));
 
-        double[] lWBridge = new double[24];
         for (int idFreq = 0; idFreq < 24; idFreq++) {
             lW[idFreq] = -99;
         }
-        if ("EU".equals(trackFileVersion)) {
-            if (bridgeId != null && !bridgeId.isEmpty() && (bridgeId.equals("3") || bridgeId.equals("4") || bridgeId.equals("EU3") || bridgeId.equals("EU4"))) {
-                for (int idFreq = 0; idFreq < 24; idFreq++) {
-                    lWBridge[idFreq] = getBridgeStructural(bridgeId, idFreq);
-                    lW[idFreq] = roughnessLtot[idFreq] + lWBridge[idFreq] + 10 * Math.log10(axlesPerVeh);
+
+        // Resolve bridge node dynamically from JSON data
+        JsonNode bridgeNode = (bridgeId != null && !bridgeId.isEmpty()) ?
+                resolveTrackNode(getRailWayData().get("Track").get("BridgeConstant"), bridgeId) : null;
+
+        if (bridgeNode != null) {
+            // Check "Values" first, then "Value" (singular)
+            JsonNode valuesNode = bridgeNode.get("Values");
+            if (valuesNode == null) {
+                valuesNode = bridgeNode.get("Value");
+            }
+            if (valuesNode != null) {
+                if (valuesNode.isArray() && valuesNode.size() >= 24) {
+                    // Frequency-dependent bridge structural spectrum (e.g. EU3, EU4)
+                    for (int idFreq = 0; idFreq < 24; idFreq++) {
+                        lW[idFreq] = roughnessLtot[idFreq] + valuesNode.get(idFreq).doubleValue() + 10 * Math.log10(axlesPerVeh);
+                    }
+                } else if (valuesNode.isNumber() && valuesNode.doubleValue() != 0) {
+                    // Uniform bridge constant (e.g. EU2, SNCF2)
+                    double bridgeConstant = valuesNode.doubleValue();
+                    for (int idFreq = 0; idFreq < 24; idFreq++) {
+                        lW[idFreq] = roughnessLtot[idFreq] + bridgeConstant + 10 * Math.log10(axlesPerVeh);
+                    }
                 }
             }
         }
@@ -480,6 +512,17 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
         double[] freqMedLog = new double[24];
         double[] Lambda = new double[35];
 
+        // Resolve impact noise node once before the loop
+        boolean hasImpactNoise = false;
+        if (impactId != null && !impactId.isEmpty()) {
+            JsonNode impactNode = resolveTrackNode(getRailWayData().get("Track").get("ImpactNoise"), impactId);
+            if (impactNode != null) {
+                // Check JoinDensity: if present and null, this is an empty sentinel entry
+                JsonNode joinDensity = impactNode.get("JoinDensity");
+                hasImpactNoise = joinDensity == null || !joinDensity.isNull();
+            }
+        }
+
         double m = 33;
         for (int idLambda = 0; idLambda < 35; idLambda++) {
             Lambda[idLambda] = Math.pow(10, m / 10);
@@ -488,9 +531,9 @@ public class RailwayCnossos extends org.noise_planet.noisemodelling.emission.rai
             roughnessTotLambda[idLambda] = Math.pow(10, getLRoughness(typeVehicle, trackRoughnessId,  trackFileVersion, idLambda) / 10);
 
             contactFilter[idLambda] = getContactFilter(typeVehicle,  idLambda);
-            if (impactId != null && !impactId.isEmpty() && !"0".equals(impactId)) {
+            if (hasImpactNoise) {
                 roughnessLtot[idLambda] =  10 * Math.log10(roughnessTotLambda[idLambda]+ Math.pow(10, getImpactNoise(impactId,  idLambda) / 10))+ contactFilter[idLambda];
-            }else{
+            } else {
                 roughnessLtot[idLambda] = 10 * Math.log10(roughnessTotLambda[idLambda]) + contactFilter[idLambda];
             }
             roughnessLtot[idLambda] = Math.pow(10, roughnessLtot[idLambda] / 10);
