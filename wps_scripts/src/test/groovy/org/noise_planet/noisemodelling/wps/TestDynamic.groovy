@@ -16,7 +16,10 @@ import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File;
 import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM;
 import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
+
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 
 class TestDynamic extends JdbcTestCase {
@@ -384,19 +387,22 @@ class TestDynamic extends JdbcTestCase {
                 "sourceIndexFieldName" : "LINK_ID",
                 "sourcePeriodFieldName" : "TIME"])
 
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "SOURCES_EMISSION"])
+
         // Compute the noise level from the network sources for each time period
         new Noise_level_from_source().exec(connection,
                 ["tableBuilding"   : "BUILDINGS",
-                "tableSources"   : "SOURCES_GEOM",
-                "tableEmission"   : "SOURCES_EMISSION",
-                "tableReceivers": "RECEIVERS",
-                "confDiffHorizontal" : true,
-                "confReflOrder"       : 0
+                 "tableSources"   : "SOURCES_GEOM",
+                 "tableSourcesEmission"   : "LW_ROADS",
+                 "tableReceivers": "RECEIVERS",
+                 "confDiffHorizontal" : true,
+                 "confReflOrder"       : 0
                 ])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, "RECEIVERS_LEVEL")
 
-        columnNames.containsAll(Arrays.asList("PERIOD", "LAEQ"))
+        assertTrue(columnNames.containsAll(Arrays.asList("PERIOD", "LAEQ")))
 
     }
 
