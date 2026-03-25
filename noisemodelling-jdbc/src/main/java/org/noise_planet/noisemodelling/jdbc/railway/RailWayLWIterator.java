@@ -349,37 +349,48 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                 impactNoise, bridgeTransfert, curvature, commercialSpeed, isTunnel, nbTrack);
 
         Map<String, Integer> vehicles = railway.getVehicleFromTrainset(train);
-       // double vehiclePerHouri=vehiclePerHour;
         if (vehicles!=null){
-            int i = 0;
-            double rbeWeightedSum = 0;
-            double totalLengthWeight = 0;
+            // Two-pass approach:
+            // Pass 1: evaluate each vehicle type and collect emissions + RBE values
+            List<RailWayCnossosParameters> vehicleEmissions = new ArrayList<>();
+            List<Integer> vehicleRbe = new ArrayList<>();
             for (Map.Entry<String,Integer> entry : vehicles.entrySet()){
                 String typeTrain = entry.getKey();
                 int unitCount = entry.getValue();
                 double vehiclePerHouri = vehiclePerHour * unitCount;
-                // Accumulate length-weighted ReflectingBarrierEffect
-                double vehLength = railway.getVehicleLength(typeTrain);
                 int rbe = railway.getReflectingBarrierEffect(typeTrain);
-                double weight = unitCount * vehLength;
-                rbeWeightedSum += rbe * weight;
-                totalLengthWeight += weight;
+                RailWayCnossosParameters vehEmission = new RailWayCnossosParameters();
                 if (vehiclePerHouri>0) {
                     RailwayVehicleCnossosParameters vehicleParameters = new RailwayVehicleCnossosParameters(typeTrain, vehicleSpeed,
                             vehiclePerHouri / (double) nbTrack, rollingCondition, idlingTime);
-
-                    if (i == 0) {
-                        lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
-                    } else {
-                        lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, railway.evaluate(vehicleParameters, trackParameters));
-                    }
+                    vehEmission = railway.evaluate(vehicleParameters, trackParameters);
                 }
-                i++;
+                vehicleEmissions.add(vehEmission);
+                vehicleRbe.add(rbe);
             }
-            // Set length-weighted Cref on the combined emission result
-            if (totalLengthWeight > 0) {
-                lWRailWay.setCref(rbeWeightedSum / totalLengthWeight);
-                lWRailWay.setCrefTotalWeight(totalLengthWeight);
+
+            // Pass 2: compute power-weighted Cref using low-source acoustic power
+            double rbeWeightedSum = 0;
+            double totalPowerWeight = 0;
+            for (int i = 0; i < vehicleEmissions.size(); i++) {
+                double power = vehicleEmissions.get(i).computeLowSourcePower();
+                rbeWeightedSum += vehicleRbe.get(i) * power;
+                totalPowerWeight += power;
+            }
+
+            // Merge all vehicle emissions
+            for (int i = 0; i < vehicleEmissions.size(); i++) {
+                if (i == 0) {
+                    lWRailWay = vehicleEmissions.get(i);
+                } else {
+                    lWRailWay = RailWayCnossosParameters.sumRailwaySource(lWRailWay, vehicleEmissions.get(i));
+                }
+            }
+
+            // Set power-weighted Cref on the combined emission result
+            if (totalPowerWeight > 0) {
+                lWRailWay.setCref(rbeWeightedSum / totalPowerWeight);
+                lWRailWay.setCrefTotalWeight(totalPowerWeight);
             }
 
         }else if (railway.isInVehicleList(train)){
@@ -388,11 +399,11 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
                         vehiclePerHour / (double) nbTrack, rollingCondition, idlingTime);
                 lWRailWay = railway.evaluate(vehicleParameters, trackParameters);
             }
-            // Set Cref from single vehicle
-            double vehLength = railway.getVehicleLength(train);
+            // Set Cref from single vehicle, weighted by low-source power
             int rbe = railway.getReflectingBarrierEffect(train);
+            double power = lWRailWay.computeLowSourcePower();
             lWRailWay.setCref(rbe);
-            lWRailWay.setCrefTotalWeight(vehLength);
+            lWRailWay.setCrefTotalWeight(power);
         }
 
         return lWRailWay;
