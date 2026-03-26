@@ -433,8 +433,6 @@ public class TableLoaderTest {
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
     }
 
-<<<<<<< fixhRail
-
     /**
      * Test that HRAIL column is properly created in LW_RAILWAY output
      * and that the default value matches the default platform hRail (h2 = 0.18).
@@ -461,7 +459,6 @@ public class TableLoaderTest {
         }
     }
 
-=======
     @Test
     public void testRoadNoiseEmission() throws SQLException, IOException {
         try(Statement statement = connection.createStatement()) {
@@ -480,5 +477,4 @@ public class TableLoaderTest {
         }
         assertEquals(89.6, AcousticIndicatorsFunctions.wToDb(globalLevel), 0.1);
     }
->>>>>>> main
 }
