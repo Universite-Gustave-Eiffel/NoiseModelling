@@ -608,7 +608,7 @@ public class AttenuationCnossos {
             double Cref = proPathParameters.getCref();
             if (Cref > 0){
 
-                int nMax = 3; // maximum reflection order N
+                int nMax = scene != null ? scene.bodyBarrierMaxReflectionOrder : 3; // maximum reflection order N
                 Coordinate rcv = ptList.get(ptList.size() - 1).coordinate;
                 double[] deltaL = new double[data.getFrequencies().size()];
                 // Bug #6 fix: init to 0.0, not dBToW(0.0)=1.0 which would double-count n=0

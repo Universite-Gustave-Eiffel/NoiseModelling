@@ -47,6 +47,12 @@ public class SceneWithAttenuation extends Scene {
      */
     public Map<Long, Double> sourceCref = new HashMap<>();
 
+    /**
+     * Maximum number of reflections between train body and barrier (body barrier interaction).
+     * Default is 3 as recommended by NMPB guide. Set to higher values (e.g. 10) for convergence studies.
+     */
+    public int bodyBarrierMaxReflectionOrder = 3;
+
     public static final String HRAIL_DATABASE_FIELD = "HRAIL";
     public static final String CREF_DATABASE_FIELD = "CREF";
 
