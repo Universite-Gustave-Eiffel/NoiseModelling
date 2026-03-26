@@ -188,80 +188,64 @@ def exec(Connection connection, input) {
     // drop table LW_ROADS if exists and the create and prepare the table
     sql.execute("drop table if exists LW_ROADS;")
 
-    def createTableQuery = new StringBuilder("CREATE TABLE LW_ROADS (")
-    def preparedInsertQuery = new StringBuilder("INSERT INTO LW_ROADS(")
-    int fieldCount = 0
+    // Use lists to collect the column definitions and column names
+    def createDefinitions = []
+    def columnNames = []
 
-    if(primaryKeyColumn != null) {
-        createTableQuery.append(primaryKeyColumn.first())
-        createTableQuery.append(" integer not null, ")
-        preparedInsertQuery.append(primaryKeyColumn.first())
-        preparedInsertQuery.append(", ")
-        fieldCount++
+    if (primaryKeyColumn != null) {
+        def pkName = primaryKeyColumn.first()
+        createDefinitions << "${pkName} integer not null"
+        columnNames << pkName
     }
 
-    if(hasIdSourceField) {
-        createTableQuery.append("IDSOURCE integer, ")
-        preparedInsertQuery.append("IDSOURCE, ")
-        fieldCount++
+    if (hasIdSourceField) {
+        createDefinitions << "IDSOURCE integer"
+        columnNames << "IDSOURCE"
     }
 
     def force3D = false
-    if(geomFields.size() > 0) {
-        createTableQuery.append(geomFields.get(0))
-        createTableQuery.append(" Geometry, ")
-        preparedInsertQuery.append(geomFields.get(0))
-        preparedInsertQuery.append(", ")
-        fieldCount++
+    if (geomFields.size() > 0) {
+        def geomName = geomFields.get(0)
+        createDefinitions << "${geomName} Geometry"
+        columnNames << geomName
+
         def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
-        if(tupMeta != null && !tupMeta.second().hasZ()) {
+        if (tupMeta != null && !tupMeta.second().hasZ()) {
             force3D = true
-            logger.warn("The geometry field "+geomFields.get(0)+" is not 3D. The z value will be forced to 0.05m height.")
+            logger.warn("The geometry field ${geomName} is not 3D. The z value will be forced to 0.05m height.")
         }
     }
 
-    if(!hasPeriodField) {
+    if (!hasPeriodField) {
         ["D", "E", "N"].each { period ->
             ["63", "125", "250", "500", "1000", "2000", "4000", "8000"].each { freq ->
-                    createTableQuery.append("HZ")
-                    createTableQuery.append(period)
-                    createTableQuery.append(freq)
-                    createTableQuery.append(" double precision, ")
-                    preparedInsertQuery.append("HZ")
-                    preparedInsertQuery.append(period)
-                    preparedInsertQuery.append(freq)
-                    preparedInsertQuery.append(", ")
-                    fieldCount++
+                def col = "HZ${period}${freq}"
+                createDefinitions << "${col} double precision"
+                columnNames << col
             }
         }
     } else {
-        createTableQuery.append("PERIOD varchar, ")
-        fieldCount++
-        preparedInsertQuery.append("PERIOD, ")
+        createDefinitions << "PERIOD varchar"
+        columnNames << "PERIOD"
+
         ["63", "125", "250", "500", "1000", "2000", "4000", "8000"].each { freq ->
-            createTableQuery.append("HZ")
-            createTableQuery.append(freq)
-            createTableQuery.append(" double precision, ")
-            preparedInsertQuery.append("HZ")
-            preparedInsertQuery.append(freq)
-            preparedInsertQuery.append(", ")
-            fieldCount++
+            def col = "HZ${freq}"
+            createDefinitions << "${col} double precision"
+            columnNames << col
         }
     }
 
-    // Create table
-    createTableQuery.setLength(createTableQuery.length() - 2) // remove last comma
-    createTableQuery.append(");")
-    sql.execute(createTableQuery.toString())
+    // 1. Create the Table Query
+    // join() adds commas only between elements
+    def createTableQuery = "CREATE TABLE LW_ROADS (" + createDefinitions.join(", ") + ");"
+    sql.execute(createTableQuery)
 
-    // Prepared insert query
-    preparedInsertQuery.setLength(preparedInsertQuery.length() - 2) // remove last comma
-    preparedInsertQuery.append(") VALUES (")
-    String.join(", ", Collections.nCopies(fieldCount, "?")).each {
-        preparedInsertQuery.append(it)
-    }
-    preparedInsertQuery.append(");")
-    def qry = preparedInsertQuery.toString()
+    // 2. Prepared Insert Query
+    int fieldCount = columnNames.size()
+    // Create a list of '?' characters equal to the number of fields
+    def placeholders = (["?"] * fieldCount).join(", ")
+
+    def qry = "INSERT INTO LW_ROADS (" + columnNames.join(", ") + ") VALUES (" + placeholders + ");"
 
     // --------------------------------------
     // Start calculation and fill the table

@@ -13,9 +13,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import org.noise_planet.noisemodelling.emission.utils.UriUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -50,14 +54,42 @@ public class Railway {
         return () -> iterator;
     }
 
-    public void setVehicleDataFile(String VehicleData) {
-        this.vehicleData = parse(Railway.class.getResourceAsStream(VehicleData));
+    /**
+     * Retrieves an InputStream from a resource string, which can either be a URI or a classpath resource.
+     * If the resource string represents a valid URI, the input stream is opened from the URI.
+     * Otherwise, the input stream is retrieved from the classpath using the resource string.
+     *
+     * @param resource the resource string, which can be a URI or a classpath resource
+     * @return the InputStream corresponding to the resource
+     * @throws IOException if the resource cannot be found or accessed
+     */
+    private static InputStream getStreamFromResourceString(String resource) throws IOException {
+        if (UriUtils.isValidUri(resource)) {
+            return UriUtils.openSafeStream(resource);
+        } else {
+            InputStream stream = Railway.class.getResourceAsStream(resource);
+            if (stream == null) {
+                throw new IOException("Resource not found: " + resource);
+            }
+            return stream;
+        }
     }
-    public void setTrainSetDataFile(String TrainsetData) {
-        this.trainsetData = parse(Railway.class.getResourceAsStream(TrainsetData));
+
+    public void setVehicleDataFile(String VehicleData) throws IOException {
+        try (InputStream stream = getStreamFromResourceString(VehicleData)) {
+             this.vehicleData = parse(stream);
+        }
     }
-    public void setRailwayDataFile(String RailWayData) {
-        this.railWayData = parse(Railway.class.getResourceAsStream(RailWayData));
+
+    public void setTrainSetDataFile(String trainsetResource) throws IOException {
+        try (InputStream stream = getStreamFromResourceString(trainsetResource)) {
+            this.trainsetData = parse(stream);
+        }
+    }
+    public void setRailwayDataFile(String railwayResource) throws IOException {
+        try (InputStream stream = getStreamFromResourceString(railwayResource)) {
+            this.railWayData = parse(stream);
+        }
     }
 
     public JsonNode getVehicleNode(String typeVehicle) {

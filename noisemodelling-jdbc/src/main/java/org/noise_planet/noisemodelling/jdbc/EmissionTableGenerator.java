@@ -249,9 +249,12 @@ public class EmissionTableGenerator {
      * @param railTrafficTableName Table name of rail traffic
      * @param outputTable Output table name
      * @param frequencyPrepend Prepend to frequency columns (e.g. "HZ_")
+     * @param vehicleDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for vehicle data configuration.
+     * @param trainSetDataFile    File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for train set data configuration.
+     * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
      * @throws SQLException If error occurred
      */
-    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile) throws SQLException {
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
@@ -294,7 +297,12 @@ public class EmissionTableGenerator {
         connection.createStatement().execute(createTableQuery.toString());
 
         // Get Class to compute HZ
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName);
+        RailWayLWIterator railWayLWIterator;
+        try {
+            railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName, vehicleDataFile, trainSetDataFile, railwayEmissionDataFile);
+        } catch (IOException ex) {
+            throw new SQLException(ex);
+        }
 
         while (railWayLWIterator.hasNext()) {
             RailWayLWGeom railWayLWGeom = railWayLWIterator.next();

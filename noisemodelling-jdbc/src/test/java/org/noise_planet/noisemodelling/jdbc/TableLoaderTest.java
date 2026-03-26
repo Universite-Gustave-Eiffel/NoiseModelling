@@ -416,7 +416,7 @@ public class TableLoaderTest {
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
 
         EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
-                "LW_RAILWAY", "HZ");
+                "LW_RAILWAY", "HZ", RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON);
 
         // Get Class to compute LW
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");

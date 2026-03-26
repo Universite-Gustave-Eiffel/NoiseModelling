@@ -24,6 +24,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
+import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -70,6 +71,27 @@ inputs = [
                         '<li><b>TRACKSPD</b> : Commercial speed on the section (in km/h) (DOUBLE)</li>' +
                         '<li><b>ISTUNNEL</b> : Indicates whether the section is a tunnel or not (0 = no / 1 = yes) (BOOLEAN) </li></ul>',
                 type: String.class
+        ],
+        vehicleDataFile : [
+                name : 'Railway vehicle data file',
+                title : 'Railway vehicle data file',
+                description : 'URL of the railway vehicle data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                type: String.class,
+                min: 0, max: 1
+        ],
+        trainSetDataFile : [
+                name : 'Railway train set data file',
+                title : 'Railway train set data file',
+                description : 'URL of the railway train set data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                type: String.class,
+                min: 0, max: 1
+        ],
+        railwayEmissionDataFile : [
+                name : 'Railway emission data file',
+                title : 'Railway emission data file',
+                description : 'URL of the railway emission data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                type: String.class,
+                min: 0, max: 1
         ]
 ]
 
@@ -155,9 +177,22 @@ def exec(Connection connection, input) {
         nSection = rs1.getInt("total")
         System.println('The table Rail Geom has ' + nSection + ' rail segments.')
     }
+    // Collect optional fields for input JSON
+    String vehicleDataFile = RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON
+    if(input['vehicleDataFile'] != null && !(input['vehicleDataFile'] as String).trim().isEmpty()) {
+        vehicleDataFile = input['vehicleDataFile'] as String
+    }
+    String trainSetDataFile = RailWayLWIterator.RAILWAY_TRAINSETS_JSON
+    if(input['trainSetDataFile'] != null && !(input['trainSetDataFile'] as String).trim().isEmpty()) {
+        trainSetDataFile = input['trainSetDataFile'] as String
+    }
+    String railwayEmissionDataFile = RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON
+    if(input['railwayEmissionDataFile'] != null && !(input['railwayEmissionDataFile'] as String).trim().isEmpty()) {
+        railwayEmissionDataFile = input['railwayEmissionDataFile'] as String
+    }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY", "HZ")
+            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile)
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

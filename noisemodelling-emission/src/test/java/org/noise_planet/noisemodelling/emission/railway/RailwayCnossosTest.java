@@ -33,9 +33,9 @@ public class RailwayCnossosTest {
     @Test
     public void testUnknownVehicle() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesNMPB.json");
+        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosSNCF_2021.json");
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
 
 
         String vehCat = "notsupported";
@@ -69,9 +69,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_1() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos_2015.json");
+        railwayCnossos.setVehicleDataFile("outdated/RailwayVehiclesCnossos_2015.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosEU_2020.json");
+        railwayCnossos.setRailwayDataFile("outdated/RailwayCnossosEU_2020.json");
 
         double[] expectedValuesLWRolling = new double[]{46.62923937074308, 47.5930887825746, 49.48855395436553, 50.84525150627218, 48.290416823553656, 47.55991120199147, 48.36598621415334, 53.685023895294904, 55.17947382327178, 56.44358069598965, 57.381090582936295, 58.06233085323542, 59.82942366487711, 59.45435581560096, 56.541564191934896, 52.173989709214666, 54.51129722944201, 53.2570463370446, 51.118153521942574, 48.73174211849708, 49.13517759611298, 48.60046539576308, 48.58746317902302, 50.14566621392022};
         double[] expectedValuesLWTractionA = new double[]{46.8200805302231, 42.7200805302231, 40.5200805302231, 42.5200805302231, 40.7200805302231, 40.7200805302231, 40.9200805302231, 42.7200805302231, 42.5200805302231, 43.6200805302231, 43.5200805302231, 46.5200805302231, 43.1200805302231, 43.0200805302231, 43.0200805302231, 42.0200805302231, 42.0200805302231, 47.3200805302231, 40.4200805302231, 37.4200805302231, 34.9200805302231, 32.0200805302231, 29.4200805302231, 27.1200805302231};
@@ -128,9 +128,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_2() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos_2015.json");
+        railwayCnossos.setVehicleDataFile("outdated/RailwayVehiclesCnossos_2015.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosEU_2020.json");
+        railwayCnossos.setRailwayDataFile("outdated/RailwayCnossosEU_2020.json");
         // Expected Values
         double[] expectedValuesLWRolling = new double[]{48.855812075460975, 49.80224950461141, 52.61908165678001, 54.982731704412586, 52.61987147312681, 52.041501361148036, 53.19288499441544, 57.95824500346427, 58.13283629462971, 58.077111652037416, 58.250150682153944, 58.69354673204066, 60.388651969482424, 59.76608857751005, 56.71229509132594, 52.262588086680765, 54.5627556471335, 53.29375923552483, 51.141539208928265, 48.745028050980125, 49.141647244090876, 48.601924082363865, 48.58782710304959, 50.14560443243711};
         String[] typeNoise = new String[] {"ROLLING"};
@@ -184,9 +184,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_3() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos_2015.json");
+        railwayCnossos.setVehicleDataFile("outdated/RailwayVehiclesCnossos_2015.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosEU_2020.json");
+        railwayCnossos.setRailwayDataFile("outdated/RailwayCnossosEU_2020.json");
         // Expected Values
 
 
@@ -248,9 +248,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_4() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos_2015.json");
+        railwayCnossos.setVehicleDataFile("outdated/RailwayVehiclesCnossos_2015.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosEU_2020.json");
+        railwayCnossos.setRailwayDataFile("outdated/RailwayCnossosEU_2020.json");
         //Expected Values
         double[] expectedValuesLWRollingD = new double[]{42.64047716756204, 43.59103735908428, 45.456174153991, 46.773857830747545, 44.20212586691305, 43.07694967273832, 42.54462519449325, 47.92450477396579, 49.74087356604085, 54.05475982745676, 57.841090649116026, 57.771236415461615, 57.85669468078028, 56.12813486229132, 52.72126638618079, 47.75972514124385, 50.33326183725299, 49.08523837496412, 46.97538128072445, 44.5793134982533, 45.004481967694915, 44.50787367671097, 44.5287841222723, 46.11962258959353};
         double[] expectedValuesLWRollingE = new double[]{41.39108980147904, 42.34164999300128, 44.206786787908, 45.524470464664546, 42.95273850083005, 41.827562306655324, 41.29523782841025, 46.675117407882794, 48.49148619995785, 52.805372461373764, 56.59170328303303, 56.521849049378616, 56.60730731469728, 54.87874749620832, 51.47187902009779, 46.51033777516085, 49.08387447116999, 47.83585100888112, 45.72599391464145, 43.3299261321703, 43.755094601611916, 43.25848631062797, 43.2793967561893, 44.870235223510534};
@@ -329,9 +329,9 @@ public class RailwayCnossosTest {
     @Test
     public void Test_Cnossos_Rail_emission_section_5() throws IOException {
 
-        railwayCnossos.setVehicleDataFile("RailwayVehiclesCnossos_2015.json");
+        railwayCnossos.setVehicleDataFile("outdated/RailwayVehiclesCnossos_2015.json");
         railwayCnossos.setTrainSetDataFile("RailwayTrainsets.json");
-        railwayCnossos.setRailwayDataFile("RailwayCnossosEU_2020.json");
+        railwayCnossos.setRailwayDataFile("outdated/RailwayCnossosEU_2020.json");
 
         double[] expectedValuesLWRollingD = new double[]{47.71997843033826, 46.637350019740694, 47.57462749051441, 48.37035398021847, 46.26756512527347, 46.231021285491536, 47.86579192688177, 52.487052374043586, 53.488856919653934, 54.60582219451978, 56.07350114723665, 58.46378649956855, 62.755024418449956, 63.70786252484214, 61.80735449363346, 58.68560995030353, 56.934883841636676, 54.84658995444764, 51.830594829509096, 49.969642427112504, 48.54957338454732, 47.75658020373088, 47.89544088700445, 48.67590747414407};
         double[] expectedValuesLWRollingE = new double[]{47.8571829614869, 46.773205039062276, 47.65061271097261, 48.41688361760173, 46.32933646576278, 46.28022349802543, 47.91165590399426, 52.32870371415995, 53.193078095746394, 54.26199790602617, 55.84798703049516, 58.496779937215315, 62.94191660235764, 63.901269120719455, 62.01181168644282, 58.892194681278255, 56.92203496269723, 54.83406505619752, 51.87274923380053, 50.01731005663079, 48.38932689131972, 47.63016466691677, 47.751238073652125, 48.38987243332228};

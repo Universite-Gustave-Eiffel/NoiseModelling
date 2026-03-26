@@ -30,6 +30,9 @@ import java.util.*;
 
 
 public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
+    public static final String RAILWAY_VEHICLES_CNOSSOS_JSON = "RailwayVehiclesCnossos.json";
+    public static final String RAILWAY_TRAINSETS_JSON = "RailwayTrainsets.json";
+    public static final String RAILWAY_EMISSION_CNOSSOS_JSON = "RailwayEmissionCnossos.json";
     private RailwayCnossos railway = new RailwayCnossos();
     private Connection connection;
     private RailWayLWGeom railWayLWComplete = null;
@@ -46,27 +49,33 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param tableTrackGeometry Track geometry and metadata
      * @param tableTrainTraffic Train traffic associated with tracks
      */
-    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) {
-        this.railway.setVehicleDataFile("RailwayVehiclesCnossos.json");
-        this.railway.setTrainSetDataFile("RailwayTrainsets.json");
-        this.railway.setRailwayDataFile("RailwayEmissionCnossos.json");
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) throws IOException {
+        this.railway.setVehicleDataFile(RAILWAY_VEHICLES_CNOSSOS_JSON);
+        this.railway.setTrainSetDataFile(RAILWAY_TRAINSETS_JSON);
+        this.railway.setRailwayDataFile(RAILWAY_EMISSION_CNOSSOS_JSON);
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
         railWayLWComplete = fetchNext(railWayLWIncomplete);
     }
 
-
     /**
      * Generate sound source for train (with train source directivity) from traffic and geometry tracks tables
-     * @param connection
-     * @param tableTrackGeometry Track geometry and metadata
-     * @param tableTrainTraffic Train traffic associated with tracks
+     * Constructs a RailWayLWIterator instance to process railway data by reading from a database connection
+     * and associated data files. Initializes the railway metadata and fetches the first incomplete railway geometry.
+     *
+     * @param connection          Database connection used to fetch railway and traffic data.
+     * @param tableTrackGeometry  Table name containing track geometry and metadata.
+     * @param tableTrainTraffic   Table name containing train traffic details associated with tracks.
+     * @param vehicleDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for vehicle data configuration.
+     * @param trainSetDataFile    File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for train set data configuration.
+     * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
+     * @throws IOException        If an error occurs during file reading or parsing the specified data files.
      */
-    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayDataFile) {
+    public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile) throws IOException {
        this.railway.setVehicleDataFile(vehicleDataFile);
         this.railway.setTrainSetDataFile(trainSetDataFile);
-        this.railway.setRailwayDataFile(railwayDataFile);
+        this.railway.setRailwayDataFile(railwayEmissionDataFile);
         this.connection = connection;
         this.tableTrackGeometry = tableTrackGeometry;
         this.tableTrainTraffic = tableTrainTraffic;
