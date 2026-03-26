@@ -117,7 +117,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @return
      */
     public Double getTrackRoughness(String trackRoughnessId, int lambdaId) { //
-        return resolveTrackNode(getRailWayData().get("Track").get("RailRoughness"), trackRoughnessId).get("Values").get(lambdaId).doubleValue();
+        return getRailWayData().get("Track").get("RailRoughness").get(trackRoughnessId).get("Values").get(lambdaId).doubleValue();
     }
 
     /**
@@ -175,7 +175,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
                     break;
             }
             // Resolve traction node dynamically from JSON data
-            JsonNode tractionNode = resolveTrackNode(getRailWayData().get("Vehicle").get(condition), refId);
+            JsonNode tractionNode = getRailWayData().get("Vehicle").get(condition).get(refId);
             if (tractionNode != null) {
                 try {
                     tractionSpectrum = tractionNode.get("Values").get(sourceHeightId).get(freqId).doubleValue();
@@ -211,7 +211,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @return
      */
     public Double getBridgeStructural(String bridgeId, int freqId) {
-        return resolveTrackNode(getRailWayData().get("Track").get("BridgeConstant"), bridgeId).get("Values").get(freqId).doubleValue();
+        return getRailWayData().get("Track").get("BridgeConstant").get(bridgeId).get("Values").get(freqId).doubleValue();
     }
 
 
@@ -222,7 +222,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @return
      */
     public Double getTrackTransfer(String trackTransferId,  int freqId) { //
-        return resolveTrackNode(getRailWayData().get("Track").get("TrackTransfer"), trackTransferId).get("Spectre").get(freqId).doubleValue();
+        return getRailWayData().get("Track").get("TrackTransfer").get(trackTransferId).get("Spectre").get(freqId).doubleValue();
     }
 
     /**
@@ -232,7 +232,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
      * @return
      */
     public Double getImpactNoise(String impactNoiseId,  int freqId) { //
-        return resolveTrackNode(getRailWayData().get("Track").get("ImpactNoise"), impactNoiseId).get("Values").get(freqId).doubleValue();
+        return getRailWayData().get("Track").get("ImpactNoise").get(impactNoiseId).get("Values").get(freqId).doubleValue();
     }
 
     /**
@@ -366,7 +366,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
 
         // Resolve the aerodynamic noise node from JSON data
         JsonNode aeroNode = (refId != null && !refId.isEmpty()) ?
-                resolveTrackNode(getRailWayData().get("Vehicle").get("AerodynamicNoise"), refId) : null;
+                getRailWayData().get("Vehicle").get("AerodynamicNoise").get(refId) : null;
 
         // Check V0 value from JSON - if 0 or node not found, no aerodynamic noise
         double v0Aero = 0;
@@ -466,7 +466,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
 
         // Resolve bridge node dynamically from JSON data
         JsonNode bridgeNode = (bridgeId != null && !bridgeId.isEmpty()) ?
-                resolveTrackNode(getRailWayData().get("Track").get("BridgeConstant"), bridgeId) : null;
+                getRailWayData().get("Track").get("BridgeConstant").get(bridgeId) : null;
 
         if (bridgeNode != null) {
             // Check "Values" first, then "Value" (singular)
@@ -516,7 +516,7 @@ public class RailwayCnossosvar extends org.noise_planet.noisemodelling.emission.
         // Resolve impact noise node once before the loop
         boolean hasImpactNoise = false;
         if (impactId != null && !impactId.isEmpty()) {
-            JsonNode impactNode = resolveTrackNode(getRailWayData().get("Track").get("ImpactNoise"), impactId);
+            JsonNode impactNode = getRailWayData().get("Track").get("ImpactNoise").get(impactId);
             if (impactNode != null) {
                 // Check JoinDensity: if present and null, this is an empty sentinel entry
                 JsonNode joinDensity = impactNode.get("JoinDensity");
