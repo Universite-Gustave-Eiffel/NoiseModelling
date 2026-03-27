@@ -92,6 +92,13 @@ inputs = [
                 description : 'URL of the railway emission data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
                 type: String.class,
                 min: 0, max: 1
+        ],
+        railwayPlatformDataFile : [
+                name : 'Railway platform data file',
+                title : 'Railway platform data file',
+                description : 'URL of the railway platform data file in CNOSSOS format (json). By default, the file provided with NoiseModelling is used.',
+                type: String.class,
+                min: 0, max: 1
         ]
 ]
 
@@ -190,9 +197,13 @@ def exec(Connection connection, input) {
     if(input['railwayEmissionDataFile'] != null && !(input['railwayEmissionDataFile'] as String).trim().isEmpty()) {
         railwayEmissionDataFile = input['railwayEmissionDataFile'] as String
     }
+    String railwayPlatformDataFile = RailWayLWIterator.RAILWAY_PLATFORMS_JSON
+    if(input['railwayPlatformDataFile'] != null && !(input['railwayPlatformDataFile'] as String).trim().isEmpty()) {
+        railwayPlatformDataFile = input['railwayPlatformDataFile'] as String
+    }
 
     EmissionTableGenerator.makeTrainLWTable(connection, sources_geom_table_name, sources_table_traffic_name,
-            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile)
+            "LW_RAILWAY", "HZ", vehicleDataFile, trainSetDataFile, railwayEmissionDataFile, railwayPlatformDataFile)
 
     TableLocation alterTable = TableLocation.parse("LW_RAILWAY", DBUtils.getDBType(connection))
     GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, alterTable, "THE_GEOM");

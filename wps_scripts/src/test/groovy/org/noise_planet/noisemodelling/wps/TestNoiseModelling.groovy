@@ -83,7 +83,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
 
-        def expected = ["PK_SECTION","THE_GEOM","DIR_ID","GS","HZD50","HZD63","HZD80","HZD100","HZD125",
+        def expected = ["PK_SECTION","THE_GEOM","DIR_ID","GS","HRAIL","CREF","HZD50","HZD63","HZD80","HZD100","HZD125",
                         "HZD160","HZD200","HZD250","HZD315","HZD400","HZD500","HZD630","HZD800","HZD1000","HZD1250",
                         "HZD1600","HZD2000","HZD2500","HZD3150","HZD4000","HZD5000","HZD6300","HZD8000","HZD10000",
                         "HZE50","HZE63","HZE80","HZE100","HZE125","HZE160","HZE200","HZE250","HZE315","HZE400",

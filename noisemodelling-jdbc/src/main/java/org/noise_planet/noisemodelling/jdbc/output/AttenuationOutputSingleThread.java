@@ -133,9 +133,15 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         cutProfileCount.addAndGet(1);
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        List<CnossosPath> cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
+        // Get hRail for this source (rail-specific, default 0.18m)
+        double hRail = scene.sourceHRail.getOrDefault(cutProfile.getSource().sourcePk, 0.18);
+        // Get Cref for this source (0 = no body barrier for road/open freight, 1 = fully reflecting)
+        double cref = scene.sourceCref.getOrDefault(cutProfile.getSource().sourcePk, 0.0);
+        List<CnossosPath> cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile,
                 scene.profileBuilder.exactFrequencyArray, scene.defaultGroundAttenuation);
         for (CnossosPath cnossosPath : cnossosPaths) {
+            cnossosPath.setHRail(hRail);
+            cnossosPath.setCref(cref);
             multiThread.cnossosPathCount.addAndGet(1);
             CutPointSource source = cutProfile.getSource();
             CutPointReceiver receiver = cutProfile.getReceiver();

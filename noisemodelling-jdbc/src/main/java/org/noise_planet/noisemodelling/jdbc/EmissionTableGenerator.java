@@ -242,6 +242,20 @@ public class EmissionTableGenerator {
         return slope;
     }
 
+
+    /**
+     * Generate Train emission from train geometry tracks and train traffic
+     * @param connection Database connection
+     * @param railSectionTableName Table name of rail sections
+     * @param railTrafficTableName Table name of rail traffic
+     * @param outputTable Output table name
+     * @param frequencyPrepend Prepend to frequency columns (e.g. "HZ_")
+     * @throws SQLException       If an error occurs while accessing the database or executing queries.
+     */
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
+        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
+    }
+
     /**
      * Generate Train emission from train geometry tracks and train traffic
      * @param connection Database connection
@@ -252,19 +266,20 @@ public class EmissionTableGenerator {
      * @param vehicleDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for vehicle data configuration.
      * @param trainSetDataFile    File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for train set data configuration.
      * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
+     * @param platformDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for platform data configuration.
      * @throws SQLException If error occurred
      */
-    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile) throws SQLException {
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile, String platformDataFile) throws SQLException {
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
 
         // Build and execute queries
         StringBuilder createTableQuery = new StringBuilder("create table "+outputTable+" (PK_SECTION int," +
-                " the_geom GEOMETRY, DIR_ID int, GS double");
+                " the_geom GEOMETRY, DIR_ID int, GS double, HRAIL double, CREF double");
         StringBuilder insertIntoQuery = new StringBuilder("INSERT INTO "+outputTable+"(PK_SECTION, the_geom," +
-                " DIR_ID, GS");
-        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?");
+                " DIR_ID, GS, HRAIL, CREF");
+        StringBuilder insertIntoValuesQuery = new StringBuilder("?,?,?,?,?,?");
         for(int thirdOctave : ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE) {
             createTableQuery.append(", ").append(frequencyPrepend).append("D");
             createTableQuery.append(thirdOctave);
@@ -299,7 +314,8 @@ public class EmissionTableGenerator {
         // Get Class to compute HZ
         RailWayLWIterator railWayLWIterator;
         try {
-            railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName, vehicleDataFile, trainSetDataFile, railwayEmissionDataFile);
+            railWayLWIterator = new RailWayLWIterator(connection, railSectionTableName, railTrafficTableName,
+                    vehicleDataFile, trainSetDataFile, railwayEmissionDataFile, platformDataFile);
         } catch (IOException ex) {
             throw new SQLException(ex);
         }
@@ -313,6 +329,7 @@ public class EmissionTableGenerator {
             List<LineString> geometries = railWayLWGeom.getRailWayLWGeometry();
 
             int pk = railWayLWGeom.getPK();
+            double hRail = railWayLWGeom.getPlatform().getHRail();
             double[] LWDay = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
             double[] LWEvening = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
             double[] LWNight = new double[ProfileBuilder.DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
@@ -332,42 +349,42 @@ public class EmissionTableGenerator {
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("ROLLING").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("ROLLING").getlW();
                         if (night) LWNight = railWayLWNight.getRailwaySourceList().get("ROLLING").getlW();
-                        if (day) heightSource = 4; //railWayLWDay.getRailwaySourceList().get("ROLLING").getSourceHeight();
+                        heightSource = 0.5 + hRail;
                         directivityId = 1;
                         break;
                     case 1:
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONA").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONA").getlW();
                         if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONA").getlW();
-                        heightSource = 0.5;
+                        heightSource = 0.5 + hRail;
                         directivityId = 2;
                         break;
                     case 2:
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("TRACTIONB").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("TRACTIONB").getlW();
                         if (night) LWNight = railWayLWNight.getRailwaySourceList().get("TRACTIONB").getlW();
-                        heightSource = 4;
+                        heightSource = 4 + hRail;
                         directivityId = 3;
                         break;
                     case 3:
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICA").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICA").getlW();
                         if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICA").getlW();
-                        heightSource = 0.5;
+                        heightSource = 0.5 + hRail;
                         directivityId = 4;
                         break;
                     case 4:
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("AERODYNAMICB").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("AERODYNAMICB").getlW();
                         if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("AERODYNAMICB").getlW();
-                        heightSource = 4;
+                        heightSource = 4 + hRail;
                         directivityId = 5;
                         break;
                     case 5:
                         if (day) LWDay = railWayLWDay.getRailwaySourceList().get("BRIDGE").getlW();
                         if (evening) LWEvening = railWayLWEvening.getRailwaySourceList().get("BRIDGE").getlW();
                         if (night)  LWNight = railWayLWNight.getRailwaySourceList().get("BRIDGE").getlW();
-                        heightSource = 0.5;
+                        heightSource = 0.5 + hRail;
                         directivityId = 6;
                         break;
                 }
@@ -382,6 +399,8 @@ public class EmissionTableGenerator {
                     ps.setObject(cursor++, sourceGeometry);
                     ps.setInt(cursor++, directivityId);
                     ps.setDouble(cursor++, railWayLWGeom.getGs());
+                    ps.setDouble(cursor++, hRail);
+                    ps.setDouble(cursor++, railWayLWGeom.getCref());
                     for (double v : LWDay) {
                         ps.setDouble(cursor++, v);
                     }
