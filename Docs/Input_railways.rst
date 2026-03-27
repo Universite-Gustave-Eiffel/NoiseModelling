@@ -36,20 +36,20 @@ Table definition
 	* Description: Maximum speed on the section *(in km/h)*
 	* Type: Double
 * ``TRANSFER``
-	* Description: Track transfer function identifier
-		* ``1`` = Mono-bloc sleeper on soft rail pad
-		* ``2`` = Mono-bloc sleeper on medium rail pad
-		* ``3`` = Mono-bloc sleeper on stiff rail pad
-		* ``4`` = Bi-bloc sleeper on soft rail pad
-		* ``5`` = Bi-bloc sleeper on medium rail pad
-		* ``6`` = Bi-bloc sleeper on stiff rail pad
-		* ``7`` = Wooden sleeper (Traverse en bois)
-	* Type: Integer
+	* Description: Track transfer function identifier, listed in the `RailwayEmissionCnossos.json`_ file
+		* ``SNCF1`` = Mono-bloc sleeper on soft rail pad
+		* ``SNCF2`` = Mono-bloc sleeper on medium rail pad
+		* ``SNCF3`` = Mono-bloc sleeper on stiff rail pad
+		* ``SNCF4`` = Bi-bloc sleeper on soft rail pad
+		* ``SNCF5`` = Bi-bloc sleeper on medium rail pad
+		* ``SNCF6`` = Bi-bloc sleeper on stiff rail pad
+		* ``SNCF7`` = Wooden sleeper (Traverse en bois)
+	* Type: Varchar
 * ``ROUGHNESS``
-	* Description: Rail roughness identifier
-		* ``1`` = Classic lines
-		* ``2`` = TGV (for France) lines
-	* Type: Integer
+	* Description: Rail roughness identifier, listed in the `RailwayEmissionCnossos.json`_ file
+		* ``SNCF1`` = Classic lines
+		* ``SNCF2`` = TGV (for France) lines
+	* Type: Varchar
 * ``IMPACT``
 	* Description: Impact noise coefficient identifier
 		* ``0`` = No impact
@@ -98,7 +98,7 @@ Table definition
 	* Description: A section identifier, refering to ``RAIL_SECTIONS`` table
 	* Type: Integer
 * ``TRAINTYPE`` *
-	* Description: Type of vehicle, listed in the `Rail_Train_SNCF_2021.json`_ file *(mainly for french SNCF)*
+	* Description: Type of vehicle, listed in the `RailwayTrainsets.json`_ file *(mainly for french SNCF)*
 	* Type: Varchar
 * ``TRAINSPD`` *
 	* Description: Maximum train speed *(in km/h)*
@@ -114,5 +114,6 @@ Table definition
 	* Type: Integer
 
 
-.. _Rail_Train_SNCF_2021.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/4.X/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/Rail_Train_SNCF_2021.json
+.. _RailwayEmissionCnossos.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayEmissionCnossos.json
+.. _RailwayTrainsets.json : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/tree/main/noisemodelling-emission/src/main/resources/org/noise_planet/noisemodelling/emission/railway/RailwayTrainsets.json
 

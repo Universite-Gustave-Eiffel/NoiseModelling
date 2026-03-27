@@ -32,15 +32,15 @@ import org.noise_planet.noisemodelling.emission.railway.RailwayTrackParameters;
 
 public class RailwayTrackCnossosParameters extends RailwayTrackParameters {
     //set default value
-    private int trackTransfer;
-    private int railRoughness;
+    private String trackTransfer;
+    private String railRoughness;
     private int curvature;
-    private int impactNoise;
-    private int bridgeTransfert;
+    private String impactNoise;
+    private String bridgeTransfert;
     private String fileVersion = "FR"; // version of cnossos coefficient, if 2 == amendments 2019
 
-    public RailwayTrackCnossosParameters(double speedTrack, int trackTransfer, int railRoughness, int impactNoise,
-                                         int bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack) {
+    public RailwayTrackCnossosParameters(double speedTrack, String trackTransfer, String railRoughness, String impactNoise,
+                                         String bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack) {
 
         setSpeedTrack(speedTrack);
         setSpeedCommercial(speedCommercial);
@@ -64,35 +64,35 @@ public class RailwayTrackCnossosParameters extends RailwayTrackParameters {
     }
 
 
-    public int getTrackTransfer() {
+    public String getTrackTransfer() {
         return trackTransfer;
     }
 
-    public void setTrackTransfer(int trackTransfer) {
+    public void setTrackTransfer(String trackTransfer) {
         this.trackTransfer = trackTransfer;
     }
 
-    public int getRailRoughness() {
+    public String getRailRoughness() {
         return railRoughness;
     }
 
-    public void setRailRoughness(int railRoughness) {
+    public void setRailRoughness(String railRoughness) {
         this.railRoughness = railRoughness;
     }
 
-    public int getImpactNoise() {
+    public String getImpactNoise() {
         return impactNoise;
     }
 
-    public void setImpactNoise(int impactNoise) {
+    public void setImpactNoise(String impactNoise) {
         this.impactNoise = impactNoise;
     }
 
-    public int getBridgeTransfert() {
+    public String getBridgeTransfert() {
         return bridgeTransfert;
     }
 
-    public void setBridgeTransfert(int bridgeTransfert) {
+    public void setBridgeTransfert(String bridgeTransfert) {
         this.bridgeTransfert = bridgeTransfert;
     }
 

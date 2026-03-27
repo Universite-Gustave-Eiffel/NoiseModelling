@@ -70,7 +70,7 @@ public class TableLoaderTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json", "RailwayPlatforms.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN",RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON,RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
 
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
@@ -170,6 +170,46 @@ public class TableLoaderTest {
 
     }
 
+    /**
+     * Test with SNCF-prefixed string track parameter keys (VARCHAR columns)
+     * to validate that the merged RailwayEmissionCnossos.json works with properly prefixed keys
+     * read directly from the database (e.g. "SNCF7", "SNCF1").
+     */
+    @Test
+    public void testNoiseEmissionRailWay_OC5_SNCFPrefixed() throws SQLException, IOException {
+        // Import geometry from existing OC test data
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+
+        // Re-create RAILTRACK with VARCHAR columns for TRANSFER, ROUGHNESS, IMPACT, BRIDGE
+        // using SNCF-prefixed values matching the merged RailwayEmissionCnossos.json keys
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN TRANSFER");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN ROUGHNESS");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN IMPACT");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN BRIDGE");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN TRANSFER VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN ROUGHNESS VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN IMPACT VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN BRIDGE VARCHAR(20)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER='SNCF7', ROUGHNESS='SNCF1', IMPACT='', BRIDGE=''");
+
+        // Import train traffic data from existing OC test
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+
+        // Use the merged RailwayEmissionCnossos.json with SNCF-prefixed keys
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN");
+        RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        v.setNbTrack(2);
+        RailWayParameters railWayLW = v.getRailWayLW();
+        assertNotNull(railWayLW);
+        assertFalse(railWayLW.getRailwaySourceList().isEmpty(), "Railway source list should not be empty with SNCF-prefixed keys");
+        List<LineString> geometries = v.getRailWayLWGeometry();
+        assertNotNull(geometries);
+
+        v = railWayLWIterator.next();
+        assertFalse(railWayLWIterator.hasNext());
+    }
+
     @Test
     public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
@@ -177,9 +217,9 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
-        HashMap<String, double[]> Resultats = new HashMap<>();
+        HashMap<String, double[]> results = new HashMap<>();
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json", "RailwayPlatforms.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {
@@ -223,7 +263,7 @@ public class TableLoaderTest {
 
             String idSection = v.getIdSection();
 
-            Resultats.put(idSection,new double[]{resD, resE, resN});
+            results.put(idSection,new double[]{resD, resE, resN});
 
         }
     }
@@ -235,7 +275,7 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
 
-        HashMap<String, double[]> Resultats = new HashMap<>();
+        HashMap<String, double[]> results = new HashMap<>();
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAIL_SECTIONS", "RAIL_TRAFIC");
 
@@ -285,9 +325,13 @@ public class TableLoaderTest {
 
             String idSection = v.getIdSection();
 
-            Resultats.put(idSection,new double[]{resD, resE, resN});
+            results.put(idSection,new double[]{resD, resE, resN});
 
         }
+
+        // TODO check results
+
+
     }
 
 
