@@ -60,7 +60,7 @@ public class Railway {
      * @return the InputStream corresponding to the resource
      * @throws IOException if the resource cannot be found or accessed
      */
-    private static InputStream getStreamFromResourceString(String resource) throws IOException {
+    public static InputStream getStreamFromResourceString(String resource) throws IOException {
         if (UriUtils.isValidUri(resource)) {
             return UriUtils.openSafeStream(resource);
         } else {

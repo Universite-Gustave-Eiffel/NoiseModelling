@@ -110,13 +110,13 @@ public class RailwayPlatform {
 
     /**
      * Load platform definitions from a JSON resource file.
-     * The JSON is located next to the Railway class resources.
-     * @param fileName name of the JSON file (e.g. "RailwayPlatforms.json")
+     * The JSON is located next to the Railway class resources, or if the filename is an URL, it is opened.
+     * @param fileName name of the JSON file (e.g. "RailwayPlatforms.json") or JSON url (e.g. "file:///path/to/RailwayPlatforms.json")
      * @return map of platform name to RailwayPlatform
      */
     public static Map<String, RailwayPlatform> loadFromJSON(String fileName) {
         Map<String, RailwayPlatform> platforms = new HashMap<>();
-        try (InputStream is = Railway.class.getResourceAsStream(fileName)) {
+        try (InputStream is = Railway.getStreamFromResourceString(fileName)) {
             if (is == null) {
                 return platforms;
             }
