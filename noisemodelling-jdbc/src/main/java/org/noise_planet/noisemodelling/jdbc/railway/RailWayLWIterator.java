@@ -53,14 +53,7 @@ public class RailWayLWIterator implements Iterator<RailWayLWGeom> {
      * @param tableTrainTraffic Train traffic associated with tracks
      */
     public RailWayLWIterator(Connection connection, String tableTrackGeometry, String tableTrainTraffic) throws IOException {
-        this.railway.setVehicleDataFile(RAILWAY_VEHICLES_CNOSSOS_JSON);
-        this.railway.setTrainSetDataFile(RAILWAY_TRAINSETS_JSON);
-        this.railway.setRailwayDataFile(RAILWAY_EMISSION_CNOSSOS_JSON);
-        this.setPlatformDataFile(RAILWAY_PLATFORMS_JSON);
-        this.connection = connection;
-        this.tableTrackGeometry = tableTrackGeometry;
-        this.tableTrainTraffic = tableTrainTraffic;
-        railWayLWComplete = fetchNext(railWayLWIncomplete);
+        this(connection, tableTrackGeometry, tableTrainTraffic, RAILWAY_VEHICLES_CNOSSOS_JSON, RAILWAY_TRAINSETS_JSON, RAILWAY_EMISSION_CNOSSOS_JSON, RAILWAY_PLATFORMS_JSON);
     }
 
     /**

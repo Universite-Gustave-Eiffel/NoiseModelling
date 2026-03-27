@@ -17,9 +17,6 @@ import org.noise_planet.noisemodelling.emission.utils.UriUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -90,6 +87,15 @@ public class Railway {
         try (InputStream stream = getStreamFromResourceString(railwayResource)) {
             this.railWayData = parse(stream);
         }
+    }
+
+    public JsonNode fetchNode(JsonNode node, String key) {
+        JsonNode result = node.get(key);
+        if(result == null) {
+            throw new IllegalArgumentException(String.format("Key '%s' not found, must be one of:\n -%s", key,
+                    String.join("\n -", iteratorToIterable(node.fieldNames()))));
+        }
+        return result;
     }
 
     public JsonNode getVehicleNode(String typeVehicle) {

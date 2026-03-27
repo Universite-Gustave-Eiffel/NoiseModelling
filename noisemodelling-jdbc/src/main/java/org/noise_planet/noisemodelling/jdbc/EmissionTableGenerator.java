@@ -242,6 +242,20 @@ public class EmissionTableGenerator {
         return slope;
     }
 
+
+    /**
+     * Generate Train emission from train geometry tracks and train traffic
+     * @param connection Database connection
+     * @param railSectionTableName Table name of rail sections
+     * @param railTrafficTableName Table name of rail traffic
+     * @param outputTable Output table name
+     * @param frequencyPrepend Prepend to frequency columns (e.g. "HZ_")
+     * @throws SQLException       If an error occurs while accessing the database or executing queries.
+     */
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend) throws SQLException {
+        makeTrainLWTable(connection, railSectionTableName, railTrafficTableName, outputTable, frequencyPrepend, RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
+    }
+
     /**
      * Generate Train emission from train geometry tracks and train traffic
      * @param connection Database connection
@@ -252,9 +266,10 @@ public class EmissionTableGenerator {
      * @param vehicleDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for vehicle data configuration.
      * @param trainSetDataFile    File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for train set data configuration.
      * @param railwayEmissionDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for railway metadata configuration.
+     * @param platformDataFile     File path Url or resource filename (from org.noise_planet.noisemodelling.emission.railway package) for platform data configuration.
      * @throws SQLException If error occurred
      */
-    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile) throws SQLException {
+    public static void makeTrainLWTable(Connection connection, String railSectionTableName, String railTrafficTableName, String outputTable, String frequencyPrepend, String vehicleDataFile, String trainSetDataFile, String railwayEmissionDataFile, String platformDataFile) throws SQLException {
 
         // drop table LW_RAILWAY if exists and the create and prepare the table
         connection.createStatement().execute("drop table if exists " + outputTable);
@@ -299,7 +314,8 @@ public class EmissionTableGenerator {
         // Get Class to compute HZ
         RailWayLWIterator railWayLWIterator;
         try {
-            railWayLWIterator = new RailWayLWIterator(connection,railSectionTableName, railTrafficTableName, vehicleDataFile, trainSetDataFile, railwayEmissionDataFile);
+            railWayLWIterator = new RailWayLWIterator(connection, railSectionTableName, railTrafficTableName,
+                    vehicleDataFile, trainSetDataFile, railwayEmissionDataFile, platformDataFile);
         } catch (IOException ex) {
             throw new SQLException(ex);
         }

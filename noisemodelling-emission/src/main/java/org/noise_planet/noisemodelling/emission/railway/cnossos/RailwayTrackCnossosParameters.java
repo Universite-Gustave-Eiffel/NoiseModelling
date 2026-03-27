@@ -37,7 +37,6 @@ public class RailwayTrackCnossosParameters extends RailwayTrackParameters {
     private int curvature;
     private String impactNoise;
     private String bridgeTransfert;
-    private String fileVersion = "FR"; // version of cnossos coefficient, if 2 == amendments 2019
 
     public RailwayTrackCnossosParameters(double speedTrack, String trackTransfer, String railRoughness, String impactNoise,
                                          String bridgeTransfert, int curvature, double speedCommercial, boolean isTunnel, int nTrack) {
@@ -53,16 +52,6 @@ public class RailwayTrackCnossosParameters extends RailwayTrackParameters {
         setBridgeTransfert(bridgeTransfert);
 
     }
-
-
-    public String getFileVersion() {
-        return this.fileVersion;
-    }
-
-    public void setFileVersion(String fileVersion) {
-        this.fileVersion = fileVersion;
-    }
-
 
     public String getTrackTransfer() {
         return trackTransfer;
