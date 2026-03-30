@@ -6,11 +6,15 @@ Java environment
 
 Since NoiseModelling is developped with the `Java langage`_, you will need to install the Java Runtime Environment (JRE) on your computer to use the application.
 
+NoiseModelling is available in two modes with different Java requirements:
+
+- **Console mode** (without GeoServer): requires Java >= 11. Any version of Java 11 or later is supported.
+- **Web interface mode** (with GeoServer): requires **exactly Java 11**. Using a different Java version will result in a non-functional web interface.
+
 .. warning::
-    **Only version 11.x of Java is compatible with NoiseModelling 4.x**. Unfortunatelay, former or newer versions are not compatible with NoiseModelling 4.x.
+    If you intend to use the **GeoServer-based web interface**, you must use **Java 11 only**. Newer versions of Java are not compatible with this mode.
 
 .. _Java langage : https://en.wikipedia.org/wiki/Java_(programming_language)
-
 
 
 
@@ -26,13 +30,13 @@ If you are not using the ``.exe`` file, you have to launch NoiseModelling thanks
 
 #. You can check if ``JAVA_HOME`` environnement variable is well settled to your last installed Java folder using ``echo %JAVA_HOME%``  in your command prompt. You should have a result similar to ``C:\\Program Files (x86)\\Java\\jre1.8.x_x\\``.
 
-#. If you don't have this result, it is probably because your ``JAVA_HOME`` environnement variable is not well settled. To set you ``JAVA_HOME`` environnement variable you can adapt (with ``x`` the JAVA version number) you installed and use the following command line : ``setx JAVA_HOME  "C:\\Program Files (x86)\\Java\\jre.1.8.x_x"`` in your command prompt. You can also refer to `this document`_ for example. 
+#. If you don't have this result, it is probably because your ``JAVA_HOME`` environnement variable is not well settled. To set you ``JAVA_HOME`` environnement variable you can adapt (with ``x`` the JAVA version number) you installed and use the following command line : ``setx JAVA_HOME  "C:\\Program Files (x86)\\Java\\jre.1.8.x_x"`` in your command prompt. You can also refer to `this document`_ for example.
 
 #. You may have to reboot your command prompt after using the precedent command line before printing again ``echo %JAVA_HOME%``.
 
 .. warning::
     The command promprt should print ``C:\\Program Files (x86)\\Java\\jre1.11.x_x\\`` whithout the bin directory. If ``JAVA_HOME`` is settled as ``C:\\Program Files (x86)\\Java\\jre1.11.x_x\\bin``, it will not work. It should also point to a JRE (Java Runtime Environment) Java environnement and not JDK.
-    
+
 .. _this document : https://confluence.atlassian.com/doc/setting-the-java_home-variable-in-windows-8895.html
 
 

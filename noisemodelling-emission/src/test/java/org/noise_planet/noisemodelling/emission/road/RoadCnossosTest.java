@@ -8,10 +8,12 @@
  */
 package org.noise_planet.noisemodelling.emission.road;
 
+import jdk.jshell.execution.Util;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.noise_planet.noisemodelling.emission.utils.Utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class RoadCnossosTest {
     private static final double EPSILON_TEST1 = 0.01;
     private static final int[] FREQUENCIES = new int[]{63, 125, 250, 500, 1000, 2000, 4000, 8000};
+    private static final double[] A_WEIGHTING = new double[]{-26.2, -16.1, -8.6, -3.2, 0.0, 1.2, 1.0, -1.1};
 
     /** based on CNOSSOS_Road_Output.csv and the CNOSSOS_DLL_CONSOLE.exe**/
     @Test
@@ -245,5 +248,37 @@ public class RoadCnossosTest {
             rsParameters.setFileVersion(1);
             assertThrows(IOException.class, () -> RoadCnossos.evaluate(rsParameters));
         }
+    }
+
+
+
+    @Test
+    public void TGlobalBP() throws IOException {
+        double lv_speed = 50;
+        int lv_per_hour = 3747;
+        double mv_speed = 50;
+        int mv_per_hour = 0;
+        double hgv_speed = 50;
+        int hgv_per_hour = 479;
+        double wav_speed = 50;
+        int wav_per_hour = 0;
+        double wbv_speed = 50;
+        int wbv_per_hour = 0;
+
+        double Temperature = 20;
+        String RoadSurface = "FR_R2";
+        double Pm_stud = 0;
+        double Ts_stud = 0;
+        double Junc_dist = 0;
+        int Junc_type = 0;
+        double globalLw = 0;
+        for(int i = 0; i < FREQUENCIES.length; i++){
+            RoadCnossosParameters rsParameters = new RoadCnossosParameters(lv_speed, mv_speed, hgv_speed, wav_speed, wbv_speed, lv_per_hour, mv_per_hour, hgv_per_hour, wav_per_hour, wbv_per_hour, FREQUENCIES[i], Temperature, RoadSurface, Ts_stud, Pm_stud, Junc_dist, Junc_type);
+            rsParameters.setFileVersion(1);
+            rsParameters.setWay(3);
+            double lw = RoadCnossos.evaluate(rsParameters);
+            globalLw += Utils.dbToW(A_WEIGHTING[i]+lw);
+        }
+        assertEquals(89.6, Utils.wToDba(globalLw), 0.1);
     }
 }

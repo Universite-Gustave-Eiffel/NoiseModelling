@@ -35,7 +35,7 @@ public class RoadCnossosParameters {
 
 
     private double Junc_dist = 250; // Distance to junction
-    private int Junc_type; // Junction type (k=1 traffic lights, k=2 roundabout)
+    private int Junc_type; // Junction type (k=0 None, k=1 traffic lights, k=2 roundabout)
 
     private double slopePercentage = 0; // slope s (in %), In the case of a bi-directional traffic flow, it is necessary to split the flow into two components and correct half for uphill and half for downhill.
     private int way = 1; // 1 = direct, 2 = inverse, 3 = double
