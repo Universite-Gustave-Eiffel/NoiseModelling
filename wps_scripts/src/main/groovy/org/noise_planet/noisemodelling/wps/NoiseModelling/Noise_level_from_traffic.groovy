@@ -498,11 +498,6 @@ def exec(Connection connection, Map input) {
     if (input['frequencyFieldPrepend']) {
         frequencyFieldPrepend = input['frequencyFieldPrepend'] as String
     }
-    int coefficientVersion =2
-    if (input['coefficientVersion']) {
-        coefficientVersion = Integer.valueOf(input['coefficientVersion'] as String)
-    }
-
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
