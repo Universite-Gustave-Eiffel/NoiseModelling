@@ -59,6 +59,12 @@ public class Scene {
     public int reflexionOrder = 1;
 
     public double defaultGroundAttenuation = 0;
+    /**
+     * dictates the density of source points created from a line sound source;
+     *      a higher value means more points and finer discretization
+     *      sourcePointDistance = DistanceSourceReceiver / lineSourceSpacingRatio
+     */
+    public double lineSourceSpacingRatio = 2;
 
     public Scene() {
         this.profileBuilder = new ProfileBuilder();

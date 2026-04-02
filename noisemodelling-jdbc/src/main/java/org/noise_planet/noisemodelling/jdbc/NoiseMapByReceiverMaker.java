@@ -164,6 +164,13 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
+     * @return Factory to create an output data handler for each cell the default is {@link DefaultCutPlaneProcessing}
+     */
+    public IComputeRaysOutFactory getComputeRaysOutFactory() {
+        return computeRaysOutFactory;
+    }
+
+    /**
      * Do not call this method after {@link #initialize(Connection)} has been called
      * @param tableLoader Object that generate scene for each sub-cell using database data
      */

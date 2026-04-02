@@ -26,6 +26,8 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -41,8 +43,11 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * Test class evaluation and testing attenuation values.
  */
 public class SceneWithEmissionTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SceneWithEmissionTest.class);
     private static final double HUMIDITY = 70;
     private static final double TEMPERATURE = 10;
+    public boolean verbose = false;
+
     private List<Long> testIgnoreNonSignificantSourcesParam(Connection connection, double maxError) throws SQLException, IOException {
         return testIgnoreNonSignificantSourcesParam(connection, maxError, "BUILDINGS",
                 "LW_ROADS", "RECEIVERS", "");
@@ -356,5 +361,107 @@ public class SceneWithEmissionTest {
                 0.1);
     }
 
+    /**
+     * Comparison: line source (500 m) and 0.1 dB error simplification vs discretized point sources (1 m spacing) without error.
+     * Free-field, no buildings, no ground effects (fully reflective), flat spectrum.
+     * The difference at each receiver should be less than the maximum error parameter per frequency band.
+     */
+    @Test
+    public void testLongLineSourceVsDiscretePointsMaximumError() throws ParseException {
+        double maxError = 0.1;
+        GeometryFactory factory = new GeometryFactory();
+
+        // 500 m horizontal line source at height 0.05 m
+        double cx = 250.0;
+        double cy = 0.0;
+        double halfLen = 250.0;
+        double x1 = cx - halfLen;
+        double x2 = cx + halfLen;
+
+        WKTReader wktReader = new WKTReader(factory);
+        LineString lineSource = (LineString) wktReader.read(
+                "LINESTRING (" + x1 + " " + cy + " 0.05, " + x2 + " " + cy + " 0.05)");
+
+        // Free-field: no buildings, no ground effect
+        ProfileBuilder builder = new ProfileBuilder();
+        builder.finishFeeding();
+
+        double lwOctDb = 73.037;
+        double[] roadLvl = new double[8];
+        for (int i = 0; i < 8; i++) {
+            roadLvl[i] = AcousticIndicatorsFunctions.dBToW(lwOctDb);
+        }
+
+        // Receivers at various distances and angles from mid-point of the line
+        // Angles relative to the line direction: 0° = along line, 45° = diagonal, 90° = perpendicular
+        double[] receiverDistances = {10, 50, 100, 200, 400};
+        double[] receiverAngles = {0, 45, 90}; // degrees
+
+        // === RUN 1: Discretized point sources at 1 m spacing ===
+        SceneWithEmission scene = new SceneWithEmission(builder);
+        List<String> receiverLabels = new ArrayList<>();
+        for (double angleDeg : receiverAngles) {
+            double angleRad = Math.toRadians(angleDeg);
+            for (double dist : receiverDistances) {
+                double rx = cx + dist * Math.cos(angleRad);
+                double ry = cy + dist * Math.sin(angleRad);
+                scene.addReceiver(new Coordinate(rx, ry, 4.0));
+                receiverLabels.add(String.format("d=%dm, angle=%d°", (int) dist, (int) angleDeg));
+            }
+        }
+
+        List<Coordinate> srcPts = new ArrayList<>();
+        PathFinder.splitLineStringIntoPoints(lineSource, 1.0, srcPts);
+        for (int i = 0; i < srcPts.size(); i++) {
+            scene.addSource((long) i, factory.createPoint(srcPts.get(i)));
+            scene.addSourceEmission((long) i, "", roadLvl);
+        }
+
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+        scene.setReflexionOrder(0);
+        scene.maxSrcDist = 800;
+
+        scene.defaultCnossosParameters.setHumidity(70);
+        scene.defaultCnossosParameters.setTemperature(15);
+
+        AttenuationOutputMultiThread outPoints = new AttenuationOutputMultiThread(scene);
+        outPoints.noiseMapDatabaseParameters.setMaximumError(0);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+        computeRays.run(outPoints);
+
+        // === RUN 2: Single line source ===
+        scene.clearSources();
+        scene.addSource(1L, lineSource);
+        scene.addSourceEmission(1L, "", roadLvl);
+        AttenuationOutputMultiThread outLine = new AttenuationOutputMultiThread(scene);
+        outLine.noiseMapDatabaseParameters.setMaximumError(maxError);
+        computeRays.run(outLine);
+
+        // === Compare results ===
+        List<ReceiverNoiseLevel> pointLevels = new ArrayList<>(outPoints.resultsCache.receiverLevels);
+        List<ReceiverNoiseLevel> lineLevels = new ArrayList<>(outLine.resultsCache.receiverLevels);
+
+        int expectedCount = receiverDistances.length * receiverAngles.length;
+        assertEquals(expectedCount, pointLevels.size(),
+                "Expected one result per receiver (points)");
+        assertEquals(expectedCount, lineLevels.size(),
+                "Expected one result per receiver (line)");
+
+        for (int i = 0; i < pointLevels.size(); i++) {
+            double globalPoints = AcousticIndicatorsFunctions.sumDbArray(pointLevels.get(i).levels);
+            double globalLine   = AcousticIndicatorsFunctions.sumDbArray(lineLevels.get(i).levels);
+            double diff = Math.abs(globalPoints - globalLine);
+            if(verbose) {
+                LOGGER.info("Receiver {} ({}): points={} dB, line={} dB, diff={} dB", i, receiverLabels.get(i),
+                        String.format("%.2f", globalPoints), String.format("%.2f", globalLine), String.format("%.2f",
+                                diff));
+            }
+            assertTrue(diff < maxError,
+                    "Difference between line and point sources at receiver " + i +
+                            " (" + receiverLabels.get(i) + ") is " + String.format("%.2f dB, expected < %.2f dB", diff, maxError));
+        }
+    }
 }
 

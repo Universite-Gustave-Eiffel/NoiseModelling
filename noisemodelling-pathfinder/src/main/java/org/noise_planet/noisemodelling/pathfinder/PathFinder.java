@@ -801,7 +801,7 @@ public class PathFinder {
             // Return mid point
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0;
-            final double targetSegmentSize = geomLength / 2.0;
+            final double targetSegmentSize = geomLength / 2.0; // take middle point
             for (int i = 0; i < points.length - 1; i++) {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
@@ -818,7 +818,7 @@ public class PathFinder {
             }
             return geom.getLength();
         } else {
-            double targetSegmentSize = geomLength / ceil(geomLength / segmentSizeConstraint);
+            double targetSegmentSize = Math.max(1, geomLength / ceil(geomLength / segmentSizeConstraint));
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0.;
 
@@ -879,9 +879,9 @@ public class PathFinder {
     private void addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<SourcePointInfo> sourceList) {
         ArrayList<Coordinate> pts = new ArrayList<>();
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
-        double segmentSizeConstraint = max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        double segmentSizeConstraint = max(1, receiverCoord.distance3D(nearestPoint) / this.data.lineSourceSpacingRatio);
         if (isNaN(segmentSizeConstraint)) {
-            segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / 2.0);
+            segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
