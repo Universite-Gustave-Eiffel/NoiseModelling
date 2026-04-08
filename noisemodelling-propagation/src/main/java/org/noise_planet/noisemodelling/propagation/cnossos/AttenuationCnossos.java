@@ -182,10 +182,10 @@ public class AttenuationCnossos {
 
         if (pathParameters.isFavourable()) {
             // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
-            if (segmentPath.testFormF <= 1) {
+            if (segmentPath.testFormH <= 1) {
                 aGroundMin = -3 * (1 - segmentPath.gm);
             } else {
-                aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
+                aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormH)));
             }
         } else {
             aGroundMin = -3;
@@ -231,7 +231,8 @@ public class AttenuationCnossos {
      */
     private static boolean isValidRcrit(CnossosPath pp, int freq) {
         double lambda = 340.0/freq;
-        return pp.delta > -lambda / 20 && pp.delta > lambda / 4 - pp.deltaPrime || pp.delta > 0;
+        // Eq 2.5.21: if delta >= 0, diffraction always applies; Rayleigh criterion only for delta < 0
+        return pp.delta >= 0 || (pp.delta > -lambda / 20 && pp.delta > lambda / 4 - pp.deltaPrime);
     }
 
     /**
@@ -378,14 +379,11 @@ public class AttenuationCnossos {
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
         double _delta = proPathParameters.delta;
-        double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime +
-                proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size() - 1).dPrime -
-                proPathParameters.getSRSegment().dPrime);
 
         double deltaDiffSR = 0;
         double testForm = 40 / lambda * cSecond * _delta;
 
-        if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
+        if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - proPathParameters.deltaPrime)) {
             deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
         } else if(type.equals(DIFH)) {
             return 0;

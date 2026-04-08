@@ -42,6 +42,11 @@ public class CnossosPathBuilder {
         CutPoint srcCut = cutProfile.getSource();
         CutPoint rcvCut = cutProfile.getReceiver();
         for (int i0Cut = 1; i0Cut < cuts.size() - 1; i0Cut++) {
+            // Skip reflection points — they are not terrain obstacles and should not
+            // create Rayleigh diffraction points
+            if(cuts.get(i0Cut) instanceof CutPointReflection) {
+                continue;
+            }
             int iO = cut2DGroundIndex.get(i0Cut);
             Coordinate o = pts2DGround[iO];
 
