@@ -806,6 +806,9 @@ public class PathFinder {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
                 double length = a.distance3D(b);
+                if(Double.isNaN(length)) {
+                    length = a.distance(b);
+                }
                 if (length + segmentLength > targetSegmentSize) {
                     double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                     Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),

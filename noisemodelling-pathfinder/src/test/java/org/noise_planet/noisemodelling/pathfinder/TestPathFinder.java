@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 
+import org.h2gis.functions.spatial.linear_referencing.ST_LineInterpolatePoint;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
@@ -20,6 +21,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -89,6 +91,31 @@ public class TestPathFinder {
         assertEquals(2, sourcePoints.size());
         assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
         assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
+    }
+
+    @Test
+    public void TestSplitLineSourceIntoPointsRegression() throws ParseException, SQLException {
+        WKTReader wktReader = new WKTReader();
+        LineString lineSource = (LineString) wktReader.read("LINESTRING (171698.4427670392 177701.00951635558, 171706.8669046766 " +
+                "177687.91784651205, 171712.97191399403 177677.7644841401, 171720.4437829301 177663.66767532472, " +
+                "171728.96676823843 177647.13902381528, 171734.72943947717 177634.77051055804, 171739.0868822124 " +
+                "177625.43309380766, 171745.47147686878 177610.67544839345, 171753.22554062092 177591.36253726296, " +
+                "171759.58780549894 177571.8658362897, 171769.10714508523 177535.77365270816, 171772.756902288 177519" +
+                ".09122776985, 171776.23273920204 177500.27220100444, 171778.51597507883 177485.76444646623, 171780" +
+                ".4296797503 177467.1168851778, 171781.83025393772 177445.0297520226, 171789.99859531887 177262" +
+                ".8134907158, 171791.8784187642 177220.3374281656, 171793.76627182262 177175.94801528286, 171794" +
+                ".85835770285 177143.55845900718, 171796.33670644296 177099.5455712648, 171804.84062152542 176921" +
+                ".4135355642, 171805.81436789143 176907.24518988002, 171807.89555734128 176888.98771900777, 171813" +
+                ".93869655454 176851.86881521158, 171816.43073227373 176841.3444906231, 171819.2233892781 176829" +
+                ".58662367053, 171826.7446807982 176804.04324781243, 171836.06368822214 176775.90431953594, 171841" +
+                ".44715023096 176760.3082989417, 171842.8699331516 176756.52086056024, 171846.55237681692 176747" +
+                ".3253388824)");
+        List<Coordinate> sourcePoints = new ArrayList<>();
+        splitLineStringIntoPoints(lineSource, 1550.50, sourcePoints);
+        assertEquals(1, sourcePoints.size());
+        // Check if the point is the middle point of the line
+        Coordinate expectedPoint = ST_LineInterpolatePoint.execute(lineSource, 0.5).getCoordinate();
+        assertEquals(0, expectedPoint.distance(sourcePoints.get(0)), 1e-6);
     }
 
     @Test
