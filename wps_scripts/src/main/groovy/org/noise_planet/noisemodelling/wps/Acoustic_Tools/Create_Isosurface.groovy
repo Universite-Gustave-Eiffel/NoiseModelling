@@ -138,20 +138,13 @@ def exec(Connection connection, Map input) {
 
     if(input.containsKey("keepTriangles")) {
       isoSurface.setMergeTriangles(!(input['keepTriangles'] as Boolean))
-    }    
-
-    if (input.containsKey("smoothCoefficient")) {
-        double coefficient = input['smoothCoefficient'] as Double
-        if (coefficient < 0.01) {
-            isoSurface.setSmooth(false)
-        } else {
-            isoSurface.setSmooth(true)
-            isoSurface.setSmoothCoefficient(coefficient)
-        }
     }
-    else {
+    double coefficient = input.getOrDefault("smoothCoefficient", 0.5) as Double
+    if(coefficient < 0.01) {
+        isoSurface.setSmooth(false)
+    } else {
         isoSurface.setSmooth(true)
-        isoSurface.setSmoothCoefficient(0.5)
+        isoSurface.setSmoothCoefficient(coefficient)
     }
 
     isoSurface.createTable(connection, "IDRECEIVER")

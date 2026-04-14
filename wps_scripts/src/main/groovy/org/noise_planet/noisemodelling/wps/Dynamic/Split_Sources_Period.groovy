@@ -21,6 +21,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -132,7 +133,7 @@ def exec(Connection connection, Map input) {
     }
 
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableSourceDynamic, dbType))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+tableSourceDynamic+".")
+    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+tableSourceDynamic+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+tableSourceDynamic+" does not have an associated SRID.")
 
     def columnNames = JDBCUtilities.getColumnNames(connection, tableSourceDynamic)

@@ -104,7 +104,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -141,14 +141,10 @@ def exec(Connection connection, input) {
     }
 
 
-    double scaleMinimum = -35
-    if (input['confScaleMinimum']) {
-        scaleMinimum = input['confScaleMinimum'] as Double
-    }
-    double scaleMaximum = 0
-    if (input['confScaleMaximum']) {
-        scaleMaximum = input['confScaleMaximum'] as Double
-    }
+    double scaleMinimum = input.getOrDefault("confScaleMinimum",-35) as Double
+
+    double scaleMaximum = input.getOrDefault("confScaleMaximum",0) as Double
+
     directionAttributes = directivityData.get(directivityIndex)
     PolarGraphDirectivity polarGraphDirectivity = new PolarGraphDirectivity()
     StringBuilder sb = new StringBuilder()

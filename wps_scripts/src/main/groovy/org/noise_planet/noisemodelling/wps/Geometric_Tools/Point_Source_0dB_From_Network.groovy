@@ -83,7 +83,7 @@ def run(input) {
 }
 
 
-def exec(connection, input) {
+def exec(connection,Map input) {
 
     double h = 0.05 // height of the source (0.05 m)
 
@@ -97,14 +97,9 @@ def exec(connection, input) {
     logger.info('Start : Create_0db_Source_From_Roads')
     logger.info("inputs {}", input)
 
-    int gridStep = 10
-    if (input['gridStep']) {
-        gridStep = Integer.valueOf(input['gridStep'] as String)
-    }
-
+    int gridStep = input.getOrDefault("gridStep",10) as Integer
 
     String roadsTableName = input['tableRoads']
-
 
 
     sql.execute("DROP TABLE IF EXISTS SOURCES_0dB")

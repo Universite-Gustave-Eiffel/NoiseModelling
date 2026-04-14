@@ -30,6 +30,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 
 import java.security.InvalidParameterException
 import java.sql.Connection
@@ -139,20 +140,11 @@ def exec(Connection connection, input) {
     // Get every inputs
     // -------------------
 
-    int duration = 60
-    if (input['duration']) {
-        duration = Integer.valueOf(input['duration'] as String)
-    }
+    int duration = input.getOrDefault("duration", 60) as Integer
 
-    int timestep = 1
-    if (input['timestep']) {
-        timestep = Integer.valueOf(input['timestep'] as String)
-    }
+    int timestep = input.getOrDefault("timestep", 1) as Integer
 
-    int gridStep = 10
-    if (input['gridStep']) {
-        gridStep = Integer.valueOf(input['gridStep'] as String)
-    }
+    int gridStep = input.getOrDefault("gridStep", 10) as Integer
 
     int nIterations = (int) Math.round(duration/timestep);
 
@@ -166,7 +158,7 @@ def exec(Connection connection, input) {
     sources_table_name = sources_table_name.toUpperCase()
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
+    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
     System.out.println('Start  time : ' + TimeCategory.minus(new Date(), start))

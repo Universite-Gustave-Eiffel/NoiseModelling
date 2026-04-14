@@ -24,6 +24,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -146,7 +147,7 @@ def exec(Connection connection, input) {
     sources_geom_table_name = sources_geom_table_name.toUpperCase()
 
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_geom_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_geom_table_name+".")
+    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_geom_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_geom_table_name+" does not have an associated spatial reference system. (missing prj file on import ?)")
 
     String sources_table_traffic_name = input['tableRailwayTraffic'] as String

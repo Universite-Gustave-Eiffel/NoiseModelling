@@ -129,7 +129,7 @@ def run(input) {
 }
 
 
-def exec(Connection connection, input) {
+def exec(Connection connection,Map input) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -150,10 +150,7 @@ def exec(Connection connection, input) {
         nReceivers = input['nReceivers'] as Integer
     }
 
-    Double h = 4.0d
-    if (input['height']) {
-        h = input['height'] as Double
-    }
+    double h = input.getOrDefault("height",4.0d) as Double
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {

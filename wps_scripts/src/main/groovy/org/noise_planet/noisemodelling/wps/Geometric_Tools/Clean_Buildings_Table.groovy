@@ -25,6 +25,7 @@ import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -111,7 +112,7 @@ def exec(Connection connection, input) {
 
     //get SRID of the table
     int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-    if (srid == 3785 || srid == 4326) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
+    if (!DataBaseUtilities.isSridMetric(connection, srid)) throw new IllegalArgumentException("Error : This SRID is not metric. Please use another SRID for your table.")
     if (srid == 0) throw new IllegalArgumentException("Error : The table does not have an associated SRID.")
 
 

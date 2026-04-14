@@ -5580,10 +5580,6 @@ public class AttenuationComputeOutputCnossosTest {
 
     /**
      * TC27 – Road source with influence of retrodiffraction
-     * Remaining ~0.07 dB gap at 4 kHz on ABoundaryF (reflection path) is due to Rayleigh criterion
-     * sensitivity at the boundary. The favourable reflection path has delta = -0.006, just below the
-     * -lambda/20 threshold at 4 kHz, causing Rcrit to fail and ABoundary to fall back to Aground
-     * instead of ADiff. A 1.8 mm difference in the curved-ray path length flips the criterion.
      * */
     @Test
     public void TC27() throws IOException {

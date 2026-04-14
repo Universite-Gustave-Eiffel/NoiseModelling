@@ -77,6 +77,22 @@ inputs = [
                 max        : 1,
                 type       : Integer.class
         ],
+        timeBinMin : [
+                name       : 'The minimum of time bins in seconds.',
+                title      : 'The minimum of time bins in seconds.',
+                min        : 0,
+                max        : 1,
+                description: 'The minimum of time bins in seconds, default value: 0',
+                type       : Integer.class
+        ],
+        timeBinMax : [
+                name       : 'The maximum of time bins in seconds.',
+                title      : 'The maximum of time bins in seconds.',
+                min        : 0,
+                max        : 1,
+                description: 'The maximum of time bins in seconds, default value: 86400 ',
+                type       : Integer.class
+        ],
         populationFactor : [
                 name       : 'Population Factor',
                 title      : 'Population Factor',
@@ -85,7 +101,7 @@ inputs = [
                         '<br/>Default: 1.0',
                 min        : 0,
                 max        : 1,
-                type       : String.class
+                type       : Double.class
         ],
         link2GeometryFile: [
                 name       : 'Network CSV file',
@@ -176,7 +192,7 @@ def run(input) {
 
 // main function of the script
 @CompileStatic
-static def exec(Connection connection, input) {
+static def exec(Connection connection, Map input) {
 
     connection = new ConnectionWrapper(connection)
     Sql sql = new Sql(connection)
@@ -202,18 +218,10 @@ static def exec(Connection connection, input) {
         link2GeometryFile = input["link2GeometryFile"]
     }
 
-    int timeBinSize = 3600;
-    if (input["timeBinSize"]) {
-        timeBinSize = input["timeBinSize"] as int
-    }
-    int timeBinMin = 0;
-    if (input["timeBinMin"]) {
-        timeBinMin = input["timeBinMin"] as int
-    }
-    int timeBinMax = 86400;
-    if (input["timeBinMax"]) {
-        timeBinMax = input["timeBinMax"] as int
-    }
+    int timeBinSize = input.getOrDefault("timeBinSize",3600) as Integer
+    int timeBinMin = input.getOrDefault("timeBinMin",0) as Integer
+    int timeBinMax = input.getOrDefault("timeBinMax",86400) as Integer
+
 
     String SRID = "4326"
     if (input['SRID']) {
@@ -235,10 +243,7 @@ static def exec(Connection connection, input) {
         exportTraffic = input["exportTraffic"] as boolean
     }
 
-    double populationFactor = 1.0
-    if (input["populationFactor"]) {
-        populationFactor = input["populationFactor"] as double
-    }
+    double populationFactor = input.getOrDefault("populationFactor",1.0) as Double
 
     File f
     String eventFile = folder + "/output_events.xml.gz"

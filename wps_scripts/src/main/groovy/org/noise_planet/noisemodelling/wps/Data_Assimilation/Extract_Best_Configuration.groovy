@@ -45,7 +45,7 @@ inputs = [
         tempToleranceThreshold: [
                 name: 'temperature tolerance threshold ',
                 title: 'temperature tolerance threshold ',
-                description: 'temperature tolerance threshold pour extraire la best configuration',
+                description: 'temperature tolerance threshold to extract the best configuration',
                 type: Double.class
         ]
 ]

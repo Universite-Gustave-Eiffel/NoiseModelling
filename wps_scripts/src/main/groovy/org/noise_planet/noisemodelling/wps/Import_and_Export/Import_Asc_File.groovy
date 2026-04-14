@@ -108,7 +108,7 @@ def run(input) {
     }
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection,Map input) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -128,11 +128,7 @@ def exec(Connection connection, input) {
         defaultSRID = input['inputSRID'] as Integer
     }
 
-    Integer downscale = 1
-    if (input['downscale']) {
-        downscale = Math.max(1, input['downscale'] as Integer)
-    }
-
+    Integer downscale =Math.max(1, input.getOrDefault("downscale",1) as Integer)
     String fence = null
     if (input['fence']) {
         fence = (String) input['fence']

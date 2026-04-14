@@ -237,10 +237,7 @@ def exec(Connection connection, input) {
     String railWidth = input["railWidth"]
 
     // Initialize rail platform height. Default value is 0.5m
-    double hRail = 0.5
-    if ('hRail' in input) {
-        hRail = input["hRail"] as double
-    }
+    double hRail = input.getOrDefault("hRail",0.5) as Double
 
     // If no SRID provided, the one from DEM layer is applied
     Integer srid = 0

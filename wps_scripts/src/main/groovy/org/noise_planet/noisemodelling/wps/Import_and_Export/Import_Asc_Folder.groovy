@@ -117,10 +117,8 @@ def exec(Connection connection, input) {
         defaultSRID = input['inputSRID'] as Integer
     }
 
-    Integer downscale = 1
-    if (input['downscale']) {
-        downscale = Math.max(1, input['downscale'] as Integer)
-    }
+
+    Integer downscale =Math.max(1, input.getOrDefault("downscale",1) as Integer)
 
     // Get path of the folder
     String folder = input["pathFolder"] as String

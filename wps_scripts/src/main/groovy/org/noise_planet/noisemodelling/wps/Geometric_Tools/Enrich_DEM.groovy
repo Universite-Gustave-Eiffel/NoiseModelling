@@ -113,7 +113,7 @@ inputs = [
                 description: 'Roads platform height (in meters) (Optionnal) </br> </br>'+
                              '&#128736; Default value = <b>0</b>',
                 min        : 0, max: 1,
-                type       : double.class
+                type       : Double.class
         ],
         inputRail : [
                 name       : 'Input Railways',
@@ -218,7 +218,7 @@ def run(input) {
 
 
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
 
     //------------------------------------------------------
@@ -279,16 +279,10 @@ def exec(Connection connection, input) {
     String roadWidth = input["roadWidth"]
 
     // Initialize rail platform height. Default value is 0.5m
-    double hRail = 0.5
-    if ('hRail' in input) {
-        hRail = input["hRail"] as double
-    }
+    double hRail = input.getOrDefault("hRail",0.5) as Double
 
     // Initialize road platform height. Default value is 0m
-    double hRoad = 0
-    if ('hRoad' in input) {
-        hRoad = input["hRoad"] as double
-    }
+    double hRoad = input.getOrDefault("hRoad",0.0) as Double
 
     // If no SRID provided, the one from DEM layer is applied
     Integer srid = 0

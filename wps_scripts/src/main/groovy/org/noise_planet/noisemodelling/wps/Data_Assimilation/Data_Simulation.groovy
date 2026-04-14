@@ -37,6 +37,7 @@ inputs = [
                 name: 'Number of map ',
                 title: 'Number of map',
                 description: 'The optional parameter limits the number of maps to be generated',
+                min        : 0, max: 1,
                 type: Integer.class
         ]
 ]

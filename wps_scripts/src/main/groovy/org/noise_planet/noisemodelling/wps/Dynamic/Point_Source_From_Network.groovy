@@ -101,15 +101,9 @@ def exec(connection, Map input) {
     logger.info('Start : Point_Source_From_Network.groovy')
     logger.info("inputs {}", input)
 
-    int gridStep = 10 // 10 meters is the default value
-    if (input['gridStep']) {
-        gridStep = Integer.valueOf(input['gridStep'] as String)
-    }
+    int gridStep = input.getOrDefault("gridStep", 10) as Integer // 10 meters is the default value
 
-    double h =  0.05 // height of the source (0.05 m) for road traffic
-    if (input['height']) {
-        h = input['height'] as Double
-    }
+    double h = input.getOrDefault("height", 0.05) as Double // height of the source (0.05 m) for road traffic
 
     String roadsTableName = input['tableNetwork']
 

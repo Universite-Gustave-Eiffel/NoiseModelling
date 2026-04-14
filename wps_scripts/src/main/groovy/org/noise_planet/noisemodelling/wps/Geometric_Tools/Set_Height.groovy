@@ -88,7 +88,7 @@ static Connection openGeoserverDataStoreConnection(String dbName) {
     return jdbcDataStore.getDataSource().getConnection()
 }
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user
     String resultString = ""
@@ -107,7 +107,7 @@ def exec(Connection connection, input) {
     table_name = table_name.toUpperCase()
     String geometryColumnName = GeometryTableUtilities.getGeometryColumnNames(connection, table_name).get(0)
 
-    if(input['height']){
+    if(input.containsKey('height')){
         Double h = input['height'] as Double
         GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
         metaData.setHasZ(true)
@@ -120,7 +120,7 @@ def exec(Connection connection, input) {
         logger.info('End : Set new height')
 
         return resultString
-    } else if(input['heightColumn']){
+    } else if(input.containsKey('heightColumn')){
         def st = connection.createStatement()
         String height_column = input['heightColumn'] as String
         height_column = st.enquoteIdentifier(height_column, false)

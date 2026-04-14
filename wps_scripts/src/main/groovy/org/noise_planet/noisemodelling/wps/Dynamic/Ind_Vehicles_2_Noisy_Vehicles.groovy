@@ -32,6 +32,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.*
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -134,7 +135,7 @@ def exec(Connection connection, Map input) {
 
     String tableFormat = input['tableFormat']
 
-    double distance2snap = input['distance2snap']
+    double distance2snap = input['distance2snap'] as Double
 
     boolean removeGeomsNoEmission = true
     if (input['keepNoEmissionGeoms']) {
@@ -145,8 +146,8 @@ def exec(Connection connection, Map input) {
     // do it case-insensitive
     vehicles_table_name = vehicles_table_name.toUpperCase()
     // Check if srid are in metric projection.
-    sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(vehicles_table_name))
-    if (sridSources == 3785 || sridSources == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for "+vehicles_table_name+".")
+    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(vehicles_table_name))
+    if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+vehicles_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+vehicles_table_name+" does not have an associated SRID.")
 
     System.out.println('Start  time : ' + TimeCategory.minus(new Date(), start))

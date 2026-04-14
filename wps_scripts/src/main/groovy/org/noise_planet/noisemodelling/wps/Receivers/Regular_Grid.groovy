@@ -176,15 +176,9 @@ def exec(connection, Map input) {
     }
     receivers_table_name = receivers_table_name.toUpperCase()
 
-    Double delta = 10
-    if (input['delta']) {
-        delta = input['delta'] as Double
-    }
+    double delta = input.getOrDefault("delta",10.0) as Double
 
-    Double h = 4
-    if (input['height']) {
-        h = input['height'] as Double
-    }
+    double h = input.getOrDefault("height",4.0) as Double
 
     boolean createTriangles = false
     if(input['outputTriangleTable']) {

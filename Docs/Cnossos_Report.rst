@@ -3,28 +3,38 @@ Conformity to ISO 17534-1:2015
 .. DO NOT UPDATE THIS FILE!!
 .. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
 
-
 Clarifications on the ISO Standard and Identified Issues
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is important to note that the ISO standard provides recommendations rather than regulatory obligations. While it serves as a reference framework, its application is not mandatory from a legal standpoint.
+It is important to note that the ISO standard provides recommendations
+rather than regulatory obligations. While it serves as a reference framework,
+its application is not mandatory from a legal standpoint.
 
-During our analysis, we identified several issues within the standard that hinder a complete and reliable comparison. Notably, we observed inconsistencies between 2D and 3D visualizations, preventing us from achieving a coherent assessment. Additionally, discrepancies exist between the geometric description of the scene and the corresponding acoustic response, raising concerns about the accuracy and reliability of the standard’s methodology.
+About the TC27
+--------------
+The remaining **1.2 dB** gap at **4 kHz** on ``ABoundaryF`` (reflection path) is
+due to geometric precision sensitivity at the Rayleigh criterion boundary:
 
-Furthermore, with respect to favourable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.
+* **Path Difference (Δ):** ``-0.006``
+* **Rayleigh Threshold (-λ/20):** ``-0.00425`` (at 4 kHz)
+* **Consequence:** ``Rcrit`` fails, causing ``ABoundary`` to fall back to
+  ``Aground`` (-0.78) instead of ``ADiff`` (0.42 per ISO).
 
+A **1.8 mm** difference in the curved-ray path length is enough to flip the
+criterion. This is an inherent sub-millimeter precision issue, not an
+algorithm error.
 
 Conformity table
 ^^^^^^^^^^^^^^^^
 | Conform
 
 * Do not the deviate more than ±0,1 dB
-* Percentage of conformity : 93% (26/28)
+* Percentage of conformity : 97% (27/28)
 
 | NLD Conform
 
 * Do not the deviate more than ±0,1 dB neglecting lateral diffraction
-* Percentage of conformity : 93% (26/28)
+* Percentage of conformity : 97% (27/28)
 
 .. list-table::
    :widths: 10 20 20 25 30
@@ -107,7 +117,7 @@ Conformity table
    * - TC15
      - ☑
      - ☑
-     - 0.06 dB @ 250 Hz
+     - 0.03 dB @ 125 Hz
      - `TC15`_
    * - TC16
      - ☑
@@ -160,14 +170,14 @@ Conformity table
      - 0.01 dB @ 2000 Hz
      - `TC25`_
    * - TC26
-     - □
-     - □
-     - 0.47 dB @ 63 Hz
+     - ☑
+     - ☑
+     - 0.02 dB @ 4000 Hz
      - `TC26`_
    * - TC27
      - □
      - □
-     - 1.20 dB @ 2000 Hz
+     - 0.21 dB @ 4000 Hz
      - `TC27`_
    * - TC28
      - ☑
@@ -754,11 +764,11 @@ Right Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 0.24 dB
-     - 500
+     - 0.03 dB
+     - 63
    * - Lꜰ
-     - 0.40 dB
-     - 250
+     - 0.03 dB
+     - 63
 
 
 Left Lateral 
@@ -1294,8 +1304,8 @@ Reflection
      - 0.03 dB
      - 125
    * - Lꜰ
-     - 3.76 dB
-     - 2000
+     - 1.20 dB
+     - 4000
 
 TC28
 ^^^^
@@ -1348,8 +1358,8 @@ Left Lateral
      - Maximum Difference
      - Frequency
    * - Lʜ
-     - 1.11 dB
-     - 1000
+     - 0.08 dB
+     - 2000
    * - Lꜰ
      - 0.01 dB
      - 1000

@@ -24,6 +24,7 @@ import groovy.sql.Sql
 import org.geotools.jdbc.JDBCDataStore
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -133,12 +134,12 @@ def exec(Connection connection, input) {
 
     //get SRID of the table
     int sridScreens = GeometryTableUtilities.getSRID(connection, TableLocation.parse(screen_table_name))
-    if (sridScreens == 3785 || sridScreens == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for Screens.")
+    if (!DataBaseUtilities.isSridMetric(connection, sridScreens)) throw new IllegalArgumentException("Error : Please use a metric projection for Screens.")
     if (sridScreens == 0) throw new IllegalArgumentException("Error : The table screens does not have an associated SRID.")
 
     //get SRID of the table
     int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
-    if (sridBuildings == 3785 || sridBuildings == 4326) throw new IllegalArgumentException("Error : Please use a metric projection for Buildings.")
+    if (!DataBaseUtilities.isSridMetric(connection, sridBuildings)) throw new IllegalArgumentException("Error : Please use a metric projection for Buildings.")
     if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table buildings does not have an associated SRID.")
 
     if (sridBuildings != sridScreens) throw new IllegalArgumentException("Error : The SRID of table screens and buildings are not the same.")

@@ -134,13 +134,8 @@ def run(input) {
 // main function of the script
 def exec(Connection connection, Map input) {
 
-    int coefficientVersion = 2
+    int coefficientVersion =  input.getOrDefault("coefficientVersion",2) as Integer
 
-    coefficientVersion = input.getOrDefault("coefficientVersion", 2) as Integer
-
-    if (input.containsKey('coefficientVersion')) {
-        coefficientVersion = Integer.parseInt(input['coefficientVersion'] as String)
-    }
 
     DBTypes dbType = DBUtils.getDBType(connection)
 

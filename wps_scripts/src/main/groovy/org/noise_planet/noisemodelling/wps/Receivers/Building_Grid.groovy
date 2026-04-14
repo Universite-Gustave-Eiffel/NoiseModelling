@@ -124,7 +124,7 @@ outputs = [
 
 
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -139,20 +139,11 @@ def exec(Connection connection, input) {
 
     String receivers_table_name = "RECEIVERS"
 
-    Double delta = 10
-    if (input['delta']) {
-        delta = input['delta'] as Double
-    }
+    double delta = input.getOrDefault("delta",10) as Double
 
-    Double h = 4.0d
-    if (input['height']) {
-        h = input['height'] as Double
-    }
+    double h = input.getOrDefault("height",4.0d) as Double
 
-    Double distance = 2.0d
-    if (input['distance']) {
-        distance = input['distance'] as Double
-    }
+    double distance = input.getOrDefault("distance",2.0d) as Double
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {

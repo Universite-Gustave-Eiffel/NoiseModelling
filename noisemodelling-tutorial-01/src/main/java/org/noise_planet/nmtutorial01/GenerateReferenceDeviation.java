@@ -45,24 +45,35 @@ public class GenerateReferenceDeviation {
     private static final double TEMPERATURE = 10;
     private static final String CHECKED = "☑";
     private static final String UNCHECKED = "□";
-    private static final String REPORT_HEADER = "Conformity to ISO 17534-1:2015\n" +
-            "==============================\n" +
-            ".. DO NOT UPDATE THIS FILE!!\n" +
-            ".. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
-            "\n" +
-            "\n" +
-            "Clarifications on the ISO Standard and Identified Issues\n" +
-            "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" +
-            "\n" +
-            "It is important to note that the ISO standard provides recommendations rather than regulatory obligations. While it serves as a reference framework, its application is not mandatory from a legal standpoint.\n" +
-            "\n" +
-            "During our analysis, we identified several issues within the standard that hinder a complete and reliable comparison. Notably, we observed inconsistencies between 2D and 3D visualizations, preventing us from achieving a coherent assessment. Additionally, discrepancies exist between the geometric description of the scene and the corresponding acoustic response, raising concerns about the accuracy and reliability of the standard’s methodology.\n" +
-            "\n" +
-            "Furthermore, with respect to favourable rays, our findings indicate a different implementation of CNOSSOS compared to the approach suggested by the standard. This divergence may have implications for the interpretation and reproducibility of results, necessitating further clarification and alignment.\n" +
-            "\n" +
-            "\n" +
-            "Conformity table\n" +
-            "^^^^^^^^^^^^^^^^\n";
+    private static final String REPORT_HEADER =
+            "Conformity to ISO 17534-1:2015\n" +
+                    "==============================\n" +
+                    ".. DO NOT UPDATE THIS FILE!!\n" +
+                    ".. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
+                    "\n" +
+                    "Clarifications on the ISO Standard and Identified Issues\n" +
+                    "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" +
+                    "\n" +
+                    "It is important to note that the ISO standard provides recommendations\n" +
+                    "rather than regulatory obligations. While it serves as a reference framework,\n" +
+                    "its application is not mandatory from a legal standpoint.\n" +
+                    "\n" +
+                    "About the TC27\n" +
+                    "--------------\n" +
+                    "The remaining **1.2 dB** gap at **4 kHz** on ``ABoundaryF`` (reflection path) is\n" +
+                    "due to geometric precision sensitivity at the Rayleigh criterion boundary:\n" +
+                    "\n" +
+                    "* **Path Difference (Δ):** ``-0.006``\n" +
+                    "* **Rayleigh Threshold (-λ/20):** ``-0.00425`` (at 4 kHz)\n" +
+                    "* **Consequence:** ``Rcrit`` fails, causing ``ABoundary`` to fall back to\n" +
+                    "  ``Aground`` (-0.78) instead of ``ADiff`` (0.42 per ISO).\n" +
+                    "\n" +
+                    "A **1.8 mm** difference in the curved-ray path length is enough to flip the\n" +
+                    "criterion. This is an inherent sub-millimeter precision issue, not an\n" +
+                    "algorithm error.\n" +
+                    "\n" +
+                    "Conformity table\n" +
+                    "^^^^^^^^^^^^^^^^\n";
 
     private static final String TABLE_HEADER = ".. list-table::\n" +
             "   :widths: 10 20 20 25 30\n" +
