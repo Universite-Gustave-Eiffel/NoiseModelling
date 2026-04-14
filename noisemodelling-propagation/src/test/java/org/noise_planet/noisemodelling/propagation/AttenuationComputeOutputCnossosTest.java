@@ -5580,12 +5580,10 @@ public class AttenuationComputeOutputCnossosTest {
 
     /**
      * TC27 – Road source with influence of retrodiffraction
-     * Remaining 1.2 dB gap at 4 kHz on ABoundaryF (reflection path) is due to geometric precision
-     * sensitivity at the Rayleigh criterion boundary. The favourable reflection path has
-     * delta = -0.006, just below the -lambda/20 = -0.00425 threshold at 4 kHz, causing Rcrit to
-     * fail and ABoundary to fall back to Aground (-0.78) instead of ADiff (0.42 per ISO).
-     * A 1.8 mm difference in the curved-ray path length flips the criterion. This is an inherent
-     * sub-millimeter precision issue, not an algorithm error.
+     * Remaining ~0.07 dB gap at 4 kHz on ABoundaryF (reflection path) is due to Rayleigh criterion
+     * sensitivity at the boundary. The favourable reflection path has delta = -0.006, just below the
+     * -lambda/20 threshold at 4 kHz, causing Rcrit to fail and ABoundary to fall back to Aground
+     * instead of ADiff. A 1.8 mm difference in the curved-ray path length flips the criterion.
      * */
     @Test
     public void TC27() throws IOException {
@@ -5705,19 +5703,20 @@ public class AttenuationComputeOutputCnossosTest {
         actualLA = addArray(actualL, A_WEIGHTING);
         double[] LA = sumDbArray(directLA, actualLA);
         double[] expectedFullLA = new double[]{16.84, 26.97, 34.79, 40.23, 38.57, 38.58, 39.36, 29.60};
+
         assertDoubleArrayEquals("AAtm - reflection", expectedAAtm, actualAAtm, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ADiv - reflection", expectedADiv, actualADiv, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("ABoundaryH - reflection", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
-        assertDoubleArrayEquals("ABoundaryF - reflection", expectedABoundaryF, actualABoundaryF, 1.5);
+        assertDoubleArrayEquals("ABoundaryF - reflection", expectedABoundaryF, actualABoundaryF, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("dLabs - reflection", expectedDLabs, cnossosPathReflectionH.aRef, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH - reflection", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
-        assertDoubleArrayEquals("LF - reflection", expectedLF, actualLF, 1.5);
-        assertDoubleArrayEquals("LA - reflection", expectedLA, actualLA, 1.5);
+        assertDoubleArrayEquals("LF - reflection", expectedLF, actualLF, ERROR_EPSILON_VERY_LOW);
+        assertDoubleArrayEquals("LA - reflection", expectedLA, actualLA, ERROR_EPSILON_VERY_LOW);
 
 
         double[] L = addArray(addArray(propDataOut.getVerticesSoundLevel().get(0).levels, SOUND_POWER_LEVELS), A_WEIGHTING);
 
-        assertArrayEquals(expectedFullLA, L, 1.0);
+        assertArrayEquals(expectedFullLA, L, ERROR_EPSILON_VERY_LOW);
     }
 
     /**
