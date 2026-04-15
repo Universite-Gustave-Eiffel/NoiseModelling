@@ -10,8 +10,8 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
-import org.junit.Test
+package org.noise_planet.noisemodelling.scripts
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.scripts.Data_Assimilation.*
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File

@@ -10,14 +10,14 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.Test
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road

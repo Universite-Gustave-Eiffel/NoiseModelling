@@ -10,14 +10,14 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.Test
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface

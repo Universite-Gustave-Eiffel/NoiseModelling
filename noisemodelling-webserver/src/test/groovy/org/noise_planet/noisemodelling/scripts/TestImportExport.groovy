@@ -10,12 +10,12 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Assert
-import org.junit.Test
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Map

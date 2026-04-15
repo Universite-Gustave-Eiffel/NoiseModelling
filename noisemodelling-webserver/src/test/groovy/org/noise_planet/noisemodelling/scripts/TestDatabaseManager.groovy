@@ -10,10 +10,10 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import org.h2gis.functions.io.shp.SHPRead
-import org.junit.Test
+import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.MultiPoint
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Clean_Database

@@ -9,35 +9,33 @@
  * Contact: contact@noise-planet.org
  *
  */
-package org.noise_planet.noisemodelling.scripts;
+package org.noise_planet.noisemodelling.scripts
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import org.h2.Driver;
-import org.h2.util.OsgiDataSourceFactory;
-import org.h2gis.functions.factory.H2GISFunctions;
-import org.h2gis.postgis_jts.ConnectionWrapper;
-import org.h2gis.utilities.JDBCUtilities;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.osgi.service.jdbc.DataSourceFactory;
-import org.postgresql.ds.PGSimpleDataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import org.h2.Driver
+import org.h2.util.OsgiDataSourceFactory
+import org.h2gis.functions.factory.H2GISFunctions
+import org.h2gis.postgis_jts.ConnectionWrapper
+import org.h2gis.utilities.JDBCUtilities
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.osgi.service.jdbc.DataSourceFactory
+import org.postgresql.ds.PGSimpleDataSource
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Optional;
-import java.util.Properties;
+import javax.sql.DataSource
+import java.sql.Connection
+import java.sql.SQLException
 
-public class JDBCTestCase {
+public class JdbcTestCase {
 
     DataSource dataSource;
     Connection connection;
     boolean isH2GISDatabase = false;
 
-    static Logger LOG = LoggerFactory.getLogger(JDBCTestCase.class);
+    static Logger LOG = LoggerFactory.getLogger(JdbcTestCase.class);
 
     static DataSource createDataSource(String user, String password, boolean debug) throws SQLException {
         HikariConfig config = new HikariConfig();

@@ -10,7 +10,7 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql

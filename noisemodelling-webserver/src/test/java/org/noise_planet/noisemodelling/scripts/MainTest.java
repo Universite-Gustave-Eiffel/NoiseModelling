@@ -1,7 +1,7 @@
-package org.noise_planet.noisemodelling.wps;
+package org.noise_planet.noisemodelling.scripts;
 
 import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;;
 import org.noise_planet.noisemodelling.runner.Main;
 
 import java.util.UUID;

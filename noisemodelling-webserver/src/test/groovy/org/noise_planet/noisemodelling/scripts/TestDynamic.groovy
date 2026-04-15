@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps
+package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.api.EmptyProgressVisitor
