@@ -18,13 +18,13 @@ import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.junit.Test
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Change_SRID
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Clean_Buildings_Table
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Enrich_DEM_with_road
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Screen_to_building
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_Asc_File
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Change_SRID
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Enrich_DEM_with_road
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Screen_to_building
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_File
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

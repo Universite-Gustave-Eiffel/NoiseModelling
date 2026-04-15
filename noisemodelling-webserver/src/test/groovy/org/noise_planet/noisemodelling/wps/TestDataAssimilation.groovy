@@ -12,12 +12,12 @@
 
 package org.noise_planet.noisemodelling.wps
 import org.junit.Test
-import org.noise_planet.noisemodelling.wps.Data_Assimilation.*
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
+import org.noise_planet.noisemodelling.scripts.Data_Assimilation.*
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

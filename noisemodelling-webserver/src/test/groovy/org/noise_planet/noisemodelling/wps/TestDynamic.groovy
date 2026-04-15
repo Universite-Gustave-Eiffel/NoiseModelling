@@ -1,23 +1,24 @@
 package org.noise_planet.noisemodelling.wps
 
 import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
-import org.noise_planet.noisemodelling.wps.Acoustic_Tools.Create_Isosurface;
-import org.noise_planet.noisemodelling.wps.Acoustic_Tools.DynamicIndicators;
-import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key;
-import org.noise_planet.noisemodelling.wps.Dynamic.Flow_2_Noisy_Vehicles;
-import org.noise_planet.noisemodelling.wps.Dynamic.Ind_Vehicles_2_Noisy_Vehicles;
-import org.noise_planet.noisemodelling.wps.Dynamic.Noise_From_Attenuation_Matrix;
-import org.noise_planet.noisemodelling.wps.Dynamic.Point_Source_From_Network
-import org.noise_planet.noisemodelling.wps.Dynamic.Split_Sources_Period;
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table;
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File;
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_OSM;
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
-import org.noise_planet.noisemodelling.wps.Receivers.Regular_Grid
+import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface;
+import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.DynamicIndicators;
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key;
+import org.noise_planet.noisemodelling.scripts.Dynamic.Flow_2_Noisy_Vehicles;
+import org.noise_planet.noisemodelling.scripts.Dynamic.Ind_Vehicles_2_Noisy_Vehicles;
+import org.noise_planet.noisemodelling.scripts.Dynamic.Noise_From_Attenuation_Matrix;
+import org.noise_planet.noisemodelling.scripts.Dynamic.Point_Source_From_Network
+import org.noise_planet.noisemodelling.scripts.Dynamic.Split_Sources_Period;
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table;
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File;
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM;
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -33,7 +34,7 @@ class TestDynamic extends JdbcTestCase {
         new Import_File().exec(connection,
                 ["pathFile" :  TestDatabaseManager.getResource("Dynamic/buildings_nm_ready_pop_heights.shp").getPath() ,
                 "inputSRID": "32635",
-                "tableName": "buildings"])
+                "tableName": "buildings"], new EmptyProgressVisitor())
 
         // Import the receivers (or generate your set of receivers using Regular_Grid script for example)
         new Import_File().exec(connection,

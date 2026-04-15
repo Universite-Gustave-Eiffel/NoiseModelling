@@ -15,12 +15,12 @@ package org.noise_planet.noisemodelling.wps
 import org.h2gis.functions.io.shp.SHPRead
 import org.junit.Test
 import org.locationtech.jts.geom.MultiPoint
-import org.noise_planet.noisemodelling.wps.Database_Manager.Add_Primary_Key
-import org.noise_planet.noisemodelling.wps.Database_Manager.Clean_Database
-import org.noise_planet.noisemodelling.wps.Database_Manager.Display_Database
-import org.noise_planet.noisemodelling.wps.Database_Manager.Drop_a_Table
-import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Data
-import org.noise_planet.noisemodelling.wps.Database_Manager.Table_Visualization_Map
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Clean_Database
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Drop_a_Table
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Data
+import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Map
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

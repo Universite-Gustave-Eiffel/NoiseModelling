@@ -19,14 +19,14 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.Test
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
-import org.noise_planet.noisemodelling.wps.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Import_File
-import org.noise_planet.noisemodelling.wps.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.wps.NoiseModelling.GenerateAtmosphericSettingsTemplate
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Noise_level_from_traffic
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Railway_Emission_from_Traffic
-import org.noise_planet.noisemodelling.wps.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.GenerateAtmosphericSettingsTemplate
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Railway_Emission_from_Traffic
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 /**
