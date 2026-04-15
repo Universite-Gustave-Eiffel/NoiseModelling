@@ -499,7 +499,7 @@
             <dependency>
                 <groupId>org.matsim</groupId>
                 <artifactId>matsim</artifactId>
-                <version>[11.0, 12)</version>
+                <version>14.0</version>
             </dependency>
             <!-- Test dependencies -->
             <dependency>

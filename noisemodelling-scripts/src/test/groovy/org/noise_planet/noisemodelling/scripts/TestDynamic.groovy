@@ -3,6 +3,10 @@ package org.noise_planet.noisemodelling.scripts
 import groovy.sql.Sql
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.JDBCUtilities
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.*
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface;
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.DynamicIndicators;
@@ -20,14 +24,13 @@ import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_s
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 
-import static org.junit.jupiter.api.Assertions.assertTrue
-
 
 class TestDynamic extends JdbcTestCase {
 
     /**
      * as SUMO or SYMUVIA or Drone input
      */
+    @Test
     void testDynamicIndividualVehiclesTutorial() {
 
         // Import Buildings for your study area
@@ -118,6 +121,7 @@ class TestDynamic extends JdbcTestCase {
     /**
      * as OSM input
      */
+    @Test
     void testDynamicFlowTutorialProbabilisticWithAttenuationMatrix() {
 
         // Import the road network (with predicted traffic flows) and buildings from an OSM file
@@ -185,6 +189,7 @@ class TestDynamic extends JdbcTestCase {
     /**
      * as OSM input
      */
+    @Test
     void testDynamicFlowTutorialProba() {
 
         // Import the road network (with predicted traffic flows) and buildings from an OSM file
@@ -253,13 +258,8 @@ class TestDynamic extends JdbcTestCase {
     /**
      * as OSM input
      */
-    void testDynamicFlowTutorialPoisson() {
-
-        File tutorialOutputFolder = new File("build/tmp/TUTO_DYNAMIC_POISSON/")
-
-        if(!tutorialOutputFolder.exists()) {
-            assertTrue(tutorialOutputFolder.mkdir())
-        }
+    @Test
+    void testDynamicFlowTutorialPoisson(@TempDir File tutorialOutputFolder) {
 
         // Import the road network (with predicted traffic flows) and buildings from an OSM file
         new Import_OSM().exec(connection, [
@@ -365,6 +365,7 @@ class TestDynamic extends JdbcTestCase {
     /**
      * as MATSIM input
      */
+    @Test
     void testDynamicFluctuatingFlowTutorial() {
 
         // Import Buildings for your study area

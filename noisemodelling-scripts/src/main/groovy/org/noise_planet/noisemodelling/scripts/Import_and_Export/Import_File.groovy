@@ -269,5 +269,5 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
 
 def exec(Connection connection, Map input) {
-    exec(connection, input, new EmptyProgressVisitor())
+    return exec(connection, input, new EmptyProgressVisitor())
 }

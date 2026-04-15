@@ -24,6 +24,8 @@ import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
@@ -34,8 +36,13 @@ import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Random_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 class TestReceivers extends JdbcTestCase {
 
+    @Test
     void testBuildingGrid3D() {
         def sql = new Sql(connection)
 
@@ -44,10 +51,10 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
 
-        new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                                 "delta"         : 5,
-                                                 "heightLevels"  : 2.5,
-                                                 "fenceTableName": "BUILDINGS"])
+        new Building_Grid3D().exec(connection, ["tableBuilding" : "BUILDINGS",
+                                                "delta"         : 5,
+                                                "heightLevels"  : 2.5,
+                                                "fenceTableName": "BUILDINGS"])
 
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
@@ -65,6 +72,7 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
+    @Test
     void testBuildingGrid3DNoFence() {
         def sql = new Sql(connection)
 
@@ -73,9 +81,9 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
 
-        new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                                 "delta"         : 5,
-                                                 "heightLevels"  : 2.5])
+        new Building_Grid3D().exec(connection, ["tableBuilding": "BUILDINGS",
+                                                "delta"        : 5,
+                                                "heightLevels" : 2.5])
 
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
@@ -93,12 +101,13 @@ class TestReceivers extends JdbcTestCase {
 
         //Execute a second time for missing drop tables test
 
-        new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                                 "delta"         : 5,
-                                                 "heightLevels"  : 2.5])
+        new Building_Grid3D().exec(connection, ["tableBuilding": "BUILDINGS",
+                                                "delta"        : 5,
+                                                "heightLevels" : 2.5])
 
     }
 
+    @Test
     void testBuildingGrid3DWithPop() {
         def sql = new Sql(connection)
 
@@ -107,10 +116,10 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
         sql.execute("ALTER TABLE BUILDINGS ADD COLUMN POP INT DEFAULT RANDOM(20) + 1")
 
-        new Building_Grid3D().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                                 "delta"         : 5,
-                                                 "heightLevels"  : 2.5,
-                                                 "fenceTableName": "BUILDINGS"])
+        new Building_Grid3D().exec(connection, ["tableBuilding" : "BUILDINGS",
+                                                "delta"         : 5,
+                                                "heightLevels"  : 2.5,
+                                                "fenceTableName": "BUILDINGS"])
 
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
         assertEquals(0, receivers_in_buildings)
@@ -127,6 +136,7 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
+    @Test
     void testBuildingGrid() {
         def sql = new Sql(connection)
 
@@ -136,11 +146,11 @@ class TestReceivers extends JdbcTestCase {
 
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                               "delta" : 5,
-                                                "height" : 6,
-                                               "sourcesTableName" : "ROADS",
-                                               "fenceTableName" : "BUILDINGS"])
+        new Building_Grid().exec(connection, ["tableBuilding"   : "BUILDINGS",
+                                              "delta"           : 5,
+                                              "height"          : 6,
+                                              "sourcesTableName": "ROADS",
+                                              "fenceTableName"  : "BUILDINGS"])
 
 
         def receivers_in_buildings = sql.firstRow("SELECT COUNT(*) from receivers r, buildings b where r.the_geom && b.the_geom and st_intersects(r.the_geom, b.the_geom) and ST_Z(r.the_geom) < b.height ")[0] as Integer
@@ -158,6 +168,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
+    @Test
     void testBuildingGridWithPop() {
         def sql = new Sql(connection)
 
@@ -168,11 +179,11 @@ class TestReceivers extends JdbcTestCase {
 
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath(), ValueBoolean.TRUE)
 
-        new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                               "delta" : 5,
-                                               "height" : 6,
-                                               "sourcesTableName" : "ROADS",
-                                               "fenceTableName" : "BUILDINGS"])
+        new Building_Grid().exec(connection, ["tableBuilding"   : "BUILDINGS",
+                                              "delta"           : 5,
+                                              "height"          : 6,
+                                              "sourcesTableName": "ROADS",
+                                              "fenceTableName"  : "BUILDINGS"])
 
         def receivers_pop = sql.firstRow("SELECT sum(pop) from receivers")[0] as Double
 
@@ -184,6 +195,8 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
     }
+
+    @Test
     void testBuildingGridFence() {
         def sql = new Sql(connection)
 
@@ -192,17 +205,18 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE INDEX bheight ON BUILDINGS(height)")
 
         GeometryFactory f = new GeometryFactory();
-        def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
+        def g = f.toGeometry(new Envelope(223556.5, 223765.7, 6758256.91, 6758576.3))
         g.setSRID(2154)
         def gFence = ST_Transform.ST_Transform(connection, g, 4326)
-        new Building_Grid().exec(connection,  ["tableBuilding" : "BUILDINGS",
-                                               "delta" : 5,
-                                               "height" : 6,
-                                               "fence" : gFence.toString()]) // in WPS Fence is an instance of geoscript.geom.Polygon not jts
+        new Building_Grid().exec(connection, ["tableBuilding": "BUILDINGS",
+                                              "delta"        : 5,
+                                              "height"       : 6,
+                                              "fence"        : gFence.toString()])
+        // in WPS Fence is an instance of geoscript.geom.Polygon not jts
 
         assertTrue(sql.firstRow("SELECT count(*) cpt from receivers")[0] > 0)
 
-        def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, :g)", [g : g])[0] as Integer
+        def receivers_pop = sql.firstRow("SELECT count(*) cpt from receivers r where not ST_Intersects(r.the_geom, :g)", [g: g])[0] as Integer
 
         assertEquals(0, receivers_pop);
 
@@ -211,6 +225,7 @@ class TestReceivers extends JdbcTestCase {
 
     }
 
+    @Test
     void testDelaunayGridReduceExtent() {
         def sql = new Sql(connection)
 
@@ -219,8 +234,8 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-        new Delaunay_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
+        new Delaunay_Grid().exec(connection, ["buildingTableName"  : "BUILDINGS",
+                                              "sourcesTableName"   : "ROADS",
                                               "fenceNegativeBuffer": 500]);
 
 
@@ -229,6 +244,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(1127409.17, envelope.getArea(), 1.0)
     }
 
+    @Test
     void testDelaunayGrid() {
         def sql = new Sql(connection)
 
@@ -237,9 +253,9 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-        "sourcesTableName" : "ROADS",
-        "exportTrianglesGeometries": true]);
+        new Delaunay_Grid().exec(connection, ["buildingTableName"        : "BUILDINGS",
+                                              "sourcesTableName"         : "ROADS",
+                                              "exportTrianglesGeometries": true]);
 
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
@@ -260,6 +276,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0.0, max_dist_c, 1e-6d);
     }
 
+    @Test
     void testDelaunayGridTableFence() {
         def sql = new Sql(connection)
 
@@ -268,14 +285,14 @@ class TestReceivers extends JdbcTestCase {
 
         new Import_File().exec(connection,
                 ["pathFile" : TestReceivers.getResource("dem.geojson").getPath(),
-                "inputSRID" : 2154])
+                 "inputSRID": 2154])
 
         sql.execute("CREATE SPATIAL INDEX ON BUILDINGS(THE_GEOM)")
         sql.execute("CREATE SPATIAL INDEX ON ROADS(THE_GEOM)")
 
-        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "fenceTableName": "DEM",
+        new Delaunay_Grid().exec(connection, ["buildingTableName"        : "BUILDINGS",
+                                              "sourcesTableName"         : "ROADS",
+                                              "fenceTableName"           : "DEM",
                                               "exportTrianglesGeometries": true]);
 
         def geomFence = GeometryTableUtilities.getEstimatedExtent(connection, "DEM", "THE_GEOM")
@@ -294,6 +311,7 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(expectedArea, res["area"], 5)
     }
 
+    @Test
     void testDelaunayGridClean() {
         def sql = new Sql(connection)
 
@@ -305,8 +323,8 @@ class TestReceivers extends JdbcTestCase {
 
         new Clean_Buildings_Table().exec(connection, ["tableName": "buildings"])
 
-        new Delaunay_Grid().exec(connection, ["buildingTableName" : "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
+        new Delaunay_Grid().exec(connection, ["buildingTableName"        : "BUILDINGS",
+                                              "sourcesTableName"         : "ROADS",
                                               "exportTrianglesGeometries": true]);
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
@@ -325,39 +343,42 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(0.0, max_dist_c, 1e-6d);
     }
 
-    public void testRandomGrid() {
+    @Test
+    void testRandomGrid() {
 
         def sql = new Sql(connection)
 
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
-                                             "sourcesTableName" : "ROADS",
-                                             "nReceivers" : 200])
+        new Random_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                            "sourcesTableName" : "ROADS",
+                                            "nReceivers"       : 200])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    public void testRandomGridFence() {
+    @Test
+    void testRandomGridFence() {
 
         def sql = new Sql(connection)
 
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
-                                             "sourcesTableName" : "ROADS",
-                                             "nReceivers" : 200,
-                                            "fenceTableName" : "BUILDINGS"])
+        new Random_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                            "sourcesTableName" : "ROADS",
+                                            "nReceivers"       : 200,
+                                            "fenceTableName"   : "BUILDINGS"])
 
         assertTrue(200 >= (sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer))
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    public void testRandomGridFence2() {
+    @Test
+    void testRandomGridFence2() {
 
         def sql = new Sql(connection)
 
@@ -370,22 +391,23 @@ class TestReceivers extends JdbcTestCase {
 
         def gFence = ST_Transform.ST_Transform(connection, g, 4326)
 
-        new Random_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
-                                             "sourcesTableName" : "ROADS",
-                                             "nReceivers" : 200,
-                                             "fence" : gFence.toString()])
+        new Random_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                            "sourcesTableName" : "ROADS",
+                                            "nReceivers"       : 200,
+                                            "fence"            : gFence.toString()])
 
         assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, :geom)", [geom : g])[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, :geom)", [geom: g])[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, :gNoReceiver)", [gNoReceiver : gNoReceiver])[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, :gNoReceiver)", [gNoReceiver: gNoReceiver])[0] as Integer)
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
 
-    public void testRegularGridFence() {
+    @Test
+    void testRegularGridFence() {
 
         def sql = new Sql(connection)
 
@@ -393,34 +415,36 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
         GeometryFactory f = new GeometryFactory();
-        def g = f.toGeometry(new Envelope(223556.5, 223765.7,6758256.91, 6758576.3))
+        def g = f.toGeometry(new Envelope(223556.5, 223765.7, 6758256.91, 6758576.3))
         def gFence = ST_Transform.ST_Transform(connection, ST_SetSRID.setSRID(g, 2154), 4326)
 
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "delta" : 50,
-                                              "fence" : gFence.toString()])
+        new Regular_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "delta"            : 50,
+                                             "fence"            : gFence.toString()])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
-    public void testRegularGridFenceTable() {
+    @Test
+    void testRegularGridFenceTable() {
 
         def sql = new Sql(connection)
 
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Regular_Grid().exec(connection,  ["buildingTableName": "BUILDINGS",
-                                              "sourcesTableName" : "ROADS",
-                                              "delta" : 50,
-                                              "fenceTableName" : "BUILDINGS"])
+        new Regular_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
+                                             "sourcesTableName" : "ROADS",
+                                             "delta"            : 50,
+                                             "fenceTableName"   : "BUILDINGS"])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
     }
 
 
-    public void testRegularGridFenceGeom() {
+    @Test
+    void testRegularGridFenceGeom(@TempDir File temp) {
 
         def sql = new Sql(connection)
 
@@ -434,33 +458,34 @@ class TestReceivers extends JdbcTestCase {
 
         def gFence = ST_Transform.ST_Transform(connection, g, 4326)
 
-        new Regular_Grid().exec(connection,  ["buildingTableName" : "BUILDINGS",
+        new Regular_Grid().exec(connection, ["buildingTableName": "BUILDINGS",
                                              "sourcesTableName" : "ROADS",
-                                             "delta" : 1,
-                                             "fence" : gFence.toString()])
+                                             "delta"            : 1,
+                                             "fence"            : gFence.toString()])
 
         assertFalse(0 == sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, :geom)", [geom : g])[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE NOT ST_INTERSECTS(THE_GEOM, :geom)", [geom: g])[0] as Integer)
 
-        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, :geom)", [geom : gNoReceiver])[0] as Integer)
+        assertEquals(0, sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS WHERE ST_INTERSECTS(THE_GEOM, :geom)", [geom: gNoReceiver])[0] as Integer)
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
-        SHPWrite.exportTable(connection, "build/tmp/regular.shp", "RECEIVERS", ValueBoolean.TRUE)
+        SHPWrite.exportTable(connection, new File(temp.getAbsoluteFile(), "regular.shp").absolutePath, "RECEIVERS", ValueBoolean.TRUE)
 
     }
 
-    public void testRegularGridWithTriangleTable() {
+    @Test
+    void testRegularGridWithTriangleTable() {
 
         def sql = new Sql(connection)
 
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Regular_Grid().exec(connection,  ["fenceTableName" : "BUILDINGS",
-                                              "delta" : 50,
-                                              "outputTriangleTable" : true])
+        new Regular_Grid().exec(connection, ["fenceTableName"     : "BUILDINGS",
+                                             "delta"              : 50,
+                                             "outputTriangleTable": true])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
@@ -470,7 +495,8 @@ class TestReceivers extends JdbcTestCase {
     /**
      * Fix regression issue, when buffer linestring length is inferior than the delta and the building polygon are in 2D
      */
-    public void testMissingReceivers() {
+    @Test
+    void testMissingReceivers() {
         def sql = new Sql(connection)
 
         GeoJsonRead.importTable(connection, TestReceivers.getResource("regression_receivers/SMALL_BUILDING_NORECEIVER.geojson").getPath())
@@ -480,8 +506,8 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("ALTER TABLE SMALL_BUILDING_NORECEIVER ADD CONSTRAINT pk_small_building_noreceiver PRIMARY KEY (pk)")
 
 
-        new Building_Grid().exec(connection, ["tableBuilding" : "SMALL_BUILDING_NORECEIVER",
-                                              "delta" : 5])
+        new Building_Grid().exec(connection, ["tableBuilding": "SMALL_BUILDING_NORECEIVER",
+                                              "delta"        : 5])
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 
         Set<Integer> expected = new HashSet<>(Arrays.asList(1797, 1798, 1800, 1801))
@@ -498,7 +524,8 @@ class TestReceivers extends JdbcTestCase {
     /**
      * Fix regression issue, receivers points should be placed when neighbors buildings have an height inferior than the receiver height
      */
-    public void testBuildingsReceiversOnTopOfShortBuildings() {
+    @Test
+    void testBuildingsReceiversOnTopOfShortBuildings() {
         def sql = new Sql(connection)
 
         GeoJsonRead.importTable(connection, TestReceivers.getResource("regression_receivers/BUILDINGS_RECEIVERS_TOO_CLOSE.geojson").getPath())
@@ -508,13 +535,13 @@ class TestReceivers extends JdbcTestCase {
         sql.execute("ALTER TABLE BUILDINGS_RECEIVERS_TOO_CLOSE ADD CONSTRAINT pk_building PRIMARY KEY (pk)")
 
 
-        new Building_Grid().exec(connection, ["tableBuilding" : "BUILDINGS_RECEIVERS_TOO_CLOSE",
-                                              "delta" : 5,
-                                              "distance" : 2])
+        new Building_Grid().exec(connection, ["tableBuilding": "BUILDINGS_RECEIVERS_TOO_CLOSE",
+                                              "delta"        : 5,
+                                              "distance"     : 2])
 
-        def row= sql.firstRow("SELECT ST_Z(p.the_geom) - b.height relativeHeight, b.pk FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B WHERE ST_INTERSECTS(p.the_geom, b.the_geom) ORDER BY relativeHeight")
+        def row = sql.firstRow("SELECT ST_Z(p.the_geom) - b.height relativeHeight, b.pk FROM RECEIVERS P, BUILDINGS_RECEIVERS_TOO_CLOSE B WHERE ST_INTERSECTS(p.the_geom, b.the_geom) ORDER BY relativeHeight")
         def minRelativeHeight = row[0] as Double
         def buildingId = row[1] as Integer
-        assertTrue("Error, receiver should be at least 0 meters (excluded) above the building roof but it is placed at " + minRelativeHeight + " m ! building:" + buildingId , minRelativeHeight > 0)
+        assertTrue(minRelativeHeight > 0, "Error, receiver should be at least 0 meters (excluded) above the building roof but it is placed at " + minRelativeHeight + " m ! building:" + buildingId)
     }
 }

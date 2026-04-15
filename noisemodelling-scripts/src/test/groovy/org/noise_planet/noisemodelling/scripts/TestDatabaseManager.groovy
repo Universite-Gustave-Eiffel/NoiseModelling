@@ -26,6 +26,9 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Statement
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -92,7 +95,7 @@ class TestDatabaseManager extends JdbcTestCase {
     @Test
     void testDisplayTables1() {
         SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
-        String res = new Display_Database().exec(connection, [])
+        String res = new Display_Database().exec(connection, [:])
         assertEquals("BUILDINGS</br></br>", res)
     }
 

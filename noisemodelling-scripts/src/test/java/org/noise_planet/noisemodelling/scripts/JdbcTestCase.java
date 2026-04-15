@@ -2,13 +2,16 @@ package org.noise_planet.noisemodelling.scripts;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.log4j.PropertyConfigurator;
 import org.h2.Driver;
 import org.h2.util.OsgiDataSourceFactory;
 import org.h2gis.functions.factory.H2GISFunctions;
 import org.h2gis.postgis_jts.ConnectionWrapper;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.noise_planet.noisemodelling.webserver.NoiseModellingServerHttpTest;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -81,5 +85,11 @@ public class JdbcTestCase {
         } catch (SQLException e) {
             // ignore
         }
+    }
+
+    @BeforeAll
+    public static void init() {
+        PropertyConfigurator.configure(
+                Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
     }
 }

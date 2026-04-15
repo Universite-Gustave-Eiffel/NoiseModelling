@@ -36,29 +36,10 @@ outputs = [result: [name: 'result', title: 'Result', type: String.class]]
 
 
 
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if(dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
 
 
-def run(input) {
 
-    // Get name of the database
-    String dbName = ""
-    if (input['databaseName']) {
-        dbName = input['databaseName'] as String
-    }
 
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-        exec(connection, input)
-    }
-}
 
 
 def exec(connection, input) {

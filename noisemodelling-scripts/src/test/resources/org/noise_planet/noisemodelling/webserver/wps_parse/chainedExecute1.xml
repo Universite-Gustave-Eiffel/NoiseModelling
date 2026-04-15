@@ -3,7 +3,7 @@
     <p0:DataInputs>
         <p0:Input>
             <p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">tableName</p1:Identifier>
-            <p0:Reference p2:href="http://localhost:8000/nmcovadis/wps" xmlns:p2="http://www.w3.org/1999/xlink" method="POST"
+            <p0:Reference p2:href="http://localhost:8000/noisemodelling/wps" xmlns:p2="http://www.w3.org/1999/xlink" method="POST"
                           mimeType="xs:string">
                 <p0:Body>
                     <p0:Execute service="WPS" version="1.0.0">
@@ -13,7 +13,7 @@
                             <p0:Input>
                                 <p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">pathFile</p1:Identifier>
                                 <p0:Data>
-                                    <p0:LiteralData>src/test/resources/org/noise_planet/covadis/webserver/wpsinput/BUILDINGS_LOW_HEIGHT.geojson</p0:LiteralData>
+                                    <p0:LiteralData>src/test/resources/org/noise_planet/noisemodelling/webserver/wpsinput/BUILDINGS_LOW_HEIGHT.geojson</p0:LiteralData>
                                 </p0:Data>
                             </p0:Input>
                         </p0:DataInputs>

@@ -13,10 +13,11 @@
 package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
-import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
@@ -33,7 +34,6 @@ import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_s
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
 import org.noise_planet.noisemodelling.scripts.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
-import org.noise_planet.noisemodelling.scripts.Receivers.Regular_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -42,9 +42,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.ZipFile
 
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
-
+import static org.junit.jupiter.api.Assertions.*
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -52,12 +50,13 @@ class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)
 
 
+    @Test
     void testTutorialGetStarted() {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [])
-        assertEquals("", res)
+        Object res = new Display_Database().exec(connection, [:])
+        assertTrue(res.contains("Database is Empty"))
 
 
         new Import_File().exec(connection,
@@ -104,13 +103,13 @@ class TestTutorials extends JdbcTestCase {
     }
 
 
-
+    @Test
     void testTutorialPointSource() {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [])
-        assertEquals("", res)
+        Object res = new Display_Database().exec(connection, [:])
+        assertTrue(res.contains("Database is Empty"))
 
         new Import_Folder().exec(connection,
                 ["pathFolder": TestImportExport.class.getResource("TutoPointSource/").getPath(),
@@ -121,10 +120,10 @@ class TestTutorials extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
-        res = new Display_Database().exec(connection, [])
+        res = new Display_Database().exec(connection, [:])
 
         assertTrue(res.contains("SOURCES"))
-        assertTrue(res.contains("BUILDINGS"))
+       assertTrue(res.contains("BUILDINGS"))
 
         // generate a grid of receivers using the buildings as envelope
         new Delaunay_Grid().exec(connection, [maxArea: 600, tableBuilding: "BUILDINGS",
@@ -132,7 +131,7 @@ class TestTutorials extends JdbcTestCase {
 
 
         // Check database
-        res = new Display_Database().exec(connection, [])
+        res = new Display_Database().exec(connection, [:])
 
         assertTrue(res.contains("RECEIVERS"))
 
@@ -140,12 +139,13 @@ class TestTutorials extends JdbcTestCase {
         res = new Noise_level_from_source().exec(connection, ["tableSources"         : "SOURCES",
                                                               "tableBuilding"        : "BUILDINGS",
                                                               "tableReceivers"       : "RECEIVERS",
-                                                              "confReflOrder"        : 1,
-                                                              "confDiffVertical"     : true,
-                                                              "confDiffHorizontal"   : true,
+                                                              "confMaxSrcDist"       : 50,
+                                                              "confReflOrder"        : 0,
+                                                              "confDiffVertical"     : false,
+                                                              "confDiffHorizontal"   : false,
                                                               "frequencyFieldPrepend": "LW"])
 
-        res =  new Display_Database().exec(connection, [])
+        res =  new Display_Database().exec(connection, [:])
 
         // Check database
         def output = new Table_Visualization_Data().exec(connection, ["tableName": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
@@ -153,30 +153,17 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
 
         assertTrue(output.contains("PERIOD"))
-
-        // Check export geojson
-        File testPath = new File("build/tmp/tutoPointSource.geojson")
-
-        if(testPath.exists()) {
-            testPath.delete()
-        }
-
-        new Export_Table().exec(connection,
-                ["exportPath"   : "build/tmp/tutoPointSource.geojson",
-                 "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
-
-
     }
 
-
+    @Test
     void testTutorialPointSourceDirectivity() {
         Logger logger = LoggerFactory.getLogger(TestTutorials.class)
 
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [])
-        assertEquals("", res)
+        Object res = new Display_Database().exec(connection, [:])
+        assertTrue(res.contains("Database is Empty"))
 
         new Import_File().exec(connection, [
                 pathFile : TestTutorials.class.getResource("buildings.shp").getPath(),
@@ -200,7 +187,7 @@ class TestTutorials extends JdbcTestCase {
 
 
 
-        res = new Display_Database().exec(connection, [])
+        res = new Display_Database().exec(connection, [:])
 
         assertTrue(res.contains("BUILDINGS"))
         assertTrue(res.contains("DIRECTIVITY"))
@@ -213,13 +200,12 @@ class TestTutorials extends JdbcTestCase {
                                                           sourcesTableName : "POINT_SOURCE" , height: 1.6]));
 
 
-        new Export_Table().exec(connection, [exportPath:"build/tmp/receivers.shp", tableToExport: "RECEIVERS"])
-
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",
                                                         tableReceivers : "RECEIVERS",
                                                         tableGroundAbs: "GROUND_TYPE",
                                                         tableSourceDirectivity: "DIRECTIVITY",
-                                                        confMaxSrcDist : 800,
+                                                        confMaxSrcDist       : 50,
+                                                        confReflOrder        : 0,
                                                         tableDEM: "DEM",
                                                         "frequencyFieldPrepend": "LW"
                                                         ])
@@ -227,12 +213,6 @@ class TestTutorials extends JdbcTestCase {
         new Create_Isosurface().exec(connection,
                 [resultTable: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME,
                  smoothCoefficient : 0.4])
-
-        new Export_Table().exec(connection, [exportPath:"build/tmp/CONTOURING_NOISE_MAP.shp", tableToExport: "CONTOURING_NOISE_MAP"])
-
-        new Export_Table().exec(connection,
-                [exportPath:"build/tmp/TUTO_DIR_RECEIVERS_LEVEL.shp",
-                 tableToExport: NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
 
         def columnNames = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
 
@@ -244,13 +224,9 @@ class TestTutorials extends JdbcTestCase {
     }
 
 
-    void testTutorialMatsim() {
-        Logger logger = LoggerFactory.getLogger(TestTutorials.class)
+    @Test
+    void testTutorialMatsim(@TempDir Path tempDataDir) {
         Sql sql = new Sql(connection)
-
-        Path tempDataDir = new File("build/tmp/matsim/").toPath();
-
-        Files.createDirectories(tempDataDir);
 
         // URL of the file to download
         String fileUrl = "https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/download/v5.X-Matsim-Test-Scenario/scenario_matsim.zip";

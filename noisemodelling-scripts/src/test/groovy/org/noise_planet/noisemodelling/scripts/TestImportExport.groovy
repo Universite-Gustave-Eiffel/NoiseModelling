@@ -14,8 +14,8 @@ package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2gis.functions.io.shp.SHPRead
-import org.junit.Assert
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Map
@@ -30,6 +30,10 @@ import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Folder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertTrue
+
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -39,15 +43,16 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportSymuvia() {
         // Check empty database
-        Object res = new Display_Database().exec(connection, [])
+        Object res = new Display_Database().exec(connection, [:])
 
-        assertEquals("", res)
+        assertTrue(res.contains("Database is Empty"))
+
         // Import OSM file
         new Import_Symuvia().exec(connection,
                 ["pathFile"   : TestImportExport.getResource("symuvia.xml").getPath(),
                  "defaultSRID": 2154])
 
-        res = new Display_Database().exec(connection, [])
+        res = new Display_Database().exec(connection, [:])
 
         assertTrue(res.contains("SYMUVIA_TRAJ"))
 
@@ -58,12 +63,12 @@ class TestImportExport extends JdbcTestCase {
     @Test
     void testImportFile1() {
 
-        String res = new Import_File().exec(connection,
+        Map res = new Import_File().exec(connection,
                 ["pathFile" : TestImportExport.getResource("receivers.shp").getPath(),
                  "inputSRID": "2154",
                  "tableName": "receivers"])
 
-        assertEquals("The table RECEIVERS has been uploaded to database!", res)
+        assertEquals("RECEIVERS", res.outputTable)
     }
 
     @Test
@@ -76,7 +81,7 @@ class TestImportExport extends JdbcTestCase {
         }
         catch (Exception e) {
             String expectedMessage = "ERROR : The table already has a different SRID than the one you gave.";
-            Assert.assertEquals("Exception message must be correct", expectedMessage, e.getMessage());
+            assertEquals(expectedMessage, e.getMessage(), "Exception message must be correct");
         }
 
     }
@@ -133,10 +138,10 @@ class TestImportExport extends JdbcTestCase {
     }
 
     @Test
-    void testExportFile() {
+    void testExportFile(@TempDir File temp) {
 
         // Check export geojson
-        File testPath = new File("build/tmp/test.geojson")
+        File testPath = new File(temp, "test.geojson")
 
         if (testPath.exists()) {
             testPath.delete()
@@ -145,7 +150,7 @@ class TestImportExport extends JdbcTestCase {
         SHPRead.importTable(connection, TestImportExport.getResource("receivers.shp").getPath())
 
         String res = new Export_Table().exec(connection,
-                ["exportPath"   : "build/tmp/test.geojson",
+                ["exportPath"   : testPath.absolutePath,
                  "tableToExport": "RECEIVERS"])
 
 
@@ -160,7 +165,7 @@ class TestImportExport extends JdbcTestCase {
                 "pathFile"      : TestImportExport.getResource("map.osm.pbf").getPath(),
                 "targetSRID"    : 2154
         ]);
-        String res = new Display_Database().exec(connection, [])
+        String res = new Display_Database().exec(connection, [:])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>PEDESTRIAN_AREA</br></br>PEDESTRIAN_POIS</br></br>PEDESTRIAN_WAYS</br></br>", res)
 
@@ -177,7 +182,7 @@ class TestImportExport extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ]);
-        String res = new Display_Database().exec(connection, [])
+        String res = new Display_Database().exec(connection, [:])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 
@@ -195,7 +200,7 @@ class TestImportExport extends JdbcTestCase {
                 "ignoreRoads"   : false,
                 "removeTunnels" : true
         ]);
-        String res = new Display_Database().exec(connection, [])
+        String res = new Display_Database().exec(connection, [:])
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 

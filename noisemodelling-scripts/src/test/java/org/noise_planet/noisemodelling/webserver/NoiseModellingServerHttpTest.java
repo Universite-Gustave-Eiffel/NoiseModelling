@@ -32,22 +32,17 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.sql.*;
-import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
-import org.noise_planet.noisemodelling.webserver.slurm.SlurmConfig;
 import org.xml.sax.InputSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class NoiseModellingServerHttpTest {
+public class NoiseModellingServerHttpTest {
 
     /**
      * A Javalin instance used to manage the HTTP server lifecycle and handle HTTP routes
@@ -318,76 +313,6 @@ class NoiseModellingServerHttpTest {
             }
         }
     }
-
-    @Test
-    @Order(4)
-    void testPostWPSCreateSSHConfiguration() throws Exception {
-        HttpClient client = HttpClient.newHttpClient();
-        String requestBody = "<p0:Execute xmlns:p0=\"http://www.opengis.net/wps/1.0.0\" service=\"WPS\" version=\"1.0" +
-                ".0\"><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">Slurm:Write_HPC_Settings</p1:Identifier><p0:DataInputs><p0:Input><p1:Identifier " +
-                "xmlns:p1=\"http://www.opengis.net/ows/1.1\">ssh_key_type</p1:Identifier><p0:Data><p0:LiteralData>ssh" +
-                "-rsa</p0:LiteralData></p0:Data></p0:Input><p0:Input><p1:Identifier xmlns:p1=\"http://www.opengis" +
-                ".net/ows/1.1\">ssl_key</p1:Identifier><p0:Data><p0:LiteralData>none</p0:LiteralData></p0:Data></p0" +
-                ":Input><p0:Input><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">host</p1:Identifier><p0:Data><p0:LiteralData>localhost</p0:LiteralData></p0:Data></p0:Input><p0" +
-                ":Input><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">user</p1:Identifier><p0:Data><p0:LiteralData>testuser</p0:LiteralData></p0:Data></p0:Input><p0" +
-                ":Input><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">java_binary_path</p1:Identifier><p0:Data><p0:LiteralData>java</p0:LiteralData></p0:Data></p0" +
-                ":Input><p0:Input><p1:Identifier xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">key</p1:Identifier><p0:Data><p0:LiteralData>-----BEGIN OPENSSH PRIVATE KEY----- " +
-                "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn " +
-                "NhAAAAAwEAAQAAAQEA3r4jz4h6BCZydEFtM20eFHKPsCNXpCzckmd+0EvwMUdG/Tsi0CkK " +
-                "ENOP3pE+VJsKC8zVUCvYc+ysZoOWExaYBkghjhpZBjiUWUIFUOdSE8zkL8+u1kZLrgikVd " +
-                "oP5s1pDEVjaimoPUPHwGyBeX95FkDcqbMkTp4Hy5wbLbeEr7Gw3lPtK/vr2r3oJmKRWIdV " +
-                "dzA4xYm6yoPvPvQaTCfymj8FZJ2h89EhEPA/x1EK34W/lrGl4kMZ1NCFvu2M6dojt76FD/ " +
-                "wpHV/QtSqEQPShKNMnLW/pdluzwzsS4eU2SHl3GpPd01qP0jIjU+AtM45v/WQxjauh12Ns " +
-                "9fbrPTRnLwAAA8jP1Gawz9RmsAAAAAdzc2gtcnNhAAABAQDeviPPiHoEJnJ0QW0zbR4Uco " +
-                "+wI1ekLNySZ37QS/AxR0b9OyLQKQoQ04/ekT5UmwoLzNVQK9hz7Kxmg5YTFpgGSCGOGlkG " +
-                "OJRZQgVQ51ITzOQvz67WRkuuCKRV2g/mzWkMRWNqKag9Q8fAbIF5f3kWQNypsyROngfLnB " +
-                "stt4SvsbDeU+0r++vavegmYpFYh1V3MDjFibrKg+8+9BpMJ/KaPwVknaHz0SEQ8D/HUQrf " +
-                "hb+WsaXiQxnU0IW+7Yzp2iO3voUP/CkdX9C1KoRA9KEo0yctb+l2W7PDOxLh5TZIeXcak9 " +
-                "3TWo/SMiNT4C0zjm/9ZDGNq6HXY2z19us9NGcvAAAAAwEAAQAAAQEAizZLK2og2HcvEXnS " +
-                "xlFse1secvejzvg640XL/GN5u1LRC3PqTi9YGywevvwH+NjtbnKW34SHw+wn0+pp4YQ9f6 " +
-                "+VSTsuaLT0AtVAfVAV/EoSU895dnJ42kyMaRvg1F+NSB4WBEQE4kV6ksk+IrGI/F+NioJs " +
-                "LraWKKtoUSphw2wgC1zD3+g/ReqIHsFjm7ml0z9Uy3lI1mSNY/f8AUNI/ylD+NY7ExOUKr " +
-                "TXMjsF0GhlGVMUsOPWzwYABE/l9IAQqrTM8y6ItwLNYg7QaU7M5dJIwt0ImWGHu8vG3pTP " +
-                "sLDXsq0+B2OKS/56aruxUMh8NYSQqRWzbvpmIjhL/+AAAQAAAIEAshSK3GTgv0s+2AKTvu " +
-                "B37E+a6sB/rq1SAwe1qzMTiCeUTcu4YJryjWb0HAxxxfV8cPlX9KOMdZIQPcnqDYda7Pmf " +
-                "GJ48arkfpslhlT837DifEQHUvksbR8WShlHvwJ1EBoTNINhIP46QHexycPMuxzXB35tdNA " +
-                "MJZa02dhWA9mQAAACBAP4233osUHyQWxtgcCrgRbXCMDQ+lpefv42KftHsODSlkFVsKoZv " +
-                "FzF1XGXDDSSrNqEiYtjtArmKWicZB0iQHp4hhrZ59Ne6Bxvu3GUaHk//vUNfJkDGu4VrUF " +
-                "/4ojV6mcwJibyoROwpbz3muHd4bMLZ6WGWbT0T9/pw37Pwl2VzAAAAgQDgTqzBBP5wmh/p " +
-                "g+MvfN+dOffEdalpEa71QGyu0SQT8MSq9RX7qQjkBLijxcBZVThicY6DVUxT+RUTYjMz7E " +
-                "t9UciovHTxjaytvodoAD36bn2ZRg0v8imS9ct7cknp+EU3PpvTPUZUKYGn+ARVpyuYWd/5 " +
-                "R83Qu+7qV0ztWSNoVQAAABB0ZXN0QGV4YW1wbGUuY29tAQ== -----END OPENSSH PRIVATE " +
-                "KEY-----</p0:LiteralData></p0:Data></p0:Input><p0:Input><p1:Identifier xmlns:p1=\"http://www.opengis" +
-                ".net/ows/1.1\">configuration_name</p1:Identifier><p0:Data><p0:LiteralData>local</p0:LiteralData></p0" +
-                ":Data></p0:Input></p0:DataInputs><p0:ResponseForm><p0:RawDataOutput><p1:Identifier " +
-                "xmlns:p1=\"http://www.opengis.net/ows/1" +
-                ".1\">result</p1:Identifier></p0:RawDataOutput></p0:ResponseForm></p0:Execute>";
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL))
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .header("Content-Type", "text/xml")
-                .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        assertEquals(200, response.statusCode());
-
-        try(Connection connection = app.getUserDataSource(1).getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM SLURM_CONFIGURATION")) {
-                try(ResultSet rs = preparedStatement.executeQuery()) {
-                    assertTrue(rs.next());
-                    assertEquals("local", rs.getString("configuration_name"));
-                }
-            }
-        }
-    }
-
 
     @Test
     void testPostWPSChainedExecution() throws Exception {

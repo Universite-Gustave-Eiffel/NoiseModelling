@@ -29,6 +29,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * Test parsing of zip file using H2GIS database
@@ -137,7 +138,7 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("DEM")))
     }
 
-    @org.junit.jupiter.api.Test
+    @Test
     void testSetHeightByColumnName2() {
         def sql = new Sql(connection)
         sql.execute("""
@@ -199,6 +200,7 @@ class TestGeometricTools extends JdbcTestCase {
         assertEquals(2154, srid2)
     }
 
+    @Test
     void testEnrichRoad() {
 
         new Import_Asc_File().exec(connection,

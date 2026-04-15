@@ -14,21 +14,18 @@ package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
 import org.h2.value.ValueBoolean
-import org.h2gis.functions.io.dbf.DBFRead
 import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
-import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Set_Height
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.GenerateAtmosphericSettingsTemplate
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Railway_Emission_from_Traffic
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import static org.junit.jupiter.api.Assertions.*
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -36,6 +33,7 @@ class TestNoiseModelling extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestNoiseModelling.class)
 
 
+    @Test
     void testRoadEmissionFromDEN() {
 
         new Import_File().exec(connection,
@@ -56,7 +54,8 @@ class TestNoiseModelling extends JdbcTestCase {
 
     }
 
-    void testRailWayEmissionFromDEN() {
+    @Test
+    void testRailWayEmissionFromDEN(@TempDir File temp) {
 
         def sql = new Sql(connection)
 
@@ -112,13 +111,10 @@ class TestNoiseModelling extends JdbcTestCase {
         def receiversCount = sql.rows("SELECT COUNT(*) CPT FROM "+
                 NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+" WHERE PERIOD = 'D'")
 
-        new Export_Table().exec(connection,
-                ["exportPath"   : "build/tmp/RECEIVERS_LEVEL.geojson",
-                 "tableToExport": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
-
         assertEquals(688, receiversCount[0]["CPT"] as Integer)
     }
 
+    @Test
     void testLdayFromTraffic() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
@@ -163,6 +159,7 @@ class TestNoiseModelling extends JdbcTestCase {
         
     }
 
+    @Test
     void testLdenFromEmission() {
 
         SHPRead.importTable(connection, TestNoiseModelling.getResource("ROADS2.shp").getPath())
@@ -189,6 +186,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
     }
 
+    @Test
     void testLdenFromEmission1khz() {
 
         new Import_File().exec(connection,
@@ -226,6 +224,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertArrayEquals(["IDRECEIVER","PERIOD","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
     }
 
+    @Test
     void testAtmosphericSettings() {
 
         Sql sql = new Sql(connection)
@@ -288,7 +287,7 @@ class TestNoiseModelling extends JdbcTestCase {
         LOGGER.info(Arrays.toString(fieldNames.toArray()))
     }
 
-
+    @Test
     void testNoiseFromTrafficUsingPeriod() {
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])

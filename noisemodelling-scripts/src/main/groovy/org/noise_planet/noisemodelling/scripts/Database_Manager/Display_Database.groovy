@@ -57,7 +57,7 @@ outputs = [
 
 
 
-def exec(Connection connection, Map input, ProgressVisitor progress) {
+def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user
     String resultString = null

@@ -135,7 +135,7 @@ public class Main {
                 ScriptMetadata scriptMetadata = new ScriptMetadata(new File(scriptPath).getParentFile().getName(), new File(scriptPath));
                 // Create Command line arguments specification using the Input specification of the WPS process
                 scriptMetadata.inputs.forEach((key, scriptInput) -> {
-                    Option customOption = new Option(key, scriptInput.type != Boolean.class, scriptInput.description.replaceAll("<[^>]*>", ""));
+                    Option customOption = new Option(null, key, scriptInput.type != Boolean.class, scriptInput.description.replaceAll("<[^>]*>", ""));
                     customOption.setType(scriptInput.type);
                     customOption.setArgs(1);
                     customOption.setArgName(scriptInput.title);
@@ -148,13 +148,13 @@ public class Main {
                     for (Iterator<Option> it = commandLine.iterator(); it.hasNext(); ) {
                         Option option = it.next();
                         if (option.getType() == String.class) {
-                            customParameters.put(option.getOpt(), option.getValue());
+                            customParameters.put(option.getLongOpt(), option.getValue());
                         } else if (option.getType() == Boolean.class) {
-                            customParameters.put(option.getOpt(), Boolean.valueOf(option.getValue()));
+                            customParameters.put(option.getLongOpt(), Boolean.valueOf(option.getValue()));
                         } else if (option.getType() == Integer.class) {
-                            customParameters.put(option.getOpt(), Integer.valueOf(option.getValue()));
+                            customParameters.put(option.getLongOpt(), Integer.valueOf(option.getValue()));
                         } else if (option.getType() == Double.class) {
-                            customParameters.put(option.getOpt(), NumberFormat.getInstance(Locale.ROOT).parse(option.getValue()).doubleValue());
+                            customParameters.put(option.getLongOpt(), NumberFormat.getInstance(Locale.ROOT).parse(option.getValue()).doubleValue());
                         } else {
                             throw new IllegalArgumentException("Unsupported type for option " + option.getOpt());
                         }

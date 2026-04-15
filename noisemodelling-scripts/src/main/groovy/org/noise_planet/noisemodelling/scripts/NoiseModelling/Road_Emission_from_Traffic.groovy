@@ -28,10 +28,7 @@ import org.h2gis.utilities.Tuple
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
-import org.hsqldb.Table
-import org.locationtech.jts.geom.Geometry
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
-import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -39,7 +36,6 @@ import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
-import java.sql.SQLException
 import java.util.stream.Collectors
 
 title = 'Compute road emission noise map from road table.'
@@ -106,30 +102,9 @@ outputs = [
                 type       : String.class
         ]
 ]
-// Open Connection to Geoserver
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
 
-// run the script
-def run(input) {
 
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
 
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}
 
 // main function of the script
 def exec(Connection connection, Map input) {

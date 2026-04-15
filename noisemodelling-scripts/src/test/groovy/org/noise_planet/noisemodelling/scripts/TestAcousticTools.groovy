@@ -17,7 +17,6 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
-import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Add_Laeq_Leq_columns
 import org.noise_planet.noisemodelling.scripts.Acoustic_Tools.Create_Isosurface
@@ -26,6 +25,8 @@ import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from
 import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*
 
 
 import java.sql.SQLException
@@ -36,6 +37,7 @@ import java.sql.SQLException
 class TestAcousticTools extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestAcousticTools.class)
 
+    @Test
     void testAddLeqLaeqColumns1() {
 
         SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
@@ -50,6 +52,7 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals("This table does not contain column with this suffix : HZ", res)
     }
 
+    @Test
     void testAddLeqLaeqColumns2() {
 
         SHPRead.importTable(connection, TestAcousticTools.getResource("ROADS2.shp").getPath())
@@ -66,6 +69,7 @@ class TestAcousticTools extends JdbcTestCase {
         assertEquals(true, fields.contains("LEQ"))
     }
 
+    @Test
     void testCreateIsosurface() {
         def sql = new Sql(connection)
 
@@ -104,6 +108,7 @@ class TestAcousticTools extends JdbcTestCase {
         assertTrue(fieldValues.contains("7"));
     }
 
+    @Test
     void testUpdateZ() throws SQLException, IOException {
         SHPRead.importTable(connection, TestAcousticTools.getResource("receivers.shp").getPath())
         def st = new Sql(connection)
