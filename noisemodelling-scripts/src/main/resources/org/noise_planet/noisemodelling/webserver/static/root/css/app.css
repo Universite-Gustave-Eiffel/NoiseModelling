@@ -1,0 +1,76 @@
+/**
+ * App-specific styles (unified with Builder/ColoringNoise theme)
+ */
+
+/* Console font for log pages */
+@font-face {
+    font-family: "Multi-size, regular Misc-Fixed";
+    src: url("../fonts/misc-fixed.ttf") format("truetype");
+}
+
+.console-text {
+    font-family: "Multi-size, regular Misc-Fixed", "Courier New", monospace;
+    padding: 1em;
+    font-size: 14px;
+    white-space: pre;
+    color: var(--text);
+}
+
+.code {
+    padding: 0.6em 0 0.6em 0.6em;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* QR Code / Registration */
+.qrCodeText {
+    letter-spacing: 4px;
+    font-weight: bold;
+    margin-left: 10px;
+    font-family: "Courier New", monospace;
+    background: var(--surface-2);
+    padding: 0.5em 1em;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: inline-block;
+    margin-top: 0.5em;
+}
+
+figcaption {
+    font-size: 0.8em;
+    margin: 0;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* GDPR text on login */
+.gdpr-text {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 1.5em;
+}
+
+.clickable-header {
+    cursor: pointer;
+}
+
+/* Job table containers */
+.job-table-container {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.pure-img-responsive {
+    max-width: 100%;
+    height: auto;
+}

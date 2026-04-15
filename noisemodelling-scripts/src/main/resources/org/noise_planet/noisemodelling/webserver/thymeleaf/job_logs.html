@@ -1,0 +1,25 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('Job log messages')}">
+<body>
+<div id="layout">
+    <div th:replace="~{menu :: menu}"></div>
+    <div id="main" class="content">
+        <div class="header"><h1 th:text="'Job #'+${jobId}"></h1>
+            <h2>Job latest logs</h2>
+        </div>
+        <div class="code">
+            <pre class="console-text" id="logs" th:text="${rows}">blah blah</pre>
+        </div>
+    </div>
+    <script th:src="@{|/js/logs_ws.js|}"></script>
+    <script th:inline="javascript">
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const path = "[(@{/job_logs_stream/})]";
+        const jobId = [(${jobId})];
+        openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
+    </script>
+    </div>
+</body>
+</html>

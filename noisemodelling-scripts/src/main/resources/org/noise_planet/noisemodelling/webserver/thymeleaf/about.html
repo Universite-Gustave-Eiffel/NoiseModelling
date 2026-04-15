@@ -1,0 +1,45 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('NoiseModelling server status')}"></head>
+<body>
+<div id="layout">
+    <div th:replace="~{menu :: menu}"></div>
+    <div id="main" class="content">
+        <div class="header">
+            <h1>NoiseModelling server status</h1>
+            <h2>Loaded libraries</h2>
+        </div>
+
+        <!-- Table container -->
+        <div class="job-table-container" style="margin: 2em;">
+            <table class="pure-table pure-table-bordered" style="width: 100%;">
+                <thead>
+                <tr>
+                    <th>Library Name</th>
+                    <th style="width: 150px;">Version</th>
+                    <th style="width: 250px;">Last Modified</th>
+                    <th>Commit / Build</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Loop through the list/array of LibraryInfo -->
+                <tr th:each="library : ${libraries}">
+                    <td th:text="${library.name}">Library Name</td>
+                    <td th:text="${library.version}">1.0.0</td>
+                    <td th:text="${library.lastModified}">Date</td>
+                    <td>
+                        <code th:text="${library.commit}" style="font-size: 0.85em;">-</code>
+                    </td>
+                </tr>
+                <!-- Show message if list is empty -->
+                <tr th:if="${#lists.isEmpty(libraries)}">
+                    <td colspan="4" style="text-align: center;">No library information is available</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
