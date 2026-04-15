@@ -332,6 +332,7 @@ static def exec(Connection connection, Map input) {
 
     Network network = scenario.getNetwork()
     MatsimNetworkReader networkReader = new MatsimNetworkReader(network)
+    networkReader.setValidating(false)
     logger.info("Start reading network file ... ")
     networkReader.readFile(networkFile)
     logger.info("Done reading network file ")

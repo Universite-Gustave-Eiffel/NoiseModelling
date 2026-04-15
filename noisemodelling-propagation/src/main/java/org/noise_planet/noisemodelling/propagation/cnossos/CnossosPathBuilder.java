@@ -224,7 +224,6 @@ public class CnossosPathBuilder {
                 (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                         cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
                 && !cutProfile.isCurvedPath()) {
-            // TODO reflection cut planes should be also done on curved profile
             throw new IllegalArgumentException("A favourable path cannot be computed using lateral non curved cut profile");
         }
         List<SegmentPath> segments = new ArrayList<>();
@@ -244,6 +243,39 @@ public class CnossosPathBuilder {
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().groundCoefficient);
+        // Directive 2002/49/EC, section 2.5.3 "Significant heights above the ground":
+        // "If the equivalent height of a point becomes negative, i.e. if the point is located
+        //  below the mean ground plane, a null height is retained, and the equivalent point is
+        //  then identical with its possible image."
+        // Applied here only to DIRECT/REFLECTION SR segments. Lateral (LEFT/RIGHT) paths are
+        // excluded because their 2D cut plane geometry differs from the vertical plane and
+        // applying this rule there causes regressions (e.g. TC14).
+        if(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT ||
+                cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
+            double slopeNorm = Math.sqrt(1 + meanPlane[0] * meanPlane[0]);
+            double signedZsH = (firstPts2D.y - (meanPlane[0] * firstPts2D.x + meanPlane[1])) / slopeNorm;
+            double signedZrH = (lastPts2D.y - (meanPlane[0] * lastPts2D.x + meanPlane[1])) / slopeNorm;
+            boolean needsRecompute = false;
+            if(signedZsH < 0) {
+                srPath.zsH = 0.0;
+                needsRecompute = true;
+            }
+            if(signedZrH < 0) {
+                srPath.zrH = 0.0;
+                needsRecompute = true;
+            }
+            if(needsRecompute && (srPath.zsH + srPath.zrH) > 0) {
+                double gPath = cutProfile.getGPath();
+                srPath.testFormH = srPath.dp / (30 * (srPath.zsH + srPath.zrH));
+                srPath.gPathPrime = srPath.testFormH <= 1 ? gPath * srPath.testFormH + gS * (1 - srPath.testFormH) : gPath;
+                double deltaZT = 6e-3 * srPath.dp / (srPath.zsH + srPath.zrH);
+                double deltaZS = ALPHA0 * pow((srPath.zsH / (srPath.zsH + srPath.zrH)), 2) * (srPath.dp * srPath.dp / 2);
+                srPath.zsF = srPath.zsH + deltaZS + deltaZT;
+                double deltaZR = ALPHA0 * pow((srPath.zrH / (srPath.zsH + srPath.zrH)), 2) * (srPath.dp * srPath.dp / 2);
+                srPath.zrF = srPath.zrH + deltaZR + deltaZT;
+                srPath.testFormF = srPath.dp / (30 * (srPath.zsF + srPath.zrF));
+            }
+        }
         srPath.setPoints2DGround(pts2DGround);
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
@@ -378,7 +410,6 @@ public class CnossosPathBuilder {
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfile.cutPoints.get(i0).getCoordinate(), targetPosition);
                 points.get(0).orientation = emissionDirection;
-                // TODO what about favourable path with curved profile ?
                 cnossosPath.raySourceReceiverDirectivity = emissionDirection;
                 src = pts2D.get(i0);
             }
