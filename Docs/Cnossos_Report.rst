@@ -3,38 +3,24 @@ Conformity to ISO 17534-1:2015
 .. DO NOT UPDATE THIS FILE!!
 .. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java
 
-Clarifications on the ISO Standard and Identified Issues
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Clarifications on the ISO Standard
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It is important to note that the ISO standard provides recommendations
 rather than regulatory obligations. While it serves as a reference framework,
 its application is not mandatory from a legal standpoint.
-
-About the TC27
---------------
-The remaining **1.2 dB** gap at **4 kHz** on ``ABoundaryF`` (reflection path) is
-due to geometric precision sensitivity at the Rayleigh criterion boundary:
-
-* **Path Difference (Δ):** ``-0.006``
-* **Rayleigh Threshold (-λ/20):** ``-0.00425`` (at 4 kHz)
-* **Consequence:** ``Rcrit`` fails, causing ``ABoundary`` to fall back to
-  ``Aground`` (-0.78) instead of ``ADiff`` (0.42 per ISO).
-
-A **1.8 mm** difference in the curved-ray path length is enough to flip the
-criterion. This is an inherent sub-millimeter precision issue, not an
-algorithm error.
 
 Conformity table
 ^^^^^^^^^^^^^^^^
 | Conform
 
 * Do not the deviate more than ±0,1 dB
-* Percentage of conformity : 97% (27/28)
+* Percentage of conformity : 100% (28/28)
 
 | NLD Conform
 
 * Do not the deviate more than ±0,1 dB neglecting lateral diffraction
-* Percentage of conformity : 97% (27/28)
+* Percentage of conformity : 100% (28/28)
 
 .. list-table::
    :widths: 10 20 20 25 30
@@ -175,9 +161,9 @@ Conformity table
      - 0.02 dB @ 4000 Hz
      - `TC26`_
    * - TC27
-     - □
-     - □
-     - 0.21 dB @ 4000 Hz
+     - ☑
+     - ☑
+     - 0.02 dB @ 1000 Hz
      - `TC27`_
    * - TC28
      - ☑
@@ -1286,8 +1272,8 @@ Vertical Plane
      - 0.02 dB
      - 2000
    * - Lꜰ
-     - 0.18 dB
-     - 125
+     - 0.03 dB
+     - 1000
 
 
 Reflection 
@@ -1304,7 +1290,7 @@ Reflection
      - 0.03 dB
      - 125
    * - Lꜰ
-     - 1.20 dB
+     - 0.08 dB
      - 4000
 
 TC28

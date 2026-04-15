@@ -51,26 +51,12 @@ public class GenerateReferenceDeviation {
                     ".. DO NOT UPDATE THIS FILE!!\n" +
                     ".. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateReferenceDeviation.java\n" +
                     "\n" +
-                    "Clarifications on the ISO Standard and Identified Issues\n" +
-                    "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" +
+                    "Clarifications on the ISO Standard\n" +
+                    "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" +
                     "\n" +
                     "It is important to note that the ISO standard provides recommendations\n" +
                     "rather than regulatory obligations. While it serves as a reference framework,\n" +
                     "its application is not mandatory from a legal standpoint.\n" +
-                    "\n" +
-                    "About the TC27\n" +
-                    "--------------\n" +
-                    "The remaining **1.2 dB** gap at **4 kHz** on ``ABoundaryF`` (reflection path) is\n" +
-                    "due to geometric precision sensitivity at the Rayleigh criterion boundary:\n" +
-                    "\n" +
-                    "* **Path Difference (Δ):** ``-0.006``\n" +
-                    "* **Rayleigh Threshold (-λ/20):** ``-0.00425`` (at 4 kHz)\n" +
-                    "* **Consequence:** ``Rcrit`` fails, causing ``ABoundary`` to fall back to\n" +
-                    "  ``Aground`` (-0.78) instead of ``ADiff`` (0.42 per ISO).\n" +
-                    "\n" +
-                    "A **1.8 mm** difference in the curved-ray path length is enough to flip the\n" +
-                    "criterion. This is an inherent sub-millimeter precision issue, not an\n" +
-                    "algorithm error.\n" +
                     "\n" +
                     "Conformity table\n" +
                     "^^^^^^^^^^^^^^^^\n";
