@@ -19,6 +19,7 @@ package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
 
 import org.apache.commons.io.FilenameUtils
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
@@ -43,7 +44,7 @@ import java.sql.Statement
 title = 'Import File'
 description = '&#10145;&#65039; Import file into the database. </br>'+
         '<hr>' +
-        'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv </br> </br>' +
+        'Valid file extensions: csv, dbf, geojson, json, geojson.gz, gpx, osm.bz2, osm.gz, osm, shp, tsv </br> </br>' +
         '<img src="wps_images/import_file.png" alt="Import file" width="95%" align="center">'
 
 inputs = [
@@ -95,10 +96,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
-
 
 def exec(Connection connection, Map input, ProgressVisitor progress) {
 
@@ -171,59 +168,41 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
 
-    // Get the extension of the file
-    String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length()).toLowerCase()
-    switch (ext) {
-        case "csv":
-            CSVDriverFunction csvDriver = new CSVDriverFunction()
-            csvDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "dbf":
-            DBFDriverFunction dbfDriver = new DBFDriverFunction()
-            dbfDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "geojson":
-            GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-            geoJsonDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "gpx":
-            GPXDriverFunction gpxDriver = new GPXDriverFunction()
-            gpxDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "bz2":
-            OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "gz":
-            OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "osm":
-            OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "shp":
-            SHPDriverFunction shpDriver = new SHPDriverFunction()
-            shpDriver.importFile(connection, tableName, new File(pathFile), progress)
-            ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
+    // Get the extension of the file and import
+    String pathFileLower = pathFile.toLowerCase()
+    if (pathFileLower.endsWith(".csv")) {
+        CSVDriverFunction csvDriver = new CSVDriverFunction()
+        csvDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".dbf")) {
+        DBFDriverFunction dbfDriver = new DBFDriverFunction()
+        dbfDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".geojson") || pathFileLower.endsWith(".json") || pathFileLower.endsWith(".geojson.gz")) {
+        GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+        geoJsonDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".gpx")) {
+        GPXDriverFunction gpxDriver = new GPXDriverFunction()
+        gpxDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".osm.bz2") || pathFileLower.endsWith(".osm.gz") || pathFileLower.endsWith(".osm")) {
+        OSMDriverFunction osmDriver = new OSMDriverFunction()
+        osmDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".shp")) {
+        SHPDriverFunction shpDriver = new SHPDriverFunction()
+        shpDriver.importFile(connection, tableName, new File(pathFile), progress)
+        ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
 
-            int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
-            int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+        int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
+        int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
 
-            if (pk2Field > 0 && pkField > 0) {
-                stmt.execute("ALTER TABLE " + tableName + " DROP COLUMN PK2;")
-                logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
-            }
-            break
-        case "fgb":
-            FGBDriverFunction fgbDriver = new FGBDriverFunction()
-            fgbDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-        case "tsv":
-            TSVDriverFunction tsvDriver = new TSVDriverFunction()
-            tsvDriver.importFile(connection, tableName, new File(pathFile), progress)
-            break
-
+        if (pk2Field > 0 && pkField > 0) {
+            stmt.execute("ALTER TABLE " + tableName + " DROP COLUMN PK2;")
+            logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
+        }
+    } else if (pathFileLower.endsWith(".fgb")) {
+        FGBDriverFunction fgbDriver = new FGBDriverFunction()
+        fgbDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".tsv")) {
+        TSVDriverFunction tsvDriver = new TSVDriverFunction()
+        tsvDriver.importFile(connection, tableName, new File(pathFile), progress)
     }
 
     // Read Geometry Index and type of the table
@@ -288,3 +267,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
 }
 
+
+def exec(Connection connection, Map input) {
+    exec(connection, input, new EmptyProgressVisitor())
+}
