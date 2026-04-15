@@ -61117,7 +61117,7 @@ wps.process.prototype.execute = function(options) {
           xmlhttp.onload = function() {
             if (this.status !== 200) {
               if (options.failure) {
-                options.failure.call(options.scope, 'HTTP status error on WPS:Execute request: ' + this.statusText, body);
+                options.failure.call(options.scope, 'HTTP status error on WPS:Execute request: ' + this.responseText, body);
                 return;
               }
             }
@@ -61199,6 +61199,7 @@ wps.process.prototype.parseDescription = function(description) {
   var server = this.client.servers[this.server];
   this.description = this.client.unmarshaller.unmarshalString(
     server.processDescription[this.identifier]).value.processDescription[0];
+
 };
 
 wps.process.prototype.setInputData = function(input, data) {
@@ -61716,13 +61717,13 @@ var extent = [-180, -90, 180, 90];
 //  })
 //});
 wps.backgroundLayer = new ol.layer.Tile({
-	source: new ol.source.TileWMS({
-	  url: 'https://maps.heigit.org/osm-wms/service?',
-	  params: {
-		      'LAYERS': 'osm_auto:all'
-		   }
-	})
-  });
+    source: new ol.source.TileWMS({
+        url: 'https://ows.terrestris.de/osm/service?',
+        params: {
+            'LAYERS': 'OSM-WMS'
+        }
+    })
+});
 // apparently axis order is not what we expect when using WPS
 var projection = new ol.proj.Projection({
   code: 'http://www.opengis.net/gml/srs/epsg.xml#4326',
@@ -61990,7 +61991,11 @@ wps.editor.prototype.showEditForm = function(node) {
       var value = node.value;
       value = (value === undefined) ? '' : value;
       html += '<div class="form-row" id="' + name + '-field">';
-      html += '<input type="text" id="' + id + '" value="' + value + '" class="form-control input-sm"></div>';
+      var textarea = document.createElement('textarea');
+      textarea.id = id;
+      textarea.className = 'form-control input-sm';
+      textarea.textContent = value; // Browser automatically escapes this safely
+      html += textarea.outerHTML;
     }
     html += saveButton;
     if (node._info.maxOccurs > 1 && node._info.maxOccurs > node._info.minOccurs) {
@@ -62516,8 +62521,10 @@ wps.ui = function(options) {
   this.initializeSplitter();
   $('#file-open').click($.proxy(wps.ui.load, null, this));
   $('#file-save').click($.proxy(this.save, null, this));
-  $('#export-clipboard').click($.proxy(this.exportClipboard, null, this));
-  $('#import-clipboard').click($.proxy(this.importClipboard, null, this));
+  $('#save-project').click($.proxy(this.saveProject, null, this));
+  $('#open-project').click($.proxy(this.openProject, null, this));
+  $('#save-project-db').click($.proxy(this.saveProjectWithDatabase, null, this));
+  $('#open-project-db').click($.proxy(this.openProjectWithDatabase, null, this));
   $( "#dialog" ).dialog({
     modal: true,
     autoOpen: false,
@@ -62648,6 +62655,8 @@ wps.ui.load = function(ui, evt, nodes) {
     ui.redraw();
     if (local) {
       $('.open-success').fadeIn().delay(1500).fadeOut();
+    } else {
+      ui.autoSave();
     }
   }
 };
@@ -62683,27 +62692,38 @@ wps.ui.prototype.recurse = function(node) {
   }
 };
 
-wps.ui.prototype.parentComplete = function(node) {
-  var processId = node._parent;
-  var process = this.processes[processId], parentNode;
-  var values = {};
-  for (var i=0, ii=this.nodes.length; i<ii; ++i) {
-    var n = this.nodes[i];
-    if (n.type === "input" && n.value !== undefined && n._parent === processId) {
-      if (typeof n.value === "string" && n.value.indexOf(wps.SUBPROCESS) !== -1) {
-        values[n._info.identifier.value] = n.complete ? n.value : undefined;
-      } else {
-        values[n._info.identifier.value] = n.value;
-      }
+wps.ui.prototype.parentComplete = function(nodeOrId) {
+    var processId = (typeof nodeOrId === "string") ? nodeOrId : nodeOrId._parent;
+    var process = this.processes[processId], parentNode;
+    var values = {};
+
+    for (var i = 0, ii = this.nodes.length; i < ii; ++i) {
+        var n = this.nodes[i];
+        if (n.type === "input" && n.value !== undefined && n._parent === processId) {
+            if (typeof n.value === "string" && n.value.indexOf(wps.SUBPROCESS) !== -1) {
+                values[n._info.identifier.value] = n.complete ? n.value : undefined;
+            } else {
+                values[n._info.identifier.value] = n.value;
+            }
+        }
+        if (n.id === processId) {
+            parentNode = n;
+        }
     }
-    if (n.id === processId) {
-      parentNode = n;
+
+    if (parentNode && process) {
+        var oldStatus = parentNode.complete;
+        var newStatus = process.isComplete(values);
+
+        // Only update if the status actually changed
+        if (oldStatus !== newStatus) {
+            parentNode.complete = newStatus;
+            parentNode.dirty = true; // Mark for redraw because status changed
+        }
+        // IMPORTANT: If parentNode.dirty was already true (e.g. it was just created),
+        // we do NOT set it to false here.
     }
-  }
-  var old = parentNode.complete;
-  parentNode.complete = process.isComplete(values);
-  parentNode.dirty = (old !== parentNode.complete);
-  return parentNode;
+    return parentNode;
 };
 
 wps.ui.prototype.afterSetValue = function(node) {
@@ -62729,34 +62749,158 @@ wps.ui.prototype.afterSetValue = function(node) {
   this.redraw();
 };
 
-wps.ui.prototype.exportClipboard = function(ui) {
+wps.ui.prototype.saveProject = function(ui) {
   var nodes = [];
   for (var i=0, ii=ui.nodes.length; i<ii; ++i) {
     nodes.push(ui.nodes[i].getState());
   }
-  var html = '<div class="form-row">';
-  html += '<label for="node-input-export" style="width:100%"><i class="glyphicon glyphicon-share"> Nodes:</i></label>';
-  html += '<textarea readonly class="wpsgui form-control" id="node-input-export" rows="5"></textarea>';
-  html += '</div>';
-  html += '<div class="form-tips"> Select the text above and copy to the clipboard.</div>';
-  $("#dialog-form").html(html);
-  $("#dialog").dialog("option", "title", "Export to clipboard").dialog( "open" );
-  // bootstrap's hide class has important, so we need to remove it
-  $("#dialog").removeClass('hide');
-  $("#node-input-export").val(JSON.stringify(nodes));
-  $("#node-input-export").focus();
+  var now = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : n; };
+  var filename = 'NM_project_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + '_' + pad(now.getHours()) + '-' + pad(now.getMinutes()) + '-' + pad(now.getSeconds()) + '.json';
+  var blob = new Blob([JSON.stringify(nodes, null, 2)], {type: 'application/json'});
+  if (window.showSaveFilePicker) {
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{
+        description: 'JSON Project File',
+        accept: {'application/json': ['.json']}
+      }]
+    }).then(function(handle) {
+      return handle.createWritable();
+    }).then(function(writable) {
+      writable.write(blob);
+      return writable.close();
+    }).catch(function(err) {
+      if (err.name !== 'AbortError') console.error(err);
+    });
+  } else {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
 };
 
-wps.ui.prototype.importClipboard = function(ui) {
-  var html = '<div class="form-row">';
-  html += '<label for="node-input-import" style="width:100%"><i class="glyphicon glyphicon-share"> Nodes:</i></label>';
-  html += '<textarea placeholder="Paste nodes here" class="form-control" id="node-input-import" rows="5"></textarea>';
-  html += '</div>';
-  $("#dialog-form").html(html);
-  $("#node-input-import").val("");
-  $("#dialog").dialog("option", "title", "Import from clipboard").dialog( "open" );
-  // bootstrap's hide class has important, so we need to remove it
-  $("#dialog").removeClass('hide');
+wps.ui.prototype.openProject = function(ui) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      wps.ui.load(ui, null, ev.target.result);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};
+
+wps.ui.prototype.saveProjectWithDatabase = function(ui) {
+  var nodes = [];
+  for (var i=0, ii=ui.nodes.length; i<ii; ++i) {
+    nodes.push(ui.nodes[i].getState());
+  }
+  var now = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : n; };
+  var filename = 'NM_project_db_' + now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + '_' + pad(now.getHours()) + '-' + pad(now.getMinutes()) + '-' + pad(now.getSeconds()) + '.zip';
+  fetch('database/export')
+    .then(function(response) {
+      if (!response.ok) throw new Error('Database export failed: ' + response.statusText);
+      return response.blob();
+    })
+    .then(function(dbBlob) {
+      var zip = new JSZip();
+      zip.file('project.json', JSON.stringify(nodes, null, 2));
+      zip.file('database.zip', dbBlob);
+      return zip.generateAsync({type: 'blob'});
+    })
+    .then(function(content) {
+      if (window.showSaveFilePicker) {
+        window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'NoiseModelling Project with Database',
+            accept: {'application/zip': ['.zip']}
+          }]
+        }).then(function(handle) {
+          return handle.createWritable();
+        }).then(function(writable) {
+          writable.write(content);
+          return writable.close();
+        }).catch(function(err) {
+          if (err.name !== 'AbortError') console.error(err);
+        });
+      } else {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      }
+    })
+    .catch(function(err) {
+      alert('Error saving project with database: ' + err.message);
+    });
+};
+
+wps.ui.prototype.openProjectWithDatabase = function(ui) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.zip';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    JSZip.loadAsync(file).then(function(zip) {
+      var projectFile = zip.file('project.json');
+      var dbFile = zip.file('database.zip');
+      if (!projectFile && !dbFile) {
+        alert('Invalid archive: neither project.json nor database.zip found');
+        return;
+      }
+      var loadProject;
+      if (projectFile) {
+        loadProject = projectFile.async('string').then(function(content) {
+          wps.ui.load(ui, null, content);
+        });
+      } else {
+        loadProject = Promise.resolve();
+      }
+      var loadDb;
+      if (dbFile) {
+        loadDb = dbFile.async('blob').then(function(dbBlob) {
+          var formData = new FormData();
+          formData.append('database', dbBlob, 'database.zip');
+          return fetch('database/import', {
+            method: 'POST',
+            body: formData
+          }).then(function(response) {
+            if (!response.ok) throw new Error('Database import failed: ' + response.statusText);
+            return response.text();
+          });
+        });
+      } else {
+        loadDb = Promise.resolve();
+      }
+      return Promise.all([loadProject, loadDb]).then(function() {
+        return {hasProject: !!projectFile, hasDb: !!dbFile};
+      });
+    }).then(function(result) {
+      var parts = [];
+      if (result.hasProject) parts.push('project');
+      if (result.hasDb) parts.push('database');
+      alert(parts.join(' and ') + ' loaded successfully');
+    }).catch(function(err) {
+      alert('Error loading project with database: ' + err.message);
+    });
+  };
+  input.click();
 };
 
 wps.ui.prototype.checkInput = function(nodeId, name, id) {
@@ -62818,6 +62962,14 @@ wps.ui.prototype.save = function(ui) {
   }
   localStorage.setItem(ui.localStorageKey, JSON.stringify(nodes));
   $('.save-success').fadeIn().delay(1500).fadeOut();
+};
+
+wps.ui.prototype.autoSave = function() {
+  var nodes = [];
+  for (var i=0, ii=this.nodes.length; i<ii; ++i) {
+    nodes.push(this.nodes[i].getState());
+  }
+  localStorage.setItem(this.localStorageKey, JSON.stringify(nodes));
 };
 
 wps.ui.prototype.resizeTabs = function() {
@@ -63010,9 +63162,11 @@ wps.ui.prototype.handleLocal = function(value) {
 
 // brute force
 wps.ui.prototype.processAlgorithm = function(processId) {
-  var executed = [];
-  var toExecute = this.getDependsOnAlgorithms(processId);
-  while (executed.length < toExecute.length) {
+  let executed = [];
+  let toExecute = this.getDependsOnAlgorithms(processId);
+  var pushed = true;
+  while (pushed) {
+    pushed = false;
     for (var i=0, ii=toExecute.length; i<ii; ++i) {
       if (executed.indexOf(toExecute[i]) === -1) {
         var canExecute = true;
@@ -63038,6 +63192,7 @@ wps.ui.prototype.processAlgorithm = function(processId) {
             inputs: values
           });
           executed.push(toExecute[i]);
+          pushed = true;
         }
       }
     }
@@ -63098,14 +63253,27 @@ wps.ui.prototype.clear = function(ui) {
   $('#tab-xml pre code').html('');
   $("#palette-search-input").val("");
   wps.ui.filterChange();
+  ui.autoSave();
   ui.redraw();
 };
 
 wps.ui.prototype.execute = function(ui) {
   var hasSelected = false;
   var selection = d3.selectAll(".node_selected");
-  if (selection[0].length > 0) {
-    var node = selection.datum();
+  if (!selection.empty()) {
+    var node = null;
+    // Search the selection for a node of type 'process'
+    selection.each(function(d) {
+      if (d.type === 'process') {
+          node = d;
+      }
+    });
+
+    // If no process node was found in the selection (e.g., only a link was selected),
+    // fall back to the first available node and find its parent
+    if (!node) {
+      node = selection.datum();
+    }
     hasSelected = true;
     var processId = node.type === 'process' ? node.id : node._parent;
     if (ui.findNodeById(processId).complete !== true) {
@@ -63164,9 +63332,73 @@ wps.ui.prototype.execute = function(ui) {
 
       recurse(inputs, ui, values);
 
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
+    /**
+     * Generates a Python script that performs the WPS POST request
+     * @param {string} xmlPayload - The XML content for the body
+     * @param {string} jwt - The JWT token to be used in the Cookie header
+     * @param targetUrl Post url
+     */
+    var generatePythonScript = function(xmlPayload, jwt, targetUrl) {
+        const referer=window.location.origin+window.location.pathname;
+            // We use a template literal for the Python code.
+            // We escape backticks if necessary, but here we just inject the variables.
+            const pythonCode = `import urllib.request
+import urllib.error
+
+# Variables
+xml_content = """${xmlPayload}"""
+jwt_token = "${jwt}"
+
+def send_request():
+    url = "${targetUrl}"
+    
+    # Encode the XML content to bytes
+    encoded_data = xml_content.encode('utf-8')
+
+    # Define Headers (using the injected JWT)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0",
+        "Accept": "*/*",
+        "Accept-Language": "fr,fr-FR;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Content-Type": "application/xml",
+        "Origin": "${window.location.origin}",
+        "Connection": "keep-alive",
+        "Referer": "${referer}",
+        "Cookie": f"jwt={jwt_token}",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin"
+    }
+
+    req = urllib.request.Request(url, data=encoded_data, headers=headers, method="POST")
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            print(f"Status: {response.getcode()}")
+            print(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        print(f"HTTP Error {e.code}: {e.read().decode('utf-8')}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    send_request()
+`;
+
+        return pythonCode;
+      };
       var prettyXML = function(body) {
         var code = $('#tab-xml pre code').get(0);
-        $(code).html(document.createTextNode(vkbeautify.xml(body, 2)));
+        var prettyXml = vkbeautify.xml(body, 2);
+        const targetUrl = window.location.origin + window.location.pathname.replace(/\/$/, "") + "/ows";
+        var pythonCode = generatePythonScript(prettyXml, getCookie('jwt'), targetUrl)
+        $(code).html(document.createTextNode(pythonCode));
         hljs.highlightBlock(code);
       };
 
@@ -63288,39 +63520,61 @@ wps.ui.prototype.checkSubLinkForDelete = function(link, process) {
 };
 
 wps.ui.prototype.deleteSelection = function() {
-  var redraw = false;
-  if (this.selectedLink !== null) {
-    var src = this.findNodeById(this.selectedLink.source);
-    var dst = this.findNodeById(this.selectedLink.target);
-    var input = src.type === 'input' ? src : dst;
-    this.editor_.setValue(false, false, undefined, input);
-    this.nodes.splice(this.nodes.indexOf(this.selectedLink), 1);
-    this.selectedLink = null;
-    redraw = true;
-  }
-  var selection = d3.selectAll(".node_selected");
-  if (selection[0].length > 0) {
-    var node = selection.datum();
-    if (node.type === 'process') {
-      this.deleteInputMap(node.id);
-      $('.input-map').detach();
-      $('.output-map').detach();
-      $('#tab-inputs').html('');
-      $('#tab-results').html('');
-      this.nodes.splice(this.nodes.indexOf(node), 1);
-      for (var i=this.nodes.length-1; i>=0; --i) {
-        if (this.nodes[i] instanceof wps.ui.link && this.checkSubLinkForDelete(this.nodes[i], node.id)) {
-          this.nodes.splice(i, 1);
-        } else if (this.nodes[i]._parent === node.id) {
-          this.nodes.splice(i, 1);
-        }
-      }
+    var redraw = false;
+    var me = this;
+
+    // 1. Handle Link deletion (original logic)
+    if (this.selectedLink !== null) {
+        var src = this.findNodeById(this.selectedLink.source);
+        var dst = this.findNodeById(this.selectedLink.target);
+        var input = src.type === 'input' ? src : dst;
+        this.editor_.setValue(false, false, undefined, input);
+        this.nodes.splice(this.nodes.indexOf(this.selectedLink), 1);
+        this.selectedLink = null;
+        redraw = true;
     }
-    redraw = true;
-  }
-  if (redraw) {
-    this.redraw();
-  }
+
+    // 2. Handle Node deletion (Updated to handle multiple selected nodes)
+    var selection = d3.selectAll(".node_selected");
+    if (!selection.empty()) {
+        // Convert selection to data array to avoid issues while modifying the DOM/nodes
+        selection.each(function(node) {
+            // Check if node still exists in the list (might have been deleted by its parent process in this same loop)
+            var nodeIndex = me.nodes.indexOf(node);
+            if (nodeIndex === -1) return;
+
+            if (node.type === 'process') {
+                // Clean up UI maps and tabs
+                me.deleteInputMap(node.id);
+                $('.input-map').detach();
+                $('.output-map').detach();
+                $('#tab-inputs').html('');
+                $('#tab-results').html('');
+
+                // Remove the process itself
+                me.nodes.splice(me.nodes.indexOf(node), 1);
+
+                // Remove all children (inputs/outputs) and links associated with this process
+                for (var i = me.nodes.length - 1; i >= 0; --i) {
+                    var n = me.nodes[i];
+                    if (n instanceof wps.ui.link && me.checkSubLinkForDelete(n, node.id)) {
+                        me.nodes.splice(i, 1);
+                    } else if (n._parent === node.id) {
+                        me.nodes.splice(i, 1);
+                    }
+                }
+                redraw = true;
+            }
+            // Note: In this UI, inputs/outputs are tied to processes.
+            // We don't delete individual inputs via the delete key normally,
+            // but if you wanted to allow it, you would add logic here.
+        });
+    }
+
+    if (redraw) {
+        this.autoSave();
+        this.redraw();
+    }
 };
 
 wps.ui.prototype.zoomIn = function(evt) {
@@ -63431,6 +63685,7 @@ wps.ui.canvasMouseUp = function(ui) {
       delete me.movingSet[i].ox;
       delete me.movingSet[i].oy;
     }
+    me.autoSave();
   }
   me.redraw();
   me.resetMouseVars();
@@ -63473,100 +63728,176 @@ wps.ui.prototype.createCanvas = function() {
   this.dragLine = this.vis.append("svg:path").attr("class", "drag_line");
 };
 
-wps.ui.prototype.createDropTarget = function() {
-  var me = this;
-  this.dropZone_.droppable({
-    accept:".palette_node",
-    drop: function( event, ui ) {
-      d3.event = event;
-      var selected_tool = $(ui.draggable[0]).data('type');
-      var process = me.client_.getProcess(me.defaultServer_, selected_tool, {callback: function(info, error, statusText) {
-        if (error === true) {
-          $('#tab-results').html('Error getting process description, details: ' + statusText);
-          me.activateTab('tab-results');
-          return;
+wps.ui.prototype.createDropTarget = function () {
+    var me = this;
+    this.dropZone_.droppable({
+        accept: ".palette_node",
+        drop: function (event, ui) {
+            d3.event = event;
+            var selected_tool = $(ui.draggable[0]).data('type');
+            var process = me.client_.getProcess(me.defaultServer_, selected_tool, {callback: function(info, error, statusText) {
+                    if (error === true) {
+                        $('#tab-results').html('Error getting process description, details: ' + statusText);
+                        me.activateTab('tab-results');
+                        return;
+                    }
+
+                    var mousePos = d3.touches(this)[0]||d3.mouse(this);
+                    mousePos[1] += this.scrollTop;
+                    mousePos[0] += this.scrollLeft;
+                    mousePos[1] /= me.scaleFactor;
+                    mousePos[0] /= me.scaleFactor;
+
+                    // --- DYNAMIC SPACING CALCULATIONS ---
+                    var horizontalGutter = 40; // Min space between the process block and its ports
+                    var processLabel = selected_tool;
+                    var processW = me.calculateTextWidth(processLabel);
+
+                    // Calculate the maximum width among all inputs
+                    var maxInputW = 0;
+                    for (var i = 0; i < info.dataInputs.input.length; i++) {
+                        var inputW = me.calculateTextWidth(info.dataInputs.input[i].title.value);
+                        if (inputW > maxInputW) maxInputW = inputW;
+                    }
+                    maxInputW = Math.max(maxInputW, me.nodeWidth);
+
+                    // Calculate the maximum width among all outputs
+                    var maxOutputW = 0;
+                    for (var i = 0; i < info.processOutputs.output.length; i++) {
+                        var outputW = me.calculateTextWidth(info.processOutputs.output[i].title.value);
+                        if (outputW > maxOutputW) maxOutputW = outputW;
+                    }
+                    maxOutputW = Math.max(maxOutputW, me.nodeWidth);
+
+                    // Calculate X positions so they don't overlap regardless of text length
+                    // Positions are centers of nodes
+                    var inputX = mousePos[0] - (processW / 2) - horizontalGutter - (maxInputW / 2);
+                    var outputX = mousePos[0] + (processW / 2) + horizontalGutter + (maxOutputW / 2);
+
+                    // Prevent inputs from falling off the left side of the workspace
+                    var leftEdgeOffset = (mousePos[0] - inputX) + (maxInputW / 2) + 20;
+                    mousePos[0] = Math.max(mousePos[0], leftEdgeOffset);
+                    // Recalculate after potential shift
+                    inputX = mousePos[0] - (processW / 2) - horizontalGutter - (maxInputW / 2);
+                    outputX = mousePos[0] + (processW / 2) + horizontalGutter + (maxOutputW / 2);
+                    // --- END DYNAMIC CALCULATIONS ---
+
+                    // We want the left-most edge of the longest label to be at x=20
+                    // LeftEdge = mouseX - (processW/2) - gutter - maxInputW
+                    var currentLeftEdge = mousePos[0] - (processW / 2) - horizontalGutter - maxInputW;
+
+                    if (currentLeftEdge < 20) {
+                        // Push the process block just enough to keep the longest label on screen
+                        mousePos[0] = 20 + maxInputW + horizontalGutter + (processW / 2);
+                    }
+
+                    // This is the vertical line where the right sides of all input blocks will touch
+                    var inputRightEdgeX = mousePos[0] - (processW / 2) - horizontalGutter;
+
+                    // --- BOUNDARY CHECK ---
+                    // Ensure the widest input doesn't go off the left side of the screen
+                    if (inputRightEdgeX - maxInputW < 20) {
+                        var shift = 20 - (inputRightEdgeX - maxInputW);
+                        mousePos[0] += shift;
+                        // Recalculate Right Edge after shift
+                        inputRightEdgeX = mousePos[0] - (processW / 2) - horizontalGutter;
+                    }
+                    // Sorting
+                    if (info.dataInputs && info.dataInputs.input) {
+                        info.dataInputs.input.sort(function(a, b) {
+                            // 1. Check Mandatory Status (minOccurs > 0)
+                            var isMandatoryA = (a.minOccurs > 0);
+                            var isMandatoryB = (b.minOccurs > 0);
+
+                            // If one is mandatory and the other isn't, mandatory goes first
+                            if (isMandatoryA !== isMandatoryB) {
+                                return isMandatoryA ? -1 : 1;
+                            }
+
+                            // 2. Secondary Sort: Alphabetical by Title
+                            var titleA = (a.title && a.title.value) ? a.title.value.toLowerCase() : "";
+                            var titleB = (b.title && b.title.value) ? b.title.value.toLowerCase() : "";
+
+                            return titleA.localeCompare(titleB);
+                        });
+                    }
+                    var config = {
+                        x: mousePos[0],
+                        y: mousePos[1],
+                        w: processW,
+                        type: 'process',
+                        dirty: true,
+                        _info: info,
+                        inputs: info.dataInputs.input.length,
+                        outputs: info.processOutputs.output.length,
+                        label: selected_tool
+                    };
+                    var nn = new wps.ui.node(config);
+                    me.processes[nn.id] = process;
+
+                    var link, i, ii, delta = 35, span = delta * nn.inputs, deltaY = (span-delta)/2;
+                    var startY = mousePos[1];
+
+                    for (i=0, ii=nn.inputs; i<ii; ++i) {
+                        var inputInfo = info.dataInputs.input[i];
+                        for (var j=0, jj=Math.max(inputInfo.minOccurs, 1); j<jj; ++j) {
+                            var currentNodeW = me.calculateTextWidth(inputInfo.title.value);
+
+                            var inputConfig = {
+                                // Center = RightBoundary - (Half Width)
+                                x: inputRightEdgeX - (currentNodeW / 2), // Aligns ports in a straight line
+                                y: startY - deltaY,
+                                w: currentNodeW,
+                                inputs: 1,
+                                outputs: 1,
+                                _parent: nn.id,
+                                dirty: true,
+                                type: 'input',
+                                _info: inputInfo,
+                                required: (inputInfo.minOccurs > 0),
+                                complete: false,
+                                label: inputInfo.title.value.replace(/_/g, ' ')
+                            };
+
+                            if (inputConfig.y < 15) {
+                                startY = 100 + deltaY;
+                                inputConfig.y = startY-deltaY;
+                            }
+                            var input = new wps.ui.node(inputConfig);
+                            deltaY -= delta;
+                            me.nodes.push(input);
+                            link = new wps.ui.link({source: input.id, target: nn.id, _parent: nn.id});
+                            me.nodes.push(link);
+                        }
+                    }
+
+                    for (i=0, ii=nn.outputs; i<ii; ++i) {
+                        var outputInfo = info.processOutputs.output[i];
+                        var outputConfig = {
+                            x: outputX, // Use calculated dynamic X
+                            y: mousePos[1],
+                            w: me.calculateTextWidth(outputInfo.title.value), // Individual width
+                            inputs: 1,
+                            outputs: 1,
+                            dirty: true,
+                            type: 'output',
+                            _parent: nn.id,
+                            _info: outputInfo,
+                            label: outputInfo.title.value.replace(/_/g, ' ')
+                        };
+                        var output = new wps.ui.node(outputConfig);
+                        me.nodes.push(output);
+                        link = new wps.ui.link({source: nn.id, _parent: nn.id, target: output.id});
+                        me.nodes.push(link);
+                    }
+
+                    me.nodes.push(nn);
+                    me.parentComplete(nn.id);
+                    me.autoSave();
+                    me.redraw();
+                }, scope: this});
         }
-        var mousePos = d3.touches(this)[0]||d3.mouse(this);
-        mousePos[1] += this.scrollTop;
-        mousePos[0] += this.scrollLeft;
-        mousePos[1] /= me.scaleFactor;
-        mousePos[0] /= me.scaleFactor;
-        mousePos[0] = Math.max(mousePos[0], 300);
-        var config = {
-          x: mousePos[0],
-          y: mousePos[1],
-          w: this.nodeWidth,
-          type: 'process',
-          dirty: true,
-          _info: info,
-          inputs: info.dataInputs.input.length,
-          outputs: info.processOutputs.output.length,
-          label: selected_tool
-        };
-        var nn = new wps.ui.node(config);
-        me.processes[nn.id] = process;
-        var link, i, ii, delta = 50, span = delta * nn.inputs, deltaY = (span-delta)/2;
-        var startY = mousePos[1];
-        for (i=0, ii=nn.inputs; i<ii; ++i) {
-          for (var j=0, jj=Math.max(info.dataInputs.input[i].minOccurs, 1); j<jj; ++j) {
-            var inputConfig = {
-              x: mousePos[0]-200,
-              y: startY-deltaY,
-              w: this.nodeWidth,
-              inputs: 1,
-              outputs: 1,
-              _parent: nn.id,
-              dirty: true,
-              type: 'input',
-              _info: info.dataInputs.input[i],
-              required: (info.dataInputs.input[i].minOccurs > 0),
-              complete: false,
-              label: info.dataInputs.input[i].title.value
-            };
-            if (inputConfig.y < 15) {
-              startY = 100 + deltaY;
-              inputConfig.y = startY-deltaY;
-            }
-            var input = new wps.ui.node(inputConfig);
-            deltaY -= delta;
-            me.nodes.push(input);
-            // create a link as well between input and process
-            link = new wps.ui.link({
-              source: input.id,
-              target: nn.id,
-              _parent: nn.id
-            });
-            me.nodes.push(link);
-          }
-        }
-        for (i=0, ii=nn.outputs; i<ii; ++i) {
-          var outputConfig = {
-            x: mousePos[0]+200,
-            y: mousePos[1],
-            w: this.nodeWidth,
-            inputs: 1,
-            outputs: 1,
-            dirty: true,
-            type: 'output',
-            _parent: nn.id,
-            _info: info.processOutputs.output[i],
-            label: info.processOutputs.output[i].title.value
-          };
-          var output = new wps.ui.node(outputConfig);
-          me.nodes.push(output);
-          // create a link as well between process and output
-          link = new wps.ui.link({
-            source: nn.id,
-            _parent: nn.id,
-            target: output.id
-          });
-          me.nodes.push(link);
-        }
-        me.nodes.push(nn);
-        me.redraw();
-      }, scope: this});
-    }
-  });
+    });
 };
 
 wps.ui.prototype.createLinkPaths = function() {
@@ -63660,7 +63991,7 @@ wps.ui.prototype.createExtraInputNode = function() {
     type: 'input',
     _info: selected_node._info,
     complete: false,
-    label: selected_node._info.identifier.value
+    label: selected_node._info.identifier.value.replace(/_/g, ' ')
   };
   var input = new wps.ui.node(inputConfig);
   this.nodes.push(input);
@@ -63801,6 +64132,7 @@ wps.ui.portMouseUp = function(ui, portType, portIndex, d) {
       ui.nodes.push(link);
     }
     ui.selectedLink = null;
+    ui.autoSave();
     ui.redraw();
   }
 };
@@ -63843,7 +64175,7 @@ wps.ui.prototype.updateNode = function(d, ui) {
       classed("node_required", function(d) { return d.required; }).
       classed("node_selected",function(d) { return d.selected; });
       thisNode.selectAll('text.node_label').text(function(d,i){
-        return d.label || "";
+        return (d.label || "").replace(/_/g, ' ');
       }).
         attr('y', function(d){return (d.h/2)-1;}).
         attr('class',function(d){
@@ -63882,13 +64214,19 @@ wps.ui.prototype.updateNode = function(d, ui) {
 };
 
 wps.ui.prototype.clearSelection = function() {
-  for (var i in this.movingSet) {
-    var n = this.movingSet[i];
-    n.n.dirty = true;
-    n.n.selected = false;
-  }
-  this.movingSet = [];
-  this.selectedLink = null;
+    // 1. Iterate through ALL nodes to ensure visual consistency
+    for (var i = 0; i < this.nodes.length; i++) {
+        var n = this.nodes[i];
+        // If the node was selected, mark it for a redraw and deselect it
+        if (n.selected) {
+            n.selected = false;
+            n.dirty = true;
+        }
+    }
+
+    // 2. Clear the technical selection tracking
+    this.movingSet = [];
+    this.selectedLink = null;
 };
 
 wps.ui.nodeMouseUp = function(ui, d) {
@@ -63906,48 +64244,89 @@ wps.ui.nodeMouseUp = function(ui, d) {
 };
 
 wps.ui.prototype.updateSelection = function() {
-  if (this.mousedownNode) {
-    if (this.inputMaps[this.mousedownNode._parent]) {
-      if (this.inputMaps[this.mousedownNode._parent].vector) {
-        this.inputMaps[this.mousedownNode._parent].vector.changed();
-      }
+    var me = this;
+    if (this.mousedownNode) {
+        // If a process is selected, update maps for all its children
+        if (this.mousedownNode.type === 'process') {
+            if (this.inputMaps[this.mousedownNode.id]) {
+                if (this.inputMaps[this.mousedownNode.id].vector) {
+                    this.inputMaps[this.mousedownNode.id].vector.changed();
+                }
+            }
+        }
+        // If an input/output is selected, update the map of its parent process
+        else if (this.mousedownNode._parent) {
+            var parentId = this.mousedownNode._parent;
+            if (this.inputMaps[parentId]) {
+                if (this.inputMaps[parentId].vector) {
+                    this.inputMaps[parentId].vector.changed();
+                }
+            }
+        }
     }
-  }
 };
 
 wps.ui.nodeMouseDown = function(ui, d) {
-  var me = ui;
-  me.mousedownNode = d;
-  var now = Date.now();
-  me.clickElapsed = now-me.clickTime;
-  me.clickTime = now;
-  if (!d.selected) {
-    me.clearSelection();
-  }
-  me.mousedownNode.selected = true;
-  me.movingSet.push({n:me.mousedownNode});
-  me.selectedLink = null;
-  if (d3.event.button != 2) {
-    // MOVING
-    me.mouseMode = 1;
-    var mouse = d3.touches(this)[0]||d3.mouse(this);
-    mouse[0] += d.x-d.w/2;
-    mouse[1] += d.y-d.h/2;
-    for (var i in me.movingSet) {
-      me.movingSet[i].ox = me.movingSet[i].n.x;
-      me.movingSet[i].oy = me.movingSet[i].n.y;
-      me.movingSet[i].dx = me.movingSet[i].n.x-mouse[0];
-      me.movingSet[i].dy = me.movingSet[i].n.y-mouse[1];
+    var me = ui;
+    me.mousedownNode = d;
+    var now = Date.now();
+    me.clickElapsed = now - me.clickTime;
+    me.clickTime = now;
+
+    if (!d.selected) {
+        me.clearSelection();
     }
-    me.mouseOffset = d3.mouse(document.body);
-    if (isNaN(me.mouseOffset[0])) {
-      me.mouseOffset = d3.touches(document.body)[0];
+
+    // Mark clicked node as selected and dirty
+    d.selected = true;
+    d.dirty = true;
+
+    // Initialize the set of things that will move
+    me.movingSet = [];
+    me.movingSet.push({n: d});
+
+    // If we clicked a process, find all associated inputs and outputs
+    if (d.type === 'process') {
+        for (var i = 0; i < me.nodes.length; i++) {
+            var node = me.nodes[i];
+            // Only add valid nodes (not links) that belong to this process
+            if (node.id !== d.id && node._parent === d.id && node.type) {
+                node.selected = true;
+                node.dirty = true;
+                me.movingSet.push({n: node});
+            }
+        }
     }
-  }
-  d.dirty = true;
-  me.updateSelection();
-  me.redraw();
-  d3.event.stopPropagation();
+
+    me.selectedLink = null;
+
+    if (d3.event.button != 2) {
+        me.mouseMode = 1; // MOVING
+
+        /**
+         * FIX: Get mouse position relative to the workspace (vis)
+         * instead of 'this' (the node). This prevents NaN values.
+         */
+        var mousePos = d3.mouse(me.vis.node());
+
+        for (var j = 0; j < me.movingSet.length; j++) {
+            var moveItem = me.movingSet[j];
+            moveItem.ox = moveItem.n.x;
+            moveItem.oy = moveItem.n.y;
+            // Calculate offset between node center and mouse
+            moveItem.dx = moveItem.n.x - mousePos[0];
+            moveItem.dy = moveItem.n.y - mousePos[1];
+        }
+
+        me.mouseOffset = d3.mouse(document.body);
+        if (isNaN(me.mouseOffset[0])) {
+            me.mouseOffset = d3.touches(document.body)[0];
+        }
+    }
+
+    me.updateSelection();
+    me.redraw();
+    d3.event.stopPropagation();
 };
 
 wps.ui.prototype.createProcessRect = function(node) {
@@ -63997,9 +64376,10 @@ wps.ui.prototype.createSearch = function() {
 };
 
 wps.ui.prototype.createProcessCategory = function(group) {
+  var groupLabel = group.replace(/_/g, ' ');
   var category = $('<div class="palette-category"><div class="palette-header">' +
     '<i class="glyphicon glyphicon-chevron-down expanded"></i><span>' +
-    group + '</span></div></div>');
+    groupLabel + '</span></div></div>');
   this.parentContainer_.append(category);
   var content = $('<div class="palette-content"></div>');
   $(category).append(content);
@@ -64015,7 +64395,7 @@ wps.ui.prototype.createProcess = function(process) {
   var summary = offering._abstract.value;
   var title = offering.title.value;
   var id = offering.identifier.value;
-  var d = $('<div class="palette_node ui-draggable">' + id.split(':')[1] + '</div>');
+  var d = $('<div class="palette_node ui-draggable">' + id.split(':')[1].replace(/_/g, ' ') + '</div>');
   $(d).data('type', id);
   $(d).popover({
     title: title,

@@ -193,11 +193,12 @@ body {
     font-size: 40px;
     color: #fff;
 }
+
 #header {
-    background: url("wpsbuilder-header.png");
+    background: url("wpsbuilder-header.png") no-repeat;
     display: inline-block;
-    height: 60px;
-    width: 420px;
+    height: 58px;
+    width: 433px;
     margin-right: 20px;
 }
 
@@ -231,14 +232,23 @@ a.brand span {
 .navbar-inner > .container-fluid {
     padding-right: 10px;
     padding-left: 20px;
-    padding-top: 8px;
+    padding-top: 0;
+    padding-bottom: 0;
     position: relative;
-
+    display: flex;
+    align-items: center;
+    height: 80px;
 }
 
 .navbar-inner > .container-fluid > .btn-group {
-    margin-top: 12px;
-    margin-bottom: 65px;
+    margin-top: 0;
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+
+.navbar-inner > .container-fluid > .btn-group.pull-right {
+    margin-left: auto;
+    float: none;
 }
 
 #workspace {
@@ -306,7 +316,6 @@ a.brand span {
     overflow: hidden;
     background: #f3f3f3;
     text-align: center;
-    height: 35px;
     padding: 6px;
     border-top: 1px solid #999;
     box-sizing:border-box;
@@ -325,7 +334,7 @@ a.brand span {
 /* bartvde change to glyphicon */
 #palette-search i.glyphicon-remove {
     position: absolute;
-    right: 10px;
+    right: 14px;
     top: 12px;
 }
 
