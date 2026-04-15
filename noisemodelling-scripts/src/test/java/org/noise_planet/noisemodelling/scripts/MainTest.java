@@ -1,12 +1,11 @@
 package org.noise_planet.noisemodelling.scripts;
 
-import junit.framework.TestCase;
-import org.junit.jupiter.api.Test;;
+import org.junit.jupiter.api.Test;
 import org.noise_planet.noisemodelling.runner.Main;
 
 import java.util.UUID;
 
-public class MainTest extends TestCase {
+public class MainTest {
     String dbName = UUID.randomUUID().toString().replace("-", "");
 
     @Test

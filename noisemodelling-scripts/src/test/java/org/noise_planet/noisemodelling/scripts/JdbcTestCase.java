@@ -1,33 +1,24 @@
-/**
- * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
- *
- * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
- * <http://noise-planet.org/noisemodelling.html>
- *
- * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
- *
- * Contact: contact@noise-planet.org
- *
- */
-package org.noise_planet.noisemodelling.scripts
+package org.noise_planet.noisemodelling.scripts;
 
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
-import org.h2.Driver
-import org.h2.util.OsgiDataSourceFactory
-import org.h2gis.functions.factory.H2GISFunctions
-import org.h2gis.postgis_jts.ConnectionWrapper
-import org.h2gis.utilities.JDBCUtilities
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.osgi.service.jdbc.DataSourceFactory
-import org.postgresql.ds.PGSimpleDataSource
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.h2.Driver;
+import org.h2.util.OsgiDataSourceFactory;
+import org.h2gis.functions.factory.H2GISFunctions;
+import org.h2gis.postgis_jts.ConnectionWrapper;
+import org.h2gis.utilities.JDBCUtilities;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.osgi.service.jdbc.DataSourceFactory;
+import org.postgresql.ds.PGSimpleDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource
-import java.sql.Connection
-import java.sql.SQLException
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Optional;
+import java.util.Properties;
 
 public class JdbcTestCase {
 
