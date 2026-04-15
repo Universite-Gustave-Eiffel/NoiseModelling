@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wps:ExecuteResponse xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ows="http://www.opengis.net/ows/1.1"
+                     xmlns:wps="http://www.opengis.net/wps/1.0.0" xmlns:xlink="http://www.w3.org/1999/xlink"
+                     xml:lang="en" service="WPS" statusLocation="http://localhost:8000/nmcovadis/builder/jobs/13"
+                     version="1.0.0">
+    <wps:Process wps:processVersion="1.0.0">
+        <ows:Identifier>Slurm:Noise_level_from_source</ows:Identifier>
+        <ows:Title>Computes the propagation from the sounds sources to the receivers</ows:Title>
+        <ows:Abstract>&amp;#10145;&amp;#65039; Computes the propagation from the sounds sources to the receivers
+            location using the noise emission table on a remote HPC cluster using Slurm for job management.&lt;hr&gt;&amp;#127757;
+            Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. &lt;/br&gt;&lt;/br&gt;&amp;#x2705;
+            The output table are called: &lt;b&gt; RECEIVERS_LEVEL &lt;/b&gt; &lt;/br&gt;&lt;/br&gt;The output table
+            contain: &lt;/br&gt; &lt;ul&gt;&lt;li&gt;&lt;b&gt; IDRECEIVER&lt;/b&gt;: receiver an identifier (INTEGER)
+            linked to RECEIVERS table primary key&lt;/li&gt;&lt;li&gt;&lt;b&gt; IDSOURCE&lt;/b&gt;: source identifier
+            (INTEGER) linked to SOURCES_GEOM primary key. Only if Keep source id is checked.&lt;/li&gt;&lt;li&gt;&lt;b&gt;
+            PERIOD &lt;/b&gt;: Time period (VARCHAR) ex. L D E and DEN. Only if you provide emission power to sources or
+            the atmospheric settings table.&lt;/li&gt;&lt;li&gt;&lt;b&gt; THE_GEOM &lt;/b&gt;: the 3D geometry of the
+            receivers with the Z as the altitude (POINTZ)&lt;/li&gt;&lt;li&gt;&lt;b&gt; Hz63, Hz125, Hz250, Hz500,
+            Hz1000,Hz2000, Hz4000, Hz8000 &lt;/b&gt;: 8 columns giving the sound level for each octave band (FLOAT)&lt;/li&gt;&lt;/ul&gt;
+        </ows:Abstract>
+    </wps:Process>
+    <wps:Status creationTime="2026-03-11T08:55:40Z">
+        <wps:ProcessStarted percentCompleted="0">RUNNING</wps:ProcessStarted>
+    </wps:Status>
+</wps:ExecuteResponse>
