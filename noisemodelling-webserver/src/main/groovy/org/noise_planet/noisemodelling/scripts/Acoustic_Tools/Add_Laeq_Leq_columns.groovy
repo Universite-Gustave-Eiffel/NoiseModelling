@@ -15,12 +15,12 @@
  * @Author Arnaud Can, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Acoustic_Tools
+package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.JDBCUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

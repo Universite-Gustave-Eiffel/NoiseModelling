@@ -15,13 +15,11 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
 import org.apache.commons.io.FilenameUtils
-import org.geotools.jdbc.JDBCDataStore
-import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
 import org.h2gis.functions.io.fgb.FGBDriverFunction
@@ -30,8 +28,8 @@ import org.h2gis.functions.io.gpx.GPXDriverFunction
 import org.h2gis.functions.io.osm.OSMDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
@@ -39,32 +37,33 @@ import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 import java.sql.ResultSet
+import java.sql.SQLException
 import java.sql.Statement
 
 title = 'Import File'
 description = '&#10145;&#65039; Import file into the database. </br>'+
-              '<hr>' +
-              'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv </br> </br>' +
-              '<img src="/wps_images/import_file.png" alt="Import file" width="95%" align="center">'
+        '<hr>' +
+        'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv </br> </br>' +
+        '<img src="wps_images/import_file.png" alt="Import file" width="95%" align="center">'
 
 inputs = [
         pathFile : [
                 name       : 'Path of the input File',
                 title      : 'Path of the input File',
                 description: '&#128194; Path of the file you want to import, including its extension. </br></br>' +
-                             'For example: c:/home/buildings.geojson',
+                        'For example: c:/home/buildings.geojson',
                 type       : String.class
         ],
         inputSRID: [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
                 description: '&#127757; Original projection identifier (also called SRID) of your table. </br> </br>' +
-                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
-                             'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
-                             'If the table is geometric and if this parameter is not filled and:</br>' +
-                             '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
-                             '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +                          
-                             '&#128736; Default value: <b>4326 </b> ',
+                        'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
+                        'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
+                        'If the table is geometric and if this parameter is not filled and:</br>' +
+                        '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
+                        '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +
+                        '&#128736; Default value: <b>4326 </b> ',
                 type       : Integer.class,
                 min        : 0, max: 1
         ],
@@ -72,45 +71,36 @@ inputs = [
                 name       : 'Output table name',
                 title      : 'Name of created table',
                 description: 'Name of the table you want to create from the file. </br> </br>' +
-                             '&#128736; Default value: <b>it will take the name of the file without its extension</b> (special characters will be removed and whitespaces will be replace by an underscore.',
+                        '&#128736; Default value: <b>it will take the name of the file without its extension</b> (special characters will be removed and whitespaces will be replace by an underscore.',
                 min        : 0, max: 1,
                 type       : String.class
+        ],
+        ifTableExists: [
+                name         : 'Table exists operation',
+                title        : 'Table exists operation',
+                description  : '<p>What to do if a table with the same name already exists ?</p>' +
+                        '<p>&#128736; Default value: Overwrite</p>',
+                min          : 0, max: 1,
+                allowedValues: ["Overwrite", "Skip import", "Raise error"],
+                default      : "Overwrite",
+                type         : String.class
         ]
 ]
 
 outputs = [
-        result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
-                type       : String.class
+        outputTable: [
+                name: 'Name of the created table',
+                title: 'Name of the created table',
+                description: 'Name of the created table',
+                type: String.class
         ]
 ]
 
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
 
-def run(input) {
 
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
 
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -165,44 +155,56 @@ def exec(Connection connection, input) {
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()
 
-    // Drop the table if already exists
-    String dropOutputTable = "drop table if exists " + tableName
-    stmt.execute(dropOutputTable)
+    def tableExistsOperation = input.getOrDefault("ifTableExists", "Overwrite")
+
+    boolean tableExists = JDBCUtilities.tableExists(connection, tableName)
+    if(tableExists && "Overwrite" == tableExistsOperation) {
+        // Drop the table if already exists
+        logger.info("Table already exists drop the table..")
+        String dropOutputTable = "drop table if exists " + tableName
+        stmt.execute(dropOutputTable)
+    } else if(tableExists && "Skip import" == tableExistsOperation) {
+        logger.info("Table already exists skip importing the file")
+        return [outputTable: tableName]
+    } else if(tableExists) {
+        throw new IllegalStateException("Table already exists and user choose to raise an error in this case")
+    }
+
 
     // Get the extension of the file
     String ext = pathFile.substring(pathFile.lastIndexOf('.') + 1, pathFile.length()).toLowerCase()
     switch (ext) {
         case "csv":
             CSVDriverFunction csvDriver = new CSVDriverFunction()
-            csvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            csvDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "dbf":
             DBFDriverFunction dbfDriver = new DBFDriverFunction()
-            dbfDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            dbfDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "geojson":
             GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-            geoJsonDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            geoJsonDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "gpx":
             GPXDriverFunction gpxDriver = new GPXDriverFunction()
-            gpxDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            gpxDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "bz2":
             OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "gz":
             OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "osm":
             OSMDriverFunction osmDriver = new OSMDriverFunction()
-            osmDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            osmDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "shp":
             SHPDriverFunction shpDriver = new SHPDriverFunction()
-            shpDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            shpDriver.importFile(connection, tableName, new File(pathFile), progress)
             ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
 
             int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
@@ -215,11 +217,11 @@ def exec(Connection connection, input) {
             break
         case "fgb":
             FGBDriverFunction fgbDriver = new FGBDriverFunction()
-            fgbDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            fgbDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
         case "tsv":
             TSVDriverFunction tsvDriver = new TSVDriverFunction()
-            tsvDriver.importFile(connection, tableName, new File(pathFile), new EmptyProgressVisitor())
+            tsvDriver.importFile(connection, tableName, new File(pathFile), progress)
             break
 
     }
@@ -231,6 +233,7 @@ def exec(Connection connection, input) {
     if (spatialFieldNames.isEmpty()) {
         logger.warn("The table " + tableName + " does not contain a geometry field.")
     } else {
+        logger.info("Creating spatial index on $tableName..")
         stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + tableName + '_INDEX ON ' + tableName + '(the_geom);')
 
         // Get the SRID of the table
@@ -261,23 +264,27 @@ def exec(Connection connection, input) {
     int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
     int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
 
-    if (pkIndex == 0) {
-        if (pkUserIndex > 0) {
-            stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
-            stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
-            resultString = resultString + String.format(tableName + " has a new primary key constraint on PK")
-            logger.info(String.format(tableName + " has a new primary key constraint on PK"))
+    resultString = "The table " + tableName + " has been uploaded to the database!"
+
+    if (pkIndex == 0) { // no primary key in the table
+        if (pkUserIndex > 0) { // there is a field with name PK
+            try {
+                stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
+                stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
+                resultString += String.format(" $tableName has a new primary key constraint on the field named PK")
+                logger.info(String.format("$tableName has a new primary key constraint on PK"))
+            } catch (SQLException ex) {
+                logger.info("Could not set PK as a primary key", ex)
+            }
         }
     }
-
-    resultString = "The table " + tableName + " has been uploaded to database!"
 
     // print to command window
     logger.info(resultString)
     logger.info('End : Import File')
 
-    // print to WPS Builder
-    return resultString
+    // Output the name of the output table
+    return [outputTable: tableName]
 
 }
 

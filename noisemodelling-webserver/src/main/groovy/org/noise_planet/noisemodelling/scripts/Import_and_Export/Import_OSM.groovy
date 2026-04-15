@@ -17,14 +17,14 @@
  * @Author buildingParams.json is from https://github.com/orbisgis/geoclimate/
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
 import crosby.binary.osmosis.OsmosisReader
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.json.JsonSlurper
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry

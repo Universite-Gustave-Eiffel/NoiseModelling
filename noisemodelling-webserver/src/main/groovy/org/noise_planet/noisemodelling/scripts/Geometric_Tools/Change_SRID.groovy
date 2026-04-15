@@ -15,11 +15,9 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Geometric_Tools
+package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation

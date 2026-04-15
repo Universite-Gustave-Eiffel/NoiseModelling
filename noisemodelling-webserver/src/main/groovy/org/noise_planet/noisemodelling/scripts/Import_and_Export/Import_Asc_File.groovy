@@ -14,11 +14,9 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.functions.spatial.crs.ST_SetSRID

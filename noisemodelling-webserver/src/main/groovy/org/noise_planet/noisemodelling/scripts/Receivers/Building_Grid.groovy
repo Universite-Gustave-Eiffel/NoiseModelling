@@ -16,11 +16,11 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Receivers
+package org.noise_planet.noisemodelling.scripts.Receivers
 
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
 import org.h2gis.functions.spatial.crs.ST_SetSRID

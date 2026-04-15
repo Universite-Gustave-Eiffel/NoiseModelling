@@ -2,12 +2,12 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Experimental
+package org.noise_planet.noisemodelling.scripts.Experimental
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet

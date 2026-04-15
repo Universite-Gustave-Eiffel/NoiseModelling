@@ -17,12 +17,12 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Receivers
+package org.noise_planet.noisemodelling.scripts.Receivers
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
 import org.h2gis.api.EmptyProgressVisitor

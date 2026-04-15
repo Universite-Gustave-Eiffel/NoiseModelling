@@ -1,0 +1,195 @@
+/**
+ * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and
+ * education, as well as by experts in a professional use.
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE
+ * provided with this software.
+ * <p>
+ * Official webpage : http://noise-planet.org/noisemodelling.html
+ * Contact: contact@noise-planet.org
+ */
+
+package org.noise_planet.noisemodelling.runner;
+
+import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.log4j.PropertyConfigurator;
+import org.noise_planet.noisemodelling.webserver.NoiseModellingServer;
+import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
+import org.noise_planet.noisemodelling.webserver.script.ExecutionPlan;
+import org.noise_planet.noisemodelling.webserver.script.Job;
+import org.noise_planet.noisemodelling.webserver.script.ScriptMetadata;
+import org.noise_planet.noisemodelling.webserver.utilities.FileUtilities;
+import org.noise_planet.noisemodelling.webserver.utilities.LibraryInfo;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.text.NumberFormat;
+import java.sql.Statement;
+import java.util.*;
+
+
+public class Main {
+    public static final int SECONDS_BETWEEN_PROGRESSION_PRINT = 5;
+
+    /**
+     * Logs the collected libraries in a tabular format.
+     */
+    public static void printBuildIdentifiers(Logger logger, List<LibraryInfo> libraries) {
+        if (libraries.isEmpty()) {
+            logger.info("No library identifiers found.");
+            return;
+        }
+
+        String columnFormat = "%-35.35s %-35.35s %-20.20s %-30.30s";
+        StringBuilder sb = new StringBuilder();
+        sb.append("Loaded libraries:\n");
+        sb.append(String.format(Locale.ROOT, columnFormat, "Name", "Last-Modified", "Version", "Commit"));
+        sb.append("\n");
+
+        for (LibraryInfo lib : libraries) {
+            sb.append(String.format(Locale.ROOT, columnFormat,
+                    lib.getName(), lib.getLastModified(), lib.getVersion(), lib.getCommit()));
+            sb.append("\n");
+        }
+
+        logger.info(sb.toString());
+    }
+
+    public static void main(String... args) throws Exception {
+        PropertyConfigurator.configure(
+                Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
+
+        // Arguments parser
+        Options options = new Options();
+        Option workingDirOption = new Option("w", "working-dir", true, "Path where the database will be located");
+        workingDirOption.setRequired(true);
+        workingDirOption.setArgName("folder path");
+        options.addOption(workingDirOption);
+        Option scriptPathOption = new Option("s", "script", true, "Path and file name of the script");
+        scriptPathOption.setRequired(true);
+        scriptPathOption.setArgName("script path");
+        options.addOption(scriptPathOption);
+        Option databaseNameOption = new Option("d", "database-name", true, "Database name (default to h2gisdb)");
+        options.addOption(databaseNameOption);
+        Option usernameOption = new Option("u", "username", true, "Database username (default sa)");
+        usernameOption.setRequired(false);
+        options.addOption(usernameOption);
+        Option passwordOption = new Option("p", "password", true, "Database password (default sa)");
+        passwordOption.setRequired(false);
+        options.addOption(passwordOption);
+        Option printVersionOption = new Option("v", false, "Print version of all libraries");
+        options.addOption(printVersionOption);
+        Option shutdownOption = new Option("c", "shutdown", false, "Do not shutdown compact the database at the end " + "of the execution");
+        options.addOption(shutdownOption);
+        Logger logger = LoggerFactory.getLogger("org.noise_planet");
+
+        // Read parameters
+        String workingDir = "";
+        String scriptPath = "";
+        String databaseName = "";
+        Map<String, Object> customParameters = new HashMap<>();
+        // Check if -v option is invoked before parsing using commandLineParser
+        for (String arg : args) {
+            if (arg.equals("-v") || arg.equals("--version")) {
+                List<LibraryInfo> libraryInfoList = FileUtilities.collectLibraryIdentifiers();
+                printBuildIdentifiers(logger, libraryInfoList);
+                return;
+            }
+        }
+
+        CommandLineParser commandLineParser = new DefaultParser();
+        HelpFormatter helpFormatter = new HelpFormatter();
+        CommandLine commandLine;
+        try {
+            commandLine = commandLineParser.parse(options, args, true);
+        } catch (ParseException ex) {
+            logger.info(ex.getMessage());
+            helpFormatter.printHelp("ScriptRunner", options, true);
+            System.exit(1);
+            return;
+        }
+        workingDir = commandLine.getOptionValue(workingDirOption.getOpt());
+        scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
+        databaseName = commandLine.getOptionValue(databaseNameOption.getOpt(), "h2gisdb");
+        String username = commandLine.getOptionValue(usernameOption.getOpt(), "sa");
+        String password = commandLine.getOptionValue(passwordOption.getOpt(), "sa");
+        boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
+
+        try (HikariDataSource ds = DatabaseManagement.createH2DataSource(new File(workingDir).getAbsolutePath(), databaseName, username, password, "", true)) {
+            // Initialize additional loggers
+            Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
+            RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
+            try {
+                ScriptMetadata scriptMetadata = new ScriptMetadata(new File(scriptPath).getParentFile().getName(), new File(scriptPath));
+                // Create Command line arguments specification using the Input specification of the WPS process
+                scriptMetadata.inputs.forEach((key, scriptInput) -> {
+                    Option customOption = new Option(key, scriptInput.type != Boolean.class, scriptInput.description.replaceAll("<[^>]*>", ""));
+                    customOption.setType(scriptInput.type);
+                    customOption.setArgs(1);
+                    customOption.setArgName(scriptInput.title);
+                    customOption.setRequired(scriptInput.minOccurs > 0);
+                    options.addOption(customOption);
+                });
+                try {
+                    commandLine = commandLineParser.parse(options, args);
+                    // Read the command lines values to feed an input hash map for the groovy WPS
+                    for (Iterator<Option> it = commandLine.iterator(); it.hasNext(); ) {
+                        Option option = it.next();
+                        if (option.getType() == String.class) {
+                            customParameters.put(option.getOpt(), option.getValue());
+                        } else if (option.getType() == Boolean.class) {
+                            customParameters.put(option.getOpt(), Boolean.valueOf(option.getValue()));
+                        } else if (option.getType() == Integer.class) {
+                            customParameters.put(option.getOpt(), Integer.valueOf(option.getValue()));
+                        } else if (option.getType() == Double.class) {
+                            customParameters.put(option.getOpt(), NumberFormat.getInstance(Locale.ROOT).parse(option.getValue()).doubleValue());
+                        } else {
+                            throw new IllegalArgumentException("Unsupported type for option " + option.getOpt());
+                        }
+                    }
+                } catch (ParseException ex) {
+                    logger.info(ex.getMessage());
+                    helpFormatter.printHelp("NoiseModelling Script Runner", options);
+                    System.exit(1);
+                    return;
+                }
+                Map<String, Object> inputs = new HashMap<>(customParameters);
+                ExecutionPlan executionPlan = new ExecutionPlan(inputs, scriptMetadata);
+                Object result = Job.runScript(executionPlan, progressVisitor, ds);
+                if (result != null) {
+                    logger.info(result.toString());
+                }
+                if (shutdown) {
+                    // No try with resource as connection will be closed by SHUTDOWN command
+                    Connection connection = ds.getConnection();
+                    try (Statement st = connection.createStatement()) {
+                        logger.info("Shutdown compact the database..");
+                        st.execute("SHUTDOWN COMPACT");
+                        logger.info("done");
+                    }
+                }
+            } catch (SQLException ex) {
+                while (ex != null) {
+                    logger.error(ex.getLocalizedMessage(), ex);
+                    ex = ex.getNextException();
+                }
+                System.exit(1);
+            }
+        } catch (Throwable ex) {
+            logger.error(ex.getLocalizedMessage(), ex);
+            System.exit(1);
+        }
+    }
+}

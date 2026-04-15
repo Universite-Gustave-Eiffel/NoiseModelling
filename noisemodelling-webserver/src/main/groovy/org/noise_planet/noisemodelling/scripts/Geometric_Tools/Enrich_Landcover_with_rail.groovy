@@ -17,9 +17,7 @@
  */
 
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+
 
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine

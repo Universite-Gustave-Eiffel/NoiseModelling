@@ -15,13 +15,14 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Database_Manager
+package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -29,16 +30,16 @@ import java.sql.Connection
 
 title = 'Display the list of tables (and their attributes).'
 description = '&#10145;&#65039; Displays the list of tables that are in the database. </br> ' +
-              '<hr>' +
-              'Optionally it is also possible to display their attributes ("showColumns" parameter). </br> </br>' +
-              '&#128161; To visualize the content of (a part of) a table, you can use "Table Visualization Data" script.'
+        '<hr>' +
+        'Optionally it is also possible to display their attributes ("showColumns" parameter). </br> </br>' +
+        '&#128161; To visualize the content of (a part of) a table, you can use "Table Visualization Data" script.'
 
 inputs = [
         showColumns: [
                 name       : 'Display columns of the tables',
                 title      : 'Display columns of the tables',
                 description: 'Do you want to display also the column of the tables ? </br></br>' +
-                             '&#128161; Note : A small yellow key symbol (&#128273;) will appear if the column as a Primary Key constraint.',
+                        '&#128161; Note : A small yellow key symbol (&#128273;) will appear if the column as a Primary Key constraint.',
                 type       : Boolean.class,
                 min        : 0, max: 1
         ]
@@ -54,16 +55,9 @@ outputs = [
 ]
 
 
-static Connection openGeoserverDataStoreConnection(String dbName) {
-    if (dbName == null || dbName.isEmpty()) {
-        dbName = new GeoServer().catalog.getStoreNames().get(0)
-    }
-    Store store = new GeoServer().catalog.getStore(dbName)
-    JDBCDataStore jdbcDataStore = (JDBCDataStore) store.getDataStoreInfo().getDataStore(null)
-    return jdbcDataStore.getDataSource().getConnection()
-}
 
-def exec(Connection connection, input) {
+
+def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -76,7 +70,7 @@ def exec(Connection connection, input) {
     logger.info("inputs {}", input) // log inputs of the run
 
     Boolean showColumnName = false
-    
+
     if(input['showColumns']) {
         showColumnName = input['showColumns'].toBoolean()
     }
@@ -89,20 +83,31 @@ def exec(Connection connection, input) {
 
     // Get every table names
     List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
+    DBTypes dbType = DBUtils.getDBType(connection)
+
     // Loop over the tables
     tables.each { t ->
-        TableLocation tab = TableLocation.parse(t)
+        TableLocation tab = TableLocation.parse(t, dbType)
         if (!ignorelst.contains(tab.getTable())) {
             sb.append(tab.getTable())
             sb.append("</br>")
             if (showColumnName) {
                 List<String> fields = JDBCUtilities.getColumnNames(connection, t)
+                def geometryColumnNames = GeometryTableUtilities.getGeometryColumnNames(connection, tab)
                 Integer keyColumnIndex = JDBCUtilities.getIntegerPrimaryKey(connection, tab)
                 int columnIndex = 1;
                 fields.each {
                     f ->
                         if (columnIndex == keyColumnIndex) {
                             sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s&nbsp;&#128273;</br>", f))
+                        } else if(geometryColumnNames.contains(f)) {
+                            int epsg = 0;
+                            try {
+                                epsg = GeometryTableUtilities.getSRID(connection, tab)
+                            } catch (Exception ex) {
+                                //ignore
+                            }
+                            sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s&nbsp;&#127760; (srid: %d)</br>", f, epsg))
                         } else {
                             sb.append(String.format("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%s</br>", f))
                         }
@@ -113,6 +118,13 @@ def exec(Connection connection, input) {
         }
     }
 
+    if(sb.length() == 0) {
+        sb.append('<div class="l-box" style="background-color: #f0f8ff; border: 1px solid #4682b4; padding: 20px; border-radius: 5px; margin: 10px 0;">')
+        sb.append('<h2 style="color: #4682b4; margin-top: 0;">&#x1F5C4; Database is Empty</h2>')
+        sb.append('<p style="font-size: 14px; color: #333;">No tables found in the database.</p>')
+        sb.append('<p style="font-size: 14px; color: #666;">Please import data using **Import_File** to get started.</p>')
+        sb.append('</div>')
+    }
     // print to command window
     logger.info('End : Display database')
 
@@ -120,16 +132,3 @@ def exec(Connection connection, input) {
     return sb.toString()
 }
 
-def run(input) {
-
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}

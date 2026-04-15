@@ -15,11 +15,9 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Database_Manager
+package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger

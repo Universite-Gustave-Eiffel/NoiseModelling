@@ -16,12 +16,12 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Receivers
+package org.noise_planet.noisemodelling.scripts.Receivers
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities

@@ -13,12 +13,12 @@
  * @Author Valentin Le Bescond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Experimental
+package org.noise_planet.noisemodelling.scripts.Experimental
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

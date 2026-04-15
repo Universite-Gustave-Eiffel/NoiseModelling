@@ -14,13 +14,13 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.io.FileType
 import org.apache.commons.io.FilenameUtils
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils

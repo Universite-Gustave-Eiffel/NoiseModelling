@@ -16,12 +16,12 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.Geometric_Tools
+package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities

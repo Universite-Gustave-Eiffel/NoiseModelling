@@ -10,12 +10,12 @@
  *
  */
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils

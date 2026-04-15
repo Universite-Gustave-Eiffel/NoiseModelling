@@ -2,13 +2,12 @@
  * @Author Aumond Pierre, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import jdk.internal.org.xml.sax.SAXException
+
+
 import org.apache.commons.io.FilenameUtils
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
@@ -24,9 +23,6 @@ import org.xml.sax.XMLReader
 import org.xml.sax.helpers.DefaultHandler
 import org.xml.sax.helpers.XMLReaderFactory
 import org.xml.sax.SAXException
-
-import javax.xml.parsers.SAXParser
-import javax.xml.parsers.SAXParserFactory
 import java.nio.channels.FileChannel
 import java.sql.Connection
 import java.sql.PreparedStatement

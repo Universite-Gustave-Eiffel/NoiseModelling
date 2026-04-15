@@ -1,4 +1,4 @@
-package org.noise_planet.noisemodelling.wps.Geometric_Tools
+package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
@@ -20,12 +20,12 @@ package org.noise_planet.noisemodelling.wps.Geometric_Tools
 
 
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine
 import groovy.transform.CompileStatic
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2.util.ScriptReader
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities

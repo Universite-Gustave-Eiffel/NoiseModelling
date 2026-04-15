@@ -16,11 +16,9 @@
  */
 
 
-package org.noise_planet.noisemodelling.wps.NoiseModelling
+package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
-import org.geotools.jdbc.JDBCDataStore
+
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere
 import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirection
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity

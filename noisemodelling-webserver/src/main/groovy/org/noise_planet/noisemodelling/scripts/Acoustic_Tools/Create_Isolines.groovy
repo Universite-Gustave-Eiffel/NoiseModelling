@@ -15,12 +15,12 @@
  * @Author Ignacio Soto Molina, Ministry for Ecological Transition (MITECO), Spain
  */
 
-package org.noise_planet.noisemodelling.wps.Acoustic_Tools
+package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.sql.Sql
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper

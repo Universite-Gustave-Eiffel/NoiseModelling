@@ -15,13 +15,13 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-package org.noise_planet.noisemodelling.wps.Import_and_Export
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-import geoserver.GeoServer
-import geoserver.catalog.Store
+
+
 import groovy.io.FileType
 import org.apache.commons.io.FilenameUtils
-import org.geotools.jdbc.JDBCDataStore
+
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
