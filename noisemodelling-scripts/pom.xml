@@ -10,7 +10,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>noisemodelling-webserver</artifactId>
+    <artifactId>noisemodelling-scripts</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
