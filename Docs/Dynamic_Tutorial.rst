@@ -344,4 +344,4 @@ The result table LT_GEOM can be displayed into QGis, if you filter by ``PERIOD``
 
 
 .. note::
-    All this tutorial done with Groovy is written on this unit test source code: `Github source <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/main/wps_scripts/src/test/groovy/org/noise_planet/noisemodelling/wps/TestDynamic.groovy>`_
+    All this tutorial done with Groovy is written on this unit test source code: `Github source <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/main/noisemodelling-scripts/src/test/groovy/org/noise_planet/noisemodelling/scripts/TestDynamic.groovy>`_

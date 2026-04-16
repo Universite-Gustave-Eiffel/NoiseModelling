@@ -35,7 +35,7 @@ Requirements
 
 Using the terminal of your operating system (Java 11 must be in the system path)
 
-Below is an example of a bash instruction, executing the ``Noise_level_from_traffic.groovy`` WPS Script (located in the directory ``/noisemodelling/wps/``). This block has 5 arguments corresponding to the input table names (for buildings, roads, receivers, dem and ground type).
+Below is an example of a bash instruction, executing the ``Noise_level_from_traffic.groovy`` WPS Script (located in the directory ``scripts/``). This block has 5 arguments corresponding to the input table names (for buildings, roads, receivers, dem and ground type).
 
 .. literalinclude:: scripts/nm_terminal.bash
    :language: bash
