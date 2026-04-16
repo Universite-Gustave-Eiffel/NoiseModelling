@@ -22,7 +22,7 @@ To visualize and manage NoiseModelling data (*e.g* roads, buildings or landcover
 1. Use WPS blocks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once NoiseModelling UI is launched (open `http://localhost:9580/ <http://localhost:9580/>`_ in your web browser), you can manage your data thanks to the ``Database_Manager`` WPS blocks folder *(on the left side)*. In particular, you can do these actions:
+Once NoiseModelling UI is launched (open `http://localhost:8000/ <http://localhost:8000/>`_ in your web browser), you can manage your data thanks to the ``Database_Manager`` WPS blocks folder *(on the left side)*. In particular, you can do these actions:
 
 - ``Add_Primary_Key``: allows to add a primary key on a column of a specific layer (table)
 - ``Clean_Database``: remove all the layers (tables) from NoiseModelling *(can be useful when starting a new project)*

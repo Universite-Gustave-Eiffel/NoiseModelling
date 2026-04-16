@@ -19,9 +19,9 @@ Requirements
 
 To play with this tutorial, you will need:
 
-* a working installation of NoiseModelling (NM) with at least version 5.0.1. If needed, get the last release on the official `GitHub repository`_,
-* the tutorial's datasets, stored in the folder ``.../NoiseModelling_5.0.1/data_dir/data/wpsdata/dataAssimilation/``,
-* the dedicated WPS ``.groovy`` scripts, stored in the folder ``.../NoiseModelling_5.0.1/data_dir/scripts/wps/DataAssimilation/``.
+* a working installation of NoiseModelling (NM) with at least version 5. If needed, get the last release on the official `GitHub repository`_,
+* the tutorial's datasets, stored in the folder ``.../NoiseModelling/resources/dataAssimilation/``,
+* the dedicated WPS ``.groovy`` scripts, stored in the folder ``.../NoiseModelling/data_dir/scripts/wps/DataAssimilation/``.
 
 .. _GitHub repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
@@ -233,7 +233,7 @@ For this tutorial, you can fill with these informations:
 * ``startDate`` : ``2024-08-25 06:30:00``
 * ``endDate`` : ``2024-08-25 07:30:00``
 * ``trainingRatio`` : ``0.8``
-* ``workingFolder`` : ``.../data_dir/data/wpsdata/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling_5.0.0/NoiseModelling_5.0.0/data_dir/data/wpsdata/dataAssimilation/``)
+* ``workingFolder`` : ``.../resources/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling/resources/dataAssimilation/``)
 * ``targetSRID`` : ``2056``
 
 If you are using the Groovy script
@@ -244,7 +244,7 @@ If you are using the Groovy script
                     "startDate":"2024-08-25 06:30:00",
                     "endDate": "2024-08-25 07:30:00",
                     "trainingRatio": 0.8,
-                    "workingFolder": ".../data_dir/data/wpsdata/dataAssimilation/",
+                    "workingFolder": "../resources/dataAssimilation/",
                     "targetSRID": 2056
     ])
 
@@ -272,7 +272,7 @@ Now, using the ``Ìmport_OSM`` block, you can import buildings and road network 
 Execution
 **********
 
-* Path of the OSM file (``pathFile``): ``.../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf``
+* Path of the OSM file (``pathFile``): ``../resources/dataAssimilation/geneva.osm.pbf``
 * Target projection identifier (``targetSRID``): ``2056``
 * Do not import Surface acoustic absorption (``ignoreGround``): ``true``
 * Remove tunnels from OSM data (``removeTunnels``): ``true``
@@ -284,7 +284,7 @@ If you are using the Groovy script
 .. code-block:: groovy
 
     new Import_OSM().exec(connection, [
-                    "pathFile"      : ".../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf",
+                    "pathFile"      : "../resources/dataAssimilation/geneva.osm.pbf",
                     "targetSRID"    : 2056,
                     "ignoreGround"  : true,
                     "removeTunnels" : true
