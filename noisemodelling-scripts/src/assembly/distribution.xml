@@ -31,7 +31,12 @@
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>
-
+        <!-- include test resources directory -->
+        <fileSet>
+            <directory>${project.basedir}/src/test/resources/org/noise_planet/noisemodelling/scripts</directory>
+            <outputDirectory>/resources</outputDirectory>
+        </fileSet>
+        <!-- include groovy source directory -->
         <fileSet>
             <directory>${project.basedir}/src/main/groovy/org/noise_planet/noisemodelling/scripts</directory>
             <outputDirectory>scripts</outputDirectory>

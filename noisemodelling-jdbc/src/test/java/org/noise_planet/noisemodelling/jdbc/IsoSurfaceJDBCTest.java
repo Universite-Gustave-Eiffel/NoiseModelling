@@ -96,8 +96,9 @@ public class IsoSurfaceJDBCTest {
     @Test
     public void testContouring3D() throws SQLException, IOException, LayerDelaunayError {
         // Will create elevation iso from DEM table
+        // Take the resource from the other project in the source tree (we are not dependent on it)
         GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
-                "wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/dem.geojson").toString());
+                "noisemodelling-scripts/src/test/resources/org/noise_planet/noisemodelling/scripts/dem.geojson").toString());
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
@@ -143,8 +144,9 @@ public class IsoSurfaceJDBCTest {
     @Test
     public void testContouring3DMerge() throws SQLException, IOException, LayerDelaunayError {
         // Will create elevation iso from DEM table
+        // Take the resource from the other project in the source tree (we are not dependent on it)
         GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
-                "wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/dem.geojson").toString());
+                "noisemodelling-scripts/src/test/resources/org/noise_planet/noisemodelling/scripts/dem.geojson").toString());
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
