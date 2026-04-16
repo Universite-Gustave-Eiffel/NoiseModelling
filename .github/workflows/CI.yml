@@ -43,7 +43,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar -B
+        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
       - name: Maven Deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -51,8 +51,6 @@ jobs:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
         run: mvn clean deploy -B
-      - name: Package
-        run: mvn package
       - name: Install bsdtar
         run: |
           sudo apt-get update
