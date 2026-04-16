@@ -3,9 +3,12 @@ name: CI release
 on:
   workflow_dispatch:
     inputs:
-      nextVersion:
-        required: false
-        description: "Next version (optional)"
+      releaseVersion:
+        description: 'Release version (e.g., 2.0.0)'
+        required: true
+      developmentVersion:
+        description: 'Next development version (e.g., 2.1.0-SNAPSHOT)'
+        required: true
 
 jobs:
   build:
@@ -38,55 +41,59 @@ jobs:
       # Test build
       - name: Build test
         run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
-      - name: Package
-        run: mvn package
-      # Create the release :
-      #   - move from Snapshot version to Release
-      #   - commit and tag release
-      #   - move to next Snapshot
-      #   - upload release to maven repo
-      - name: Release
+      - name: Configure Git
         run: |
-          VERSION=${{ github.event.inputs.nextVersion }}
-          mvn \
-            -ntp \
-            --batch-mode \
-            -Dmaven.test.skip=true \
-            release:prepare release:perform \
-            -Dusername=$GITHUB_ACTOR -Dpassword=$GITHUB_TOKEN ${VERSION:+"-DdevelopmentVersion="$VERSION"-SNAPSHOT"}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Create Release Branch
+        run: |
+          git checkout -b release/v${{ github.event.inputs.releaseVersion }}
+      - name: Prepare Release
+        # -DpushChanges=false ensures Maven doesn't try to push to main automatically
+        run: |
+          mvn -B release:prepare \
+            -DreleaseVersion=${{ github.event.inputs.releaseVersion }} \
+            -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }} \
+            -DpushChanges=false \
+            -Darguments="-DskipTests -P!use-snapshots"
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-      # Export the last git tag into env.
-      - name: Export env values
-        run: echo "GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)" >> $GITHUB_ENV
-      # Make the Github release from the last created tag. Write in its body the content of the changelog file.
-      - name: Make Github release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ env.GIT_TAG }}
-          release: ${{ env.GIT_TAG }}
-          bodyFile: "README.md"
-          draft: false
-          prerelease: false
-          artifacts: "noisemodelling-scripts/target/*.zip"
-
-      # If the version change is a major or minor, create a branch from the previous tag for future revisions.
-      - name: Branch fork
+      - name: Push Branch and Tag
         run: |
-          GIT_TAG="${GIT_TAG:1}"
-          CUR_TAG="$( mvn help:evaluate -Dexpression=project.version  | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }' | cut -d- -f1)"
-          SPLIT0=(${GIT_TAG//./ })
-          SPLIT1=(${CUR_TAG//./ })
-          if [ "${SPLIT0[0]}" = "${SPLIT1[0]}" ] && [ "${SPLIT0[1]}" = "${SPLIT1[1]}" ]; then
-            echo "Revision change"
-          else
-            echo "Minor or Major change"
-            BRANCH="${SPLIT0[0]}.${SPLIT0[1]}.X"
-            git checkout -b "$BRANCH" "v${GIT_TAG}"
-            mvn versions:set -DnewVersion="${SPLIT0[0]}.${SPLIT0[1]}.$((${SPLIT0[2]}+1))-SNAPSHOT"
-            git commit -a -m "Set next version."
-            git push -u origin "$BRANCH"
-          fi
+          # Push the commits (Release and Next Snapshot) to the temporary branch
+          git push origin release/v${{ github.event.inputs.releaseVersion }}
+          # Push the tag (Maven creates this locally)
+          git push origin v${{ github.event.inputs.releaseVersion }}
+      - name: Create Pull Request to Main
+        run: |
+          gh pr create \
+            --title "Release v${{ github.event.inputs.releaseVersion }}" \
+            --body "This PR updates the version to ${{ github.event.inputs.releaseVersion }} and prepares the next development cycle ${{ github.event.inputs.developmentVersion }}." \
+            --base main \
+            --head release/v${{ github.event.inputs.releaseVersion }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Zip Artifact
+        # Since we are already on the release-ready state locally,
+        # we can just package the webserver
+        run: |
+          # Checkout the release tag to be sure we build the exact release code
+          git checkout v${{ github.event.inputs.releaseVersion }}
+          mvn package -DskipTests
+          
+          mkdir NoiseModelling
+          sudo apt-get update && sudo apt-get install -y libarchive-tools
+          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
+          zip -r NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip NoiseModelling/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.releaseVersion }}
+          name: Release ${{ github.event.inputs.releaseVersion }}
+          files: NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
+          generate_release_notes: true
