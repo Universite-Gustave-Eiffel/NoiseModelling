@@ -196,8 +196,8 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(res.contains("DEM"))
 
         // generate a grid of receivers using the buildings as envelope
-        logger.info(new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
-                                                          sourcesTableName : "POINT_SOURCE" , height: 1.6]));
+        new Delaunay_Grid().exec(connection, [maxArea: 60, tableBuilding: "BUILDINGS",
+                                                                  sourcesTableName : "POINT_SOURCE" , height: 1.6])
 
 
         new Noise_level_from_source().exec(connection, [tableBuilding: "BUILDINGS", tableSources:"POINT_SOURCE",

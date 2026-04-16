@@ -21,7 +21,7 @@ package org.noise_planet.noisemodelling.scripts.Receivers
 
 
 import groovy.sql.Sql
-
+import groovy.transform.CompileStatic
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.JDBCUtilities
@@ -30,6 +30,7 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.*
 import org.locationtech.jts.io.WKTReader
+import org.noise_planet.noisemodelling.pathfinder.PathFinder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -110,12 +111,13 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Created table',
+                title      : 'Created table',
+                description: 'Name of the table containing the results of the computation. Can be used as input for another process.',
                 type       : String.class
         ]
 ]
+
 
 
 
@@ -222,22 +224,22 @@ def exec(Connection connection, Map input) {
             List<Coordinate> pts = new ArrayList<Coordinate>()
             def geom = row[1] as Geometry
             def hBuilding = row[2] as Double
-            def pk_building = row[3] as Integer
+            int pk_building = row[3] as Integer
             if (geom instanceof LineString) {
-                splitLineStringIntoPoints(geom as LineString, delta, pts)
+                PathFinder.splitLineStringIntoPoints(geom as LineString, delta, pts)
             } else if (geom instanceof MultiLineString) {
                 for (int idgeom = 0; idgeom < geom.numGeometries; idgeom++) {
-                    splitLineStringIntoPoints(geom.getGeometryN(idgeom) as LineString, delta, pts)
+                    PathFinder.splitLineStringIntoPoints(geom.getGeometryN(idgeom) as LineString, delta, pts)
                 }
             }
-            int nLevels = Math.ceil((hBuilding-1.5)/h)
-            if (hBuilding>1.5){
-                for (int i=0;i<nLevels;i++){
+            int nLevels = (int) Math.ceil((hBuilding - 1.5) / h)
+            if (hBuilding > 1.5) {
+                for (int i = 0; i < nLevels; i++) {
                     for (int idp = 0; idp < pts.size(); idp++) {
                         Coordinate pt = pts.get(idp);
                         if (!Double.isNaN(pt.x) && !Double.isNaN(pt.y)) {
                             // define coordinates of receivers
-                            Coordinate newCoord = new Coordinate(pt.x, pt.y, 1.5+i*h)
+                            Coordinate newCoord = new Coordinate(pt.x, pt.y, 1.5 + i * h)
                             ps.addBatch(row[0] as Integer, factory.createPoint(newCoord), i, pk_building)
                         }
                     }
@@ -329,91 +331,6 @@ def exec(Connection connection, Map input) {
     logger.info('Result : ' + resultString)
     logger.info('End : 3D Receivers grid around buildings')
 
-    // print to WPS Builder
-    return resultString
+    return [result: receivers_table_name]
 
-}
-
-
-/**
- *
- * @param geom Geometry
- * @param segmentSizeConstraint Maximal distance between points
- * @param [out]pts computed points
- * @return Fixed distance between points
- */
-double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint,
-                                 List<Coordinate> pts) {
-    // If the linear sound source length is inferior than half the distance between the nearest point of the sound
-    // source and the receiver then it can be modelled as a single point source
-    double geomLength = geom.getLength();
-    if (geomLength < segmentSizeConstraint) {
-        // Return mid point
-        Coordinate[] points = geom.getCoordinates();
-        double segmentLength = 0;
-        final double targetSegmentSize = geomLength / 2.0;
-        for (int i = 0; i < points.length - 1; i++) {
-            Coordinate a = points[i];
-            final Coordinate b = points[i + 1];
-            double length = a.distance3D(b);
-            if (length + segmentLength > targetSegmentSize) {
-                double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
-                Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
-                        a.y + segmentLengthFraction * (b.y - a.y),
-                        a.z + segmentLengthFraction * (b.z - a.z));
-                pts.add(midPoint);
-                break;
-            }
-            segmentLength += length;
-        }
-        return geom.getLength();
-    } else {
-        double targetSegmentSize = geomLength / Math.ceil(geomLength / segmentSizeConstraint);
-        Coordinate[] points = geom.getCoordinates();
-        double segmentLength = 0.0;
-
-        // Mid point of segmented line source
-        def midPoint = null;
-        for (int i = 0; i < points.length - 1; i++) {
-            Coordinate a = points[i];
-            final Coordinate b = points[i + 1];
-            double length = a.distance3D(b);
-            if (Double.isNaN(length)) {
-                length = a.distance(b);
-            }
-            while (length + segmentLength > targetSegmentSize) {
-                //LineSegment segment = new LineSegment(a, b);
-                double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
-                Coordinate splitPoint = new Coordinate();
-                splitPoint.x = a.x + segmentLengthFraction * (b.x - a.x);
-                splitPoint.y = a.y + segmentLengthFraction * (b.y - a.y);
-                splitPoint.z = a.z + segmentLengthFraction * (b.z - a.z);
-                if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
-                    segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
-                    midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
-                            a.y + segmentLengthFraction * (b.y - a.y),
-                            a.z + segmentLengthFraction * (b.z - a.z));
-                }
-                pts.add(midPoint);
-                a = splitPoint;
-                length = a.distance3D(b);
-                if (Double.isNaN(length)) {
-                    length = a.distance(b);
-                }
-                segmentLength = 0;
-                midPoint = null;
-            }
-            if (midPoint == null && length + segmentLength > targetSegmentSize / 2) {
-                double segmentLengthFraction = (targetSegmentSize / 2.0 - segmentLength) / length;
-                midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
-                        a.y + segmentLengthFraction * (b.y - a.y),
-                        a.z + segmentLengthFraction * (b.z - a.z));
-            }
-            segmentLength += length;
-        }
-        if (midPoint != null) {
-            pts.add(midPoint);
-        }
-        return targetSegmentSize;
-    }
 }

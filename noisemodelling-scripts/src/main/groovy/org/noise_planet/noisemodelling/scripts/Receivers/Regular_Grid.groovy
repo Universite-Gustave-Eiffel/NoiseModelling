@@ -115,9 +115,9 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Created table',
+                title      : 'Created table',
+                description: 'Name of the table containing the results of the computation. Can be used as input for another process.',
                 type       : String.class
         ]
 ]
@@ -242,5 +242,5 @@ def exec(connection, Map input) {
                 " AND A.ID_ROW = C.ID_ROW AND A.ID_COL = C.ID_COL + 1;")
     }
 
-    return [tableNameCreated: "Process done. Table of receivers " + receivers_table_name + " created !"]
+    return [result: receivers_table_name]
 }

@@ -19,6 +19,7 @@ package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
 
 import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
@@ -562,3 +563,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     return [result : pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable]
 }
 
+def exec(Connection connection, Map input) {
+    return exec(connection, input, new EmptyProgressVisitor())
+}

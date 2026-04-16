@@ -179,9 +179,9 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Created table',
+                title      : 'Created table',
+                description: 'Name of the table containing the results of the computation. Can be used as input for another process.',
                 type       : String.class
         ]
 ]
@@ -394,7 +394,7 @@ def exec(Connection connection, Map input) {
     long nbReceivers = delaunayReceiversMaker.getReceiversCount()
 
     // Process Done
-    resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
+    def resultString = "Delaunay grid created with " + nbReceivers + " receivers in table " + receivers_table_name +
             (exportTriangles ? " and triangles in table TRIANGLES" : "" )+ "."
     resultString += " Process time: " + (processTime / 1000) + " seconds."
 
@@ -402,8 +402,7 @@ def exec(Connection connection, Map input) {
     logger.info('Result : ' + resultString)
     logger.info('End : Delaunay grid')
 
-    // print to WPS Builder
-    return resultString
+    return [result: receivers_table_name]
 
 
 }
