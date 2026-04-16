@@ -34,7 +34,7 @@ description = '&#10145;&#65039; Create isosurfaces from a NoiseModelling resulti
               '<hr>' +
               '&#x1F6A8; The triangle table must have been created using the WPS block "<b>Receivers/Delaunay_Grid</b>". </br> </br> ' +
               '&#x2705; The output table is called <b>CONTOURING_NOISE_MAP</b> </br> </br> ' +
-              '<img src="/wps_images/create_isosurface.png" alt="Create isosurfaces" width="95%" align="center">'
+              '<img src="wps_images/create_isosurface.png" alt="Create isosurfaces" width="95%" align="center">'
 
 inputs = [
         resultTable      : [

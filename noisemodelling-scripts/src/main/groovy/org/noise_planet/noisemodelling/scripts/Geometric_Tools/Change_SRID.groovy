@@ -34,7 +34,7 @@ description = '&#10145;&#65039; Affect a new Spatial Reference Identifier (SRID)
               '&#x1F6A8; If the table: </br>' +
               '- has <b>already an associated SRID</b>: the new SRID is applied to the table and a <b>reprojection of geometries is done</b>, </br>'+
               '- has <b>no associated SRID</b>: the new SRID is applied to the table but <b>without doing a reprojection</b> of geometries. </br> </br>'+
-              '<img src="/wps_images/change_SRID.png" alt="Change SRID" width="95%" align="center">'
+              '<img src="wps_images/change_SRID.png" alt="Change SRID" width="95%" align="center">'
 
 inputs = [
         newSRID  : [

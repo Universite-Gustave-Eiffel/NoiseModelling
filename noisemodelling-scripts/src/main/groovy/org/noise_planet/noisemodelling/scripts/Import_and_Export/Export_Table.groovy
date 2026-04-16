@@ -39,7 +39,7 @@ title = 'Export table'
 description = '&#10145;&#65039; Export table from the database into a local file. </br> '+
               '<hr>' +
               'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv, fgb </br> </br>' +
-              '<img src="/wps_images/export_table.png" alt="Export table" width="95%" align="center">'
+              '<img src="wps_images/export_table.png" alt="Export table" width="95%" align="center">'
 
 inputs = [
         exportPath   : [

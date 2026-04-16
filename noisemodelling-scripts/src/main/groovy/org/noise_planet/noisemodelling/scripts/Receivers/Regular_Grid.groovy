@@ -40,7 +40,7 @@ description = '&#10145;&#65039; Computes a regular grid of receivers. </br>' +
               '<li> the BUILDINGS table extent (option by default)</li>' +
               '<li> <b>OR</b> a single Geometry "fence" (see "Extent filter" parameter).</li></ul></br>' +
               '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
-              '<img src="/wps_images/regular_grid_output.png" alt="Regular grid output" width="95%" align="center">'
+              '<img src="wps_images/regular_grid_output.png" alt="Regular grid output" width="95%" align="center">'
 
 inputs = [
         buildingTableName : [

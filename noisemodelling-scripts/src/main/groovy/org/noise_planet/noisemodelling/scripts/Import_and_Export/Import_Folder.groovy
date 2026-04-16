@@ -48,7 +48,7 @@ description = '&#10145;&#65039; Import all files with a specified extension from
               '<hr>' +
               'Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv.</br> </br>'+
               '&#x2705; The resulting tables will have the same name as the input files</br> </br>' +
-              '<img src="/wps_images/import_folder.png" alt="Import folder" width="95%" align="center">'
+              '<img src="wps_images/import_folder.png" alt="Import folder" width="95%" align="center">'
 
 inputs = [
         pathFolder: [

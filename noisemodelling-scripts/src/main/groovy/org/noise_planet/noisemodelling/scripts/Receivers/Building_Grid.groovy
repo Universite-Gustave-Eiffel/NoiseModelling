@@ -42,7 +42,7 @@ title = 'Buildings Grid'
 description = '&#10145;&#65039; Generates receivers, 2m around the building facades, at a given height. </br>' +
               '<hr>' +
               '&#x2705; The output table is called <b>RECEIVERS</b> and contain a field <b>build_pk</b> corresponding to the primary key of the buildings table</br></br>'+
-              '<img src="/wps_images/building_grid_output.png" alt="Building grid output" width="95%" align="center">'
+              '<img src="wps_images/building_grid_output.png" alt="Building grid output" width="95%" align="center">'
 
 inputs = [
         tableBuilding : [

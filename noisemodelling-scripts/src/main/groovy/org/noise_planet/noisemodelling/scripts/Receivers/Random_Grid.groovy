@@ -39,7 +39,7 @@ title = 'Random Grid'
 description = '&#10145;&#65039; Computes a random grid of receivers.</br>' +
               '<hr>' +
               '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
-              '<img src="/wps_images/receivers_random_output.png" alt="Random grid output" width="95%" align="center">'
+              '<img src="wps_images/receivers_random_output.png" alt="Random grid output" width="95%" align="center">'
 
 inputs = [
         buildingTableName: [
@@ -64,7 +64,7 @@ inputs = [
                 title      : 'Number of receivers',
                 description: 'Number of receivers to return </br> </br>' +
                              '&#128736; Default value: <b>100</b> </br> </br>'+
-                             '<img src="/wps_images/receivers_random_nReceivers.png" alt="Number of receivers" width="95%" align="center">',
+                             '<img src="wps_images/receivers_random_nReceivers.png" alt="Number of receivers" width="95%" align="center">',
                 type       : Integer.class
         ],
         height           : [

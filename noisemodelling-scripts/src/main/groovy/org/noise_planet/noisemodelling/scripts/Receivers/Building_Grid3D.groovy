@@ -43,7 +43,7 @@ description = '&#10145;&#65039; Generates 3D receivers around the buildings and 
               '<li>"Distance from wall": set the distance between the receivers and the building facades,</li>'+
               '<li>"Distance between receivers": set the number of receivers around the buildings.</li></ul></br>' +
               '&#x2705; The output table is called <b>RECEIVERS</b> </br></br>'+
-              '<img src="/wps_images/Building_Grid3D.png" alt="Building grid output" width="95%" align="center">'
+              '<img src="wps_images/Building_Grid3D.png" alt="Building grid output" width="95%" align="center">'
 
 inputs = [
         tableBuilding   : [

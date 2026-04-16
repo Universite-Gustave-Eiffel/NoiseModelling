@@ -38,7 +38,7 @@ description = '&#10145;&#65039; Import ESRI Ascii Raster file and convert into a
               ' Valid file extensions : asc and asc.gz . </br> </br>' +
               '&#x2705; The output table is called: <b>DEM</b> and contain: </br>' +
               '- <b>THE_GEOM</b>: the 3D point cloud of the DEM (POINT) </br> </br>' +
-              '<img src="/wps_images/import_asc_file.png" alt="Import asc file" width="95%" align="center">'
+              '<img src="wps_images/import_asc_file.png" alt="Import asc file" width="95%" align="center">'
 
 inputs = [
         pathFile : [

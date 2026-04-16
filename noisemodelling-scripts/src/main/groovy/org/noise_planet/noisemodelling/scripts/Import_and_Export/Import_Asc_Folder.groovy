@@ -36,7 +36,7 @@ title = 'Import all .asc files from a folder'
 description = '&#10145;&#65039; Import all files with .asc extension from a folder to the database </br>' +
               '<hr>' +
               '&#x2705; The resulting tables will have the same name as the input files </br> </br>' +
-              '<img src="/wps_images/import_asc_folder.png" alt="Import asc folder" width="95%" align="center">'
+              '<img src="wps_images/import_asc_folder.png" alt="Import asc folder" width="95%" align="center">'
 
 inputs = [
         pathFolder: [

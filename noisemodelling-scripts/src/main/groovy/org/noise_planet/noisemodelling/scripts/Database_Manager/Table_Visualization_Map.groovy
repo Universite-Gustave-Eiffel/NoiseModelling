@@ -19,10 +19,9 @@
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
 
-import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTWriter
@@ -35,9 +34,9 @@ import java.sql.Statement
 
 title = 'Diplay a table on a map.'
 description = '&#10145;&#65039; Display a table containing a geometric column on a map &#128506;</br> '+
-              '<hr>' +
-              'Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> </br> '+
-              '&#x1F6A8; Be careful, this treatment can be blocked if the table is too large.'
+        '<hr>' +
+        'Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> </br> '+
+        '&#x1F6A8; Be careful, this treatment can be blocked if the table is too large.'
 
 inputs = [
         inputSRID: [
@@ -69,7 +68,7 @@ outputs = [
 
 
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // output geometry, the information given back to the user
     Geometry geom = null
@@ -95,9 +94,10 @@ def exec(Connection connection, input) {
     if (input['inputSRID']) {
         srid = input['inputSRID'] as Integer
     }
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     // Read Geometry Index and type of the table
-    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)))
+    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, dbType))
 
     // If the table does not contain a geometry field
     if (spatialFieldNames.isEmpty()) {
@@ -105,7 +105,7 @@ def exec(Connection connection, input) {
     }
 
     // Get the SRID of the table
-    Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
+    Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName, dbType))
 
     if (tableSrid != 0 && tableSrid != srid && input['inputSRID']) throw new Exception("The table already has a different SRID than the one you gave.")
 
@@ -115,15 +115,8 @@ def exec(Connection connection, input) {
     // Display the actual SRID in the command window
     logger.info("The actual SRID of the table is " + srid)
 
-    if (tableSrid == 0) {
-        GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)), spatialFieldNames.get(0));
-        metaData.setSRID(srid);
-        connection.createStatement().execute(String.format("ALTER TABLE %s ALTER COLUMN %s %s USING ST_SetSRID(%s,%d)",
-                TableLocation.parse(tableName, DBUtils.getDBType(connection)), spatialFieldNames.get(0), metaData.getSQL(), spatialFieldNames.get(0),spatialFieldNames.get(0) ,srid))
-    }
-
     // Project geometry in WGS84 (EPSG:4326) and groups all the geometries of the table
-    String geomField = "ST_ACCUM(ST_TRANSFORM(" + spatialFieldNames.get(0) + " ,4326))"
+    String geomField = "ST_ACCUM(ST_TRANSFORM(" + TableLocation.quoteIdentifier(spatialFieldNames.get(0)) + " ,4326))"
     ResultSet rs = stmt.executeQuery(String.format("select %s " + spatialFieldNames.get(0) + " from %s", geomField, tableName))
 
     // Get the geometry field from the table
@@ -132,10 +125,11 @@ def exec(Connection connection, input) {
     }
 
     // print to command window
-    if (asWKT(geom).size() > 100) {
-        logger.info('Result (100 first characters) : ' + asWKT(geom).substring(0, 100) + '...')
+    String wkt = asWKT(geom)
+    if (wkt.size() > 100) {
+        logger.info('Result (100 first characters) : ' + wkt.substring(0, 100) + '...')
     } else {
-        logger.info('Result : ' + asWKT(geom))
+        logger.info('Result : ' + wkt)
     }
 
     logger.info('End : Display a table on a map')

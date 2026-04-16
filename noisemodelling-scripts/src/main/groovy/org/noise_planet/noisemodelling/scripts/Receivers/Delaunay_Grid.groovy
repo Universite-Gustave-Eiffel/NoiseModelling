@@ -56,7 +56,7 @@ description = '&#10145;&#65039; Computes a <a href="https://en.wikipedia.org/wik
               '&#x2705; Two tables are returned:<ul>' +
               '<li> <b>RECEIVERS</b></li>' +
               '<li> <b>TRIANGLES</b></li>' +
-              '<img src="/wps_images/delaunay_grid_output.png" alt="Delaunay grid output" width="95%" align="center">'
+              '<img src="wps_images/delaunay_grid_output.png" alt="Delaunay grid output" width="95%" align="center">'
 
 inputs = [
         fenceTableName: [

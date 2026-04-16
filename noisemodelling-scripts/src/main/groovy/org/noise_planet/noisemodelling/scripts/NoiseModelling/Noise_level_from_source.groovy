@@ -21,7 +21,7 @@ package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
 
 import groovy.sql.Sql
-
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -169,7 +169,7 @@ inputs = [
                 title      : 'Maximum source-receiver distance',
                 description: 'Maximum distance between source and receiver (FLOAT, in meters). </br> </br>' +
                         '&#128736; Default value: <b>150 </b> </br> </br>' +
-                        '<img src="/wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from source" width="95%" align="center">',
+                        '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from source" width="95%" align="center">',
                 min        : 0, max: 1, type: Double.class
         ],
         confMaxReflDist         : [
@@ -177,7 +177,7 @@ inputs = [
                 title      : 'Maximum source-reflexion distance',
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
                         '&#128736; Default value: <b>50 </b> </br> </br>' +
-                        '<img src="/wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
+                        '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
                 min        : 0, max: 1, type: Double.class
         ],
         confThreadNumber        : [
@@ -230,7 +230,7 @@ inputs = [
                 title      : 'Probability of occurrences',
                 description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. </br> </br>' +
                         '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b> </br> </br>' +
-                        '<img src="/wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">',
+                        '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">',
                 min        : 0, max: 1,
                 type       : String.class
         ],
@@ -262,9 +262,9 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Created table',
+                title      : 'Created table',
+                description: 'Name of the table containing the results of the computation. Can be used as input for another process.',
                 type       : String.class
         ]
 ]
@@ -273,7 +273,7 @@ outputs = [
 
 
 // main function of the script
-def exec(Connection connection, Map input) {
+def exec(Connection connection, Map input, ProgressVisitor progress) {
     long startCompute = System.currentTimeMillis()
 
     DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
@@ -525,13 +525,9 @@ def exec(Connection connection, Map input) {
     // --------------------------------------------
     // Run Calculations
     // --------------------------------------------
-
-    // Init ProgressLogger (loading bar)
-    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
-
     logger.info("Start calculation... ")
 
-    pointNoiseMap.run(connection, progressLogger)
+    pointNoiseMap.run(connection, progress)
 
     long elapsed = System.currentTimeMillis() - startCompute;
     long hours = TimeUnit.MILLISECONDS.toHours(elapsed)
@@ -540,7 +536,7 @@ def exec(Connection connection, Map input) {
     elapsed -= TimeUnit.MINUTES.toMillis(minutes)
     long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsed)
     String timeString = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
-    logger.info( "Calculation Done in $timeString ! ")
+    logger.info( "Calculation done in $timeString ! ")
 
-    return "Calculation Done ! The table $pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable have been created."
+    return [result : pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable]
 }

@@ -51,7 +51,7 @@ description = '&#10145;&#65039; Convert <b>.osm</b>, <b>.osm.gz</b> or <b>.osm.p
               '- <b> GROUND </b>: a table containing ground acoustic absorption, based on OSM landcover surfaces<br>' +
               '- <b> ROADS </b>: a table containing the roads. As OSM does not include data on road traffic flows, default values are assigned according to the -Good Practice Guide for Strategic Noise Mapping and the Production of Associated Data on Noise Exposure - Version 2<br><br>' +
               '&#128161; The user can choose to avoid creating some of these tables by checking the dedicated boxes </br> </br>' +
-              '<img src="/wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
+              '<img src="wps_images/import_osm_file.png" alt="Import OSM file" width="95%" align="center">'
 
 inputs = [
         pathFile : [
