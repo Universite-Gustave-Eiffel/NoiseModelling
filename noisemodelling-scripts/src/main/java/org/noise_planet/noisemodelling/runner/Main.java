@@ -161,6 +161,7 @@ public class Main {
                     }
                 } catch (ParseException ex) {
                     logger.info(ex.getMessage());
+                    helpFormatter.setWidth(120);
                     helpFormatter.printHelp("NoiseModelling Script Runner", options);
                     System.exit(1);
                     return;
