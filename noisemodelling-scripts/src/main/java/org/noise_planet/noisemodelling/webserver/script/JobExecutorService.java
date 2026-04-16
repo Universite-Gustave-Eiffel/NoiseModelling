@@ -24,13 +24,11 @@ import java.util.concurrent.*;
 public class JobExecutorService {
     protected final Map<Integer, Job<?>> jobs = new ConcurrentHashMap<>();
     protected final ExecutorService executorService;
-    protected final ScheduledExecutorService scheduledExecutorService;
     private final Logger logger = LoggerFactory.getLogger(JobExecutorService.class);
 
     public JobExecutorService(int corePoolSize, int maximumPoolSize, long keepAliveTime, @NotNull TimeUnit unit) {
         this.executorService = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit,
                 new SynchronousQueue<>(), Executors.defaultThreadFactory());
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     public <T> Future<T> submitJob(Job<T> job) {
@@ -51,28 +49,15 @@ public class JobExecutorService {
         return jobs.get(id);
     }
 
-    public boolean cancelJob(int jobId, int abortDelay) {
+    /**
+     * Cancel a job
+     * @param jobId Job identifier
+     * @return true if the job was found and canceled, false otherwise
+     */
+    public boolean cancelJob(int jobId) {
         Job<?> job = jobs.get(jobId);
         if (job != null) {
             job.cancel();
-            // After a specified delay, abort the process if it can't handle the progress monitor cancel
-            scheduledExecutorService.schedule(() -> {
-                if (job.isRunning() && job.getFuture() != null) {
-                    logger.warn("Aborting job {} after {} seconds.", jobId, abortDelay);
-                    // Release/Close the connections of this datasource
-                    // to avoid corruption of the database
-                    if(job.userDataSource instanceof Closeable) {
-                        try {
-                            ((Closeable) job.userDataSource).close();
-                            // Wait 1s
-                            Thread.sleep(1_000);
-                        } catch (IOException | InterruptedException e) {
-                            // Ignore
-                        }
-                    }
-                    job.getFuture().cancel(true);
-                }
-            }, abortDelay, TimeUnit.SECONDS);
             jobs.remove(jobId);
             return true;
         } else {
@@ -83,7 +68,6 @@ public class JobExecutorService {
 
     public void shutdown() {
         executorService.shutdown();
-        scheduledExecutorService.shutdown();
     }
 
 }

@@ -52,6 +52,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Comparator;
+import java.util.concurrent.*;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -59,9 +60,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -84,6 +82,7 @@ public class OwsController {
     private Map<WsContext, WriterAppender> websocketLoggers = Collections.synchronizedMap(new HashMap<>());
     Configuration configuration;
     DataSource serverDataSource;
+    protected final ScheduledExecutorService scheduledExecutorService;
 
     /**
      * Handle threads
@@ -128,6 +127,7 @@ public class OwsController {
         this.provider = provider;
         this.configuration = configuration;
         this.serverDataSource = serverDataSource;
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     /**
@@ -709,10 +709,47 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                if(!jobExecutorService.cancelJob(jobId, DEFAULT_ABORT_JOB_DELAY)) {
+                Job<?> job = jobExecutorService.getJob(jobId);
+                if(!jobExecutorService.cancelJob(jobId)) {
                     // Can't find the job, set it in error to be able to remove it
                     DatabaseManagement.setJobState(connection, jobId, JobStates.FAILED.name());
                 }
+
+                // After a specified delay, abort the process if it can't handle the progress monitor cancel
+                scheduledExecutorService.schedule(() -> {
+                    if (job.isRunning() && job.getFuture() != null) {
+                        logger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY);
+                        // Release/Close the connections of this datasource
+                        // to avoid corruption of the database
+                        if(userDataSources.get(job.getUserId()) instanceof Closeable) {
+                            try {
+                                DataSource dataSource = userDataSources.get(job.getUserId());
+                                if (dataSource instanceof Closeable) {
+                                    // Execute SHUTDOWN command with timeout
+                                    try (Connection conn = dataSource.getConnection(); Statement stmt =
+                                            conn.createStatement()) {
+                                        stmt.setQueryTimeout(5); // 5 seconds timeout
+                                        stmt.execute("SHUTDOWN");
+                                    } catch (SQLException e) {
+                                        logger.warn("SHUTDOWN command failed or timed out for user {}",
+                                                job.getUserId(), e);
+                                    }
+                                }
+                                // Close the datasource
+                                if (userDataSources.get(job.getUserId()) instanceof Closeable) {
+                                    ((Closeable) userDataSources.get(job.getUserId())).close();
+                                }
+                                // Remove the dead datasource from the cache
+                                userDataSources.remove(job.getUserId());
+                                // Wait 1s
+                                Thread.sleep(1_000);
+                            } catch (IOException | InterruptedException e) {
+                                // Ignore
+                            }
+                        }
+                        job.getFuture().cancel(true);
+                    }
+                }, DEFAULT_ABORT_JOB_DELAY, TimeUnit.SECONDS);
                 jobList(ctx);
             } catch (NumberFormatException ex) {
                 logger.error("Invalid job id {}", ctx.body(), ex);
@@ -962,5 +999,6 @@ public class OwsController {
      */
     public void shutdown() {
         jobExecutorService.shutdown();
+        scheduledExecutorService.shutdown();
     }
 }

@@ -81,6 +81,14 @@ public class Job<T> implements Callable<T> {
         }
     }
 
+    /**
+     * Get the user id of the job
+     * @return User id
+     */
+    public int getUserId() {
+        return userId;
+    }
+
     void onJobEnd() throws SQLException {
         try (Connection connection = serverDataSource.getConnection()) {
             DatabaseManagement.setJobEndTime(connection, jobId);
