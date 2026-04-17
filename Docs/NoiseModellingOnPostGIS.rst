@@ -12,7 +12,7 @@ However, you may want to connect NoiseModelling to a `PostgreSQL`_/`PostGIS`_ da
 
 NoiseModelling core functions has been written with the idea of maintaining the H2GIS/PostGIS compatibility.scripts
 
-.. warning NoiseModelling Groovy scripts may use incompatible syntax with PostGIS.
+.. warning:: NoiseModelling Groovy scripts may use incompatible syntax with PostGIS. We are currently working on checking the compatibility with the PostGIS database.
 
 This tutorial will not cover the steps for installing and configuring a PostGIS database.
 
