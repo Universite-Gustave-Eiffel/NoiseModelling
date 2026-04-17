@@ -49,5 +49,13 @@
                 <include>README.md</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/Docs/scripts</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>get_started_tutorial_complex.groovy</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
     </fileSets>
 </assembly>

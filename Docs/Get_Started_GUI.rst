@@ -27,11 +27,11 @@ Download the latest release of NoiseModelling on `Github`_.
 Step 2: Start NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As described on the page ":doc:`Architecture`", NoiseModelling can be used through a Graphical User Interface (GUI), thanks to the GeoServer and WPS Builder components.
+As described on the page ":doc:`Architecture`", NoiseModelling can be used through a Graphical User Interface (GUI) in a web browser.
 
 In this tutorial, we will use the default, already configured H2GIS database.
 
-These tools (GeoServer, WPS Builder and H2GIS) are already included in the archive, so you don't have to install them separately.
+These tools (WPS Builder and H2GIS) are already included in the archive, so you don't have to install them separately.
 
 To launch NoiseModelling with the GUI, start it from a command prompt (terminal). This will start a local server on your computer, which provides the GUI as a web application.
 
@@ -43,8 +43,6 @@ Please execute:
 .. tip::
     NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and the GUI will no longer be available.
 
-
-.. _GeoServer : http://geoserver.org/
 .. _H2GIS : http://www.h2gis.org/
 
 Step 3: Open NoiseModelling GUI

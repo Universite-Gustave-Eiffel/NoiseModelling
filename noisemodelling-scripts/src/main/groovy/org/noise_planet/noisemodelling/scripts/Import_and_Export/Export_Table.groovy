@@ -18,7 +18,7 @@
 package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
 
-import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
 import org.h2gis.functions.io.fgb.FGBDriverFunction
@@ -27,9 +27,10 @@ import org.h2gis.functions.io.json.JsonDriverFunction
 import org.h2gis.functions.io.kml.KMLDriverFunction
 import org.h2gis.functions.io.shp.SHPDriverFunction
 import org.h2gis.functions.io.tsv.TSVDriverFunction
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -59,16 +60,16 @@ inputs = [
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Exported table name',
+                title      : 'Exported table name',
+                description: 'The name of the exported table, can be used as input for another process',
                 type       : String.class
         ]
 ]
 
 
 
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     // output string, the information given back to the user
     String resultString = null
@@ -101,35 +102,35 @@ def exec(Connection connection, input) {
     switch (ext) {
         case "csv":
             CSVDriverFunction csvDriver = new CSVDriverFunction()
-            csvDriver.exportTable(connection, tableToExport, new File(exportPath), true, new EmptyProgressVisitor())
+            csvDriver.exportTable(connection, tableToExport, new File(exportPath), true, progress)
             break
         case "dbf":
             DBFDriverFunction dbfDriver = new DBFDriverFunction()
-            dbfDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
+            dbfDriver.exportTable(connection, tableToExport, new File(exportPath),true, progress)
             break
         case "geojson":
             GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
-            geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath),true,  new EmptyProgressVisitor())
+            geoJsonDriver.exportTable(connection, tableToExport, new File(exportPath),true,  progress)
             break
         case "json":
             JsonDriverFunction jsonDriver = new JsonDriverFunction()
-            jsonDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
+            jsonDriver.exportTable(connection, tableToExport, new File(exportPath),true, progress)
             break
         case "kml":
             KMLDriverFunction kmlDriver = new KMLDriverFunction()
-            kmlDriver.exportTable(connection, tableToExport, new File(exportPath),true,  new EmptyProgressVisitor())
+            kmlDriver.exportTable(connection, tableToExport, new File(exportPath),true,  progress)
             break
         case "shp":
             SHPDriverFunction shpDriver = new SHPDriverFunction()
-            shpDriver.exportTable(connection, tableToExport, new File(exportPath),true, new EmptyProgressVisitor())
+            shpDriver.exportTable(connection, tableToExport, new File(exportPath),true, progress)
             break
         case "tsv":
             TSVDriverFunction tsvDriver = new TSVDriverFunction()
-            tsvDriver.exportTable(connection, tableToExport, new File(exportPath), true, new EmptyProgressVisitor())
+            tsvDriver.exportTable(connection, tableToExport, new File(exportPath), true, progress)
             break
         case "fgb":
             FGBDriverFunction fgbDriver = new FGBDriverFunction()
-            fgbDriver.exportTable(connection, tableToExport, new File(exportPath), true, new EmptyProgressVisitor())
+            fgbDriver.exportTable(connection, tableToExport, new File(exportPath), true, progress)
             break
         default:
             throw new Exception("The file extension is not valid. No table has been exported.")
@@ -154,7 +155,11 @@ def exec(Connection connection, input) {
     logger.info(resultString)
     logger.info('End : Export File')
     // print to WPS Builder
-    return resultString
+    return [result: tableToExport]
 
 }
 
+
+def exec(Connection connection, Map input) {
+    return exec(connection, input, new RootProgressVisitor(1, true, 5))
+}

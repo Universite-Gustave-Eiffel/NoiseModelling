@@ -1,13 +1,7 @@
 Pilot NoiseModelling with scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we describe the different ways to pilot NoiseModelling thanks to scripts. To do so, we will use a dedicated packaging of NoiseModelling, called ``NoiseModelling_5.0.0_without_gui``, in which the GUI has been removed (no more Geoserver and :doc:`WPS_Builder`).
-
-#. Go to the NoiseModelling latest `release page`_
-#. Download and unzip the `NoiseModelling_5.0.0_without_gui`_ file
-
-.. _release page : https://github.com/Ifsttar/NoiseModelling/releases/latest
-.. _NoiseModelling_5.0.0_without_gui : https://github.com/Ifsttar/NoiseModelling/releases/download/v5.0.0/NoiseModelling_5.0.0_without_gui.zip
+In this tutorial, we describe the different ways to pilot NoiseModelling thanks to scripts. To do so, we will use a dedicated binary, called ``ScriptRunner``, in which the GUI has been removed (no more  :doc:`WPS_Builder`).
 
 From that point, NoiseModelling can be executed in 3 different manners:
 
@@ -27,7 +21,7 @@ Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
-    For all users (**Linux** , **Mac** and **Windows**), please make sure your Java environment is well setted. For more information, please read the page :doc:`Requirements`.
+    For all users (**Linux** , **Mac** and **Windows**), please make sure your Java environment is well configured. For more information, please read the page :doc:`Requirements`.
 
 
 1. Simple command line
@@ -41,12 +35,8 @@ Below is an example of a bash instruction, executing the ``Noise_level_from_traf
    :language: bash
    :linenos:
 
-
-``./bin/wps_scripts`` instruction allows to launch the ``wps_scripts.sh`` or ``wps_scripts.bat`` *(depending on if you are on Linux / Mac or Windows)* file, which is located in the ``bin/`` directory.
-
-
 .. warning ::
-   Adapt ``/home/user/`` address with your own situation
+   Adapt ``/home/user/NoiseModelling`` address with the real installation folder of NoiseModelling. Use the appropriate ``./bin/ScriptRunner`` or ``./bin/ScriptRunner.bat`` *(depending on if you are on Linux / Mac or Windows)* file, which is located in the ``bin/`` directory.
 
 
 2. Bash script
@@ -62,12 +52,16 @@ Below is an example of a sequence of simple .groovy scripts, using bash instruct
 3. Groovy script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Below is an example of a complex .groovy script, launching the differents steps described in the ":doc:`Get_Started_GUI`".
+Below is an example of a complex .groovy script, launching the different steps described in the ":doc:`Get_Started_GUI`".
 
 .. literalinclude:: scripts/get_started_tutorial_complex.groovy
    :language: java
    :linenos:
 
-You can find this script online `here`_
+You can find this script ``get_started_tutorial_complex.groovy`` on the installation folder of NoiseModelling
 
-.. _here : https://github.com/Ifsttar/NoiseModelling/blob/master/wps_scripts/src/main/groovy/get_started_tutorial.groovy
+To run it use this bash command.
+
+.. literalinclude:: scripts/run_get_started_tutorial_complex.bash
+   :language: bash
+   :linenos:
