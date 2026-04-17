@@ -32,7 +32,9 @@ import org.h2gis.functions.io.tsv.TSVDriverFunction
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -99,6 +101,7 @@ outputs = [
 
 def exec(Connection connection, Map input, ProgressVisitor progress) {
 
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
     // output string, the information given back to the user
     String resultString = null
 
@@ -188,12 +191,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     } else if (pathFileLower.endsWith(".shp")) {
         SHPDriverFunction shpDriver = new SHPDriverFunction()
         shpDriver.importFile(connection, tableName, new File(pathFile), progress)
-        ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
-
-        int pk2Field = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK2")
-        int pkField = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
-
-        if (pk2Field > 0 && pkField > 0) {
+        def columnNames = JDBCUtilities.getColumnNames(connection, TableLocation.parse(tableName, dbType)).collect {it.toLowerCase(Locale.ROOT)}
+        if (columnNames.contains("pk") && columnNames.contains("pk2")) {
             stmt.execute("ALTER TABLE " + tableName + " DROP COLUMN PK2;")
             logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
         }
@@ -212,8 +211,11 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     if (spatialFieldNames.isEmpty()) {
         logger.warn("The table " + tableName + " does not contain a geometry field.")
     } else {
-        logger.info("Creating spatial index on $tableName..")
-        stmt.execute('CREATE SPATIAL INDEX IF NOT EXISTS ' + tableName + '_INDEX ON ' + tableName + '(the_geom);')
+        String geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, tableName).first();
+        if(!JDBCUtilities.isSpatialIndexed(connection, tableName, geomCol)) {
+            logger.info("Creating spatial index on $tableName..")
+            JDBCUtilities.createSpatialIndex(connection, tableName, geomCol);
+        }
 
         // Get the SRID of the table
         Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
@@ -241,14 +243,14 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
     ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
     int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName, dbType))
 
     resultString = "The table " + tableName + " has been uploaded to the database!"
 
     if (pkIndex == 0) { // no primary key in the table
         if (pkUserIndex > 0) { // there is a field with name PK
             try {
-                stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK INT NOT NULL;")
+                stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK SET NOT NULL;")
                 stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
                 resultString += String.format(" $tableName has a new primary key constraint on the field named PK")
                 logger.info(String.format("$tableName has a new primary key constraint on PK"))

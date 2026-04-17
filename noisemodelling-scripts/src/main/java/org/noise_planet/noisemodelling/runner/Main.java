@@ -21,6 +21,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.PropertyConfigurator;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.noise_planet.noisemodelling.webserver.NoiseModellingServer;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.ExecutionPlan;
@@ -94,8 +96,10 @@ public class Main {
         passwordOption.setRequired(false);
         Option portOption = new Option(null, "port", true, "Database port when connecting to PostGIS database (default 5432)");
         portOption.setRequired(false);
+        options.addOption(portOption);
         Option databaseHostNameOption = new Option(null, "host", true, "Database host name when connecting to PostGIS database (default empty to use embedded H2GIS).  The database and host name can be used to fetch the credential access from the file .pgpass on your system if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).");
         databaseHostNameOption.setRequired(false);
+        options.addOption(databaseHostNameOption);
         options.addOption(passwordOption);
         Option printVersionOption = new Option("v", false, "Print version of all libraries");
         options.addOption(printVersionOption);
@@ -184,10 +188,13 @@ public class Main {
                 if (shutdown) {
                     // No try with resource as connection will be closed by SHUTDOWN command
                     Connection connection = ds.getConnection();
-                    try (Statement st = connection.createStatement()) {
-                        logger.info("Shutdown compact the database..");
-                        st.execute("SHUTDOWN COMPACT");
-                        logger.info("done");
+                    DBTypes dbType = DBUtils.getDBType(connection);
+                    if (dbType == DBTypes.H2 || dbType == DBTypes.H2GIS) {
+                        try (Statement st = connection.createStatement()) {
+                            logger.info("Shutdown compact the database..");
+                            st.execute("SHUTDOWN COMPACT");
+                            logger.info("done");
+                        }
                     }
                 }
             } catch (SQLException ex) {

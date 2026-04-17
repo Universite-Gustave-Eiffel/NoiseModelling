@@ -32,35 +32,38 @@ public class JdbcTestCase {
 
     static Logger LOG = LoggerFactory.getLogger(JdbcTestCase.class);
 
-    static DataSource createDataSource(String user, String password, boolean debug) throws SQLException {
+    static DataSource createPostgisDataSourceFromEnv() throws SQLException {
         HikariConfig config = new HikariConfig();
-        boolean pgHostConfigurationDefined = System.getenv().containsKey ("POSTGRES_HOST");
-        pgHostConfigurationDefined = false; // We do not use Postgis Database locally
-        if(pgHostConfigurationDefined) {
-            config.setUsername(System.getenv("POSTGRES_USER"));
-            config.setPassword(System.getenv("POSTGRES_PASSWORD"));
-            config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
-            config.addDataSourceProperty("portNumbers", Integer.parseInt(Optional.ofNullable(System.getenv("POSTGRES_PORT")).orElse("5432")));
-            config.addDataSourceProperty("databaseName",
-                    Optional.ofNullable(System.getenv("POSTGRES_DB")).orElse("noisemodelling_db"));
-            config.addDataSourceProperty("serverNames",
-                    Optional.ofNullable(System.getenv("POSTGRES_HOST")).orElse("localhost"));
-            return new HikariDataSource(config);
-        } else {
-            // Create H2 memory DataSource
-            Driver driver = Driver.load();
-            OsgiDataSourceFactory dataSourceFactory = new OsgiDataSourceFactory(driver);
-            Properties properties = new Properties();
-            String databasePath = "jdbc:h2:mem:junit"+System.currentTimeMillis();
-            LOG.warn("POSTGRES_HOST is not configured, fallback to H2GIS database: \n${databasePath}");
-            properties.setProperty(DataSourceFactory.JDBC_URL, databasePath);
-            properties.setProperty(DataSourceFactory.JDBC_USER, user);
-            properties.setProperty(DataSourceFactory.JDBC_PASSWORD, password);
-            if (debug) {
-                properties.setProperty("TRACE_LEVEL_FILE", "3"); // enable debug
-            }
-            return dataSourceFactory.createDataSource(properties);
+
+        String pgUser = Optional.ofNullable(System.getenv("POSTGRES_USER")).orElse("noisemodelling");
+        String pgPass = Optional.ofNullable(System.getenv("POSTGRES_PASSWORD")).orElse("noisemodelling");
+        String pgPort = Optional.ofNullable(System.getenv("POSTGRES_PORT")).orElse("5432");
+        String pgDb = Optional.ofNullable(System.getenv("POSTGRES_DB")).orElse("noisemodelling_db");
+        String pgHost = Optional.ofNullable(System.getenv("POSTGRES_HOST")).orElse("localhost");
+
+        config.setUsername(pgUser);
+        config.setPassword(pgPass);
+        config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
+        config.addDataSourceProperty("portNumbers", Integer.parseInt(pgPort));
+        config.addDataSourceProperty("databaseName",pgDb);
+        config.addDataSourceProperty("serverNames", pgHost);
+        return new HikariDataSource(config);
+    }
+
+    static DataSource createDataSource(String user, String password, boolean debug) throws SQLException {
+        // Create H2 memory DataSource
+        Driver driver = Driver.load();
+        OsgiDataSourceFactory dataSourceFactory = new OsgiDataSourceFactory(driver);
+        Properties properties = new Properties();
+        String databasePath = "jdbc:h2:mem:junit"+System.currentTimeMillis();
+        LOG.warn("POSTGRES_HOST is not configured, fallback to H2GIS database: \n${databasePath}");
+        properties.setProperty(DataSourceFactory.JDBC_URL, databasePath);
+        properties.setProperty(DataSourceFactory.JDBC_USER, user);
+        properties.setProperty(DataSourceFactory.JDBC_PASSWORD, password);
+        if (debug) {
+            properties.setProperty("TRACE_LEVEL_FILE", "3"); // enable debug
         }
+        return dataSourceFactory.createDataSource(properties);
     }
 
     @BeforeEach
