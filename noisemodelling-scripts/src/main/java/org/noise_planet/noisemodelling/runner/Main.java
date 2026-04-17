@@ -132,7 +132,12 @@ public class Main {
             Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
             try {
-                ScriptMetadata scriptMetadata = new ScriptMetadata(new File(scriptPath).getParentFile().getName(), new File(scriptPath));
+                File parentFolder = new File(scriptPath).getParentFile();
+                String group = "";
+                if(parentFolder != null) {
+                    group = parentFolder.getName();
+                }
+                ScriptMetadata scriptMetadata = new ScriptMetadata(group, new File(scriptPath));
                 // Create Command line arguments specification using the Input specification of the WPS process
                 scriptMetadata.inputs.forEach((key, scriptInput) -> {
                     Option customOption = new Option(null, key, scriptInput.type != Boolean.class, scriptInput.description.replaceAll("<[^>]*>", ""));
