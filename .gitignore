@@ -1,7 +1,6 @@
 target/
 *.iml
 .idea/
-nbactions.xml
 *.versionsBackup
 .attach*
 Docs/build
