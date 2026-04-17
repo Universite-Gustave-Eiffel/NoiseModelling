@@ -75,5 +75,5 @@ The file should contain lines in the following format:
 
     hostname:port:database:username:password
 
-NoiseModelling will automatically fetch the password if the host is specified and the password parameter is omitted or set to its default.
+NoiseModelling will automatically fetch the password if the host is specified and the password parameter is omitted.
 
