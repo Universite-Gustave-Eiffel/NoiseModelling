@@ -11,6 +11,7 @@
 
 package org.noise_planet.noisemodelling.runner;
 
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -29,9 +30,12 @@ import org.noise_planet.noisemodelling.webserver.utilities.FileUtilities;
 import org.noise_planet.noisemodelling.webserver.utilities.LibraryInfo;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
+import org.noise_planet.noisemodelling.webserver.utilities.PgPassUtilities;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -86,8 +90,12 @@ public class Main {
         Option usernameOption = new Option("u", "username", true, "Database username (default sa)");
         usernameOption.setRequired(false);
         options.addOption(usernameOption);
-        Option passwordOption = new Option("p", "password", true, "Database password (default sa)");
+        Option passwordOption = new Option("p", "password", true, "Database password (default sa for H2GIS). If a PostGIS host is specified without a password, the password will be fetched from the .pgpass file if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).");
         passwordOption.setRequired(false);
+        Option portOption = new Option(null, "port", true, "Database port when connecting to PostGIS database (default 5432)");
+        portOption.setRequired(false);
+        Option databaseHostNameOption = new Option(null, "host", true, "Database host name when connecting to PostGIS database (default empty to use embedded H2GIS).  The database and host name can be used to fetch the credential access from the file .pgpass on your system if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).");
+        databaseHostNameOption.setRequired(false);
         options.addOption(passwordOption);
         Option printVersionOption = new Option("v", false, "Print version of all libraries");
         options.addOption(printVersionOption);
@@ -98,7 +106,6 @@ public class Main {
         // Read parameters
         String workingDir = "";
         String scriptPath = "";
-        String databaseName = "";
         Map<String, Object> customParameters = new HashMap<>();
         // Check if -v option is invoked before parsing using commandLineParser
         for (String arg : args) {
@@ -122,12 +129,9 @@ public class Main {
         }
         workingDir = commandLine.getOptionValue(workingDirOption.getOpt());
         scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
-        databaseName = commandLine.getOptionValue(databaseNameOption.getOpt(), "h2gisdb");
-        String username = commandLine.getOptionValue(usernameOption.getOpt(), "sa");
-        String password = commandLine.getOptionValue(passwordOption.getOpt(), "sa");
         boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
-        try (HikariDataSource ds = DatabaseManagement.createH2DataSource(new File(workingDir).getAbsolutePath(), databaseName, username, password, "", true)) {
+        try (HikariDataSource ds = createDataSource(commandLine)) {
             // Initialize additional loggers
             Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
@@ -196,6 +200,42 @@ public class Main {
         } catch (Throwable ex) {
             logger.error(ex.getLocalizedMessage(), ex);
             System.exit(1);
+        }
+    }
+
+    /**
+     * Create a datasource for the database
+     * @param commandLine Command line arguments
+     * @return
+     */
+    public static HikariDataSource createDataSource(CommandLine commandLine) throws SQLException {
+        String workingDir = commandLine.getOptionValue("working-dir");
+        String databaseName = commandLine.getOptionValue("database-name", "h2gisdb");
+        String username = commandLine.getOptionValue("username", "sa");
+        String password = commandLine.getOptionValue("password");
+        String port = commandLine.getOptionValue("port", "5432");
+        String host = commandLine.getOptionValue("host", "");
+        if(!host.isEmpty()) {
+            if (password == null) {
+                // Password isn't specified, try to fetch it from the .pgpass file
+                PgPassUtilities.PgPassEntry entry = PgPassUtilities.getCredentials(PgPassUtilities.getPgPassFile(), host, port, databaseName, username);
+                if (entry != null) {
+                    password = entry.password;
+                }
+            }
+            HikariConfig config = new HikariConfig();
+            config.setUsername(username);
+            config.setPassword(password);
+            config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
+            config.addDataSourceProperty("portNumbers", Integer.parseInt(port));
+            config.addDataSourceProperty("databaseName", databaseName);
+            config.addDataSourceProperty("serverNames", host);
+            return new HikariDataSource(config);
+        } else {
+            if(password == null) {
+                password = "sa";
+            }
+            return DatabaseManagement.createH2DataSource(new File(workingDir).getAbsolutePath(), databaseName, username, password, "", true);
         }
     }
 }
