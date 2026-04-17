@@ -90,8 +90,6 @@ In the new interface, you discover a full database manager, with the list of tab
     :align: center
     :width: 100%
 
-
-.. _Geoserver: http://geoserver.org/
 .. _H2 : https://www.h2database.com
 .. _H2GIS : http://h2gis.org/
 .. _PostgreSQL: https://www.postgresql.org/
