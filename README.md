@@ -43,7 +43,7 @@ Deployment on a public server
 > You can edit the following environment variables:
 > 
 > - PROXY_BASE_URL :  If you have a domain name you can use the your domain name instead of localhost
-> - ROOT_URL : By default the service is accessible from the path /nmcovadis but you can change it by using the environment variable ROOT_URL (empty to use the base url)
+> - ROOT_URL : By default the service is accessible from the path /noisemodelling but you can change it by using the environment variable ROOT_URL (empty to use the base url)
 > - UNSECURE_MODE : By default the registration is enabled (with TOTP). You can disable the registration by setting the environment variable UNSECURE_MODE in the docker-compose.yml file to true.
 > 
 > # Dependencies

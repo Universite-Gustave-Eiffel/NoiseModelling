@@ -93,7 +93,46 @@ When a developer uses `Docker`_, he creates an application or service, which he 
 Available versions
 ********************
 
-The Docker images are published on our Github repository. It is the best way to safely host NoiseModelling on a public server. Be aware that a registered user may be able to run a privilege escalation attack through the usage of scripts/SQL, so you should provide access to the server only to trusted users.
+The Docker images are published `on our Github repository <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/pkgs/container/noisemodelling>`_. It is the best way to safely host NoiseModelling on a public server. Be aware that a registered user may be able to run a privilege escalation attack through the usage of scripts/SQL, so you should add only trusted users.
 
 .. _Docker : https://www.docker.com/
-.. _Docker repository : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/pkgs/container/noisemodelling
+
+On the root of this repository you can find an example docker compose.
+
+You can edit the following environment variables:
+
+- PROXY_BASE_URL : If you have a domain name you can use the your domain name instead of localhost
+- ROOT_URL : By default the service is accessible from the path /noisemodelling but you can change it by using the environment variable ROOT_URL (empty to use the base url)
+- UNSECURE_MODE : By default the registration is enabled (with TOTP). If you use this docker image locally, you can disable the registration by setting the environment variable UNSECURE_MODE in the docker-compose.yml file to true.
+
+Dependencies
+============
+
+Install Docker or Podman on your system
+
+Running
+=======
+
+Download the file `docker-compose.yml <https://github.com/Universite-Gustave-Eiffel/NoiseModelling/blob/main/docker-compose.yml>`_ and run this command in the same folder:
+
+::
+
+   docker compose up -d
+
+or
+
+::
+
+   podman compose up -d
+
+Follow the instructions of the logs in order to register the administrator account (if not in unsecure mode).
+
+::
+
+   docker compose logs noisemodelling
+
+or
+
+::
+
+   podman compose logs noisemodelling
