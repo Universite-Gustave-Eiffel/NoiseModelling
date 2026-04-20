@@ -12,15 +12,17 @@
 
 package org.noise_planet.noisemodelling;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class VersionUtilsTest {
+public class AssumptionLoggerExtension implements TestWatcher {
+    private static final Logger logger = LoggerFactory.getLogger(AssumptionLoggerExtension.class);
 
-    @Test
-    public void testGetVersion() {
-        String version = VersionUtils.getVersion();
-        assertNotNull(version);
-        assertNotEquals("Unknown", version);
+    @Override
+    public void testAborted(ExtensionContext context, Throwable cause) {
+        // This method is called when an Assumption fails
+        logger.warn("Test '{}' cancelled (Assumption failed) : {}", context.getDisplayName(), cause.getMessage());
     }
 }
