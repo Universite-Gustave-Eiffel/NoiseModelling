@@ -20,7 +20,7 @@ Download the latest release of NoiseModelling on `Github`_.
 .. note::
     Starting from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
 
-.. _Github : https://github.com/Ifsttar/NoiseModelling/releases
+.. _Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
 
 
