@@ -42,11 +42,10 @@ The **computation time has been decreased**. The separation between path finding
 Packaging
 **************
 
-On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
+On the NoiseModelling latest `release page`_, two packages of NoiseModelling are proposed:
 
-* ``NoiseModelling_5.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
-* ``NoiseModelling_5.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_5.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
+* ``NoiseModelling_X.X.X.zip`` : cross-platform version, with web GUI (Graphic User Interface) and terminal cli version (read ":doc:`Get_Started_Script`" page for more info)
+* ``NoiseModelling_X.X.X_install.exe`` : windows installer, with GUI and Java Virtual Machine
 
 .. _CNOSSOS-EU: https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
