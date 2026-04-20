@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-NoiseModelling v5.0 User Guide
+NoiseModelling v5 User Guide
 ==========================================
 
 .. figure:: images/home/NoiseModelling_banner.png
    :align: center
 
-Welcome on the **official NoiseModelling v5.0 User Guide**.
+Welcome on the **official NoiseModelling V5 User Guide**.
 
 NoiseModelling is a free and open-source Java library for producing environmental noise maps from local to national scales, implementing CNOSSOS‑EU road and rail noise emission and propagation methods while linking to H2GIS and PostGIS for spatial analysis.
 It responds to the need for robust noise assessment in public health and environmental planning by enabling simulation and prediction of noise propagation for mitigation design and compliance with EU regulations.
@@ -30,10 +30,10 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 .. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
 .. _offical NoiseModelling website : http://noise-planet.org/noisemodelling.html
 
-What's new with the v5.0?
+What's new with the V5?
 ---------------------------
 
-Since the release v5.0, **NoiseModelling validate the** `CNOSSOS-EU`_ **standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
+Since the release V5, **NoiseModelling validate the** `CNOSSOS-EU`_ **standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
 
 **Time periods are not limited to Day Evening and Night anymore**. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
 
