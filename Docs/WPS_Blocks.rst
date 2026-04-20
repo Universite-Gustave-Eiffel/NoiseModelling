@@ -29,6 +29,5 @@ Physically stored as ``.groovy`` files *(openable in any text editor)*, they are
 Create your own WPS block
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Please see `Advanced Users Section`_, because now you want to be one!
+Please see :doc:`Own_Wps`, because now you want to be one!
 
-.. _Advanced Users Section : Own_Wps

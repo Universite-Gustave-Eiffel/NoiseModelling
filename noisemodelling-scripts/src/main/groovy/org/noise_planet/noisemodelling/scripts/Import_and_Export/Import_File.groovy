@@ -99,6 +99,14 @@ outputs = [
         ]
 ]
 
+/**
+ * Main method
+ * @param connection SQL Connection
+ * @param input Map of inputs, should provide the same keys as described in the input metadata
+ * @param progress Can be used to display the progression of the computation, and to check if the user canceled the execution
+ * @return A map as described in the result metadata
+ * @throws SQLException if something went wrong
+ */
 def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
