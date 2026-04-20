@@ -8,15 +8,18 @@ NoiseModelling is designed to use `H2GIS`_ as the default database.
 
 H2GIS does not need to be configured or installed on the system and is therefore perfectly suitable as a default database.
 
-However, you may want to connect NoiseModelling to a `PostgreSQL`_/`PostGIS`_ database (this option may be interesting especially if you are using huge datasets (*e.g* on large area)).
+However, you may want to connect NoiseModelling to a `PostgreSQL`_/`PostGIS`_ database (this option may be interesting especially if you want to use `QGIS`_ while using NoiseModelling).
 
-NoiseModelling core functions has been written with the idea of maintaining the H2GIS/PostGIS compatibility.scripts
+.. note:: Using PostGIS may result in slower performance than H2GIS due to network overhead, as data is transferred over a connection rather than written directly to local storage.
+
+NoiseModelling core functions has been written with the idea of maintaining the H2GIS/PostGIS compatibility.
 
 .. warning:: NoiseModelling Groovy scripts may use incompatible syntax with PostGIS. We are currently working on checking the compatibility with the PostGIS database.
 
 This tutorial will not cover the steps for installing and configuring a PostGIS database.
 
-.. _H2GIS : http://h2gis.org/
+.. _QGIS : https://qgis.org
+.. _H2GIS : https://h2gis.org/
 .. _PostgreSQL: https://www.postgresql.org/
 .. _PostGIS: https://postgis.net/
 
