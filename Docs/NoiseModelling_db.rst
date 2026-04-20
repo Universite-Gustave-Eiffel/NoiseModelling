@@ -61,17 +61,17 @@ To do so, follow these steps:
 In the connexion panel, you have to specify the following informations:
 
 - ``Driver Class``: the driver that allows to connect to a specific database. Here we want to connect to a H2 db, so let the default value ``org.h2.Driver``
-- ``JDBC URL``: the JDBC address of the NoiseModelling database. By default, this database is placed in here ``/.../data_dir/h2gisdb.mv.db``. So, fill this text area with ``jdbc:h2:/.../data_dir/h2gisdb.mv.db``. 
-- ``User name``: the db user name. By default, keep the empty value
-- ``Password``: the db password. By default, keep the empty value
+- ``JDBC URL``: the JDBC address of the NoiseModelling database. By default, this database is placed in here ``~/.noisemodelling/user_001.mv.db``. So, fill this text area with ``jdbc:h2:/~/.noisemodelling/user_001.mv.db``.
+- ``User name``: the db user name. By default, sa
+- ``Password``: the db password. By default, sa
 
 
 .. warning::
     If you want to open the database while NoiseModelling is running, you have to add ``;AUTO_SERVER=TRUE`` after the ``JDBC URL``. If not, you will only be able to open the database once NoiseModelling is closed.
 
-Below is an example, with a database located on the computer here: ``/home/nm_user/NoiseModelling/NoiseModelling_4.0/data_dir/h2gisdb.mv.db``. We want to open the db while NoiseModelling is running.
+Below is an example, with a database located on the computer here: ``/home/nm_user/.noisemodelling/user_001.mv.db``. We want to open the db while NoiseModelling is running.
 
-- ``JDBC URL``: ``jdbc:h2:/home/nm_user/NoiseModelling/NoiseModelling_4.0/data_dir/h2gisdb.mv.db;AUTO_SERVER=TRUE``
+- ``JDBC URL``: ``jdbc:h2:/home/nm_user/.noisemodelling/user_001;AUTO_SERVER=TRUE``
 - ``User name``: *empty*
 - ``Password``: *empty*
 
@@ -115,9 +115,10 @@ Connect DBeaver to your database
 #. Run DBeaver
 #. Add a new connection
 #. If you use a H2GIS type databse, please select ``H2GIS embedded`` *(use the search engine to filter)*
-#. Point the database path by clicking on ``Browse ...``. By default the database is placed in the ``NoiseModelling/data_dir`` directory and is named ``h2gisdb.mv.db``.
+#. Point the database path by clicking on ``Browse ...``. By default the database is placed in the ``~/.noisemodelling`` directory and is named ``user_001.mv.db``.
 #. In the ``Path`` text area, remove ``.mv.db`` at the end of the address
-#. If you want to open the database while NoiseModelling is running, add ``;AUTO_SERVER=TRUE`` at the end of the path (you should have something like this ``/home/nm_user/NoiseModelling/NoiseModelling_4.0/data_dir/h2gisdb;AUTO_SERVER=TRUE``)
+#. The default user is ``sa`` and password ``sa``
+#. If you want to open the database while NoiseModelling is running, add ``;AUTO_SERVER=TRUE`` at the end of the path (you should have something like this ``/home/nm_user/.noisemodelling/user_001;AUTO_SERVER=TRUE``)
 #. Click on ``Terminate`` to open your dabatase!
 
 .. figure:: images/NoiseModelling_db/dbeaver_new_connection.png
@@ -126,7 +127,7 @@ Connect DBeaver to your database
 
 
 .. warning ::
-    If you are using a version of DBeaver prior to 22.0.4, the interface may ask you to ``Save`` instead of ``Opening`` the existing db. Once you click on ``Save``, a panel will warns you that ``h2gisdb.mv.db`` already exists and will ask you if you want to ``Cancel`` or ``Replace`` : click on ``Replace``.
+    If you are using a version of DBeaver prior to 22.0.4, the interface may ask you to ``Save`` instead of ``Opening`` the existing db. Once you click on ``Save``, a panel will warns you that ``user_001.mv.db`` already exists and will ask you if you want to ``Cancel`` or ``Replace`` : click on ``Replace``.
 
 Now you can use the full potential of DBeaver and the H2GIS database. You can explore, display and manage your database.
 
