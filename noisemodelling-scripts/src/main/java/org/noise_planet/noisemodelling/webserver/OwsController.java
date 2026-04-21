@@ -17,8 +17,6 @@ import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
 import net.opengis.ows11.ExceptionReportType;
-import net.opengis.ows11.ExceptionType;
-import net.opengis.ows11.Ows11Factory;
 import net.opengis.wps10.*;
 import org.apache.log4j.*;
 import org.apache.log4j.spi.Filter;
@@ -73,7 +71,8 @@ public class OwsController {
     public static final int MAXIMUM_POOL_SIZE = 5;
     public static final long KEEP_ALIVE_TIME = 0L;
     public static final int MAXIMUM_LINES_TO_FETCH = 1_000;
-    private static final int DEFAULT_ABORT_JOB_DELAY = 5;
+    private static final int DEFAULT_ABORT_JOB_DELAY_SECONDS = 5;
+    private static final int COMPLETED_JOB_CLEANUP_DELAY_SECONDS = 3600; // 1 hour
     private static final long MAX_UPLOAD_SIZE = 500L * 1024 * 1024; // 500 MB
     private static final int MAX_UPLOAD_TIMEOUT = 10;
     private final Logger logger = LoggerFactory.getLogger(OwsController.class);
@@ -489,6 +488,21 @@ public class OwsController {
             Job<Object> job = new Job<>(jobUserId, executionPlan, serverDataSource,
                     userDataSource , configuration);
             Future<Object> result = jobExecutorService.submitJob(job);
+            // Prepare the task to clean up the job after it is completed or failed,
+            // we delay the cleanup to let the user fetch the job result if needed
+            // It will release some memory and avoid keeping too many results. The job state will still be saved in the database,
+            // but the result will be removed from memory.
+            scheduledExecutorService.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    if (result.isDone() || result.isCancelled()) {
+                        jobExecutorService.removeJob(job.getId());
+                    } else {
+                        // Job is still running we will try again in the same delay
+                        scheduledExecutorService.schedule(this, COMPLETED_JOB_CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
+                    }
+                }
+            }, COMPLETED_JOB_CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
             if(execute.getResponseForm().getResponseDocument() == null) {
                 // Synchronous WPS Execution
                 try {
@@ -501,6 +515,7 @@ public class OwsController {
                 }
             } else {
                 // Asynchronous WPS Execution
+                // We answer without delay
                 // Request want a standard OGC ExecuteResponse document
                 Map<String, Object> jobData;
                 try (Connection connection = serverDataSource.getConnection()) {
@@ -717,7 +732,7 @@ public class OwsController {
                 // After a specified delay, abort the process if it can't handle the progress monitor cancel
                 scheduledExecutorService.schedule(() -> {
                     if (job.isRunning() && job.getFuture() != null) {
-                        logger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY);
+                        logger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
                         // Release/Close the connections of this datasource
                         // to avoid corruption of the database
                         if(userDataSources.get(job.getUserId()) instanceof Closeable) {
@@ -748,7 +763,7 @@ public class OwsController {
                         }
                         job.getFuture().cancel(true);
                     }
-                }, DEFAULT_ABORT_JOB_DELAY, TimeUnit.SECONDS);
+                }, DEFAULT_ABORT_JOB_DELAY_SECONDS, TimeUnit.SECONDS);
                 jobList(ctx);
             } catch (NumberFormatException ex) {
                 logger.error("Invalid job id {}", ctx.body(), ex);

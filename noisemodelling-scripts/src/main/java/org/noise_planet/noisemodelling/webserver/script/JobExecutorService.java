@@ -66,6 +66,16 @@ public class JobExecutorService {
         }
     }
 
+    /**
+     * Remove a job from the service. This does not cancel the job if it is still running,
+     * it just removes it from the tracking map. See cancelJob(int jobId) to cancel a job before removing it.
+     * @param jobId Job identifier
+     * @return The removed job instance or null if it did not exist
+     */
+    public Job<?> removeJob(int jobId) {
+        return jobs.remove(jobId);
+    }
+
     public void shutdown() {
         executorService.shutdown();
     }
