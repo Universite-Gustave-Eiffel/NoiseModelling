@@ -497,6 +497,7 @@ public class OwsController {
                 public void run() {
                     if (result.isDone() || result.isCancelled()) {
                         jobExecutorService.removeJob(job.getId());
+                        logger.info("Job with ID {} has been clean-up from the memory after completion or cancellation.", job.getId());
                     } else {
                         // Job is still running we will try again in the same delay
                         scheduledExecutorService.schedule(this, COMPLETED_JOB_CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);

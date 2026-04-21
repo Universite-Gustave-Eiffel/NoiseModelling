@@ -296,6 +296,6 @@ public class Job<T> implements Callable<T> {
     }
 
     public BigInteger getProgression() {
-        return BigInteger.valueOf(Math.round(progressVisitor.getProgression()) * 100);
+        return BigInteger.valueOf(Math.round(progressVisitor.getProgression() * 100));
     }
 }
