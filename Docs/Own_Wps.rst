@@ -42,6 +42,11 @@ General Structure
         my_choice_parameter: [name: 'my_choice_parameter', title: 'my_choice_parameter', description : 'A list box with limited choices', type: String.class, allowedValues : ["Choice 1", "Choice 2", "Choice 3"], default : "Choice 2"],
     ]
 
+    // Optional (default 60 seconds)
+    // For synchronous WPS, it will wait this time (in seconds) before returning a message, but it will still run the execution in the background
+    executionTimeout = 120
+
+
     outputs = [
         result: [name: 'result', title: 'result', description : 'Result output, generally the result output table name', type: String.class]
     ]

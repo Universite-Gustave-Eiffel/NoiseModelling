@@ -1,4 +1,4 @@
-Pilot NoiseModelling with scripts
+NoiseModelling client line interface (CLI)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this tutorial, we describe the different method to pilot NoiseModelling thanks to scripts. To do so, we will use a separate command-line interface, called ``ScriptRunner``, in which the GUI has been removed (no more  :doc:`WPS_Builder`).

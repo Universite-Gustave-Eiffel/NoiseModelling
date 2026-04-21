@@ -44,7 +44,7 @@ import java.util.zip.ZipFile
 
 import static org.junit.jupiter.api.Assertions.*
 /**
- * Test parsing of zip file using H2GIS database
+ * Test the tutorials of the NoiseModelling documentation
  */
 class TestTutorials extends JdbcTestCase {
     Logger LOGGER = LoggerFactory.getLogger(TestTutorials.class)

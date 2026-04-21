@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -38,7 +37,7 @@ import java.util.concurrent.Future;
 public class Job<T> implements Callable<T> {
     private static final Logger logger = LoggerFactory.getLogger(Job.class);
     /** NoiseModelling DataBase for the user */
-    public static final int limit = 2000;
+    public static final int WPS_RESPONSE_LOGGING_LENGTH_LIMIT = 2000;
     protected DataSource userDataSource;
     protected DataSource serverDataSource;
     protected boolean isRunning = false;
@@ -57,7 +56,7 @@ public class Job<T> implements Callable<T> {
         this.configuration = configuration;
         this.userDataSource = userDataSource;
         this.serverDataSource = serverDataSource;
-        progressVisitor = new RootProgressVisitor(1, true, 5);
+        progressVisitor = new RootProgressVisitor(1, false, 0);
         try (Connection connection = serverDataSource.getConnection()) {
             this.jobId = DatabaseManagement.createJob(connection, userId, executionPlan.scriptMetadata.id);
             progressVisitor.addPropertyChangeListener("PROGRESS" , new ProgressionTracker(serverDataSource, jobId));
@@ -214,8 +213,16 @@ public class Job<T> implements Callable<T> {
         Script script = shell.parse(currentPlan.scriptMetadata.path.toFile());
         // Check expected arguments
         List<MetaMethod> methods = script.getMetaClass().getMethods();
-        MetaMethod execMetaMethod =
-                methods.stream().filter(m -> m.getName().equals("exec")).findFirst().orElse(null);
+        MetaMethod execMetaMethod = null;
+        // Take the exec method with the most arguments, in case there are multiple exec methods,
+        // we want to use the one with the most arguments to provide more features to the script author
+        for (MetaMethod method : methods) {
+            if (method.getName().equals("exec")) {
+                if (execMetaMethod == null || method.getNativeParameterTypes().length > execMetaMethod.getNativeParameterTypes().length) {
+                    execMetaMethod = method;
+                }
+            }
+        }
         boolean useConnection = true; //first argument is a connection input
         boolean useProgressVisitor = false; // third argument is a ProgressVisitor
         if (execMetaMethod != null) {
@@ -262,8 +269,8 @@ public class Job<T> implements Callable<T> {
         String outputString = currentPlan.outputs != null ? currentPlan.outputs.toString() : "null";
         logger.info("Script {} executed with result {}",
                 currentPlan.scriptMetadata.id,
-                outputString.length() > limit ?
-                        outputString.substring(0, limit) +
+                outputString.length() > WPS_RESPONSE_LOGGING_LENGTH_LIMIT ?
+                        outputString.substring(0, WPS_RESPONSE_LOGGING_LENGTH_LIMIT) +
                                 "... [TRUNCATED]" : outputString);
         return returnData;
     }

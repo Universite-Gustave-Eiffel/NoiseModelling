@@ -38,6 +38,8 @@ description = '&#10145;&#65039; Display a table containing a geometric column on
         'Technically, it groups all the geometries of a table and returns them in WKT OGC format. </br> </br> '+
         '&#x1F6A8; Be careful, this treatment can be blocked if the table is too large.'
 
+executionTimeout = 120 // For synchronous WPS, it will wait this time before returning a message, but it will still run the execution in the background
+
 inputs = [
         inputSRID: [
                 name       : 'Projection identifier',

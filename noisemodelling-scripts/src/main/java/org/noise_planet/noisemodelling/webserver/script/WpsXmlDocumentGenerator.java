@@ -159,8 +159,8 @@ public class WpsXmlDocumentGenerator {
         processDescriptionType.setTitle(languageString(wrapper.title));
         processDescriptionType.setAbstract(languageString(wrapper.description));
         processDescriptionType.setProcessVersion("1.0.0");
-        processDescriptionType.setStoreSupported(true);
-        processDescriptionType.setStatusSupported(true);
+        processDescriptionType.setStoreSupported(true); // complex data output(s) from this process can be requested to be stored by the WPS server
+        processDescriptionType.setStatusSupported(true); // support for Asynchronous WPS
         DataInputsType dataInputsType = wpsf.createDataInputsType();
         processDescriptionType.setDataInputs(dataInputsType);
         for (ScriptInput input : wrapper.inputs.values()) {

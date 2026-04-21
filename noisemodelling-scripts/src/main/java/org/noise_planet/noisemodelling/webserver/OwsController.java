@@ -497,7 +497,7 @@ public class OwsController {
                 if(execute.getResponseForm().getResponseDocument() == null) {
                     String url = ctx.contextPath() + "/job_logs/" + job.getId();
                     ctx.result(String.format(
-                            "Long running process, <a href=\"%s\" target=\"_blank\">please look at the job (id: %d)</a> output logs",
+                            "Long running process, <a href=\"%s\" target=\"_blank\">please look at the job (id: %d)</a> output logs. This is a synchronous WPS execution, you can use a asynchronous execution by using ResponseDocument instead of a RawDataOutput.",
                             url,
                             job.getId()));
                 } else {

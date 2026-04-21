@@ -27,9 +27,8 @@ import java.util.*;
  * Represents the description for a script, with expected inputs and outputs
  */
 public class ScriptMetadata {
-    // Still run the script after this time, but it will run in the background
-    public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 5;
-
+    // For the synchronous WPS call, release the http connection after this timeout (with a message "long running process..")
+    public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 60;
     final public String id;
     final public String title;
     final public String description;
