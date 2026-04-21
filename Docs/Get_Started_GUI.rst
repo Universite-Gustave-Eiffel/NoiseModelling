@@ -116,7 +116,7 @@ Then, select the orange blocks and enter the name of the corresponding table in 
 - Receivers table name: ``RECEIVERS`` Locations where noise levels are evaluated
 - DEM table name: ``DEM`` Digital elevation model
 - Ground absorption table: ``GROUND_TYPE`` Nature of the ground
-- Diffraction on horizontal edges: check it (sound propagation goes over buildings)
+- Diffraction on horizontal edges: ``☑`` check it (sound propagation goes over buildings)
 - Maximum source-receiver distance: set ``2000`` meters (do not look for sound sources further than 2 km)
 - Order of reflection: set ``0`` to disable it (faster but less accurate)
 

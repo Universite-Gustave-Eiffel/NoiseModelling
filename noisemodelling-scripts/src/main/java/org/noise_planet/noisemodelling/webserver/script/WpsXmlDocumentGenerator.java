@@ -7,6 +7,7 @@ import org.geotools.wps.WPSConfiguration;
 import org.geotools.xsd.Encoder;
 import org.jspecify.annotations.NonNull;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.webserver.Configuration;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 
@@ -252,7 +253,11 @@ public class WpsXmlDocumentGenerator {
                 response.getStatus().getProcessStarted().setPercentCompleted(job == null ? BigInteger.valueOf(0) : job.getProgression());
                 break;
             case COMPLETED:
-                response.getStatus().setProcessSucceeded(job != null ? job.getExecutionPlan().getOutputs() != null ? job.getExecutionPlan().getOutputs().toString() : "" : "");
+                String output = "";
+                if(job != null && job.getExecutionPlan().getOutputs() != null) {
+                    output = castJobOutputToString(job.getExecutionPlan().getOutputs());
+                }
+                response.getStatus().setProcessSucceeded(output);
                 break;
             case CANCELED:
             case FAILED:
@@ -269,6 +274,18 @@ public class WpsXmlDocumentGenerator {
         encoder.encode(response, new QName("http://www.opengis.net/wps/1.0.0", "ExecuteResponse"), baos);
         return baos.toString();
 
+    }
+
+    public static String castJobOutputToString(Object output) {
+        if(output instanceof Map<?, ?> && ((Map<?, ?>) output).size() == 1) {
+            // Take first key if this is a map [result: "my result"}
+            castJobOutputToString(((Map<?, ?>) output).values().iterator().next());
+        } else if(output instanceof Geometry) {
+            // Convert Geometry to WKT
+            WKTWriter wktWriter = new WKTWriter(2);
+            return wktWriter.write((Geometry) output);
+        }
+        return output.toString();
     }
 
     /**

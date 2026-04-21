@@ -489,26 +489,25 @@ public class OwsController {
             Job<Object> job = new Job<>(jobUserId, executionPlan, serverDataSource,
                     userDataSource , configuration);
             Future<Object> result = jobExecutorService.submitJob(job);
-            try {
-                Object jobResult = result.get(executionPlan.getScriptMetadata().executionTimeoutSeconds, TimeUnit.SECONDS);
-                processResult(ctx, jobResult);
-            } catch (TimeoutException e) {
-                // Long process, switch to asynchronous call
-                if(execute.getResponseForm().getResponseDocument() == null) {
+            if(execute.getResponseForm().getResponseDocument() == null) {
+                // Synchronous WPS Execution
+                try {
+                    Object jobResult = result.get(executionPlan.getScriptMetadata().executionTimeoutSeconds, TimeUnit.SECONDS);
+                    processResult(ctx, jobResult);
+                } catch (TimeoutException e) {
+                    // Long process, timeout as been triggered, provide a response while the processing still run in the background
                     String url = ctx.contextPath() + "/job_logs/" + job.getId();
-                    ctx.result(String.format(
-                            "Long running process, <a href=\"%s\" target=\"_blank\">please look at the job (id: %d)</a> output logs. This is a synchronous WPS execution, you can use a asynchronous execution by using ResponseDocument instead of a RawDataOutput.",
-                            url,
-                            job.getId()));
-                } else {
-                    // Request want a standard OGC ExecuteResponse document
-                    Map<String, Object> jobData;
-                    try (Connection connection = serverDataSource.getConnection()) {
-                        jobData = DatabaseManagement.getJob(connection, job.getId());
-                    }
-                    ctx.contentType("text/xml; charset=UTF-8");
-                    ctx.result(WpsXmlDocumentGenerator.generateExecuteResponseDocument(job, jobData, configuration));
+                    ctx.result(String.format("Long running process, <a href=\"%s\" target=\"_blank\">please look at the job (id: %d)</a> output logs. This is a synchronous WPS execution, you can use a asynchronous execution by using ResponseDocument instead of a RawDataOutput.", url, job.getId()));
                 }
+            } else {
+                // Asynchronous WPS Execution
+                // Request want a standard OGC ExecuteResponse document
+                Map<String, Object> jobData;
+                try (Connection connection = serverDataSource.getConnection()) {
+                    jobData = DatabaseManagement.getJob(connection, job.getId());
+                }
+                ctx.contentType("text/xml; charset=UTF-8");
+                ctx.result(WpsXmlDocumentGenerator.generateExecuteResponseDocument(job, jobData, configuration));
             }
         } catch (Exception e) {
             logger.error("Error executing WPS {}", ctx.body(), e);
