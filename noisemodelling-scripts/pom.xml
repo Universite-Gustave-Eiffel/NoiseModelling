@@ -16,7 +16,47 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <shell.executable/>
+        <shell.arg/>
+        <sphinx.command/>
     </properties>
+    <profiles>
+        <profile>
+            <id>unix-config</id>
+            <activation>
+                <os><family>unix</family></os>
+            </activation>
+            <properties>
+                <shell.executable>sh</shell.executable>
+                <shell.arg>-c</shell.arg>
+                <!-- Check if python3 exists, if so run the commands, if not echo and exit 0 -->
+                <sphinx.command>
+                    command -v python3 >/dev/null 2>&amp;1 &amp;&amp; (
+                    python3 -m venv target/venv &amp;&amp;
+                    target/venv/bin/python -m pip install -r ../Docs/requirements.txt &amp;&amp;
+                    target/venv/bin/sphinx-build -M html ../Docs target/sphinx
+                    ) || echo "Python3 not found. Skipping documentation generation."
+                </sphinx.command>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows-config</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <shell.executable>cmd</shell.executable>
+                <shell.arg>/c</shell.arg>
+                <sphinx.command>
+                    where python >nul 2>nul &amp;&amp; (
+                    python -m venv target/venv &amp;&amp;
+                    target\venv\Scripts\python -m pip install -r ..\Docs\requirements.txt &amp;&amp;
+                    target\venv\Scripts\sphinx-build -M html ..\Docs target\sphinx
+                    ) || echo Python not found. Skipping documentation generation.
+                </sphinx.command>
+            </properties>
+        </profile>
+    </profiles>
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -207,48 +247,18 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.1</version>
                 <executions>
-                    <!-- Create the virtualenv -->
                     <execution>
-                        <id>create-virtualenv</id>
+                        <id>generate-documentation</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>python3</executable>
+                            <!-- We call 'sh' or 'cmd', which ALWAYS exist -->
+                            <executable>${shell.executable}</executable>
                             <arguments>
-                                <argument>-m</argument>
-                                <argument>venv</argument>
-                                <argument>${project.basedir}/target/venv</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <!-- Install dependencies in the virtualenv -->
-                    <execution>
-                        <id>install-sphinx-deps</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>${project.basedir}/target/venv/bin/python</executable>
-                            <commandlineArgs>-m pip install -r ${project.parent.basedir}/Docs/requirements.txt</commandlineArgs>
-                        </configuration>
-                    </execution>
-                    <!-- Build documentation with the virtualenv sphinx-build -->
-                    <execution>
-                        <id>build-docs</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>${project.basedir}/target/venv/bin/sphinx-build</executable>
-                            <arguments>
-                                <argument>-M</argument>
-                                <argument>html</argument>
-                                <argument>${project.parent.basedir}/Docs</argument>
-                                <argument>${project.basedir}/target/sphinx</argument>
+                                <argument>${shell.arg}</argument>
+                                <argument>${sphinx.command}</argument>
                             </arguments>
                         </configuration>
                     </execution>
