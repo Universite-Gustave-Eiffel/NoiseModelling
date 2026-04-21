@@ -1,7 +1,7 @@
 Pilot NoiseModelling with scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we describe the different ways to pilot NoiseModelling thanks to scripts. To do so, we will use a dedicated binary, called ``ScriptRunner``, in which the GUI has been removed (no more  :doc:`WPS_Builder`).
+In this tutorial, we describe the different method to pilot NoiseModelling thanks to scripts. To do so, we will use a separate command-line interface, called ``ScriptRunner``, in which the GUI has been removed (no more  :doc:`WPS_Builder`).
 
 From that point, NoiseModelling can be executed in 3 different manners:
 
@@ -15,7 +15,7 @@ To illustrate, users are invited to reproduce the tutorial ":doc:`Get_Started_GU
     This tutorial is mainly dedicated to advanced users.
     
 .. warning::
-    The URL is here adapted to Linux or Mac users. Windows user may adapt the address by replacing ``/`` by ``\`` and the drive name.
+    The URL is here adapted to Linux or Mac users. Windows user may adapt the address by replacing ``/`` by ``\`` in the folders paths.
 
 Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +27,7 @@ Requirements
 1. Simple command line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Using the terminal of your operating system (Java 11 must be in the system path)
+Using the terminal of your operating system
 
 Below is an example of a bash instruction, executing the ``Noise_level_from_traffic.groovy`` WPS Script (located in the directory ``scripts/``). This block has 5 arguments corresponding to the input table names (for buildings, roads, receivers, dem and ground type).
 

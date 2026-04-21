@@ -16,6 +16,7 @@ import io.javalin.http.Handler;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.rendering.template.JavalinThymeleaf;
+import io.javalin.util.JavalinException;
 import io.javalin.util.JavalinLogger;
 import io.javalin.websocket.WsConfig;
 import org.apache.commons.cli.Option;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
@@ -196,6 +198,17 @@ public class NoiseModellingServer {
                 staticFileConfig.directory = "org/noise_planet/noisemodelling/webserver/static/root/";
                 staticFileConfig.roles = Set.of(Role.ANYONE);
             });
+            // Serve documentation if the folder exists
+            if(new File("help").exists()) {
+                config.staticFiles.add(staticFileConfig -> {
+                    staticFileConfig.location = Location.EXTERNAL;
+                    staticFileConfig.hostedPath = "/builder/help";
+                    staticFileConfig.directory = "help/";
+                    staticFileConfig.roles = Set.of(Role.ANYONE);
+                });
+            } else {
+                logger.warn("Documentation folder 'help/' not found, documentation won't be served on the web interface.");
+            }
             config.fileRenderer(new JavalinThymeleaf(ThymeleafConfig.buildTemplateConfiguration()));
         });
 

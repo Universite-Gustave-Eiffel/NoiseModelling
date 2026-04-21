@@ -61747,7 +61747,7 @@ wps.SUBPROCESS = 'process|';
 wps.VECTORLAYER = 'vector|';
 wps.RASTERLAYER = 'raster|';
 wps.ONLINE_DOCS_URL = 'https://noisemodelling.readthedocs.io';
-wps.LOCAL_DOCS_URL = 'noisemodelling-readthedocs-io-en-latest.pdf';
+wps.LOCAL_DOCS_URL = 'help/index.html';
 
 wps.editor.prototype.addRasterLayer = function(id, node, value) {
   var mapId = node._parent;

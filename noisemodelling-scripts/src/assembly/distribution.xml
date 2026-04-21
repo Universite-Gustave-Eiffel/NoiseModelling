@@ -38,7 +38,7 @@
         <!-- include the documentation directory -->
         <fileSet>
             <directory>${project.basedir}/target/sphinx/html</directory>
-            <outputDirectory>/documentation</outputDirectory>
+            <outputDirectory>/help</outputDirectory>
         </fileSet>
         <!-- include groovy source directory -->
         <fileSet>
