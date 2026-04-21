@@ -20,7 +20,6 @@
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>
-
         <!-- Include start scripts from src/assembly directory -->
         <fileSet>
             <directory>${project.basedir}/src/assembly</directory>
@@ -35,6 +34,11 @@
         <fileSet>
             <directory>${project.basedir}/src/test/resources/org/noise_planet/noisemodelling/scripts</directory>
             <outputDirectory>/resources</outputDirectory>
+        </fileSet>
+        <!-- include the documentation directory -->
+        <fileSet>
+            <directory>${project.basedir}/target/sphinx/html</directory>
+            <outputDirectory>/documentation</outputDirectory>
         </fileSet>
         <!-- include groovy source directory -->
         <fileSet>

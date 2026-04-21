@@ -201,6 +201,59 @@
             </resource>
         </resources>
         <plugins>
+            <!-- Maven plugin to generate the NoiseModelling documentation before packaging the distribution file -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <!-- Create the virtualenv -->
+                    <execution>
+                        <id>create-virtualenv</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python3</executable>
+                            <arguments>
+                                <argument>-m</argument>
+                                <argument>venv</argument>
+                                <argument>${project.basedir}/target/venv</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <!-- Install dependencies in the virtualenv -->
+                    <execution>
+                        <id>install-sphinx-deps</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${project.basedir}/target/venv/bin/python</executable>
+                            <commandlineArgs>-m pip install -r ${project.parent.basedir}/Docs/requirements.txt</commandlineArgs>
+                        </configuration>
+                    </execution>
+                    <!-- Build documentation with the virtualenv sphinx-build -->
+                    <execution>
+                        <id>build-docs</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${project.basedir}/target/venv/bin/sphinx-build</executable>
+                            <arguments>
+                                <argument>-M</argument>
+                                <argument>html</argument>
+                                <argument>${project.parent.basedir}/Docs</argument>
+                                <argument>${project.basedir}/target/sphinx</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- GMavenPlus plugin for compiling Groovy -->
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
