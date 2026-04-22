@@ -86,17 +86,7 @@ outputs = [
 
 
 
-def run(input) {
 
-    // Get name of the database
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}
 
 // main function of the script
 @CompileStatic

@@ -38,7 +38,7 @@ Click on the ``File`` icon and then choose ``Save project``. The browser will sa
 
 Once you want to recover the saved state, click on ``File / Open project`` and select the saved file.
 
-1. Export/Import the database
+2. Export/Import the database
 ********************
 
 Click on the ``File`` icon and then choose ``Save project with database``. The browser will save the file in your download folder.

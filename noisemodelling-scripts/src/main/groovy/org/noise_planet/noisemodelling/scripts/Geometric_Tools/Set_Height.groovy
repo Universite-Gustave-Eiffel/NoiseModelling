@@ -65,22 +65,6 @@ outputs = [
         ]
 ]
 
-// run the script
-def run(input) {
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection, input)]
-    }
-}
-
-
-
 def exec(Connection connection, Map input) {
 
     // output string, the information given back to the user

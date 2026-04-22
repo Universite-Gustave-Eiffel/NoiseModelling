@@ -209,21 +209,3 @@ def exec(Connection connection,input) {
     return "Calculation Done ! The table LW_ROADS has been created."
 
 }
-
-
-// run the script
-def run(input) {
-
-    // Get name of the database
-    // by default an embedded h2gis database is created
-    // Advanced user can replace this database for a postGis or h2Gis server database.
-    String dbName = "h2gisdb"
-
-    // Open connection
-    openGeoserverDataStoreConnection(dbName).withCloseable {
-        Connection connection ->
-            return [result: exec(connection,input)]
-    }
-}
-
-

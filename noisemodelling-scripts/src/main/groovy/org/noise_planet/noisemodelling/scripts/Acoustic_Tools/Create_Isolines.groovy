@@ -91,24 +91,9 @@ outputs = [
 ]
 
 // -------------------
-// Open Connection to Geoserver (same pattern as Template)
-// -------------------
-
-
-// -------------------
-// run() wrapper (same pattern as Template)
-// -------------------
-def run(input) {
-    String dbName = "h2gisdb"
-    openGeoserverDataStoreConnection(dbName).withCloseable { Connection connection ->
-        return [result: exec(connection, input)]
-    }
-}
-
-// -------------------
 // Main function (same structure as Template.exec)
 // -------------------
-def exec(Connection connection, input) {
+def exec(Connection connection, Map input) {
 
     // Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
