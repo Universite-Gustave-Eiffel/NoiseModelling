@@ -9,17 +9,22 @@ import org.jspecify.annotations.NonNull;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.webserver.Configuration;
+import org.noise_planet.noisemodelling.webserver.NoiseModellingServer;
+import org.noise_planet.noisemodelling.webserver.OwsController;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.namespace.QName;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A utility class for generating WPS (Web Processing Service) XML documents.
@@ -227,6 +232,7 @@ public class WpsXmlDocumentGenerator {
     /**
      * Generates WPS execute response with status by job state
      */
+    @SuppressWarnings("unchecked")
     public static String generateExecuteResponseDocument(Job<?> job, Map<String, Object> jobData, Configuration webServerConfiguration)
             throws IOException, DatatypeConfigurationException, SQLException, ParseException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -236,7 +242,8 @@ public class WpsXmlDocumentGenerator {
         if(job != null) {
             response.setProcess(getProcessBriefType(job.executionPlan.scriptMetadata));
         }
-        response.setStatusLocation(webServerConfiguration.getWebSiteFullUrl() + "/builder/jobs/" + jobData.get("id"));
+        int jobId = (int) jobData.get("id");
+        response.setStatusLocation(webServerConfiguration.getWebSiteFullUrl() + "/builder/jobs/" + jobId);
         response.setStatus(wpsf.createStatusType());
         String startDate = jobData.get("startDate").toString();
         // Converts timestamp to XMLGregorianCalendar for standardized serialization
@@ -257,7 +264,30 @@ public class WpsXmlDocumentGenerator {
                 if(job != null && job.getExecutionPlan().getOutputs() != null) {
                     output = castJobOutputToString(job.getExecutionPlan().getOutputs());
                 }
-                response.getStatus().setProcessSucceeded(output);
+                // Fetch logs output for this job and attach to response (up to a maximum number of lines)
+                String lastLines = Logging.getLastLines(new File(webServerConfiguration.getWorkingDirectory(),
+                        NoiseModellingServer.LOGGING_FILE_NAME), OwsController.MAXIMUM_LINES_TO_FETCH, Job.getThreadName(jobId), new AtomicInteger());
+                response.getStatus().setProcessSucceeded(lastLines);
+                response.setProcessOutputs(wpsf.createProcessOutputsType1());
+                OutputDataType outputDataType = wpsf.createOutputDataType();
+                outputDataType.setIdentifier(codetype("result"));
+                DataType data = wpsf.createDataType();
+                if(job != null) {
+                    outputDataType.setTitle(languageString(job.getExecutionPlan().scriptMetadata.title));
+                    // If the output is a Geometry it is a complex output, otherwise it is a literal output
+                    if(job.getExecutionPlan().getOutputs() != null && job.getExecutionPlan().getOutputs() instanceof Geometry) {
+                        ComplexDataType complexDataType = wpsf.createComplexDataType();
+                        complexDataType.setMimeType("application/wkt");
+                        complexDataType.getData().add(output);
+                        data.setComplexData(complexDataType);
+                    } else {
+                        LiteralDataType literalDataType = wpsf.createLiteralDataType();
+                        literalDataType.setValue(output);
+                        data.setLiteralData(literalDataType);
+                    }
+                }
+                outputDataType.setData(data);
+                response.getProcessOutputs().getOutput().add(outputDataType);
                 break;
             case CANCELED:
             case FAILED:

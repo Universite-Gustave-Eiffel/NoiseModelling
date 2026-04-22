@@ -33,6 +33,12 @@ public class ExecutionPlan {
         this.scriptMetadata = scriptMetadata;
     }
 
+    /**
+     * Create a new ExecutionPlan for a chained process.
+     * @param inputs WPS Scripts inputs
+     * @param scriptMetadata Metadata of the script
+     * @param chainedOutputKey the name of the output of this plan used as an input of the parent plan
+     */
     public ExecutionPlan(Map<String, Object> inputs, ScriptMetadata scriptMetadata, String chainedOutputKey) {
         this(inputs, scriptMetadata);
         this.chainedOutputKey = chainedOutputKey;

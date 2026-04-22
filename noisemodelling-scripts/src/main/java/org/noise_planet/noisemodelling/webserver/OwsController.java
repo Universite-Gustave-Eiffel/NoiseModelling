@@ -454,11 +454,13 @@ public class OwsController {
             }
         }
         // Expected output
-        OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
-        if(outputDefinitionType != null) {
-            String outputIdentifier = outputDefinitionType.getIdentifier().getValue();
-            if(scriptMetadata.outputs.containsKey(outputIdentifier)) {
-                return new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
+        if(execute.getResponseForm() != null) {
+            OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
+            if (outputDefinitionType != null) {
+                String outputIdentifier = outputDefinitionType.getIdentifier().getValue();
+                if (scriptMetadata.outputs.containsKey(outputIdentifier)) {
+                    return new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
+                }
             }
         }
         return new ExecutionPlan(queryInputs, scriptMetadata);
@@ -504,8 +506,11 @@ public class OwsController {
                     }
                 }
             }, COMPLETED_JOB_CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
-            if(execute.getResponseForm().getResponseDocument() == null) {
-                // Synchronous WPS Execution
+            if(execute.getResponseForm() != null && execute.getResponseForm().getRawDataOutput() != null) {
+                // When a response form of RawDataOutput is requested
+                // Execute operation response will consist simply of that one complex output in its raw form
+                // returned directly to the client.
+                // Synchronous WPS Execution, wait for execution
                 try {
                     Object jobResult = result.get(executionPlan.getScriptMetadata().executionTimeoutSeconds, TimeUnit.SECONDS);
                     processResult(ctx, jobResult);
