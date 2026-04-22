@@ -21,14 +21,20 @@ It has been widely used for strategic noise mapping, dynamic maps driven by traf
 ## Features
 
 *   **CNOSSOS-EU Implementation:** Fully implements the European standard method (Commission Directive 2015/996) for road traffic and railway noise.
-*   **Propagation Physics:** Includes complex physical phenomena such as geometrical spreading, atmospheric absorption, ground effect, and diffraction over obstacles (buildings and barriers).
+*   **Advanced Propagation Physics:**
+    *   **Geometrical Attenuation:** Geometric dispersion of sound wave from point and line sources.
+    *   **Atmospheric Absorption:** Frequency-dependent attenuation.
+    *   **Ground Effect:** Impact of ground porosity (hard/soft) and terrain.
+    *   **Diffraction:** Support for diffraction over and around obstacles (vertical and horizontal edges).
+    *   **Specular Reflections:** Calculations for reflections on vertical surfaces like buildings and noise barriers with customizable order of reflection.
+*   **Meteorological Conditions:** Support for both homogeneous and favorable propagation scenarios.
+*   **Full Spectral Analysis:** Calculations performed across standard third/full octave bands (50 Hz to 10000 Hz).
 *   **Emission Models:** Calculate noise emissions based on traffic flow, vehicle speed, and pavement type.
 *   **Performance:** Optimized for large-scale urban areas using an embedded spatial database (H2GIS). The support for PostGIS is currently available but in progress.
 
-
 ### GIS & Data Integration
 *   **Direct OSM Import:** Built-in tools to import and process OpenStreetMap data for buildings, road networks and ground absorption.
-*   **Format Support:** Compatible with major GIS formats and database manager (DBeaver) through its spatial database core, including Shapefiles, GeoJSON, FlatGeobuf, Esri ASCII Grid etc.
+*   **Format Support:** Compatible with major GIS formats and database manager (DBeaver) through its spatial database library, including Shapefiles, GeoJSON, FlatGeobuf, Esri ASCII Grid etc.
 *   **Topography Support:** Ability to integrate Digital Elevation Models (DEM) to account for terrain effects (Points and/or Lines).
 *   **Spatial Analysis:** Advanced spatial queries to match noise levels with population data for exposure impact studies.
 
