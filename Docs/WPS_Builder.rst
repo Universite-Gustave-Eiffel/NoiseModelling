@@ -5,7 +5,7 @@ What is WPS Builder ?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 WPS Builder allows to creates graphical process workflows that can be easily executed and reproduced. It allows Web Processing Services to operate through a user interface.
 
-We have developed a version of WPS Builder adapted to the needs of NoiseModelling. This version being very close to `the original version initially developed by former BoundlessGEO company<https://github.com/planetfederal/wps-gui>`_.
+We have developed a version of WPS Builder adapted to the needs of NoiseModelling. This version being very close to `the original version initially developed by former BoundlessGEO company <https://github.com/planetfederal/wps-gui>`_.
 
 
 Frequently Asked Question
@@ -59,27 +59,18 @@ If the timeout is reached it will always return a message "Long running process.
 
 But you can use the asynchronous WPS API so the server will return a message immediately with links to follow the progression of the execution of your job.
 
-To do so edit the WPS XML document to require a ResponseDocument instead of a RawValue:
+You can use the `OwsLib Python library <https://github.com/geopython/OWSLib>`_ to do so, here is an example of how to do it:
 
-.. code-block:: xml
-
-        <p0:ResponseForm>
-            <p0:ResponseDocument></p0:ResponseDocument>
-        </p0:ResponseForm>
-
-instead of
-
-.. code-block:: xml
-
-      <p0:ResponseForm>
-        <p0:RawDataOutput>
-          <p1:Identifier
-            xmlns:p1="http://www.opengis.net/ows/1.1">result
-          </p1:Identifier>
-        </p0:RawDataOutput>
-      </p0:ResponseForm>
+.. literalinclude:: scripts/OwsLib_ListProcess.py
+   :language: python
+   :caption: List all available processes
+   :linenos:
 
 
+.. literalinclude:: scripts/OwsLib_ExecuteProcess.py
+   :language: python
+   :caption: Execute a processes
+   :linenos:
 
 .. _WPS: https://www.ogc.org/standards/wps
 
