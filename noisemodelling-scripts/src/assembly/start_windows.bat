@@ -1,1 +1,1 @@
-call bin\WebServer.bat -u -w ./ -s scripts/ -r ""
+call bin\WebServer.bat -u -s scripts/ -r ""
