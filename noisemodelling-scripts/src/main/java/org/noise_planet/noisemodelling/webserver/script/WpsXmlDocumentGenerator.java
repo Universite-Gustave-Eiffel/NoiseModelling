@@ -255,7 +255,7 @@ public class WpsXmlDocumentGenerator {
                 break;
             case RUNNING:
                 response.getStatus().setProcessStarted(wpsf.createProcessStartedType());
-                response.getStatus().getProcessStarted().setValue(JobStates.RUNNING.name());
+                response.getStatus().getProcessStarted().setValue(getLastLoggingLines(webServerConfiguration, jobId));
                 // Extracts progression percentage for status encoding
                 response.getStatus().getProcessStarted().setPercentCompleted(job == null ? BigInteger.valueOf(0) : job.getProgression());
                 break;
@@ -265,9 +265,9 @@ public class WpsXmlDocumentGenerator {
                     output = castJobOutputToString(job.getExecutionPlan().getOutputs());
                 }
                 // Fetch logs output for this job and attach to response (up to a maximum number of lines)
-                String lastLines = Logging.getLastLines(new File(webServerConfiguration.getWorkingDirectory(),
-                        NoiseModellingServer.LOGGING_FILE_NAME), OwsController.MAXIMUM_LINES_TO_FETCH, Job.getThreadName(jobId), new AtomicInteger());
+                String lastLines = getLastLoggingLines(webServerConfiguration, jobId);
                 response.getStatus().setProcessSucceeded(lastLines);
+                // Copy the wps outputs if available
                 response.setProcessOutputs(wpsf.createProcessOutputsType1());
                 OutputDataType outputDataType = wpsf.createOutputDataType();
                 outputDataType.setIdentifier(codetype("result"));
@@ -304,6 +304,17 @@ public class WpsXmlDocumentGenerator {
         encoder.encode(response, new QName("http://www.opengis.net/wps/1.0.0", "ExecuteResponse"), baos);
         return baos.toString();
 
+    }
+
+    public static @NonNull String getLastLoggingLines(Configuration webServerConfiguration, int jobId) throws IOException {
+        String lastLines = "";
+        File logFile = new File(webServerConfiguration.getWorkingDirectory(),
+                NoiseModellingServer.LOGGING_FILE_NAME);
+        if(logFile.exists()) {
+            lastLines = Logging.getLastLines(logFile, OwsController.MAXIMUM_LINES_TO_FETCH,
+                    Job.getThreadName(jobId), new AtomicInteger());
+        }
+        return lastLines;
     }
 
     public static String castJobOutputToString(Object output) {

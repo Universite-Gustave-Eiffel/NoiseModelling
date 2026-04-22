@@ -10,7 +10,6 @@
 package org.noise_planet.noisemodelling.webserver;
 
 import net.opengis.wps10.ExecuteResponseType;
-import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.h2.value.ValueBoolean;
 import org.h2gis.api.EmptyProgressVisitor;
@@ -25,18 +24,25 @@ import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.JobStates;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.http.*;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -56,6 +62,8 @@ public class NoiseModellingServerHttpTest {
      * for WPS capabilities, process descriptions, and WPS execution, as verified in the test methods.
      */
     private static NoiseModellingServer app;
+
+    private Logger logger = LoggerFactory.getLogger(NoiseModellingServerHttpTest.class);
 
     /**
      * The default port number on which the HTTP server will listen.
@@ -90,13 +98,38 @@ public class NoiseModellingServerHttpTest {
      * @throws IOException if an I/O error occurs while starting the server.
      */
     @BeforeAll
-    public static void setUp(@TempDir Path temporaryDirectory) throws IOException, SQLException {
+    public static void setUp(@TempDir Path temporaryDirectory) throws IOException, SQLException, URISyntaxException {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
         Configuration configuration = new Configuration(true);
         configuration.setWorkingDirectory(temporaryDirectory.toString());
+        // Copy unit test scripts and standard scripts to temporary directory
+        // Using recursive path copy to ensure that all scripts and subdirectories are included
+        // standard scripts from src/main/groovy/org/noise_planet/noisemodelling/scripts
+        // unit tests scripts in src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts
+        copyScriptsFromResource(Path.of("src/main/groovy/org/noise_planet/noisemodelling/scripts").toAbsolutePath(), temporaryDirectory);
+        copyScriptsFromResource(Path.of("src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts").toAbsolutePath(), temporaryDirectory);
+        configuration.setScriptPath(temporaryDirectory.resolve("scripts").toString());
         app = new NoiseModellingServer(configuration);
         app.startServer(false);
+    }
+
+    private static void copyScriptsFromResource(Path resourcePath, Path temporaryDirectory) throws IOException {
+        try (Stream<Path> paths = Files.walk(resourcePath)) {
+            paths.forEach(path -> {
+                if (Files.isRegularFile(path)) {
+                    try {
+                        // Get the folders after "scripts" in the path and create the same structure in the temporary directory
+                        Path relativePath = resourcePath.relativize(path);
+                        Files.createDirectories(temporaryDirectory.resolve("scripts").resolve(relativePath.getParent()));
+                        Path targetPath = temporaryDirectory.resolve("scripts").resolve(relativePath);
+                        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -338,6 +371,43 @@ public class NoiseModellingServerHttpTest {
             }
             // Check if the content of the buildings_low_height table is printed as html in response body
             assertTrue(response.body().contains("The total number of rows is 9"));
+        }
+    }
+
+    @Test
+    void testAsynchronousWPSExecute() throws Exception {
+        try(InputStream inputStream = TestParseWPSQueries.class.getResourceAsStream("wps_parse/asynchronousExecute.xml")) {
+                assertNotNull(inputStream);
+                String requestBody = new String(inputStream.readAllBytes());
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL))
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .header("Content-Type", "text/xml")
+                        .build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, response.statusCode());
+
+            ExecuteResponseType executeResponseType = OwsController.parseExecuteResponse(new ByteArrayInputStream(response.body().getBytes()));
+            String requestResponseUrl = executeResponseType.getStatusLocation();
+
+            // Polls status endpoint until process completes or fails
+            while (!(executeResponseType.getStatus().getProcessFailed() != null ||
+                    executeResponseType.getStatus().getProcessSucceeded() != null)) {
+                Thread.sleep(500);
+                request = HttpRequest.newBuilder()
+                        .uri(URI.create(requestResponseUrl))
+                        .GET()
+                        .build();
+                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, response.statusCode());
+                executeResponseType = OwsController.parseExecuteResponse(new ByteArrayInputStream(response.body().getBytes()));
+                // log status and progression
+                if(executeResponseType.getStatus().getProcessStarted() != null) {
+                    logger.info("Progress: {} %",executeResponseType.getStatus().getProcessStarted().getPercentCompleted());
+                }
+            }
+            assertNull(executeResponseType.getStatus().getProcessFailed());
         }
     }
 
