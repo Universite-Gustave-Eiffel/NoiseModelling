@@ -18,6 +18,52 @@ The software can be used independently or through a graphical interface and is o
 
 It has been widely used for strategic noise mapping, dynamic maps driven by traffic models or sensors, sensitivity studies, and investigations of particular sources such as emergency sirens and drones.
 
+## Features
+
+*   **CNOSSOS-EU Implementation:** Fully implements the European standard method (Commission Directive 2015/996) for road traffic and railway noise.
+*   **Propagation Physics:** Includes complex physical phenomena such as geometrical spreading, atmospheric absorption, ground effect, and diffraction over obstacles (buildings and barriers).
+*   **Emission Models:** Calculate noise emissions based on traffic flow, vehicle speed, and pavement type.
+*   **Performance:** Optimized for large-scale urban areas using an embedded spatial database (H2GIS). The support for PostGIS is currently available but in progress.
+
+
+### GIS & Data Integration
+*   **Direct OSM Import:** Built-in tools to import and process OpenStreetMap data for buildings, road networks and ground absorption.
+*   **Format Support:** Compatible with major GIS formats and database manager (DBeaver) through its spatial database core, including Shapefiles, GeoJSON, FlatGeobuf, Esri ASCII Grid etc.
+*   **Topography Support:** Ability to integrate Digital Elevation Models (DEM) to account for terrain effects (Points and/or Lines).
+*   **Spatial Analysis:** Advanced spatial queries to match noise levels with population data for exposure impact studies.
+
+### Automation & Scripting
+*   **Groovy Scripting:** Create and automate complex workflows using dynamic Groovy scripts.
+*   **WPS Interface:** Exposes noise calculation processes as OGC Web Processing Services (WPS), allowing integration with WPS compatible tools.
+*   **Java API:** Can be integrated as a library into existing Java applications for custom environmental modeling tools.
+*   **Headless Mode:** Run simulations using the NoiseModelling Command Line Interface instead of using the user graphical interface.
+
+### Deployment & Accessibility
+*   **Web Interface:** User-friendly web-based GUI for configuring simulations and visualizing results.
+*   **Docker Support:** Ready-to-use Docker images for quick deployment across different operating systems.
+*   **Cross-Platform:** Runs on Windows, Linux, and macOS thanks to the Java runtime environment.
+*   **Open Source:** Transparent algorithms and open-source license (GPLv3) ensuring reproducibility in scientific and regulatory contexts.
+
+### Output & Visualization
+*   **Noise Indicators:** Calculate standard indicators such as $L_{eq}$, $LA_{eq}$, $L_{den}$, $L_{day}$, $L_{evening}$, and $L_{night}$.
+*   **Grid & Receiver Maps:** Generate noise maps on a regular grid, smooth adaptative Delaunay or at specific receiver points (e.g., building facades).
+*   **Population Exposure:** Produce statistical reports on the number of people exposed to different noise levels.
+*   **Seamless Export:** Export results directly to GIS software (like QGIS) for professional cartographic rendering.
+
+### Dynamic Noise Mapping
+*   **Time-Varying Simulations:** Go beyond static maps by generating noise levels at regular time intervals (e.g., every 15 minutes or hourly)
+*   **Moving Source Integration:** Import spatio-temporal trajectories from traffic simulators like **SUMO**, **Symuvia**, or **MATSim**, as well as custom paths for moving sources like drones.
+*   **Advanced Statistics:** Calculate dynamic indicators such as percentile levels ($L_{A10}$, $L_{A50}$, $L_{A90}$) and event-based metrics (e.g., number of exceedances).
+*   **Stochastic Traffic Modeling:** Supports both Probabilistic and Poisson distribution methods to realistically simulate vehicle placement and flow on road networks.
+*   **Temporal Visualization:** Compatible with the QGIS Temporal Controller for creating animated noise maps over time.
+
+![QGIS Temporal Controller interface showing a timeline for noise map playback](Docs/images/tutorial/dynamic/temporal_bar_nav.png)
+*Example: Navigating through a dynamic noise map using the QGIS Temporal Controller.*
+
+![The NoiseModelling WPS Builder interface](Docs/images/WPS_Builder/wps_demo.png)
+*Example: The WPS Builder allows users to visually configure simulation parameters and execute spatial tasks.*
+
+
 Documentation
 ---------------------------
 
@@ -34,11 +80,10 @@ The current stable version of NoiseModelling can be found here: [latest release]
 Deployment on a public server
 ---------------------------
 
-NoiseModelling can be used as a local application, or it can be deployed on a server using Docker or Podman
+**Containerized Environment:** Fully compatible with **Docker** and **Podman** for rapid, reproducible deployment across Linux, Windows, and macOS.
 
-You can find the deployment instructions `on this help page <https://noisemodelling.readthedocs.io/en/latest/Architecture.html#docker-setup>`_
-
-
+> [!TIP]
+> For detailed setup procedures, including environment variables and configuration, visit the **[Docker Setup & Architecture Guide](https://noisemodelling.readthedocs.io/en/latest/Architecture.html#docker-setup)**.
 
 Contribute
 ---------------------------
