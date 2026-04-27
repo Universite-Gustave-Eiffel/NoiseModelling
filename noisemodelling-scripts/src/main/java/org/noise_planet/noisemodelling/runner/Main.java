@@ -148,7 +148,11 @@ public class Main {
                 ScriptMetadata scriptMetadata = new ScriptMetadata(group, new File(scriptPath));
                 // Create Command line arguments specification using the Input specification of the WPS process
                 scriptMetadata.inputs.forEach((key, scriptInput) -> {
-                    Option customOption = new Option(null, key, scriptInput.type != Boolean.class, scriptInput.description.replaceAll("<[^>]*>", ""));
+                    String description = scriptInput.description.replaceAll("<[^>]*>", "");
+                    if(scriptInput.defaultValue != null) {
+                        description += " Default: " + scriptInput.defaultValue;
+                    }
+                    Option customOption = new Option(null, key, scriptInput.type != Boolean.class, description);
                     customOption.setType(scriptInput.type);
                     customOption.setArgs(1);
                     customOption.setArgName(scriptInput.title);
