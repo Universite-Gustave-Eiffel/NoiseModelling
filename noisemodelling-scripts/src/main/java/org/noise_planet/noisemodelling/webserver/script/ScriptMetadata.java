@@ -17,6 +17,7 @@ import net.opengis.wps10.DataInputsType1;
 import net.opengis.wps10.ExecuteType;
 import net.opengis.wps10.InputType;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.util.*;
  */
 public class ScriptMetadata {
     // For the synchronous WPS call, release the http connection after this timeout (with a message "long running process..")
+    Logger logger = LoggerFactory.getLogger(ScriptMetadata.class);
     public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 60;
     final public String id;
     final public String title;
@@ -65,6 +67,12 @@ public class ScriptMetadata {
                     Object maxValue = inputAttributes.getOrDefault("max", 1);
                     si.maxOccurs = maxValue instanceof Integer ? (Integer)maxValue : 1;
                     si.defaultValue = inputAttributes.getOrDefault("default", null);
+                    // If minOccurs is 0 but no default value is provided
+                    // it means that the input map will not have an entry for this input
+                    if (inputAttributes.containsKey("default")) {
+                        // We can consider that the input is optional as the default value will be used if no value is provided
+                        si.minOccurs  = 0;
+                    }
                     Object allowedValues = inputAttributes.getOrDefault("allowedValues", new HashSet<>());
                     if(allowedValues instanceof Collection) {
                         si.allowedValues = new HashSet<>((Collection<String>)allowedValues);

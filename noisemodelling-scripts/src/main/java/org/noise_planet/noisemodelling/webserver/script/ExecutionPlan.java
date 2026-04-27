@@ -15,12 +15,12 @@ import java.util.Map;
  * Inputs values can be an instance of ExecutionPlan for a chained process and will be replaced by the outputs of the previous process.
  */
 public class ExecutionPlan {
-    protected Map<String, Object> inputs;
+    protected final Map<String, Object> inputs;
     protected Object outputs;
-    protected ScriptMetadata scriptMetadata;
+    protected final ScriptMetadata scriptMetadata;
     // If this plan is referenced as an input of another plan,
     // this is the key of one of these plan outputs that will be used as an input of the parent plan
-    protected String chainedOutputKey = "";
+    protected final String chainedOutputKey;
 
     /**
      * Create a new ExecutionPlan.
@@ -31,6 +31,7 @@ public class ExecutionPlan {
         this.inputs = inputs;
         this.outputs = null;
         this.scriptMetadata = scriptMetadata;
+        this.chainedOutputKey = "";
     }
 
     /**
@@ -40,8 +41,10 @@ public class ExecutionPlan {
      * @param chainedOutputKey the name of the output of this plan used as an input of the parent plan
      */
     public ExecutionPlan(Map<String, Object> inputs, ScriptMetadata scriptMetadata, String chainedOutputKey) {
-        this(inputs, scriptMetadata);
         this.chainedOutputKey = chainedOutputKey;
+        this.inputs = inputs;
+        this.outputs = null;
+        this.scriptMetadata = scriptMetadata;
     }
 
     public Map<String, Object> getInputs() {
@@ -64,11 +67,4 @@ public class ExecutionPlan {
         return chainedOutputKey;
     }
 
-    /**
-     * Set the name of the output of this plan used as an input of the parent plan.
-     * @param chainedOutputKey
-     */
-    public void setChainedOutputKey(String chainedOutputKey) {
-        this.chainedOutputKey = chainedOutputKey;
-    }
 }

@@ -36,9 +36,10 @@ General Structure
     title = 'My script title'
     description = 'My script description, I support <b>html</b> !'
     inputs = [
-        my_optional_parameter: [name: 'option1', title: 'option1', description : 'Option description, you can use html here', type: String.class, min: 0, max: 1, default: 'MY_RESULT_TABLE'],
-        my_numeric_parameter: [name: 'my_numeric_option', title: 'my_numeric_option', description : 'Option description, you can use html here', type: Integer.class],
-        my_boolean_parameter: [name: 'my_boolean_option', title: 'my_boolean_option', description : 'A checkbox parameter', type: Boolean.class],
+        my_optional_parameter: [name: 'option1', title: 'option1', description : 'Description, you can use html here. This parameter is optional because you have provided a default value', type: String.class, default: 'MY_RESULT_TABLE'],
+        my_integer_parameter: [name: 'my_integer_parameter', title: 'my_integer_parameter', description : 'Restrict to an int, you can use html here', type: Integer.class],
+        my_double_parameter: [name: 'my_double_parameter', title: 'my_double_parameter', description : 'Restrict to an floating point value, you can use html here', type: Double.class],
+        my_boolean_parameter: [name: 'my_boolean_parameter', title: 'my_boolean_parameter', description : 'A checkbox parameter', type: Boolean.class],
         my_choice_parameter: [name: 'my_choice_parameter', title: 'my_choice_parameter', description : 'A list box with limited choices', type: String.class, allowedValues : ["Choice 1", "Choice 2", "Choice 3"], default : "Choice 2"],
     ]
 
@@ -50,6 +51,11 @@ General Structure
     outputs = [
         result: [name: 'result', title: 'result', description : 'Result output, generally the result output table name. You can use this output as an input for another processing', type: String.class]
     ]
+
+
+.. note::
+    You may want to add an optional parameter but without a default value (the input will not be in the input map) to do so instead of defining a default value ``default: 'MY_RESULT_TABLE'`` use the entry ``min : 0``
+
 
 4. Set main method to execute
 -----------------------------------
