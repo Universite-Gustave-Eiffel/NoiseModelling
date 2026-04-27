@@ -405,6 +405,7 @@ public class OwsController {
         DataInputsType1 dataInputs = execute.getDataInputs();
         Map<String, Object> queryInputs = new HashMap<>();
         if (dataInputs != null && dataInputs.getInput() != null) {
+            // Check and cast provided inputs from the WPS Request
             for (Object inputObj : dataInputs.getInput()) {
                 if (inputObj instanceof InputType) {
                     InputType input = (InputType) inputObj;
@@ -412,27 +413,12 @@ public class OwsController {
                         String inputId = input.getIdentifier().getValue();
                         if(input.getData() != null && input.getData().getLiteralData() != null) {
                             // Simple literal data type as input
-                            Object inputContent = input.getData().getLiteralData().getValue();
                             if (scriptMetadata.inputs.containsKey(inputId)) {
                                 ScriptInput scriptInput = scriptMetadata.inputs.get(inputId);
                                 // found expected input, try to cast to expect type if not null
                                 Class<?> expectedInputType = scriptInput.type;
-                                String typeName = expectedInputType.getName();
-                                if (typeName.equals(Long.class.getName())) {
-                                    inputContent = Long.parseLong(input.getData().getLiteralData().getValue());
-                                } else if (typeName.equals(Integer.class.getName())) {
-                                    inputContent = Integer.parseInt(input.getData().getLiteralData().getValue());
-                                } else if (typeName.equals(Float.class.getName())) {
-                                    inputContent = Float.parseFloat(input.getData().getLiteralData().getValue());
-                                } else if (typeName.equals(Double.class.getName())) {
-                                    inputContent = Double.parseDouble(input.getData().getLiteralData().getValue());
-                                } else if (typeName.equals(Boolean.class.getName())) {
-                                    inputContent = Boolean.parseBoolean(input.getData().getLiteralData().getValue());
-                                } else if (typeName.equals(org.locationtech.jts.geom.Geometry.class.getName())) {
-                                    inputContent =
-                                            new org.locationtech.jts.io.WKTReader().read(input.getData().getLiteralData().getValue());
-                                }
-                                queryInputs.put(inputId, inputContent);
+                                Object convertedInputValue = castInputUsingExpectedInputType(expectedInputType, input.getData().getLiteralData().getValue());
+                                queryInputs.put(inputId, convertedInputValue);
                             } else {
                                 Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
                                 logger.warn("Input '{}' not found in metadata, ignore this argument", inputId);
@@ -453,6 +439,26 @@ public class OwsController {
                 }
             }
         }
+        // Provide default inputs specified in the WPS that are not provided by the request
+        scriptMetadata.inputs.entrySet( ).stream().filter(
+                entry -> entry.getValue().defaultValue != null
+                        && !queryInputs.containsKey(entry.getKey()))
+                .forEach(entry -> {
+                    Object defaultValue = entry.getValue().defaultValue;
+                    Class<?> expectedType = entry.getValue().type;
+                    // Groovy may generate BigDecimal instead of expected class
+                    // So cast/convert to the expected type
+                    if(expectedType != null && !expectedType.isAssignableFrom(defaultValue.getClass())) {
+                        try {
+                            defaultValue = castInputUsingExpectedInputType(expectedType, defaultValue.toString());
+                        } catch (Exception ex) {
+                            Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
+                            logger.info("Warning, failed to cast default value for input '{}', use the original value. Exception: {}",
+                                    entry.getKey(), ex.getMessage());
+                        }
+                    }
+                    queryInputs.put(entry.getKey(), defaultValue);
+                });
         // Expected output
         if(execute.getResponseForm() != null) {
             OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
@@ -465,6 +471,33 @@ public class OwsController {
         }
         return new ExecutionPlan(queryInputs, scriptMetadata);
     }
+
+    /**
+     * Cast the input content to the expected input type defined in the script metadata.
+     *
+     * @param expectedInputType the expected type of the input as defined in the script metadata
+     * @param inputValue the string input value containing the literal data to be cast
+     * @return the cast input content if successful, otherwise returns the original input content
+     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
+     */
+    private static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
+        String typeName = expectedInputType.getName();
+        if (typeName.equals(Long.class.getName())) {
+            return Long.parseLong(inputValue);
+        } else if (typeName.equals(Integer.class.getName())) {
+            return Integer.parseInt(inputValue);
+        } else if (typeName.equals(Float.class.getName())) {
+            return Float.parseFloat(inputValue);
+        } else if (typeName.equals(Double.class.getName())) {
+            return Double.parseDouble(inputValue);
+        } else if (typeName.equals(Boolean.class.getName())) {
+            return Boolean.parseBoolean(inputValue);
+        } else if (typeName.equals(Geometry.class.getName())) {
+            return new org.locationtech.jts.io.WKTReader().read(inputValue);
+        }
+        return inputValue;
+    }
+
     /**
      * Handles an HTTP POST request for a Web Processing Service (WPS) operation.
      * This method parses the request body, validates the WPS Execute Request, identifies

@@ -12,8 +12,6 @@
 
 package org.noise_planet.noisemodelling.webserver;
 
-import net.opengis.wps10.ExecuteType;
-import org.apache.commons.math3.stat.inference.TestUtils;
 import org.apache.log4j.PropertyConfigurator;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,13 +27,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -82,7 +76,7 @@ public class TestParseWPSQueries {
         assertEquals(true, executionPlan.getInputs().get("exportTrianglesGeometries"));
         assertEquals(Boolean.class, executionPlan.getInputs().get("isoSurfaceInBuildings").getClass());
         assertEquals(false, executionPlan.getInputs().get("isoSurfaceInBuildings"));
-
+        assertEquals(600.0, (double) executionPlan.getInputs().get("maxCellDist"), 0.01);
     }
 
     private static @NonNull Map<String, ScriptMetadata> getWrappers() throws IOException {

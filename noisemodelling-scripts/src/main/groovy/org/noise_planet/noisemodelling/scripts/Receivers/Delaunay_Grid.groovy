@@ -95,6 +95,7 @@ inputs = [
                              'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation.</br></br>' +
                              '&#128736; Default value: <b>600 </b>',
                 min        : 0, max: 1,
+                default    : 600.0,
                 type       : Double.class
         ],
         skipCellNoSourcesMinimalDistance        : [

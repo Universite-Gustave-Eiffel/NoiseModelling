@@ -36,7 +36,7 @@ General Structure
     title = 'My script title'
     description = 'My script description, I support <b>html</b> !'
     inputs = [
-        my_optional_parameter: [name: 'option1', title: 'option1', description : 'Option description, you can use html here', type: String.class, min: 0, max: 1],
+        my_optional_parameter: [name: 'option1', title: 'option1', description : 'Option description, you can use html here', type: String.class, min: 0, max: 1, default: 'MY_RESULT_TABLE'],
         my_numeric_parameter: [name: 'my_numeric_option', title: 'my_numeric_option', description : 'Option description, you can use html here', type: Integer.class],
         my_boolean_parameter: [name: 'my_boolean_option', title: 'my_boolean_option', description : 'A checkbox parameter', type: Boolean.class],
         my_choice_parameter: [name: 'my_choice_parameter', title: 'my_choice_parameter', description : 'A list box with limited choices', type: String.class, allowedValues : ["Choice 1", "Choice 2", "Choice 3"], default : "Choice 2"],
@@ -48,7 +48,7 @@ General Structure
 
 
     outputs = [
-        result: [name: 'result', title: 'result', description : 'Result output, generally the result output table name', type: String.class]
+        result: [name: 'result', title: 'result', description : 'Result output, generally the result output table name. You can use this output as an input for another processing', type: String.class]
     ]
 
 4. Set main method to execute
@@ -66,7 +66,8 @@ General Structure
      */
     def exec(Connection connection, Map inputs, ProgressVisitor progress) {
         Sql sql = new Sql(connection)
-        def myTableName = inputs.getOrDefault("my_optional_parameter", "MY_RESULT_TABLE")
+        // Get the parameter value. For optional parameters, do not forget to provide a default value in the metadata.
+        def myTableName = inputs.my_optional_parameter
         sql.execute("CREATE TABLE IF NOT EXISTS $myTableName(PK SERIAL PRIMARY KEY, DATA INTEGER)".toString())
         return [result : '$myTableName']
     }

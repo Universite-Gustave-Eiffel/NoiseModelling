@@ -64,8 +64,7 @@ public class ScriptMetadata {
                     si.minOccurs = minValue instanceof Integer ? (Integer)minValue : 1;
                     Object maxValue = inputAttributes.getOrDefault("max", 1);
                     si.maxOccurs = maxValue instanceof Integer ? (Integer)maxValue : 1;
-                    Object defaultValue = inputAttributes.getOrDefault("default", null);
-                    si.defaultValue = defaultValue != null ? defaultValue.toString() : null;
+                    si.defaultValue = inputAttributes.getOrDefault("default", null);
                     Object allowedValues = inputAttributes.getOrDefault("allowedValues", new HashSet<>());
                     if(allowedValues instanceof Collection) {
                         si.allowedValues = new HashSet<>((Collection<String>)allowedValues);

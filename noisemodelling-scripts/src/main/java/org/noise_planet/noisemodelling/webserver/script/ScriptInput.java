@@ -25,7 +25,7 @@ public class ScriptInput {
     /**
      * Default value for this input.
      */
-    public String defaultValue;
+    public Object defaultValue;
 
     /**
      * If at least one element, restrict allowed values, only for Strings

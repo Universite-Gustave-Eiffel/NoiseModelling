@@ -103,7 +103,7 @@ public class WpsXmlDocumentGenerator {
         } else {
             // Set default value
             if(scriptInput.defaultValue != null) {
-                literalInputType.setDefaultValue(scriptInput.defaultValue);
+                literalInputType.setDefaultValue(scriptInput.defaultValue.toString());
             }
             // Generate allowed values
             if(!scriptInput.allowedValues.isEmpty()) {
