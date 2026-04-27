@@ -44,25 +44,49 @@ public class JdbcTestCase {
 
     static Logger LOG = LoggerFactory.getLogger(JdbcTestCase.class);
 
-    static DataSource createPostgisDataSourceFromEnv() throws SQLException {
-        HikariConfig config = new HikariConfig();
-
+    /**
+     * Retrieves PostgreSQL connection parameters from environment variables.
+     * @return a {@link PostgisParameters} object containing the parameters or null if POSTGRES_HOST environment variable is not set
+     */
+    public static PostgisParameters getPostGISParametersFromEnv() {
+        if(System.getenv("POSTGRES_HOST") == null) {
+            return null;
+        }
         String pgUser = Optional.ofNullable(System.getenv("POSTGRES_USER")).orElse("noisemodelling");
         String pgPass = Optional.ofNullable(System.getenv("POSTGRES_PASSWORD")).orElse("noisemodelling");
         String pgPort = Optional.ofNullable(System.getenv("POSTGRES_PORT")).orElse("5432");
         String pgDb = Optional.ofNullable(System.getenv("POSTGRES_DB")).orElse("noisemodelling_db");
         String pgHost = Optional.ofNullable(System.getenv("POSTGRES_HOST")).orElse("localhost");
+        return new PostgisParameters(pgUser, pgPass, pgPort, pgDb, pgHost);
+    }
 
-        config.setUsername(pgUser);
-        config.setPassword(pgPass);
+    /**
+     * Creates a DataSource for PostgreSQL using the provided parameters.
+     * @param params the PostgreSQL connection parameters
+     * @return a DataSource configured for PostgreSQL
+     * @throws SQLException if an error occurs while creating the DataSource
+     */
+    public static DataSource createPostgisDataSource(PostgisParameters params) throws SQLException {
+        HikariConfig config = new HikariConfig();
+        config.setUsername(params.user);
+        config.setPassword(params.password);
         config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
-        config.addDataSourceProperty("portNumbers", Integer.parseInt(pgPort));
-        config.addDataSourceProperty("databaseName",pgDb);
-        config.addDataSourceProperty("serverNames", pgHost);
+        config.addDataSourceProperty("portNumbers", Integer.parseInt(params.port));
+        config.addDataSourceProperty("databaseName", params.database);
+        config.addDataSourceProperty("serverNames", params.host);
         return new HikariDataSource(config);
     }
 
-    static DataSource createDataSource(String user, String password, boolean debug) throws SQLException {
+    /**
+     * Creates a DataSource for PostgreSQL from environment variables.
+     * @return a DataSource configured for PostgreSQL
+     * @throws SQLException if an error occurs while creating the DataSource
+     */
+    public static DataSource createPostgisDataSourceFromEnv() throws SQLException {
+        return createPostgisDataSource(getPostGISParametersFromEnv());
+    }
+
+    public static DataSource createDataSource(String user, String password, boolean debug) throws SQLException {
         // Create H2 memory DataSource
         Driver driver = Driver.load();
         OsgiDataSourceFactory dataSourceFactory = new OsgiDataSourceFactory(driver);

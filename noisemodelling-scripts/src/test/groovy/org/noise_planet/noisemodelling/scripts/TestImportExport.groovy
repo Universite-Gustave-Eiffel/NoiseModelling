@@ -13,27 +13,22 @@
 package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.shp.SHPRead
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.io.TempDir
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Display_Database
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Data
 import org.noise_planet.noisemodelling.scripts.Database_Manager.Table_Visualization_Map
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_Folder
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM_Pedestrian
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Symuvia
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Asc_File
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Folder
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertTrue
+import javax.sql.DataSource
+import java.sql.Connection
 
+import static org.junit.jupiter.api.Assertions.*
 /**
  * Test parsing of zip file using H2GIS database
  */
@@ -205,5 +200,32 @@ class TestImportExport extends JdbcTestCase {
 
         assertEquals("BUILDINGS</br></br>GROUND</br></br>ROADS</br></br>", res)
 
+    }
+
+    /**
+     * Test Linked_Table with external PostGIS database POSTGRES_HOST must be defined
+     */
+    @Test
+    void testLinkedTable() {
+        PostgisParameters parameters = getPostGISParametersFromEnv()
+        Assumptions.assumeTrue(parameters != null, "POSTGRES_HOST is not defined, skipping Linked_Table test")
+        try(DataSource pgDataSource = createPostgisDataSource(parameters)) {
+            // Send data
+            try (Connection postgisConnection = pgDataSource.getConnection()) {
+                postgisConnection.createStatement().execute("DROP TABLE IF EXISTS RECEIVERS")
+                SHPRead.importTable(postgisConnection, TestImportExport.getResource("receivers.shp").getPath())
+            }
+            new Linked_Table().exec(connection, [
+                    localTableName: "RECEIVERS",
+                    databaseUrl: "jdbc:postgresql_h2://$parameters.host:$parameters.port/$parameters.database",
+                    username: parameters.user,
+                    password: parameters.password,
+                    remoteTableName: 'receivers'], new EmptyProgressVisitor())
+
+            // Read on the H2GIS side the receivers table stored in the PostGIS database
+            Sql sql = new Sql(connection)
+            int cpt = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")[0] as Integer
+            assertEquals(830, cpt)
+        }
     }
 }
