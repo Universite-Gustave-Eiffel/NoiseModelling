@@ -139,7 +139,16 @@ static String mapToTable(List<Map> list, Sql sql, String tableName, Connection c
 
 
     output.append("</br> </br> ")
-    output.append("<table  border=' 1px solid black'><thead><tr>")
+
+    // Add CSS styling for table cells with scroll support
+    output.append("<style>")
+    output.append(".table-visualization { border-collapse: collapse; width: 100%; }")
+    output.append(".table-visualization th { background-color: #f2f2f2; padding: 8px; border: 1px solid black; text-align: left; }")
+    output.append(".table-visualization td { border: 1px solid black; padding: 0; }")
+    output.append(".table-cell-content { width: 200px; height: 100px; overflow: auto; padding: 8px; word-break: break-word; font-family: monospace; font-size: 12px; }")
+    output.append("</style>")
+
+    output.append("<table class='table-visualization'><thead><tr>")
 
     first.each { key, val ->
         output.append("<th>${key}</th>")
@@ -159,7 +168,7 @@ static String mapToTable(List<Map> list, Sql sql, String tableName, Connection c
                 if (it instanceof Geometry) {
                     val = wktWriter.write(it)
                 }
-                output.append "<td><div style='width: 150px;'>${val}</div></td>"
+                output.append "<td><div class='table-cell-content'>${val}</div></td>"
             }
 
             output.append("</tr>")
