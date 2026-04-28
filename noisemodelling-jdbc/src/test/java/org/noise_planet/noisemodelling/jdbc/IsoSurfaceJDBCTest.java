@@ -249,6 +249,7 @@ public class IsoSurfaceJDBCTest {
             isoSurface.setPointTableField("LAEQ");
             isoSurface.setSmooth(false); // faster
             isoSurface.setMergeTriangles(false); // faster
+            isoSurface.setProgressVisitor(new RootProgressVisitor(1, true, 5));
             isoSurface.createTable(connection, "IDRECEIVER");
 
             List<String> columnNames = JDBCUtilities.getColumnNames(connection, isoSurface.getOutputTable());

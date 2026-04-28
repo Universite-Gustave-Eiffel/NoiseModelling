@@ -71,7 +71,10 @@ public class OwsController {
     public static final int MAXIMUM_POOL_SIZE = 5;
     public static final long KEEP_ALIVE_TIME = 0L;
     public static final int MAXIMUM_LINES_TO_FETCH = 1_000;
-    private static final int DEFAULT_ABORT_JOB_DELAY_SECONDS = 5;
+    // After the user cancel the job, the WPS script should detect the progressLogger.isCancel() and terminate
+    // the computation. However, the script does not respond with this delay,
+    // NoiseModelling will force shutdown the database then kill the processing thread.
+    private static final int DEFAULT_ABORT_JOB_DELAY_SECONDS = 60;
     private static final int COMPLETED_JOB_CLEANUP_DELAY_SECONDS = 3600; // 1 hour
     private static final long MAX_UPLOAD_SIZE = 500L * 1024 * 1024; // 500 MB
     private static final int MAX_UPLOAD_TIMEOUT = 10;
@@ -550,7 +553,9 @@ public class OwsController {
                 } catch (TimeoutException e) {
                     // Long process, timeout as been triggered, provide a response while the processing still run in the background
                     String url = ctx.contextPath() + "/job_logs/" + job.getId();
-                    ctx.result(String.format("Long running process, <a href=\"%s\" target=\"_blank\">please look at the job (id: %d)</a> output logs. This is a synchronous WPS execution, you can use a asynchronous execution by using ResponseDocument instead of a RawDataOutput.", url, job.getId()));
+                    String htmlMessage = String.format("<p>The process is still running in the background. You can monitor its progress in the output logs.</p>" +
+                            "<p><a href=\"%s\" target=\"_blank\">Click here to view the job (id: %d) output logs</a>.</p>", url, job.getId());
+                    ctx.result(htmlMessage);
                 }
             } else {
                 // Asynchronous WPS Execution

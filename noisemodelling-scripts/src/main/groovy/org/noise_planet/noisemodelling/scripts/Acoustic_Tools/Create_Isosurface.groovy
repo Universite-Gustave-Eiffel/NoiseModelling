@@ -19,10 +19,12 @@
 package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
 
 
+import org.h2gis.api.ProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface
+import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -63,22 +65,24 @@ inputs = [
                 name       : 'Keep triangles',
                 title      : 'Keep triangles',
                 description: 'Point inside areas with the same iso levels are kept so elevation variation into ' +
-                        'same iso level areas will be preserved but the output data size will be higher.',
+                        'same iso level areas will be preserved but the output data size will be higher. Keeping triangles will reduce significantly the computation time.',
                 default    : false,
                 type       : Boolean.class
         ],
         smoothCoefficient: [name       : 'Polygon smoothing coefficient',
                             title      : 'Polygon smoothing coefficient',
-                            description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>' + 'If equal to 0, it disables the smoothing step and will keep the altitude of receivers (3D geojson can be viewed on https://kepler.gl).',
+                            description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>' +
+                                    'If equal to 0, it disables the smoothing step and will keep the altitude of final polygons (3D geojson can be viewed on https://kepler.gl).' +
+                                    ' Use this option with keepTriangles to keep the altitude variation into same iso level areas.',
                             default    : 0,
                             type       : Double.class]
 ]
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Output table',
+                title      : 'Output table',
+                description: 'Name of the output table containing the isosurfaces. The table is created in the same schema as the input result table. (STRING)',
                 type       : String.class
         ]
 ]
@@ -86,7 +90,7 @@ outputs = [
 
 
 
-def exec(Connection connection, Map input) {
+def exec(Connection connection, Map input, ProgressVisitor progressVisitor) {
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
@@ -133,6 +137,8 @@ def exec(Connection connection, Map input) {
         isoSurface.setSmoothCoefficient(coefficient)
     }
 
+    isoSurface.setProgressVisitor(progressVisitor)
+
     isoSurface.createTable(connection, "IDRECEIVER")
 
     resultString = "Table " + isoSurface.getOutputTable() + " created"
@@ -141,8 +147,11 @@ def exec(Connection connection, Map input) {
     logger.info(resultString)
 
     // print to WPS Builder
-    return resultString
+    return [result: isoSurface.getOutputTable()]
 }
 
+def exec(Connection connection, Map input) {
+    return exec(connection, input, new RootProgressVisitor(1, true, 5))
+}
 
 
