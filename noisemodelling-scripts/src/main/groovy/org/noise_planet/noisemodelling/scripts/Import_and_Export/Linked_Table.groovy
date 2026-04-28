@@ -32,8 +32,7 @@ inputs = [
         driverClass: [
                 name       : 'Driver name',
                 title      : 'Driver name',
-                description: 'Name of the class to connect to the external database.' +
-                        ' For an external H2 database: <pre>org.h2.Driver</pre>For a PostGIS database (default): <pre>org.h2gis.postgis_jts.Driver</pre>',
+                description: 'Name of the class to connect to the external database.',
                 min          : 0, max: 1,
                 allowedValues: ["org.h2gis.postgis_jts.Driver", "org.h2.Driver"],
                 default      : "org.h2gis.postgis_jts.Driver",

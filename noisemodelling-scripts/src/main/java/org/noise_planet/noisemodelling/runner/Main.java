@@ -48,6 +48,7 @@ import java.util.*;
 
 public class Main {
     public static final int SECONDS_BETWEEN_PROGRESSION_PRINT = 5;
+    public static final int DEFAULT_TERMINAL_WIDTH = 240;
 
     /**
      * Logs the collected libraries in a tabular format.
@@ -79,31 +80,33 @@ public class Main {
 
         // Arguments parser
         Options options = new Options();
-        Option workingDirOption = new Option("w", "working-dir", true, "Path where the database will be located");
+        Option workingDirOption = new Option("w", "working-dir", true, "Path where the database and output logs will be written. It must be an existing folder with write permissions");
         workingDirOption.setRequired(true);
-        workingDirOption.setArgName("folder path");
+        workingDirOption.setArgName("WORKING_DIR");
         options.addOption(workingDirOption);
         Option scriptPathOption = new Option("s", "script", true, "Path and file name of the script");
         scriptPathOption.setRequired(true);
-        scriptPathOption.setArgName("script path");
+        scriptPathOption.setArgName("SCRIPT_PATH");
         options.addOption(scriptPathOption);
-        Option databaseNameOption = new Option("d", "database-name", true, "Database name (default to h2gisdb)");
+        Option databaseNameOption = new Option("d", "database-name", true, "Database name (default: h2gisdb)");
+        databaseNameOption.setArgName("DATABASE_NAME");
         options.addOption(databaseNameOption);
-        Option usernameOption = new Option("u", "username", true, "Database username (default sa)");
-        usernameOption.setRequired(false);
+        Option usernameOption = new Option("u", "username", true, "Database username (default: sa)");
+        usernameOption.setArgName("USERNAME");
         options.addOption(usernameOption);
-        Option passwordOption = new Option("p", "password", true, "Database password (default sa for H2GIS). If a PostGIS host is specified without a password, the password will be fetched from the .pgpass file if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).");
-        passwordOption.setRequired(false);
-        Option portOption = new Option(null, "port", true, "Database port when connecting to PostGIS database (default 5432)");
-        portOption.setRequired(false);
+        Option passwordOption = new Option("p", "password", true, "Database password. If a PostGIS host is specified without a password, the password will be fetched from the .pgpass file if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html). (default: sa for H2GIS)");
+        passwordOption.setArgName("PASSWORD");
+        Option portOption = new Option(null, "port", true, "Database port when connecting to PostGIS database (default: 5432)");
+        portOption.setArgName("PORT");
         options.addOption(portOption);
-        Option databaseHostNameOption = new Option(null, "host", true, "Database host name when connecting to PostGIS database (default empty to use embedded H2GIS).  The database and host name can be used to fetch the credential access from the file .pgpass on your system if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).");
-        databaseHostNameOption.setRequired(false);
+        Option databaseHostNameOption = new Option(null, "host", true, "Database host name when connecting to PostGIS database, localhost if it is on your PC.  The database and host name can be used to fetch the credential access from the file .pgpass on your system if it exists (see https://www.postgresql.org/docs/current/libpq-pgpass.html).(default: empty to use embedded H2GIS)");
+        databaseHostNameOption.setArgName("HOST");
         options.addOption(databaseHostNameOption);
         options.addOption(passwordOption);
         Option printVersionOption = new Option("v", false, "Print version of all libraries");
         options.addOption(printVersionOption);
-        Option shutdownOption = new Option("c", "shutdown", false, "Do not shutdown compact the database at the end " + "of the execution");
+        Option shutdownOption = new Option("c", "shutdown", false, "Do not shutdown compact the database at the end " +
+                "of the execution");
         options.addOption(shutdownOption);
         Logger logger = LoggerFactory.getLogger("org.noise_planet");
 
@@ -122,6 +125,9 @@ public class Main {
 
         CommandLineParser commandLineParser = new DefaultParser();
         HelpFormatter helpFormatter = new HelpFormatter();
+        helpFormatter.setWidth(DEFAULT_TERMINAL_WIDTH);
+        helpFormatter.setLeftPadding(2);
+        helpFormatter.setDescPadding(4);
         CommandLine commandLine;
         try {
             commandLine = commandLineParser.parse(options, args, true);
@@ -148,14 +154,23 @@ public class Main {
                 ScriptMetadata scriptMetadata = new ScriptMetadata(group, new File(scriptPath));
                 // Create Command line arguments specification using the Input specification of the WPS process
                 scriptMetadata.inputs.forEach((key, scriptInput) -> {
-                    String description = scriptInput.description.replaceAll("<[^>]*>", "");
+                    StringBuilder description = new StringBuilder(scriptInput.description.replaceAll("<[^>]*>", ""));
                     if(scriptInput.defaultValue != null) {
-                        description += " Default: " + scriptInput.defaultValue;
+                        description.append("\nDefault: ").append(scriptInput.defaultValue).append("\n");
                     }
-                    Option customOption = new Option(null, key, scriptInput.type != Boolean.class, description);
+                    if(!scriptInput.allowedValues.isEmpty()) {
+                        description.append("\nPossible values:\n");
+                        for(Object allowedValue : scriptInput.allowedValues) {
+                            description.append(" - ").append(allowedValue.toString()).append("\n");
+                        }
+                    }
+                    Option customOption = new Option(null, key, true, description.toString());
                     customOption.setType(scriptInput.type);
-                    customOption.setArgs(1);
-                    customOption.setArgName(scriptInput.title);
+                    if(Boolean.class == scriptInput.type) {
+                        customOption.setArgName("true/false");
+                    } else {
+                        customOption.setArgName(scriptInput.title);
+                    }
                     customOption.setRequired(scriptInput.minOccurs > 0);
                     options.addOption(customOption);
                 });
@@ -178,7 +193,6 @@ public class Main {
                     }
                 } catch (ParseException ex) {
                     logger.info(ex.getMessage());
-                    helpFormatter.setWidth(120);
                     helpFormatter.printHelp("NoiseModelling Script Runner", options);
                     System.exit(1);
                     return;

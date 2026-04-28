@@ -61956,9 +61956,12 @@ wps.editor.prototype.showEditForm = function(node) {
   var hasMap = false, bboxTool = false, i, ii;
   // simple input
   var name = node._info.identifier.value;
-  var nameText = name;
-  if (node.required !== true) {
-    nameText += ' (optional)';
+  var nameText = name +":";
+  var abstract = node._info._abstract.value;
+  if(node._info.literalData && node._info.literalData.defaultValue) {
+      abstract += '<p>&#128736; Default value: ' + node._info.literalData.defaultValue + '</p>'
+  } else if (node.required !== true) {
+      abstract += '<p>(optional)</p>';
   }
   var pId, id = wps.editor.PREFIX + node._parent + '-' + name.replace(/ /g, '_');
   var inputId = id;
@@ -61966,7 +61969,7 @@ wps.editor.prototype.showEditForm = function(node) {
   var saveButton  = '<div class="form-row input-validate">';
   var selected;
 
-  html += '<div class="form-row-abstract">' + node._info._abstract.value + '</div>';
+  html += '<div class="form-row-abstract">' + abstract + '</div>';
   if (node._info.literalData) {
     html += '<div class="form-row">';
     html += '<label for="' + id + '">' + nameText + '</label></div>';
