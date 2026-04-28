@@ -65,7 +65,9 @@ figcaption {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0;
-    margin: 2em;
+    margin: 2em auto;
+    max-width: 100%;
+    width: calc(100% - 4em);
     background: var(--surface);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
@@ -79,6 +81,8 @@ figcaption {
 /* Memory monitoring container */
 .memory-container {
     margin: 2em;
+    max-width: 100%;
+    width: calc(100% - 4em);
 }
 
 .memory-box {
