@@ -5,14 +5,39 @@
 <body>
 <div id="layout">
     <div th:replace="~{menu :: menu}"></div>
-    <div id="main" class="content">
-        <div class="header">
-            <h1>NoiseModelling server status</h1>
-            <h2>Loaded libraries</h2>
-        </div>
+     <div id="main" class="content">
+         <div class="header">
+             <h1>NoiseModelling server status</h1>
+             <h2>Java Virtual Machine Memory</h2>
+         </div>
 
-        <!-- Table container -->
-        <div class="job-table-container" style="margin: 2em;">
+         <!-- Memory Stats Container -->
+         <div class="memory-container">
+             <div class="memory-box">
+                 <h3>Heap Memory Usage</h3>
+                 <div class="memory-stats">
+                     <div class="memory-header">
+                         <span><strong>Used:</strong> <span id="memory-used">0 MB</span></span>
+                         <span><strong>Max:</strong> <span id="memory-max">0 MB</span></span>
+                     </div>
+                     <div class="memory-bar-container">
+                         <div id="memory-used-bar" class="memory-used-bar"></div>
+                         <div id="memory-free-bar" class="memory-free-bar"></div>
+                     </div>
+                     <div class="memory-footer">
+                         <span>Used</span>
+                         <span><strong>Free:</strong> <span id="memory-free">0 MB</span></span>
+                     </div>
+                 </div>
+             </div>
+         </div>
+
+         <div class="header">
+             <h2>Loaded libraries</h2>
+         </div>
+
+         <!-- Table container -->
+         <div class="job-table-container">
             <table class="pure-table pure-table-bordered" style="width: 100%;">
                 <thead>
                 <tr>
@@ -38,8 +63,14 @@
                 </tr>
                 </tbody>
             </table>
-        </div>
-    </div>
-</div>
-</body>
-</html>
+         </div>
+     </div>
+ </div>
+ <script th:src="@{|/js/memory_ws.js|}"></script>
+ <script th:inline="javascript">
+     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+     const path = "[(@{/memory_stats_stream})]";
+     openMemoryStatsStream(`${protocol}//${window.location.host}${path}`);
+ </script>
+ </body>
+ </html>

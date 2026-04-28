@@ -24,6 +24,9 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import io.javalin.http.Context;
 import io.javalin.http.InternalServerErrorResponse;
 import io.javalin.http.util.NaiveRateLimit;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsConnectContext;
+import io.javalin.websocket.WsContext;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
@@ -43,7 +46,12 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +67,9 @@ public class UserController {
     private final JWTProvider<User> provider;
     private final TOTPService totpService;
     private final Configuration configuration;
+
+    private final ScheduledExecutorService memoryStatsScheduler = Executors.newScheduledThreadPool(1);
+    private final Set<WsContext> memoryWebSocketContexts = Collections.synchronizedSet(new HashSet<>());
 
     public UserController(DataSource serverDataSource, JWTProvider<User> provider, Configuration configuration) {
         this.serverDataSource = serverDataSource;
@@ -378,6 +389,50 @@ public class UserController {
         } catch (SQLException e) {
             logger.error(e.getLocalizedMessage(), e);
             throw new InternalServerErrorResponse();
+        }
+    }
+
+    /**
+     * Handles WebSocket connection for memory stats streaming.
+     * @param ctx the WebSocket connect context
+     */
+    public void memoryStatsStreamOnConnect(WsConnectContext ctx) {
+        logger.info("WebSocket connection established for memory stats");
+        memoryWebSocketContexts.add(ctx);
+        // Start sending memory stats every second
+        memoryStatsScheduler.scheduleAtFixedRate(() -> sendMemoryStats(ctx), 0, 1, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Handles WebSocket disconnection for memory stats streaming.
+     * @param wsCloseContext the WebSocket close context
+     */
+    public void memoryStatsStreamOnClose(WsCloseContext wsCloseContext) {
+        logger.info("WebSocket connection closed for memory stats");
+        memoryWebSocketContexts.remove(wsCloseContext);
+    }
+
+    /**
+     * Sends current JVM memory statistics to the connected WebSocket client.
+     * @param ctx the WebSocket context
+     */
+    private void sendMemoryStats(WsContext ctx) {
+        try {
+            MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+            MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
+
+            long max = heapMemoryUsage.getMax();
+            long used = heapMemoryUsage.getUsed();
+            long free = max - used;
+
+            // Create JSON-like string
+            String memoryStats = String.format("{\"max\": %d, \"used\": %d, \"free\": %d}", max, used, free);
+
+            if (ctx.session.isOpen()) {
+                ctx.send(memoryStats);
+            }
+        } catch (Exception e) {
+            logger.error("Error sending memory stats", e);
         }
     }
 

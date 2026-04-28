@@ -294,6 +294,7 @@ public class NoiseModellingServer {
         app.post("/edit_user/{userId}", userController::userEdit,  Role.ADMINISTRATOR);
         app.get("/logout", userController::logout, Role.ANYONE);
         app.get("/about", userController::about, Role.ADMINISTRATOR);
+        app.ws("/memory_stats_stream", this::manageMemoryWebSocket, Role.ADMINISTRATOR);
     }
 
     /**
@@ -329,5 +330,10 @@ public class NoiseModellingServer {
     protected void manageLogsWebSocket(WsConfig ws) {
         ws.onConnect(owsController::jobLogsStreamOnConnect);
         ws.onClose(owsController::jobLogsStreamOnClose);
+    }
+
+    protected void manageMemoryWebSocket(WsConfig ws) {
+        ws.onConnect(userController::memoryStatsStreamOnConnect);
+        ws.onClose(userController::memoryStatsStreamOnClose);
     }
 }
