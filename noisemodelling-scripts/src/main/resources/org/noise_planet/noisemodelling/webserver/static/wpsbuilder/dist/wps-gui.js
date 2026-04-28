@@ -61957,9 +61957,9 @@ wps.editor.prototype.showEditForm = function(node) {
   // simple input
   var name = node._info.identifier.value;
   var nameText = name +":";
-  var abstract = node._info._abstract.value;
+  var abstract = '<p>' + node._info._abstract.value.replace('\n', '<br/>') + '</p>';
   if(node._info.literalData && node._info.literalData.defaultValue) {
-      abstract += '<p>&#128736; Default value: ' + node._info.literalData.defaultValue + '</p>'
+      abstract += '<p>&#128736; Default value: <b>' + node._info.literalData.defaultValue + '</b></p>'
   } else if (node.required !== true) {
       abstract += '<p>(optional)</p>';
   }

@@ -81,7 +81,7 @@ inputs = [
         ifTableExists: [
                 name         : 'Table exists operation',
                 title        : 'Table exists operation',
-                description  : '<p>What to do if a table with the same name already exists ?</p>',
+                description  : 'What to do if a table with the same name already exists ?',
                 allowedValues: ["Overwrite", "Skip import", "Raise error"],
                 default      : "Overwrite",
                 type         : String.class

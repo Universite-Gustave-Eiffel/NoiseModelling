@@ -48,16 +48,15 @@ inputs = [
                 name       : 'Iso levels in dB',
                 title      : 'Iso levels in dB',
                 description: 'Separation of sound levels for isosurfaces. First range is from -&#8734; to first value excluded. The first value included to next value excluded..</br> </br>' +
-                             'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes. </br> </br>' +
-                             '&#128736; Default value: <b>35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0 </b>',
-                min        : 0, max: 1,
+                             'Read <a href="https://noisemodelling.readthedocs.io/en/latest/Noise_Map_Color_Scheme.html#creation-of-the-isosurfaces" target=_blank>this documentation</a> for more information about sound levels classes.',
+                default    : "35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0",
                 type       : String.class
         ],
         resultTableField         : [
                 name       : 'Field of result table',
                 title      : 'Field of result table',
-                description: 'Field to read in the result table to make the iso surface; Default value: LAEQ',
-                min        : 0, max: 1,
+                description: 'Field to read in the result table to make the iso surface.',
+                default    : 'LAEQ',
                 type       : String.class
         ],
         keepTriangles: [
@@ -65,18 +64,14 @@ inputs = [
                 title      : 'Keep triangles',
                 description: 'Point inside areas with the same iso levels are kept so elevation variation into ' +
                         'same iso level areas will be preserved but the output data size will be higher.',
-                min        : 0, max: 1,
+                default    : false,
                 type       : Boolean.class
         ],
-        smoothCoefficient: [
-                name       : 'Polygon smoothing coefficient',
-                title      : 'Polygon smoothing coefficient',
-                description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>'+
-                             'If equal to 0, it disables the smoothing step and will keep the altitude of receivers (3D geojson can be viewed on https://kepler.gl).</br> </br>' +
-                             '&#128736; Default value: <b>0.5 </b>',
-                min        : 0, max: 1,
-                type       : Double.class
-        ]
+        smoothCoefficient: [name       : 'Polygon smoothing coefficient',
+                            title      : 'Polygon smoothing coefficient',
+                            description: 'This coefficient (<a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve" target="_blank">Bezier curve</a> coefficient) will smooth the generated isosurfaces. </br> </br>' + 'If equal to 0, it disables the smoothing step and will keep the altitude of receivers (3D geojson can be viewed on https://kepler.gl).',
+                            default    : 0,
+                            type       : Double.class]
 ]
 
 outputs = [
@@ -112,7 +107,7 @@ def exec(Connection connection, Map input) {
         isoLevels = new ArrayList<>()
         StringTokenizer st = new StringTokenizer(input['isoClass'] as String, ",")
         while (st.hasMoreTokens()) {
-            isoLevels.add(Double.parseDouble(st.nextToken()))
+            isoLevels.add(Double.parseDouble(st.nextToken().trim()))
         }
     }
 
@@ -130,7 +125,7 @@ def exec(Connection connection, Map input) {
     if(input.containsKey("keepTriangles")) {
       isoSurface.setMergeTriangles(!(input['keepTriangles'] as Boolean))
     }
-    double coefficient = input.getOrDefault("smoothCoefficient", 0.5) as Double
+    double coefficient = input.getOrDefault("smoothCoefficient", 0.0) as Double
     if(coefficient < 0.01) {
         isoSurface.setSmooth(false)
     } else {
