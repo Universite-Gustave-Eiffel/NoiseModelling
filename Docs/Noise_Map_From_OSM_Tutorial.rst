@@ -97,13 +97,13 @@ Export tables into files
 
 * Export a table: It is also possible to export the tables via ``Export_Table`` WPS script, in Shapefile, CSV or GeoJSON format.
 
-* View the files: Then open these files into your preferred Geographic Information System (*e.g* `QGIS`_, `OrbisGIS`_, ...). You can then graphically visualize your geometries layer, but also the data contained in it. Take the time to familiarize yourself with your chosen GIS.
+* View the files: Then open these files into your preferred Geographic Information System (*e.g* `QGIS`_, `OpenJUMP`_, ...). You can then graphically visualize your geometries layer, but also the data contained in it. Take the time to familiarize yourself with your chosen GIS.
 
 * Add a background map: Most of the GIS allow you to add an `WMS`_ OSM `background map`_: (see an `example with QGIS`_)
 
 * Change colors: Most of the GIS allow you to change layer colors (*e.g.* ``GROUND`` layer in green, ``BUILDINGS`` in gray, ``ROADS`` in red).
 
-.. _OrbisGIS: http://orbisgis.org/
+.. _OpenJUMP: https://github.com/openjump-gis/openjump
 .. _QGIS: http://qgis.org/
 .. _WMS : https://www.ogc.org/standards/wms
 .. _background map : https://wiki.openstreetmap.org/wiki/Tile_servers

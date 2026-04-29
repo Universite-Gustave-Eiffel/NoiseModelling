@@ -9,11 +9,12 @@
 
 package org.noise_planet.noisemodelling.jdbc.utils;
 
+import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.functions.spatial.convert.ST_Force2D;
 import org.h2gis.functions.spatial.convert.ST_Force3D;
 import org.h2gis.utilities.JDBCUtilities;
 import org.h2gis.utilities.TableLocation;
-import org.h2gis.utilities.TableUtilities;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.h2gis.utilities.jts_utils.Contouring;
@@ -30,7 +31,6 @@ import java.sql.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
-import static org.h2gis.utilities.dbtypes.DBUtils.getDBType;
 import static org.noise_planet.noisemodelling.emission.utils.Utils.dbaToW;
 
 
@@ -58,6 +58,7 @@ public class IsoSurface {
     public static final List<Double> NF31_133_ISO = Collections.unmodifiableList(Arrays.asList(35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0));
 
     private int exportDimension = 2;
+    private ProgressVisitor progressVisitor = new EmptyProgressVisitor();
 
     /**
      * @param isoLevels Iso levels in dB. First range start with -Infinity then first level excluded.
@@ -542,6 +543,20 @@ public class IsoSurface {
     }
 
     /**
+     * @return instance of progress information
+     */
+    public ProgressVisitor getProgressVisitor() {
+        return progressVisitor;
+    }
+
+    /**
+     * @param progressVisitor Progress informations
+     */
+    public void setProgressVisitor(ProgressVisitor progressVisitor) {
+        this.progressVisitor = progressVisitor;
+    }
+
+    /**
      * @param connection
      * @param pkField Field name in point table to join with Triangle table and point table
      * @throws SQLException
@@ -593,10 +608,31 @@ public class IsoSurface {
             } else {
                 periods.addAll(getUniquePeriods(connection));
             }
+            ProgressVisitor periodProgress = progressVisitor.subProcess(periods.size());
             for (String period : periods) {
                 if(aggregateByPeriod) {
                     statement.setString(1, period);
                 }
+
+                // Evaluate the number of triangles with this period in order to have a relevant progress information
+                int numRows = 0;
+                StringBuilder selectCountQuery = new StringBuilder();
+                selectCountQuery.append("SELECT COUNT(*) FROM ").append(triangleTable);
+                if(aggregateByPeriod) {
+                    selectCountQuery.append(" t, ").append(pointTable).append(" p1 WHERE t.PK_1 = p1.").append(pkField);
+                    selectCountQuery.append(" AND p1.PERIOD = ?");
+                }
+                try(PreparedStatement countStatement = connection.prepareStatement(selectCountQuery.toString())) {
+                    if(aggregateByPeriod) {
+                        countStatement.setString(1, period);
+                    }
+                    try (ResultSet countResult = countStatement.executeQuery()) {
+                        if (countResult.next()) {
+                            numRows = countResult.getInt(1);
+                        }
+                    }
+                }
+                ProgressVisitor cellProgress = periodProgress.subProcess(numRows);
                 // Cache iso for the current processing cell
                 Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
                 try (ResultSet rs = statement.executeQuery()) {
@@ -679,6 +715,7 @@ public class IsoSurface {
                                 polygonsArray.add(poly);
                             }
                         }
+                        cellProgress.endStep();
                     }
                 }
                 if (!polyMap.isEmpty()) {

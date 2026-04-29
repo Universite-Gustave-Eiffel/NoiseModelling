@@ -359,6 +359,10 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                 // Run ray propagation
                 try {
                     evaluateCell(connection, cellIndex, progressVisitor, receivers);
+                    if(progressLogger.isCanceled()) {
+                        // Computation has been canceled, exit the loop
+                        break;
+                    }
                 } catch (IOException ex) {
                     throw new SQLException(ex);
                 }

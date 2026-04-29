@@ -8,9 +8,7 @@ The OGC Web Processing Service (`WPS`_) Standard provides rules for standardizin
 
 .. _WPS : https://www.ogc.org/standards/wps
 
-WPS scripts for NoiseModelling are written in Groovy language. They are located in the ``NoiseModelling/data_dir/scripts/wps`` directory.
-
-To help you build your WPS script, you will find a template in the ``NoiseModelling/data_dir/scripts/template`` directory
+WPS scripts for NoiseModelling are written in Groovy language. They are located in the ``NoiseModelling/scripts/`` directory.
 
 .. note::
     Don't be shy, if you think your script can be useful to the community, you can redistribute it using github or by sending it directly to us.
@@ -24,59 +22,62 @@ General Structure
 1. Import used libraries
 -------------------------
 
-::
+.. code-block:: groovy
 
-    import geoserver.GeoServer
-    import geoserver.catalog.Store
+    import groovy.sql.Sql
+    import java.sql.Connection
+    import org.h2gis.api.ProgressVisitor
 
 2. WPS Script meta data
 -------------------------
 
-::
+.. code-block:: groovy
 
-    title = '....'
-    description = '.....'
-
-3. WPS Script input & output
------------------------------------
-
-::
-
+    title = 'My script title'
+    description = 'My script description, I support <b>html</b> !'
     inputs = [
-        inputparameter1: [name: '...', description : '...', title: '...', type: String.class],
-        inputparameter2: [name: '...', description : '...', title: '...', type: String.class]
+        my_optional_parameter: [name: 'option1', title: 'option1', description : 'Description, you can use html here. This parameter is optional because you have provided a default value', type: String.class, default: 'MY_RESULT_TABLE'],
+        my_integer_parameter: [name: 'my_integer_parameter', title: 'my_integer_parameter', description : 'Restrict to an int, you can use html here', type: Integer.class],
+        my_double_parameter: [name: 'my_double_parameter', title: 'my_double_parameter', description : 'Restrict to an floating point value, you can use html here', type: Double.class],
+        my_boolean_parameter: [name: 'my_boolean_parameter', title: 'my_boolean_parameter', description : 'A checkbox parameter', type: Boolean.class],
+        my_choice_parameter: [name: 'my_choice_parameter', title: 'my_choice_parameter', description : 'A list box with limited choices', type: String.class, allowedValues : ["Choice 1", "Choice 2", "Choice 3"], default : "Choice 2"],
     ]
+
+    // Optional (default 60 seconds)
+    // For synchronous WPS, it will wait this time (in seconds) before returning a message, but it will still run the execution in the background
+    executionTimeout = 120
+
 
     outputs = [
-        ouputparameter: [name: '...', title: '...', type: String.class]
+        result: [name: 'result', title: 'result', description : 'Result output, generally the result output table name. You can use this output as an input for another processing', type: String.class]
     ]
 
-4. Set connection method
+
+.. note::
+    You may want to add an optional parameter but without a default value (the input will not be in the input map) to do so instead of defining a default value ``default: 'MY_RESULT_TABLE'`` use the entry ``min : 0``
+
+
+4. Set main method to execute
 -----------------------------------
 
-::
+.. code-block:: groovy
 
-    def static Connection openPostgreSQLDataStoreConnection() {
-        Store store = new GeoServer().catalog.getStore("h2gisdb")
-        JDBCDataStore jdbcDataStore = (JDBCDataStore)store.getDataStoreInfo().getDataStore(null)
-        return jdbcDataStore.getDataSource().getConnection()
+    /**
+     * Main method
+     * @param connection SQL Connection
+     * @param input Map of inputs, should provide the same keys as described in the input metadata
+     * @param progress Can be used to display the progression of the computation, and to check if the user canceled the execution
+     * @return A map as described in the result metadata
+     * @throws SQLException if something went wrong
+     */
+    def exec(Connection connection, Map inputs, ProgressVisitor progress) {
+        Sql sql = new Sql(connection)
+        // Get the parameter value. For optional parameters, do not forget to provide a default value in the metadata.
+        def myTableName = inputs.my_optional_parameter
+        sql.execute("CREATE TABLE IF NOT EXISTS $myTableName(PK SERIAL PRIMARY KEY, DATA INTEGER)".toString())
+        return [result : '$myTableName']
     }
 
-5. Set main method to execute 
------------------------------------
+5. Make your method available
 
-::
-
-    def run(input) {
-    
-        // Open connection and close it at the end
-        openPostgreSQLDataStoreConnection(dbName).withCloseable { Connection connection ->
-            // Execute code here
-            // for example, run SQL command lines
-            Sql sql = new Sql(connection)
-            sql.execute("drop table if exists TABLETODROP")    
-        }
-        
-        // print to Console windows
-        return [result : 'Ok ! ']
-    }
+You have to save the script into the folder ``NoiseModelling/scripts/``. You have to refresh the web page WPS Builder in order to see your new script.

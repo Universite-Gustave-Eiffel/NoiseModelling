@@ -1,0 +1,26 @@
+<div th:fragment="menu" id="menu" class="pure-menu pure-menu-custom">
+    <span class="pure-menu-heading">Jobs</span>
+    <ul class="pure-menu-list">
+        <li class="pure-menu-item">
+            <a th:href="@{|/builder|}" class="pure-menu-link">Builder</a>
+            <a th:href="@{|/jobs|}" class="pure-menu-link">Job list</a>
+        </li>
+    </ul>
+    <div th:if="${user != null && user.isAdministrator()}">
+        <span class="pure-menu-heading">Administration</span>
+        <ul class="pure-menu-list">
+            <li class="pure-menu-item">
+                <a th:href="@{|/about|}" class="pure-menu-link">System status</a>
+            </li>
+            <li class="pure-menu-item">
+                <a th:href="@{|/users|}" class="pure-menu-link">Manage users</a>
+            </li>
+        </ul>
+    </div>
+    <div id="filler"></div>
+    <ul class="pure-menu-list">
+        <li class="pure-menu-item">
+            <a th:href="@{|/logout|}" class="pure-menu-link">Logout</a>
+        </li>
+    </ul>
+</div>

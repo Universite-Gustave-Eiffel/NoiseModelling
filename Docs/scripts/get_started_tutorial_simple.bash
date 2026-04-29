@@ -5,15 +5,15 @@
 
 # Step 4: Upload files to database
 # create (or load existing) database and load a shape file into the database
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.groovy -pathFile resources/org/noise_planet/noisemodelling/wps/ground_type.shp
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.groovy -pathFile resources/org/noise_planet/noisemodelling/wps/buildings.shp
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.groovy -pathFile resources/org/noise_planet/noisemodelling/wps/receivers.shp
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.groovy -pathFile resources/org/noise_planet/noisemodelling/wps/ROADS2.shp
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Import_File.groovy -pathFile resources/org/noise_planet/noisemodelling/wps/dem.geojson
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ground_type.shp
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/buildings.shp
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/receivers.shp
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ROADS2.shp
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/dem.geojson
 
 
 # Step 5: Run Calculation
-./bin/wps_scripts -w ./ -s noisemodelling/wps/NoiseModelling/Noise_level_from_traffic.groovy -tableBuilding BUILDINGS -tableRoads ROADS2 -tableReceivers RECEIVERS -tableDEM DEM -tableGroundAbs GROUND_TYPE
+./bin/ScriptRunner -w ./ -s scripts/NoiseModelling/Noise_level_from_traffic.groovy --tableBuilding BUILDINGS --tableRoads ROADS2 --tableReceivers RECEIVERS --tableDEM DEM --tableGroundAbs GROUND_TYPE
 
 # Step 6: Export (& see) the results
-./bin/wps_scripts -w ./ -s noisemodelling/wps/Import_and_Export/Export_Table.groovy -exportPath RECEIVERS_LEVEL.shp -tableToExport RECEIVERS_LEVEL
+./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Export_Table.groovy --exportPath RECEIVERS_LEVEL.shp --tableToExport RECEIVERS_LEVEL
