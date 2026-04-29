@@ -389,7 +389,7 @@
             <dependency>
                 <groupId>org.geotools.xsd</groupId>
                 <artifactId>gt-xsd-core</artifactId>
-                <version>30.2</version>
+                <version>30.4</version>
             </dependency>
             <dependency>
                 <groupId>org.geotools.xsd</groupId>
