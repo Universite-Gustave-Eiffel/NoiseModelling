@@ -31,30 +31,25 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
+import java.sql.Statement
 
 
-title = 'Display first rows of a table.'
-description = '&#10145;&#65039; Display the content of a table. </br>' +
+title = 'Display first rows of a query result.'
+description = '&#10145;&#65039; Display the content of a SQL query result. </br>' +
               '<hr>' +
+              'You can provide either a table name or a complete SELECT SQL query. </br>' +
               'Using "linesNumber" parameter, you can choose the number of lines to display </br> </br>' +
-              '&#x1F6A8; Be careful, this treatment can be very long if the table is large.'
+              '&#x1F6A8; Be careful, this treatment can be very long if the query returns many rows.'
 
-inputs = [
-        linesNumber: [
-                name       : 'Number of rows',
-                title      : 'Number of rows',
-                description: 'Number of rows you want to display (INTEGER) </br> </br>' +
-                             '&#128736; Default value: <b>10 </b> ',
-                min        : 0, max: 1,
-                type       : Integer.class
-        ],
-        tableName  : [
-                name       : 'Name of the table',
-                title      : 'Name of the table',
-                description: 'Name of the table you want to display',
-                type       : String.class
-        ]
-]
+inputs = [linesNumber: [name       : 'Number of rows',
+                        title      : 'Number of rows',
+                        description: 'Number of rows you want to display. This parameter is ignored if your SQL query already contains a LIMIT clause.',
+                        default    : 10,
+                        type       : Integer.class],
+          tableName  : [name       : 'Table name',
+                        title      : 'Table name',
+                        description: 'Table name or SQL SELECT query (e.g., mytable or <code>SELECT * FROM mytable</code>)',
+                        type       : String.class]]
 
 outputs = [
         result: [
@@ -73,7 +68,7 @@ def exec(Connection connection, input) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
-    logger.info('Start : Display first rows of a table')
+    logger.info('Start : Display first rows of a query result')
     logger.info("inputs {}", input) // log inputs of the run
 
     // Get the number of rows the user want to display
@@ -82,21 +77,45 @@ def exec(Connection connection, input) {
         linesNumber = input['linesNumber'] as Integer
     }
 
-    // Get name of the table
-    String tableName = input["tableName"] as String
-    // do it case-insensitive
-    tableName = tableName.toUpperCase()
+    // Get SQL query or table name
+    String sqlQuery = input["tableName"] as String
 
     // Create a connection statement to interact with the database in SQL
     Sql sql = new Sql(connection)
 
-    List output = sql.rows(String.format("select * from %s LIMIT %s", tableName, linesNumber.toString()))
+    List output
+    String finalQuery
+    boolean isTableName = !sqlQuery.toUpperCase().trim().startsWith("SELECT ")
 
-    logger.info('End : Display first rows of a table')
+    if (isTableName) {
+        // If the input is a table name, create a SELECT query
+        Statement statement = connection.createStatement()
+        finalQuery = String.format("SELECT * FROM %s", statement.enquoteIdentifier(sqlQuery, false))
+    } else {
+        // If the input is already a SQL query, use it as is
+        // Additional validation: prevent common SQL injection patterns
+        def upperQuery = sqlQuery.toUpperCase()
+        if (upperQuery.contains(" DROP ") || upperQuery.contains(" DELETE ") ||
+                upperQuery.contains(" UPDATE ") || upperQuery.contains(" INSERT ") ||
+                upperQuery.contains(" ALTER ") || upperQuery.contains(" CREATE ") ||
+                upperQuery.contains(" TRUNCATE ")) {
+            throw new IllegalArgumentException("Query contains forbidden SQL keywords")
+        }
+        finalQuery = sqlQuery
+    }
+
+    // Add LIMIT clause if not already present
+    if (!finalQuery.toUpperCase().contains("LIMIT")) {
+        finalQuery += String.format(" LIMIT %s", linesNumber.toString())
+    }
+
+    output = sql.rows(finalQuery)
+
+    logger.info('End : Display first rows of a query result')
 
 
     // print to WPS Builder
-    return mapToTable(output, sql, tableName, connection)
+    return mapToTable(output, sql, sqlQuery, connection, isTableName)
 }
 
 
@@ -105,40 +124,60 @@ def exec(Connection connection, input) {
 /**
  * Convert a list to HTML table
  * @param list
+ * @param isTableName true if the query was a simple table name, false if it was a custom SQL query
  * @return
  */
-static String mapToTable(List<Map> list, Sql sql, String tableName, Connection connection) {
+static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Connection connection, boolean isTableName) {
 
     StringBuilder output = new StringBuilder()
 
     Map first = list.first()
 
-    output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + tableName)[0])
+    if (isTableName) {
+        // Only show total count and metadata for table names
+        try {
+            output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + queryOrTableName.toUpperCase())[0])
+        } catch (Exception e) {
+            output.append("Unable to determine total row count for this query")
+        }
 
-    //get SRID of the table
-    int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
+        //get SRID of the table
+        try {
+            int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(queryOrTableName))
 
-    if (srid > 0) {
-        output.append("</br>")
-        output.append("The srid of the table is " + srid)
+            if (srid > 0) {
+                output.append("</br>")
+                output.append("The srid of the table is " + srid)
+            } else {
+                output.append("</br>")
+                output.append("This table doesn't have any srid")
+            }
+        } catch (Exception e) {
+            output.append("</br>")
+            output.append("Unable to determine SRID information")
+        }
+
+        //get primary key of the table
+        try {
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(queryOrTableName))
+
+            if (pkIndex > 0) {
+                output.append("</br>")
+                output.append("The table has the following primary key : " + JDBCUtilities.getColumnName(connection, queryOrTableName, pkIndex))
+            } else {
+                output.append("</br>")
+                output.append("This table does not have primary key.")
+            }
+        } catch (Exception e) {
+            output.append("</br>")
+            output.append("Unable to determine primary key information")
+        }
+
+        output.append("</br> </br> ")
     } else {
-        output.append("</br>")
-        output.append("This table doesn't have any srid")
+        output.append("SQL Query: <code>" + queryOrTableName + "</code></br>")
+        output.append("Showing first " + list.size() + " rows</br> </br> ")
     }
-
-    //get SRID of the table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName))
-
-    if (pkIndex > 0) {
-        output.append("</br>")
-        output.append("The table has the following primary key : " + JDBCUtilities.getColumnName(connection, tableName, pkIndex))
-    } else {
-        output.append("</br>")
-        output.append("This table does not have primary key.")
-    }
-
-
-    output.append("</br> </br> ")
 
     // Add CSS styling for table cells with scroll support
     output.append("<style>")

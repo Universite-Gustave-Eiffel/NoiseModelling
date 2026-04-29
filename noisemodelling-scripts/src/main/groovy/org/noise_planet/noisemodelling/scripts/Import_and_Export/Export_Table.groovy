@@ -53,7 +53,12 @@ inputs = [
         tableToExport: [
                 name:        'Name of the table to export',
                 title:       'Name of the table',
-                description: 'Name of the table you want to export',
+                description: 'Table Name or SQL Query</br> </br>' +
+                             '<u>Option 1: Simple table name</u> </br>' +
+                             'Enter the name of an existing table, e.g.: <code>mytable</code> </br> </br>' +
+                             '<u>Option 2: SQL query with parenthesis</u> </br>' +
+                             'Wrap your SELECT query in parenthesis to export filtered or joined data </br>' +
+                             'Example: </br><code>(SELECT * FROM mytable WHERE field = 1)</code>',
                 type: String.class
         ]
 ]
