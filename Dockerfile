@@ -13,7 +13,7 @@ COPY . /build/
 # Run your commands
 RUN mvn package && \
     mkdir noisemodelling && \
-    bsdtar -xvf covadis-webserver/target/*.zip --strip-components=1 -C noisemodelling
+    bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C noisemodelling
 
 FROM eclipse-temurin:latest
 
