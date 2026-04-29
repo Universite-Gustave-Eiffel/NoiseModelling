@@ -71,7 +71,7 @@ From the network with traffic flow to individual trajectories with associated Lw
 
 Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block:
 
-#. ``Method``: Enter ``TNP`` Use the Poisson method
+#. ``Method``: Select ``TNP`` to use the Poisson method
 #. ``Roads table name``: Enter ``ROADS``
 #. ``timestep``: Enter ``1``
 #. ``duration``: Enter ``60``
@@ -137,7 +137,8 @@ Load the style located in the NoiseModelling folder ``Docs/styles/style_beate_to
 
 In QGis, in time window, paste the following formulae:
 
-``datetime_from_epoch(to_real("PERIOD")*1000+1739869220000)``
+Start expression: ``datetime_from_epoch(to_real("PERIOD")*1000+1739869220000)``
+End expression: ``datetime_from_epoch(to_real("PERIOD")*1000+1739869221000)``
 
 .. figure:: images/tutorial/dynamic/temporal_settings.png
    :align: center

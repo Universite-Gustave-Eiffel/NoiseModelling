@@ -111,6 +111,12 @@ def exec(Connection connection, input) {
 
     output = sql.rows(finalQuery)
 
+    // Check if the query returned any result
+    if (output.isEmpty()) {
+        logger.info("The query did not return any result.")
+        return "The query did not return any result."
+    }
+
     logger.info('End : Display first rows of a query result')
 
 

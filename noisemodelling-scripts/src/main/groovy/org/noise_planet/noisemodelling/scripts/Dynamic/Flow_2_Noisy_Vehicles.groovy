@@ -31,6 +31,8 @@ import org.locationtech.jts.geom.*
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.security.InvalidParameterException
 import java.sql.Connection
@@ -68,28 +70,32 @@ inputs = [
                   description : "</br>Two methods are available : " +
                     "</br> - PROBA : Probabilistic representation of vehicle appearances for each time step (quicker, but sacrifices temporal coherence) <b>Aumond, P., Jacquesson, L., & Can, A. (2018). Probabilistic modeling framework for multisource sound mapping. Applied Acoustics, 139, 34-43. </b>." +
                      "</br> - TNP : Simplified vehicle movements (slower, but maintaining temporal coherence) <b>De Coensel, B.; Brown, A.L.; Tomerini, D. A road traffic noise pattern simulation model that includes distributions of vehicle sound power levels. Appl. Acoust. 2016, 111, 170–178. </b>.",
+                  allowedValues: ['TNP', 'PROBA'],
                   type: String.class],
 
         timestep : [name : 'timestep',
                     title : "timestep",
-                    description : "Number of iterations. Timestep in sec. </br> <b> Default value : 1 </b>",
+                    description : "Number of iterations. Timestep in sec.",
+                    default : 1,
                     type: Integer.class],
 
         gridStep : [name : 'gridStep',
                     title : "gridStep",
-                    description : "Distance between location of vehicle along the network in meters.</br> <b> Default value : 10 </b>",
+                    description : "Distance between location of vehicle along the network in meters.",
+                    default : 10,
                     type: Integer.class],
 
-        duration       : [name   : 'duration', title: 'duration in sec.',
-                             description: 'Number of seconds to compute (INTEGER). </br> </br> <b> Default value : 60 </b>',
-                             type: Integer.class],
+        duration: [name       : 'duration', title: 'duration in sec.',
+                   description: 'Number of seconds to compute (INTEGER).',
+                   default    : 60,
+                   type       : Integer.class],
 ]
 
 outputs = [
         result: [
-                name       : 'Result output string',
-                title      : 'Result output string',
-                description: 'This type of result does not allow the blocks to be linked together.',
+                name       : 'Generated table name',
+                title      : 'Generated table name',
+                description: 'Name of the generated table. Can be used as the input of other process.',
                 type       : String.class
         ]
 ]
@@ -102,6 +108,7 @@ outputs = [
 // main function of the script
 def exec(Connection connection, input) {
 
+    Logger logger = LoggerFactory.getLogger("Flow_2_Noisy_Vehicles")
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -112,7 +119,7 @@ def exec(Connection connection, input) {
     String resultString = null
 
     // print to command window
-    System.out.println('Start : Traffic Probabilistic Modelling')
+    logger.info('Start : Traffic Probabilistic Modelling')
     def start = new Date()
 
     // -------------------
@@ -125,7 +132,7 @@ def exec(Connection connection, input) {
 
     int gridStep = input.getOrDefault("gridStep", 10) as Integer
 
-    int nIterations = (int) Math.round(duration/timestep);
+    int nIterations = (int) Math.round(duration/timestep)
 
     String method = "PROBA"
     if (input['method']) {
@@ -140,7 +147,7 @@ def exec(Connection connection, input) {
     if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
-    System.out.println('Start  time : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Start  time : ' + TimeCategory.minus(new Date(), start))
 
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS" )
     sql.execute("CREATE TABLE ROAD_POINTS(ROAD_ID serial, THE_GEOM geometry, LV int, LV_SPD real, HV int, HV_SPD real) AS SELECT r.PK, ST_Tomultipoint(ST_Densify(the_geom, "+gridStep+")), r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D FROM  "+sources_table_name+" r WHERE NOT ST_IsEmpty(r.THE_GEOM) ;")
@@ -160,7 +167,7 @@ def exec(Connection connection, input) {
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN LV_DENS_D double;" +
                 "ALTER TABLE VEHICLES_PROBA ALTER COLUMN HGV_DENS_D double;" )
 
-        IndividualVehicleEmissionProcessData probabilisticProcessData = new IndividualVehicleEmissionProcessData();
+        IndividualVehicleEmissionProcessData probabilisticProcessData = new IndividualVehicleEmissionProcessData()
         probabilisticProcessData.setDynamicEmissionTable("VEHICLES_PROBA", sql)
 
 
@@ -210,7 +217,7 @@ def exec(Connection connection, input) {
 
             while (rs.next()) {
                 Road road = new Road()
-                System.out.println(k + "/" + roadCount + "    % " + 100*k/roadCount)
+                logger.info(k + "/" + roadCount + "    % " + 100*k/roadCount)
                 k++
 
                 road.setRoad(
@@ -262,19 +269,18 @@ def exec(Connection connection, input) {
     sql.execute("drop table VEHICLES_PROBA if exists;")
 
 
-    System.out.println('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
-    System.out.println("Export data to table")
+    logger.info('Intermediate  time : ' + TimeCategory.minus(new Date(), start))
+    logger.info("Export data to table")
 
 
     resultString = "Calculation Done ! The table SOURCES_EMISSION and SOURCES_GEOM has been created."
 
     // print to command window
-    System.out.println('Result : ' + resultString)
-    System.out.println('End : Traffic Probabilistic Modelling')
-    System.out.println('Duration : ' + TimeCategory.minus(new Date(), start))
+    logger.info('Result : ' + resultString)
+    logger.info('End : Traffic Probabilistic Modelling')
+    logger.info('Duration : ' + TimeCategory.minus(new Date(), start))
 
-    // print to WPS Builder
-    return resultString
+    return [result : "SOURCES_GEOM"]
 }
 
 
@@ -328,7 +334,7 @@ class Road {
 
         Coordinate[] coordinates = geom.getCoordinates()
         for(int i = 1; i < coordinates.length; i++){
-            line_segments.add(new LineSegment(coordinates[i-1], coordinates[i]));
+            line_segments.add(new LineSegment(coordinates[i-1], coordinates[i]))
         }
 
         /*for (String vehicle_type: [

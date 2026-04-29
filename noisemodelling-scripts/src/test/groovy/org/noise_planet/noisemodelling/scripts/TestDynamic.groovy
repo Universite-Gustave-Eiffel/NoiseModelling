@@ -284,28 +284,19 @@ class TestDynamic extends JdbcTestCase {
         // Create a receiver grid
         new Regular_Grid().exec(connection,  [
                 "fenceTableName": "ROADS",
-                "delta" : 25,
+                "delta" : 15,
+                "height": 1.5,
                 "outputTriangleTable" : true])
-
-        // Remove receiver in buildings
-        connection.createStatement().execute("DELETE FROM RECEIVERS WHERE EXISTS(SELECT 1 FROM BUILDINGS " +
-                "WHERE RECEIVERS.THE_GEOM && BUILDINGS.THE_GEOM AND ST_INTERSECTS(RECEIVERS.THE_GEOM,BUILDINGS.THE_GEOM))")
-
-        // Set a height to the receivers at 1.5 m
-        new Set_Height().exec(connection,
-                [ "tableName":"RECEIVERS",
-                  "height": 1.5
-                ])
 
         // From the network with traffic flow to individual trajectories with associated Lw using the Poisson method
         // This method place the vehicles on the network according to the traffic flow following a poisson law
         // It keeps a coherence in the time series of the noise level
         new Flow_2_Noisy_Vehicles().exec(connection,
                 ["tableRoads": "ROADS",
-                 "method"    : "POISSON",
+                 "method"    : "TNP",
                  "timestep"  : 1,
                  "duration"  : 60,
-                 "gridStep"  : 8])
+                 "gridStep"  : 10])
 
         assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_EMISSION"))
         assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_GEOM"))
