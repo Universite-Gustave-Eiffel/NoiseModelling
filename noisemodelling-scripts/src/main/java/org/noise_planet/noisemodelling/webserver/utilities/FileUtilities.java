@@ -9,7 +9,6 @@
 package org.noise_planet.noisemodelling.webserver.utilities;
 
 import com.fasterxml.jackson.core.*;
-import org.h2gis.api.ProgressVisitor;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,70 +19,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public class FileUtilities {
 
-
-
-    /**
-     * Merges multiple .sql.gz files into a single .sql.gz file.
-     * The first file's create table instruction is preserved; later files only contribute data
-     * starting from the first "INSERT INTO" line.
-     *
-     * @param inputFiles List of paths to .sql.gz files
-     * @param outputFile The destination .sql.gz file
-     * @throws IOException If an I/O error occurs
-     */
-    public static void mergeSqlFiles(List<String> inputFiles, File outputFile, ProgressVisitor progressVisitor) throws IOException {
-        // Use a large buffer for bulk copying
-        char[] buffer = new char[32768]; // 32KB buffer
-
-        try (FileOutputStream fos = new FileOutputStream(outputFile);
-             GZIPOutputStream gzos = new GZIPOutputStream(fos);
-             OutputStreamWriter osw = new OutputStreamWriter(gzos, StandardCharsets.UTF_8);
-             BufferedWriter writer = new BufferedWriter(osw)) {
-            ProgressVisitor subProgress = progressVisitor.subProcess(inputFiles.size());
-            for (int fileIndex = 0; fileIndex < inputFiles.size(); fileIndex++) {
-                File inputFile = new File(inputFiles.get(fileIndex));
-                if (!inputFile.exists()) continue;
-
-                try (GZIPInputStream gzis = new GZIPInputStream(new FileInputStream(inputFile));
-                     InputStreamReader isr = new InputStreamReader(gzis, StandardCharsets.UTF_8);
-                     BufferedReader reader = new BufferedReader(isr)) {
-
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        // Logic to identify the starting line
-                        boolean isMatch = line.startsWith("INSERT INTO") ||
-                                (fileIndex == 0 && line.startsWith("CREATE CACHED TABLE"));
-
-                        if (isMatch) {
-                            // 1. Write the first matching line
-                            writer.write(line);
-                            writer.write('\n'); // Standardize on Unix newline for SQL
-
-                            // 2. FAST BULK TRANSFER:
-                            // Stop reading line-by-line and copy the remaining stream in chunks.
-                            int charsRead;
-                            while ((charsRead = reader.read(buffer)) != -1) {
-                                writer.write(buffer, 0, charsRead);
-                            }
-
-                            // Exit the line-by-line loop and proceed to the next file
-                            break;
-                        }
-                    }
-                }
-                // Flush the writer after each file to keep the GZIP compression stream moving
-                writer.flush();
-                subProgress.endStep();
-            }
-        }
-    }
 
     /**
      * Merge GeoJSON files
