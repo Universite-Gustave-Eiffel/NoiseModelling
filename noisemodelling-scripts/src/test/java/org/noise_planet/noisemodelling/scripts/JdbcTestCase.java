@@ -23,6 +23,7 @@ import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.NoiseModellingServerHttpTest;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -128,6 +129,6 @@ public class JdbcTestCase {
     @BeforeAll
     public static void init() {
         PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
+                Objects.requireNonNull(VersionUtils.class.getResource("log4j_tests.properties")));
     }
 }

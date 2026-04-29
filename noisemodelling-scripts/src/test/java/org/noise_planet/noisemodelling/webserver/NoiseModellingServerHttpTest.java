@@ -19,6 +19,7 @@ import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.JobStates;
@@ -100,7 +101,7 @@ public class NoiseModellingServerHttpTest {
     @BeforeAll
     public static void setUp(@TempDir Path temporaryDirectory) throws IOException, SQLException, URISyntaxException {
         PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
+                Objects.requireNonNull(VersionUtils.class.getResource("log4j_tests.properties")));
         Configuration configuration = new Configuration(true);
         configuration.setWorkingDirectory(temporaryDirectory.toString());
         // Copy unit test scripts and standard scripts to temporary directory
