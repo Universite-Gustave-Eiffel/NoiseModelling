@@ -36,8 +36,8 @@ inputs = [
         noiseMapLimit: [
                 name: 'Number of map ',
                 title: 'Number of map',
-                description: 'The optional parameter limits the number of maps to be generated',
-                min        : 0, max: 1,
+                description: 'The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of combinations'+ 
+                        '&#128736; Default value: <b>100</b> ',
                 type: Integer.class
         ]
 ]
@@ -46,7 +46,7 @@ outputs = [
         result: [
                 name: 'Noise map table ',
                 title: 'Noise map table',
-                description: 'NOISE_MAPS table input',
+                description: 'LW_ROADS and ROADS_GEOM tables output',
                 type: String.class
         ]
 ]
@@ -81,7 +81,8 @@ def exec(Connection connection,input) {
             "HZ63 double precision, HZ125 double precision, HZ250 double precision, HZ500 double precision, HZ1000 double precision, HZ2000 double precision, HZ4000 double precision, HZ8000 double precision);")
     int size
     if (limit != null){
-        size = limit
+
+        size = (int) ((limit * allCombinations.size()) / 100)
     }
     else{
         size = allCombinations.size()
@@ -206,6 +207,6 @@ def exec(Connection connection,input) {
     }
 
     logger.info('End data simulation ')
-    return "Calculation Done ! The table LW_ROADS has been created."
+    return "Calculation Done ! The table LW_ROADS and ROADS_GEOM has been created."
 
 }
