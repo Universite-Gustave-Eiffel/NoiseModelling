@@ -13,14 +13,11 @@ package org.noise_planet.noisemodelling.webserver.script;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
-import net.opengis.wps10.DataInputsType1;
-import net.opengis.wps10.ExecuteType;
-import net.opengis.wps10.InputType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -34,19 +31,33 @@ public class ScriptMetadata {
     final public String id;
     final public String title;
     final public String description;
-    final public Path path;
+    final public URI path;
+    final public URI scriptDirectory;
     final public int executionTimeoutSeconds;
 
     final public Map<String, ScriptInput> inputs = new HashMap<>();
     final public Map<String, ScriptOutput> outputs = new HashMap<>();
 
-    public ScriptMetadata(String group, File file) throws IOException {
+    /**
+     * Constructs a `ScriptMetadata` instance by parsing metadata from a specified Groovy script file.
+     * The constructor initializes the metadata fields such as `id`, `title`, `description`, `executionTimeoutSeconds`,
+     * and populates the `inputs` and `outputs` maps based on the content of the script. The `id` is generated
+     * using the provided group and the script file name, while the other fields are extracted from the script's
+     * metadata or assigned default values if not specified.
+     *
+     * @param group           a string representing the group or category to which the script belongs, used in generating the script's unique identifier
+     * @param file            a URI pointing to the Groovy script file from which to extract metadata
+     * @param scriptDirectory a URI representing the directory containing the script, used for mounting a special file system if the script is stored into a jar file
+     * @throws IOException if an error occurs while reading or parsing the script file for metadata extraction
+     */
+    public ScriptMetadata(String group, URI file, URI scriptDirectory) throws IOException {
+        this.scriptDirectory = scriptDirectory;
         Map metadata = parseGroovyScriptMetadata(file);
-        id = group + ":" + file.getName().replace(".groovy", "");
+        id = group + ":" + Path.of(file).getFileName().toString().replace(".groovy", "");
         title = metadata.getOrDefault("title", id).toString();
         description = metadata.getOrDefault("description", "").toString();
         executionTimeoutSeconds = (Integer) metadata.getOrDefault("executionTimeout", DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS);
-        path = file.toPath();
+        path = file;
 
         // Convert metadata inputs into ScriptInput instances
         Object inputsValue = metadata.get("inputs");
@@ -111,7 +122,7 @@ public class ScriptMetadata {
      * where "inputs" and "outputs" are themselves maps with their respective properties
      * @throws IOException if an error occurs while reading the script file
      */
-    private static Map parseGroovyScriptMetadata(File scriptFile) throws IOException {
+    private static Map parseGroovyScriptMetadata(URI scriptFile) throws IOException {
         GroovyShell shell = new GroovyShell();
         Script script = shell.parse(scriptFile);
         script.run();

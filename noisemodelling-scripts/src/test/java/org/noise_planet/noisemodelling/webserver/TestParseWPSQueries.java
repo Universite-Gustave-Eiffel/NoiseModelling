@@ -34,18 +34,20 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestParseWPSQueries {
+    static Map<String, ScriptMetadata> wrappers;
 
     @BeforeAll
-    public static void init() {
+    public static void init() throws IOException {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
+        wrappers = getWrappers();
     }
 
     @Test
     public void testDelaunayParse() throws IOException, ParserConfigurationException, SAXException {
 
-        // Build ScriptWrapper
-        Map<String, ScriptMetadata> wrappers = getWrappers();
+        
+        
         assertNotEquals(0, wrappers.size());
         // look for the script named Delaunay_Grid
         ScriptMetadata scriptMetadata = wrappers.get("Receivers:Delaunay_Grid");
@@ -80,17 +82,15 @@ public class TestParseWPSQueries {
     }
 
     private static @NonNull Map<String, ScriptMetadata> getWrappers() throws IOException {
-        Map<String, ScriptMetadata> wrappers = WpsScriptWrapper.buildScriptWrappers(WpsScriptWrapper.scanScriptsGrouped(ClassLoader.getSystemClassLoader(),
-                Path.of("scripts")));
-        return wrappers;
+        return WpsScriptWrapper.scanScriptsGrouped(ClassLoader.getSystemClassLoader(), "scripts");
     }
 
 
     @Test
     public void testGeometryReturnParse() throws IOException, ParserConfigurationException, SAXException {
 
-        // Build ScriptWrapper
-        Map<String, ScriptMetadata> wrappers = getWrappers();
+        
+        
         assertNotEquals(0, wrappers.size());
         // look for the script named Delaunay_Grid
         ScriptMetadata scriptMetadata = wrappers.get("Database_Manager:Table_Visualization_Map");
@@ -109,8 +109,8 @@ public class TestParseWPSQueries {
 
     @Test
     public void testGenerateCapabilitiesXML() throws IOException {
-        // Build ScriptWrapper
-        Map<String, ScriptMetadata> wrappers = getWrappers();
+        
+        
         assertNotEquals(0, wrappers.size());
 
         String capabilitiesXML = WpsXmlDocumentGenerator.generateCapabilitiesXML(wrappers);
@@ -128,8 +128,8 @@ public class TestParseWPSQueries {
 
     @Test
     public void testParseChainedExecuteQuery() throws IOException, ParserConfigurationException, SAXException {
-        // Build ScriptWrapper
-        Map<String, ScriptMetadata> wrappers = getWrappers();
+        
+        
         assertNotEquals(0, wrappers.size());
 
         try(InputStream inputStream = TestParseWPSQueries.class.getResourceAsStream("wps_parse/chainedExecute1.xml")) {
@@ -149,8 +149,7 @@ public class TestParseWPSQueries {
 
     @Test
     public void testParseChainedExecuteQuery2() throws IOException, ParserConfigurationException, SAXException {
-        // Build ScriptWrapper
-        Map<String, ScriptMetadata> wrappers = getWrappers();
+        
         assertNotEquals(0, wrappers.size());
 
         try(InputStream inputStream = TestParseWPSQueries.class.getResourceAsStream("wps_parse/chainedExecute2.xml")) {

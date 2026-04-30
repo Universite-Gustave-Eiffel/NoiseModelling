@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.File;
+import java.net.URI;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.NumberFormat;
@@ -151,7 +153,8 @@ public class Main {
                 if(parentFolder != null) {
                     group = parentFolder.getName();
                 }
-                ScriptMetadata scriptMetadata = new ScriptMetadata(group, new File(scriptPath));
+                ScriptMetadata scriptMetadata = new ScriptMetadata(group, new File(scriptPath).toURI(),
+                        parentFolder == null ? new URI("") : parentFolder.toURI());
                 // Create Command line arguments specification using the Input specification of the WPS process
                 scriptMetadata.inputs.forEach((key, scriptInput) -> {
                     StringBuilder description = new StringBuilder(scriptInput.description.replaceAll("<[^>]*>", ""));

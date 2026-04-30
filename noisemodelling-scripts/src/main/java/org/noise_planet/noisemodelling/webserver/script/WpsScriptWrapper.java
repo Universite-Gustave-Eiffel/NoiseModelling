@@ -36,11 +36,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * The `WpsScriptWrapper` class provides functionalities to manage, organize, and process
@@ -55,6 +56,7 @@ import java.util.*;
  */
 public class WpsScriptWrapper {
 
+    private Logger logger = LoggerFactory.getLogger(WpsScriptWrapper.class);
 
     /**
      * The root directory where Groovy script files are stored and managed.
@@ -78,21 +80,6 @@ public class WpsScriptWrapper {
 
 
     /**
-     * Loads Groovy scripts from a predefined directory structure and organizes them into groups.
-     *
-     * This method scans the available scripts using the `scanScriptsGrouped` method to organize
-     * them by groups, then attempts to locate the corresponding script files for each script
-     * name in the directory structure. Only valid script files that exist on the file system
-     * are included in the resulting map.
-     *
-     * @return a map where the keys are script group names and the values are lists of
-     *         File objects corresponding to the scripts in each group
-     */
-    public  Map<String, List<File>> loadScripts(){
-        return scanScriptsGrouped(getClass().getClassLoader(), scriptsRoot);
-    }
-
-    /**
      * Scans a predefined directory structure containing Groovy scripts and organizes them into groups.
      * <p>
      * This method traverses the directory structure rooted at the `scriptsRoot` location recursively.
@@ -103,35 +90,61 @@ public class WpsScriptWrapper {
      * If the root directory does not exist or contains no valid files, an empty map is returned.
      *
      * @return a map where the keys are group names (relative directory paths) and the values are lists
-     *         of script names (without file extensions) belonging to each group
+     *         of script metadata
      */
-    public static Map<String, List<File>> scanScriptsGrouped(ClassLoader loader, Path scriptDirectory) {
-        Map<String, List<File>> grouped = new TreeMap<>();
-        File baseDir = scriptDirectory.toFile();
+    public static Map<String, ScriptMetadata> scanScriptsGrouped(ClassLoader loader, String scriptDirectoryName) throws IOException {
+        Map<String, ScriptMetadata> grouped = new TreeMap<>();
         Logger logger = LoggerFactory.getLogger(WpsScriptWrapper.class.getName());
-        logger.info("Scanning scripts in directory: " + scriptDirectory.toAbsolutePath());
+        File baseDir = new File(scriptDirectoryName).getAbsoluteFile();
+        logger.info("Scanning scripts in directory: " + baseDir);
         if (!baseDir.exists()) {
-            logger.warn("Directory does not exist {}, will try to use ClassLoader resources package instead..", scriptDirectory);
+            logger.warn("Directory does not exist {}, will try to use ClassLoader resources package instead..", baseDir);
             // The location may be stored into the jar not the local file system
             try {
-                URL resourceUrl = loader.getResource(scriptDirectory.toString());
+                URL resourceUrl = loader.getResource(scriptDirectoryName);
                 if (resourceUrl == null) {
-                    return grouped;
+                    throw new IOException("Can't find scripts in Jar files using this URL " + loader.getResource(scriptDirectoryName));
                 }
-                baseDir = new File(resourceUrl.toURI());
-            } catch (URISyntaxException e) {
-                return grouped;
-            }
-            if (!baseDir.exists()) {
-                return grouped;
+                URI resourcesScriptUri = resourceUrl.toURI();
+                walkUri(grouped, logger, resourcesScriptUri, scriptDirectoryName);
+            } catch (URISyntaxException | IOException | IllegalArgumentException e) {
+                logger.warn("Can't find scripts in Jar files using this URL {}.", loader.getResource(scriptDirectoryName), e);
+                return new TreeMap<>();
             }
         }
-        scanRecursive(baseDir, "", grouped);
-        logger.info("Found {} scripts in directory/package: {}", grouped.values().stream().mapToInt(List::size).sum(), scriptDirectory);
+        walkUri(grouped, logger, baseDir.toURI(), scriptDirectoryName);
+        int scriptCount = grouped.size();
+        if(scriptCount == 0) {
+            logger.warn("No scripts found in directory/package: {}", scriptDirectoryName);
+        } else {
+            logger.info("Found {} scripts in directory/package: {}", scriptCount, scriptDirectoryName);
+        }
         return grouped;
     }
 
 
+    private static void walkUri(Map<String, ScriptMetadata> grouped, Logger logger, URI resourcesScriptUri, String scriptDirectoryName) throws IOException {
+        try (FileSystem fileSystem = FileSystems.newFileSystem(resourcesScriptUri, Collections.emptyMap())) {
+            Path fileSystemPath = fileSystem.getPath(scriptDirectoryName);
+            try (Stream<Path> stream = Files.walk(fileSystemPath)) {
+                stream.forEach(path -> {
+                    if(Files.isRegularFile(path) && path.toString().endsWith(".groovy")) {
+                        String relativePath =
+                                fileSystem.getPath(scriptDirectoryName).relativize(path).toString();
+                        String group = relativePath.substring(0,
+                                relativePath.lastIndexOf(File.separator));
+                        try {
+                            ScriptMetadata script = new ScriptMetadata(group, path.toUri(), resourcesScriptUri);
+                            grouped.put(script.id, script);
+                        } catch (IOException e) {
+                            logger.warn("Error while loading script metadata for file {} in Jar, " +
+                                    "skipping this script.", path, e);
+                        }
+                    }
+                });
+            }
+        }
+    }
     /**
      * Finds a Groovy script file based on the specified group and script name.
      *
@@ -149,57 +162,6 @@ public class WpsScriptWrapper {
         Path path = scriptsRoot.resolve(group).resolve(scriptName + ".groovy");
         return Files.exists(path) ? path.toFile() : null;
     }
-
-    /**
-     * Recursively scans a directory for Groovy script files and groups them into categories
-     * based on the directory structure. Each group corresponds to a directory path relative
-     * to the root directory.
-     *
-     * @param dir the directory to scan for Groovy script files
-     * @param currentGroup the current group name, representing the relative path from the root directory
-     * @param grouped a map where keys are group names (relative directory paths) and values are lists
-     *        of script files that belong to each group
-     */
-    private static void scanRecursive(File dir, String currentGroup, Map<String, List<File>> grouped) {
-        File[] files = dir.listFiles();
-        if (files == null) return;
-        for (File f : files) {
-            if (f.isDirectory()) {
-                String newGroup = currentGroup.isEmpty() ? f.getName() : currentGroup + "/" + f.getName();
-                scanRecursive(f, newGroup, grouped);
-            } else if (f.getName().endsWith(".groovy")) {
-                grouped.computeIfAbsent(currentGroup, k -> new ArrayList<>())
-                        .add(f);
-            }
-        }
-    }
-
-    /**
-     * Builds a list of {@link ScriptMetadata} objects from the Groovy scripts available
-     * in the given directory or JAR.
-     *
-     * <p>This method reads each Groovy script file, parses its metadata (title,
-     * description, inputs, and outputs), and wraps it into a {@link ScriptMetadata}
-     * instance. The resulting list can be used to generate WPS Capabilities and
-     * DescribeProcess documents.</p>
-     *
-     * @param scriptFiles a map of grouped script files (group → list of script files)
-     * @return a list of {@code ScriptWrapper} instances representing available scripts
-     * @throws IOException if a script file cannot be read or parsed
-     */
-    public static Map<String, ScriptMetadata> buildScriptWrappers(Map<String, List<File>> scriptFiles) throws IOException {
-        Map<String, ScriptMetadata> wrappers = new HashMap<>();
-        for (Map.Entry<String, List<File>> entry : scriptFiles.entrySet()) {
-            String group = entry.getKey();
-            for (File file : entry.getValue()) {
-                ScriptMetadata wrapper = new ScriptMetadata(group, file);
-                wrappers.put(wrapper.id, wrapper);
-            }
-        }
-
-        return wrappers;
-    }
-
 
 }
 
