@@ -36,8 +36,8 @@ inputs = [
         noiseMapLimit: [
                 name: 'Number of map ',
                 title: 'Number of map',
-                description: 'The optional parameter limits the percentage(%) of maps to be generated',
-                min        : 0, max: 1,
+                description: 'The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of combinations'+ 
+                        '&#128736; Default value: <b>100</b> ',
                 type: Integer.class
         ]
 ]
