@@ -45,7 +45,7 @@ public class TestJobLogs {
                 "[JOB_16][JOB_16] INFO  2026-02-24 12:06:11 - Successfully connected to the server localhost",
                 "[sshd-SshClient[1e3d79ba]-nio2-thread-4][JOB_16] WARN  2026-02-24 12:06:11 - No server key configured. Trusting the server automatically (not recommended for production).",
                 "[JOB_16][org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver] INFO  2026-02-24 12:06:11 - resolveEffectiveResolver(testuser@localhost:2222) loaded 4 entries from /Users/user/.ssh/config",
-                "[JOB_16][org.apache.sshd.common.io.DefaultIoServiceFactoryFactory] INFO  2026-02-24 12:06:11 - No detected/configured IoServiceFactoryFactory; using Nio2ServiceFactoryFactory"), Arrays.asList(lastLines.split("\n")));
+                "[JOB_16][org.apache.sshd.common.io.DefaultIoServiceFactoryFactory] INFO  2026-02-24 12:06:11 - No detected/configured IoServiceFactoryFactory; using Nio2ServiceFactoryFactory"), Arrays.asList(lastLines.split("\\r?\\n|\\r")));
     }
 
     /**
@@ -62,7 +62,7 @@ public class TestJobLogs {
                 2, "JOB_16", fetchedLines);
         assertEquals(2, fetchedLines.get());
         assertLinesMatch(Arrays.asList("[JOB_16][JOB_16] ERROR 2026-02-24 12:06:11 - Command java -v"
-                , " exit-status: 127"), Arrays.asList(lastLines.split("\n")));
+                , " exit-status: 127"), Arrays.asList(lastLines.split("\\r?\\n|\\r")));
     }
 
 
