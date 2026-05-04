@@ -1,0 +1,34 @@
+<launch4jConfig>
+    <dontWrapJar>false</dontWrapJar>
+    <headerType>gui</headerType>
+
+
+
+    <jar>JAR_PLACEHOLDER</jar>
+
+    <outfile>installer\NoiseModelling.exe</outfile>
+
+    <classPath>
+        <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
+    </classPath>
+
+    <jre>
+        <bundledJre64Bit>true</bundledJre64Bit>
+        <bundledJreAsFallback>false</bundledJreAsFallback>
+        <minVersion>11</minVersion>
+        <jdkPreference>preferJre</jdkPreference>
+        <runtimeBits>64/32</runtimeBits>
+    </jre>
+    <versionInfo>
+        <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
+        <txtFileVersion>APP_VERSION_PLACEHOLDER</txtFileVersion>
+
+        <productVersion>APP_VERSION_PLACEHOLDER</productVersion>
+        <txtProductVersion>APP_VERSION_PLACEHOLDER</txtProductVersion>
+
+        <fileDescription>NoiseModelling</fileDescription>
+        <internalName>NoiseModelling</internalName>
+        <originalFilename>NoiseModelling.exe</originalFilename>
+    </versionInfo>
+
+</launch4jConfig>

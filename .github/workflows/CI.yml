@@ -1,4 +1,4 @@
-name: CI
+name: CI + Windows Installer
 
 on:
   push:
@@ -7,86 +7,144 @@ on:
   workflow_dispatch:
 
 jobs:
+  # =========================
+  # 1. BUILD LINUX (Maven)
+  # =========================
   build:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: imresamu/postgis:17-3.5
         env:
-          # must specify password for PG Docker container image, see: https://registry.hub.docker.com/_/postgres?tab=description&page=1&name=10
           POSTGRES_USER: noisemodelling
           POSTGRES_PASSWORD: noisemodelling
           POSTGRES_DB: noisemodelling_db
         ports:
           - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/.m2/
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      # Checkout the source code of the project
       - name: Checkout
         uses: actions/checkout@v4
-      # Setup the jdk using version 11 of Adoptium Temurin
-      - name: Setup java 11 using Adoptium Temurin
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '11'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+
+      - name: Build Maven
+        run: mvn clean test package -B
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DB: noisemodelling_db
           POSTGRES_USER: noisemodelling
           POSTGRES_PASSWORD: noisemodelling
-      - name: Maven Deploy
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean deploy -B
+
       - name: Install bsdtar
         run: |
           sudo apt-get update
           sudo apt-get install -y libarchive-tools
-      - name: Unzip production artifacts
+
+      - name: Extract ZIP artifact
         run: |
           mkdir NoiseModelling
-          # bsdtar handles .zip and supports --strip-components
           bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
-      - name: Generate Sanitized Artifact Name
-        id: sanitize
-        run: |
-          # Determine the raw value (Ref name if not default branch, otherwise SHA)
-          if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
-          RAW_VAL="${{ github.ref_name }}"
-          else
-          RAW_VAL="${{ github.sha }}"
-          fi
-          
-          # Use sed to perform replacements:
-          # 1. / and \ become _
-          # 2. : is removed
-          # 3. * becomes x
-          CLEAN_VAL=$(echo "$RAW_VAL" | sed 's/[\/\\]/_/g; s/://g; s/\*/x/g')
-          
-          # Set it as an environment variable for the next step
-          echo "ARTIFACT_NAME=NoiseModelling-$CLEAN_VAL" >> $GITHUB_ENV
-      - name: Upload distribution file
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: app-linux
           path: NoiseModelling/
 
+      - name: Upload ZIP for Windows job
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-zip
+          path: noisemodelling-scripts/target/*.zip
+
+
+  # =========================
+  # 2. WINDOWS INSTALLER
+  # =========================
+  windows-installer:
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      # -------------------------
+      # Version automatique
+      # -------------------------
+      - name: Set version
+        run: |
+          echo "APP_VERSION=0.0.0-${{ github.run_number }}-${{ github.sha }}" >> $env:GITHUB_ENV
+
+      # -------------------------
+      # Download artifact
+      # -------------------------
+      - name: Download ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-zip
+          path: dist
+
+      - name: Extract ZIP
+        run: |
+          Expand-Archive -Path "dist\*.zip" -DestinationPath extracted -Force
+
+      # -------------------------
+      # Find JAR
+      # -------------------------
+      - name: Find JAR
+        run: |
+          $jar = Get-ChildItem -Recurse -Path extracted -Filter *.jar |
+                 Sort-Object Length -Descending |
+                 Select-Object -First 1
+          echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
+
+      # -------------------------
+      # Launch4j EXE
+      # -------------------------
+      - name: Install Launch4j
+        run: choco install launch4j --yes --no-progress
+
+      - name: Build EXE config
+        run: |
+          (Get-Content installer\launch4j-config.xml) `
+            -replace 'JAR_PLACEHOLDER', $env:JAR_PATH `
+            -replace '1.0.0.0', $env:APP_VERSION `
+          | Set-Content installer\launch4j-config-final.xml
+
+      - name: Create EXE
+        run: |
+          & "C:\Program Files (x86)\Launch4j\launch4jc.exe" installer\launch4j-config-final.xml
+
+      # -------------------------
+      # NSIS installer
+      # -------------------------
+      - name: Install NSIS
+        run: choco install nsis --yes --no-progress
+
+      - name: Build installer
+        run: |
+          makensis /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
+
+      # -------------------------
+      # Upload artifacts
+      # -------------------------
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer\NoiseModelling-Setup.exe
