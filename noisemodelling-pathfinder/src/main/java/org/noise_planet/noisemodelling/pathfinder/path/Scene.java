@@ -95,6 +95,8 @@ public class Scene {
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
+    /** Maximum receiver-to-wall horizontal distance for the optional reflection cut profile filter */
+    private double closeReceiverReflectionWallDistance = 0;
 
 
     /**
@@ -162,6 +164,14 @@ public class Scene {
 
     public void setDefaultGroundAttenuation(double gS) {
         this.defaultGroundAttenuation = gS;
+    }
+
+    public double getCloseReceiverReflectionWallDistance() {
+        return closeReceiverReflectionWallDistance;
+    }
+
+    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
+        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
     }
 
     public void clearSources() {

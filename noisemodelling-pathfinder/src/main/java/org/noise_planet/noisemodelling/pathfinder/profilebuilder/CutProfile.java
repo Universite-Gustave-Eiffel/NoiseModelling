@@ -15,6 +15,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -221,6 +222,39 @@ public class CutProfile {
     @JsonIgnore
     public boolean isFreeField() {
         return !hasBuildingIntersection && !hasTopographyIntersection;
+    }
+
+    /**
+     * @param maximumReceiverWallDistance Maximum horizontal receiver-to-wall distance in meters
+     * @return True if this reflection profile contains a last reflection before the receiver and the receiver
+     *         is closer than the provided distance to that reflective wall, even if other events occur afterwards
+     */
+    @JsonIgnore
+    public boolean hasCloseReflectionBeforeReceiver(double maximumReceiverWallDistance) {
+        if(profileType != PROFILE_TYPE.REFLECTION || cutPoints.size() < 3 || maximumReceiverWallDistance < 0) {
+            return false;
+        }
+        CutPointReceiver receiver = getReceiver();
+        if(receiver == null) {
+            return false;
+        }
+        CutPointReflection lastReflectionBeforeReceiver = null;
+        for(int i = cutPoints.size() - 2; i >= 1; i--) {
+            CutPoint cutPoint = cutPoints.get(i);
+            if(cutPoint instanceof CutPointReflection) {
+                lastReflectionBeforeReceiver = (CutPointReflection) cutPoint;
+                break;
+            }
+        }
+        if(lastReflectionBeforeReceiver == null || lastReflectionBeforeReceiver.wall == null) {
+            return false;
+        }
+        Coordinate receiverXY = new Coordinate(receiver.coordinate.x, receiver.coordinate.y);
+        LineSegment wallXY = new LineSegment(
+                new Coordinate(lastReflectionBeforeReceiver.wall.p0.x, lastReflectionBeforeReceiver.wall.p0.y),
+                new Coordinate(lastReflectionBeforeReceiver.wall.p1.x, lastReflectionBeforeReceiver.wall.p1.y));
+        Coordinate closestWallPoint = wallXY.closestPoint(receiverXY);
+        return closestWallPoint.distance(receiverXY) < maximumReceiverWallDistance;
     }
 
 

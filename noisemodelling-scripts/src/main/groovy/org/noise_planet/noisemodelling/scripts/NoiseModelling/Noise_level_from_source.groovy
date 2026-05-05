@@ -181,6 +181,14 @@ inputs = [
                         '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
                 min        : 0, max: 1, type: Double.class
         ],
+        confMinWallReflDist: [
+                name       : 'Ignore close reflections',
+                title      : 'Ignore reflections close to the receiver wall',
+                description: 'Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. ' +
+                        'Use <b>0</b> to keep all reflections. </br> </br>' +
+                        '&#128736; Default value: <b>0</b>',
+                min        : 0, max: 1, type: Double.class
+        ],
         confThreadNumber        : [
                 name       : 'Thread number',
                 title      : 'Thread number',
@@ -398,6 +406,15 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         max_ref_dist = Double.valueOf(input['confMaxReflDist'] as String)
     }
 
+    double close_receiver_reflection_wall_distance = input.getOrDefault("confMinWallReflDist", 0.0) as Double
+    if (close_receiver_reflection_wall_distance < 0) {
+        throw new IllegalArgumentException("Error : confMinWallReflDist must be greater than or equal to 0.")
+    }
+    if (close_receiver_reflection_wall_distance > 2.0) {
+        logger.warn("confMinWallReflDist is set to {} m, which is unusually high. Many reflections may be ignored.",
+                close_receiver_reflection_wall_distance)
+    }
+
     double wall_alpha = input.getOrDefault("paramWallAlpha",0.1) as Double
 
     int n_thread = input.getOrDefault("confThreadNumber",0) as Integer
@@ -508,6 +525,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
     pointNoiseMap.setMaximumReflectionDistance(max_ref_dist)
+    pointNoiseMap.setCloseReceiverReflectionWallDistance(close_receiver_reflection_wall_distance)
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
