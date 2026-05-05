@@ -103,12 +103,7 @@ jobs:
       - name: Debug JAR
         run: |
           dir installer
-
-      - name: Copy JRE for packaging
-        run: |
-          mkdir installer\jre
-          xcopy "%JAVA_HOME%" installer\jre /E /I /H /Y
-
+          
       - name: Copy JRE for packaging
         run: |
           New-Item -ItemType Directory -Force -Path installer\jre
