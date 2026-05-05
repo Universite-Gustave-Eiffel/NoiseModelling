@@ -110,7 +110,7 @@ jobs:
 
       - name: Create EXE
         run: |
-          & "C:\Program Files (x86)\Launch4j\launch4jc.exe" installer\launch4j-config-final.xml
+          java -jar "C:\Program Files (x86)\Launch4j\launch4j.jar" installer\launch4j-config-final.xml
       - name: Install NSIS
         run: choco install nsis --yes --no-progress
 
