@@ -29,6 +29,8 @@
         <fileDescription>NoiseModelling</fileDescription>
         <internalName>NoiseModelling</internalName>
         <originalFilename>NoiseModelling.exe</originalFilename>
+        <copyright>© 2026 Noise-Planet</copyright>
+        <productName>NoiseModelling</productName>
     </versionInfo>
 
 </launch4jConfig>
