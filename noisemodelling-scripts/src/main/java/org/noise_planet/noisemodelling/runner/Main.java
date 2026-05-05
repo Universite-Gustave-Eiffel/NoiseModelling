@@ -20,6 +20,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.Appender;
 import org.apache.log4j.PropertyConfigurator;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -144,9 +145,9 @@ public class Main {
         scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
         boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
+        Appender appender = Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
         try (HikariDataSource ds = createDataSource(commandLine)) {
             // Initialize additional loggers
-            Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
             try {
                 File parentFolder = new File(scriptPath).getParentFile();
@@ -228,6 +229,10 @@ public class Main {
         } catch (Throwable ex) {
             logger.error(ex.getLocalizedMessage(), ex);
             System.exit(1);
+        } finally {
+            if (appender != null) {
+                appender.close();
+            }
         }
     }
 
