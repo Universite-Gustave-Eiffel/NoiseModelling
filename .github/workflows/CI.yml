@@ -7,9 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # =========================
-  # 1. BUILD LINUX (Maven)
-  # =========================
   build:
     runs-on: ubuntu-latest
 
@@ -66,9 +63,6 @@ jobs:
           path: noisemodelling-scripts/target/*.zip
 
 
-  # =========================
-  # 2. WINDOWS INSTALLER
-  # =========================
   windows-installer:
     runs-on: windows-latest
     needs: build
@@ -83,16 +77,10 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      # -------------------------
-      # Version automatique
-      # -------------------------
       - name: Set version
         run: |
           echo "APP_VERSION=0.0.0-${{ github.run_number }}-${{ github.sha }}" >> $env:GITHUB_ENV
 
-      # -------------------------
-      # Download artifact
-      # -------------------------
       - name: Download ZIP
         uses: actions/download-artifact@v4
         with:
@@ -103,9 +91,6 @@ jobs:
         run: |
           Expand-Archive -Path "dist\*.zip" -DestinationPath extracted -Force
 
-      # -------------------------
-      # Find JAR
-      # -------------------------
       - name: Find JAR
         run: |
           $jar = Get-ChildItem -Recurse -Path extracted -Filter *.jar |
@@ -113,9 +98,6 @@ jobs:
                  Select-Object -First 1
           echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
 
-      # -------------------------
-      # Launch4j EXE
-      # -------------------------
       - name: Install Launch4j
         run: choco install launch4j --yes --no-progress
 
@@ -129,10 +111,6 @@ jobs:
       - name: Create EXE
         run: |
           & "C:\Program Files (x86)\Launch4j\launch4jc.exe" installer\launch4j-config-final.xml
-
-      # -------------------------
-      # NSIS installer
-      # -------------------------
       - name: Install NSIS
         run: choco install nsis --yes --no-progress
 
@@ -140,9 +118,7 @@ jobs:
         run: |
           makensis /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
 
-      # -------------------------
-      # Upload artifacts
-      # -------------------------
+
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
