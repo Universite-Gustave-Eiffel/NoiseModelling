@@ -128,8 +128,13 @@ jobs:
         run: |
           & "C:\Program Files (x86)\NSIS\makensis.exe" /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
 
+      - name: Debug installer
+        run: |
+          dir installer
+          
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: installer\NoiseModelling-Setup.exe
+          path: installer\NoiseModelling-${{ env.APP_VERSION }}-Setup.exe
+          
