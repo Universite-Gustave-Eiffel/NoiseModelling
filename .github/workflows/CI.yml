@@ -117,7 +117,13 @@ jobs:
       - name: Extract packaged zip with windows
         run: |
           unzip -o noisemodelling-scripts/target/*.zip -d NoiseModelling
+      - name: Find extracted folder (PowerShell)
+        id: folder
+        shell: pwsh
+        run: |
+          $subdir = Get-ChildItem -Path NoiseModelling -Directory | Select-Object -First 1
+          echo "folder=$($subdir.FullName)" >> $env:GITHUB_OUTPUT
       - name: Run tutorial script
         run: |
-          cd NoiseModelling
-          ./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ground_type.shp
+          bin\ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ground_type.shp
+        working-directory: ${{ steps.folder.outputs.folder }}
