@@ -100,16 +100,22 @@ jobs:
                  Sort-Object Length -Descending |
                  Select-Object -First 1
           echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
+      - name: Debug JAR
+        run: |
+          dir installer    
 
       - name: Install Launch4j
         run: choco install launch4j --yes --no-progress
 
       - name: Build EXE config
         run: |
+          $JAR_PATH = $env:JAR_PATH -replace '\\','/'
           (Get-Content installer\launch4j-config.xml) `
+            -replace 'JAR_PLACEHOLDER', $JAR_PATH `
             -replace 'APP_VERSION_PLACEHOLDER', $env:APP_VERSION `
             -replace 'APP_VERSION_TXT_PLACEHOLDER', $env:APP_VERSION_TXT `
           | Set-Content installer\launch4j-config-final.xml
+
 
       - name: Create EXE
         run: |
