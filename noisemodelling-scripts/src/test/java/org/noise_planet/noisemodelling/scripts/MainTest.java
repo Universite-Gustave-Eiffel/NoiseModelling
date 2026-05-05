@@ -48,12 +48,13 @@ public class MainTest {
                 "--tableName", "RECEIVERS", "--height" , "1.5");
     }
 
-
     @AfterEach
-    public void cleanup() {
-        // Close all log4j handlers to release file locks
-        LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
-        loggerContext.stop();
+    public void cleanup() throws Exception {
+        // Close logging handlers
+        LogManager.shutdown();
+
+        // Give system time to release file
+        Thread.sleep(125);
     }
 
 
