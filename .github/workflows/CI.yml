@@ -156,3 +156,43 @@ jobs:
           name: windows-installer
           path: installer\NoiseModelling-${{ env.APP_VERSION }}-Setup.exe
           
+          name: ${{ env.ARTIFACT_NAME }}
+          path: NoiseModelling/
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            $HOME/.m2/
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      # Checkout the source code of the project
+      - name: Checkout
+        uses: actions/checkout@v4
+      # Setup the jdk using version 11 of Adoptium Temurin
+      - name: Setup java 11 using Adoptium Temurin
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Building
+        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+      - name: Extract packaged zip with windows
+        run: |
+          unzip -o noisemodelling-scripts/target/*.zip -d NoiseModelling
+      - name: Find extracted folder (PowerShell)
+        id: folder
+        shell: pwsh
+        run: |
+          $subdir = Get-ChildItem -Path NoiseModelling -Directory | Select-Object -First 1
+          echo "folder=$($subdir.FullName)" >> $env:GITHUB_OUTPUT
+      - name: Run tutorial script
+        run: |
+          bin\ScriptRunner -w ./ -s scripts/Import_and_Export/Import_File.groovy --pathFile resources/ground_type.shp
+        working-directory: ${{ steps.folder.outputs.folder }}

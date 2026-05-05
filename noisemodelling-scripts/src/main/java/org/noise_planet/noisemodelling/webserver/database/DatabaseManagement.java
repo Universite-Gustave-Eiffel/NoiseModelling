@@ -105,7 +105,8 @@ public class DatabaseManagement {
         StringBuilder connectionUrl = new StringBuilder();
         connectionUrl.append(H2GISDBFactory.START_URL);
         try {
-            connectionUrl.append(new File(databaseDirectory, databaseName).toURI().toURL());
+            connectionUrl.append(new File(databaseDirectory, databaseName)
+                    .getAbsolutePath().replace("\\", "/"));
         } catch (Exception e) {
             throw new RuntimeException("Error building H2GIS JDBC URL", e);
         }

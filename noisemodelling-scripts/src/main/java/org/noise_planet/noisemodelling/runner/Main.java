@@ -20,6 +20,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.Appender;
 import org.apache.log4j.PropertyConfigurator;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -37,7 +38,6 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -78,6 +78,10 @@ public class Main {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
 
+        parseArgsAndRun(args);
+    }
+
+    public static void parseArgsAndRun(String... args) {
         // Arguments parser
         Options options = new Options();
         Option workingDirOption = new Option("w", "working-dir", true, "Path where the database and output logs will be written. It must be an existing folder with write permissions");
@@ -141,9 +145,9 @@ public class Main {
         scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
         boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
+        Appender appender = Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
         try (HikariDataSource ds = createDataSource(commandLine)) {
             // Initialize additional loggers
-            Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
             try {
                 File parentFolder = new File(scriptPath).getParentFile();
@@ -225,6 +229,10 @@ public class Main {
         } catch (Throwable ex) {
             logger.error(ex.getLocalizedMessage(), ex);
             System.exit(1);
+        } finally {
+            if (appender != null) {
+                appender.close();
+            }
         }
     }
 
