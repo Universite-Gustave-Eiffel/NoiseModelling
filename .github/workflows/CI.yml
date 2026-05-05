@@ -107,10 +107,8 @@ jobs:
       - name: Copy JRE for packaging
         run: |
           New-Item -ItemType Directory -Force -Path installer\jre
-      
-          Copy-Item -Path $env:JAVA_HOME\* `
-                    -Destination installer\jre `
-                    -Recurse -Force     
+
+          Copy-Item "$env:JAVA_HOME\*" installer\jre -Recurse -Force 
 
       - name: Debug JRE
         run: |
