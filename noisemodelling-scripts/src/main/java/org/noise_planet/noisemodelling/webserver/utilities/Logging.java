@@ -202,9 +202,9 @@ public class Logging {
                 }
                 int previousHookLocation = tailCache.length();
                 // Reverse search of end of line into the string buffer
-                lastEndOfLine = tailCache.lastIndexOf("\n");
+                lastEndOfLine = tailCache.lastIndexOf(System.lineSeparator());
                 while (lastEndOfLine != -1 && (maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch)) {
-                    int nextEndOfLine = tailCache.lastIndexOf("\n", Math.max(0, lastEndOfLine - 1));
+                    int nextEndOfLine = tailCache.lastIndexOf(System.lineSeparator(), Math.max(0, lastEndOfLine - 1));
                     if(nextEndOfLine <= 0) {
                         break;
                     }
@@ -224,7 +224,7 @@ public class Logging {
                         }
                     } else {
                         sbMatch.append(line);
-                        sbMatch.append("\n");
+                        sbMatch.append(System.lineSeparator());
                         pushedLines++;
                     }
                     lastEndOfLine = nextEndOfLine;
