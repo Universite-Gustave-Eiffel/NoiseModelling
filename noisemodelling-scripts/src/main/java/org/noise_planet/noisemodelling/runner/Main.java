@@ -37,7 +37,6 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -78,6 +77,10 @@ public class Main {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
 
+        parseArgsAndRun(args);
+    }
+
+    public static void parseArgsAndRun(String... args) {
         // Arguments parser
         Options options = new Options();
         Option workingDirOption = new Option("w", "working-dir", true, "Path where the database and output logs will be written. It must be an existing folder with write permissions");
