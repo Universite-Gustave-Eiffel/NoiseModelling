@@ -107,7 +107,15 @@ jobs:
       - name: Copy JRE for packaging
         run: |
           mkdir installer\jre
-          xcopy "%JAVA_HOME%" installer\jre /E /I /H /Y   
+          xcopy "%JAVA_HOME%" installer\jre /E /I /H /Y
+
+      - name: Copy JRE for packaging
+        run: |
+          New-Item -ItemType Directory -Force -Path installer\jre
+      
+          Copy-Item -Path $env:JAVA_HOME\* `
+                    -Destination installer\jre `
+                    -Recurse -Force     
 
       - name: Debug JRE
         run: |
