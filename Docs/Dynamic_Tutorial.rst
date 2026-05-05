@@ -45,7 +45,7 @@ Use ``Import_OSM`` WPS block
 #. ``Remove tunnels``: Check it
 #. ``Do not import surface``: Check it as we will not use this output
 
-.. figure:: images/tutorial/dynamic/ImportOSM.png
+.. figure:: images/tutorial/Dynamic/Road/ImportOSM.png
    :align: center
 
 Create a receiver grid using 25 meters step in a grid pattern
@@ -58,7 +58,7 @@ Use ``Regular_Grid`` WPS block
 #. ``Output triangle table``: Check it in order to be able to generate the iso contours
 #. ``height``: Enter ``1.5``
 
-.. figure:: images/tutorial/dynamic/RegularGrid.png
+.. figure:: images/tutorial/Dynamic/Road/RegularGrid.png
    :align: center
 
 Convert traffic to dynamic traffic flow
@@ -129,7 +129,7 @@ Load the 3 files in QGIS. ``Contouring_noise_map`` must be ordered as the last l
 Load the style for contouring noise map:
 
 
-.. figure:: images/tutorial/dynamic/loadstyle.png
+.. figure:: images/tutorial/Dynamic/Road/loadstyle.png
    :align: center
    :alt: Load style menu in QGis
 
@@ -140,7 +140,7 @@ In QGis, in time window, paste the following formulae:
 Start expression: ``datetime_from_epoch(to_real("PERIOD")*1000+1739869220000)``
 End expression: ``datetime_from_epoch(to_real("PERIOD")*1000+1739869221000)``
 
-.. figure:: images/tutorial/dynamic/temporal_settings.png
+.. figure:: images/tutorial/Dynamic/Road/temporal_settings.png
    :align: center
    :alt: Layer setting, temporal tab in QGis
 
@@ -148,7 +148,7 @@ Epoch is in millisecond, so we multiply by 1000 and add any base epoch time. The
 
 With the navigation bar of QGis you can select the period to display.
 
-.. figure:: images/tutorial/dynamic/temporal_bar_nav.png
+.. figure:: images/tutorial/Dynamic/Road/temporal_bar_nav.png
    :align: center
    :alt: Layer setting, temporal tab in QGis
 
@@ -164,7 +164,7 @@ Import Buildings for your study area
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Z_EXPORT_TEST_BUILDINGS.geojson``
+#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Road/Z_EXPORT_TEST_BUILDINGS.geojson``
 #. ``Projection identifier``: Enter SRID ``2154``
 #. ``Output table name``: Enter ``buildings``
 
@@ -173,7 +173,7 @@ Import the road network
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Z_EXPORT_TEST_TRAFFIC.geojson``
+#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Road/Z_EXPORT_TEST_TRAFFIC.geojson``
 #. ``Projection identifier``: Enter SRID ``2154``
 #. ``Output table name``: Enter ``roads``
 
@@ -240,7 +240,7 @@ Import Buildings for your study area
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/buildings_nm_ready_pop_heights.shp``
+#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Road/buildings_nm_ready_pop_heights.shp``
 #. ``Projection identifier``: Enter SRID ``32635``
 #. ``Output table name``: Enter ``buildings``
 
@@ -249,7 +249,7 @@ Import the receivers (or generate your set of receivers using Regular_Grid scrip
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/receivers_python_method0_50m_pop.shp``
+#. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/Road/receivers_python_method0_50m_pop.shp``
 #. ``Projection identifier``: Enter SRID ``32635``
 #. ``Output table name``: Enter ``receivers``
 #. ``height``: Enter ``1.5``
@@ -260,7 +260,7 @@ Import the road network
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter ``resources/Dynamic/network_tartu_32635_.geojson``
+#. ``Path of the input File``: Enter ``resources/Dynamic/Road/network_tartu_32635_.geojson``
 #. ``Projection identifier``: Enter SRID ``32635``
 #. ``Output table name``: Enter ``network_tartu``
 
@@ -277,7 +277,7 @@ Import the vehicle trajectories
 
 Use ``Import File`` WPS block
 
-#. ``Path of the input File``: Enter ``resources/Dynamic/SUMO.geojson``
+#. ``Path of the input File``: Enter ``resources/Dynamic/Road/SUMO.geojson``
 #. ``Projection identifier``: Enter SRID ``32635``
 #. ``Output table name``: Enter ``vehicle``
 
