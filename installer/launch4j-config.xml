@@ -6,7 +6,7 @@
 
     <jar>JAR_PLACEHOLDER</jar>
 
-    <outfile>installer\NoiseModelling.exe</outfile>
+    <outfile>NoiseModelling.exe</outfile>
 
     <classPath>
         <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
