@@ -155,9 +155,7 @@ jobs:
         with:
           name: windows-installer
           path: installer\NoiseModelling-${{ env.APP_VERSION }}-Setup.exe
-          
-          name: ${{ env.ARTIFACT_NAME }}
-          path: NoiseModelling/
+        
   build_windows:
     runs-on: windows-latest
     steps:
