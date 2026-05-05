@@ -120,13 +120,13 @@ jobs:
       - name: Create EXE
         run: |
           java -jar "C:\Program Files (x86)\Launch4j\launch4j.jar" installer\launch4j-config-final.xml
+          
       - name: Install NSIS
-        run: choco install nsis --yes --no-progress
+        run: choco install nsis --yes --no-progress 
 
       - name: Build installer
         run: |
-          makensis /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
-
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
