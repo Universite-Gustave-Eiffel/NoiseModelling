@@ -109,6 +109,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path installer\jre
 
           Copy-Item "$env:JAVA_HOME\*" installer\jre -Recurse -Force 
+          Copy-Item $env:JAR_PATH installer\app.jar
 
       - name: Debug JRE
         run: |
