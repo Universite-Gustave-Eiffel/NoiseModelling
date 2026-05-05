@@ -21,10 +21,10 @@
     </jre>
     <versionInfo>
         <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
-        <txtFileVersion>APP_VERSION_PLACEHOLDER</txtFileVersion>
-
         <productVersion>APP_VERSION_PLACEHOLDER</productVersion>
-        <txtProductVersion>APP_VERSION_PLACEHOLDER</txtProductVersion>
+
+        <txtFileVersion>APP_VERSION_TXT_PLACEHOLDER</txtFileVersion>
+        <txtProductVersion>APP_VERSION_TXT_PLACEHOLDER</txtProductVersion>
 
         <fileDescription>NoiseModelling</fileDescription>
         <internalName>NoiseModelling</internalName>
