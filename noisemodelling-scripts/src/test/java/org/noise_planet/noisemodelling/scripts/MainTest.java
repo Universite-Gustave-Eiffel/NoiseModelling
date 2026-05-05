@@ -11,7 +11,10 @@
  */
 package org.noise_planet.noisemodelling.scripts;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.h2gis.utilities.JDBCUtilities;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +47,16 @@ public class MainTest {
                 "-s", "src/main/groovy/org/noise_planet/noisemodelling/scripts/Geometric_Tools/Set_Height.groovy",
                 "--tableName", "RECEIVERS", "--height" , "1.5");
     }
+
+
+    @AfterEach
+    public void cleanup() {
+        // Close all log4j handlers to release file locks
+        LoggerContext loggerContext = (LoggerContext) LogManager.getContext(false);
+        loggerContext.stop();
+    }
+
+
 
     @Test
     public void testConnectionToPostGIS(@TempDir File temp) throws Exception {
