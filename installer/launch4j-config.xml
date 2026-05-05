@@ -4,18 +4,20 @@
 
 
 
-    <jar>JAR_PLACEHOLDER</jar>
+    <jar>app.jar</jar>
 
     <outfile>NoiseModelling.exe</outfile>
 
     <classPath>
         <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
     </classPath>
+    
+
     <jre>
+        <path>jre</path>
+        <minVersion>11</minVersion>
         <bundledJre64Bit>true</bundledJre64Bit>
         <bundledJreAsFallback>false</bundledJreAsFallback>
-        <minVersion>11</minVersion>
-        <path>jre</path>
     </jre>
     <versionInfo>
         <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
