@@ -102,7 +102,17 @@ jobs:
           echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
       - name: Debug JAR
         run: |
-          dir installer    
+          dir installer
+
+      - name: Copy JRE for packaging
+        run: |
+          mkdir installer\jre
+          xcopy "%JAVA_HOME%" installer\jre /E /I /H /Y   
+
+      - name: Debug JRE
+        run: |
+          dir installer\jre
+          dir installer\jre\bin    
 
       - name: Install Launch4j
         run: choco install launch4j --yes --no-progress
