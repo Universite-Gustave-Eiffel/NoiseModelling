@@ -11,13 +11,13 @@
     <classPath>
         <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
     </classPath>
-
     <jre>
         <bundledJre64Bit>true</bundledJre64Bit>
         <bundledJreAsFallback>false</bundledJreAsFallback>
         <minVersion>11</minVersion>
         <jdkPreference>preferJre</jdkPreference>
         <runtimeBits>64/32</runtimeBits>
+        <path>%JAVA_HOME%</path>
     </jre>
     <versionInfo>
         <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
