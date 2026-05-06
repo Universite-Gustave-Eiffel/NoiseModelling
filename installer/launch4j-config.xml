@@ -1,18 +1,18 @@
 <launch4jConfig>
-    <headerType>gui</headerType>
+    <headerType>console</headerType>
 
     <dontWrapJar>true</dontWrapJar>
 
-    <cmdLine>app/bin/WebServer.bat</cmdLine>
+    <cmdLine>app\bin\WebServer.bat</cmdLine>
 
     <outfile>NoiseModelling.exe</outfile>
-    
+
+    <chdir>.</chdir>
 
     <jre>
         <path>jre</path>
         <minVersion>11</minVersion>
     </jre>
-
     <versionInfo>
         <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
         <productVersion>APP_VERSION_PLACEHOLDER</productVersion>
