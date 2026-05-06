@@ -249,12 +249,7 @@ public class CutProfile {
         if(lastReflectionBeforeReceiver == null || lastReflectionBeforeReceiver.wall == null) {
             return false;
         }
-        Coordinate receiverXY = new Coordinate(receiver.coordinate.x, receiver.coordinate.y);
-        LineSegment wallXY = new LineSegment(
-                new Coordinate(lastReflectionBeforeReceiver.wall.p0.x, lastReflectionBeforeReceiver.wall.p0.y),
-                new Coordinate(lastReflectionBeforeReceiver.wall.p1.x, lastReflectionBeforeReceiver.wall.p1.y));
-        Coordinate closestWallPoint = wallXY.closestPoint(receiverXY);
-        return closestWallPoint.distance(receiverXY) < maximumReceiverWallDistance;
+        return lastReflectionBeforeReceiver.wall.distance(receiver.coordinate) < maximumReceiverWallDistance;
     }
 
 
