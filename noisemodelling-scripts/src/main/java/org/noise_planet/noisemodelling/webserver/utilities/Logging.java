@@ -177,7 +177,7 @@ public class Logging {
      * @throws IOException
      */
     public static String getLastLines(File logFile, int maximumLinesToFetch, String jobId, AtomicInteger fetchedLines) throws IOException {
-        int pushedLines = 0;
+        AtomicInteger pushedLines = new AtomicInteger();
         StringBuilder sbMatch = new StringBuilder();
         final int buffer = 8192;
         long read = 0;
@@ -186,7 +186,7 @@ public class Logging {
         try(RandomAccessFile f = new RandomAccessFile(logFile.getAbsoluteFile(), "r")) {
             long fileSize = f.length();
             long lastCursor = fileSize;
-            while((maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch) && read < fileSize) {
+            while((maximumLinesToFetch == -1 || pushedLines.get() < maximumLinesToFetch) && read < fileSize) {
                 long cursor = Math.max(0, fileSize - read - buffer);
                 read += buffer;
                 f.seek(cursor);
@@ -204,7 +204,7 @@ public class Logging {
                 int previousHookLocation = tailCache.length();
                 // Reverse search of end of line into the string buffer
                 lastEndOfLine = tailCache.lastIndexOf(LINE_SEPARATOR);
-                while (lastEndOfLine != -1 && (maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch)) {
+                while (lastEndOfLine != -1 && (maximumLinesToFetch == -1 || pushedLines.get() < maximumLinesToFetch)) {
                     int nextEndOfLine = tailCache.lastIndexOf(LINE_SEPARATOR, Math.max(0, lastEndOfLine - 1));
                     if(nextEndOfLine <= 0) {
                         break;
@@ -217,22 +217,25 @@ public class Logging {
                             String loggerName = matcher.group("logger");
                             if((threadName.equals(jobId) || loggerName.equals(jobId)) && lastEndOfLine < previousHookLocation) {
                                 // push other lines of this log
-                                String logLines = tailCache.substring(nextEndOfLine + 1, previousHookLocation);
-                                pushedLines += (int) logLines.lines().count();
-                                sbMatch.append(logLines);
+                                String logLines = tailCache.substring(nextEndOfLine + LINE_SEPARATOR.length(), previousHookLocation);
+                                logLines.lines().forEach(s -> {
+                                    pushedLines.getAndIncrement();
+                                    sbMatch.append(s);
+                                    sbMatch.append(LINE_SEPARATOR);
+                                });
                             }
                             previousHookLocation = nextEndOfLine + 1;
                         }
                     } else {
                         sbMatch.append(line);
                         sbMatch.append(LINE_SEPARATOR);
-                        pushedLines++;
+                        pushedLines.getAndIncrement();
                     }
                     lastEndOfLine = nextEndOfLine;
                 }
             }
         }
-        fetchedLines.addAndGet(pushedLines);
+        fetchedLines.addAndGet(pushedLines.get());
         return sbMatch.toString();
     }
 }
