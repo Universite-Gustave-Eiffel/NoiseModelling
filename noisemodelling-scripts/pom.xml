@@ -325,6 +325,7 @@
                     </programs>
                     <!-- This ensures all dependencies are included -->
                     <repositoryLayout>flat</repositoryLayout>
+                    <useWildcardClassPath>true</useWildcardClassPath>
                     <repositoryName>lib</repositoryName>
                 </configuration>
             </plugin>
