@@ -130,10 +130,6 @@ public class NoiseModellingServer {
         } catch (Exception e) {
             Logger logger = LoggerFactory.getLogger("Main");
             logger.error("Can't start NoiseModelling", e);
-        } finally {
-            if(fileLogger != null) {
-                fileLogger.close();
-            }
         }
     }
 
@@ -170,6 +166,10 @@ public class NoiseModellingServer {
                 owsController.shutdown();
                 if (serverDataSource instanceof AutoCloseable) {
                     ((AutoCloseable) serverDataSource).close();
+                }
+                // stop file logger
+                if(fileLogger != null) {
+                    fileLogger.close();
                 }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);

@@ -31,6 +31,7 @@ public class Logging {
     public static final String DEFAULT_LOG_FORMAT = "[%t][%c] %-5p %d{dd MMM HH:mm:ss} - %m%n";
     public static final Pattern LOG_PATTERN =
             Pattern.compile("^\\[(?<thread>.+?)\\]\\[(?<logger>[^\\]]+)\\]");
+    public static final String LINE_SEPARATOR = System.lineSeparator();
 
     public static Appender configureFileLogger(String workingDirectory, String loggingFileName) {
         try {
@@ -202,13 +203,13 @@ public class Logging {
                 }
                 int previousHookLocation = tailCache.length();
                 // Reverse search of end of line into the string buffer
-                lastEndOfLine = tailCache.lastIndexOf(System.lineSeparator());
+                lastEndOfLine = tailCache.lastIndexOf(LINE_SEPARATOR);
                 while (lastEndOfLine != -1 && (maximumLinesToFetch == -1 || pushedLines < maximumLinesToFetch)) {
-                    int nextEndOfLine = tailCache.lastIndexOf(System.lineSeparator(), Math.max(0, lastEndOfLine - 1));
+                    int nextEndOfLine = tailCache.lastIndexOf(LINE_SEPARATOR, Math.max(0, lastEndOfLine - 1));
                     if(nextEndOfLine <= 0) {
                         break;
                     }
-                    String line = tailCache.substring(nextEndOfLine + 1, lastEndOfLine);
+                    String line = tailCache.substring(nextEndOfLine + LINE_SEPARATOR.length(), lastEndOfLine);
                     if(!jobId.isEmpty()) {
                         Matcher matcher = LOG_PATTERN.matcher(line);
                         if (matcher.find()) {
@@ -224,7 +225,7 @@ public class Logging {
                         }
                     } else {
                         sbMatch.append(line);
-                        sbMatch.append(System.lineSeparator());
+                        sbMatch.append(LINE_SEPARATOR);
                         pushedLines++;
                     }
                     lastEndOfLine = nextEndOfLine;
