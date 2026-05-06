@@ -207,11 +207,11 @@ inputs = [
         ],
         confMinWallReflDist: [
                 name       : 'Ignore close reflections',
-                title      : 'Ignore reflections close to the receiver wall',
-                description: 'Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. ' +
-                        'Use <b>0</b> to keep all reflections. </br> </br>' +
-                        '&#128736; Default value: <b>0</b>',
-                min        : 0, max: 1, type: Double.class
+                title      : 'Ignore close reflections',
+                description: 'Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. ' +
+                        'Use <b>0</b> to keep all reflections.',
+                default: 0,
+                type: Double.class
         ],
         confThreadNumber        : [
                 name       : 'Thread number',
