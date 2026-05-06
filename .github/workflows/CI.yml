@@ -83,6 +83,8 @@ jobs:
           $build = "${{ github.run_number }}"
           echo "APP_VERSION=0.0.$build.0" >> $env:GITHUB_ENV
           echo "APP_VERSION_TXT=0.0.0-$build-$shortSha" >> $env:GITHUB_ENV
+          $mavenVersion = (Select-String -Path "pom.xml" -Pattern "<version>([^<]+)</version>" | Select-Object -First 1).Matches.Groups[1].Value
+          echo "MAVEN_VERSION=$mavenVersion" >> $env:GITHUB_ENV
 
       - name: Download ZIP
         uses: actions/download-artifact@v4
@@ -92,37 +94,19 @@ jobs:
 
       - name: Extract ZIP
         run: |
-          Expand-Archive -Path "dist\*.zip" -DestinationPath extracted -Force
-
-      - name: Find main JAR
-        run: |
-          $jar = Get-ChildItem -Recurse extracted\lib -Filter *.jar |
-                 Where-Object { $_.Name -like "noisemodelling-scripts*.jar" } |
-                 Sort-Object Length -Descending |
-                 Select-Object -First 1
-      
-          echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
-          
-          
-      - name: Copy JRE for packaging
-        run: |
-          New-Item -ItemType Directory -Force -Path installer\jre
-
-          Copy-Item "$env:JAVA_HOME\*" installer\jre -Recurse -Force 
-          
-      - name: Package runtime (appassembler)
-        run: |
+          $zip = Get-ChildItem dist\*.zip | Select-Object -First 1
+          Expand-Archive -Path $zip.FullName -DestinationPath extracted_raw -Force
+          $innerDir = (Get-ChildItem extracted_raw | Where-Object PSIsContainer | Select-Object -First 1).FullName
           New-Item -ItemType Directory -Force -Path installer\app
-      
-          Copy-Item -Recurse extracted\* installer\app
+          Copy-Item -Recurse "$innerDir\*" installer\app
 
-      - name: Prepare app folder
+      - name: Download Windows JRE (Adoptium)
         run: |
-          New-Item -ItemType Directory -Force -Path installer\app\bin
-          New-Item -ItemType Directory -Force -Path installer\app\lib
-      
-          Copy-Item "$env:JAR_PATH" installer\app\lib\
-          Copy-Item installer\WebServer.bat installer\app\bin\    
+          $jreUrl = "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse"
+          Invoke-WebRequest -Uri $jreUrl -OutFile jre.zip
+          Expand-Archive -Path jre.zip -DestinationPath jre_raw -Force
+          $innerDir = (Get-ChildItem jre_raw | Where-Object PSIsContainer | Select-Object -First 1).FullName
+          Move-Item "$innerDir" installer\jre
           
       - name: Debug JAR
         run: |
@@ -139,7 +123,6 @@ jobs:
 
       - name: Build EXE config
         run: |
-          $JAR_PATH = $env:JAR_PATH -replace '\\','/'
           (Get-Content installer\launch4j-config.xml) `
             -replace 'APP_VERSION_PLACEHOLDER', $env:APP_VERSION `
             -replace 'APP_VERSION_TXT_PLACEHOLDER', $env:APP_VERSION_TXT `
@@ -155,7 +138,7 @@ jobs:
 
       - name: Build installer
         run: |
-          & "C:\Program Files (x86)\NSIS\makensis.exe" /DAPP_VERSION=$env:APP_VERSION installer\installer.nsi
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /DAPP_VERSION=$env:APP_VERSION /DMAVEN_VERSION=$env:MAVEN_VERSION installer\installer.nsi
 
       - name: Debug installer
         run: |
@@ -165,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: installer\NoiseModelling-${{ env.APP_VERSION }}-Setup.exe
+          path: installer\NoiseModelling-${{ env.MAVEN_VERSION }}-Setup.exe
         
   build_windows:
     runs-on: windows-latest

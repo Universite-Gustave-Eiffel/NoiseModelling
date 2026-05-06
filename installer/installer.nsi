@@ -4,7 +4,10 @@
 !define APP_PUBLISHER   "Noise-Planet"
 !define APP_URL         "https://noise-planet.org"
 !define EXE_NAME        "NoiseModelling.exe"
-!define INSTALLER_NAME "NoiseModelling-${APP_VERSION}-Setup.exe"
+!ifndef MAVEN_VERSION
+  !define MAVEN_VERSION "dev"
+!endif
+!define INSTALLER_NAME "NoiseModelling-${MAVEN_VERSION}-Setup.exe"
 !define INSTALL_DIR     "$PROGRAMFILES64\${APP_NAME}"
 !define UNINSTALL_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
@@ -45,7 +48,7 @@ Section "NoiseModelling" SecMain
   SectionIn RO
 
   SetOutPath "$INSTDIR"
-  File /r "installer\app\*"
+  File /r "app\*"
   File "NoiseModelling.exe"
   
 
@@ -84,7 +87,7 @@ Section "Uninstall"
 
   Delete "$INSTDIR\${EXE_NAME}"
   Delete "$INSTDIR\Uninstall.exe"
-  RMDir  "$INSTDIR"
+  RMDir /r "$INSTDIR"
 
 
   Delete "$DESKTOP\${APP_NAME}.lnk"

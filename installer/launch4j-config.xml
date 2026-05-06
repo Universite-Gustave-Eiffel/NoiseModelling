@@ -3,11 +3,16 @@
 
     <dontWrapJar>true</dontWrapJar>
 
-    <cmdLine>cmd /c app\bin\WebServer.bat</cmdLine>
-
     <outfile>NoiseModelling.exe</outfile>
 
     <chdir>.</chdir>
+
+    <classPath>
+        <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
+        <cp>lib/*.jar</cp>
+    </classPath>
+
+    <cmdLine>-u -s scripts</cmdLine>
 
     <jre>
         <path>jre</path>
