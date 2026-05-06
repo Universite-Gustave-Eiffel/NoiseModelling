@@ -103,18 +103,6 @@ jobs:
       
           echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
           
-      - name: Prepare app folder
-        run: |
-          New-Item -ItemType Directory -Force -Path installer\app\bin
-          New-Item -ItemType Directory -Force -Path installer\app\lib
-      
-          Copy-Item "$env:JAR_PATH" installer\app\lib\
-          Copy-Item installer\WebServer.bat installer\app\bin\    
-          
-      - name: Debug JAR
-        run: |
-          dir installer
-          dir installer\app\bin  
           
       - name: Copy JRE for packaging
         run: |
@@ -126,7 +114,20 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path installer\app
       
-          Copy-Item -Recurse extracted\* installer\app  
+          Copy-Item -Recurse extracted\* installer\app
+
+      - name: Prepare app folder
+        run: |
+          New-Item -ItemType Directory -Force -Path installer\app\bin
+          New-Item -ItemType Directory -Force -Path installer\app\lib
+      
+          Copy-Item "$env:JAR_PATH" installer\app\lib\
+          Copy-Item installer\WebServer.bat installer\app\bin\    
+          
+      - name: Debug JAR
+        run: |
+          dir installer
+          dir installer\app\bin      
 
       - name: Debug JRE
         run: |
