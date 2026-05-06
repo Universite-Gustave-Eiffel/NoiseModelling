@@ -2,7 +2,7 @@ name: CI + Windows Installer
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix-automate-exe]
   pull_request:
   workflow_dispatch:
 
