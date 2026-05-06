@@ -11,17 +11,24 @@
  */
 package org.noise_planet.noisemodelling.scripts;
 
+import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.h2gis.utilities.JDBCUtilities;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.AssumptionLoggerExtension;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.runner.Main;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,15 +38,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MainTest {
     String dbName = UUID.randomUUID().toString().replace("-", "");
 
+    @BeforeAll
+    public static void init() {
+        PropertyConfigurator.configure(
+                Objects.requireNonNull(VersionUtils.class.getResource("log4j_tests.properties")));
+    }
+
     @Test
     public void testSetHeight(@TempDir File temp) throws Exception {
         String receiverPath = MainTest.class.getResource("receivers.shp").getPath();
-        Main.main("-w", temp.getAbsolutePath(),
+        Main.parseArgsAndRun("-w", temp.getAbsolutePath(),
                 "-d", dbName,
                 "-s", "src/main/groovy/org/noise_planet/noisemodelling/scripts/Import_and_Export/Import_File.groovy",
                 "--pathFile", receiverPath);
 
-        Main.main("-w", temp.getAbsolutePath(),
+        Main.parseArgsAndRun("-w", temp.getAbsolutePath(),
                 "-d", dbName,
                 "-s", "src/main/groovy/org/noise_planet/noisemodelling/scripts/Geometric_Tools/Set_Height.groovy",
                 "--tableName", "RECEIVERS", "--height" , "1.5");

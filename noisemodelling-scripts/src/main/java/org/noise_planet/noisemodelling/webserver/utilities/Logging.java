@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.webserver.utilities;
 
+import org.apache.log4j.Appender;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +32,7 @@ public class Logging {
     public static final Pattern LOG_PATTERN =
             Pattern.compile("^\\[(?<thread>.+?)\\]\\[(?<logger>[^\\]]+)\\]");
 
-    public static void configureFileLogger(String workingDirectory, String loggingFileName) {
+    public static Appender configureFileLogger(String workingDirectory, String loggingFileName) {
         try {
             // Create rolling file appender
             RollingFileAppender rollingAppender = createRollingFileAppender(workingDirectory, loggingFileName);
@@ -42,9 +43,11 @@ public class Logging {
             // Configure root logger
             org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
             rootLogger.addAppender(rollingAppender);
+            return rollingAppender;
         } catch (Exception e) {
             System.err.println("Failed to configure logger: " + e.getMessage());
         }
+        return null;
     }
 
     @NotNull

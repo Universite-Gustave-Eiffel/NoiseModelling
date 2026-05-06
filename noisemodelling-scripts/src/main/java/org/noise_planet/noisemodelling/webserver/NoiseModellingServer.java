@@ -20,6 +20,7 @@ import io.javalin.util.JavalinException;
 import io.javalin.util.JavalinLogger;
 import io.javalin.websocket.WsConfig;
 import org.apache.commons.cli.Option;
+import org.apache.log4j.Appender;
 import org.apache.log4j.PropertyConfigurator;
 import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
@@ -63,6 +64,7 @@ import java.util.concurrent.Future;
  */
 public class NoiseModellingServer {
     public static final String LOGGING_FILE_NAME = "webserver.log";
+    private static Appender fileLogger;
     protected final Logger logger = LoggerFactory.getLogger(NoiseModellingServer.class);
     protected Javalin app;
     protected Future<?> scriptWatch;
@@ -121,13 +123,17 @@ public class NoiseModellingServer {
                 System.exit(0);
             }
             // Initialize additional loggers
-            Logging.configureFileLogger(configuration.workingDirectory, LOGGING_FILE_NAME);
+            fileLogger = Logging.configureFileLogger(configuration.workingDirectory, LOGGING_FILE_NAME);
             // Create WebServer instance
             NoiseModellingServer noiseModellingServer = new NoiseModellingServer(configuration);
             noiseModellingServer.startServer(!configuration.skipOpenBrowser);
         } catch (Exception e) {
             Logger logger = LoggerFactory.getLogger("Main");
             logger.error("Can't start NoiseModelling", e);
+        } finally {
+            if(fileLogger != null) {
+                fileLogger.close();
+            }
         }
     }
 

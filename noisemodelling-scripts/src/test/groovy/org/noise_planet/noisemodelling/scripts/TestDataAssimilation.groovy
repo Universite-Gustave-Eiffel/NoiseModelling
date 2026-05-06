@@ -11,7 +11,8 @@
  */
 
 package org.noise_planet.noisemodelling.scripts
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.scripts.Data_Assimilation.*
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
@@ -25,23 +26,23 @@ class TestDataAssimilation extends JdbcTestCase {
     Logger logger = LoggerFactory.getLogger(TestDataAssimilation.class)
 
     @Test
-    void testSimulation() {
+    void testSimulation(@TempDir File tempDir) {
         logger.info('Start Test for Data Assimilation')
 
         // Path folder containing all the necessary data for this test
-        String workingFolder = TestDataAssimilation.class.getResource("dataAssimilation/").getPath()
+        File workingFolder = new File(TestDataAssimilation.class.getResource("dataAssimilation").toURI())
 
         new All_Possible_Configuration().exec(connection, [
                 "trafficValues"    : "0.01, 1.0, 2.0",
                 "temperatureValues": "10, 15, 20"
         ])
         new Export_Table().exec(connection, [
-                "exportPath":"./target/ALL_CONFIGURATIONS.csv", // receivers
+                "exportPath": new File(tempDir, "ALL_CONFIGURATIONS.csv").getAbsolutePath(), // receivers
                 "tableToExport":"ALL_CONFIGURATIONS"
         ])
 
         new Import_File().exec(connection,[
-                "pathFile" : workingFolder+"device_mapping_sf.geojson",
+                "pathFile" : new File(workingFolder, "device_mapping_sf.geojson").getAbsolutePath(),
                 "inputSRID" : 2056,
                 "tableName": "SENSORS_LOCATION"
 
@@ -51,11 +52,11 @@ class TestDataAssimilation extends JdbcTestCase {
                 "startDate"    : "2024-08-25 06:30:00",
                 "endDate"      : "2024-08-25 07:30:00",
                 "trainingRatio": 0.8,
-                "workingFolder": workingFolder,
+                "workingFolder": workingFolder.getAbsolutePath(),
                 "targetSRID"   : 2056
         ])
         new Import_OSM().exec(connection, [
-                "pathFile"      : workingFolder + "geneva.osm.pbf",
+                "pathFile"      : new File(workingFolder , "geneva.osm.pbf").getAbsolutePath(),
                 "targetSRID"    : 2056,
                 "ignoreGround"  : true,
                 "ignoreBuilding": false,
