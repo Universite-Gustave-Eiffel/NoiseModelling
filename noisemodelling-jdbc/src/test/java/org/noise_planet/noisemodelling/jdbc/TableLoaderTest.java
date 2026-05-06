@@ -24,6 +24,7 @@ import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
+import org.noise_planet.noisemodelling.jdbc.railway.RailwayPlatform;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
@@ -103,7 +104,6 @@ public class TableLoaderTest {
         }
         assertEquals(expectedNumberOfRows, numberOfRows);
     }
-//
 
     @Test
     public void testNoiseEmissionRailWaySingleGeom() throws SQLException, IOException {
@@ -127,7 +127,6 @@ public class TableLoaderTest {
         }
         assertEquals(expectedNumberOfRows, numberOfRows);
     }
-
 
     @Test
     public void testNoiseEmissionRailWaySingleGeomSingleTrain() throws SQLException, IOException {
@@ -334,7 +333,6 @@ public class TableLoaderTest {
 
     }
 
-
     @Test
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
@@ -401,7 +399,6 @@ public class TableLoaderTest {
 
     }
 
-
     @Test
     public void testReadFrequencies() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("lw_roads.shp").getFile());
@@ -448,8 +445,6 @@ public class TableLoaderTest {
 
         assertEquals(1000, (int) tableLoader.frequencyArray.get(0));
     }
-
-
 
     // Check regression of finding cell i,j that contains receivers
     @Test
@@ -501,6 +496,60 @@ public class TableLoaderTest {
             assertEquals(0.18, rs.getDouble("HRAIL"), 0.001,
                     "Default HRAIL should be 0.18 (h2 = rail above ballast)");
         }
+    }
+
+
+    /**
+     * Tests RailwayPlatform JSON loading, validates SNCF and SNCF_LGV platform properties,
+     * verifies getHRail() returns h2, checks multi-track calculation methods (getD2, getD3, getD4),
+     * and confirms DEFAULT_PLATFORM differs from SNCF.
+     */
+    @Test
+    public void Test_Railway_Platform() throws Exception {
+        // Load platforms from the default JSON file
+        Map<String, RailwayPlatform> platforms = RailwayPlatform.loadFromJSON(RailWayLWIterator.RAILWAY_PLATFORMS_JSON);
+
+        // Verify that loading succeeded
+        assertFalse(platforms.isEmpty(), "RailwayPlatforms.json file must contain platforms");
+
+        // Verify that SNCF and SNCF_LGV platforms exist
+        assertTrue(platforms.containsKey("SNCF"), "SNCF platform must be present");
+        assertTrue(platforms.containsKey("SNCF_LGV"), "SNCF_LGV platform must be present");                                                                                                                                     ▃
+
+        // Retrieve instances
+        RailwayPlatform sncfPlatform = platforms.get("SNCF");
+        RailwayPlatform sncfLgvPlatform = platforms.get("SNCF_LGV");
+        RailwayPlatform defaultPlatform = RailwayPlatform.DEFAULT_PLATFORM;
+
+        // Verify SNCF properties
+        assertNotNull(sncfPlatform, "SNCF must not be null");
+        assertEquals(1.0, sncfPlatform.d1, 0.001, "SNCF d1 incorrect");
+        assertEquals(3.0, sncfPlatform.d2_0, 0.001, "SNCF d2_0 incorrect");
+        assertEquals(4.0, sncfPlatform.d3_0, 0.001, "SNCF d3_0 incorrect");
+        assertEquals(8.0, sncfPlatform.d4_0, 0.001, "SNCF d4_0 incorrect");
+        assertEquals(0.0, sncfPlatform.g1, 0.001, "SNCF g1 incorrect");
+        assertEquals(1.0, sncfPlatform.g2, 0.001, "SNCF g2 incorrect");
+        assertEquals(0.0, sncfPlatform.g3, 0.001, "SNCF g3 incorrect");
+        assertEquals(0.0, sncfPlatform.h1, 0.001, "SNCF h1 incorrect");                                                                                                                                                         ▁
+        assertEquals(0.0, sncfPlatform.h2, 0.001, "SNCF h2 incorrect");
+        assertEquals(3.67, sncfPlatform.trackspacing, 0.001, "SNCF trackspacing incorrect");
+        // Verify SNCF_LGV properties (differs by trackspacing)
+        assertNotNull(sncfLgvPlatform, "SNCF_LGV must not be null");
+        assertEquals(4.5, sncfLgvPlatform.trackspacing, 0.001, "SNCF_LGV trackspacing must be 4.5");
+
+        // Verify that getHRail returns h2
+        assertEquals(sncfPlatform.h2, sncfPlatform.getHRail(), 0.001, "getHRail must return h2");
+
+        // Test calculation methods with multiple tracks
+        int nbTracks = 2;
+        double trackSpacing = 3.67;
+        assertEquals(3.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD2(nbTracks, trackSpacing), 0.001, "getD2 calculation incorrect");
+        assertEquals(4.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD3(nbTracks, trackSpacing), 0.001, "getD3 calculation incorrect");                                                                                    ▃
+        assertEquals(8.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD4(nbTracks, trackSpacing), 0.001, "getD4 calculation incorrect");
+
+        // Verify that DEFAULT_PLATFORM has different values
+        assertNotEquals(defaultPlatform.d1, sncfPlatform.d1, "DEFAULT_PLATFORM.d1 must differ from SNCF");
+        assertEquals(1.8, defaultPlatform.d1, 0.001, "DEFAULT_PLATFORM.d1 incorrect");
     }
 
     @Test

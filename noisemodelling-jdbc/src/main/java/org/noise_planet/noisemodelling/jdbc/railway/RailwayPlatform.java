@@ -55,7 +55,7 @@ public class RailwayPlatform {
     /** Height of the rail above the ballast - hRail (m) */
     public double h2 = 0.18;
 
-    /** trackspacing (m) */
+    /** trackSpacing spacing between tracks (m) */
     public double trackspacing = 3.67;
 
     /** Default platform with standard SNCF values */
