@@ -46,6 +46,7 @@ Section "NoiseModelling" SecMain
 
   SetOutPath "$INSTDIR"
   File "NoiseModelling.exe"
+  File "app.jar"
 
   SetOutPath "$INSTDIR\jre"
   File /r "jre\*.*"  
