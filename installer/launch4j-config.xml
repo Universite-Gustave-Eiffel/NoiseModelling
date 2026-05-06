@@ -3,7 +3,7 @@
 
     <dontWrapJar>true</dontWrapJar>
 
-    <cmdLine>app\bin\WebServer.bat</cmdLine>
+    <cmdLine>cmd /c app\bin\WebServer.bat</cmdLine>
 
     <outfile>NoiseModelling.exe</outfile>
 
