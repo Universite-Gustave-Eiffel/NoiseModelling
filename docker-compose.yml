@@ -1,0 +1,23 @@
+volumes:
+  noisemodelling-db:
+    driver: local
+
+services:
+    noisemodelling:
+      image: ghcr.io/universite-gustave-eiffel/noisemodelling:main
+      restart: unless-stopped
+      ports:
+        - "8000:8000"
+      environment:
+        PROXY_BASE_URL: "http://localhost:8000" # Replace with your domain name
+        JAVA_OPTS: "-Xmx2g" # Maximal memory usage
+        ROOT_URL: "" # You can host it on a subpath ex: /noisemodelling/ by default
+        DB_ENCRYPTION_SECRET: "changeme" # Main database encryption password to protect the totp tokens
+      volumes:
+        - noisemodelling-db:/srv/noisemodelling/workspace
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8000"]
+        interval: 15s
+        timeout: 5s
+        retries: 3
+        start_period: 10s

@@ -19,9 +19,9 @@ Requirements
 
 To play with this tutorial, you will need:
 
-* a working installation of NoiseModelling (NM) with at least version 5.0.1. If needed, get the last release on the official `GitHub repository`_,
-* the tutorial's datasets, stored in the folder ``.../NoiseModelling_5.0.1/data_dir/data/wpsdata/dataAssimilation/``,
-* the dedicated WPS ``.groovy`` scripts, stored in the folder ``.../NoiseModelling_5.0.1/data_dir/scripts/wps/DataAssimilation/``.
+* a working installation of NoiseModelling (NM) with at least version 5. If needed, get the last release on the official `GitHub repository`_,
+* the tutorial's datasets, stored in the folder ``.../NoiseModelling/resources/dataAssimilation/``,
+* the dedicated WPS ``.groovy`` scripts, stored in the folder ``.../NoiseModelling/scripts/DataAssimilation/``.
 
 .. _GitHub repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
@@ -84,7 +84,7 @@ To compute the data assimilation, you will have to execute several WPS ``.groovy
 
 
 * with the NoiseModelling's GUI (Graphic User Interface). In this case, the WPS blocks are listed in the ``Data_Assimilation`` tab *(see screenshot below)*,
-* in command line (see how to :doc:`Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_5.0.1/data_dir/scripts/wps/DataAssimilation/``,
+* in command line (see how to :doc:`Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
 * in a .groovy script, calling one or various WPS .groovy scripts.
 
 .. image:: ./images/Data_Assimilation/NM_GUI_wps_list.png
@@ -180,11 +180,11 @@ Step 2 : Import sensor positions
 
 Using the ``Import_File`` WPS script*, import the location of the sensors into the NoiseModelling's database from the .geojson file ``device_mapping_sf.geojson``. This file will be stored in a table called ``SENSORS_LOCATION``.
 
-\* in the ``data_dir/scripts/wps/Ìmport_and_Export/`` folder
+\* in the ``scripts/Ìmport_and_Export/`` folder
 
 🌍 Since we are in the Geneva area, we are using the ``CH1903+`` metric coordinate system (identified as `EPSG:2056`_).
 
-* ``pathFile`` : ``.../device_mapping_sf.geojson``
+* ``pathFile`` : ``./resources/dataAssimilation/device_mapping_sf.geojson``
 * ``inputSRID`` : ``2056``
 * ``tableName`` : ``SENSORS_LOCATION``
 
@@ -206,7 +206,7 @@ Result
 
 Once done, you have the table ``SENSORS_LOCATION``, presented below.
 
-.. csv-table:: 
+.. csv-table::
    :file: ./data/SENSORS_LOCATION.csv
    :widths: 80, 20
    :header-rows: 1
@@ -215,9 +215,9 @@ Once done, you have the table ``SENSORS_LOCATION``, presented below.
 Step 3 : Prepare sensor data
 ---------------------------------------
 
-Now we can extract and prepare the sensors, for a given period. To do so, we are using the ``Prepare_Sensors`` WPS .groovy script stored in the folder ``.../data_dir/scripts/wps/DataAssimilation/``. 
+Now we can extract and prepare the sensors, for a given period. To do so, we are using the ``Prepare_Sensors`` WPS .groovy script stored in the folder ``.../scripts/DataAssimilation/``.
 
-This script has the following parameters:  
+This script has the following parameters:
 
 * ``startDate`` : the start timestamp to extract the dataset (in format ``YYYY-MM-DD HH:MM:SS``)
 * ``endDate`` : the start timestamp to extract the dataset (in format ``YYYY-MM-DD HH:MM:SS``)
@@ -233,7 +233,7 @@ For this tutorial, you can fill with these informations:
 * ``startDate`` : ``2024-08-25 06:30:00``
 * ``endDate`` : ``2024-08-25 07:30:00``
 * ``trainingRatio`` : ``0.8``
-* ``workingFolder`` : ``.../data_dir/data/wpsdata/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling_5.0.0/NoiseModelling_5.0.0/data_dir/data/wpsdata/dataAssimilation/``)
+* ``workingFolder`` : ``./resources/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling/resources/dataAssimilation/``)
 * ``targetSRID`` : ``2056``
 
 If you are using the Groovy script
@@ -244,7 +244,7 @@ If you are using the Groovy script
                     "startDate":"2024-08-25 06:30:00",
                     "endDate": "2024-08-25 07:30:00",
                     "trainingRatio": 0.8,
-                    "workingFolder": ".../data_dir/data/wpsdata/dataAssimilation/",
+                    "workingFolder": "./resources/dataAssimilation/",
                     "targetSRID": 2056
     ])
 
@@ -272,7 +272,7 @@ Now, using the ``Ìmport_OSM`` block, you can import buildings and road network 
 Execution
 **********
 
-* Path of the OSM file (``pathFile``): ``.../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf``
+* Path of the OSM file (``pathFile``): ``./resources/dataAssimilation/geneva.osm.pbf``
 * Target projection identifier (``targetSRID``): ``2056``
 * Do not import Surface acoustic absorption (``ignoreGround``): ``true``
 * Remove tunnels from OSM data (``removeTunnels``): ``true``
@@ -284,7 +284,7 @@ If you are using the Groovy script
 .. code-block:: groovy
 
     new Import_OSM().exec(connection, [
-                    "pathFile"      : ".../data_dir/data/wpsdata/dataAssimilation/geneva.osm.pbf",
+                    "pathFile"      : "./resources/dataAssimilation/geneva.osm.pbf",
                     "targetSRID"    : 2056,
                     "ignoreGround"  : true,
                     "removeTunnels" : true
@@ -313,7 +313,7 @@ This step consists in generating all the traffic emissions by modifying traffic 
 
 To do so, users have first to execute the ``Data_Simulation`` WPS block, which has only one **optionnal** parameter :
 
-* ``noiseMapLimit`` : final number of maps to be generated (Integer). If a value is filled, a random selection is applied to keep the number of expected maps, based on the LHS (`Latin Hypercube Sampling`_) method. 
+* ``noiseMapLimit`` : final number of maps to be generated (%). If a value is filled, a random selection is applied to keep the percentage(%) of expected maps, based on the LHS (`Latin Hypercube Sampling`_) method.
 
 .. _Latin Hypercube Sampling: https://en.wikipedia.org/wiki/Latin_hypercube_sampling
 

@@ -96,8 +96,9 @@ public class IsoSurfaceJDBCTest {
     @Test
     public void testContouring3D() throws SQLException, IOException, LayerDelaunayError {
         // Will create elevation iso from DEM table
+        // Take the resource from the other project in the source tree (we are not dependent on it)
         GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
-                "wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/dem.geojson").toString());
+                "noisemodelling-scripts/src/test/resources/org/noise_planet/noisemodelling/scripts/dem.geojson").toString());
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
@@ -143,8 +144,9 @@ public class IsoSurfaceJDBCTest {
     @Test
     public void testContouring3DMerge() throws SQLException, IOException, LayerDelaunayError {
         // Will create elevation iso from DEM table
+        // Take the resource from the other project in the source tree (we are not dependent on it)
         GeoJsonRead.importTable(connection, Paths.get(Paths.get(System.getProperty("user.dir")).getParent().toString(),
-                "wps_scripts/src/test/resources/org/noise_planet/noisemodelling/wps/dem.geojson").toString());
+                "noisemodelling-scripts/src/test/resources/org/noise_planet/noisemodelling/scripts/dem.geojson").toString());
         LayerTinfour delaunayTool = new LayerTinfour();
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT the_geom FROM DEM")) {
@@ -217,8 +219,7 @@ public class IsoSurfaceJDBCTest {
             IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
-            delaunayReceiversMaker.setMaximumArea(800);
-            delaunayReceiversMaker.setVerbose(true);
+            delaunayReceiversMaker.setMaximumArea(0);
             delaunayReceiversMaker.setGridDim(1);
             delaunayReceiversMaker.run(connection, "RECEIVERS" , isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
@@ -231,7 +232,6 @@ public class IsoSurfaceJDBCTest {
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
             noiseMapByReceiverMaker.setGridDim(1);
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setMaximumError(3);
 
             noiseMapByReceiverMaker.run(connection, new RootProgressVisitor(1, true, 5));
 
@@ -249,6 +249,7 @@ public class IsoSurfaceJDBCTest {
             isoSurface.setPointTableField("LAEQ");
             isoSurface.setSmooth(false); // faster
             isoSurface.setMergeTriangles(false); // faster
+            isoSurface.setProgressVisitor(new RootProgressVisitor(1, true, 5));
             isoSurface.createTable(connection, "IDRECEIVER");
 
             List<String> columnNames = JDBCUtilities.getColumnNames(connection, isoSurface.getOutputTable());

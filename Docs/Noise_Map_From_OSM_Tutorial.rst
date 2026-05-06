@@ -1,7 +1,7 @@
 Noise Map from OSM - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we are going to produce a noise map, using `OpenStreetMap`_ (OSM) data. The exercice will be made through NoiseModelling with Graphic User Interface (GUI).
+In this tutorial, we are going to produce a noise map, using `OpenStreetMap`_ (OSM) data. The exercise will be made through NoiseModelling with Graphic User Interface (GUI).
 
 
 .. _OpenStreetMap : https://www.openstreetmap.org/
@@ -43,7 +43,7 @@ In the email you will receive from BBBike, use the link to download your data. Y
    To avoid potential upcoming errors rename the file ``planet_xx.xx,xx.xx.osm.pbf`` to something simpler (*e.g.* ``my_area.osm.pbf``).
 
 .. note::
-   Developped by `Wolfram Schneider`_, BBBike is a free of charge service (for non-professional purpose). If you like Wolfram's job and wants to help him support the server costs, you are invited to `donate`_.
+   Developed by `Wolfram Schneider`_, BBBike is a free of charge service (for non-professional purpose). If you like Wolfram's job and wants to help him support the server costs, you are invited to `donate`_.
 
 .. _Wolfram Schneider : https://wolfram.schneider.org/
 .. _donate : https://extract.bbbike.org/community.html#donate
@@ -54,8 +54,8 @@ Import to the database
 To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` WPS block (note that this block also allows to load ``.osm`` or ``.osm.gz`` files).
 
 #. ``Target projection identifier``: enter the corresponding SRID *(see note below)* (*e.g.* ``2154`` for french Lambert 93)
-#. ``Path of the OSM file``: enter the adress of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
-#. If needeed, check the 4 other optionnal options
+#. ``Path of the OSM file``: enter the address of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
+#. If needed, check the 4 other optional options
 #. When ready, click on the green ``Run Process`` button
 
 Once done, three tables must be created: ``BUILDINGS``, ``GROUND`` and ``ROADS``
@@ -97,13 +97,13 @@ Export tables into files
 
 * Export a table: It is also possible to export the tables via ``Export_Table`` WPS script, in Shapefile, CSV or GeoJSON format.
 
-* View the files: Then open these files into your preferred Geographic Information System (*e.g* `QGIS`_, `OrbisGIS`_, ...). You can then graphically visualize your geometries layer, but also the data contained in it. Take the time to familiarize yourself with your chosen GIS.
+* View the files: Then open these files into your preferred Geographic Information System (*e.g* `QGIS`_, `OpenJUMP`_, ...). You can then graphically visualize your geometries layer, but also the data contained in it. Take the time to familiarize yourself with your chosen GIS.
 
 * Add a background map: Most of the GIS allow you to add an `WMS`_ OSM `background map`_: (see an `example with QGIS`_)
 
 * Change colors: Most of the GIS allow you to change layer colors (*e.g.* ``GROUND`` layer in green, ``BUILDINGS`` in gray, ``ROADS`` in red).
 
-.. _OrbisGIS: http://orbisgis.org/
+.. _OpenJUMP: https://github.com/openjump-gis/openjump
 .. _QGIS: http://qgis.org/
 .. _WMS : https://www.ogc.org/standards/wms
 .. _background map : https://wiki.openstreetmap.org/wiki/Tile_servers
@@ -115,7 +115,7 @@ Step 3: Generate a Receiver table
 
 The locations of noise level evaluation points needs to be defined.
 
-Use ``Delaunay_Grid`` with the previously generated BUILDINGS table as the buildings table and ROADS as *Sources table name*.
+Use ``Delaunay_Grid`` with the previously generated ``BUILDINGS`` table as the buildings table and ``ROADS`` as *Sources table name*.
 Other parameters are optional.
 
 Don't forget to view your resulting layer in ``WPSBuilder`` or in your GIS to check that it meets your expectations.
@@ -134,7 +134,7 @@ Don't forget to view your resulting layers *(see Step 2)* to check that it meets
 Step 5: Source to Receiver Propagation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``Noise_level_from_source`` block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (created table ``LW_ROADS``) propagated to the receivers according to the CNOSSOS-EU. propagation laws.
+The ``Noise_level_from_source`` block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (use the created table ``LW_ROADS`` as *Source geometry table name*) propagated to the receivers according to the CNOSSOS-EU. propagation laws.
 
 
 Step 6: Create Isosurfaces map

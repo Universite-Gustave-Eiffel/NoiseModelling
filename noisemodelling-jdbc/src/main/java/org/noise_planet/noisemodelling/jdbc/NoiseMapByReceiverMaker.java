@@ -157,6 +157,13 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     }
 
     /**
+     * @return Factory to create an output data handler for each cell the default is {@link DefaultCutPlaneProcessing}
+     */
+    public IComputeRaysOutFactory getComputeRaysOutFactory() {
+        return computeRaysOutFactory;
+    }
+
+    /**
      * Do not call this method after {@link #initialize(Connection)} has been called
      * @param tableLoader Object that generate scene for each sub-cell using database data
      */
@@ -345,6 +352,10 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                 // Run ray propagation
                 try {
                     evaluateCell(connection, cellIndex, progressVisitor, receivers);
+                    if(progressLogger.isCanceled()) {
+                        // Computation has been canceled, exit the loop
+                        break;
+                    }
                 } catch (IOException ex) {
                     throw new SQLException(ex);
                 }

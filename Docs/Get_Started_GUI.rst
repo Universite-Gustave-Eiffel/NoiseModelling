@@ -20,39 +20,29 @@ Download the latest release of NoiseModelling on `Github`_.
 .. note::
     Starting from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
 
-.. _Github : https://github.com/Ifsttar/NoiseModelling/releases
+.. _Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
 
 
 Step 2: Start NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As described on the page ":doc:`Architecture`", NoiseModelling can be used through a Graphical User Interface (GUI), thanks to the GeoServer and WPS Builder components.
+As described on the page ":doc:`Architecture`", NoiseModelling can be used through a Graphical User Interface (GUI) in a web browser.
 
 In this tutorial, we will use the default, already configured H2GIS database.
 
-These tools (GeoServer, WPS Builder and H2GIS) are already included in the archive, so you don't have to install them separately.
+These tools (WPS Builder and H2GIS) are already included in the archive, so you don't have to install them separately.
 
 To launch NoiseModelling with the GUI, start it from a command prompt (terminal). This will start a local server on your computer, which provides the GUI as a web application.
 
 Please execute:
 
-* Windows: ``NoiseModelling.exe`` or ``NoiseModelling_xxx\bin\startup_windows.bat``
-* Linux or Mac: ``NoiseModelling_xxx/bin/startup_linux_mac.sh`` *(make sure the file is allowed to be executed before running it)*
-
-and wait until ``INFO:oejs.Server:main:Started`` appears in your command prompt.
-
-
-.. warning::
-    Depending on your computer configuration, starting NoiseModelling can take some time.
-
-NoiseModelling with GUI is now started.
+* Windows: ``NoiseModelling.exe`` or ``NoiseModelling_xxx\start_windows.bat``
+* Linux or Mac: ``NoiseModelling_xxx/start_linux_macos.sh`` *(make sure the file is allowed to be executed before running it)*
 
 .. tip::
     NoiseModelling will stay open as long as the command window is open. If you close it, NoiseModelling will automatically stop and the GUI will no longer be available.
 
-
-.. _GeoServer : http://geoserver.org/
 .. _H2GIS : http://www.h2gis.org/
 
 Step 3: Open NoiseModelling GUI
@@ -60,14 +50,19 @@ Step 3: Open NoiseModelling GUI
 
 The NoiseModelling GUI is built using the :doc:`WPS_Builder` component and runs as a web application provided by the local server started in Step 2.
 
-To open it, go to http://localhost:9580 using your preferred web browser.
+By running NoiseModelling your default web browser should have been opened to the http://localhost:8000 address. If not please go to this URL, if something went wrong you should have more information on your terminal.
+
+.. figure:: images/tutorial/Tutorial1_nm_landing.png
+    :align: center
+    :width: 80%
+
+    Noise Modelling GUI landing page
+
+Click ``builder`` to open the builder.
 
 .. figure:: images/tutorial/Tutorial1_nm_open.png
     :align: center
     :width: 80%
-
-.. warning::
-    In older versions of NoiseModelling, the URL was: http://localhost:8080/geoserver/web/
 
 You are now ready to discover the power of NoiseModelling!
 
@@ -80,12 +75,12 @@ In this tutorial, we have 5 layers, zoomed in on the city center of `Lorient`_ (
 
 .. _Lorient : https://www.openstreetmap.org/relation/30305
 
-In the ``noisemodelling/data_dir/data/wpsdata/`` folder, you will find the 5 files (4 shapefiles and 1 GeoJSON) corresponding to these layers.
+In the ``resources/`` sub-folder of the NoiseModelling installation, you will find all the data that will be used in the tutorials.
 
-You can import these layers into your database using the ``Import File`` or ``Import Folder`` blocks.
+You will import these layers into your database using the ``Import File`` blocks.
 
 - Drag the ``Import File`` block into the Builder window
-- Select the ``Path of the input File`` box and enter ``data_dir/data/wpsdata/buildings.shp`` in the ``PathFile`` field *(on the right-side column)*
+- Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``pathFile`` field *(on the right-side column)*
 - Then click on ``Run Process`` after selecting one of the input/output boxes of your process
 
 .. figure:: images/tutorial/Tutorial1_Image1bis.gif
@@ -93,12 +88,12 @@ You can import these layers into your database using the ``Import File`` or ``Im
 
 Repeat this operation for the 4 other files:
 
-- ``data_dir/data/wpsdata/ground_type.shp``
-- ``data_dir/data/wpsdata/receivers.shp``
-- ``data_dir/data/wpsdata/ROADS2.shp``
-- ``data_dir/data/wpsdata/dem.geojson``
+- ``resources/ground_type.shp``
+- ``resources/receivers.shp``
+- ``resources/ROADS2.shp``
+- ``resources/dem.geojson``
 
-Files are uploaded to the database when the Console window displays ``The table x has been uploaded to database``.
+Files are uploaded to the database when the Console window displays the name of the layer.
 
 
 .. note::
@@ -110,7 +105,7 @@ Files are uploaded to the database when the Console window displays ``The table 
     - Blocks get a solid border when they are ready to run
     - Read the :doc:`WPS_Builder` page for more information
 
-Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" part). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
+Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" section). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
 
 .. figure:: images/tutorial/Tutorial1_display_db.png
     :align: center
@@ -125,11 +120,11 @@ To run the calculation, drag the ``Noise_level_from_traffic`` block into the WPS
 Then, select the orange blocks and enter the name of the corresponding table in your database:
 
 - Building table name: ``BUILDINGS``
-- Sources table name: ``ROADS2`` This table contains the road geometries with traffic data for day, evening and night
+- Roads table name: ``ROADS2`` This table contains the road geometries with traffic data for day, evening and night
 - Receivers table name: ``RECEIVERS`` Locations where noise levels are evaluated
 - DEM table name: ``DEM`` Digital elevation model
 - Ground absorption table: ``GROUND_TYPE`` Nature of the ground
-- Diffraction on horizontal edges: check it (sound propagation goes over buildings)
+- Diffraction on horizontal edges: ``☑`` check it (sound propagation goes over buildings)
 - Maximum source-receiver distance: set ``2000`` meters (do not look for sound sources further than 2 km)
 - Order of reflection: set ``0`` to disable it (faster but less accurate)
 

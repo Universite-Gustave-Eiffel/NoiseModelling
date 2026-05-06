@@ -45,10 +45,6 @@ public class NoiseMapDatabaseParameters {
 
     public enum ExportRaysMethods {TO_RAYS_TABLE, NONE}
     public ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
-    /** Cnossos revisions have multiple coefficients for road emission formulae
-     * this parameter will be removed when the final version of Cnossos will be published
-     */
-    public int coefficientVersion = 2;
 
     // Output config
 
@@ -142,22 +138,6 @@ public class NoiseMapDatabaseParameters {
      */
     public void setExportAttenuationMatrix(boolean exportAttenuationMatrix) {
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-    }
-
-    /**
-     * @param coefficientVersion Cnossos revisions have multiple coefficients for road emission formulae this parameter
-     *                          will be removed when the final version of Cnossos will be published
-     */
-    public void setCoefficientVersion(int coefficientVersion) {
-        this.coefficientVersion = coefficientVersion;
-    }
-
-    /**
-     * @return Cnossos revisions have multiple coefficients for road emission formulae
-     * this parameter will be removed when the final version of Cnossos will be published
-     */
-    public int getCoefficientVersion() {
-        return coefficientVersion;
     }
 
     /**

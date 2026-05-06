@@ -1,0 +1,26 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('Login page')}">
+<body>
+<div class="header"><h1>User authentification</h1>
+    <div class="l-box" id="message_div" th:if="${not #lists.isEmpty(messages)}">
+        <aside th:each="message : ${messages}"><p th:text="${message}"></p></aside>
+    </div>
+    <form class="pure-form pure-form-aligned" th:action="@{|/do_login|}" method="POST">
+        <fieldset>
+            <legend>Open your one-time password manager and fill the generated code (ex: KeePassXC, FreeOTP)</legend>
+            <div class="pure-control-group"><label for="EMAIL">E-mail</label>
+                <input type="email" placeholder="user@domain.com" id="EMAIL" name="EMAIL"/>
+            </div>
+            <div class="pure-control-group"><label for="TOTP_CODE">Verification code</label>
+                <input type="number" placeholder="123456" id="TOTP_CODE" name="TOTP_CODE"/>
+            </div>
+            <button id="addButton" type="submit" class="pure-button pure-button-primary">Login
+            </button>
+            <p class="gdpr-text">By logging in, you consent to our use of a cookie to track your session as per the General Data Protection Regulation (GDPR).</p>
+        </fieldset>
+    </form>
+</div>
+</body>
+</html>
