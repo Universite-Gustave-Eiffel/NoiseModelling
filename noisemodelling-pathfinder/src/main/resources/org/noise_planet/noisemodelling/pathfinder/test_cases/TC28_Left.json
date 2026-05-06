@@ -1,0 +1,131 @@
+{
+  "cutPoints" : [ {
+    "type" : "Source",
+    "coordinate" : {
+      "x" : 0.0,
+      "y" : 50.0,
+      "z" : 4.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "sourcePk" : -1,
+    "li" : 1.0,
+    "orientation" : {
+      "yaw" : 0.0,
+      "pitch" : 0.0,
+      "roll" : 0.0
+    }
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 163.9878343051629,
+      "y" : 88.00877472900609,
+      "z" : 3.503576240274473
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 250.0,
+      "y" : 105.77403802834974,
+      "z" : 14.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 250.0,
+        "y" : 70.0,
+        "z" : 14.0
+      },
+      "p1" : {
+        "x" : 250.0,
+        "y" : 180.0,
+        "z" : 14.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_ENTER"
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 270.0,
+      "y" : 109.90491024993129,
+      "z" : 14.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 270.0,
+        "y" : 180.0,
+        "z" : 14.0
+      },
+      "p1" : {
+        "x" : 270.0,
+        "y" : 70.0,
+        "z" : 14.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_EXIT"
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 347.9966030659161,
+      "y" : 126.01461029906707,
+      "z" : 2.947239899508617
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 435.98849781235185,
+      "y" : 136.0096280672675,
+      "z" : 2.682426994865687
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 516.009612630621,
+      "y" : 143.01151509151265,
+      "z" : 2.4419146482238476
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 978.9916414594315,
+      "y" : 121.01245531210233,
+      "z" : 1.0597238975809367
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 993.0124553121024,
+      "y" : 118.0083585405684,
+      "z" : 1.0182158406809045
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "Receiver",
+    "coordinate" : {
+      "x" : 1000.0,
+      "y" : 100.0,
+      "z" : 1.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "receiverPk" : 0
+  } ],
+  "curvedPath" : false,
+  "profileType" : "LEFT"
+}

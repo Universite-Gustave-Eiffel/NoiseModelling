@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head th:replace="~{header :: customHead('Generate debug report')}">
+</head>
+<body>
+<div id="layout">
+    <div th:replace="menu :: menu"></div>
+    <div id="main" class="content">
+        <div class="header"><h1>Generate debug report</h1>
+            <div class="l-box" id="message_div" th:if="${not #strings.isEmpty(message)}">
+                <aside><p th:utext="${message}"></p></aside>
+            </div>
+            <form class="pure-form pure-form-aligned" id="createreportform" action="/manage/do_generate_report" method="POST">
+                <fieldset>
+                    <legend>Create a propagation report for a specific location</legend>
+                    <div class="pure-control-group"><label for="NOISEMODELLING_DATABASE">Code Department</label>
+                        <select name="NOISEMODELLING_DATABASE" id="NOISEMODELLING_DATABASE">
+                            <option th:each="database : ${databases}" th:value="${database}" th:text="${database}"></option>
+                        </select>
+                    </div>
+                    <div class="pure-control-group"><label for="LATITUDE">Latitude of evaluation point</label>
+                        <input type="text" placeholder="47.43807221" id="LATITUDE" name="LATITUDE" value=""/>
+                    </div>
+                    <div class="pure-control-group"><label for="LONGITUDE">Longitude of evaluation point</label>
+                        <input type="text" placeholder="1.02078192" id="LONGITUDE" name="LONGITUDE" value=""/>
+                    </div>
+                    <div class="pure-control-group"><label for="HEIGHT">Height of evaluation point (m from ground)</label>
+                        <input type="text" placeholder="4" id="HEIGHT" name="HEIGHT" value="4"/>
+                    </div>
+                    <div class="pure-control-group"><label for="UUEID">UUEID (empty for no filtering)</label>
+                        <input type="text" placeholder="" id="UUEID" name="UUEID" value=""/>
+                    </div>
+                    <div class="pure-control-group">
+                        <label for="ROAD">Road</label><input type="radio" id="ROAD" name="SOURCE_TYPE" value="ROAD" checked="checked"/>
+                        <label for="TRAIN">Train</label><input type="radio" id="TRAIN" name="SOURCE_TYPE" value="TRAIN"/>
+                    </div>
+                    <div class="pure-control-group"><label for="MAX_RAYS">Maximum number of rays</label>
+                        <input type="number" min="1" max="100" placeholder="10" id="MAX_RAYS" name="MAX_RAYS" value="10"/>
+                    </div>
+                    <div class="pure-controls">
+                        <button id="addButton" type="submit" class="pure-button pure-button-primary">Add
+                        </button>
+                    </div>
+                    <fieldset></fieldset>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

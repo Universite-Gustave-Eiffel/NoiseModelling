@@ -1,0 +1,26 @@
+[main][com.zaxxer.hikari.HikariDataSource] INFO  2026-02-24 12:06:02 - HikariPool-1 - Starting...
+[main][com.zaxxer.hikari.pool.HikariPool] INFO  2026-02-24 12:06:02 - HikariPool-1 - Added connection conn1: url=jdbc:h2:file:/Users/user/github/plamade/noisemodelling-webserver/target/server user=SA
+[main][com.zaxxer.hikari.HikariDataSource] INFO  2026-02-24 12:06:02 - HikariPool-1 - Start completed.
+[main][org.noise_planet.noisemodelling.webserver.database.DatabaseManagement] WARN  2026-02-24 12:06:02 - The Administrator account has not been registered yet, please use this url to create the account (or run with -u option):
+ http://localhost:8000/nmnoisemodelling/register/_TmX8hNBgkxejZ_nAeiRQfk7s9bA2aONbjBAUhBAXMQ
+[main][org.noise_planet.noisemodelling.webserver.script.WpsScriptWrapper] INFO  2026-02-24 12:06:02 - Scanning scripts in directory: /Users/user/github/plamade/scripts
+[main][org.noise_planet.noisemodelling.webserver.script.WpsScriptWrapper] WARN  2026-02-24 12:06:02 - Directory does not exist scripts, will try to use ClassLoader resources package instead..
+[main][org.noise_planet.noisemodelling.webserver.script.WpsScriptWrapper] INFO  2026-02-24 12:06:02 - Found 43 scripts in directory/package: scripts
+[main][org.eclipse.jetty.server.Server] INFO  2026-02-24 12:06:05 - jetty-11.0.25; built: 2025-03-13T00:15:57.301Z; git: a2e9fae3ad8320f2a713d4fa29bba356a99d1295; jvm 11.0.29+7-LTS
+[main][org.eclipse.jetty.server.session.DefaultSessionIdManager] INFO  2026-02-24 12:06:05 - Session workerName=node0
+[main][org.eclipse.jetty.server.handler.ContextHandler] INFO  2026-02-24 12:06:05 - Started o.e.j.s.ServletContextHandler@29db9746{/nmnoisemodelling,null,AVAILABLE}
+[main][org.eclipse.jetty.server.AbstractConnector] INFO  2026-02-24 12:06:05 - Started ServerConnector@40a0364a{HTTP/1.1, (http/1.1)}{0.0.0.0:8000}
+[main][org.eclipse.jetty.server.Server] INFO  2026-02-24 12:06:05 - Started Server@5973d3ec{STARTING}[11.0.25,sto=0] @4506ms
+[main][io.javalin.Javalin] INFO  2026-02-24 12:06:06 - Static file handler added: StaticFileConfig(hostedPath=/builder, directory=org/noise_planet/noisemodelling/webserver/static/wpsbuilder/, location=CLASSPATH, precompress=false, aliasCheck=null, headers={Cache-Control=max-age=0}, mimeTypes={}, roles=[ANYONE]). File system location: 'file:///Users/user/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/wpsbuilder/'
+[main][io.javalin.Javalin] INFO  2026-02-24 12:06:06 - Static file handler added: StaticFileConfig(hostedPath=/, directory=org/noise_planet/noisemodelling/webserver/static/root/, location=CLASSPATH, precompress=false, aliasCheck=null, headers={Cache-Control=max-age=0}, mimeTypes={}, roles=[ANYONE]). File system location: 'file:///Users/user/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/root/'
+[JettyServerThreadPool-41][com.zaxxer.hikari.HikariDataSource] INFO  2026-02-24 12:06:11 - HikariPool-2 - Starting...
+[JettyServerThreadPool-41][com.zaxxer.hikari.pool.HikariPool] INFO  2026-02-24 12:06:11 - HikariPool-2 - Added connection conn3: url=jdbc:h2:file:/Users/user/github/plamade/noisemodelling-webserver/target/user_001 user=SA
+[JettyServerThreadPool-41][com.zaxxer.hikari.HikariDataSource] INFO  2026-02-24 12:06:11 - HikariPool-2 - Start completed.
+[JOB_16][org.apache.sshd.common.io.DefaultIoServiceFactoryFactory] INFO  2026-02-24 12:06:11 - No detected/configured IoServiceFactoryFactory; using Nio2ServiceFactoryFactory
+[JOB_16][org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver] INFO  2026-02-24 12:06:11 - resolveEffectiveResolver(testuser@localhost:2222) loaded 4 entries from /Users/user/.ssh/config
+[sshd-SshClient[1e3d79ba]-nio2-thread-4][JOB_16] WARN  2026-02-24 12:06:11 - No server key configured. Trusting the server automatically (not recommended for production).
+[sshd-SshClient[1e3d79ba]-nio2-thread-4][org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication] INFO  2026-02-24 12:06:11 - Server announced support for publickey-hostbound@openssh.com version 0
+[JOB_16][JOB_16] INFO  2026-02-24 12:06:11 - Successfully connected to the server localhost
+[sshd-SshClient[1e3d79ba]-nio2-thread-1][JOB_16] ERROR 2026-02-24 12:06:11 - bash: line 1: java: command not found
+[JOB_16][JOB_16] ERROR 2026-02-24 12:06:11 - Command java -v
+ exit-status: 127

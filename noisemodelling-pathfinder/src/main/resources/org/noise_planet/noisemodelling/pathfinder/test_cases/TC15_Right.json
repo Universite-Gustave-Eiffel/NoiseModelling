@@ -1,0 +1,113 @@
+{
+  "cutPoints" : [ {
+    "type" : "Source",
+    "coordinate" : {
+      "x" : 50.0,
+      "y" : 10.0,
+      "z" : 1.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "sourcePk" : -1,
+    "li" : 1.0,
+    "orientation" : {
+      "yaw" : 0.0,
+      "pitch" : 0.0,
+      "roll" : 0.0
+    }
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 54.9893933982822,
+      "y" : 4.989393398282202,
+      "z" : 1.3555115040087453
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 65.0106066017178,
+      "y" : 4.989393398282202,
+      "z" : 2.1492709656670104
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 87.30436578489108,
+      "y" : 6.585649392964587,
+      "z" : 3.927756889044556
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 92.81851301610914,
+      "y" : 10.240289036493747,
+      "z" : 10.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 88.86,
+        "y" : 2.9,
+        "z" : 10.0
+      },
+      "p1" : {
+        "x" : 94.9,
+        "y" : 14.1,
+        "z" : 10.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_ENTER"
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 96.9374845595576,
+      "y" : 12.970240933322229,
+      "z" : 10.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 94.9,
+        "y" : 14.1,
+        "z" : 10.0
+      },
+      "p1" : {
+        "x" : 98.02,
+        "y" : 12.37,
+        "z" : 10.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_EXIT"
+  }, {
+    "type" : "GroundEffect",
+    "coordinate" : {
+      "x" : 100.0,
+      "y" : 15.0,
+      "z" : 0.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.0
+  }, {
+    "type" : "Receiver",
+    "coordinate" : {
+      "x" : 100.0,
+      "y" : 15.0,
+      "z" : 5.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.0,
+    "receiverPk" : 0
+  } ],
+  "curvedPath" : false,
+  "profileType" : "RIGHT"
+}

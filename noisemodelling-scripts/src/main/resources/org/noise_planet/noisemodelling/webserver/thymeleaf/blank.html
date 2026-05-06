@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width"/>
+        <meta http-equiv="refresh"  th:if="${redirectUrl}" th:content="@{|3;url=${redirectUrl}|}"/>
+        <title data-react-helmet="true">Plamade computation platform</title>
+        <link rel="shortcut icon" th:href="@{|/favicon.ico|}" type="image/png"/>
+        <link rel="stylesheet" th:href="@{|/css/pure-min.css|}"/>
+        <link rel="stylesheet" th:href="@{|/css/pure-custom.css|}"/>
+        <link rel="stylesheet" th:href="@{|/css/app.css|}"/>
+    </head>
+    <body>
+        <div class="header"><h1>Notification</h1>
+            <div class="l-box" id="message_div" th:if="${not #strings.isEmpty(message)}">
+                <aside><div th:remove="tag" th:utext="${message}"></aside>
+            </div>
+        </div>
+    </body>
+</html>

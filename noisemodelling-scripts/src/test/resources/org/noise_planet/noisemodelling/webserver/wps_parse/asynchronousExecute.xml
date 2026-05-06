@@ -1,0 +1,11 @@
+<p0:Execute xmlns:p0="http://www.opengis.net/wps/1.0.0" service="WPS" version="1.0.0">
+    <p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">ut:LongRunningProcess</p1:Identifier>
+    <p0:DataInputs>
+        <p0:Input>
+            <p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">waitTime</p1:Identifier>
+            <p0:Data>
+                <p0:LiteralData>10</p0:LiteralData>
+            </p0:Data>
+        </p0:Input>
+    </p0:DataInputs>
+</p0:Execute>

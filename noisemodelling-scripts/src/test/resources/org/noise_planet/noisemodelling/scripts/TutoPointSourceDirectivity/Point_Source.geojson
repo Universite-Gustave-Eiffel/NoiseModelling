@@ -1,0 +1,8 @@
+{
+  "type": "FeatureCollection",
+  "name": "Point_Source",
+  "crs": {"type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
+  "features": [{"type": "Feature", "properties": { "PK": 1, "LWD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 },
+    "geometry": {"type": "Point", "coordinates": [223771.0727, 6757583.2983, 0.0]}
+  }]
+}

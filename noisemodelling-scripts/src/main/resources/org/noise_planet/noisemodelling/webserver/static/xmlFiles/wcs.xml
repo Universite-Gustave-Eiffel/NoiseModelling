@@ -1,0 +1,83 @@
+<wcs:Capabilities xmlns:wcs="http://www.opengis.net/wcs/1.1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ogc="http://www.opengis.net/ogc" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.1.1" xsi:schemaLocation="http://www.opengis.net/wcs/1.1.1 http://localhost:9580/geoserver/schemas/wcs/1.1.1/wcsGetCapabilities.xsd" updateSequence="257">
+    <ows:ServiceIdentification>
+        <ows:Title>Web Coverage Service</ows:Title>
+        <ows:Abstract>This server implements the WCS specification 1.0 and 1.1.1, it's reference implementation of WCS 1.1.1. All layers published by this service are available on WMS also. </ows:Abstract>
+        <ows:Keywords>
+            <ows:Keyword>WCS</ows:Keyword>
+            <ows:Keyword>WMS</ows:Keyword>
+            <ows:Keyword>GEOSERVER</ows:Keyword>
+        </ows:Keywords>
+        <ows:ServiceType>WCS</ows:ServiceType>
+        <ows:ServiceTypeVersion>1.1.0</ows:ServiceTypeVersion>
+        <ows:ServiceTypeVersion>1.1.1</ows:ServiceTypeVersion>
+        <ows:Fees>NONE</ows:Fees>
+        <ows:AccessConstraints>NONE</ows:AccessConstraints>
+    </ows:ServiceIdentification>
+    <ows:ServiceProvider>
+        <ows:ProviderName>The Ancient Geographers</ows:ProviderName>
+        <ows:ProviderSite xlink:href="http://geoserver.org"/>
+        <ows:ServiceContact>
+            <ows:IndividualName>Claudius Ptolomaeus</ows:IndividualName>
+            <ows:PositionName>Chief Geographer</ows:PositionName>
+            <ows:ContactInfo>
+                <ows:Phone/>
+                <ows:Address>
+                    <ows:City>Alexandria</ows:City>
+                    <ows:Country>Egypt</ows:Country>
+                    <ows:ElectronicMailAddress>claudius.ptolomaeus@gmail.com</ows:ElectronicMailAddress>
+                </ows:Address>
+                <ows:OnlineResource xlink:href="http://geoserver.org"/>
+            </ows:ContactInfo>
+        </ows:ServiceContact>
+    </ows:ServiceProvider>
+    <ows:OperationsMetadata>
+        <ows:Operation name="GetCapabilities">
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Get xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Post xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+        </ows:Operation>
+        <ows:Operation name="DescribeCoverage">
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Get xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Post xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+        </ows:Operation>
+        <ows:Operation name="GetCoverage">
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Get xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Post xlink:href="http://localhost:9580/geoserver/wcs?"/>
+                </ows:HTTP>
+            </ows:DCP>
+            <ows:Parameter name="store">
+                <ows:AllowedValues>
+                    <ows:Value>True</ows:Value>
+                    <ows:Value>False</ows:Value>
+                </ows:AllowedValues>
+            </ows:Parameter>
+        </ows:Operation>
+        <ows:Constraint name="PostEncoding">
+            <ows:AllowedValues>
+                <ows:Value>XML</ows:Value>
+            </ows:AllowedValues>
+        </ows:Constraint>
+    </ows:OperationsMetadata>
+    <wcs:Contents/>
+</wcs:Capabilities>

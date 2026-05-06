@@ -1,0 +1,122 @@
+{
+  "cutPoints" : [ {
+    "type" : "Source",
+    "coordinate" : {
+      "x" : 10.0,
+      "y" : 10.0,
+      "z" : 1.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.9,
+    "sourcePk" : -1,
+    "li" : 1.0,
+    "orientation" : {
+      "yaw" : 0.0,
+      "pitch" : 0.0,
+      "roll" : 0.0
+    }
+  }, {
+    "type" : "GroundEffect",
+    "coordinate" : {
+      "x" : 50.0,
+      "y" : 16.063775909003617,
+      "z" : 0.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 102.35169775461208,
+      "y" : 24.0,
+      "z" : 12.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 118.0,
+        "y" : 24.0,
+        "z" : 12.0
+      },
+      "p1" : {
+        "x" : 100.0,
+        "y" : 24.0,
+        "z" : 12.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_ENTER"
+  }, {
+    "type" : "Wall",
+    "coordinate" : {
+      "x" : 118.0,
+      "y" : 26.372194954309762,
+      "z" : 12.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5,
+    "wall" : {
+      "p0" : {
+        "x" : 118.0,
+        "y" : 30.0,
+        "z" : 12.0
+      },
+      "p1" : {
+        "x" : 118.0,
+        "y" : 24.0,
+        "z" : 12.0
+      }
+    },
+    "wallAlpha" : [ 0.004918209037966988, 0.008088162780793065, 0.013267721240171722, 0.02168493917994337, 0.03525564533465828, 0.056883929412881944, 0.09077715686040604, 0.14258583864393162 ],
+    "intersectionType" : "BUILDING_EXIT"
+  }, {
+    "type" : "Topography",
+    "coordinate" : {
+      "x" : 120.0,
+      "y" : 26.67538374975994,
+      "z" : 0.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.5
+  }, {
+    "type" : "GroundEffect",
+    "coordinate" : {
+      "x" : 150.0,
+      "y" : 31.223215681512652,
+      "z" : 4.615384615384616
+    },
+    "zGround" : 4.615384615384616,
+    "groundCoefficient" : 0.2
+  }, {
+    "type" : "VEdgeDiffraction",
+    "coordinate" : {
+      "x" : 174.99054111062358,
+      "y" : 35.01164171000175,
+      "z" : 12.343278448981938
+    },
+    "zGround" : 8.460083247788244,
+    "groundCoefficient" : 0.2
+  }, {
+    "type" : "Topography",
+    "coordinate" : {
+      "x" : 185.0,
+      "y" : 33.005847746748294,
+      "z" : 10.0
+    },
+    "zGround" : 10.0,
+    "groundCoefficient" : 0.2
+  }, {
+    "type" : "Receiver",
+    "coordinate" : {
+      "x" : 200.0,
+      "y" : 30.0,
+      "z" : 14.0
+    },
+    "zGround" : 10.0,
+    "groundCoefficient" : 0.2,
+    "receiverPk" : 0
+  } ],
+  "curvedPath" : true,
+  "profileType" : "LEFT"
+}
