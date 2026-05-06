@@ -1,24 +1,18 @@
 <launch4jConfig>
-    <dontWrapJar>false</dontWrapJar>
     <headerType>gui</headerType>
 
+    <dontWrapJar>true</dontWrapJar>
 
-
-    <jar>app.jar</jar>
+    <cmdLine>app/bin/WebServer.bat</cmdLine>
 
     <outfile>NoiseModelling.exe</outfile>
-
-    <classPath>
-        <mainClass>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</mainClass>
-    </classPath>
     
 
     <jre>
         <path>jre</path>
         <minVersion>11</minVersion>
-        <bundledJre64Bit>true</bundledJre64Bit>
-        <bundledJreAsFallback>false</bundledJreAsFallback>
     </jre>
+
     <versionInfo>
         <fileVersion>APP_VERSION_PLACEHOLDER</fileVersion>
         <productVersion>APP_VERSION_PLACEHOLDER</productVersion>
