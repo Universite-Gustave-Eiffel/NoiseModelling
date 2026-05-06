@@ -9,7 +9,8 @@
     "g2": 1,
     "g3": 1,
     "h1": 0.5,
-    "h2": 0.18
+    "h2": 0.18,
+    "trackspacing" : 3.67
   },
   "testPlatform": {
     "Description": "Test platform",
@@ -21,7 +22,8 @@
     "g2": 1,
     "g3": 0,
     "h1": 0.0,
-    "h2": 0.0
+    "h2": 0.0,
+    "trackspacing" : 3.67
   },
   "SNCF": {
     "Description": "SNCF",
@@ -34,7 +36,7 @@
     "g3": 0,
     "h1": 0.0,
     "h2": 0.0,
-    trackspacing : 3.67
+    "trackspacing" : 3.67
 
   },
   "SNCF_LGV": {
@@ -48,7 +50,7 @@
     "g3": 0,
     "h1": 0.0,
     "h2": 0.0,
-    trackspacing : 4.5
+    "trackspacing" : 4.5
 
   }
 }
