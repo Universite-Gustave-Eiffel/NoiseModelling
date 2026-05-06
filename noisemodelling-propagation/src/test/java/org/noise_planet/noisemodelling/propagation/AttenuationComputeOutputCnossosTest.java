@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
@@ -6748,7 +6749,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         List<CnossosPath> reflectionPaths = propDataOut.getPropagationPaths().stream()
                 .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
-                .toList();
+                .collect(Collectors.toList());
         assertFalse(reflectionPaths.isEmpty(),
                 "A reflection path should exist on the building wall when source and receiver are on the same side.");
         assertTrue(reflectionPaths.stream().anyMatch(path ->
@@ -6762,7 +6763,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         List<CnossosPath> reflectionPaths = propDataOut.getPropagationPaths().stream()
                 .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
-                .toList();
+                .collect(Collectors.toList());
         assertTrue(reflectionPaths.isEmpty(),
                 "Reflection paths ending with a wall reflection within 0.5 m of the receiver should be filtered when the option is enabled.");
         assertFalse(propDataOut.getPropagationPaths().isEmpty(),
