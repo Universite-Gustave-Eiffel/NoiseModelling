@@ -94,15 +94,27 @@ jobs:
         run: |
           Expand-Archive -Path "dist\*.zip" -DestinationPath extracted -Force
 
-      - name: Find JAR
+      - name: Find main JAR
         run: |
-          $jar = Get-ChildItem -Recurse -Path extracted -Filter *.jar |
+          $jar = Get-ChildItem -Recurse extracted\lib -Filter *.jar |
+                 Where-Object { $_.Name -like "noisemodelling-scripts*.jar" } |
                  Sort-Object Length -Descending |
                  Select-Object -First 1
+      
           echo "JAR_PATH=$($jar.FullName)" >> $env:GITHUB_ENV
+          
+      - name: Prepare app folder
+        run: |
+          New-Item -ItemType Directory -Force -Path installer\app\bin
+          New-Item -ItemType Directory -Force -Path installer\app\lib
+      
+          Copy-Item "$env:JAR_PATH" installer\app\lib\
+          Copy-Item installer\WebServer.bat installer\app\bin\    
+          
       - name: Debug JAR
         run: |
           dir installer
+          dir installer\app\bin  
           
       - name: Copy JRE for packaging
         run: |
@@ -128,7 +140,6 @@ jobs:
         run: |
           $JAR_PATH = $env:JAR_PATH -replace '\\','/'
           (Get-Content installer\launch4j-config.xml) `
-            -replace 'JAR_PLACEHOLDER', $JAR_PATH `
             -replace 'APP_VERSION_PLACEHOLDER', $env:APP_VERSION `
             -replace 'APP_VERSION_TXT_PLACEHOLDER', $env:APP_VERSION_TXT `
           | Set-Content installer\launch4j-config-final.xml
