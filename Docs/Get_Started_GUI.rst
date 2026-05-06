@@ -52,6 +52,14 @@ The NoiseModelling GUI is built using the :doc:`WPS_Builder` component and runs 
 
 By running NoiseModelling your default web browser should have been opened to the http://localhost:8000 address. If not please go to this URL, if something went wrong you should have more information on your terminal.
 
+.. figure:: images/tutorial/Tutorial1_nm_landing.png
+    :align: center
+    :width: 80%
+
+    Noise Modelling GUI landing page
+
+Click ``builder`` to open the builder.
+
 .. figure:: images/tutorial/Tutorial1_nm_open.png
     :align: center
     :width: 80%
@@ -72,7 +80,7 @@ In the ``resources/`` sub-folder of the NoiseModelling installation, you will fi
 You will import these layers into your database using the ``Import File`` blocks.
 
 - Drag the ``Import File`` block into the Builder window
-- Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``PathFile`` field *(on the right-side column)*
+- Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``pathFile`` field *(on the right-side column)*
 - Then click on ``Run Process`` after selecting one of the input/output boxes of your process
 
 .. figure:: images/tutorial/Tutorial1_Image1bis.gif
@@ -97,7 +105,7 @@ Files are uploaded to the database when the Console window displays the name of 
     - Blocks get a solid border when they are ready to run
     - Read the :doc:`WPS_Builder` page for more information
 
-Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" part). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
+Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" section). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
 
 .. figure:: images/tutorial/Tutorial1_display_db.png
     :align: center
@@ -112,7 +120,7 @@ To run the calculation, drag the ``Noise_level_from_traffic`` block into the WPS
 Then, select the orange blocks and enter the name of the corresponding table in your database:
 
 - Building table name: ``BUILDINGS``
-- Sources table name: ``ROADS2`` This table contains the road geometries with traffic data for day, evening and night
+- Roads table name: ``ROADS2`` This table contains the road geometries with traffic data for day, evening and night
 - Receivers table name: ``RECEIVERS`` Locations where noise levels are evaluated
 - DEM table name: ``DEM`` Digital elevation model
 - Ground absorption table: ``GROUND_TYPE`` Nature of the ground

@@ -1,7 +1,7 @@
 Noise Map from Point Source - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this tutorial, we are going to produce a noise map, based on a unique source point. The exercice will be made through NoiseModelling with Graphic User Interface (GUI).
+In this tutorial, we are going to produce a noise map, based on a unique source point. The exercise will be made through NoiseModelling with Graphic User Interface (GUI).
 
 To make it more simple, we will use the data used in the :doc:`Get_Started_GUI` tutorial.
 
@@ -73,7 +73,7 @@ Add a new source point
 
 Now we have an empty layer. It's time to feed it with a point geometry. 
 
-By default, the new temporary layer is already turned into edtion mode. If not, you can activate it thanks to these two options:
+By default, the new temporary layer is already turned into edition mode. If not, you can activate it thanks to these two options:
 
 * In the ``Layers`` panel, select the ``Point_Source`` layer and make a right-click. Choose ``Toggle Editing``
 * or you can click on the "Yellow pencil" icon in the toolbar
@@ -166,7 +166,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the three fo
 
 Once ready, click on ``Run Process`` button.
 
-You should then have this message: ``Calculation Done ! RECEIVERS_LEVEL table(s) have been created.``
+A new table ``RECEIVERS_LEVEL`` is created.
 
 Generate noise level isosurfaces
 ----------------------------------
@@ -175,11 +175,11 @@ Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following mand
 
 * ``Sound levels table`` : ``RECEIVERS_LEVEL``
 
-You should have this message: ``Table CONTOURING_NOISE_MAP created``
+A new table ``CONTOURING_NOISE_MAP`` is created.
 
 Now, you can export this table into a .shapefile, using the ``Import_and_Export:Export_Table`` WPS script.
 
-You can then visualize this file into QGIS *(just load the file as seen before)*. The resulting table *(in grey)* is illustred below
+You can then visualize this file into QGIS *(just load the file as seen before)*. The resulting table *(in grey)* is illustrated below
 
 .. figure:: images/Noise_Map_From_Point_Source/table_contouring.png
    :align: center
@@ -239,7 +239,7 @@ Step 4: Change the default parameters
 To produce this noise map, we used, in most of WPS scripts, default parameters (*e.g* the height of the source, the number of reflections, the air temperature, …). You are prompted to redo some of the previous steps by changing some of the settings. You will then be able to visually see what impact they have on the final noise map.
 
 .. note::
-   To change optionnal parameters *(the yellow boxes)* just select them and fill the needed informations in the right-side menu.
+   To change optional parameters *(the yellow boxes)* just select them and fill the needed information in the right-side menu.
 
 .. figure:: images/Noise_Map_From_Point_Source/change_parameters.png
    :align: center
@@ -328,7 +328,7 @@ by
 
    { "PK": 1, "HZD500": 100.0, "YAW": 45, "PITCH": 0, "ROLL": 0, "DIR_ID" : 1 }
 
-Here we can see that the Yaw is setted to 45°. Pitch and Roll are equal to 0, and the directivity is defined as ``1``  and will refer to the directivy table (see below).
+Here we can see that the Yaw is set to 45°. Pitch and Roll are equal to 0, and the directivity is defined as ``1``  and will refer to the directivity table (see below).
 
 So your final .geojson file should look like this
 
@@ -349,11 +349,11 @@ Import data
 
 Now, in NoiseModelling we have to:
 
-* Import the ``Directivy.csv`` file
+* Import the ``Directivity.csv`` file
 * Reimport the ``Point_Source.geojson`` file in order to take into account the changes
-* Import the ``dem.geojson`` file, which is placed here ``./NoiseModelling/resources/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
+* Import the ``dem.geojson`` file, which is placed here ``resources/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
 
-To do so, just use the ``Import_and_Export:Import_Table`` WPS script.
+To do so, just use the ``Import and Export:Import file`` WPS script.
 
 
 Generate the Delaunay triangulation
