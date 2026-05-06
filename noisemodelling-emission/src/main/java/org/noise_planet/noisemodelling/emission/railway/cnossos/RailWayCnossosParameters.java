@@ -29,7 +29,9 @@ import org.noise_planet.noisemodelling.emission.railway.RailWayParameters;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 
+import static org.noise_planet.noisemodelling.emission.utils.Utils.dbToW;
 import static org.noise_planet.noisemodelling.emission.utils.Utils.sumDbArray;
 
 /**
@@ -47,6 +49,16 @@ public class RailWayCnossosParameters extends RailWayParameters {
     private double[] lWAerodynamicA = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
     private double[] lWAerodynamicB = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
     private double[] lWBridge = new double[DEFAULT_FREQUENCIES_THIRD_OCTAVE.length];
+
+    /** Reflection coefficient of the vehicle body barrier, power-weighted average of ReflectingBarrierEffect
+     *  from vehicle JSON. 0 = no body barrier (open freight), 1 = fully reflecting body.
+     *  Weighted by the acoustic power of low sources (ROLLING, TRACTIONA, AERODYNAMICA). */
+    private double cref = 1.0;
+    /** Accumulated weight for cref averaging (total acoustic power in Watts of low sources). Used to merge across vehicles/trainsets. */
+    private double crefTotalWeight = 0;
+
+    /** Source types considered "low" (h <= 0.5m above rail top) for body barrier weighting. */
+    private static final Set<String> LOW_SOURCE_TYPES = Set.of("ROLLING", "TRACTIONA", "AERODYNAMICA");
 
     public RailWayCnossosParameters() {
         Arrays.fill(lWRolling, -99.99);
@@ -80,6 +92,13 @@ public class RailWayCnossosParameters extends RailWayParameters {
                 double[]  lW2 = lineSource2.getRailwaySourceList().get(railwaySourceEntry.getKey()).getlW();
                 lineSource1.getRailwaySourceList().get(railwaySourceEntry.getKey()).setlW(sumDbArray(lW1, lW2));
             }
+        }
+        // Merge cref using power-weighted average
+        double totalWeight = lineSource1.crefTotalWeight + lineSource2.crefTotalWeight;
+        if (totalWeight > 0) {
+            lineSource1.cref = (lineSource1.cref * lineSource1.crefTotalWeight
+                    + lineSource2.cref * lineSource2.crefTotalWeight) / totalWeight;
+            lineSource1.crefTotalWeight = totalWeight;
         }
         return lineSource1;
     }
@@ -167,6 +186,54 @@ public class RailWayCnossosParameters extends RailWayParameters {
             }
         }
         return attHorizontal + attVertical;
+    }
+
+    /**
+     * Compute the total acoustic power (in Watts) of low sources (ROLLING, TRACTIONA, AERODYNAMICA)
+     * from the railway source list. This is used as the weight for Cref averaging.
+     * @return total power in Watts of the low source types, or 0 if none present
+     */
+    public double computeLowSourcePower() {
+        double totalPower = 0;
+        for (Map.Entry<String, LineSource> entry : getRailwaySourceList().entrySet()) {
+            if (LOW_SOURCE_TYPES.contains(entry.getKey())) {
+                double[] lW = entry.getValue().getlW();
+                for (double v : lW) {
+                    totalPower += dbToW(v);
+                }
+            }
+        }
+        return totalPower;
+    }
+
+    /**
+     * @return Reflection coefficient of the vehicle body barrier (0-1), power-weighted average.
+     */
+    public double getCref() {
+        return cref;
+    }
+
+    /**
+     * Set the reflection coefficient of the vehicle body barrier.
+     * @param cref 0 = open freight (no reflection), 1 = fully reflecting body
+     */
+    public void setCref(double cref) {
+        this.cref = cref;
+    }
+
+    /**
+     * @return Accumulated weight for cref averaging
+     */
+    public double getCrefTotalWeight() {
+        return crefTotalWeight;
+    }
+
+    /**
+     * Set the accumulated weight for cref averaging.
+     * @param crefTotalWeight acoustic power in Watts of low sources
+     */
+    public void setCrefTotalWeight(double crefTotalWeight) {
+        this.crefTotalWeight = crefTotalWeight;
     }
 
 }

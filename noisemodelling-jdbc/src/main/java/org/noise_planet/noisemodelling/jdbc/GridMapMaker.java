@@ -50,7 +50,6 @@ public abstract class GridMapMaker {
     protected double groundSurfaceSplitSideLength = 200;
     protected int soundReflectionOrder = 2;
 
-    protected boolean bodyBarrier = false; // it needs to be true if train propagation is computed (multiple reflection between the train and a screen)
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
@@ -119,13 +118,6 @@ public abstract class GridMapMaker {
         this.groundSurfaceSplitSideLength = groundSurfaceSplitSideLength;
     }
 
-
-    /**
-     * true if train propagation is computed (multiple reflection between the train and a screen)
-     */
-    public void setBodyBarrier(boolean bodyBarrier) {
-        this.bodyBarrier = bodyBarrier;
-    }
 
     public double getCellWidth() {
         return mainEnvelope.getWidth() / gridDim;
