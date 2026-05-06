@@ -514,7 +514,7 @@ public class TableLoaderTest {
 
         // Verify that SNCF and SNCF_LGV platforms exist
         assertTrue(platforms.containsKey("SNCF"), "SNCF platform must be present");
-        assertTrue(platforms.containsKey("SNCF_LGV"), "SNCF_LGV platform must be present");                                                                                                                                     ▃
+        assertTrue(platforms.containsKey("SNCF_LGV"), "SNCF_LGV platform must be present");
 
         // Retrieve instances
         RailwayPlatform sncfPlatform = platforms.get("SNCF");
@@ -530,7 +530,7 @@ public class TableLoaderTest {
         assertEquals(0.0, sncfPlatform.g1, 0.001, "SNCF g1 incorrect");
         assertEquals(1.0, sncfPlatform.g2, 0.001, "SNCF g2 incorrect");
         assertEquals(0.0, sncfPlatform.g3, 0.001, "SNCF g3 incorrect");
-        assertEquals(0.0, sncfPlatform.h1, 0.001, "SNCF h1 incorrect");                                                                                                                                                         ▁
+        assertEquals(0.0, sncfPlatform.h1, 0.001, "SNCF h1 incorrect");
         assertEquals(0.0, sncfPlatform.h2, 0.001, "SNCF h2 incorrect");
         assertEquals(3.67, sncfPlatform.trackspacing, 0.001, "SNCF trackspacing incorrect");
         // Verify SNCF_LGV properties (differs by trackspacing)
@@ -544,7 +544,7 @@ public class TableLoaderTest {
         int nbTracks = 2;
         double trackSpacing = 3.67;
         assertEquals(3.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD2(nbTracks, trackSpacing), 0.001, "getD2 calculation incorrect");
-        assertEquals(4.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD3(nbTracks, trackSpacing), 0.001, "getD3 calculation incorrect");                                                                                    ▃
+        assertEquals(4.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD3(nbTracks, trackSpacing), 0.001, "getD3 calculation incorrect");
         assertEquals(8.0 + (nbTracks - 1) * trackSpacing, sncfPlatform.getD4(nbTracks, trackSpacing), 0.001, "getD4 calculation incorrect");
 
         // Verify that DEFAULT_PLATFORM has different values
