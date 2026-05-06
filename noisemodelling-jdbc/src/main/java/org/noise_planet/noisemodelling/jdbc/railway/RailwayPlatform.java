@@ -55,6 +55,9 @@ public class RailwayPlatform {
     /** Height of the rail above the ballast - hRail (m) */
     public double h2 = 0.18;
 
+    /** trackspacing (m) */
+    public double trackspacing = 3.67;
+
     /** Default platform with standard SNCF values */
     public static final RailwayPlatform DEFAULT_PLATFORM = new RailwayPlatform();
 
@@ -71,6 +74,7 @@ public class RailwayPlatform {
         this.g3 = other.g3;
         this.h1 = other.h1;
         this.h2 = other.h2;
+        this.trackspacing = other.trackspacing;
     }
 
     /**
@@ -136,6 +140,7 @@ public class RailwayPlatform {
                 if (node.has("g3")) p.g3 = node.get("g3").asDouble();
                 if (node.has("h1")) p.h1 = node.get("h1").asDouble();
                 if (node.has("h2")) p.h2 = node.get("h2").asDouble();
+                if (node.has("trackspacing")) p.trackspacing = node.get("trackspacing").asDouble();
                 platforms.put(name.toUpperCase(), p);
             }
         } catch (IOException e) {
