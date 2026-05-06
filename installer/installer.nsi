@@ -41,15 +41,14 @@ Unicode         True
 !insertmacro MUI_LANGUAGE "French"
 !insertmacro MUI_LANGUAGE "English"
 
-
 Section "NoiseModelling" SecMain
   SectionIn RO
 
   SetOutPath "$INSTDIR"
-
   File "NoiseModelling.exe"
-  File /r "jre\*.*"
 
+  SetOutPath "$INSTDIR\jre"
+  File /r "jre\*.*"  
 
 
   CreateShortcut "$DESKTOP\${APP_NAME}.lnk" \
