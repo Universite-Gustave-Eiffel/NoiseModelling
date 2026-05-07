@@ -17,7 +17,7 @@
 !endif
 
 
-Name            "${APP_NAME} ${APP_VERSION}"
+Name            "${APP_NAME} ${MAVEN_VERSION}"
 OutFile         "${INSTALLER_NAME}"
 InstallDir      "${INSTALL_DIR}"
 InstallDirRegKey HKLM "${UNINSTALL_KEY}" "InstallLocation"
@@ -72,8 +72,8 @@ Section "NoiseModelling" SecMain
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME} ${APP_VERSION}"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayVersion"   "${APP_VERSION}"
+  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME} ${MAVEN_VERSION}"
+  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayVersion"   "${MAVEN_VERSION}"
   WriteRegStr   HKLM "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
   WriteRegStr   HKLM "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
   WriteRegStr   HKLM "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"

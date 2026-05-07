@@ -79,12 +79,15 @@ jobs:
 
       - name: Set versions
         run: |
-          $shortSha = "${{ github.sha }}".Substring(0,7)
-          $build = "${{ github.run_number }}"
-          echo "APP_VERSION=0.0.$build.0" >> $env:GITHUB_ENV
-          echo "APP_VERSION_TXT=0.0.0-$build-$shortSha" >> $env:GITHUB_ENV
           $mavenVersion = (Select-String -Path "pom.xml" -Pattern "<version>([^<]+)</version>" | Select-Object -First 1).Matches.Groups[1].Value
           echo "MAVEN_VERSION=$mavenVersion" >> $env:GITHUB_ENV
+          # Derive 4-part numeric version for Windows EXE metadata (e.g. 5.0.2-SNAPSHOT -> 5.0.2.0)
+          $numericVersion = $mavenVersion -replace '-.*', ''
+          $parts = $numericVersion.Split('.')
+          while ($parts.Count -lt 4) { $parts += '0' }
+          $winVersion = ($parts[0..3]) -join '.'
+          echo "APP_VERSION=$winVersion" >> $env:GITHUB_ENV
+          echo "APP_VERSION_TXT=$mavenVersion" >> $env:GITHUB_ENV
 
       - name: Download ZIP
         uses: actions/download-artifact@v4
@@ -149,6 +152,7 @@ jobs:
         with:
           name: windows-installer
           path: installer\NoiseModelling-${{ env.MAVEN_VERSION }}-Setup.exe
+          compression-level: 0
         
   build_windows:
     runs-on: windows-latest
