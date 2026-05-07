@@ -75,7 +75,7 @@ You will import these layers into your database using the ``Import File`` blocks
 - Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``PathFile`` field *(on the right-side column)*
 - Then click on ``Run Process`` after selecting one of the input/output boxes of your process
 
-.. figure:: images/tutorial/Tutorial1_Image1bis.gif
+.. figure:: images/tutorial/get_started_gui/Tutorial1_Image1bis.gif
    :align: center
 
 Repeat this operation for the 4 other files:

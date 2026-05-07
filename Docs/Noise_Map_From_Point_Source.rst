@@ -186,10 +186,10 @@ You can then visualize this file into QGIS *(just load the file as seen before)*
 
 Filter the table according to a single period (ex. DEN):
 
-.. figure:: images/tutorial/Tutorial1_FilterMenu.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_FilterMenu.png
    :align: center
 
-.. figure:: images/tutorial/Tutorial1_FilterWindow.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_FilterWindow.png
    :align: center
 
 

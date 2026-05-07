@@ -227,7 +227,7 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 #. ``tableName``: Enter ``RECEIVERS_LEVEL``
 #. ``columnName``: Enter ``LAEQ``
 
-Visualizing case 2 results
+Visualizing results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The result table ``RECEIVERS_LEVEL`` can be displayed in QGis, if you filter by ``PERIOD``.
@@ -344,7 +344,7 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 #. ``tableName``: Enter ``LT_GEOM``
 #. ``columnName``: Enter ``LAEQ``
 
-Visualizing case 3 results
+Visualizing results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The result table ``LT_GEOM`` can be displayed into QGis, if you filter by ``PERIOD``.
