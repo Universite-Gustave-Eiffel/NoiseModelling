@@ -24,7 +24,7 @@ This tutorial will not cover the steps for installing and configuring a PostGIS 
 .. _PostGIS: https://postgis.net/
 
 Using ScriptRunner with PostGIS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can run Groovy scripts using a PostGIS connection instead of the default H2GIS embedded database by using the `ScriptRunner` program.
 

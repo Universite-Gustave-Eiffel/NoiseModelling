@@ -78,7 +78,7 @@ Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block:
 #. ``gridStep``: Enter ``10``
 
 Compute noise level at receiver points for each receiver-period combination
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -204,7 +204,7 @@ Two output tables are created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
 
 
 Compute noise level at receiver points for each receiver-period combination
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -227,7 +227,7 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 #. ``tableName``: Enter ``RECEIVERS_LEVEL``
 #. ``columnName``: Enter ``LAEQ``
 
-Visualizing results
+Visualizing case 2 results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The result table ``RECEIVERS_LEVEL`` can be displayed in QGis, if you filter by ``PERIOD``.
@@ -344,7 +344,7 @@ Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 #. ``tableName``: Enter ``LT_GEOM``
 #. ``columnName``: Enter ``LAEQ``
 
-Visualizing results
+Visualizing case 3 results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The result table ``LT_GEOM`` can be displayed into QGis, if you filter by ``PERIOD``.
