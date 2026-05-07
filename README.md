@@ -63,7 +63,7 @@ It has been widely used for strategic noise mapping, dynamic maps driven by traf
 *   **Stochastic Traffic Modeling:** Supports both Probabilistic and Poisson distribution methods to realistically simulate vehicle placement and flow on road networks.
 *   **Temporal Visualization:** Compatible with the QGIS Temporal Controller for creating animated noise maps over time.
 
-![QGIS Temporal Controller interface showing a timeline for noise map playback](Docs/images/tutorial/dynamic/temporal_bar_nav.png)
+![QGIS Temporal Controller interface showing a timeline for noise map playback](Docs/images/tutorial/dynamic/temporal_bar_nav.gif)
 *Example: Navigating through a dynamic noise map using the QGIS Temporal Controller.*
 
 ![The NoiseModelling WPS Builder interface](Docs/images/WPS_Builder/wps_demo.png)
