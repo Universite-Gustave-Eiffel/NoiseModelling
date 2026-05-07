@@ -5,6 +5,8 @@
 
     <outfile>NoiseModelling.exe</outfile>
 
+    <icon>noisemodelling.ico</icon>
+
     <chdir>.</chdir>
 
     <classPath>

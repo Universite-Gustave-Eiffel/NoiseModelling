@@ -29,8 +29,8 @@ Unicode         True
 !include "MUI2.nsh"
 
 !define MUI_ABORTWARNING
-!define MUI_ICON          "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON        "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON          "noisemodelling.ico"
+!define MUI_UNICON        "noisemodelling.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE               "..\LICENSE"
@@ -50,6 +50,7 @@ Section "NoiseModelling" SecMain
   SetOutPath "$INSTDIR"
   File /r "app\*"
   File "NoiseModelling.exe"
+  File "noisemodelling.ico"
   
 
   SetOutPath "$INSTDIR\jre"
@@ -59,14 +60,14 @@ Section "NoiseModelling" SecMain
   CreateShortcut "$DESKTOP\${APP_NAME}.lnk" \
                  "$INSTDIR\${EXE_NAME}" \
                  "" \
-                 "$INSTDIR\${EXE_NAME}" 0
+                 "$INSTDIR\noisemodelling.ico" 0
 
 
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
   CreateShortcut  "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" \
                   "$INSTDIR\${EXE_NAME}" \
                   "" \
-                  "$INSTDIR\${EXE_NAME}" 0
+                  "$INSTDIR\noisemodelling.ico" 0
   CreateShortcut  "$SMPROGRAMS\${APP_NAME}\Uninstall ${APP_NAME}.lnk" \
                   "$INSTDIR\Uninstall.exe"
 
@@ -86,6 +87,7 @@ SectionEnd
 Section "Uninstall"
 
   Delete "$INSTDIR\${EXE_NAME}"
+  Delete "$INSTDIR\noisemodelling.ico"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir /r "$INSTDIR"
 
