@@ -48,12 +48,12 @@ Since we're only interested in buildings, you can also check the ``Do not import
 
 .. _2154: https://epsg.io/2154
 
-.. figure:: images/matsim/osm_pbf_wps.png
+.. figure:: images/tutorial/matsim/osm_pbf_wps.png
    :align: center
 
 You should end up with a ``BUILDINGS`` table containing the city center buildings. If you want to visualize the buildings in NoiseModelling, you can use the ``Table visualization Map`` WPS block (in the *Database Manager* section) with ``Name of the table`` set to *BUILDINGS* and ``Projection identifier`` set to *2154*.
 
-.. figure:: images/matsim/buildings_table.png
+.. figure:: images/tutorial/matsim/buildings_table.png
    :align: center
 
 Step 2: Import MATSim Traffic Data
@@ -86,12 +86,12 @@ You can explore the other options by reading their descriptions. Here we are goi
 - Skip unused links ?: ``true``
 - Projection identifier: ``2154``
 
-.. figure:: images/matsim/traffic_events_wps.png
+.. figure:: images/tutorial/matsim/traffic_events_wps.png
    :align: center
 
 You should end up with a ``MATSIM_ROADS`` table containing the links ids and their geometry and a ``MATSIM_ROADS_LW`` table containing the noise power level of each link per 15 min time slice.
 
-.. figure:: images/matsim/roads_table.png
+.. figure:: images/tutorial/matsim/roads_table.png
    :align: center
 
 Step 3: Import MATSim Activities
@@ -105,12 +105,12 @@ Let's use the ``Import_Activities`` WPS bloc. The inputs descriptions are quite 
 - Projection identifier: ``2154``
 - Path of MatSim facilities file: ``/path/to/your/scenario_mastim/output_facilities.xml.gz``
 
-.. figure:: images/matsim/import_activities_wps.png
+.. figure:: images/tutorial/matsim/import_activities_wps.png
    :align: center
 
 You should end up with a ``ACTIVITIES`` table containing the activities location, and few other properties.
 
-.. figure:: images/matsim/activities_table.png
+.. figure:: images/tutorial/matsim/activities_table.png
    :align: center
 
 
@@ -145,13 +145,13 @@ Now, we must use the ``Receivers_From_Activity_Random`` WPS bloc. The inputs are
 - Name of the table containing the buildings: ``BUILDINGS``
 - Name of the table containing the receivers: ``RECEIVERS``
 
-.. figure:: images/matsim/receiver_activities_wps.png
+.. figure:: images/tutorial/matsim/receiver_activities_wps.png
    :align: center
 
 You should end up with a ``ACTIVITY_RECEIVERS`` table containing the new location (``THE_GEOM``, in blue below) as well as the original matsim position (``ORIGIN_GEOM``, in red below).
 You can inspect the results to see where each activity is placed now.
 
-.. figure:: images/matsim/activity_receivers_table.png
+.. figure:: images/tutorial/matsim/activity_receivers_table.png
    :align: center
 
 
@@ -177,7 +177,7 @@ The parameters we will use are the following:
 - Diffraction on vertical edges: ``false``
 - Diffraction on horizontal edges: ``true``
 
-.. figure:: images/matsim/noise_from_source_wps.png
+.. figure:: images/tutorial/matsim/noise_from_source_wps.png
    :align: center
 
 We should end up with a table called ``RECEIVERS_LEVEL`` that contains a list of noise levels for every receiver, at every 15-minute interval.
@@ -198,7 +198,7 @@ We'll simply use the ``Export_Table WPS`` bloc with the following parameters:
 - Name of the table: ``RECEIVERS_LEVEL``
 - Path of the file you want to export: ``/path/to/wherever/results.shp``
 
-.. figure:: images/matsim/results_export_wps.png
+.. figure:: images/tutorial/matsim/results_export_wps.png
    :align: center
 
 View it in QGIS
@@ -229,12 +229,12 @@ To filter results for the 10h00_10h15 time period you can enter the following fi
 The last step is to color the dots based on the LEQA field.
 The following configuration can be used:
 
-.. figure:: images/matsim/symbology_results_qgis.png
+.. figure:: images/tutorial/matsim/symbology_results_qgis.png
    :align: center
 
 And the final result, between 10h00 and 10h15:
 
-.. figure:: images/matsim/results_10h_qgis.png
+.. figure:: images/tutorial/matsim/results_10h_qgis.png
    :align: center
 
 
@@ -250,5 +250,5 @@ You can then run a ``Create_Isosurface`` WPS bloc to create a noise map, it will
 
 Here is an example of a noise map for the 10h to 10h15 time period:
 
-.. figure:: images/matsim/map_10h_qgis.png
+.. figure:: images/tutorial/matsim/map_10h_qgis.png
    :align: center
