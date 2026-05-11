@@ -57,7 +57,7 @@ NoiseModelling has a Graphical User Interface (GUI). It is accessible through a 
 
 In order for "WPS Builder" to communicate with the NoiseModelling libraries, we use a standard name `Web Processing Service`_ (Defined by the Open Geospatial Consortium `OGC`_) API to execute WPS scripts. Theses scripts are written in the `Groovy`_ language.
 
-You can see NoiseModelling with a GUI in action in the page ":doc:`Get_Started_GUI`".
+You can see NoiseModelling with a GUI in action in the page ":doc:`Tutorial_Get_Started_GUI`".
 
 .. _Groovy : http://www.groovy-lang.org/
 .. _Web Processing Service : https://www.ogc.org/standards/wps
