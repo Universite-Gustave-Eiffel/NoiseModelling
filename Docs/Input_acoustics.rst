@@ -94,6 +94,15 @@ Maximum source-reflexion distance
 .. figure:: images/Input_tables/acoustics_parameters_confMaxReflDist.png
 	:align: center
 
+Ignore reflections close to the receiver wall
+----------------------------------------------
+
+* Parameter name: ``confMinWallReflDist``
+* Description: Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. When a receiver is located very close to a reflective wall, the reflected path may be physically unreliable or negligible. Setting this parameter filters out such reflection paths. Use ``0`` to keep all reflections (filter disabled).
+* Type: Double
+* Default value: ``0`` (disabled)
+* Recommended value: Set the distance you wish; classically below ``2`` m. This parameter is typically used when assessing noise impact on people inside buildings, in order to avoid the last-reflection effect (approximately +3 dB).
+
 
 Wall absorption coefficient
 --------------------------------

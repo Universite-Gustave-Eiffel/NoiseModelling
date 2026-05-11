@@ -45,6 +45,7 @@ public abstract class GridMapMaker {
     protected boolean sourceHasSeaLevelZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
+    protected double closeReceiverReflectionWallDistance = 0;
     protected double gs = 0;
     // Soil areas are split by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
@@ -353,6 +354,22 @@ public abstract class GridMapMaker {
      */
     public void setMaximumReflectionDistance(double maximumReflectionDistance) {
         this.maximumReflectionDistance = maximumReflectionDistance;
+    }
+
+    /**
+     * @return Maximum receiver-to-wall distance in meters below which reflection cut profiles can be ignored.
+     *         A value of 0 means the optional filter is disabled.
+     */
+    public double getCloseReceiverReflectionWallDistance() {
+        return closeReceiverReflectionWallDistance;
+    }
+
+    /**
+     * @param closeReceiverReflectionWallDistance Maximum receiver-to-wall distance in meters below which
+     *                                            reflection cut profiles can be ignored. A value of 0 disables the filter.
+     */
+    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
+        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
     }
 
     /**
