@@ -11,7 +11,6 @@ package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
@@ -29,7 +28,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.DoubleStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDb;
@@ -480,46 +478,4 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         }
     }
 
-    /**
-     * Unique identifier for one discretized source point in the maxError bookkeeping.
-     * We cannot use the coordinate alone because distinct source points may legitimately
-     * share the same position while belonging to different source identifiers.
-     */
-    static final class SourcePointKey {
-        final long sourcePk;
-        final int sourceIndex;
-        final long x;
-        final long y;
-        final long z;
-
-        SourcePointKey(PathFinder.SourcePointInfo sourcePointInfo) {
-            this.sourcePk = sourcePointInfo.sourcePk;
-            this.sourceIndex = sourcePointInfo.sourceIndex;
-            this.x = Double.doubleToLongBits(sourcePointInfo.position.x);
-            this.y = Double.doubleToLongBits(sourcePointInfo.position.y);
-            this.z = Double.doubleToLongBits(sourcePointInfo.position.z);
-        }
-
-        SourcePointKey(CutPointSource sourcePoint) {
-            this.sourcePk = sourcePoint.sourcePk;
-            this.sourceIndex = sourcePoint.id;
-            this.x = Double.doubleToLongBits(sourcePoint.coordinate.x);
-            this.y = Double.doubleToLongBits(sourcePoint.coordinate.y);
-            this.z = Double.doubleToLongBits(sourcePoint.coordinate.z);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof SourcePointKey)) return false;
-            SourcePointKey that = (SourcePointKey) o;
-            return sourcePk == that.sourcePk && sourceIndex == that.sourceIndex &&
-                    x == that.x && y == that.y && z == that.z;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(sourcePk, sourceIndex, x, y, z);
-        }
-    }
 }
