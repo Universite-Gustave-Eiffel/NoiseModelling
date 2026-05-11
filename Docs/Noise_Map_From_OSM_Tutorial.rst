@@ -158,5 +158,5 @@ You can view this layer in your favorite GIS. Drop the file in QGIS then filter 
  You can then apply a (revert) color gradient on ``ISOLABEL`` field.
 
 
-.. figure:: images/tutorial/Tutorial2_ContouringNoiseMap.png
+.. figure:: images/tutorial/Noise_Map_From_OSM/Tutorial2_ContouringNoiseMap.png
    :align: center
