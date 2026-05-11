@@ -32,7 +32,7 @@ Once installed, launch QGIS and load the three ``buildings.shp``, ``roads.shp`` 
 
 You should see your input data in the map as below:
 
-.. figure:: images/Noise_Map_From_Point_Source/load_data_qgis.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/load_data_qgis.png
    :align: center
 
 Initialize the source point layer
@@ -62,7 +62,7 @@ Once done, click on ``Add to Fields List``. Then redo this step with the followi
 
 You should have something like this
 
-.. figure:: images/Noise_Map_From_Point_Source/create_source_point_layer.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/create_source_point_layer.png
    :align: center
 
 Once done, click on ``OK`` button. The new layer ``Point_Source`` should appear in your ``Layers`` panel.
@@ -78,14 +78,14 @@ By default, the new temporary layer is already turned into edition mode. If not,
 * In the ``Layers`` panel, select the ``Point_Source`` layer and make a right-click. Choose ``Toggle Editing``
 * or you can click on the "Yellow pencil" icon in the toolbar
 
-.. figure:: images/Noise_Map_From_Point_Source/edit_layer_source.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/edit_layer_source.png
    :align: center
 
 Now we can add a new point, by clicking on the dedicated icon (see illustration below) and then by clicking somewhere in the map.
 
 To have an interesting resulting noise map, choose to place your source point next to buildings.
 
-.. figure:: images/Noise_Map_From_Point_Source/place_point_source.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/place_point_source.png
    :align: center
 
 Click on the map where you want to create the source point. Once clicked, a new dialog appears and you are invited to fill the following attributes:
@@ -93,22 +93,22 @@ Click on the map where you want to create the source point. Once clicked, a new 
 * ``PK``: 1
 * ``HZD500`` : 90
 
-.. figure:: images/Noise_Map_From_Point_Source/fill_attributes.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/fill_attributes.png
    :align: center
 
 Once done, click on ``OK``. The source point is now visible in the map (the blue point in the illustration below).
 
-.. figure:: images/Noise_Map_From_Point_Source/layer_source.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/layer_source.png
    :align: center
 
 Now, we have to save this temporary layer into a flat file. To do so, just make a right-click on the layer name and choose the  ``Make permanent`` option.
 
-.. figure:: images/Noise_Map_From_Point_Source/convert_point_source_geojson.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/convert_point_source_geojson.png
    :align: center
 
 In the new dialog, select ``GeoJSON`` file format and then define the path and the name of your resulting .geojson file. Press ``OK`` when ready.
 
-.. figure:: images/Noise_Map_From_Point_Source/save_geojson.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/save_geojson.png
    :align: center
 
 Your ``Point_Source.geojson`` file is now ready to be imported in NoiseModelling.
@@ -134,7 +134,7 @@ Once NoiseModelling is launched (see ``Step 2: Start NoiseModelling GUI`` in :do
 
 If you use the ``Database_Manager:Display_Database`` WPS script, you should see your four tables like below:
 
-.. figure:: images/Noise_Map_From_Point_Source/table_list_NM.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/table_list_NM.png
    :align: center
 
 Step 3: Generate the noise map
@@ -152,7 +152,7 @@ Use the ``Receivers:Delaunay_Grid`` WPS script. Fill the two following mandatory
 
 Once done, you should have a new table : ``RECEIVERS`` *(illustrated below with the purple small points)*
 
-.. figure:: images/Noise_Map_From_Point_Source/table_receivers.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/table_receivers.png
    :align: center
 
 Calculate noise levels
@@ -181,7 +181,7 @@ Now, you can export this table into a .shapefile, using the ``Import_and_Export:
 
 You can then visualize this file into QGIS *(just load the file as seen before)*. The resulting table *(in grey)* is illustrated below
 
-.. figure:: images/Noise_Map_From_Point_Source/table_contouring.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/table_contouring.png
    :align: center
 
 Filter the table according to a single period (ex. DEN):
@@ -198,7 +198,7 @@ Apply a color palette adapted to acoustics
 
 In QGIS, since the isosurface table is not easy to read *(everything is grey in our example)*, we will change the color palette to have colors depending on the noise levels. This information is present in the field ``ISOLVL`` in the attributes table. To open it, just select the layer ``CONTOURING_NOISE_MAP`` and press ``F6``.
 
-.. figure:: images/Noise_Map_From_Point_Source/contouring.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/contouring.png
    :align: center
 
 To adapt the colors, we will apply a cartographic style. This style:
@@ -219,17 +219,17 @@ To adapt the colors, we will apply a cartographic style. This style:
 Once downloaded, make a double click on the layer ``CONTOURING_NOISE_MAP``. It will opens the property panel. Here, click on the ``Symbology`` tab.
 In the ``Style`` menu *(at the bottom)*, choose ``Load style``. Then in the opened dialog, click on the ``...`` icon to search the ``style_beate_tomio.sld`` file. Once selected, click on ``Load style``.
 
-.. figure:: images/Noise_Map_From_Point_Source/style_sld.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/style_sld.png
    :align: center
 
 The style with its different colors is now displayed. 
 
-.. figure:: images/Noise_Map_From_Point_Source/style_scale.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/style_scale.png
    :align: center
 
 Press ``OK`` to apply and close the dialog. Your noise map is now well colorized and you can navigate into it to see the influence of buildings on noise levels.
 
-.. figure:: images/Noise_Map_From_Point_Source/style_map.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/style_map.png
    :align: center
 
 
@@ -241,7 +241,7 @@ To produce this noise map, we used, in most of WPS scripts, default parameters (
 .. note::
    To change optional parameters *(the yellow boxes)* just select them and fill the needed information in the right-side menu.
 
-.. figure:: images/Noise_Map_From_Point_Source/change_parameters.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/change_parameters.png
    :align: center
 
 Step 5 (bonus): Change the directivity
@@ -276,7 +276,7 @@ Each of the sound sources has its own directivity. For the exercise we will use 
 
 Below is an illustration generated from train directivity formula.
 
-.. figure:: images/Noise_Map_From_Point_Source/directivity_rail.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/directivity_rail.png
    :align: center
 
 
@@ -306,7 +306,7 @@ To play with directivity, we need to add 4 fields in the source point table:
    * ``Type`` : Integer
    * ``Length`` : 2
 
-.. figure:: images/Noise_Map_From_Point_Source/yaw_pitch_roll.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/yaw_pitch_roll.png
    :align: center
 
 .. note::
@@ -396,5 +396,5 @@ Use the ``Import_and_Export:Export_Table`` WPS script to export the ``CONTOURING
 
 Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS and filter the period to ``DEN``. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
 
-.. figure:: images/Noise_Map_From_Point_Source/contouring_directivity_compare.png
+.. figure:: images/tutorial/Noise_Map_From_Point_Source/contouring_directivity_compare.png
    :align: center
