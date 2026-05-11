@@ -3,7 +3,7 @@ Noise Map from Point Source - GUI
 
 In this tutorial, we are going to produce a noise map, based on a unique source point. The exercise will be made through NoiseModelling with Graphic User Interface (GUI).
 
-To make it more simple, we will use the data used in the :doc:`Get_Started_GUI` tutorial.
+To make it more simple, we will use the data used in the :doc:`Tutorial_Get_Started_GUI` tutorial.
 
 This tutorial is divided in 5 steps:
 
@@ -130,7 +130,7 @@ For your information, you can open ``.geojson`` files in most of text editor. If
 Step 2: Import input data in NoiseModelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once NoiseModelling is launched (see ``Step 2: Start NoiseModelling GUI`` in :doc:`Get_Started_GUI` page), load the four ``BUILDINGS``, ``ROADS`` and ``GROUND_TYPE``, ``POINT_SOURCE`` layers (see ``Step 4: Load input files`` for more details).
+Once NoiseModelling is launched (see ``Step 2: Start NoiseModelling GUI`` in :doc:`Tutorial_Get_Started_GUI` page), load the four ``BUILDINGS``, ``ROADS`` and ``GROUND_TYPE``, ``POINT_SOURCE`` layers (see ``Step 4: Load input files`` for more details).
 
 If you use the ``Database_Manager:Display_Database`` WPS script, you should see your four tables like below:
 

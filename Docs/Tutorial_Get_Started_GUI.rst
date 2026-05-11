@@ -15,7 +15,7 @@ Download the latest release of NoiseModelling on `Github`_.
     The chosen directory can be anywhere, but make sure you have write access. If you are using a company computer, the Program Files folder is probably not a good idea.
 
 .. warning::
-    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up. For more information, please read the page :doc:`Requirements`. **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
+    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up. For more information, please read the page :doc:`Tutorial_Requirements`. **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
 
 .. note::
     Starting from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
