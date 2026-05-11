@@ -1,14 +1,15 @@
-Extract_Best_Configuration
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Extract Best Configuration
 ==========================
 
-Extract the best configurations.
+Extraction of the best configurations
 
 Overview
 --------
 
-``Extract_Best_Configuration.groovy`` extracts the best simulated maps by minimizing the difference between measured and simulated values.
-
-It does this by calculating minimum median absolute differences and creates the table ``BEST_CONFIGURATION_FULL``.
+Extraction of the best maps, i.e. those that minimise the difference between the measured and simulated values, by calculating the minimum median values.
 
 Arguments
 ---------
@@ -17,27 +18,19 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``observationTable``
-   Table of sensor observations containing the training dataset.
-
-   Type: ``String``
+   table of observationSensor containing the training data Set
 
 ``noiseMapTable``
-   Table containing the simulated noise maps.
-
-   Type: ``String``
+   table of noiseMapTable containing the noise maps after simulation
 
 ``tempToleranceThreshold``
-   Temperature tolerance threshold used to extract the best configuration.
-
-   Type: ``Double``
+   temperature tolerance threshold to extract the best configuration
 
 Output
 ------
 
 ``result``
-   Created table ``BEST_CONFIGURATION_FULL``.
-
-   Type: ``String``
+   BEST_CONFIGURATION_FULL table created
 
 Function Signatures
 -------------------
@@ -45,15 +38,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It adds a ``TEMP`` column to ``RECEIVERS_LEVEL`` and fills it from ``FILTERED_CONFIGURATIONS``.
-* It computes median observed temperatures per epoch and average simulated temperatures per period.
-* It builds a ``BEST_TEMP`` table matching observation epochs to simulated periods within the configured temperature tolerance.
-* For each epoch, it computes the median absolute difference between observed and simulated ``LAEQ`` values and keeps the minimum.
-* It joins the selected periods back to ``FILTERED_CONFIGURATIONS`` to create ``BEST_CONFIGURATION_FULL``.
-

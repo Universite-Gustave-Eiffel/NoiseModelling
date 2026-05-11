@@ -1,57 +1,91 @@
-Buildings Grid
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Building Grid3D
 ===============
+
+Buildings Grid
 
 Overview
 --------
 
-Generates 3D receivers around building facades at multiple vertical levels. The number of levels depends on building height and the configured spacing between levels. The script creates a ``RECEIVERS`` table and can also distribute building population to receivers when a ``POP`` column is present.
+➡️ Generates 3D receivers around the buildings and at different levels.
+Main parameters:
 
-.. image:: Building_Grid3D.png
-   :alt: Building grid 3D output
-   :width: 95%
+* "Height between levels": coupled with the building height, allows to determine the number of levels,
+
+* "Distance from wall": set the distance between the receivers and the building facades,
+
+* "Distance between receivers": set the number of receivers around the buildings.
+
+✅ The output table is called RECEIVERS
+
+.. figure:: Building_Grid3D.png
    :align: center
+   :alt: Building grid output
 
 Arguments
 ---------
 
+Mandatory inputs
+~~~~~~~~~~~~~~~~
+
 ``tableBuilding``
-  Buildings table name. The table must contain ``THE_GEOM`` as building polygons or multipolygons and ``HEIGHT`` as building height in meters. An optional ``POP`` field can also be present.
-
-``fence``
-  Optional polygon geometry used to restrict receiver creation to a specific area.
-
-``fenceTableName``
-  Optional table name used to derive a bounding box filter from its ``THE_GEOM`` column.
-
-``sourcesTableName``
-  Optional sources table. Receivers closer than 1 meter to the provided source geometries are removed.
+   Name of the Buildings table.
+   The table must contain:
+   
+   *  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+   
+   *  HEIGHT : the height of the building (in meter) (FLOAT)
+   
+   *  POP : building population to add in the receiver attribute (FLOAT) (Optionnal)
 
 ``delta``
-  Optional spacing between receivers along facades, in meters. Default: ``10``.
+   Distance between receivers (in the Cartesian plane - in meters) (FLOAT)
+
+   Default: ``10``
+
+Optional inputs
+~~~~~~~~~~~~~~~
+
+``fence``
+   Create receivers only in the provided polygon (fence)
+
+``fenceTableName``
+   Filter receivers, using the bounding box of the given table name:
+   
+   *  Extract the bounding box of the specified table,
+   
+   *  then create only receivers on the table bounding box.
+   
+   The given table must contain:
+   
+   *  THE_GEOM : any geometry type.
+
+``sourcesTableName``
+   Keep only receivers that are at least 1 meter from the provided source geometries.The source geometries table must contain:
+   
+   *  THE_GEOM : any geometry type.
 
 ``heightLevels``
-  Optional vertical spacing between receiver levels, in meters. Default: ``2.5``.
+   Height between each level of receivers (in meters) (FLOAT)
+
+   Default: ``2.5``
 
 ``distance``
-  Optional offset from the wall in meters. Default: ``2``.
+   Distance of receivers from the wall (in meters) (FLOAT)
+
+   Default: ``2``
 
 Output
 ------
 
-The script returns the created ``RECEIVERS`` table name. The output table stores 3D receiver geometries, a ``level`` field, and ``pk_building``. When population is available in the buildings table, a ``pop`` field is also added.
+``result``
+   Name of the table containing the results of the computation. Can be used as input for another process.
 
 Function Signatures
 -------------------
 
-.. code-block:: groovy
+The script exposes one entry point:
 
-   def exec(Connection connection, Map input)
-
-Execution Notes
----------------
-
-- The buildings table must have an integer primary key and a ``HEIGHT`` field.
-- The script starts receiver elevations at 1.5 meters and adds new levels every ``heightLevels`` meters until the building height is covered.
-- A direct ``fence`` geometry is reprojected to the buildings or sources SRID, while ``fenceTableName`` uses the table envelope directly.
-- Receivers inside buildings are removed at the end of processing.
-- If a ``POP`` field exists on the buildings table, the script distributes the population across the generated receivers.
+* ``exec(Connection connection, input)``

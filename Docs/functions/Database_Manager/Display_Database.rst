@@ -1,16 +1,16 @@
-Display_Database
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Display Database
 ================
 
-Display the list of database tables and optionally their attributes.
+Display the list of tables (and their attributes).
 
 Overview
 --------
 
-``Display_Database.groovy`` displays the list of tables present in the database.
-
-Optionally, it can also display the columns of each table.
-
-To visualize the content of a table, the script description points users to ``Table_Visualization_Data``.
+➡️ Displays the list of tables that are in the database.
+Optionally it is also possible to display their attributes ("showColumns" parameter).  💡 To visualize the content of (a part of) a table, you can use "Table Visualization Data" script.
 
 Arguments
 ---------
@@ -19,33 +19,17 @@ Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``showColumns``
-   Whether the columns of each table should also be displayed.
-
-   A small key symbol is shown for columns that have a primary-key constraint.
-
-   Type: ``Boolean``
+   Do you want to display also the column of the tables ? 💡 Note : A small yellow key symbol (🔑) will appear if the column as a Primary Key constraint.
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It ignores the system tables ``SPATIAL_REF_SYS`` and ``GEOMETRY_COLUMNS``.
-* When ``showColumns`` is enabled, it lists each column and marks geometry columns with their SRID and primary-key columns with a key symbol.
-* If no user tables are found, it returns a formatted message indicating that the database is empty.
-
+* ``exec(Connection connection, input)``

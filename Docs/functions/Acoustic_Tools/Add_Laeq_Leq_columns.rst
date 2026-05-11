@@ -1,14 +1,16 @@
-Add_Laeq_Leq_columns
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Add Laeq Leq columns
 ====================
 
-Add ``Leq`` and ``LAeq`` columns.
+Add Leq and LAeq columns
 
 Overview
 --------
 
-``Add_Laeq_Leq_columns.groovy`` adds ``LEQ`` and ``LEQA`` columns to a table containing octave-band values from ``63 Hz`` to ``8000 Hz``.
-
-The script expects frequency columns such as ``HZ63``, ``HZ125``, up to ``HZ8000``, using a configurable prefix.
+➡️ Add the columns Leq and LAeq to a table with octave band values from 63 Hz to 8000 Hz.
+The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed.
 
 Arguments
 ---------
@@ -17,24 +19,16 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``prefix``
-   Prefix of the octave-band columns.
-
-   For example: ``HZ``
-
-   Type: ``String``
+   Prefix of the columns containing the octave bands. (STRING) For example: HZ
 
 ``tableName``
-   Name of the table on which ``LEQ`` and ``LEQA`` columns will be added.
-
-   Type: ``String``
+   Name of the table on which Leq and LAeq columns will be added.
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -42,13 +36,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* The input prefix is normalized to uppercase before column lookup.
-* The script checks that the table contains at least the ``<PREFIX>63`` column before proceeding.
-* It adds computed ``LEQA`` and ``LEQ`` columns using SQL expressions derived from the octave bands.
-

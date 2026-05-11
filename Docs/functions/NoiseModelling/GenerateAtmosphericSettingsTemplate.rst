@@ -1,16 +1,15 @@
-GenerateAtmosphericSettingsTemplate
-==================================
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Generate default atmospheric settings from the ``PERIOD`` field of a noise emission table.
+GenerateAtmosphericSettingsTemplate
+===================================
+
+Generate default atmospherics settings from the PERIOD field of a noise emission table
 
 Overview
 --------
 
-``GenerateAtmosphericSettingsTemplate.groovy`` generates default atmospheric settings from the ``PERIOD`` field of a noise emission table.
-
-It is intended to produce a table that can be exported, edited, reimported, and then used by ``Noise_level_from_source`` or ``Noise_level_from_traffic``.
-
-This table lets you adjust temperature and other atmospheric settings for each simulation time period.
+➡️ Generate default atmospherics settings from the PERIOD field of a noise emission table. It is used to export the result table to be edited and reimported to be used into Noise_level_from_source or Noise_level_from_traffic. This table make you able to change the temperature and other settings for each time period of the simulation
 
 Arguments
 ---------
@@ -19,56 +18,43 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableSourcesEmission``
-   Sources emission table name, for example ``SOURCES_EMISSION``.
-
-   The table must contain:
-
-   * ``IDSOURCE``: identifier linked to the primary key of the source table
-   * ``PERIOD``: time period that will be reused in the generated atmospheric table
-
-   Type: ``String``
+   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
+   
+   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
+   
+   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``tablePeriodAtmosphericSettings``
-   Name of the output atmospheric settings table for each time period.
-
-   The generated table contains:
-
-   * ``PERIOD``: time period (``VARCHAR PRIMARY KEY``)
-   * ``WINDROSE``: probability of occurrences of favorable propagation conditions (``ARRAY(16)``)
-   * ``TEMPERATURE``: temperature in Celsius
-   * ``PRESSURE``: air pressure in pascal
-   * ``HUMIDITY``: air humidity in percent
-   * ``GDISC``: whether ground discontinuity is accepted. Default ``true``.
-   * ``PRIME2520``: whether prime values are used to compute equation 2.5.20. Default ``false``.
-
-   Default: ``SOURCES_ATMOSPHERIC``
-
-   Type: ``String``
+   Name of the Atmospheric settings table  The table will contain the following columns:
+   
+   *   PERIOD : time period (VARCHAR PRIMARY KEY)
+   
+   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   
+   *   TEMPERATURE : Temperature in celsius (FLOAT)
+   
+   *   PRESSURE : air pressure in pascal (FLOAT)
+   
+   *   HUMIDITY : air humidity in percentage (FLOAT)
+   
+   *   GDISC : choose between accept G discontinuity or not (BOOLEAN) default true
+   
+   *   PRIME2520 : choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false
+   
+   Default to SOURCES_ATMOSPHERIC
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It reads the unique ``PERIOD`` values from the source emission table.
-* It creates one atmospheric settings row per period using ``AttenuationParameters`` defaults.
-* If no output table name is provided, it writes to ``SOURCES_ATMOSPHERIC``.
-
+* ``exec(Connection connection, input)``

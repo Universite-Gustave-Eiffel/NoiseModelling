@@ -1,16 +1,16 @@
-Change_SRID
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Change SRID
 ===========
 
-Change or set the SRID of a table.
+Change or set SRID
 
 Overview
 --------
 
-``Change_SRID.groovy`` assigns a new Spatial Reference Identifier, or SRID, to the specified table.
-
-If the table already has an associated SRID, geometries are reprojected to the new SRID.
-
-If the table has no associated SRID, the new SRID is assigned without reprojecting geometries.
+➡️ Affect a new Spatial Reference Identifier (SRID) to the specified table
+🚨 If the table: - has already an associated SRID: the new SRID is applied to the table and a reprojection of geometries is done, - has no associated SRID: the new SRID is applied to the table but without doing a reprojection of geometries.
 
 .. figure:: change_SRID.png
    :align: center
@@ -23,24 +23,16 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``newSRID``
-   New projection identifier, or SRID, of the table.
-
-   It should be an EPSG code.
-
-   Type: ``Integer``
+   🌍 New projection identifier (also called SRID) of your table.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection)
 
 ``tableName``
-   Name of the table whose SRID should be changed or set.
-
-   Type: ``String``
+   Name of the table you want to change the SRID (and reproject if the table has already a SRID)
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -48,13 +40,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It preserves non-geometry columns when rebuilding the table.
-* If the table already has a primary key, it restores that primary key after recreating the table.
-* When the current SRID equals the requested SRID, it returns a message instead of modifying the table.
-

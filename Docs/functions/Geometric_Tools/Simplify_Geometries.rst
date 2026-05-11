@@ -1,14 +1,14 @@
-Simplify_Geometries
-===================
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Simplify geometries in a table.
+Simplify Geometries
+===================
 
 Overview
 --------
 
-``Simplify_Geometries.groovy`` simplifies geometries in a selected table using the Douglas-Peucker algorithm.
-
-The input table geometries are updated in place.
+➡️ Use Douglas-Peucker algorithm to simplify geometries in the selected table.
+✅ The input table geometries will be updated.
 
 Arguments
 ---------
@@ -17,48 +17,30 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableName``
-   Name of the table whose geometries will be simplified.
-
-   Type: ``String``
+   Name of the table on which geometries will be simplified.
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``distanceTolerance``
-   Tolerance distance used for simplification.
+   Sets the tolerance distance for the simplification (FLOAT).
 
    Default: ``1``
 
-   Type: ``Double``
-
 ``preserveTopology``
-   Whether topology should be preserved.
+   Do you want to preserve topology?
 
    Default: ``false``
-
-   Type: ``Boolean``
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It validates that the table has a geometry column and a metric SRID.
-* If ``preserveTopology`` is true, it uses ``ST_SimplifyPreserveTopology``.
-* Otherwise, it uses ``ST_Simplify`` and logs that invalid geometries may result.
-
+* ``exec(Connection connection, input)``

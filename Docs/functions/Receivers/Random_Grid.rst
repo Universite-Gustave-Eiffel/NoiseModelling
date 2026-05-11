@@ -1,59 +1,71 @@
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
 Random Grid
 ===========
 
 Overview
 --------
 
-Computes a random set of receiver points within the extent of the buildings and sources tables, or within a provided fence. The script creates a ``RECEIVERS`` table and removes points that fall too close to buildings or sources.
+➡️ Computes a random grid of receivers.
+✅ The output table is called RECEIVERS
 
-.. image:: receivers_random_output.png
-   :alt: Random grid output
-   :width: 95%
+.. figure:: receivers_random_output.png
    :align: center
+   :alt: Random grid output
 
 Arguments
 ---------
 
+Mandatory inputs
+~~~~~~~~~~~~~~~~
+
 ``buildingTableName``
-  Buildings table name. The table must contain ``THE_GEOM`` and ``HEIGHT``.
+   Name of the Buildings table  The table must contain:
+   
+   *  THE_GEOM: the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+   
+   *  HEIGHT: the height of the building (FLOAT)
 
 ``sourcesTableName``
-  Sources table name. Receivers closer than 1 meter to the provided source geometries are removed.
+   Keep only receivers at least at 1 meters of provided sources geometries  The table must contain :
+   
+   *  THE_GEOM: any geometry type.
 
 ``nReceivers``
-  Optional number of random receivers to generate. Default: ``100``.
+   Number of receivers to return
+   
+   .. figure:: receivers_random_nReceivers.png
+      :align: center
+      :alt: Number of receivers
 
-  .. image:: receivers_random_nReceivers.png
-     :alt: Number of receivers
-     :width: 95%
-     :align: center
+   Default: ``100``
+
+Optional inputs
+~~~~~~~~~~~~~~~
 
 ``height``
-  Optional receiver height in meters. Default: ``4``.
+   Height of receivers (in meters) (FLOAT)
+
+   Default: ``4``
 
 ``fence``
-  Optional polygon geometry used to restrict receiver creation. The script comments specify WGS84 (EPSG:4326) input for this parameter.
+   Create receivers only in the provided polygon.  Must be in the WGS84 (EPSG:4326) projection system
 
 ``fenceTableName``
-  Optional table name used to derive a bounding box filter from its ``THE_GEOM`` column.
+   Extract the bounding box of the specified table then create only receivers on the table bounding box.  The table must contain :
+   
+   *  THE_GEOM: any geometry type.
 
 Output
 ------
 
-The script returns the created ``RECEIVERS`` table name.
+``result``
+   Name of the table containing the results of the computation. Can be used as input for another process.
 
 Function Signatures
 -------------------
 
-.. code-block:: groovy
+The script exposes one entry point:
 
-   def exec(Connection connection, Map input)
-
-Execution Notes
----------------
-
-- The script builds a random point cloud inside the chosen computation envelope, then filters invalid receivers.
-- If no fence is provided, the envelope is computed from the combined extent of the sources and buildings tables.
-- A direct ``fence`` geometry is reprojected to the detected SRID before filtering.
-- Receivers closer than 1 meter to buildings or sources are deleted before the primary key is added.
-- A spatial index is created on the ``RECEIVERS`` table.
+* ``exec(Connection connection, input)``

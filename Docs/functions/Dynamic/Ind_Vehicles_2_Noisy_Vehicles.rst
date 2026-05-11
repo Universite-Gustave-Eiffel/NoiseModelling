@@ -1,18 +1,15 @@
-Ind_Vehicles_2_Noisy_Vehicles
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Ind Vehicles 2 Noisy Vehicles
 =============================
 
-Convert individual vehicles into emission noise levels and snap them to network point sources.
+Convert Individual Vehicles traffic to emission noise level and Snap them to the network point sources.
 
 Overview
 --------
 
-``Ind_Vehicles_2_Noisy_Vehicles.groovy`` calculates dynamic road emissions from individual vehicle trajectories and snaps them to the network source points.
-
-The output table is ``SOURCES_EMISSION`` and contains:
-
-* ``IDSOURCE``: identifier
-* ``PERIOD``: timestamp iteration
-* ``HZ63`` to ``HZ8000``: emission sound level for each octave band
+Calculating dynamic road emissions based on vehicles trajectories and snap them to the network   The output table is called : SOURCES_EMISSION  and contain : -   IDSOURCE   : an identifier (INTEGER). -   PERIOD  : The TIMESTAMP iteration (STRING).-   HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000  : 8 columns giving the emission sound level for each octave band (FLOAT).
 
 Arguments
 ---------
@@ -21,64 +18,32 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableVehicles``
-   Individual vehicles table.
-
-   It should contain timestep, geometry as ``POINT``, speed, acceleration, vehicle type, and similar trajectory attributes.
-
-   Type: ``String``
+   it should contain timestep, geometry (POINT), speed, acceleration, veh_type...
 
 ``tableSourceGeom``
-   Source geometry table.
-
-   This is the point-source geometry table to which the computed emissions are reattached according to the snap distance. It is expected to be similar to ``SOURCES_GEOM``.
-
-   Type: ``String``
-
-``distance2snap``
-   Maximum distance used to snap vehicles to network point sources.
-
-   Type: ``Double``
+   table of points source geometry, the output emission will be reattached to the index of this table according to the snap distance. Should be SOURCES_GEOM See Point_Source_From_Network to convert lines to points
 
 ``tableFormat``
-   Format of the individual vehicles table.
-
-   The script currently documents ``SUMO`` and ``Matsim``-style formats, while its inline code also handles ``SYMUVIA``.
-
-   Type: ``String``
+   Format of the individual Vehicles table. Can be for the moment SUMO or Matsim. See in the code to understand the different format.
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
+``distance2snap``
+   Maximum distance to snap on the network point sources
+
 ``keepNoEmissionGeoms``
-   Whether source geometries without any emission value should be kept.
-
-   Default behavior keeps them, which reduces computation time when later evaluating attenuation.
-
-   Type: ``Boolean``
+   Do not delete source geometries that does not contain any emission value. Default to true, it reduce the computation time when evaluating the attenuation
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It validates that the vehicles table uses a metric SRID.
-* It requires the source-geometry table to have an integer primary key.
-* It computes vehicle emission levels into an intermediate ``LW_VEHICLE`` table, then snaps each record to the nearest source geometry within the requested distance.
-* If several vehicles are associated with the same source and period, their levels are merged energetically into ``SOURCES_EMISSION``.
-* Depending on ``keepNoEmissionGeoms``, source geometries without associated emissions may be deleted from the source-geometry table.
-
+* ``exec(Connection connection, input)``

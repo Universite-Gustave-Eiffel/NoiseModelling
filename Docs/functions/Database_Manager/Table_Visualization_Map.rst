@@ -1,16 +1,16 @@
-Table_Visualization_Map
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Table Visualization Map
 =======================
 
-Display a table on a map.
+Diplay a table on a map.
 
 Overview
 --------
 
-``Table_Visualization_Map.groovy`` displays a table containing a geometry column on a map.
-
-Technically, it groups all geometries from the table and returns them in WKT OGC format.
-
-The script warns that very large tables may block the treatment.
+➡️ Display a table containing a geometric column on a map 🗺
+Technically, it groups all the geometries of a table and returns them in WKT OGC format.   🚨 Be careful, this treatment can be blocked if the table is too large.
 
 Arguments
 ---------
@@ -19,48 +19,25 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableName``
-   Name of the table to display.
-
-   Type: ``String``
+   Name of the table you want to display.
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   Original projection identifier, or SRID, of the table.
-
-   Coordinates are transformed from the specified SRID to WGS84 ``EPSG:4326``.
-
-   This input is optional because some formats already include projection metadata and some imported files may not contain geometry attributes.
+   🌍 Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER)  All coordinates will be projected from the specified EPSG to WGS84 coordinates.  This entry is optional because many formats already include the projection and you can also import files without geometry attributes.
 
    Default: ``4326``
-
-   Type: ``Integer``
 
 Output
 ------
 
 ``result``
-   Output geometry in WKT OGC form.
-
-   Type: ``Geometry``
+   This is the output geometry in WKT OGC format
 
 Function Signatures
 -------------------
 
-The script exposes two functions:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-* ``asWKT(Geometry geometry)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It normalizes the table name to uppercase.
-* It checks that the table contains at least one geometry column.
-* If the table already has an SRID and it differs from a user-provided ``inputSRID``, the script raises an exception.
-* When the table SRID is known, that SRID is used instead of the default input value.
-* The geometries are transformed to ``EPSG:4326`` and accumulated into a single returned geometry.
-
+* ``exec(Connection connection, input)``

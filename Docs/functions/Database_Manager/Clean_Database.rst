@@ -1,14 +1,15 @@
-Clean_Database
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Clean Database
 ==============
 
-Delete all database tables.
+Delete all database tables
 
 Overview
 --------
 
-``Clean_Database.groovy`` deletes all non-system tables from the database.
-
-This operation is explicitly marked for cautious use.
+➡️ Delete all non-system tables of the database.  🚨 Use with caution
 
 Arguments
 ---------
@@ -17,17 +18,13 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``areYouSure``
-   Confirmation flag indicating whether all database tables should be deleted.
-
-   Type: ``Boolean``
+   Are you sure you want to delete all the tables in the database?
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -35,13 +32,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It ignores the system tables ``SPATIAL_REF_SYS`` and ``GEOMETRY_COLUMNS``.
-* If ``areYouSure`` is ``true``, it drops every other table found in the ``PUBLIC`` schema.
-* If ``areYouSure`` is ``false``, the script leaves the database unchanged.
-

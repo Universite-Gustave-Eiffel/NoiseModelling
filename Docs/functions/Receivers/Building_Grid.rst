@@ -1,58 +1,83 @@
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Building Grid
+=============
+
 Buildings Grid
-===============
 
 Overview
 --------
 
-Generates facade receivers around building footprints, positioned 2 meters from the walls by default and placed at a fixed receiver height. The script creates a ``RECEIVERS`` table and stores the source building primary key in ``build_pk``. If the buildings table contains a ``POP`` field, the population is distributed across the generated receivers.
+➡️ Generates receivers, 2m around the building facades, at a given height.
+✅ The output table is called RECEIVERS and contain a field build_pk corresponding to the primary key of the buildings table
 
-.. image:: building_grid_output.png
-   :alt: Building grid output
-   :width: 95%
+.. figure:: building_grid_output.png
    :align: center
+   :alt: Building grid output
 
 Arguments
 ---------
 
+Mandatory inputs
+~~~~~~~~~~~~~~~~
+
 ``tableBuilding``
-  Buildings table name. The table must contain ``THE_GEOM`` as building polygons or multipolygons and ``HEIGHT`` as building height in meters. An optional ``POP`` field can also be present.
+   Name of the Buildings table.
+   The table must contain:
+   
+   *  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+   
+   *  HEIGHT : the height of the building (in meter) (FLOAT)
+   
+   *  POP : (optional field) building population to add in the receiver attribute (FLOAT)
+
+Optional inputs
+~~~~~~~~~~~~~~~
 
 ``fence``
-  Optional polygon geometry used to restrict receiver creation to a specific area.
+   Create receivers only in the provided polygon (fence)
 
 ``fenceTableName``
-  Optional table name used to derive a bounding box filter from its ``THE_GEOM`` column.
+   Filter receivers, using the bounding box of the given table name:
+   
+   *  Extract the bounding box of the specified table,
+   
+   *  then create only receivers on the table bounding box.
+   
+   The given table must contain:
+   
+   *  THE_GEOM : any geometry type.
 
 ``sourcesTableName``
-  Optional sources table. Receivers closer than 1 meter to the provided source geometries are removed.
+   Keep only receivers that are at least 1 meter from the provided source geometries.The source geometries table must contain:
+   
+   *  THE_GEOM : any geometry type.
 
 ``delta``
-  Optional spacing between receivers along facades, in meters. Default: ``10``.
+   Distance between receivers (in the Cartesian plane - in meter) (FLOAT)
+
+   Default: ``10``
 
 ``height``
-  Optional receiver height in meters. Default: ``4``.
+   Height of receivers (in meter) (FLOAT)
+
+   Default: ``4``
 
 ``distance``
-  Optional offset from the wall in meters. Default: ``2``.
+   Distance of receivers from the wall in meters (FLOAT)
+
+   Default: ``2``
 
 Output
 ------
 
-The script returns the created ``RECEIVERS`` table name. The output table contains receiver geometries and a ``build_pk`` field, plus ``pop`` when the input buildings table includes a population column.
+``result``
+   Name of the table containing the results of the computation. Can be used as input for another process.
 
 Function Signatures
 -------------------
 
-.. code-block:: groovy
+The script exposes one entry point:
 
-   def exec(Connection connection, Map input)
-   double splitLineStringIntoPoints(LineString geom, double segmentSizeConstraint, List<Coordinate> pts)
-
-Execution Notes
----------------
-
-- The buildings table must have an integer primary key and a ``HEIGHT`` field.
-- The script can use either a direct ``fence`` geometry or the envelope of ``fenceTableName`` as a spatial filter.
-- Receiver lines are built from buffered building outlines, truncated where taller neighboring buildings intersect them, then converted to regularly spaced points.
-- If a ``POP`` field exists on the buildings table, the script distributes the building population evenly across its generated receivers.
-- Temporary tables are created during processing and dropped before completion.
+* ``exec(Connection connection, input)``

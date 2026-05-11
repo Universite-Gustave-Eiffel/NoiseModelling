@@ -1,14 +1,16 @@
-Point_Source_0dB_From_Network
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Point Source 0dB From Network
 =============================
 
-Create a 0 dB source table from roads.
+Create 0db Source From Roads
 
 Overview
 --------
 
-``Point_Source_0dB_From_Network.groovy`` creates a ``SOURCES_0DB`` table from a roads table.
-
-This output can be used with ``Noise_level_from_source`` and ``confExportSourceId=true`` to compute an attenuation matrix independent of absolute source power.
+➡️ Creates a SOURCE table from a ROAD table.
+The SOURCE table can then be used in the Noise_level_from_source WPS block with the "confExportSourceId" set to true. The Noise_level_from_source output will contain a list of "source-receiver" attenuation matrix independent of the source absolute noise power levels.
 
 Arguments
 ---------
@@ -17,46 +19,24 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableRoads``
-   Name of the roads table.
-
-   It must contain at least:
-
-   * ``PK``: primary key identifier
-   * ``THE_GEOM``: geometry column
-
-   Type: ``String``
-
-Optional inputs
-~~~~~~~~~~~~~~~
+   Name of the Roads table.
+   
+   Must contain at least:- PK: identifier with a Primary Key constraint- THE_GEOM: geometric column
 
 ``gridStep``
-   Distance in meters between possible source locations along the network.
+   Distance between location of vehicle along the network in
 
    Default: ``10``
-
-   Type: ``Integer``
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It creates ``SOURCES_0DB`` with geometry and zero-valued octave-band columns.
-* It densifies the road geometry using the requested spacing.
-* It updates the geometry metadata so the output inherits the road SRID and becomes 3D at ``0.05`` meters height.
-
+* ``exec(Connection connection, input)``

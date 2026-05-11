@@ -1,20 +1,19 @@
-Import_OSM_Pedestrian
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Import OSM Pedestrian
 =====================
 
-Import pedestrian-oriented tables from OSM.
+Import Pedestrian tables from OSM
 
 Overview
 --------
 
-``Import_OSM_Pedestrian.groovy`` converts ``.osm``, ``.osm.gz``, or ``.osm.pbf`` files into NoiseModelling pedestrian-oriented input tables.
+➡️ Convert .osm, .osm.gz or .osm.pbf file into NoiseModelling input tables.
 
-It creates tables including:
-
-* ``BUILDINGS``
-* ``PEDESTRIAN_WAYS``
-* ``PEDESTRIAN_POIS``
-* ``GROUND``
-* ``PEDESTRIAN_AREA``
+The following output tables will be created:
+-  BUILDINGS : a table containing the buildings
+💡 The user can choose to avoid creating some of these tables by checking the dedicated boxes
 
 Arguments
 ---------
@@ -23,40 +22,24 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pathFile``
-   Path of the OSM file, including extension.
-
-   Supported extensions are ``.osm``, ``.osm.gz``, and ``.osm.pbf``.
-
-   Type: ``String``
+   📂 Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).
+   For example: c:/home/area.osm.pbf
 
 ``targetSRID``
-   Target projection identifier of the created tables.
-
-   It must be metric.
-
-   Type: ``Integer``
+   🌍 Target projection identifier (also called SRID) of your table.
+   It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Web Mercator projection).
+   
+   ❗ The target SRID must be in metric coordinates.
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It reads the OSM file and extracts buildings, pedestrian ways, pedestrian POIs, and ground areas.
-* It builds intermediate pedestrian-area tables and then derives a final ``PEDESTRIAN_AREA`` table.
-* It creates spatial indexes on the generated geometry tables.
-

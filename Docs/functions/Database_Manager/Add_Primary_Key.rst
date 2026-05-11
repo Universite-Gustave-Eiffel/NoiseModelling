@@ -1,16 +1,16 @@
-Add_Primary_Key
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Add Primary Key
 ===============
 
-Add a primary-key column or constraint.
+Add primary key column or constraint
 
 Overview
 --------
 
-``Add_Primary_Key.groovy`` adds a primary-key column to a table, or adds a primary-key constraint to an existing column.
-
-This is useful because source and receiver tables must have a primary key before running some calculations.
-
-If the table already has a primary key, the script removes that constraint before applying the requested change.
+➡️ Add a Primary Key (🔑) column or add a Primary Key constraint to a column of a table.
+It is necessary to add a Primary Key on one of the columns for the source and receiver tables before doing a calculation.  💡 If the table already has a Primary Key, it will remove the constraint before the operation.
 
 Arguments
 ---------
@@ -19,24 +19,16 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pkName``
-   Name of the column to add, or of the existing column that should receive the primary-key constraint.
-
-   Primary-key values must be unique and cannot contain ``NULL`` values.
-
-   Type: ``String``
+   Name of the column to be added, or for which the main key constraint will be added.  💡 Primary keys must contain UNIQUE values, and cannot contain NULL values
 
 ``tableName``
-   Name of the table on which a primary key will be added.
-
-   Type: ``String``
+   Name of the table on which a primary key will be added
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -44,14 +36,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It normalizes the table name and target column name to uppercase.
-* If the table already has an integer primary key, the existing primary-key constraint is dropped first.
-* If the requested column already exists, the script makes it ``INT NOT NULL`` and adds a primary-key constraint.
-* Otherwise, it creates a new ``INT AUTO_INCREMENT PRIMARY KEY`` column with the requested name.
-

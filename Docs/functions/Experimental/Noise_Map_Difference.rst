@@ -1,14 +1,15 @@
-Noise_Map_Difference
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Noise Map Difference
 ====================
 
-Compute the difference between two noise maps.
+Map Difference
 
 Overview
 --------
 
-``Noise_Map_Difference.groovy`` computes the difference between two noise-map tables and writes the result into a new output table.
-
-The subtraction can be done in the default order or inverted.
+➡️ Computes the difference between two noise maps
 
 Arguments
 ---------
@@ -17,77 +18,42 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``mainMapTable``
-   Name of the table containing the primary noise-map data.
-
-   The table must contain:
-
-   * ``PK``
-   * ``THE_GEOM``
-   * ``HZ63`` to ``HZ8000``
-   * ``LAEQ``
-   * ``LEQ``
-
-   Type: ``String``
+   Name of the table containing the primary noise map data.
+   
+   The table must contain the following columns:
+   PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ
 
 ``secondMapTable``
-   Name of the table containing the secondary noise-map data.
-
-   The table must contain:
-
-   * ``PK``
-   * ``THE_GEOM``
-   * ``HZ63`` to ``HZ8000``
-   * ``LAEQ``
-   * ``LEQ``
-
-   Type: ``String``
+   Name of the table containing the second noise map data.
+   
+   The table must contain the following columns:
+   PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ
 
 ``outTable``
-   Name of the output table to create.
-
-   The created table contains:
-
-   * ``PK``
-   * ``THE_GEOM``
-   * ``HZ63`` to ``HZ8000``
-   * ``LAEQ``
-   * ``LEQ``
-
-   Type: ``String``
+   Name of the table you want to create
+   
+   The table will contain the following columns:
+   PK, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000, LAEQ, LEQ
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``invert``
-   Whether the subtraction should be inverted.
-
-   * ``false``: primary map minus second map
-   * ``true``: second map minus primary map
-
-   Type: ``Boolean``
+   Invert the substraction?
+   
+   * False (default) : Primary map - Second map
+   
+   * True : Second map - Primary map
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It drops the requested output table if it already exists.
-* It joins the two input maps on ``IDRECEIVER`` and ``TIMESTRING``.
-* It computes per-band, ``LAEQ``, and ``LEQ`` differences directly in SQL.
-* The optional ``invert`` flag changes the sign of the subtraction in the generated SQL query.
-

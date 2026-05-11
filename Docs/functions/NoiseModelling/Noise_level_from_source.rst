@@ -1,24 +1,26 @@
-Noise_level_from_source
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Noise level from source
 =======================
 
-Computes the propagation from the sounds sources to the receivers.
+Computes the propagation from the sounds sources to the receivers
 
 Overview
 --------
 
-``Noise_level_from_source.groovy`` computes the propagation from the sound sources to the receiver locations using the noise emission table.
+➡️ Computes the propagation from the sounds sources to the receivers location using the noise emission table.
+🌍 Tables must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. ✅ The output table are called:  RECEIVERS_LEVEL  The output table contain:
 
-Tables must be projected in a metric coordinate system (SRID). Use ``Change_SRID`` if needed.
+*  IDRECEIVER: receiver an identifier (INTEGER) linked to RECEIVERS table primary key
 
-The output table is called ``RECEIVERS_LEVEL``.
+*  IDSOURCE: source identifier (INTEGER) linked to SOURCES_GEOM primary key. Only if Keep source id is checked.
 
-The output table contains:
+*  PERIOD : Time period (VARCHAR) ex. L D E and DEN. Only if you provide emission power to sources or the atmospheric settings table.
 
-* ``IDRECEIVER``: receiver identifier linked to the ``RECEIVERS`` table primary key.
-* ``IDSOURCE``: source identifier linked to the ``SOURCES_GEOM`` primary key. Present only if ``Keep source id`` is enabled.
-* ``PERIOD``: time period such as ``L``, ``D``, ``E`` and ``DEN``. Present only if source emission power or atmospheric settings per period are provided.
-* ``THE_GEOM``: 3D geometry of the receivers, with ``Z`` as altitude (``POINTZ``).
-* ``Hz63``, ``Hz125``, ``Hz250``, ``Hz500``, ``Hz1000``, ``Hz2000``, ``Hz4000``, ``Hz8000``: sound level for each octave band.
+*  THE_GEOM : the 3D geometry of the receivers with the Z as the altitude (POINTZ)
+
+*  Hz63, Hz125, Hz250, Hz500, Hz1000,Hz2000, Hz4000, Hz8000 : 8 columns giving the sound level for each octave band (FLOAT)
 
 Arguments
 ---------
@@ -27,261 +29,191 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableBuilding``
-   Buildings table name.
-
-   The table must contain:
-
-   * ``THE_GEOM``: 2D geometry of the building (``POLYGON`` or ``MULTIPOLYGON``)
-   * ``HEIGHT``: building height (``FLOAT``)
-   * ``G``: optional wall absorption value if ``G`` is in ``[0, 1]``, or wall surface impedance if ``G`` is in ``[20, 20000]``. Default is ``0.1`` if the column does not exist.
-
-   Type: ``String``
+   🏠 Name of the Buildings table The table must contain:
+   
+   *  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+   
+   *  HEIGHT : the height of the building (FLOAT)
+   
+   *  G : Optional, Wall absorption value if g is [0, 1] or wall surface impedance ([N.s.m-4] static air flow resistivity of material) if G is [20, 20000] (default is 0.1 if the column G does not exists) (FLOAT)
 
 ``tableSources``
-   Sources geometry table name.
-
-   The table must contain:
-
-   * ``PK``: identifier. It shall be a primary key (``INTEGER, PRIMARY KEY``)
-   * ``THE_GEOM``: 3D source geometry (``POINT``, ``MULTIPOINT``, ``LINESTRING``, ``MULTILINESTRING``). According to CNOSSOS-EU, road traffic emission should use a height of ``0.05 m``.
-   * ``HZD63``, ``HZD125``, ``HZD250``, ``HZD500``, ``HZD1000``, ``HZD2000``, ``HZD4000``, ``HZD8000``: day emission sound level for each octave band
-   * ``HZE``: evening emission sound level columns for each octave band
-   * ``HZN``: night emission sound level columns for each octave band
-   * ``YAW``: horizontal orientation in degrees. For points, ``0`` is north and ``90`` is east. For lines, ``0`` is line direction and ``90`` is right of line direction.
-   * ``PITCH``: vertical orientation in degrees. ``0`` front, ``90`` top, ``-90`` bottom.
-   * ``ROLL``: roll in degrees
-   * ``DIR_ID``: directivity sphere identifier from ``tableSourceDirectivity`` or train directivity if not provided. Values include ``OMNIDIRECTIONAL(0)``, ``ROLLING(1)``, ``TRACTIONA(2)``, ``TRACTIONB(3)``, ``AERODYNAMICA(4)``, ``AERODYNAMICB(5)``, ``BRIDGE(6)``.
-
-   This table can be generated from the ``Road_Emission_from_Traffic`` WPS block.
-
-   Type: ``String``
+   Name of the Sources table (if only geometry is specified)  The table must contain (* mandatory):
+   
+   *   PK * : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)
+   
+   *   THE_GEOM * : the 3D geometry of the sources (POINT, MULTIPOINT, LINESTRING, MULTILINESTRING). According to CNOSSOS-EU, you need to set a height of 0.05 m for a road traffic emission
+   
+   *   HZD63, HZD125, HZD250, HZD500, HZD1000, HZD2000, HZD4000, HZD8000  : 8 columns giving the day emission sound level for each octave band (FLOAT)
+   
+   *   HZE  : 8 columns giving the evening emission sound level for each octave band (FLOAT)
+   
+   *   HZN  : 8 columns giving the night emission sound level for each octave band (FLOAT)
+   
+   *   YAW  : Source horizontal orientation in degrees. For points 0° North, 90° East. For lines 0° line direction, 90° right of the line direction.  (FLOAT)
+   
+   *   PITCH  : Source vertical orientation in degrees. 0° front, 90° top, -90° bottom. (FLOAT)
+   
+   *   ROLL  : Source roll in degrees (FLOAT)
+   
+   *   DIR_ID  : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER)
+   
+   💡 This table can be generated from the WPS Block "Road_Emission_from_Traffic"
 
 ``tableReceivers``
-   Receivers table name.
-
-   The table must contain:
-
-   * ``PK``: identifier. It shall be a primary key (``INTEGER, PRIMARY KEY``)
-   * ``THE_GEOM``: 3D geometry of the receivers (``POINT``, ``MULTIPOINT``)
-
-   This table can be generated from WPS blocks in the ``Receivers`` folder.
-
-   Type: ``String``
+   Name of the Receivers table  The table must contain:
+   
+   *   PK  : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)
+   
+   *   THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
+   
+   💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``tableSourcesEmission``
-   Sources emission table name, for example ``SOURCES_EMISSION``.
-
-   The table must contain:
-
-   * ``IDSOURCE``: identifier linked to the primary key of the source geometry table
-   * ``PERIOD``: time period copied to the output
-   * ``HZ63``, ``HZ125``, ``HZ250``, ``HZ500``, ``HZ1000``, ``HZ2000``, ``HZ4000``, ``HZ8000``: emission noise level in dB. Third-octave bands from ``50 Hz`` to ``10000 Hz`` can also be used.
-
-   Type: ``String``
+   Name of the Sources table (ex. SOURCES_EMISSION)  The table must contain:
+   
+   *  IDSOURCE * : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)
+   
+   *  PERIOD * : Time period, you will find this column on the output (VARCHAR)
+   
+   *   HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000  : Emission noise level in dB can be third-octave 50Hz to 10000Hz (FLOAT)
 
 ``tableDEM``
-   Digital Elevation Model table name.
-
-   The table must contain:
-
-   * ``THE_GEOM``: 3D geometry (``POINT``, ``MULTIPOINT``)
-
-   This table can be generated from ``Import_Asc_File``.
-
-   Type: ``String``
+   Name of the Digital Elevation Model (DEM) table  The table must contain:
+   
+   *   THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
+   
+   💡 This table can be generated from the WPS Block "Import_Asc_File"
 
 ``tableGroundAbs``
-   Ground absorption table name.
-
-   The table must contain:
-
-   * ``THE_GEOM``: 2D geometry (``POLYGON`` or ``MULTIPOLYGON``)
-   * ``G``: ground acoustic absorption between ``0`` (very hard) and ``1`` (very soft)
-
-   Type: ``String``
+   Name of the surface/ground acoustic absorption table  The table must contain:
+   
+   *   THE_GEOM : the 2D geometry of the sources (POLYGON or MULTIPOLYGON)
+   
+   *   G : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft)
 
 ``tableSourceDirectivity``
-   Source directivity table name.
-
-   If not specified, the default is CNOSSOS-EU train directivity.
-
-   The table must contain:
-
-   * ``DIR_ID``: directivity sphere identifier
-   * ``THETA``: vertical angle in degrees, from ``-90`` to ``90``. ``0`` front, ``90`` top, ``-90`` bottom.
-   * ``PHI``: horizontal angle in degrees, from ``0`` to ``360``. ``0`` front, ``90`` right.
-   * ``HZ63``, ``HZ125``, ``HZ250``, ``HZ500``, ``HZ1000``, ``HZ2000``, ``HZ4000``, ``HZ8000``: attenuation in dB for each octave or third-octave band.
-
-   Type: ``String``
+   Name of the emission directivity table  If not specified the default is train directivity of CNOSSOS-EU  The table must contain the following columns:
+   
+   *   DIR_ID : identifier of the directivity sphere (INTEGER)
+   
+   *   THETA : [-90;90] Vertical angle in degree. 0° front 90° top -90° bottom (FLOAT)
+   
+   *   PHI : [0;360] Horizontal angle in degree. 0° front 90° right (FLOAT)
+   
+   *   HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 : attenuation levels in dB for each octave or third octave (FLOAT)
 
 ``tablePeriodAtmosphericSettings``
-   Atmospheric settings table name for each time period.
-
-   The table must contain:
-
-   * ``PERIOD``: time period (``VARCHAR PRIMARY KEY``)
-   * ``WINDROSE``: probability of favorable propagation conditions (``ARRAY(16)``)
-   * ``TEMPERATURE``: temperature in Celsius
-   * ``PRESSURE``: air pressure in pascal
-   * ``HUMIDITY``: air humidity in percent
-   * ``GDISC``: whether ground discontinuity is accepted. Default ``true``.
-   * ``PRIME2520``: whether prime values are used for equation 2.5.20. Default ``false``.
-
-   Type: ``String``
+   Name of the Atmospheric settings table  The table must contain the following columns:
+   
+   *   PERIOD : time period (VARCHAR PRIMARY KEY)
+   
+   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   
+   *   TEMPERATURE : Temperature in celsius (FLOAT)
+   
+   *   PRESSURE : air pressure in pascal (FLOAT)
+   
+   *   HUMIDITY : air humidity in percentage (FLOAT)
+   
+   *   GDISC : choose between accept G discontinuity or not (BOOLEAN) default true
+   
+   *   PRIME2520 : choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false
 
 ``paramWallAlpha``
-   Wall absorption coefficient in ``[0,1]``, where ``0`` is fully reflective and ``1`` is fully absorbent.
+   Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully
 
    Default: ``0.1``
 
-   Type: ``Double``
-
 ``confReflOrder``
-   Maximum number of reflections to take into account.
-
-   Adding one more order of reflection can significantly increase processing time.
+   Maximum number of reflections to be taken into account (INTEGER).  🚨 Adding 1 order of reflexion can significantly increase the processing time.
 
    Default: ``1``
 
-   Type: ``Integer``
-
 ``confMaxSrcDist``
-   Maximum source-receiver distance in meters.
+   Maximum distance between source and receiver (FLOAT, in meters).
+   
+   .. figure:: acoustics_parameters_confMaxSrcDist.png
+      :align: center
+      :alt: Noise level from source
 
    Default: ``150``
 
-   Type: ``Double``
-
-   .. figure:: ../../wps_images/acoustics_parameters_confMaxSrcDist.png
-      :align: center
-      :alt: Maximum source-receiver distance
-
 ``confMaxReflDist``
-   Maximum search distance of walls or facades from the source-receiver segment for specular reflections, in meters.
+   Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters).
+   
+   .. figure:: acoustics_parameters_confMaxReflDist.png
+      :align: center
+      :alt: Noise level from source
 
    Default: ``50``
 
-   Type: ``Double``
-
-   .. figure:: ../../wps_images/acoustics_parameters_confMaxReflDist.png
-      :align: center
-      :alt: Maximum source-reflection distance
-
 ``confThreadNumber``
-   Number of threads to use.
+   Number of thread to use on the computer (INTEGER).
 
-   Default: ``0`` meaning automatic detection of CPU cores minus one. For example, on an 8-core machine, 7 cores are used.
-
-   Type: ``Integer``
+   Default: ``0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used``
 
 ``confDiffVertical``
-   Whether diffraction on vertical edges is computed.
-
-   Following Directive 2015/996, this should be enabled for rail and industrial sources only.
+   Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only.
 
    Default: ``false``
-
-   Type: ``Boolean``
 
 ``confDiffHorizontal``
-   Whether diffraction on horizontal edges is computed.
+   Compute or not the diffraction on horizontal edges.
 
    Default: ``false``
-
-   Type: ``Boolean``
 
 ``confExportSourceId``
-   Whether source identifiers are preserved in the output so the contribution of each source can be separated.
+   Keep source identifier in output in order to get noise contribution of each noise source.
 
    Default: ``false``
 
-   Type: ``Boolean``
-
 ``confHumidity``
-   Relative humidity for noise propagation, in percent from ``0`` to ``100``.
+   🌧 Humidity for noise propagation (%) [0,100].
 
    Default: ``70``
 
-   Type: ``Double``
-
 ``confTemperature``
-   Air temperature in degrees Celsius.
+   🌡 Air temperature (°C).
 
    Default: ``15``
 
-   Type: ``Double``
-
 ``confFavourableOccurrencesDefault``
-   Comma-delimited string containing the probability, between ``0`` and ``1``, of favorable propagation conditions.
-
-   Values follow the clockwise direction. The north slice is the last array index, number 16 in the schema, not the first one.
+   Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
 
    Default: ``0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5``
 
-   Type: ``String``
-
-   .. figure:: ../../wps_images/acoustics_parameters_confFavorableOccurrences.png
-      :align: center
-      :alt: Favorable propagation occurrence schema
-
 ``confRaysName``
-   Export scene to a table, for example ``RAYS``, or to a file URL such as ``file:///Z:/dir/map.kml``.
+   Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml)  You can set a table name here in order to save all the rays computed by NoiseModelling.  The number of rays has been limited in this script in order to avoid memory exception.
 
-   This can be used to save the terrain model, buildings, and propagation rays computed by NoiseModelling.
-
-   The number of rays is limited in this script to avoid memory exceptions.
-
-   Default: empty value, meaning rays are not kept.
-
-   Type: ``String``
+   Default: ``empty (do not keep rays)``
 
 ``confMaxError``
-   Threshold in dB used to exclude negligible sound sources from calculations.
+   Threshold for excluding negligible sound sources in
 
-   Default: ``0.1``
-
-   This parameter is ignored if no emission level is specified or if it is set to ``0 dB``. It has a strong impact on computation time.
-
-   Type: ``Double``
+   Default: ``0.1 This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.``
 
 ``frequencyFieldPrepend``
-   Prefix used for frequency field names.
-
-   For example, for ``1000 Hz`` the default column name is ``HZ1000``.
+   Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is
 
    Default: ``HZ``
-
-   Type: ``String``
 
 Output
 ------
 
 ``result``
-   Name of the table containing the computation results. It can be used as input for another process.
-
-   Type: ``String``
+   Name of the table containing the results of the computation. Can be used as input for another process.
 
 Function Signatures
 -------------------
 
-The script exposes two entry points:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input, ProgressVisitor progress)``
-* ``exec(Connection connection, Map input)``
-
-The second form calls the first one with an ``EmptyProgressVisitor``.
-
-Execution Notes
----------------
-
-The script comments and inline checks show the following behavior:
-
-* Source, receiver, building, DEM, and ground tables are validated for metric SRID compatibility.
-* Source and receiver tables must have geometry columns and integer primary keys.
-* The script drops ``RECEIVERS_LEVEL`` if it already exists before running.
-* If ``tableSourceDirectivity`` is not provided, CNOSSOS-EU train directivity is used by default.
-* If ``tableSourcesEmission`` is provided, period-based emissions are propagated into the output.
-* If ``tablePeriodAtmosphericSettings`` is provided, atmospheric settings can vary by period.
+* ``exec(Connection connection, input)``

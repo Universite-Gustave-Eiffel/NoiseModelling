@@ -1,14 +1,16 @@
-Import_Asc_Folder
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Import Asc Folder
 =================
 
-Import all ``.asc`` files from a folder.
+Import all .asc files from a folder
 
 Overview
 --------
 
-``Import_Asc_Folder.groovy`` imports all files with the ``.asc`` extension from a folder into the database.
-
-The script description states that resulting tables should follow the input filenames.
+➡️ Import all files with .asc extension from a folder to the database
+✅ The resulting tables will have the same name as the input files
 
 .. figure:: import_asc_folder.png
    :align: center
@@ -21,34 +23,26 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pathFolder``
-   Path of the folder to scan.
-
-   Type: ``String``
+   📂 Path of the folder  For example: c:/home/inputdata/
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   Projection identifier of the input ``.asc`` files.
+   🌍 Original projection identifier (also called SRID) of the .asc file.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection).
 
    Default: ``4326``
 
-   Type: ``Integer``
-
 ``downscale``
-   Number of pixels skipped on each axis.
+   Divide the number of rows and columns read by the following coefficient (FLOAT)
 
-   Default: ``1``
-
-   Type: ``Integer``
+   Default: ``1.0``
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -56,13 +50,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It recursively scans the folder for ``.asc`` files.
-* It tries to read a matching ``.prj`` file per raster, otherwise it falls back to the default or provided SRID.
-* It uses the ASCII reader in 3D-point mode and can downscale the raster resolution.
-

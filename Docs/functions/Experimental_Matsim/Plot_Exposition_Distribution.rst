@@ -1,14 +1,13 @@
-Plot_Exposition_Distribution
-============================
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Plot the distribution of a noise-exposure field.
+Plot Exposition Distribution
+============================
 
 Overview
 --------
 
-``Plot_Exposition_Distribution.groovy`` displays a graph showing the distribution of a selected field in a previously calculated MATSim agent-exposure table.
-
-The script opens a graph window on the server.
+Plot a graph displaying the distribution of a chosen field in a previously calculated Matsim agents noise exposition table. Will display a Graph Window on the server
 
 Arguments
 ---------
@@ -17,56 +16,28 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``expositionsTableName``
-   Name of the table containing the exposure values.
-
-   The table must contain fields such as:
-
-   * ``PK``
-   * ``PERSON_ID``
-   * ``HOME_FACILITY``
-   * ``HOME_GEOM``
-   * ``WORK_FACILITY``
-   * ``WORK_GEOM``
-   * ``LAEQ``
-   * ``HOME_LAEQ``
-   * ``DIFF_LAEQ``
-
-   Type: ``String``
+   Name of the table containing the expositions
+   The table must contain the following fields :
+   PK, PERSON_ID, HOME_FACILITY, HOME_GEOM, WORK_FACILITY, WORK_GEOM, LAEQ, HOME_LAEQ, DIFF_LAEQ
 
 ``expositionField``
-   Field containing the exposure values to plot.
-
-   Type: ``String``
+   Field containing noise exposition
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``otherExpositionField``
-   Second exposure field to plot for comparison.
-
-   Type: ``String``
+   Other field containing noise exposition
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It computes cumulative percentages of agents exposed above each level from ``20`` to ``100`` dB.
-* It can plot one or two exposure series depending on whether the comparison field is provided.
-* It renders the result with JFreeChart in a Swing window on the server.
-

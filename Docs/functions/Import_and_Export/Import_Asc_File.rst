@@ -1,16 +1,16 @@
-Import_Asc_File
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Import Asc File
 ===============
 
-Import an ESRI ASCII raster file as a DEM.
+Import Asc File.
 
 Overview
 --------
 
-``Import_Asc_File.groovy`` imports an ESRI ASCII raster file and converts it into a DEM compatible with NoiseModelling.
-
-The output table is ``DEM`` and contains:
-
-* ``THE_GEOM``: 3D DEM point cloud as points
+➡️ Import ESRI Ascii Raster file and convert into a Digital Elevation Model (DEM) compatible with NoiseModelling (X,Y,Z).
+Valid file extensions : asc and asc.gz .  ✅ The output table is called: DEM and contain: - THE_GEOM: the 3D point cloud of the DEM (POINT)
 
 .. figure:: import_asc_file.png
    :align: center
@@ -23,54 +23,33 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pathFile``
-   Path to the input ``.asc`` or ``.asc.gz`` file.
-
-   Type: ``String``
+   📂 Path of the ESRI Ascii Raster file you want to import, including its extension. Can be gzip compressed.  For example: c:/home/receivers.asc or c:/home/receivers.asc.gz
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   Projection identifier of the input ASCII file.
+   🌍 Original projection identifier (also called SRID) of the .asc files.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection).
 
    Default: ``4326``
 
-   Type: ``Integer``
-
 ``fence``
-   Polygon geometry used to restrict DEM extraction to a subset area.
-
-   Type: ``Geometry``
+   Create DEM table only in the provided polygon
 
 ``downscale``
-   Number of pixels skipped on each axis.
+   Divide the number of rows and columns read by the following coefficient (FLOAT)
 
-   Default: ``1``
-
-   Type: ``Integer``
+   Default: ``1.0``
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It accepts ``.asc`` and ``.asc.gz`` files only.
-* If a matching ``.prj`` file exists, the SRID is inferred from it; otherwise the default or provided SRID is used.
-* If a fence is provided, it is transformed to the DEM SRID before extraction.
-* It imports the raster as 3D points and creates a spatial index on ``DEM``.
-
+* ``exec(Connection connection, input)``

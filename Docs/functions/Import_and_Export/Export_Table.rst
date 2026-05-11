@@ -1,14 +1,14 @@
-Export_Table
-============
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Export a database table to a local file.
+Export Table
+============
 
 Overview
 --------
 
-``Export_Table.groovy`` exports a table from the database into a local file.
-
-Supported output extensions include ``csv``, ``dbf``, ``geojson``, ``json``, ``kml``, ``shp``, ``tsv``, and ``fgb``.
+➡️ Export table from the database into a local file.
+Valid file extensions: csv, dbf, geojson, gpx, bz2, gz, osm, shp, tsv, fgb
 
 .. figure:: export_table.png
    :align: center
@@ -21,46 +21,20 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``exportPath``
-   Output file path, including the extension.
-
-   Example: ``c:/home/receivers.geojson``
-
-   Type: ``String``
+   📂 Path of the file, including its extension.  For example: c:/home/receivers.geojson
 
 ``tableToExport``
-   Table name or SQL query to export.
-
-   The metadata documents two forms:
-
-   * a simple table name
-   * a ``SELECT`` query wrapped in parentheses
-
-   Type: ``String``
+   Table Name or SQL Query Option 1: Simple table name Enter the name of an existing table, e.g.: mytable  Option 2: SQL query with parenthesis Wrap your SELECT query in parenthesis to export filtered or joined data Example: (SELECT * FROM mytable WHERE field = 1)
 
 Output
 ------
 
 ``result``
-   Exported table name that can be reused as an input for another process.
-
-   Type: ``String``
+   The name of the exported table, can be used as input for another process
 
 Function Signatures
 -------------------
 
-The script exposes two entry points:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input, ProgressVisitor progress)``
-* ``exec(Connection connection, Map input)``
-
-The second form calls the first one with a ``RootProgressVisitor``.
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It checks that the table is not empty before exporting.
-* It chooses the export driver from the file extension.
-* It reports the SRID of the exported table when available.
-
+* ``exec(Connection connection, input)``
