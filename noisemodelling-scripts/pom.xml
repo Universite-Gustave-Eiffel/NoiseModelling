@@ -48,11 +48,7 @@
                 <shell.executable>cmd</shell.executable>
                 <shell.arg>/c</shell.arg>
                 <sphinx.command>
-                    where python >nul 2>nul &amp;&amp; (
-                    python -m venv target/venv &amp;&amp;
-                    target\venv\Scripts\python -m pip install -r ..\Docs\requirements.txt &amp;&amp;
-                    target\venv\Scripts\sphinx-build -M html ..\Docs target\sphinx
-                    ) || echo Python not found. Skipping documentation generation.
+                    where python >nul 2>nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
                 </sphinx.command>
             </properties>
         </profile>
@@ -260,6 +256,7 @@
                                 <argument>${shell.arg}</argument>
                                 <argument>${sphinx.command}</argument>
                             </arguments>
+                            <inheritIo>true</inheritIo>
                         </configuration>
                     </execution>
                 </executions>
