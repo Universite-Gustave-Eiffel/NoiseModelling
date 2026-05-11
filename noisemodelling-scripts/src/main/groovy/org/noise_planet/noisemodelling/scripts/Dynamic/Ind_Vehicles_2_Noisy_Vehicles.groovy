@@ -51,7 +51,7 @@ inputs = [
                   description : "it should contain timestep, geometry (POINT), speed, acceleration, veh_type...",
                   type: String.class],
         tableSourceGeom : [name : 'Source geometry table',
-                           title : "table of the individual Vehicles",
+                           title : "table of the source geometry",
                            description : "table of points source geometry, the output emission will be reattached to" +
                                    " the index of this table according to the snap distance. Should be SOURCES_GEOM" +
                                    " See Point_Source_From_Network to convert lines to points",
