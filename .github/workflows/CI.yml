@@ -112,6 +112,10 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       - name: Building
         run: mvn test install javadoc:test-javadoc javadoc:jar package -B
       - name: Extract packaged zip with windows
