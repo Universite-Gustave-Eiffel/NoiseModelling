@@ -121,6 +121,10 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+# Get rid of duplicate label warnings when using several time the same
+# title
+suppress_warnings = ['autosectionlabel.*']
+
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.

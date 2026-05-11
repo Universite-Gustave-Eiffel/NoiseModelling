@@ -160,7 +160,7 @@ Fundings
     Tutorial_Noise_Map_From_OSM
     Tutorial_Matsim
     Tutorial_Dynamic
-    Data_Assimilation_Tutorial
+    Tutorial_Data_Assimilation
     Get_Started_Script
     Tutorials_FAQ
 
