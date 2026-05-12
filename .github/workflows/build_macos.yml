@@ -1,0 +1,59 @@
+name: Reusable macOS Build
+
+on:
+  workflow_call:
+    inputs:
+      git_ref:
+        description: 'The git ref to checkout'
+        required: true
+        type: string
+    outputs:
+      # Tier 3: Map Workflow Output -> Job Output
+      installer_name:
+        description: "The filename of the generated DMG file"
+        value: ${{ jobs.build.outputs.dmg_name }} # MUST reference jobs, not steps
+
+jobs:
+  build:
+    runs-on: macos-latest
+    outputs:
+      dmg_name: ${{ steps.get_name.outputs.FILENAME }}
+    steps:
+      # Checkout the source code of the project
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            $HOME/.m2/
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      # Setup the jdk
+      - name: Setup java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Building
+        run: mvn package -B -DskipTests
+      - name: Extract DMG Filename
+        id: get_name
+        run: |
+          # Find the dmg file and get just the filename
+          FULL_PATH=$(ls noisemodelling-scripts/target/*.dmg | head -n 1)
+          FILENAME=$(basename "$FULL_PATH")
+          echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
+          echo "Detected DMG: $FILENAME"
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.get_name.outputs.FILENAME }}
+          path: noisemodelling-scripts/target/*.dmg
+          if-no-files-found: error

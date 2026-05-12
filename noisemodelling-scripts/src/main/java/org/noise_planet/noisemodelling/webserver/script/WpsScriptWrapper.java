@@ -111,8 +111,9 @@ public class WpsScriptWrapper {
                 logger.warn("Can't find scripts in Jar files using this URL {}.", loader.getResource(scriptDirectoryName), e);
                 return new TreeMap<>();
             }
+        } else {
+            walkUri(grouped, logger, baseDir.toURI(), scriptDirectoryName);
         }
-        walkUri(grouped, logger, baseDir.toURI(), scriptDirectoryName);
         int scriptCount = grouped.size();
         if(scriptCount == 0) {
             logger.warn("No scripts found in directory/package: {}", scriptDirectoryName);
@@ -122,47 +123,78 @@ public class WpsScriptWrapper {
         return grouped;
     }
 
+    /**
+     * Walks through the contents of a given URI, which can point to either a directory in the file system or a location within a JAR file, to find and process Groovy script files.
+     * @param grouped a map to store the metadata of found scripts, where the key is a unique identifier for each script and the value is a ScriptMetadata object containing details about the script
+     * @param logger a Logger instance for logging information and warnings during the script discovery process
+     * @param resourcesScriptUri a URI pointing to the location to be scanned for Groovy script files; this can be a file system path or a JAR file path
+     * @param scriptDirectoryName the name of the script directory being scanned, used for logging purposes and to ensure correct path handling within JAR files
+     * @throws IOException if an I/O error occurs while accessing the URI or reading script files, or if the URI is malformed and cannot be processed correctly
+     */
 
     private static void walkUri(Map<String, ScriptMetadata> grouped, Logger logger, URI resourcesScriptUri, String scriptDirectoryName) throws IOException {
-        try (FileSystem fileSystem = FileSystems.newFileSystem(resourcesScriptUri, Collections.emptyMap())) {
-            Path fileSystemPath = fileSystem.getPath(scriptDirectoryName);
-            try (Stream<Path> stream = Files.walk(fileSystemPath)) {
-                stream.forEach(path -> {
-                    if(Files.isRegularFile(path) && path.toString().endsWith(".groovy")) {
-                        String relativePath =
-                                fileSystem.getPath(scriptDirectoryName).relativize(path).toString();
-                        String group = relativePath.substring(0,
-                                relativePath.lastIndexOf(File.separator));
-                        try {
-                            ScriptMetadata script = new ScriptMetadata(group, path.toUri(), resourcesScriptUri);
-                            grouped.put(script.id, script);
-                        } catch (IOException e) {
-                            logger.warn("Error while loading script metadata for file {} in Jar, " +
-                                    "skipping this script.", path, e);
-                        }
-                    }
-                });
+        String scheme = resourcesScriptUri.getScheme();
+
+        if ("jar".equals(scheme)) {
+            // --- JAR LOGIC script folder not found, use the Jar file system to read the scripts ---
+            String uriStr = resourcesScriptUri.toString();
+            String[] parts = uriStr.split("!/");
+            URI jarUri = URI.create(parts[0]);
+            String absoluteScriptPath = scriptDirectoryName.startsWith("/") ? scriptDirectoryName : "/" + scriptDirectoryName;
+
+            FileSystem fileSystem = null;
+            try {
+                try {
+                    fileSystem = FileSystems.getFileSystem(jarUri);
+                } catch (FileSystemNotFoundException e) {
+                    fileSystem = FileSystems.newFileSystem(jarUri, Collections.emptyMap());
+                }
+                Path basePath = fileSystem.getPath(absoluteScriptPath);
+                scanPath(grouped, logger, basePath, resourcesScriptUri);
+            } finally {
+                // Keep open if scripts are read lazily, otherwise close.
+                if (fileSystem != null) { fileSystem.close(); }
             }
+        } else {
+            // Regular file system logic
+            // Paths.get(URI) handles "file:/Users/..." correctly
+            Path basePath = Paths.get(resourcesScriptUri);
+            scanPath(grouped, logger, basePath, resourcesScriptUri);
         }
     }
-    /**
-     * Finds a Groovy script file based on the specified group and script name.
-     *
-     * This method builds the path to the desired script file by resolving the group
-     * and script name against a predefined root directory. If the file exists, it
-     * returns a {@code File} object representing the script; otherwise, it returns null.
-     *
-     * @param group the name of the group or folder containing the script
-     *              (relative to the root directory)
-     * @param scriptName the name of the script file (without the ".groovy" extension)
-     * @return a {@code File} object representing the script file if it exists,
-     *         or null if the file does not exist
-     */
-    public File findScript(String group, String scriptName) {
-        Path path = scriptsRoot.resolve(group).resolve(scriptName + ".groovy");
-        return Files.exists(path) ? path.toFile() : null;
-    }
 
+    /**
+     * Shared logic to walk a Path (regardless of FileSystem type) and extract metadata.
+     */
+    private static void scanPath(Map<String, ScriptMetadata> grouped, Logger logger, Path basePath, URI originUri) throws IOException {
+        if (!Files.exists(basePath)) {
+            return;
+        }
+
+        try (Stream<Path> stream = Files.walk(basePath)) {
+            stream.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".groovy"))
+                    .forEach(p -> {
+                        try {
+                            // Relativize identifies the folder structure inside "scripts"
+                            Path relativePath = basePath.relativize(p);
+
+                            // Get parent folder name as the "group"
+                            Path parentPath = relativePath.getParent();
+                            String group = (parentPath != null) ? parentPath.toString() : "";
+
+                            // Normalize path separators for the Metadata object (always use /)
+                            group = group.replace("\\", "/");
+
+                            ScriptMetadata script = new ScriptMetadata(group, p.toUri(), originUri);
+                            grouped.put(script.id, script);
+
+                            logger.debug("Loaded script: {} in group: {}", relativePath, group);
+                        } catch (Exception e) {
+                            logger.warn("Error while loading script metadata for file: {}", p, e);
+                        }
+                    });
+        }
+    }
 }
 
 

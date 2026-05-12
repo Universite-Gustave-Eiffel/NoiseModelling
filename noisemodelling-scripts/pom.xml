@@ -22,6 +22,37 @@
     </properties>
     <profiles>
         <profile>
+            <id>unix-config</id>
+            <activation>
+                <os><family>unix</family></os>
+            </activation>
+            <properties>
+                <shell.executable>sh</shell.executable>
+                <shell.arg>-c</shell.arg>
+                <!-- Check if python3 exists, if so run the commands, if not echo and exit 0 -->
+                <sphinx.command>
+                    command -v python3 >/dev/null 2>&amp;1 &amp;&amp; (
+                    python3 -m venv target/venv &amp;&amp;
+                    target/venv/bin/python -m pip install -r ../Docs/requirements.txt &amp;&amp;
+                    target/venv/bin/sphinx-build -M html ../Docs target/sphinx
+                    ) || echo "Python3 not found. Skipping documentation generation."
+                </sphinx.command>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows-config</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <shell.executable>cmd</shell.executable>
+                <shell.arg>/c</shell.arg>
+                <sphinx.command>
+                    where python >nul 2>nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
+                </sphinx.command>
+            </properties>
+        </profile>
+        <profile>
             <id>macos-bundler</id>
             <activation>
                 <os><family>mac</family></os>
@@ -86,15 +117,28 @@
                                             <directory>${project.build.directory}</directory>
                                             <includes>
                                                 <include>${project.build.finalName}.jar</include>
+                                                <include>help/**</include>
                                             </includes>
                                         </resource>
-                                        <!-- The Scripts Folder -->
-<!--                                        <resource>-->
-<!--                                            <directory>${project.basedir}/../</directory> &lt;!&ndash; Adjust path to source &ndash;&gt;-->
-<!--                                            <includes>-->
-<!--                                                <include>scripts/**</include>-->
-<!--                                            </includes>-->
-<!--                                        </resource>-->
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-help-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/help</outputDirectory>
+                                    <resources>
+                                        <!-- The help pages -->
+                                        <resource>
+                                            <directory>${project.build.directory}/sphinx/html/</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
                                     </resources>
                                 </configuration>
                             </execution>
@@ -126,14 +170,16 @@
                                         <argument>${project.build.directory}</argument>
                                         <argument>--name</argument>
                                         <argument>NoiseModelling</argument>
-                                        <!--<argument>&#45;&#45;icon</argument>-->
-                                        <!--<argument>src/main/resources/icon.icns</argument>-->
+                                        <argument>--icon</argument>
+                                        <argument>../installer/Logo_noisemodelling_square.icns</argument>
                                         <argument>--vendor</argument>
                                         <argument>${parent.organization.name}</argument>
                                         <argument>--app-version</argument>
                                         <argument>${macOS.version}</argument>
                                         <argument>--mac-package-name</argument>
                                         <argument>NoiseModelling</argument>
+                                        <argument>--arguments</argument>
+                                        <argument>-u -r ""</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
@@ -141,37 +187,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>unix-config</id>
-            <activation>
-                <os><family>unix</family></os>
-            </activation>
-            <properties>
-                <shell.executable>sh</shell.executable>
-                <shell.arg>-c</shell.arg>
-                <!-- Check if python3 exists, if so run the commands, if not echo and exit 0 -->
-                <sphinx.command>
-                    command -v python3 >/dev/null 2>&amp;1 &amp;&amp; (
-                    python3 -m venv target/venv &amp;&amp;
-                    target/venv/bin/python -m pip install -r ../Docs/requirements.txt &amp;&amp;
-                    target/venv/bin/sphinx-build -M html ../Docs target/sphinx
-                    ) || echo "Python3 not found. Skipping documentation generation."
-                </sphinx.command>
-            </properties>
-        </profile>
-        <profile>
-            <id>windows-config</id>
-            <activation>
-                <os><family>windows</family></os>
-            </activation>
-            <properties>
-                <shell.executable>cmd</shell.executable>
-                <shell.arg>/c</shell.arg>
-                <sphinx.command>
-                    where python >nul 2>nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
-                </sphinx.command>
-            </properties>
         </profile>
     </profiles>
     <dependencies>

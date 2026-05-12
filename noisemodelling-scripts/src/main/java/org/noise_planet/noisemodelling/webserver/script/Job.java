@@ -210,7 +210,7 @@ public class Job<T> implements Callable<T> {
     public static Object runScript(ExecutionPlan currentPlan, ProgressVisitor progressVisitor, DataSource userDataSource) throws IOException, SQLException {
         Object returnData = null;
         GroovyShell shell = new GroovyShell();
-        Script script = shell.parse(currentPlan.scriptMetadata.path.toFile());
+        Script script = shell.parse(currentPlan.scriptMetadata.path);
         // Check expected arguments
         List<MetaMethod> methods = script.getMetaClass().getMethods();
         MetaMethod execMetaMethod = null;

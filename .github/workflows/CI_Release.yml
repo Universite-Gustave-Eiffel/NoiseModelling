@@ -84,9 +84,13 @@ jobs:
     uses: ./.github/workflows/build_windows.yml
     with:
       git_ref: v${{ github.event.inputs.releaseVersion }}
-
+  build_macos_dmg:
+    needs: prepare_release
+    uses: ./.github/workflows/build_macos.yml
+    with:
+      git_ref: v${{ github.event.inputs.releaseVersion }}
   upload_release:
-    needs: [prepare_release, build_windows_exe]
+    needs: [prepare_release, build_windows_exe, build_macos_dmg]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -110,6 +114,11 @@ jobs:
         with:
           name: windows-installer
           path: release-artifacts
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build_macos_dmg.outputs.installer_name }}
+          path: release-artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -118,6 +127,7 @@ jobs:
           files: |
             NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
             release-artifacts/${{ needs.build_windows_exe.outputs.installer_name }}
+            release-artifacts/${{ needs.build_macos_dmg.outputs.installer_name }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

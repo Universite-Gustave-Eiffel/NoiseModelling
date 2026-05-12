@@ -196,7 +196,7 @@ public class NoiseModellingServer {
                 staticFileConfig.location = Location.CLASSPATH;
                 staticFileConfig.hostedPath = "/builder";
                 staticFileConfig.directory = "org/noise_planet/noisemodelling/webserver/static/wpsbuilder/";
-                staticFileConfig.roles = configuration.unsecure ? Set.of(Role.ANYONE) : Set.of(Role.RUNNER);
+                staticFileConfig.roles = Set.of(Role.ANYONE);
             });
             config.staticFiles.add(staticFileConfig -> {
                 staticFileConfig.location = Location.CLASSPATH;
@@ -205,11 +205,12 @@ public class NoiseModellingServer {
                 staticFileConfig.roles = Set.of(Role.ANYONE);
             });
             // Serve documentation if the folder exists
-            if(new File("help").exists()) {
+            File helpDir = getHelpDirectory();
+            if(helpDir != null) {
                 config.staticFiles.add(staticFileConfig -> {
                     staticFileConfig.location = Location.EXTERNAL;
                     staticFileConfig.hostedPath = "/builder/help";
-                    staticFileConfig.directory = "help/";
+                    staticFileConfig.directory = helpDir.getAbsolutePath();
                     staticFileConfig.roles = Set.of(Role.ANYONE);
                 });
             } else {
@@ -240,6 +241,33 @@ public class NoiseModellingServer {
         installJobsRoutes();
         installUserManagementRoutes();
         installExceptionHandlers();
+    }
+
+    /**
+     * Determines the location of the "help" directory relative to the JAR file and returns it as a File object.
+     * "Working Directory" issue with macOS App Bundles. When you double-click a .app,
+     * the working directory is not the folder where the app is located; it's usually the system root (/).
+     * @return A File object representing the "help" directory if it exists, or null if it does not exist at the expected location.
+     */
+    public File getHelpDirectory() {
+        // 1. Find where the JAR file is located, jar file is located into lib directory
+        File contentsDir;
+        try {
+            contentsDir = new File(NoiseModellingServer.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile().getParentFile();
+        } catch (Exception e) {
+            // Fallback to current directory if URI fails
+            contentsDir = new File(".");
+        }
+
+        // 2. Define the help directory relative to the JAR
+        File helpDir = new File(contentsDir, "help");
+        // 3. Check if the help directory exists
+        if (helpDir.exists() && helpDir.isDirectory()) {
+            return helpDir;
+        } else {
+            logger.warn("Help directory not found at expected location: {}", helpDir.getAbsolutePath());
+            return null;
+        }
     }
 
     protected void handleBuilderIndex(Context ctx) {
