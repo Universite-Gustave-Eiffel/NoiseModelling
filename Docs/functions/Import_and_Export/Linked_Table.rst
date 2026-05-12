@@ -1,14 +1,13 @@
-Linked_Table
-============
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Create a linked table to an external database.
+Linked Table
+============
 
 Overview
 --------
 
-``Linked_Table.groovy`` creates a database table linked to an external database.
-
-The data stays in the external database and is not copied locally.
+➡️ Create a table into the database linked to an external database. The data is not stored into the database
 
 Arguments
 ---------
@@ -17,82 +16,46 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``localTableName``
-   Name of the local linked table to create.
-
-   Type: ``String``
+   Name of the local linked table.
 
 ``databaseUrl``
-   JDBC connection URL of the external database.
-
-   Type: ``String``
+   Connection url of the database. For PostGIS
+   jdbc:postgresql_h2://hostname:5432/databaseName for H2
+   jdbc:h2:tcp://localhost/D:/data/test
 
 ``username``
-   User name for the external database.
-
-   Type: ``String``
+   User name when connecting to the external database
 
 ``password``
-   Password for the external database.
-
-   Type: ``String``
+   User password when connecting to the external database
 
 ``remoteTableName``
-   External table name or query.
-
-   If a query is used, it must be enclosed in parentheses and the linked table becomes read-only.
-
-   Type: ``String``
+   External Table name or query. If a query is used instead of the original table name, the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``driverClass``
-   JDBC driver class used to connect to the external database.
-
-   Allowed values include ``org.h2gis.postgis_jts.Driver`` and ``org.h2.Driver``.
-
-   Default: ``org.h2gis.postgis_jts.Driver``
-
-   Type: ``String``
+   Name of the class to connect to the external database.
 
 ``remoteSchemaName``
-   External schema name.
-
-   Default: ``public``
-
-   Type: ``String``
+   External Table Schema ex: public
 
 ``force``
-   Whether to create the linked table even if the remote database or table does not exist.
-
-   Type: ``Boolean``
+   Create the LINKED TABLE even if the remote database/table does not exist.
 
 ``fetchSize``
-   Fetch size hint passed to the linked-table statement.
-
-   Type: ``Integer``
+   the number of rows fetched, a hint with non-negative number of rows to fetch from the external table at once, may be ignored by the driver of external database. 0 is default and means no hint. The value is passed to java.sql.Statement.setFetchSize() method.
 
 Output
 ------
 
 ``result``
-   Name of the created local linked table.
-
-   Type: ``String``
+   The name of the local linked table, can be used as an input for another process
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input, ProgressVisitor progress)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It builds a ``CREATE LINKED TABLE`` statement dynamically from the provided connection settings.
-* If ``fetchSize`` is provided, it appends a ``FETCH_SIZE`` clause.
-* If ``force`` is enabled, it uses the ``FORCE`` keyword when creating the linked table.
-
+* ``exec(Connection connection, input)``

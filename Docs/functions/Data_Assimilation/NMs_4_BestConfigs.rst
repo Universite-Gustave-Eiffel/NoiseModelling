@@ -1,14 +1,15 @@
-NMs_4_BestConfigs
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+NMs 4 BestConfigs
 =================
 
-Create dynamic road traffic emission from the best configurations.
+Dynamic Road Traffic Emission
 
 Overview
 --------
 
-``NMs_4_BestConfigs.groovy`` creates a dynamic road emission table using the best configurations.
-
-The resulting table is ``LW_ROADS_best``.
+Creation of the dynamic road using best configurations
 
 Arguments
 ---------
@@ -17,36 +18,20 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``bestConfig``
-   Best configuration table, typically ``BEST_CONFIGURATION_FULL``.
-
-   Type: ``String``
+   The best configuration table BEST_CONFIGURATION_FULL
 
 ``roadEmission``
-   Road emission table, typically ``LW_ROADS``.
-
-   Type: ``String``
+   The Road Emission table LW_ROADS
 
 Output
 ------
 
 ``results``
-   Dynamic road emission table using the best configuration: ``LW_ROADS_best``.
-
-   Type: ``String``
+   Dynamic Road Emission Table using best configuration LW_ROADS_best
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, inputs)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It drops ``LW_ROADS_best`` if it already exists.
-* It creates ``LW_ROADS_best`` by selecting distinct road-emission rows whose ``PERIOD`` matches a best-configuration ``IT`` value.
-* It adds an index on ``IDSOURCE`` and ``PERIOD`` for the resulting table.
-
+* ``exec(Connection connection, input)``

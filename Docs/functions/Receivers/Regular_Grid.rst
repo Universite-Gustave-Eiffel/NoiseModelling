@@ -1,60 +1,85 @@
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
 Regular Grid
 ============
 
 Overview
 --------
 
-Computes a regular receiver grid with a fixed spacing in the Cartesian plane. The grid is generated inside a provided fence geometry or the bounding box of a table, then filtered against buildings and sources. The script creates a ``RECEIVERS`` table and can optionally generate a ``TRIANGLES`` table for isosurface workflows.
+➡️ Computes a regular grid of receivers.
+The receivers are spaced at a distance "delta" (Offset) in the Cartesian plane in meters.  The grid will be based on:
 
-.. image:: regular_grid_output.png
-   :alt: Regular grid output
-   :width: 95%
+*  the BUILDINGS table extent (option by default)
+
+*  OR a single Geometry "fence" (see "Extent filter" parameter).
+
+✅ The output table is called RECEIVERS
+
+.. figure:: regular_grid_output.png
    :align: center
+   :alt: Regular grid output
 
 Arguments
 ---------
 
-``buildingTableName``
-  Optional buildings table name. Receivers inside buildings are removed. The table must contain ``THE_GEOM``.
-
-``fence``
-  Optional polygon geometry used to define the computation extent.
+Mandatory inputs
+~~~~~~~~~~~~~~~~
 
 ``fenceTableName``
-  Optional table name used to derive the output envelope from its ``THE_GEOM`` bounding box.
+   Using the bounding box of the given table name, define the envelope of the output grid:
+   
+   *  Extract the bounding box of the specified table,
+   
+   *  then create only receivers on the table bounding box.
+   
+   The given table must contain:
+   
+   *  THE_GEOM : any geometry type with the appropriate SRID
+
+Optional inputs
+~~~~~~~~~~~~~~~
+
+``buildingTableName``
+   Name of the Buildings table. Receivers inside buildings will be removed.The table must contain:
+   
+   *  THE_GEOM  : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+
+``fence``
+   Create receivers only in the provided polygon (fence)
 
 ``sourcesTableName``
-  Optional sources table. Receivers closer than 1 meter to the provided source geometries are removed.
+   Keep only receivers at least at 1 meters of provided sources geometries  The given table must contain:
+   
+   *  THE_GEOM : any geometry type.
 
 ``delta``
-  Optional receiver spacing in meters. Default: ``10``.
+   Offset in the Cartesian plane (in meters)
+
+   Default: ``10``
 
 ``receiverstablename``
-  Optional output table name. Default: ``RECEIVERS``.
+   Name of the output table. Do not write the name of a table that contains a space.
+
+   Default: ``RECEIVERS``
 
 ``height``
-  Optional receiver height in meters. Default: ``4``.
+   Height of receivers (in meter) (FLOAT)
+
+   Default: ``4``
 
 ``outputTriangleTable``
-  Optional boolean. If enabled, a ``TRIANGLES`` table is created for later use with ``Create_Isosurface``.
+   Output a triangle table in order to be used to generate iso contours with Create_Isosurface
 
 Output
 ------
 
-The script returns the created receiver table name. When ``outputTriangleTable`` is enabled, it also creates a ``TRIANGLES`` table containing triangle geometries and receiver references.
+``result``
+   Name of the table containing the results of the computation. Can be used as input for another process.
 
 Function Signatures
 -------------------
 
-.. code-block:: groovy
+The script exposes one entry point:
 
-   def exec(connection, Map input)
-
-Execution Notes
----------------
-
-- Either ``fence`` or ``fenceTableName`` must be provided, otherwise the script raises an error.
-- The script uses ``ST_MakeGridPoints`` to generate a regular point lattice and stores row and column identifiers before adding a primary key.
-- A direct ``fence`` geometry is reprojected to the detected SRID, while ``fenceTableName`` uses the table envelope.
-- Receivers inside buildings and receivers closer than 1 meter to sources are removed after grid creation.
-- When triangle export is enabled, the script builds a ``TRIANGLES`` table by connecting neighboring grid points into cell triangles.
+* ``exec(Connection connection, input)``

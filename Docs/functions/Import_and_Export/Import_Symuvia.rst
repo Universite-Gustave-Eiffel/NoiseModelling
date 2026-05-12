@@ -1,14 +1,15 @@
-Import_Symuvia
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Import Symuvia
 ==============
 
-Import Symuvia output data from XML.
+Import Symuvia File
 
 Overview
 --------
 
-``Import_Symuvia.groovy`` imports Symuvia XML output files into the database.
-
-It creates a trajectory table derived from the XML content.
+➡️ Import Symuvia outputs (as .xml) into the database
 
 Arguments
 ---------
@@ -17,49 +18,30 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pathFile``
-   Path of the input ``.xml`` file.
-
-   Type: ``String``
+   📂 Path of the input File (including extension .xml) For example: c:/home/mysymuviafile.xml
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   SRID of the Symuvia output geometry.
+   Symuvia output file SRID
 
-   Default: ``2154``
-
-   Type: ``Integer``
+   Default: ``French``
 
 ``tableName``
-   Base name of the output table.
+   Do not write the name of a table that contains a space
 
-   By default, the file name without extension is used.
-
-   Type: ``String``
+   Default: ``it will take the name of the file without its extension``
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It imports the XML through a dedicated ``SYMUVIADriverFunction`` parser.
-* It creates a ``<tableName>_TRAJ`` table from the imported XML content, including point geometry, speed, acceleration, and time.
-* It creates a spatial index on the trajectory table and assigns or validates the SRID.
-* If needed, it adds a primary key after import.
-

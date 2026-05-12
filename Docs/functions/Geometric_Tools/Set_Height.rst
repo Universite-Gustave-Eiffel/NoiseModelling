@@ -1,12 +1,15 @@
-Set_Height
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Set Height
 ==========
 
-Set or update geometry heights.
+Set_Height
 
 Overview
 --------
 
-``Set_Height.groovy`` updates the geometry of a table by adding a Z value either from a fixed height or from a height column in the table.
+➡️ Update the geometry by adding a height from the column in the input table that contains the heights or elevations or from a static value.
 
 Arguments
 ---------
@@ -15,45 +18,26 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableName``
-   Name of the table whose geometry height will be modified.
-
-   Type: ``String``
+   Name of the table on which the height will be modified.
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``height``
-   Static height value in meters.
-
-   Type: ``Double``
+   New height for the input table (in meters) (FLOAT)
 
 ``heightColumn``
-   Name of the column containing heights to use.
-
-   Type: ``String``
+   The column name in the input table that contains the heights
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It detects the geometry column name from the target table.
-* When a static ``height`` is provided, it updates all geometries to that Z value.
-* When ``heightColumn`` is provided, it updates geometry Z values from the referenced column.
-* In both cases, it updates the geometry metadata to mark the geometry as 3D.
-
+* ``exec(Connection connection, input)``

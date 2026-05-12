@@ -120,9 +120,37 @@
                 <version>1.6.0</version>
                 <executions>
                     <execution>
+                        <!-- Default execution for interactive: mvn exec:java -->
                         <goals>
                             <goal>java</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-cnossos-report</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.noise_planet.nmtutorial01.GenerateReferenceDeviation</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../Docs</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-functions-docs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.noise_planet.nmtutorial01.GenerateFunctionsDocs</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../Docs</argument>
+                                <argument>${project.basedir}/../noisemodelling-scripts/src/main/groovy/org/noise_planet/noisemodelling/scripts</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>

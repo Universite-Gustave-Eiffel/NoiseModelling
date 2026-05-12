@@ -1,4 +1,7 @@
-Screen_to_building
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Screen to building
 ==================
 
 Convert screens to building format.
@@ -6,12 +9,8 @@ Convert screens to building format.
 Overview
 --------
 
-``Screen_to_building.groovy`` converts screen geometries into building-style polygons and can optionally merge them with an existing buildings table.
-
-The output table is ``BUILDINGS_SCREENS`` and contains:
-
-* ``THE_GEOM``: polygon or multipolygon geometry
-* ``HEIGHT``: height of the created polygons
+➡️ Convert the screens to the building format.
+A width of 10 cm will be defined. If you also give a building table, this WPS script allows you to merge the two layers together.   Tables must be projected in a same metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.  ✅ The output table is called : BUILDINGS_SCREENS and contain: -  THE_GEOM : the 2D geometry of the created table (POLYGON or MULTIPOLYGON). -  HEIGHT : the height of the created polygons (FLOAT)
 
 Arguments
 ---------
@@ -20,37 +19,19 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableScreens``
-   Screens table name.
-
-   The table must contain:
-
-   * ``THE_GEOM``: screen geometry
-   * ``HEIGHT``: screen height
-
-   Type: ``String``
+   Name of the Screens table.   The table must contain: -  THE_GEOM  : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). -  HEIGHT  : the height of the screens (FLOAT)
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``tableBuilding``
-   Buildings table name.
-
-   If provided, the script merges the buffered screens with this building layer.
-
-   The table must contain:
-
-   * ``THE_GEOM``: building geometry
-   * ``HEIGHT``: building height
-
-   Type: ``String``
+   Name of the Buildings table.   The table must contain: -  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON). -  HEIGHT : the height of the building (FLOAT)
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -58,14 +39,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It requires screens and buildings to share the same metric SRID when both tables are used.
-* It truncates intersecting screens and removes parts too close to buildings.
-* It converts screens into polygons using a fixed buffer width of ``0.1`` meters.
-* It creates ``BUILDINGS_SCREENS`` and adds a spatial index and an auto-increment primary key.
-

@@ -1,14 +1,14 @@
-Import_File
-===========
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Import a file into the database.
+Import File
+===========
 
 Overview
 --------
 
-``Import_File.groovy`` imports a file into the database.
-
-Supported input formats include ``csv``, ``dbf``, ``geojson``, ``json``, ``geojson.gz``, ``gpx``, ``osm``, ``osm.gz``, ``osm.bz2``, ``shp``, ``fgb``, and ``tsv``.
+➡️ Import file into the database.
+Valid file extensions: csv, dbf, geojson, json, geojson.gz, gpx, osm.bz2, osm.gz, osm, shp, tsv
 
 .. figure:: import_file.png
    :align: center
@@ -21,65 +21,33 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``pathFile``
-   Path of the input file, including its extension.
+   📂 Path of the file you want to import, including its extension. For example: c:/home/buildings.geojson
 
-   Type: ``String``
+``ifTableExists``
+   What to do if a table with the same name already exists ?
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   Original projection identifier of the input table when needed.
+   🌍 Original projection identifier (also called SRID) of your table.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection).  This entry is optional because many formats already include the projection and you can also import files without geometry attributes. If the table is geometric and if this parameter is not filled and:- the file has a .prj file associated: the SRID is deduced from the .prj - the file has no .prj file associated: we apply the WGS84 (EPSG:4326) code
 
    Default: ``4326``
 
-   Type: ``Integer``
-
 ``tableName``
-   Name of the output table to create.
+   Name of the table you want to create from the file.
 
-   By default, the file name without extension is used.
-
-   Type: ``String``
-
-``ifTableExists``
-   Action to take if the destination table already exists.
-
-   Allowed values:
-
-   * ``Overwrite``
-   * ``Skip import``
-   * ``Raise error``
-
-   Default: ``Overwrite``
-
-   Type: ``String``
+   Default: ``it will take the name of the file without its extension``
 
 Output
 ------
 
 ``outputTable``
-   Name of the created table.
-
-   Type: ``String``
+   Name of the created table
 
 Function Signatures
 -------------------
 
-The script exposes two entry points:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input, ProgressVisitor progress)``
-* ``exec(Connection connection, Map input)``
-
-The second form calls the first one with an ``EmptyProgressVisitor``.
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It derives the output table name from the file name when no table name is provided.
-* It can overwrite, skip, or fail when the destination table exists.
-* For geometric tables, it creates a spatial index and assigns or validates the SRID.
-* If a ``PK`` column exists and no primary key is already defined, it attempts to promote ``PK`` to a primary key.
-
+* ``exec(Connection connection, input)``

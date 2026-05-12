@@ -1,14 +1,15 @@
-Split_Sources_Period
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Split Sources Period
 ====================
 
-Split a dynamic source table into geometry and emission tables.
+Aggregate by source index
 
 Overview
 --------
 
-``Split_Sources_Period.groovy`` splits a single table that contains duplicated geometries and repeated source identifiers across multiple periods into separate ``SOURCES_GEOM`` and ``SOURCES_EMISSION`` tables.
-
-The resulting tables can be used directly with ``Noise_level_from_source`` or ``Noise_From_Attenuation_Matrix``.
+Split a single table with duplicated geometry and source identifier into SOURCES_GEOM and SOURCES_EMISSION tables
 
 Arguments
 ---------
@@ -17,66 +18,32 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableSourceDynamic``
-   Source table name.
-
-   The source table contains multiple periods for the same source index, along with other columns compatible with ``Noise_level_from_source`` or ``Noise_level_from_traffic`` style emission data.
-
-   Type: ``String``
+   Name of the Source table.    The source table have for the same index multiple periods, other columns can be any supported columns of noise level from emission or noise level from traffic
 
 ``sourceIndexFieldName``
-   Field name for the source index.
-
-   It is translated into ``IDSOURCE`` in the output tables.
-
-   Type: ``String``
+   The field name of the source index, will be translated into IDSOURCE
 
 ``sourcePeriodFieldName``
-   Field name for the source period, for example ``T``.
-
-   It is translated into ``PERIOD`` in the output tables.
-
-   Type: ``String``
+   The field name of the source period (ex. T), will be translated into PERIOD
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``sourceGeomTableName``
-   Output table name that contains the distinct source index and associated geometry.
-
-   Default: ``SOURCES_GEOM``
-
-   Type: ``String``
+   The output table that contain the distinct source index with the appropriate geometry. Default is SOURCES_GEOM
 
 ``sourceEmissionTableName``
-   Output table name that contains, for each source index, the period and other source attributes.
-
-   Default: ``SOURCES_EMISSION``
-
-   Type: ``String``
+   The output table that contain for each source index, the period and other attributes of the source. Default is SOURCES_EMISSION. Can be used directly on noise_level_from_source or Noise_From_Attenuation_Matrix
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It validates that the source table uses a metric SRID.
-* It removes the geometry, period, and source-index columns from the list of additional attributes copied into the emission table.
-* It creates the geometry table from distinct source identifiers using ``ANY_VALUE(THE_GEOM)``.
-* It creates the emission table by renaming the chosen source-index and period fields to ``IDSOURCE`` and ``PERIOD``.
-* It adds an index on ``IDSOURCE`` and ``PERIOD`` and updates the geometry SRID of the source-geometry table.
-
+* ``exec(Connection connection, input)``

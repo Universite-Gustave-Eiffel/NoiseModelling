@@ -1,14 +1,38 @@
-Enrich_DEM_with_rail
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Enrich DEM with rail
 ====================
 
-Enrich a DEM with railway platform points.
+Enrich DEM with railways
 
 Overview
 --------
 
-``Enrich_DEM_with_rail.groovy`` inserts altimetric points coming from railways into the input DEM.
+➡️ Insert altimetric points coming from railways into the input DEM.
+This script works with two input layers:
 
-It uses a railway platform scheme derived from the railway width column.
+* Digital Elevation Model (DEM) to be enriched
+
+* Railways
+
+And four parameters:
+
+* Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)
+
+* Rail platform height (hRail): Railways platform height (Optionnal). Default value = 0.5m
+
+* Input SRID (inputSRID): SRID of the input tables (Optionnal)
+
+* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied
+
+In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
+
+* d2 = (railWidth - 5.5)/2
+
+* d3 = (railWidth - 4)/2
+
+* d4 = (railWidth)/2
 
 .. figure:: railway_plateform.png
    :align: center
@@ -21,66 +45,35 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``inputDEM``
-   Input DEM table to enrich.
-
-   Type: ``String``
+   Name of the input DEM table to be enriched
 
 ``inputRail``
-   Input railways table.
-
-   Type: ``String``
+   Name of the input railways table
 
 ``railWidth``
-   Name of the column storing railway width.
-
-   Type: ``String``
+   Name of column where the railways width is stored
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   SRID of the input tables.
-
-   If not specified, the DEM SRID is used.
-
-   Type: ``Integer``
+   🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
 ``hRail``
-   Railway platform height in meters.
-
-   Default: ``0.5``
-
-   Type: ``Double``
+   Railways platform height (in meters) (Optionnal) 🛠 Default value = 0.5
 
 ``outputSuffixe``
-   Suffix applied to the resulting table name.
-
-   Default: ``ENRICHED``
-
-   Type: ``String``
+   Suffixe applied at the end of the resuling table name  🛠 If not specified, "ENRICHED" is applied
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes two functions:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-* ``parseScript(String sqlInstructions, Sql sql, ProgressVisitor progressVisitor, Logger logger)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It removes DEM points close to railway corridors before inserting railway platform points.
-* It generates three buffered railway envelopes derived from the width field and inserts points at different heights.
-* The final enriched DEM name is built from the input DEM plus the chosen suffix.
-

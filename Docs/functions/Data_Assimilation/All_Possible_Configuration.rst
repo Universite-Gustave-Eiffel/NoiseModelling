@@ -1,14 +1,15 @@
-All_Possible_Configuration
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+All Possible Configuration
 ==========================
 
-Generate all possible configurations.
+all configurations
 
 Overview
 --------
 
-``All_Possible_Configuration.groovy`` generates all possible combinations of traffic variation values and temperature values.
-
-The combinations are written into the SQL table ``ALL_CONFIGURATIONS``.
+process to generate all configurations.
 
 Arguments
 ---------
@@ -17,40 +18,20 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``trafficValues``
-   List of traffic variation values in percent.
-
-   Example format: ``0.01,1.0,2.0,3,4``
-
-   Type: ``String``
+   list of variation values in % for traffic like [0.01,1.0, 2.0,3,4]
 
 ``temperatureValues``
-   List of temperature values used for road traffic emission.
-
-   Type: ``String``
+   List of temperature values for the road traffic emission
 
 Output
 ------
 
 ``result``
-   Name of the created SQL table: ``ALL_CONFIGURATIONS``.
-
-   Type: ``String``
+   A sql table named ALL_CONFIGURATIONS
 
 Function Signatures
 -------------------
 
-The script exposes two functions:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-* ``getAllConfig(Connection connection, double[] vals, double[] temps)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It parses the two comma-separated input lists into numeric arrays.
-* It creates ``ALL_CONFIGURATIONS`` with the fields ``IT``, ``PRIMARY_VAL``, ``SECONDARY_VAL``, ``TERTIARY_VAL``, ``OTHERS_VAL``, and ``TEMP_VAL``.
-* It generates all combinations of the traffic multipliers and temperatures.
-* It skips combinations considered incoherent by ratio checks between road classes.
-

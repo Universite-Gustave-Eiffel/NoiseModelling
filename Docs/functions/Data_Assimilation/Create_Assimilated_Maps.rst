@@ -1,14 +1,15 @@
-Create_Assimilated_Maps
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Create Assimilated Maps
 =======================
 
-Create the assimilated result table.
+Creation of the result table
 
 Overview
 --------
 
-``Create_Assimilated_Maps.groovy`` creates a result table by joining the best configuration table with a receivers level table.
-
-The output table contains timestamped receiver noise levels and geometries.
+Creation of the result table.
 
 Arguments
 ---------
@@ -17,42 +18,23 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``bestConfigTable``
-   Name of the best configuration table.
-
-   Type: ``String``
+   The best configuration table
 
 ``receiverLevel``
-   Name of the receivers level table.
-
-   Type: ``String``
+   The receivers Level table
 
 ``outputTable``
-   Name of the output table to create.
-
-   Type: ``String``
+   The output  table name
 
 Output
 ------
 
 ``result``
-   Name of the created result table.
-
-   Type: ``String``
+   The result table
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, inputs)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It drops the output table if it already exists.
-* It creates the output table from a join between the best configuration table and the receiver levels table using ``a.PERIOD = b.IT``.
-* The created table contains ``TIMESTAMP``, ``LAEQ``, ``THE_GEOM``, and ``IDRECEIVER``.
-* After creation, it converts the ``TIMESTAMP`` column to ``INTEGER``.
-
+* ``exec(Connection connection, input)``

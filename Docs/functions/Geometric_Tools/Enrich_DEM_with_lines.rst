@@ -1,17 +1,26 @@
-Enrich_DEM_with_lines
-=====================
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Enrich a DEM with Z-enabled linestring data.
+Enrich DEM with lines
+=====================
 
 Overview
 --------
 
-``Enrich_DEM_with_lines.groovy`` inserts altimetric points from a linestring layer into a DEM.
+➡️ Insert altimetric points coming from linestring input layers into the input DEM.
+This script works with two input layers:
 
-It works with:
+* Digital Elevation Model (DEM) to be enriched
 
-* a DEM to enrich
-* a linestring layer whose coordinates already carry Z values
+* A linestring layer (e.g: hydrographic network, ...) in which coordinates have a Z dimension
+
+And three optionnal parameters:
+
+* Input SRID (inputSRID): SRID of the input tables
+
+* Source (source): Text indicating the source of the linestring layer. Can be useful to distinguish the points in the resulting DEM . If not specified, "LINESTRING" is applied
+
+* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name. If not specified, "ENRICHED" is applied
 
 Arguments
 ---------
@@ -20,61 +29,32 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``inputDEM``
-   Input DEM table to enrich.
-
-   Type: ``String``
+   Name of the input DEM table to be enriched
 
 ``inputLine``
-   Input linestring table.
-
-   Type: ``String``
+   Name of the input Linestring table
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``inputSRID``
-   SRID of the input tables.
-
-   If not specified, the DEM SRID is used.
-
-   Type: ``Integer``
+   🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
 ``source``
-   Label written into the output ``SOURCE`` field to identify the origin of inserted points.
-
-   Default: ``LINESTRING``
-
-   Type: ``String``
+   Text indicating the source of the linestring layer (Optionnal)  🛠 If not specified, "LINESTRING" is applied
 
 ``outputSuffixe``
-   Suffix applied to the resulting table name.
-
-   Default: ``ENRICHED``
-
-   Type: ``String``
+   Suffixe applied at the end of the resuling table name  🛠 If not specified, "ENRICHED" is applied
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes two functions:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-* ``parseScript(String sqlInstructions, Sql sql, ProgressVisitor progressVisitor, Logger logger)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It preserves an existing ``SOURCE`` field from the DEM if present, otherwise it creates one.
-* It densifies the linestring layer and projects Z values from the source lines onto inserted DEM points.
-* The final enriched table name is based on the input DEM plus the requested suffix.
-

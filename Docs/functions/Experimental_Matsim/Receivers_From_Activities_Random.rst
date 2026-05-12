@@ -1,14 +1,15 @@
-Receivers_From_Activities_Random
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Receivers From Activities Random
 ================================
 
-Choose random receivers for MATSim activities based on nearby buildings.
+Chose a Random Receivers For Matsim Activities
 
 Overview
 --------
 
-``Receivers_From_Activities_Random.groovy`` first finds a nearby building for each MATSim activity, then chooses a random receiver associated with that building.
-
-The output table stores both the chosen receiver geometry and the original activity geometry.
+Chose the closest building for every Mastim Activity in an ACTIVITIES table, and then chose a random receiver previously generated around this building.
 
 Arguments
 ---------
@@ -17,84 +18,40 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``activitiesTable``
-   Name of the table containing the activities.
-
-   The table must contain:
-
-   * ``PK``
-   * ``FACILITY``
-   * ``THE_GEOM``
-   * ``TYPES``
-
-   Type: ``String``
+   Name of the table containing the activities
+   The table must contain the following fields :
+   PK, FACILITY, THE_GEOM, TYPES
 
 ``buildingsTable``
-   Name of the table containing the buildings.
-
-   The table must contain:
-
-   * ``PK``
-   * ``THE_GEOM``
-
-   Type: ``String``
+   Name of the table containing the buildings
+   The table must contain the following fields :
+   PK, THE_GEOM
 
 ``receiversTable``
-   Name of the table containing the receivers.
-
-   The table must contain:
-
-   * ``PK``
-   * ``THE_GEOM``
-   * ``BUILD_PK``
-
-   Type: ``String``
+   Name of the table containing the receivers
+   The table must contain the following fields :
+   PK, THE_GEOM, BUILD_PK
 
 ``outTableName``
-   Name of the table to create.
-
-   The table contains:
-
-   * ``PK``
-   * ``FACILITY``
-   * ``ORIGIN_GEOM``
-   * ``THE_GEOM``
-   * ``TYPES``
-   * ``BUILD_PK``
-
-   Type: ``String``
+   Name of the table you want to create
+   The table will contain the following fields :
+   PK, FACILITY, ORIGIN_GEOM, THE_GEOM, TYPES, BUILD_PK
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``randomSeed``
-   Random seed used for receiver selection.
-
-   Default: ``1234``
-
-   Type: ``Integer``
+   Random seed, default: 1234
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It checks for a spatial index on the buildings geometry and a standard index on ``BUILD_PK`` in the receivers table.
-* For each activity, it searches nearby candidate buildings and then chooses a random receiver attached to the first suitable building.
-* If no receiver is found, the output geometry falls back to the activity geometry updated to ``Z = 4.0``.
-* It uses a temporary table to store the chosen activity-building-receiver associations before building the final output.
-

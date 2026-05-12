@@ -1,16 +1,14 @@
-Clean_Buildings_Table
-=====================
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
 
-Clean a buildings table.
+Clean Buildings Table
+=====================
 
 Overview
 --------
 
-``Clean_Buildings_Table.groovy`` cleans a buildings table by avoiding overlapping areas and invalid building polygons.
-
-The input table is erased and replaced by the cleaned version.
-
-NoiseModelling propagation code does not handle intersecting building polygons well.
+➡️ Clean the BUILDINGS table, avoiding overlapping areas and unclosed polygons.
+NoiseModelling propagation code does not support well intersecting polygons  ✅  The input table will be erased and replaced by the cleaned one.
 
 Arguments
 ---------
@@ -19,23 +17,13 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableName``
-   Buildings table name.
-
-   The table must:
-
-   * use a metric coordinate system
-   * contain ``THE_GEOM`` as building geometry
-   * contain ``HEIGHT`` as building height
-
-   Type: ``String``
+   Name of the Buildings table.  The table must be projected in a metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed.  The table shall contain: -  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON).-  HEIGHT : the height of the building (FLOAT)
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
@@ -43,14 +31,3 @@ Function Signatures
 The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It validates that the buildings table has a metric SRID.
-* It runs geometry cleanup steps including precision reduction, topology-preserving simplification, and ``ST_MAKEVALID``.
-* It detects overlapping buildings, truncates intersections, and rebuilds the original table.
-* If a ``POP`` column exists, it is preserved in the cleaned output.
-

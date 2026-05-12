@@ -1,14 +1,15 @@
-Noise_From_Attenuation_Matrix
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Noise From Attenuation Matrix
 =============================
 
-Create a noise map from an attenuation matrix.
+Noise Map From Attenuation Matrix
 
 Overview
 --------
 
-``Noise_From_Attenuation_Matrix.groovy`` combines a source-emission table with an attenuation matrix to build a receiver noise map.
-
-It creates a new output table by summing source emissions and attenuation contributions for each receiver and period.
+Noise Map From Attenuation Matrix.
 
 Arguments
 ---------
@@ -17,67 +18,34 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``lwTable``
-   Source-emission table, for example ``SOURCES_EMISSION``.
-
-   The table must contain:
-
-   * ``IDSOURCE``
-   * ``PERIOD``
-   * ``HZ63`` to ``HZ8000``
-
-   ``IDSOURCE`` links to the attenuation table primary key, and ``PERIOD`` is a text value.
-
-   Type: ``String``
+   LW(PERIOD) ex. SOURCES_EMISSION
+   The table must contain the following fields :
+   IDSOURCE, PERIOD, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000
+   IDSOURCE link to primary key of attenuation table and PERIOD a varchar
 
 ``attenuationTable``
-   Attenuation matrix table, typically obtained from ``Noise_level_from_source`` with ``confExportSourceId`` enabled.
-
-   It should typically be ``RECEIVERS_LEVEL`` and must contain:
-
-   * ``IDRECEIVER``
-   * ``IDSOURCE``
-   * ``THE_GEOM``
-   * ``HZ63`` to ``HZ8000``
-
-   Type: ``String``
+   Attenuation Matrix Table name, Obtained from the Noise_level_from_source script with "confExportSourceId" enabled. Should be RECEIVERS_LEVEL
+   The table must contain the following fields :
+   IDRECEIVER, IDSOURCE, THE_GEOM, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000
 
 ``outputTable``
-   Name of the output table to create.
-
-   Type: ``String``
+   outputTable
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``lwTable_sourceId``
-   Field name used as the source identifier in the LW table.
-
-   Default: ``IDSOURCE``
-
-   Type: ``String``
+   LW(PERIOD) source index field. Default is IDSOURCE
 
 Output
 ------
 
 ``result``
-   Result output string. This output type does not allow blocks to be linked together.
-
-   Type: ``String``
+   This type of result does not allow the blocks to be linked together.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It joins the attenuation table with the LW table on source identifier.
-* For each receiver and period, it performs an energetic sum over all contributing sources for each octave band.
-* It adds computed ``LAEQ`` and ``LEQ`` columns to the output table.
-* It creates a unique index on ``IDRECEIVER`` and ``PERIOD`` in the output table.
-

@@ -1,30 +1,15 @@
-Flow_2_Noisy_Vehicles
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
+Flow 2 Noisy Vehicles
 =====================
 
-Convert road traffic flows into noisy individual vehicles.
+From Road traffic flows to noisy individual vehicles
 
 Overview
 --------
 
-``Flow_2_Noisy_Vehicles.groovy`` calculates individual vehicle positions and instantaneous noise levels from average traffic flows.
-
-It creates two output tables:
-
-* ``SOURCES_GEOM`` for source-point geometry, used to compute the attenuation matrix
-* ``SOURCES_EMISSION`` for per-source, per-period octave-band emission levels
-
-``SOURCES_GEOM`` contains:
-
-* ``IDSOURCE``: identifier
-* ``ROAD_ID``: identifier linked to the road segment
-* ``THE_GEOM``: 3D source geometry as points
-
-``SOURCES_EMISSION`` contains:
-
-* ``PK``: identifier
-* ``IDSOURCE``: link to the source point
-* ``PERIOD``: timestamp iteration
-* ``HZ63`` to ``HZ8000``: instantaneous emission sound level for each octave band
+Calculating individual vehicle position and noise_level based on average traffic flows.   A first output table is called : SOURCES_GEOM  which is needed to compute the Noise Attenuation Matrixand contain : -   IDSOURCE   : an identifier (INTEGER, PRIMARY KEY). -   ROAD_ID   : id link to the road segment (INTEGER). -   THE_GEOM  : the 3D geometry of the sources (POINT).     The output table is called : SOURCES_EMISSION  and contain : -   PK   : an identifier (INTEGER, PRIMARY KEY). -   IDSOURCE   : link to the source point (INTEGER). -   PERIOD   : The TIMESTAMP iteration (VARCHAR).-   HZ63, HZ125, HZ250, HZ500, HZ1000,HZ2000, HZ4000, HZ8000  : 8 columns giving the instantaneous emission sound level for each octave band (FLOAT).
 
 Arguments
 ---------
@@ -33,78 +18,35 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``tableRoads``
-   Roads table name.
-
-   The table must contain at least:
-
-   * ``PK``: primary key identifier
-   * ``LV_D``: hourly average light-vehicle count
-   * ``HGV_D``: hourly average heavy-vehicle count
-   * ``LV_SPD_D``: hourly average light-vehicle speed
-   * ``HGV_SPD_D``: hourly average heavy-vehicle speed
-   * ``PVMT``: CNOSSOS pavement identifier
-
-   This table can be generated from the ``Import_OSM`` WPS block.
-
-   Type: ``String``
-
-Optional inputs
-~~~~~~~~~~~~~~~
+   Name of the Roads table.
+   The table shall contain : -  PK  : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)
+   -  LV_D  : Hourly average light and heavy vehicle count (DOUBLE)
+   -  HGV_D  :  Hourly average heavy vehicle count (DOUBLE)
+   -  LV_SPD_D  :  Hourly average light vehicle speed (DOUBLE)
+   -  HGV_SPD_D  :  Hourly average heavy vehicle speed  (DOUBLE)
+   -  PVMT  :  CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)   This table can be generated from the WPS Block 'Import_OSM'. .
 
 ``method``
-   Selected modeling method.
-
-   Allowed values:
-
-   * ``PROBA``: probabilistic representation of vehicle appearances for each time step
-   * ``TNP``: simplified vehicle movements with temporal coherence
-
-   Type: ``String``
+   Two methods are available :  - PROBA : Probabilistic representation of vehicle appearances for each time step (quicker, but sacrifices temporal coherence) Aumond, P., Jacquesson, L., & Can, A. (2018). Probabilistic modeling framework for multisource sound mapping. Applied Acoustics, 139, 34-43. . - TNP : Simplified vehicle movements (slower, but maintaining temporal coherence) De Coensel, B.; Brown, A.L.; Tomerini, D. A road traffic noise pattern simulation model that includes distributions of vehicle sound power levels. Appl. Acoust. 2016, 111, 170–178. .
 
 ``timestep``
-   Time step in seconds.
-
-   Default: ``1``
-
-   Type: ``Integer``
+   Number of iterations. Timestep in sec.
 
 ``gridStep``
-   Distance in meters between vehicle locations along the network.
-
-   Default: ``10``
-
-   Type: ``Integer``
+   Distance between location of vehicle along the network in meters.
 
 ``duration``
-   Number of seconds to compute.
-
-   Default: ``60``
-
-   Type: ``Integer``
+   Number of seconds to compute (INTEGER).
 
 Output
 ------
 
 ``result``
-   Name of the generated table that can be used by other processes.
-
-   Type: ``String``
+   Name of the generated table. Can be used as the input of other process.
 
 Function Signatures
 -------------------
 
-The script exposes one main entry point:
+The script exposes one entry point:
 
 * ``exec(Connection connection, input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* It validates that the roads table uses a metric SRID.
-* It densifies the road network into points, then creates ``SOURCES_GEOM`` with source heights forced to ``0.05`` meters.
-* With ``PROBA``, it creates a probabilistic vehicle table and computes source emissions independently per time step.
-* With ``TNP``, it simulates vehicle motion along each road segment and updates source levels over time.
-* It creates an index on ``SOURCES_EMISSION(PERIOD, IDSOURCE)``.
-

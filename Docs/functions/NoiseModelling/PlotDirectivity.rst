@@ -1,16 +1,15 @@
+.. DO NOT UPDATE THIS FILE!!
+.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+
 PlotDirectivity
 ===============
 
-Plot the directivity graph of the specified ``DIR_ID``.
+Plot the directivity graph of the specified DIR_ID
 
 Overview
 --------
 
-``PlotDirectivity.groovy`` generates the directivity graph for a selected directivity identifier.
-
-If no directivity table is provided, the script falls back to CNOSSOS-EU train directivity definitions.
-
-The result output is an SVG or HTML fragment containing top, side, and front views of the directivity chart.
+➡️ Plot the directivity graph of the specified "DIR_ID"
 
 Arguments
 ---------
@@ -19,79 +18,58 @@ Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
 ``confDirId``
-   Identifier of the directivity sphere from ``tableSourceDirectivity``, or a built-in train directivity if no table is provided.
-
-   For train directivity, the documented values are:
-
-   * ``0``: ``OMNIDIRECTIONAL``
-   * ``1``: ``ROLLING``
-   * ``2``: ``TRACTIONA``
-   * ``3``: ``TRACTIONB``
-   * ``4``: ``AERODYNAMICA``
-   * ``5``: ``AERODYNAMICB``
-   * ``6``: ``BRIDGE``
-
-   Type: ``Integer``
+   Identifier of the directivity sphere from "tableSourceDirectivity" parameter or train directivity if "tableSourceDirectivity" parameter is not filled (INTEGER) In case of train, you can use these values:
+   
+   * 0 = OMNIDIRECTIONAL
+   
+   * 1 = ROLLING
+   
+   * 2 = TRACTIONA
+   
+   * 3 = TRACTIONB
+   
+   * 4 = AERODYNAMICA
+   
+   * 5 = AERODYNAMICB
+   
+   * 6 = BRIDGE
 
 ``confFrequency``
-   Frequency to plot.
-
-   Expected values are ``63``, ``125``, ``250``, ``500``, ``1000``, ``2000``, ``4000``, or ``8000``.
-
-   Type: ``Integer``
+   Frequency to plot (INTEGER). 63, 125, 250, 500, 1000, 2000, 4000, 8000 (should match with the column of tableSourceDirectivity
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``tableSourceDirectivity``
-   Source directivity table name.
-
-   If not specified, the default is CNOSSOS-EU train directivity.
-
-   The table must contain:
-
-   * ``DIR_ID``: directivity sphere identifier
-   * ``THETA``: vertical angle from ``-90`` to ``90`` degrees
-   * ``PHI``: horizontal angle from ``0`` to ``360`` degrees
-   * ``LW63``, ``LW125``, ``LW250``, ``LW500``, ``LW1000``, ``LW2000``, ``LW4000``, ``LW8000``: attenuation in dB for each octave or third-octave band
-
-   Type: ``String``
+   Name of the emission directivity table.🛠  If not specified the default is train directivity of CNOSSOS-EU  The table must contain the following columns:
+   
+   *   DIR_ID  : identifier of the directivity sphere (INTEGER)
+   
+   *   THETA  : [-90;90] Vertical angle in degree. 0° front 90° top -90° bottom (FLOAT)
+   
+   *   PHI  : [0;360] Horizontal angle in degree. 0° front 90° right (FLOAT)
+   
+   *   LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000  : attenuation levels in dB for each octave or third octave (FLOAT).
 
 ``confScaleMinimum``
-   Minimum attenuation shown on the scale, in dB.
+   Minimum scale attenuation (in dB)
 
-   Default: ``-35``
-
-   Type: ``Double``
+   Default: ``-35 dB``
 
 ``confScaleMaximum``
-   Maximum attenuation shown on the scale, in dB.
+   Maximum scale attenuation (in dB)
 
-   Default: ``0``
-
-   Type: ``Double``
+   Default: ``0 dB``
 
 Output
 ------
 
 ``result``
-   SVG or HTML representation of the directivity chart.
-
-   Type: ``String``
+   Svg/Html of the directivity chart
 
 Function Signatures
 -------------------
 
 The script exposes one entry point:
 
-* ``exec(Connection connection, Map input)``
-
-Execution Notes
----------------
-
-The script comments and inline behavior show the following:
-
-* If ``tableSourceDirectivity`` is supplied, directivity data is loaded from that table.
-* Otherwise, the script builds an in-memory set of train directivity definitions.
-* The result combines three polar graph orientations: top, side, and front.
-
+* ``exec(Connection connection, input)``
