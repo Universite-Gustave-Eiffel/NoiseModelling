@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Simplify Geometries
 ===================
@@ -16,31 +16,33 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableName``
-   Name of the table on which geometries will be simplified.
+``tableName`` — *Name of the table*
+   Name of the table on which geometries will be simplified
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``distanceTolerance``
-   Sets the tolerance distance for the simplification (FLOAT).
+``distanceTolerance`` — *Distance tolerance*
+   Sets the tolerance distance for the simplification (FLOAT)
+
+   Type: ``Double``
 
    Default: ``1``
 
-``preserveTopology``
+``preserveTopology`` — *Preserve topology ?*
    Do you want to preserve topology?
+
+   Type: ``Boolean``
 
    Default: ``false``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

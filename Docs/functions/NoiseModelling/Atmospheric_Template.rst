@@ -1,8 +1,8 @@
 .. DO NOT UPDATE THIS FILE!!
 .. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
-GenerateAtmosphericSettingsTemplate
-===================================
+Atmospheric Template
+====================
 
 Generate default atmospheric settings from the PERIOD field of a noise emission table
 

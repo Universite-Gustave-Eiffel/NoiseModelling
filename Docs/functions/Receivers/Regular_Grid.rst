@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Regular Grid
 ============
@@ -26,7 +26,7 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``fenceTableName``
+``fenceTableName`` — *Table bounding box name*
    Using the bounding box of the given table name, define the envelope of the output grid:
    
    *  Extract the bounding box of the specified table,
@@ -37,49 +37,61 @@ Mandatory inputs
    
    *  THE_GEOM : any geometry type with the appropriate SRID
 
+   Type: ``String``
+
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``buildingTableName``
+``buildingTableName`` — *Buildings table name*
    Name of the Buildings table. Receivers inside buildings will be removed.The table must contain:
    
    *  THE_GEOM  : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
 
-``fence``
+   Type: ``String``
+
+``delta`` — *Offset*
+   Offset in the Cartesian plane (in meters)
+
+   Type: ``Double``
+
+   Default: ``10``
+
+``fence`` — *Extent filter*
    Create receivers only in the provided polygon (fence)
 
-``sourcesTableName``
+   Type: ``Geometry``
+
+``height`` — *Height*
+   Height of receivers (in meter) (FLOAT)
+
+   Type: ``Double``
+
+   Default: ``4``
+
+``outputTriangleTable`` — *Output triangle table*
+   Output a triangle table in order to be used to generate iso contours with Create_Isosurface
+
+   Type: ``Boolean``
+
+``receiverstablename`` — *Name of receivers table*
+   Name of the output table. Do not write the name of a table that contains a space
+
+   Type: ``String``
+
+   Default: ``RECEIVERS``
+
+``sourcesTableName`` — *Sources table name*
    Keep only receivers at least at 1 meters of provided sources geometries  The given table must contain:
    
    *  THE_GEOM : any geometry type.
 
-``delta``
-   Offset in the Cartesian plane (in meters)
-
-   Default: ``10``
-
-``receiverstablename``
-   Name of the output table. Do not write the name of a table that contains a space.
-
-   Default: ``RECEIVERS``
-
-``height``
-   Height of receivers (in meter) (FLOAT)
-
-   Default: ``4``
-
-``outputTriangleTable``
-   Output a triangle table in order to be used to generate iso contours with Create_Isosurface
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Created table*
    Name of the table containing the results of the computation. Can be used as input for another process.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

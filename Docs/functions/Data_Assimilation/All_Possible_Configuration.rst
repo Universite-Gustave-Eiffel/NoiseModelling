@@ -1,15 +1,15 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 All Possible Configuration
 ==========================
 
-all configurations
+All configurations
 
 Overview
 --------
 
-process to generate all configurations.
+Process to generate all configurations.
 
 Arguments
 ---------
@@ -17,21 +17,21 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``trafficValues``
-   list of variation values in % for traffic like [0.01,1.0, 2.0,3,4]
-
-``temperatureValues``
+``temperatureValues`` — *Temperature values*
    List of temperature values for the road traffic emission
+
+   Type: ``String``
+
+``trafficValues`` — *Traffic values*
+   List of variation values in % for traffic like [0.01,1.0, 2.0,3,4]
+
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *ALL_CONFIGURATIONS*
    A sql table named ALL_CONFIGURATIONS
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

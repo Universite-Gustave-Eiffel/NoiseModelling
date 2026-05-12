@@ -15,23 +15,19 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
-
 
 import org.noise_planet.noisemodelling.emission.directivity.DiscreteDirectivitySphere
 import org.noise_planet.noisemodelling.emission.directivity.OmnidirectionalDirection
 import org.noise_planet.noisemodelling.emission.directivity.PolarGraphDirectivity
 import org.noise_planet.noisemodelling.emission.railway.nmpb.RailWayNMPBParameters
 import org.noise_planet.noisemodelling.emission.railway.nmpb.TrainAttenuation
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
-title = 'Plot the directivity graph of the specified DIR_ID'
-description = '&#10145;&#65039; Plot the directivity graph of the specified "DIR_ID"'
+title = 'Plots the directivity graph of the specified DIR_ID'
+description = '&#10145;&#65039; Plots the directivity graph of the specified "DIR_ID"'
 
 inputs = [
         tableSourceDirectivity          : [
@@ -44,7 +40,8 @@ inputs = [
                         '<li> <b> THETA </b> : [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT)</li> ' +
                         '<li> <b> PHI </b> : [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT)</li> ' +
                         '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b> : attenuation levels in dB for each octave or third octave (FLOAT). </li></ul> ' ,
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         confDirId            : [
                 name       : 'Directivity Index',
@@ -69,17 +66,15 @@ inputs = [
         confScaleMinimum            : [
                 name       : 'Minimum scale attenuation (dB)',
                 title      : 'Minimum scale attenuation (dB)',
-                description: 'Minimum scale attenuation (in dB) </br> </br>'+
-                        '&#128736; Default value: <b>-35 dB</b>',
-                min        : 0, max: 1,
+                description: 'Minimum scale attenuation (in dB)',
+                default    : -35,
                 type       : Double.class
         ],
         confScaleMaximum            : [
                 name       : 'Maximum scale attenuation (dB)',
                 title      : 'Maximum scale attenuation (dB)',
-                description: 'Maximum scale attenuation (in dB) </br> </br>'+
-                        '&#128736; Default value: <b>0 dB</b>',
-                min        : 0, max: 1,
+                description: 'Maximum scale attenuation (in dB)',
+                default    : 0,
                 type       : Double.class
         ]
 ]
@@ -92,7 +87,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
 
 
 def exec(Connection connection, Map input) {
@@ -147,6 +141,3 @@ def exec(Connection connection, Map input) {
     sb.append(polarGraphDirectivity.generatePolarGraph(directionAttributes, frequency, scaleMinimum, scaleMaximum, PolarGraphDirectivity.ORIENTATION.FRONT))
     return sb.toString()
 }
-
-
-

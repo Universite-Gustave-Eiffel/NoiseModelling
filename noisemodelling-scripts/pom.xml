@@ -248,6 +248,20 @@
                 <version>3.5.1</version>
                 <executions>
                     <execution>
+                        <id>generate-functions-docs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.noise_planet.noisemodelling.webserver.script.GenerateFunctionsDocs</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/../Docs</argument>
+                                <argument>${project.basedir}/src/main/groovy/org/noise_planet/noisemodelling/scripts</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>generate-documentation</id>
                         <phase>generate-resources</phase>
                         <goals>

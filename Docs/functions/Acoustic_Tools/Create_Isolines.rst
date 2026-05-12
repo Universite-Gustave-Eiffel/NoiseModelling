@@ -1,10 +1,8 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Create Isolines
 ===============
-
-Create Isolines (Isophones)
 
 Overview
 --------
@@ -17,30 +15,38 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``trianglesTable``
+``receiversTable`` — *Receivers level table*
+   Name of the receivers level table.Shall contain : IDRECEIVER, PERIOD, THE_GEOM, LAEQ (or any field to contour).
+
+   Type: ``String``
+
+``trianglesTable`` — *Triangles table*
    Name of the triangles table.Shall contain : PK, THE_GEOM, PK_1, PK_2, PK_3, CELL_ID.
 
-``receiversTable``
-   Name of the receivers level table.Shall contain : IDRECEIVER, PERIOD, THE_GEOM, LAEQ (or any field to contour).
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``fieldName``
-   Receivers numeric field to contour (e.g. LAEQ). Default: LAEQ.
+``fieldName`` — *Field to contour*
+   Receivers numeric field to contour (e.g. LAEQ).
 
-``isoClasses``
-   Comma-separated levels. Default: 35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0
+   Type: ``String``
+
+   Default: ``LAEQ``
+
+``isoClasses`` — *Iso levels (dB)*
+   Comma-separated levels.
+
+   Type: ``String``
+
+   Default: ``35.0,40.0,45.0,50.0,55.0,60.0,65.0,70.0,75.0,80.0,200.0``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

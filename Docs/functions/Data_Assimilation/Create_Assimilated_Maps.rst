@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Create Assimilated Maps
 =======================
@@ -9,7 +9,7 @@ Creation of the result table
 Overview
 --------
 
-Creation of the result table.
+Creates the ASSIMILATED_MAPS table by joining the best configuration table with the receivers noise levels.
 
 Arguments
 ---------
@@ -17,24 +17,26 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``bestConfigTable``
+``bestConfigTable`` — *The best configuration table*
    The best configuration table
 
-``receiverLevel``
+   Type: ``String``
+
+``outputTable`` — *The output table name*
+   The output table name
+
+   Type: ``String``
+
+``receiverLevel`` — *The receivers Level table*
    The receivers Level table
 
-``outputTable``
-   The output  table name
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *The result table*
    The result table
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Enrich Landcover with rail
 ==========================
@@ -20,11 +20,11 @@ And four parameters:
 
 * Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)
 
-* Rail platform height (hRail): Railways platform height (Optionnal). Default value = 0.5m
+* Rail platform height (hRail): Railways platform height (Optional). Default value = 0.5m
 
-* Input SRID (inputSRID): SRID of the input tables (Optionnal)
+* Input SRID (inputSRID): SRID of the input tables (Optional)
 
-* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied
+* Output suffix (outputsuffix): suffix applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied
 
 In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
 
@@ -44,36 +44,46 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``inputLandcover``
+``gColumn`` — *G column*
+   Ground absorption coefficient (G) column name
+
+   Type: ``String``
+
+``inputLandcover`` — *Input landcover table*
    Name of the input landcover table
 
-``gColumn``
-   Ground absorption coeffecient (G) column name
+   Type: ``String``
 
-``inputRail``
+``inputRail`` — *Input railways table*
    Name of the input railways table
 
-``railWidth``
+   Type: ``String``
+
+``railWidth`` — *Railways width*
    Name of column where the railways width is stored
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
+``inputSRID`` — *Input SRID*
    🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
-``outputSuffixe``
-   Suffixe applied at the end of the resuling table name  🛠 If not specified, "ENRICHED" is applied
+   Type: ``Integer``
+
+``outputsuffix`` — *Output suffix*
+   Suffix applied at the end of the resulting table name
+
+   Type: ``String``
+
+   Default: ``ENRICHED``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

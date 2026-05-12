@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Table Visualization Data
 ========================
@@ -18,21 +18,26 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``linesNumber``
+``tableName`` — *Table name*
+   Table name or SQL SELECT query (e.g., mytable or SELECT * FROM mytable)
+
+   Type: ``String``
+
+Optional inputs
+~~~~~~~~~~~~~~~
+
+``linesNumber`` — *Number of rows*
    Number of rows you want to display. This parameter is ignored if your SQL query already contains a LIMIT clause.
 
-``tableName``
-   Table name or SQL SELECT query (e.g., mytable or SELECT * FROM mytable)
+   Type: ``Integer``
+
+   Default: ``10``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

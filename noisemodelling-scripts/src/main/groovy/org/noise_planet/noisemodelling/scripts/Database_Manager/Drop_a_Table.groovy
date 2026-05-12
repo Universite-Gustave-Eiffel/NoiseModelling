@@ -17,12 +17,10 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
@@ -103,5 +101,3 @@ def exec(Connection connection, input) {
     // print to WPS Builder
     return resultString
 }
-
-

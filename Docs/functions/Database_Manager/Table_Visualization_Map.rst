@@ -1,10 +1,10 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Table Visualization Map
 =======================
 
-Diplay a table on a map.
+Display a table on a map.
 
 Overview
 --------
@@ -18,26 +18,24 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableName``
+``tableName`` — *Name of the table*
    Name of the table you want to display.
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
+``inputSRID`` — *Projection identifier*
    🌍 Original projection identifier (also called SRID) of your table. It should be an EPSG code, a integer with 4 or 5 digits (ex: 3857 is Web Mercator projection). (INTEGER)  All coordinates will be projected from the specified EPSG to WGS84 coordinates.  This entry is optional because many formats already include the projection and you can also import files without geometry attributes.
 
-   Default: ``4326``
+   Type: ``Integer``
 
 Output
 ------
 
-``result``
+``result`` — *Result output geometry*
    This is the output geometry in WKT OGC format
 
-Function Signatures
--------------------
+   Type: ``Geometry``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

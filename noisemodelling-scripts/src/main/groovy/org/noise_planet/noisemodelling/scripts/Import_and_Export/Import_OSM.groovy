@@ -20,11 +20,8 @@
 package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
 import crosby.binary.osmosis.OsmosisReader
-
-
 import groovy.json.JsonSlurper
 import groovy.sql.Sql
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Geometry
@@ -39,7 +36,6 @@ import org.openstreetmap.osmosis.xml.common.CompressionMethod
 import org.openstreetmap.osmosis.xml.v0_6.XmlReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Import BUILDINGS, GROUND and ROADS tables from OSM'
@@ -67,6 +63,7 @@ inputs = [
                 description: '&#127757; Target projection identifier (also called SRID) of your table.<br>' +
                              'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Web Mercator projection).<br><br>' +
                              '&#x1F6A8; The target SRID must be in <b>metric</b> coordinates.',
+                min        : 0, max: 1,
                 type       : Integer.class
         ],
         ignoreBuilding : [
@@ -79,8 +76,7 @@ inputs = [
                              '- <b> HEIGHT </b> : The height of the building (FLOAT). ' +
                              'If this information is not available then it is deduced from the number of floors (if available) with the addition of a small random variation from one building to another. ' +
                              'Finally, if no information is available, a height of 5m is set by default.',
-                min        : 0, 
-                max        : 1,
+                default    : false,
                 type       : Boolean.class
         ],
         ignoreGround : [
@@ -93,8 +89,7 @@ inputs = [
                              '- <b> THE_GEOM </b> : The 2D geometry of the sources (POLYGON or MULTIPOLYGON)<br>' +
                              '- <b> PRIORITY </b> : Since NoiseModelling does not allowed overlapping geometries, if this is the case, this column is used to prioritize the geometry that will win over the other one when cutting. The order is given according to the type of land use<br>' +
                              '- <b> G </b> : The acoustic absorption of a ground (FLOAT) (between 0 : very hard and 1 : very soft)',
-                min        : 0, 
-                max        : 1,
+                default    : false,
                 type       : Boolean.class
         ],
         ignoreRoads : [
@@ -119,16 +114,14 @@ inputs = [
                              '- <b> HGV_SPD_N </b> : Hourly average heavy vehicle speed (22-6h) (DOUBLE)<br>' +
                              '- <b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05) (VARCHAR)<br> <br>' +
                              '&#128161; <b>These information are deduced from the roads importance in OSM.</b>.',
-                min        : 0, 
-                max        : 1,
+                default    : false,
                 type       : Boolean.class
         ],
         removeTunnels : [
                 name       : 'Remove tunnels from OSM data',
                 title      : 'Remove tunnels from OSM data',
                 description: '&#9989; If checked, remove roads from OSM data that contain OSM tag <b>tunnel=yes</b>.',
-                min        : 0, 
-                max        : 1,
+                default    : false,
                 type       : Boolean.class
         ],
         eliminateNoTrafficRoads : [
@@ -157,8 +150,7 @@ inputs = [
                              '- traffic_calming: Traffic calming features (speed bumps, etc.)<br>' +
                              '- traffic_island: Traffic islands<br><br>' +
                              '<b>If not checked</b>, all roads are processed as before.',
-                min        : 0, 
-                max        : 1,
+                default    : false,
                 type       : Boolean.class
         ]
 ]
@@ -173,9 +165,7 @@ outputs = [
 ]
 
 
-
 // run the script
-
 
 // main function of the script
 def exec(Connection connection, input) {

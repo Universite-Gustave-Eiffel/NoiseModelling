@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Merged Sensors Receivers
 ========================
@@ -9,7 +9,7 @@ Merged Sensors and Receivers
 Overview
 --------
 
-Adding the sensors into the RECEIVERS after creating a regular grid of receivers.
+Merges sensor locations into an existing RECEIVERS table previously created with a regular grid.
 
 Arguments
 ---------
@@ -17,21 +17,21 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableReceivers``
+``tableReceivers`` — *The receiver table*
    The receiver table
 
-``tableSensors``
+   Type: ``String``
+
+``tableSensors`` — *The Sensors table*
    The Sensors table
+
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Merged table*
    Receiver table containing all sensors
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

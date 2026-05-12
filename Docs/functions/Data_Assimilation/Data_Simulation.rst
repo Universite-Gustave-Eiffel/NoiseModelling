@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Data Simulation
 ===============
@@ -7,28 +7,26 @@ Data Simulation
 Overview
 --------
 
-Method to execute a series of operations for generate noise maps
+Method for performing a series of operations to generate noise maps
 
 Arguments
 ---------
 
-Mandatory inputs
-~~~~~~~~~~~~~~~~
+Optional inputs
+~~~~~~~~~~~~~~~
 
-``noiseMapLimit``
-   The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of
+``noiseMapLimit`` — *Number of map*
+   The optional parameter between 1 and 100 corresponding to the percentage of number of maps relative to the maximal number of combinations
+
+   Type: ``Integer``
 
    Default: ``100``
 
 Output
 ------
 
-``result``
+``result`` — *Noise map table*
    LW_ROADS and ROADS_GEOM tables output
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

@@ -12,10 +12,7 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
@@ -25,7 +22,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
 
-title = 'Generate default atmospherics settings from the PERIOD field of a noise emission table'
+title = 'Generate default atmospheric settings from the PERIOD field of a noise emission table'
 description = '&#10145;&#65039; Generate default atmospherics settings from the PERIOD field of a noise emission table.' +
         ' It is used to export the result table to be edited and reimported to be used into Noise_level_from_source or' +
         ' Noise_level_from_traffic. This table make you able to change the temperature and other settings for each time period of the simulation'
@@ -51,9 +48,9 @@ inputs = [
                         '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
                         '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
-                        '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
-                        '</ul> Default to SOURCES_ATMOSPHERIC' ,
-                min        : 0, max: 1, type: String.class
+                        '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ',
+                default   : 'SOURCES_ATMOSPHERIC', 
+                type: String.class
         ],
 ]
 
@@ -65,9 +62,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 
 // main function of the script

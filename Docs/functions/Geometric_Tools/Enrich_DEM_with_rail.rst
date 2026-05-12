@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Enrich DEM with rail
 ====================
@@ -20,11 +20,11 @@ And four parameters:
 
 * Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)
 
-* Rail platform height (hRail): Railways platform height (Optionnal). Default value = 0.5m
+* Rail platform height (hRail): Railways platform height (Optional). Default value = 0.5m
 
-* Input SRID (inputSRID): SRID of the input tables (Optionnal)
+* Input SRID (inputSRID): SRID of the input tables (Optional)
 
-* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied
+* Output suffix (outputsuffix): suffix applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied
 
 In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter railWidth, using the following formula:
 
@@ -44,36 +44,48 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``inputDEM``
+``inputDEM`` — *Input DEM table*
    Name of the input DEM table to be enriched
 
-``inputRail``
+   Type: ``String``
+
+``inputRail`` — *Input railways table*
    Name of the input railways table
 
-``railWidth``
+   Type: ``String``
+
+``railWidth`` — *Railways width*
    Name of column where the railways width is stored
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
+``hRail`` — *Railways platform height*
+   Railways platform height (in meters) (Optional)
+
+   Type: ``double``
+
+   Default: ``0.5``
+
+``inputSRID`` — *Input SRID*
    🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
-``hRail``
-   Railways platform height (in meters) (Optionnal) 🛠 Default value = 0.5
+   Type: ``Integer``
 
-``outputSuffixe``
-   Suffixe applied at the end of the resuling table name  🛠 If not specified, "ENRICHED" is applied
+``outputsuffix`` — *Output suffix*
+   Suffix applied at the end of the resulting table name  🛠 If not specified, "ENRICHED" is applied
+
+   Type: ``String``
+
+   Default: ``ENRICHED``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

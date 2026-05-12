@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Enrich DEM with road
 ====================
@@ -32,36 +32,48 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``inputDEM``
+``inputDEM`` — *Input DEM table*
    Name of the input DEM table to be enriched
 
-``inputRoad``
+   Type: ``String``
+
+``inputRoad`` — *Input roads table*
    Name of the input roads table
 
-``roadWidth``
+   Type: ``String``
+
+``roadWidth`` — *Road width*
    Name of column where the road width is stored
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
+``hRoad`` — *Roads platform height*
+   Roads platform height (in meters) (Optional)
+
+   Type: ``Double``
+
+   Default: ``0``
+
+``inputSRID`` — *Input SRID*
    🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
-``hRoad``
-   Roads platform height (in meters) (Optional)   🛠 Default value = 0
+   Type: ``Integer``
 
-``outputSuffix``
-   Suffix applied at the end of the resulting table name  🛠 If not specified, "ENRICHED" is applied
+``outputSuffix`` — *Output suffix*
+   Suffix applied at the end of the resulting table name
+
+   Type: ``String``
+
+   Default: ``ENRICHED``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

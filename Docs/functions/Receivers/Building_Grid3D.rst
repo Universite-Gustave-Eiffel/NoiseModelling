@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Building Grid3D
 ===============
@@ -30,7 +30,7 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableBuilding``
+``tableBuilding`` — *Buildings table name*
    Name of the Buildings table.
    The table must contain:
    
@@ -38,20 +38,33 @@ Mandatory inputs
    
    *  HEIGHT : the height of the building (in meter) (FLOAT)
    
-   *  POP : building population to add in the receiver attribute (FLOAT) (Optionnal)
+   *  POP : building population to add in the receiver attribute (FLOAT) (Optional)
 
-``delta``
-   Distance between receivers (in the Cartesian plane - in meters) (FLOAT)
-
-   Default: ``10``
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``fence``
+``delta`` — *Distance between receivers*
+   Distance between receivers (in the Cartesian plane - in meters) (FLOAT)
+
+   Type: ``Double``
+
+   Default: ``10``
+
+``distance`` — *Distance from wall*
+   Distance between the receivers and the wall, in metres (FLOAT)
+
+   Type: ``Double``
+
+   Default: ``2``
+
+``fence`` — *Extent filter*
    Create receivers only in the provided polygon (fence)
 
-``fenceTableName``
+   Type: ``Geometry``
+
+``fenceTableName`` — *Filter using table bounding box*
    Filter receivers, using the bounding box of the given table name:
    
    *  Extract the bounding box of the specified table,
@@ -62,30 +75,27 @@ Optional inputs
    
    *  THE_GEOM : any geometry type.
 
-``sourcesTableName``
-   Keep only receivers that are at least 1 meter from the provided source geometries.The source geometries table must contain:
-   
-   *  THE_GEOM : any geometry type.
+   Type: ``String``
 
-``heightLevels``
-   Height between each level of receivers (in meters) (FLOAT)
+``heightLevels`` — *Height between levels*
+   Height between each level of receivers, in meters (FLOAT)
+
+   Type: ``Double``
 
    Default: ``2.5``
 
-``distance``
-   Distance of receivers from the wall (in meters) (FLOAT)
+``sourcesTableName`` — *Sources table name*
+   Keep only receivers that are at least 1 meter from the provided source geometries.The source geometries table must contain:
+   
+   *  THE_GEOM : any geometry type
 
-   Default: ``2``
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Created table*
    Name of the table containing the results of the computation. Can be used as input for another process.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

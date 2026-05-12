@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Clean Database
 ==============
@@ -9,7 +9,7 @@ Delete all database tables
 Overview
 --------
 
-➡️ Delete all non-system tables of the database.  🚨 Use with caution
+➡️ Delete all non-system tables of the database. 🚨 Use with caution
 
 Arguments
 ---------
@@ -17,18 +17,16 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``areYouSure``
+``areYouSure`` — *Are you sure?*
    Are you sure you want to delete all the tables in the database?
+
+   Type: ``Boolean``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

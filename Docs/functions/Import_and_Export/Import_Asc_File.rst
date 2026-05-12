@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Import Asc File
 ===============
@@ -22,34 +22,38 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``pathFile``
-   📂 Path of the ESRI Ascii Raster file you want to import, including its extension. Can be gzip compressed.  For example: c:/home/receivers.asc or c:/home/receivers.asc.gz
+``pathFile`` — *Path of the ESRI Ascii Raster file*
+   📂 Path of the ESRI Ascii Raster file you want to import, including its extension. Files can be gzip compressed.  For example: c:/home/receivers.asc or c:/home/receivers.asc.gz
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
-   🌍 Original projection identifier (also called SRID) of the .asc files.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection).
-
-   Default: ``4326``
-
-``fence``
-   Create DEM table only in the provided polygon
-
-``downscale``
+``downscale`` — *Skip pixels on each axis*
    Divide the number of rows and columns read by the following coefficient (FLOAT)
 
+   Type: ``Integer``
+
    Default: ``1.0``
+
+``fence`` — *Fence geometry*
+   Create DEM table only in the provided polygon
+
+   Type: ``Geometry``
+
+``inputSRID`` — *Projection identifier*
+   🌍 Original projection identifier (also called SRID) of the .asc files.  It should be an EPSG code, an integer with 4 or 5 digits (ex: 3857 is Pseudo-Mercator projection)
+
+   Type: ``Integer``
+
+   Default: ``4326``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

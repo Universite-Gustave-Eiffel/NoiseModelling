@@ -17,18 +17,15 @@
 
 package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.JDBCUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
 
-title = 'Add Leq and LAeq columns'
-description = '&#10145;&#65039; Add the columns <b>Leq</b> and <b>LAeq</b> to a table with octave band values from 63 Hz to 8000 Hz.'+
+title = 'Add LAeq and Leq columns'
+description = '&#10145;&#65039; Add the columns <b>LAeq</b> and <b>Leq</b> to a table with octave band values from 63 Hz to 8000 Hz.'+
               '<hr>' +
               'The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed.'
 
@@ -43,7 +40,7 @@ inputs = [
         tableName: [
                 title      : 'Name of the table',
                 name       : 'Name of the table',
-                description: 'Name of the table on which <b>Leq</b> and <b>LAeq</b> columns will be added.',
+                description: 'Name of the table on which <b>LAeq</b> and <b>Leq</b> columns will be added.',
                 type       : String.class
         ]
 ]
@@ -56,8 +53,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 
 def exec(Connection connection, input) {
@@ -107,4 +102,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-

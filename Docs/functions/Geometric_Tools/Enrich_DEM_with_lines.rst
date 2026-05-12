@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Enrich DEM with lines
 =====================
@@ -14,13 +14,13 @@ This script works with two input layers:
 
 * A linestring layer (e.g: hydrographic network, ...) in which coordinates have a Z dimension
 
-And three optionnal parameters:
+And three optional parameters:
 
 * Input SRID (inputSRID): SRID of the input tables
 
 * Source (source): Text indicating the source of the linestring layer. Can be useful to distinguish the points in the resulting DEM . If not specified, "LINESTRING" is applied
 
-* Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name. If not specified, "ENRICHED" is applied
+* Output suffix (outputsuffix): suffix applied at the end of the resuling table name. If not specified, "ENRICHED" is applied
 
 Arguments
 ---------
@@ -28,33 +28,43 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``inputDEM``
+``inputDEM`` — *Input DEM table*
    Name of the input DEM table to be enriched
 
-``inputLine``
+   Type: ``String``
+
+``inputLine`` — *Input Linestring table*
    Name of the input Linestring table
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``inputSRID``
+``inputSRID`` — *Input SRID*
    🌍 SRID of the input tables.  🛠 If not specified, the SRID from DEM layer is applied. If DEM has no SRID, 0 is applied
 
-``source``
-   Text indicating the source of the linestring layer (Optionnal)  🛠 If not specified, "LINESTRING" is applied
+   Type: ``Integer``
 
-``outputSuffixe``
-   Suffixe applied at the end of the resuling table name  🛠 If not specified, "ENRICHED" is applied
+``outputsuffix`` — *Output suffix*
+   Suffix applied at the end of the resulting table name
+
+   Type: ``String``
+
+   Default: ``ENRICHED``
+
+``source`` — *Source*
+   Text indicating the source of the linestring layer (Optional)
+
+   Type: ``String``
+
+   Default: ``LINESTRING``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

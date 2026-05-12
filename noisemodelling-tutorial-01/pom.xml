@@ -138,24 +138,7 @@
                             </arguments>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>generate-functions-docs</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>org.noise_planet.nmtutorial01.GenerateFunctionsDocs</mainClass>
-                            <arguments>
-                                <argument>${project.basedir}/../Docs</argument>
-                                <argument>${project.basedir}/../noisemodelling-scripts/src/main/groovy/org/noise_planet/noisemodelling/scripts</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
                 </executions>
-                <configuration>
-                    <mainClass>${main.class}</mainClass>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

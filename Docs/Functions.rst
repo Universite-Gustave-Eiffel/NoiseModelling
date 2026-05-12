@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 List of functions
 ^^^^^^^^^^^^^^^^^
@@ -120,7 +120,7 @@ NoiseModelling
 .. toctree::
     :maxdepth: 1
 
-    functions/NoiseModelling/GenerateAtmosphericSettingsTemplate
+    functions/NoiseModelling/Atmospheric_Template
     functions/NoiseModelling/Noise_level_from_source
     functions/NoiseModelling/Noise_level_from_traffic
     functions/NoiseModelling/PlotDirectivity

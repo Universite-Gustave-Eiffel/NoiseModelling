@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Road Emission From TMJA
 =======================
@@ -17,22 +17,22 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``sourcesTableName``
+``sourcesTableName`` — *Sources table name*
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``databaseName``
+``databaseName`` — *Name of the database*
    Name of the database (default : first found db)
+
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Result*
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

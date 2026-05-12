@@ -1,10 +1,10 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Screen to building
 ==================
 
-Convert screens to building format.
+Convert screens to building format
 
 Overview
 --------
@@ -18,24 +18,24 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableScreens``
+``tableScreens`` — *Screens table name*
    Name of the Screens table.   The table must contain: -  THE_GEOM  : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). -  HEIGHT  : the height of the screens (FLOAT)
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``tableBuilding``
+``tableBuilding`` — *Buildings table name*
    Name of the Buildings table.   The table must contain: -  THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON). -  HEIGHT : the height of the building (FLOAT)
+
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

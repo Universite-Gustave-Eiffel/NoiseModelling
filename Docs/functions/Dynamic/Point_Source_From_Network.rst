@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Point Source From Network
 =========================
@@ -17,33 +17,31 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``tableNetwork``
+``tableNetwork`` — *Input table name*
    Name of the network table.
    
    Must contain at least:- PK: identifier with a Primary Key constraint- THE_GEOM: geometric column
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``gridStep``
-   Distance between location of possible sources along the network in
+   Distance between location of possible sources along the network in meters.
 
-   Default: ``10``
+   Type: ``Integer``
 
-``height``
-   Height of the source in
+``height`` — *Source height*
+   Height of the source in meters.
 
-   Default: ``0.05``
+   Type: ``Double``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    This type of result does not allow the blocks to be linked together.
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

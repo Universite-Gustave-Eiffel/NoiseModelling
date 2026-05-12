@@ -1,7 +1,7 @@
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by the DECIDE team FROM the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
  *
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -15,10 +15,7 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
-
-
 
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
@@ -33,7 +30,6 @@ import org.locationtech.jts.io.WKTReader
 import org.noise_planet.noisemodelling.pathfinder.PathFinder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Buildings Grid'
@@ -54,7 +50,7 @@ inputs = [
                              'The table must contain: <ul>' +
                              '<li> <b>THE_GEOM</b> : the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
                              '<li> <b>HEIGHT</b> : the height of the building (in meter) (FLOAT)</li>' +
-                             '<li> <b>POP</b> : building population to add in the receiver attribute (FLOAT) (Optionnal)</li></ul>',
+                             '<li> <b>POP</b> : building population to add in the receiver attribute (FLOAT) (Optional)</li></ul>',
                 type       : String.class
         ],
         fence           : [
@@ -80,31 +76,29 @@ inputs = [
                 title      : 'Sources table name',
                 description: 'Keep only receivers that are at least 1 meter from the provided source geometries.</br></br>' +
                              'The source geometries table must contain: <ul>' +
-                             '<li> <b>THE_GEOM</b> : any geometry type. </li></ul>',
+                             '<li> <b>THE_GEOM</b> : any geometry type</li></ul>',
                 min        : 0, max: 1,
                 type       : String.class
         ],
         delta           : [
                 name       : 'Receivers minimal distance',
                 title      : 'Distance between receivers',
-                description: 'Distance between receivers (in the Cartesian plane - in meters) (FLOAT) </br></br>'+
-                             '&#128736; Default value: <b>10 </b>',
+                description: 'Distance between receivers (in the Cartesian plane - in meters) (FLOAT)',
+                default    : 10,
                 type       : Double.class
         ],
         heightLevels          : [
                 name       : 'Height between levels',
                 title      : 'Height between levels',
-                description: 'Height between each level of receivers (in meters) (FLOAT) </br> </br>' +
-                             '&#128736; Default value: <b>2.5 </b> ',
-                min        : 0, max: 1,
+                description: 'Height between each level of receivers, in meters (FLOAT)',
+                default    : 2.5,
                 type       : Double.class
         ],
         distance          : [
                 name       : 'Distance',
                 title      : 'Distance from wall',
-                description: 'Distance of receivers from the wall (in meters) (FLOAT) </br></br>' +
-                             '&#128736; Default value: <b>2 </b>',
-                min        : 0, max: 1,
+                description: 'Distance between the receivers and the wall, in metres (FLOAT)',
+                default    : 2,
                 type       : Double.class
         ]
 ]
@@ -117,12 +111,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
-
-
 
 
 def exec(Connection connection, Map input) {

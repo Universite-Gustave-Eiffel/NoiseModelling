@@ -1,5 +1,5 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 Linked Table
 ============
@@ -15,47 +15,69 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``localTableName``
-   Name of the local linked table.
-
-``databaseUrl``
+``databaseUrl`` — *Database URL*
    Connection url of the database. For PostGIS
-   jdbc:postgresql_h2://hostname:5432/databaseName for H2
+   jdbc:postgresql_h2://hostname:5432/databaseName. For H2
    jdbc:h2:tcp://localhost/D:/data/test
 
-``username``
-   User name when connecting to the external database
+   Type: ``String``
 
-``password``
+``localTableName`` — *Name of created table*
+   Name of the local linked table.
+
+   Type: ``String``
+
+``password`` — *User password*
    User password when connecting to the external database
 
-``remoteTableName``
-   External Table name or query. If a query is used instead of the original table name, the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).
+   Type: ``String``
+
+``remoteTableName`` — *External table name*
+   External Table name or query. If a query is used instead of the original table name, then the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).
+
+   Type: ``String``
+
+``username`` — *User name*
+   User name when connecting to the external database
+
+   Type: ``String``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``driverClass``
+``driverClass`` — *Driver name*
    Name of the class to connect to the external database.
 
-``remoteSchemaName``
-   External Table Schema ex: public
+   Type: ``String``
 
-``force``
+   Default: ``org.h2gis.postgis_jts.Driver``
+
+   Allowed values: ``org.h2gis.postgis_jts.Driver``, ``org.h2.Driver``
+
+``fetchSize`` — *Fetch size*
+   the number of rows fetched, a hint with non-negative number of rows to fetch from the external table at once, may be ignored by the driver of external database. 0 is default and means no hint. The value is passed to java.sql.Statement.setFetchSize() method.
+
+   Type: ``Integer``
+
+   Default: ``0``
+
+``force`` — *Force*
    Create the LINKED TABLE even if the remote database/table does not exist.
 
-``fetchSize``
-   the number of rows fetched, a hint with non-negative number of rows to fetch from the external table at once, may be ignored by the driver of external database. 0 is default and means no hint. The value is passed to java.sql.Statement.setFetchSize() method.
+   Type: ``Boolean``
+
+``remoteSchemaName`` — *External table schema*
+   External Table Schema ex: public
+
+   Type: ``String``
+
+   Default: ``public``
 
 Output
 ------
 
-``result``
+``result`` — *Local table name*
    The name of the local linked table, can be used as an input for another process
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

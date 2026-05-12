@@ -15,9 +15,7 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
-
 
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
@@ -28,7 +26,6 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.*
 import groovy.sql.Sql
 
@@ -81,27 +78,23 @@ inputs = [
         delta             : [
                 name       : 'Offset',
                 title      : 'Offset',
-                description: 'Offset in the Cartesian plane (in meters) </br> </br>' +
-                             '&#128736; Default value: <b>10 </b>',
-                min        : 0, max        : 1,
+                description: 'Offset in the Cartesian plane (in meters)',
+                default    : 10,
                 type       : Double.class
         ],
         receiverstablename: [
                 name       : 'receiverstablename',
                 title      : 'Name of receivers table',
                 description: 'Name of the output table.</br> </br>' +
-                             'Do not write the name of a table that contains a space.</br> </br>' +
-                             '&#128736; Default value: <b>RECEIVERS </b>',
-                min        : 0, max: 1,
+                             'Do not write the name of a table that contains a space',
+                default    : 'RECEIVERS',
                 type       : String.class
         ],
         height : [
                 name       : 'Height',
                 title      : 'Height',
-                description: 'Height of receivers (in meter) (FLOAT) </br> </br>' +
-                             '&#128736; Default value: <b>4</b>',
-                min        : 0, 
-                max        : 1,
+                description: 'Height of receivers (in meter) (FLOAT)',
+                default    : 4,
                 type       : Double.class
         ],
         outputTriangleTable            : [
@@ -121,12 +114,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
-
-
 
 
 def exec(connection, Map input) {

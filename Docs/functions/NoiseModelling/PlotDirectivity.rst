@@ -1,15 +1,15 @@
 .. DO NOT UPDATE THIS FILE!!
-.. This document has been automatically generated with noisemodelling-tutorial-01/src/main/java/org/noise_planet/nmtutorial01/GenerateFunctionsDocs.java
+.. This document has been automatically generated with noisemodelling-scripts/src/main/java/org/noise_planet/noisemodelling/webserver/script/GenerateFunctionsDocs.java
 
 PlotDirectivity
 ===============
 
-Plot the directivity graph of the specified DIR_ID
+Plots the directivity graph of the specified DIR_ID
 
 Overview
 --------
 
-➡️ Plot the directivity graph of the specified "DIR_ID"
+➡️ Plots the directivity graph of the specified "DIR_ID"
 
 Arguments
 ---------
@@ -17,7 +17,7 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``confDirId``
+``confDirId`` — *Directivity Index*
    Identifier of the directivity sphere from "tableSourceDirectivity" parameter or train directivity if "tableSourceDirectivity" parameter is not filled (INTEGER) In case of train, you can use these values:
    
    * 0 = OMNIDIRECTIONAL
@@ -34,13 +34,31 @@ Mandatory inputs
    
    * 6 = BRIDGE
 
-``confFrequency``
+   Type: ``Integer``
+
+``confFrequency`` — *Frequency*
    Frequency to plot (INTEGER). 63, 125, 250, 500, 1000, 2000, 4000, 8000 (should match with the column of tableSourceDirectivity
+
+   Type: ``Integer``
 
 Optional inputs
 ~~~~~~~~~~~~~~~
 
-``tableSourceDirectivity``
+``confScaleMaximum`` — *Maximum scale attenuation (dB)*
+   Maximum scale attenuation (in dB)
+
+   Type: ``Double``
+
+   Default: ``0``
+
+``confScaleMinimum`` — *Minimum scale attenuation (dB)*
+   Minimum scale attenuation (in dB)
+
+   Type: ``Double``
+
+   Default: ``-35``
+
+``tableSourceDirectivity`` — *Source directivity table name*
    Name of the emission directivity table.🛠  If not specified the default is train directivity of CNOSSOS-EU  The table must contain the following columns:
    
    *   DIR_ID  : identifier of the directivity sphere (INTEGER)
@@ -51,25 +69,13 @@ Optional inputs
    
    *   LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000  : attenuation levels in dB for each octave or third octave (FLOAT).
 
-``confScaleMinimum``
-   Minimum scale attenuation (in dB)
-
-   Default: ``-35 dB``
-
-``confScaleMaximum``
-   Maximum scale attenuation (in dB)
-
-   Default: ``0 dB``
+   Type: ``String``
 
 Output
 ------
 
-``result``
+``result`` — *Result output string*
    Svg/Html of the directivity chart
 
-Function Signatures
--------------------
+   Type: ``String``
 
-The script exposes one entry point:
-
-* ``exec(Connection connection, input)``

@@ -14,9 +14,7 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
-
 
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
@@ -24,12 +22,11 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
 title = 'Change or set SRID'
-description = '&#10145;&#65039; Affect a new Spatial Reference Identifier (SRID) to the specified table'+
+description = '&#10145;&#65039; Assign a new Spatial Reference Identifier (SRID) to the specified table'+
               '<hr>' +
               '&#x1F6A8; If the table: </br>' +
               '- has <b>already an associated SRID</b>: the new SRID is applied to the table and a <b>reprojection of geometries is done</b>, </br>'+
@@ -60,9 +57,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 def exec(Connection connection, input) {
 
@@ -148,5 +142,3 @@ def exec(Connection connection, input) {
     // print to WPS Builder
     return resultString
 }
-
-

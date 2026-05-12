@@ -17,11 +17,8 @@
 
 package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-
-
 import groovy.io.FileType
 import org.apache.commons.io.FilenameUtils
-
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.csv.CSVDriverFunction
 import org.h2gis.functions.io.dbf.DBFDriverFunction
@@ -37,7 +34,6 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.ResultSet
 import java.sql.SQLException
@@ -55,7 +51,7 @@ inputs = [
                 name       : 'Path of the folder',
                 title      : 'Path of the folder',
                 description: '&#128194; Path of the folder </br> </br>' +
-                             ' For example : c:/home/inputdata/ ',
+                             'For example : c:/home/inputdata/ ',
                 type       : String.class
         ],
         inputSRID: [
@@ -66,10 +62,10 @@ inputs = [
                              'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
                              'If the table is geometric and if this parameter is not filled and:</br>' +
                              '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
-                             '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code </br> </br>' +                          
-                             '&#128736; Default value: <b>4326 </b> ',
-                type       : Integer.class,
-                min        : 0, max: 1
+                             '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code',
+                min        : 0,
+                max        : 1,
+                type       : Integer.class
         ],
         importExt: [
                 name       : 'Extension to import',
@@ -88,7 +84,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
 
 
 def exec(Connection connection, input) {
@@ -268,4 +263,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-
