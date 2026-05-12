@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "recepteursR4E",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32635" } },
+"features": [
+{ "type": "Feature", "properties": { "pk": 1, "id": 1, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 545502.617344143916853, 6777754.284914939664304, 0.0 ] } },
+{ "type": "Feature", "properties": { "pk": 2, "id": 2, "height": 1.5 }, "geometry": { "type": "Point", "coordinates": [ 545513.90610469202511, 6777734.247364967130125, 0.0 ] } }
+]
+}
+
