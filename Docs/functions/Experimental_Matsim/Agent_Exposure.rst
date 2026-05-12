@@ -64,8 +64,6 @@ Optional inputs
 
    Type: ``Integer``
 
-   Default: ``4326``
-
 ``personsCsvFile``
    Path of the Matsim output_persons csv file  For example : /home/matsim/simulation_output/output_persons.csv.gz
 

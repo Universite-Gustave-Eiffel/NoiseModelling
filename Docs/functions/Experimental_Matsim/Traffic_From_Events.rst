@@ -37,8 +37,6 @@ Optional inputs
 
    Type: ``Integer``
 
-   Default: ``4326``
-
 ``exportTraffic`` — *Export additionnal traffic data ?*
    Define if you want to output average speed and flow per vehicle category in an additional table
 

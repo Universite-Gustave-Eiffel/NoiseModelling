@@ -30,8 +30,6 @@ Optional inputs
 
    Type: ``Integer``
 
-   Default: ``2154``
-
 ``tableName`` — *Name of created table*
    Do not write the name of a table that contains a space  🛠
 

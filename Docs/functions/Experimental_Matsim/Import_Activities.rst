@@ -37,8 +37,6 @@ Optional inputs
 
    Type: ``Integer``
 
-   Default: ``4326``
-
 Output
 ------
 

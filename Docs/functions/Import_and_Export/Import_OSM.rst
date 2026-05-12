@@ -134,8 +134,6 @@ Optional inputs
 
    Type: ``Integer``
 
-   Default: ``3857``
-
 Output
 ------
 
