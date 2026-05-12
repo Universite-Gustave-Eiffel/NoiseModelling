@@ -11,7 +11,9 @@ on:
         required: true
 
 jobs:
-  build:
+  prepare_release:
+    outputs:
+      tag_name: v${{ github.event.inputs.release_version }}
     name: Release and next iteration
     runs-on: ubuntu-latest
     permissions:
@@ -77,6 +79,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build_windows_exe:
+    needs: prepare_release
+    uses: ./.github/workflows/build_windows.yml
+    with:
+      git_ref: v${{ github.event.inputs.releaseVersion }}
+
+  upload_release:
+    needs: [prepare_release, build_windows_exe]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necessary to see tags and branches
       - name: Build Zip Artifact
         # Since we are already on the release-ready state locally,
         # we can just package the webserver
@@ -89,11 +105,20 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libarchive-tools
           bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
           zip -r NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip NoiseModelling/
-
+      - name: Download windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: release-artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.event.inputs.releaseVersion }}
           name: Release ${{ github.event.inputs.releaseVersion }}
-          files: NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
+          files: |
+            NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
+            release-artifacts/${{ needs.build_windows_exe.outputs.installer_name }}
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
