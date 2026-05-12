@@ -6,8 +6,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+  
 jobs:
-  build:
+  build_linux:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -89,4 +93,9 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: NoiseModelling/
+  build_windows:
+    uses: ./.github/workflows/build_windows.yml
+    with:
+      git_ref: ${{ github.ref }}
+
 

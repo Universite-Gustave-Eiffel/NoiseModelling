@@ -1,4 +1,4 @@
-[![CI](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml/badge.svg?branch=4.X)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml)
+[![CI](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/actions/workflows/CI.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Documentation Status](https://readthedocs.org/projects/noisemodelling/badge/?version=latest)](https://noisemodelling.readthedocs.io/en/latest/?badge=latest)
 [![GitHub release](https://img.shields.io/github/release/Universite-Gustave-Eiffel/NoiseModelling)](https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/)
