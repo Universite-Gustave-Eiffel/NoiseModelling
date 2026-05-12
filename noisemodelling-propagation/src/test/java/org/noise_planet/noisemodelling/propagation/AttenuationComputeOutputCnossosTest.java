@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.lang.Double.NaN;
@@ -6740,6 +6741,80 @@ public class AttenuationComputeOutputCnossosTest {
         // Check attenuation is cnossosPath.aGlobal < 0 dB
         assertTrue(Arrays.stream(cnossosPath.aGlobal).allMatch(d -> d < 0));
         assertTrue(Arrays.stream(cnossosPath.aGlobalRaw).allMatch(d -> d < 0));
+    }
+
+    @Test
+    public void reflectionOnBuildingWallNearReceiver() throws IOException {
+        AttenuationComputeOutput propDataOut = computeReflectionOnBuildingWallNearReceiver(false);
+
+        List<CnossosPath> reflectionPaths = propDataOut.getPropagationPaths().stream()
+                .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
+                .collect(Collectors.toList());
+        assertFalse(reflectionPaths.isEmpty(),
+                "A reflection path should exist on the building wall when source and receiver are on the same side.");
+        assertTrue(reflectionPaths.stream().anyMatch(path ->
+                        path.getPointList().stream().anyMatch(point -> point.type == PointPath.POINT_TYPE.REFL)),
+                "At least one computed reflection path should contain a reflection point on the wall.");
+    }
+
+    @Test
+    public void reflectionOnBuildingWallNearReceiverFilteredWhenOptionEnabled() throws IOException {
+        AttenuationComputeOutput propDataOut = computeReflectionOnBuildingWallNearReceiver(true);
+
+        List<CnossosPath> reflectionPaths = propDataOut.getPropagationPaths().stream()
+                .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
+                .collect(Collectors.toList());
+        assertTrue(reflectionPaths.isEmpty(),
+                "Reflection paths ending with a wall reflection within 0.5 m of the receiver should be filtered when the option is enabled.");
+        assertFalse(propDataOut.getPropagationPaths().isEmpty(),
+                "Enabling the reflection-profile filter should not remove the valid direct paths.");
+        assertTrue(propDataOut.getPropagationPaths().stream().allMatch(path ->
+                        path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT),
+                "Only direct paths should remain after filtering the near-receiver reflection profile.");
+    }
+
+    private AttenuationComputeOutput computeReflectionOnBuildingWallNearReceiver(boolean enableReflectionProfileFilter)
+            throws IOException {
+        GeometryFactory geometryFactory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        profileBuilder
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(0.0, -2.5, 0.0),
+                        new Coordinate(1.0, -2.5, 0.0),
+                        new Coordinate(1.0, 2.5, 0.0),
+                        new Coordinate(0.0, 2.5, 0.0)
+                }, 5.0)
+                .finishFeeding();
+
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(geometryFactory.createPoint(new Coordinate(11.49, 0.0, 2.0)));
+        scene.addReceiver(new Coordinate(1.49, 0.0, 2.0));
+        scene.defaultGroundAttenuation = 0.0;
+        scene.reflexionOrder = 1;
+        scene.maxSrcDist = 50.0;
+        scene.setCloseReceiverReflectionWallDistance(enableReflectionProfileFilter ? 0.5 : 0.0);
+        scene.setComputeHorizontalDiffraction(false);
+        scene.setComputeVerticalDiffraction(false);
+
+        AttenuationParameters attData = new AttenuationParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+        scene.defaultCnossosParameters = attData;
+
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder pathFinder = new PathFinder(scene);
+        pathFinder.setThreadCount(1);
+        pathFinder.run(propDataOut);
+
+        for (int i = 0; i < propDataOut.getPropagationPaths().size(); i++) {
+            CnossosPath path = propDataOut.getPropagationPaths().get(i);
+            LOGGER.info("Path {} profileType={}", i, path.getCutProfile().getProfileType());
+            LOGGER.info("Path {} segmentList={}", i, objectMapper.writeValueAsString(path.getSegmentList()));
+            LOGGER.info("Path {} pointList={}", i, objectMapper.writeValueAsString(path.getPointList()));
+        }
+        return propDataOut;
     }
 
     /**
