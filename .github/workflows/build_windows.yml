@@ -8,25 +8,28 @@ on:
         required: true
         type: string
     outputs:
-      exe_name: ${{ steps.version_step.outputs.EXE_NAME }}
+      # Tier 3: Map Workflow Output -> Job Output
+      installer_name:
+        description: "The filename of the generated EXE"
+        value: ${{ jobs.build.outputs.exe_name }} # MUST reference jobs, not steps
 
 jobs:
   build:
     runs-on: windows-latest
     outputs:
-      exe_path: "NoiseModelling_windows-x64.exe"
+      exe_name: ${{ steps.version_step.outputs.EXE_NAME }}
     steps:
+      # Checkout the source code of the project
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
       - name: Cache
         uses: actions/cache@v4
         with:
           path: |
             $HOME/.m2/
           key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-      # Checkout the source code of the project
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.git_ref }}
       # Setup the jdk using version 11 of Adoptium Temurin
       - name: Setup java 11 using Adoptium Temurin
         uses: actions/setup-java@v4
