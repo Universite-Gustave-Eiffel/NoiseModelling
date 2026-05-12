@@ -44,7 +44,7 @@ Packaging
 
 The latest `release page`_ offers two NoiseModelling packages:
 
-* ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface. Please check the :doc:`Tutorial_Requirements` before installing, and refer to :doc:`Get_Started_Script` for CLI usage.
+* ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface. Please check the :doc:`Tutorial_Requirements` before installing, and refer to :doc:`Tutorial_Get_Started_Script` for CLI usage.
 * ``NoiseModelling_X.X.X_install.exe``: A standalone Windows installer that includes the web GUI and a bundled Java Virtual Machine.
 
 .. _CNOSSOS-EU: https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
@@ -161,7 +161,7 @@ Fundings
     Tutorial_Matsim
     Tutorial_Dynamic
     Tutorial_Data_Assimilation
-    Get_Started_Script
+    Tutorial_Get_Started_Script
     Tutorials_FAQ
 
 .. toctree::

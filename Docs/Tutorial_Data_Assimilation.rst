@@ -84,7 +84,7 @@ To compute the data assimilation, you will have to execute several WPS ``.groovy
 
 
 * with the NoiseModelling's GUI (Graphic User Interface). In this case, the WPS blocks are listed in the ``Data_Assimilation`` tab *(see screenshot below)*,
-* in command line (see how to :doc:`Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
+* in command line (see how to :doc:`Tutorial_Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
 * in a .groovy script, calling one or various WPS .groovy scripts.
 
 .. image:: ./images/tutorial/Data_Assimilation/NM_GUI_wps_list.png

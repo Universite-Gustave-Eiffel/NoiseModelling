@@ -81,7 +81,7 @@ You can use NoiseModelling with command lines. To do so,
 .. Note::
     No need to launch / start the application as we do with web server. Here the NoiseModelling libraries are called directly for each instructions.
 
-Examples can be found in the page ":doc:`Get_Started_Script`".
+Examples can be found in the page ":doc:`Tutorial_Get_Started_Script`".
 
 
 5. Docker Setup
