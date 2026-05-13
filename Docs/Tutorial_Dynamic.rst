@@ -1,4 +1,4 @@
-Dynamic Tutorial - GUI
+Dynamic Maps - GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Many publications have emerged showcasing the use of **NoiseModelling** to create dynamic maps (see `scientific production`_).
@@ -78,7 +78,7 @@ Use the ``Dynamic:Flow_2_Noisy_Vehicles`` WPS block:
 #. ``gridStep``: Enter ``10``
 
 Compute noise level at receiver points for each receiver-period combination
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -94,7 +94,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 Compute noise indicators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This step is optional, it computes the LA10, LA50 and LA90 at each receiver from the table RECEIVERS_LEVEL
+This step is optional, it computes the LA10, LA50 and LA90 time-aggregated indicators at each receiver from the table RECEIVERS_LEVEL
 
 Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
@@ -110,7 +110,7 @@ Generate a dynamic iso-contour map for each time period based on the LAEQ of the
 Use the ``Acoustic_Tools:Create_Isosurface`` wps block
 
 #. ``Sound levels table``: Enter ``RECEIVERS_LEVEL``
-#. ``Smooth coefficient``: Enter ``0``
+#. ``Polygon smoothing coefficient``: Enter ``0``
 
 Export Map to QGis
 ~~~~~~~~~~~~~~~~~~~
@@ -148,7 +148,7 @@ Epoch is in millisecond, so we multiply by 1000 and add any base epoch time. The
 
 With the navigation bar of QGis you can select the period to display.
 
-.. figure:: images/tutorial/dynamic/temporal_bar_nav.png
+.. figure:: images/tutorial/dynamic/temporal_bar_nav.gif
    :align: center
    :alt: Layer setting, temporal tab in QGis
 
@@ -189,7 +189,7 @@ Use ``Regular_Grid`` WPS block
 Split geometry and traffic periods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the table ``ROADS``, the traffic information is given for each period in the ``TIME`` column.
+In the table ``ROADS``, the traffic information is given for each period in the ``PERIOD`` column.
 
 The following WPS block aggregates roads by the geometry and places the associated pair ``IDSOURCE``/``PERIOD``
 with the corresponding road traffic into the ``SOURCES_EMISSION`` table.
@@ -198,13 +198,13 @@ Use the block ``Dynamic::Split_Sources_Period`` :
 
 #. ``Source table name``: Enter ``ROADS``
 #. ``Source index field name``: Enter ``LINK_ID``
-#. ``Source period field name``: Enter ``TIME``. The field time will be renamed to ``PERIOD``.
+#. ``Source period field name``: Enter ``PERIOD``.
 
-Two output table is created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
+Two output tables are created ``SOURCES_GEOM`` and ``SOURCES_EMISSION``
 
 
 Compute noise level at receiver points for each receiver-period combination
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -215,18 +215,22 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 #. ``Diffraction on horizontal edges``: Check it
 #. ``Order of reflexion``: Enter ``0``
 
+The ``RECEIVERS_LEVEL`` output table is created.
 
 Compute noise indicators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This step is optional, it computes the LA10, LA50 and LA90 at each receiver from the table ``LT_GEOM``
+This step is optional, it computes the LA10, LA50 and LA90 time-aggregated indicators at each receiver from the table ``RECEIVERS_LEVEL``.
 
 Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
 #. ``tableName``: Enter ``RECEIVERS_LEVEL``
 #. ``columnName``: Enter ``LAEQ``
 
-The result table LT_GEOM can be displayed into QGis, if you filter by ``PERIOD``.
+Visualizing results
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The result table ``RECEIVERS_LEVEL`` can be displayed in QGis, if you filter by ``PERIOD``.
 
 Case 3: Spatio-Temporal Data of Moving Sources
 ----------------------------------------------------
@@ -252,7 +256,6 @@ Use ``Import File`` WPS block
 #. ``Path of the input File``: Enter the path of building (can be relative to NoiseModelling): ``resources/Dynamic/receivers_python_method0_50m_pop.shp``
 #. ``Projection identifier``: Enter SRID ``32635``
 #. ``Output table name``: Enter ``receivers``
-#. ``height``: Enter ``1.5``
 
 
 Import the road network
@@ -306,7 +309,7 @@ Compute noise attenuation for each receiver-source pairs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Unlike the previous tutorial we will use an alternative approach here by storing the attenuation between all sources and receivers first.
-The applying later this attenuation to the emission level for each period.
+ This attenuation will be applied later to the emission levels for each period.
 
 Use the ``NoiseModelling:Noise_level_from_source`` WPS block
 
@@ -334,14 +337,17 @@ Use the ``Dynamic:Noise_From_Attenuation_Matrix`` WPS block
 Compute noise indicators
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This step is optional, it computes the LA10, LA50 and LA90 at each receiver from the table ``LT_GEOM``
+This step is optional, it computes the LA10, LA50 and LA90 time-aggregated indicators at each receiver from the table ``LT_GEOM``
 
 Use the ``Acoustic_Tools:DynamicIndicators`` wps block
 
-#. ``tableName``: Enter ``RECEIVERS_LEVEL``
+#. ``tableName``: Enter ``LT_GEOM``
 #. ``columnName``: Enter ``LAEQ``
 
-The result table LT_GEOM can be displayed into QGis, if you filter by ``PERIOD``.
+Visualizing results
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The result table ``LT_GEOM`` can be displayed into QGis, if you filter by ``PERIOD``.
 
 
 .. note::

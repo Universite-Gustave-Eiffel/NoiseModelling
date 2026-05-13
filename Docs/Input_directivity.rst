@@ -11,7 +11,7 @@ The other tables are accessible via the left menu in the ``Input tables`` sectio
 	:align: center
 
 .. note::
-	If you want to see how to use this table, have a look to the tutorial ":doc:`Noise_Map_From_Point_Source`" , in the section ``Step 5 (bonus): Change the directivity``
+	If you want to see how to use this table, have a look to the tutorial ":doc:`Tutorial_Noise_Map_From_Point_Source`" , in the section ``Step 5 (bonus): Change the directivity``
 
 Table definition
 ---------------------
