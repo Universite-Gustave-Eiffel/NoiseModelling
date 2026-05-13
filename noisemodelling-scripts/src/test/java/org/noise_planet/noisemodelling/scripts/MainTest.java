@@ -15,15 +15,13 @@ import org.apache.log4j.PropertyConfigurator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.h2gis.utilities.JDBCUtilities;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.noise_planet.noisemodelling.AssumptionLoggerExtension;
 import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.runner.Main;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 
 import java.io.File;
 import java.sql.Connection;
@@ -38,10 +36,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MainTest {
     String dbName = UUID.randomUUID().toString().replace("-", "");
 
-    @BeforeAll
-    public static void init() {
+    @BeforeEach
+    public void initLogger() {
         PropertyConfigurator.configure(
                 Objects.requireNonNull(VersionUtils.class.getResource("log4j_tests.properties")));
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        Logging.clearAppenders();
     }
 
     @Test
