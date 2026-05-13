@@ -60,16 +60,21 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean deploy -B
-      - name: Install bsdtar
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libarchive-tools
+        run: mvn clean -DskipTests deploy -B
       - name: Unzip production artifacts
         run: |
+          # 1. Unzip into a temporary directory
+          unzip -q noisemodelling-scripts/target/*.zip -d tmp_extract
+          
+          # 2. Create target directory
           mkdir NoiseModelling
-          # bsdtar handles .zip and supports --strip-components
-          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
+          
+          # 3. Move contents from the subfolder to the target
+          # The asterisk-slash-asterisk moves everything inside the first subfolder
+          mv tmp_extract/*/* NoiseModelling/
+          
+          # 4. Cleanup
+          rm -rf tmp_extract
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
