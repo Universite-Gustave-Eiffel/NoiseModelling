@@ -28,7 +28,7 @@ Yes. To save your WPS Builder project you two possibilities:
 #. Export the blocks state and the whole database into a zip file (limited to 500 MB database)
 
 1. Export/Import the blocks state
-********************
+*********************************
 
 Click on the ``File`` icon and then choose ``Save project``. The browser will save the file in your download folder.
 
@@ -39,7 +39,7 @@ Click on the ``File`` icon and then choose ``Save project``. The browser will sa
 Once you want to recover the saved state, click on ``File / Open project`` and select the saved file.
 
 2. Export/Import the database
-********************
+*****************************
 
 Click on the ``File`` icon and then choose ``Save project with database``. The browser will save the file in your download folder.
 
@@ -49,7 +49,7 @@ How to run multiple processing at once ?
 You can use the output of a processing block (like ``Import File``) as the input of another process. To do this keep the left button of your mouse down while dragging the white square on the right side of a green output block to the left white square of the input of another process. Then run the last process in the chain in order to execute the whole processing.
 
 I want to run the same processing but using a script not using my web browser, how do it ?
-------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
 
 NoiseModelling WebServer is using the standard protocol named OGC Web Processing Service (`WPS`_) Interface Standard. When you run a WPS block the WPS Builder is generating an equivalent Python script into the Python tab in the user interface. You can just copy/paste the script in a Python console and it should work (no dependency) as long as the NoiseModelling program is running in the background.
 

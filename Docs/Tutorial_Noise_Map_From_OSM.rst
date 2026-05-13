@@ -10,10 +10,10 @@ Prerequisites
 ~~~~~~~~~~~~~~~~~
 
 * You need at least NoiseModelling v.3.0.6; the best is always to use last release
-* We assume you already installed/configured Java and installed NoiseModelling. If not, follow Step 1 in ":doc:`Get_Started_GUI`" page
+* We assume you already installed/configured Java and installed NoiseModelling. If not, follow Step 1 in ":doc:`Tutorial_Get_Started_GUI`" page
 
 .. warning::
-   If you have just finished the ":doc:`Get_Started_GUI`" tutorial, please clean your database with the WPS block ``Clean_Database``. Don't forget to check the ``Are you sure`` check box before running the process. 
+   If you have just finished the ":doc:`Tutorial_Get_Started_GUI`" tutorial, please clean your database with the WPS block ``Clean_Database``. Don't forget to check the ``Are you sure`` check box before running the process.
 
 Step 1:  Get OSM data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,5 +158,5 @@ You can view this layer in your favorite GIS. Drop the file in QGIS then filter 
  You can then apply a (revert) color gradient on ``ISOLABEL`` field.
 
 
-.. figure:: images/tutorial/Tutorial2_ContouringNoiseMap.png
+.. figure:: images/tutorial/Noise_Map_From_OSM/Tutorial2_ContouringNoiseMap.png
    :align: center

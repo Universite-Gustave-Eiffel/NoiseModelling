@@ -124,8 +124,7 @@ public class OwsController {
      */
     public OwsController(DataSource serverDataSource, JWTProvider<User> provider, Configuration configuration) throws IOException {
         wpsScriptWrapper = new WpsScriptWrapper(Path.of(configuration.scriptPath));
-        Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
-        wpsScripts = WpsScriptWrapper.buildScriptWrappers(groupedScripts);
+        wpsScripts = WpsScriptWrapper.scanScriptsGrouped(getClass().getClassLoader(), configuration.scriptPath);
         this.provider = provider;
         this.configuration = configuration;
         this.serverDataSource = serverDataSource;
@@ -135,16 +134,11 @@ public class OwsController {
     /**
      * Reloads the WPS (Web Processing Service) scripts by reloading them from the file system
      * and rebuilding the corresponding script wrappers.
-     * <p>
-     * This method uses {@link WpsScriptWrapper#loadScripts()} to scan and organize script files into
-     * groups. The results are then processed by {@link WpsScriptWrapper#buildScriptWrappers(Map)} to
-     * create a new set of script wrappers, which replace the existing ones.
      *
      * @throws IOException if an error occurs while loading or rebuilding the scripts.
      */
     public void reloadScripts() throws IOException {
-        Map<String, List<File>> groupedScripts = wpsScriptWrapper.loadScripts();
-        wpsScripts = WpsScriptWrapper.buildScriptWrappers(groupedScripts);
+        wpsScripts = WpsScriptWrapper.scanScriptsGrouped(getClass().getClassLoader(), configuration.scriptPath);
     }
 
     /**

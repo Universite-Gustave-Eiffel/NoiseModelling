@@ -15,7 +15,7 @@ Download the latest release of NoiseModelling on `Github`_.
     The chosen directory can be anywhere, but make sure you have write access. If you are using a company computer, the Program Files folder is probably not a good idea.
 
 .. warning::
-    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up. For more information, please read the page :doc:`Requirements`. **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
+    For **Linux** and **Mac** users, please make sure your Java environment is correctly set up. For more information, please read the page :doc:`Tutorial_Requirements`. **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
 
 .. note::
     Starting from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
@@ -52,7 +52,7 @@ The NoiseModelling GUI is built using the :doc:`WPS_Builder` component and runs 
 
 By running NoiseModelling your default web browser should have been opened to the http://localhost:8000 address. If not please go to this URL, if something went wrong you should have more information on your terminal.
 
-.. figure:: images/tutorial/Tutorial1_nm_landing.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_nm_landing.png
     :align: center
     :width: 80%
 
@@ -60,7 +60,7 @@ By running NoiseModelling your default web browser should have been opened to th
 
 Click ``builder`` to open the builder.
 
-.. figure:: images/tutorial/Tutorial1_nm_open.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_nm_open.png
     :align: center
     :width: 80%
 
@@ -83,7 +83,7 @@ You will import these layers into your database using the ``Import File`` blocks
 - Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``pathFile`` field *(on the right-side column)*
 - Then click on ``Run Process`` after selecting one of the input/output boxes of your process
 
-.. figure:: images/tutorial/Tutorial1_Image1bis.gif
+.. figure:: images/tutorial/get_started_gui/Tutorial1_Image1bis.gif
    :align: center
 
 Repeat this operation for the 4 other files:
@@ -107,7 +107,7 @@ Files are uploaded to the database when the Console window displays the name of 
 
 Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" section). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
 
-.. figure:: images/tutorial/Tutorial1_display_db.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_display_db.png
     :align: center
     :width: 100%
 
@@ -132,7 +132,7 @@ The beige blocks correspond to optional parameters (e.g. ``DEM table name``, ``G
 
 When ready, you can press ``Run Process``.
 
-.. figure:: images/tutorial/Tutorial1_Image2bis.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_Image2bis.png
    :align: center
 
 As a result, the table ``RECEIVERS_LEVEL`` will be created in your database. This table corresponds to the noise levels computed at receiver points. The column PERIOD corresponds to the 4 different periods of the day (D, E, N and DEN).
@@ -146,7 +146,7 @@ You can now export the output tables *(one by one)* in your preferred export for
 .. warning::
     Don't forget to add the file extension (*e.g.* ``c:/home/receivers_level.geojson`` or ``c:/home/receivers_level.shp``). (Read more info about file extensions here: :doc:`Tutorials_FAQ`)
 
-.. figure:: images/tutorial/Tutorial1_Image3.PNG
+.. figure:: images/tutorial/get_started_gui/Tutorial1_Image3.PNG
    :align: center
 
 For example, you can export the tables in ``.shp`` format. This format can be read with most GIS tools such as the free and open-source `QGIS`_ and `SAGA`_ software.
@@ -161,17 +161,17 @@ For example, you can export the tables in ``.shp`` format. This format can be re
 
 To obtain the following image, use the styling options in your GIS and assign a color gradient to the ``LAEQ`` column of your exported ``RECEIVERS_LEVEL`` table.
 
-.. figure:: images/tutorial/Tutorial1_Image4.PNG
+.. figure:: images/tutorial/get_started_gui/Tutorial1_Image4.PNG
    :align: center
 
 To display the result for a specific period, filter the rendering by the field PERIOD in QGIS.
 
-.. figure:: images/tutorial/Tutorial1_FilterMenu.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_FilterMenu.png
    :align: center
 
    Popup menu
 
-.. figure:: images/tutorial/Tutorial1_FilterWindow.png
+.. figure:: images/tutorial/get_started_gui/Tutorial1_FilterWindow.png
    :align: center
 
    Filter window
@@ -187,5 +187,5 @@ Now that you have finished this introduction tutorial, take the time to read the
 
 By clicking on each of the inputs or outputs, you will find a lot of information.
 
-.. figure:: images/tutorial/Tutorial1_ImageLast.gif
+.. figure:: images/tutorial/get_started_gui/Tutorial1_ImageLast.gif
    :align: center

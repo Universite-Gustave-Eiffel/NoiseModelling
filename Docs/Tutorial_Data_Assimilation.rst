@@ -1,11 +1,11 @@
 Data Assimilation
 ^^^^^^^^^^^^^^^^^^^^
 
-.. image:: ./images/Data_Assimilation/data_assimilation_banner.png
+.. image:: ./images/tutorial/Data_Assimilation/data_assimilation_banner.png
         :alt: Data assimilation
 
 Introduction
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 Data assimilation is a technique that combines observations with a numerical model to improve the accuracy of forecasts or analyses. Applied to acoustics and noise maps, data assimilation makes it possible to integrate real noise measurements (*e.g* coming from sensors) into noise propagation models to produce more accurate and reliable noise maps.
 
@@ -15,7 +15,7 @@ The main objective is to **combine measurements from sensors** located in Geneva
 .. _Geneva: https://www.openstreetmap.org/relation/1685488
 
 Requirements
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
 
 To play with this tutorial, you will need:
 
@@ -74,7 +74,7 @@ The ``device_mapping_sf.geojson`` columns are:
 
 Below is a map, showing the seven sensors (red points), with their identifier ``deveui``.
 
-.. image:: ./images/Data_Assimilation/geneva_sensors.png
+.. image:: ./images/tutorial/Data_Assimilation/geneva_sensors.png
     :alt: Sensors in Geneva
 
 
@@ -84,10 +84,10 @@ To compute the data assimilation, you will have to execute several WPS ``.groovy
 
 
 * with the NoiseModelling's GUI (Graphic User Interface). In this case, the WPS blocks are listed in the ``Data_Assimilation`` tab *(see screenshot below)*,
-* in command line (see how to :doc:`Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
+* in command line (see how to :doc:`Tutorial_Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
 * in a .groovy script, calling one or various WPS .groovy scripts.
 
-.. image:: ./images/Data_Assimilation/NM_GUI_wps_list.png
+.. image:: ./images/tutorial/Data_Assimilation/NM_GUI_wps_list.png
     :alt: List of WPS blocks
 
 Data Simulation
@@ -117,7 +117,7 @@ Execute ``All_Possible_Configuration`` WPS block
 
 With the **NoiseModelling GUI**
 
-.. image:: ./images/Data_Assimilation/all_possible_configuration_all.png
+.. image:: ./images/tutorial/Data_Assimilation/all_possible_configuration_all.png
     :alt: All possible configuration
 
 With **command lines**
@@ -219,8 +219,8 @@ Now we can extract and prepare the sensors, for a given period. To do so, we are
 
 This script has the following parameters:
 
-* ``startDate`` : the start timestamp to extract the dataset (in format ``YYYY-MM-DD HH:MM:SS``)
-* ``endDate`` : the start timestamp to extract the dataset (in format ``YYYY-MM-DD HH:MM:SS``)
+* ``startDate`` : the start timestamp for the dataset extraction (in format ``YYYY-MM-DD HH:MM:SS``)
+* ``endDate`` : the final timestamp for the dataset extraction  (in format ``YYYY-MM-DD HH:MM:SS``)
 * ``trainingRatio`` : define the percentage of data to be used for training (e.g a value of 0.7 means that 70% of the data will be used for training. The remaining 30% will be used for validation) (Double)
 * ``workingFolder`` : folder containing the file ``device_mapping_sf.csv``, the OSM file and the ``devices_data`` folder.
 * ``targetSRID``: Target projection identifier (also called SRID) of your project (Integer)
@@ -230,11 +230,11 @@ Execution
 
 For this tutorial, you can fill with these informations:
 
-* ``startDate`` : ``2024-08-25 06:30:00``
-* ``endDate`` : ``2024-08-25 07:30:00``
-* ``trainingRatio`` : ``0.8``
-* ``workingFolder`` : ``./resources/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling/resources/dataAssimilation/``)
-* ``targetSRID`` : ``2056``
+* Start time stamp (``startDate``) : ``2024-08-25 06:30:00``
+* End time stamp (``endDate``) : ``2024-08-25 07:30:00``
+* Training data percentage(``trainingRatio``) : ``0.8``
+* Working directory path with input files (``workingFolder``) : ``./resources/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling/resources/dataAssimilation/``)
+* Target projection identifier (``targetSRID``) : ``2056``
 
 If you are using the Groovy script
 
@@ -298,7 +298,7 @@ The tables ``BUILDINGS`` and ``ROADS`` are created.
 .. note::
     If you are using NoiseModelling with the GUI and wish to visualize the data in a map, you can use the ``Table_Visualization_Map`` block. Below is the result with the two table ``BUILDINGS`` *(left)* and ``ROADS`` *(right)*.
 
-    .. image:: ./images/Data_Assimilation/BUILDINGS_ROADS.png
+    .. image:: ./images/tutorial/Data_Assimilation/BUILDINGS_ROADS.png
         :alt: BUILDINGS and ROADS
 
 .. _Generate_all_traffic_emissions_and_maps:
@@ -490,8 +490,9 @@ The table ``RECEIVERS`` is created.
    :widths: 25, 25, 25, 25
    :header-rows: 1
 
-.. image:: ./images/Data_Assimilation/RECEIVERS.png
+.. image:: ./images/tutorial/Data_Assimilation/RECEIVERS.png
         :alt: RECEIVERS map
+        :width: 80%
 
 
 Step 8 : Adding sensors as receivers
@@ -521,8 +522,9 @@ Result
 
 The ``RECEIVERS`` table has now new points, the sensor's one
 
-.. image:: ./images/Data_Assimilation/RECEIVERS_and_SENSORS.png
+.. image:: ./images/tutorial/Data_Assimilation/RECEIVERS_and_SENSORS.png
         :alt: RECEIVERS and SENSORS map
+        :width: 80%
 
 
 Step 9 : Generate dynamic road emissions
@@ -670,12 +672,12 @@ or
 
 The resulting map may looks like this:
 
-.. image:: ./images/Data_Assimilation/ASSIMILATED_MAPS_200m.png
+.. image:: ./images/tutorial/Data_Assimilation/ASSIMILATED_MAPS_200m.png
         :alt: ASSIMILATED_MAPS map
 
-**Legend**: Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (light grey) and the roads (white lines).
+**Legend**: Here, we applied the color scheme proposed by Beate Tomio (see :doc:`Noise_Map_Color_Scheme`) on the column ``LAEQ``. We also added the input sensors, the buildings (medium grey) and the roads (light grey).
 
 **Remark**: In this example, we have chosen to have a receiver every 200m (see :ref:`Step 7 <generate_new_receivers>`). To achieve a denser rendering, we could have made the receiver grid denser. Below is an example, on the same area, but with a 20m grid.
 
-.. image:: ./images/Data_Assimilation/ASSIMILATED_MAPS.png
+.. image:: ./images/tutorial/Data_Assimilation/ASSIMILATED_MAPS.png
         :alt: ASSIMILATED_MAPS map

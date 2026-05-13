@@ -110,7 +110,7 @@ public class NoiseModellingServerHttpTest {
         // unit tests scripts in src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts
         copyScriptsFromResource(Path.of("src/main/groovy/org/noise_planet/noisemodelling/scripts").toAbsolutePath(), temporaryDirectory);
         copyScriptsFromResource(Path.of("src/test/resources/org/noise_planet/noisemodelling/webserver/wps_scripts").toAbsolutePath(), temporaryDirectory);
-        configuration.setScriptPath(temporaryDirectory.resolve("scripts").toString());
+        configuration.setScriptPath(temporaryDirectory.resolve("scripts/").toString());
         app = new NoiseModellingServer(configuration);
         app.startServer(false);
     }

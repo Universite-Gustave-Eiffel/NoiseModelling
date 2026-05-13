@@ -52,6 +52,142 @@
                 </sphinx.command>
             </properties>
         </profile>
+        <profile>
+            <id>macos-bundler</id>
+            <activation>
+                <os><family>mac</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- 1. Sanitize the version string -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>regex-property</id>
+                                <goals>
+                                    <goal>regex-property</goal>
+                                </goals>
+                                <configuration>
+                                    <name>macOS.version</name>
+                                    <value>${project.version}</value>
+                                    <!-- Regex to extract only the X.Y.Z part -->
+                                    <regex>^([0-9]+(\.[0-9]+)*).*</regex>
+                                    <replacement>$1</replacement>
+                                    <failIfNoMatch>false</failIfNoMatch>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-dependencies</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/lib</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- 2. Copy the Main JAR and the Scripts folder -->
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-app-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/lib</outputDirectory>
+                                    <resources>
+                                        <!-- The Main JAR -->
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}.jar</include>
+                                                <include>help/**</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-help-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/help</outputDirectory>
+                                    <resources>
+                                        <!-- The help pages -->
+                                        <resource>
+                                            <directory>${project.build.directory}/sphinx/html/</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>create-macos-app</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}/macos-stage</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>lib/${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</argument>
+                                        <argument>--type</argument>
+                                        <argument>dmg</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>--name</argument>
+                                        <argument>NoiseModelling</argument>
+                                        <argument>--icon</argument>
+                                        <argument>../installer/Logo_noisemodelling_square.icns</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>${parent.organization.name}</argument>
+                                        <argument>--app-version</argument>
+                                        <argument>${macOS.version}</argument>
+                                        <argument>--mac-package-name</argument>
+                                        <argument>NoiseModelling</argument>
+                                        <argument>--arguments</argument>
+                                        <argument>-u -r ""</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     <dependencies>
         <dependency>
@@ -204,6 +340,11 @@
                 <exclusion>
                     <groupId>org.geotools</groupId>
                     <artifactId>*</artifactId>
+                </exclusion>
+                <!-- Exclude log4j 1.2 API to avoid conflicts with slf4j -->
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-1.2-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
