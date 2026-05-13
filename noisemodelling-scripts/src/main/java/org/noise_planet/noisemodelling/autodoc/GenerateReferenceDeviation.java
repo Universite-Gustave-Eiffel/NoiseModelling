@@ -7,7 +7,7 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.nmtutorial01;
+package org.noise_planet.noisemodelling.autodoc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +23,7 @@ import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -254,8 +255,10 @@ public class GenerateReferenceDeviation {
      * @throws IOException exception
      */
     public static void main(String[] args) throws IOException {
+        Logging.initConsoleLogging();
+
         // Read working directory argument
-        String workingDir = "Docs";
+        String workingDir = "../Docs";
         if (args.length > 0) {
             workingDir = args[0];
         }

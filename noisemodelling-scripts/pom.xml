@@ -395,9 +395,25 @@
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath />
-                                <argument>org.noise_planet.noisemodelling.webserver.script.GenerateFunctionsDocs</argument>
+                                <argument>org.noise_planet.noisemodelling.autodoc.GenerateFunctionsDocs</argument>
                                 <argument>${project.parent.basedir}/Docs</argument>
                                 <argument>${project.basedir}/src/main/groovy/org/noise_planet/noisemodelling/scripts</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-cnossos-report</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>org.noise_planet.noisemodelling.autodoc.GenerateReferenceDeviation</argument>
+                                <argument>${project.parent.basedir}/Docs</argument>
                             </arguments>
                         </configuration>
                     </execution>

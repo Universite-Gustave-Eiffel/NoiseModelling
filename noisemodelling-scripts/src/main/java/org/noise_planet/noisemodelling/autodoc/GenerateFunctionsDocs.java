@@ -9,9 +9,12 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.webserver.script;
+package org.noise_planet.noisemodelling.autodoc;
 
-import org.h2.security.SHA256;
+import org.noise_planet.noisemodelling.webserver.script.ScriptInput;
+import org.noise_planet.noisemodelling.webserver.script.ScriptMetadata;
+import org.noise_planet.noisemodelling.webserver.script.ScriptOutput;
+import org.noise_planet.noisemodelling.webserver.script.WpsScriptWrapper;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +24,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +32,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.locationtech.jts.io.WKBWriter.bytesToHex;
 import static org.locationtech.jts.io.WKBWriter.toHex;
 
 /**
