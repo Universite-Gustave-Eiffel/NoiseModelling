@@ -29,6 +29,7 @@ public class ScriptMetadata {
     Logger logger = LoggerFactory.getLogger(ScriptMetadata.class);
     public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 60;
     final public String id;
+    final public String group;
     final public String title;
     final public String description;
     final public URI path;
@@ -52,6 +53,7 @@ public class ScriptMetadata {
      */
     public ScriptMetadata(String group, URI file, URI scriptDirectory) throws IOException {
         this.scriptDirectory = scriptDirectory;
+        this.group = group;
         Map metadata = parseGroovyScriptMetadata(file);
         id = group + ":" + Path.of(file).getFileName().toString().replace(".groovy", "");
         title = metadata.getOrDefault("title", id).toString();

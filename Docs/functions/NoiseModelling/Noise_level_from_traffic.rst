@@ -171,6 +171,13 @@ Optional inputs
 
    Default: ``150``
 
+``confMinWallReflDist`` — *Ignore close reflections*
+   Optional maximum receiver-to-wall distance (meters) below which reflection cut profiles are ignored. With regard to the population’s exposure to noise, it is recommended that the contribution due to reflection off the façade wall of the building where the resident lives should be disregarded. If you have placed the receivers 0.1 m from the façades, you can set this parameter to 0.2 m. This offset is set to ensure that the contribution from the nearby wall is ignored. Use 0 to keep all reflections.
+
+   Type: ``Double``
+
+   Default: ``0``
+
 ``confRaysName`` — *Export scene*
    Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml)  You can set a table name here in order to save all the rays computed by NoiseModelling.  The number of rays has been limited in this script in order to avoid memory exception.  🛠
 

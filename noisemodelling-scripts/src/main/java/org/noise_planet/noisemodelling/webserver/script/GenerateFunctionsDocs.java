@@ -11,6 +11,8 @@
 
 package org.noise_planet.noisemodelling.webserver.script;
 
+import org.h2.security.SHA256;
+import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,20 +21,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static org.locationtech.jts.io.WKBWriter.bytesToHex;
+import static org.locationtech.jts.io.WKBWriter.toHex;
 
 /**
  * Parses Groovy WPS scripts and generates RST documentation files for each script,
  * as well as the main Functions.rst index.
- * <p>
- * Parsing is delegated entirely to {@link ScriptMetadata}, which uses a {@link groovy.lang.GroovyShell}
- * to evaluate each script's top-level binding (title, description, inputs, outputs). This avoids the
- * need for any regex-based parsing of Groovy syntax.
- * <p>
- * Scripts are discovered via {@link WpsScriptWrapper#scanScriptsGrouped}.
  * <p>
  * Bound to the Maven {@code package} phase via the exec-maven-plugin in
  * noisemodelling-scripts/pom.xml.
@@ -63,7 +66,10 @@ public class GenerateFunctionsDocs {
      *             args[1] = path to groovy scripts root directory
      *             (default: "src/main/groovy/org/noise_planet/noisemodelling/scripts")
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+
+        Logging.initConsoleLogging();
+
         String docsDir = "../Docs";
         String scriptsDir = "src/main/groovy/org/noise_planet/noisemodelling/scripts";
         if (args.length > 0) {
@@ -73,7 +79,7 @@ public class GenerateFunctionsDocs {
             scriptsDir = args[1];
         }
 
-        File docsDirFile = new File(docsDir).getAbsoluteFile();
+        File docsDirFile = new File(docsDir).getCanonicalFile();
         File scriptsDirFile = new File(scriptsDir).getAbsoluteFile();
 
         if (!docsDirFile.exists()) {
@@ -86,25 +92,16 @@ public class GenerateFunctionsDocs {
         }
 
         // Derive wps_images source directory (resources sibling of the groovy source tree)
-        File wpsImagesDir = scriptsDirFile
-                .getParentFile() // noisemodelling
-                .getParentFile() // noise_planet
-                .getParentFile() // org
-                .getParentFile() // groovy
-                .getParentFile() // main
-                .toPath()
-                .resolve("resources/org/noise_planet/noisemodelling/webserver/static/wpsbuilder/wps_images")
-                .toFile();
+        File wpsImagesDir = new File("src/main/resources/org/noise_planet/noisemodelling/webserver/static/wpsbuilder/wps_images");
         if (!wpsImagesDir.exists()) {
             LOGGER.warn("wps_images directory not found at {}, images will not be copied", wpsImagesDir);
             wpsImagesDir = null;
         }
 
         // Discover and parse all scripts using GroovyShell-based ScriptMetadata
-        Map<String, List<File>> scriptFiles = WpsScriptWrapper.scanScriptsGrouped(
-                Thread.currentThread().getContextClassLoader(), scriptsDirFile.toPath());
 
-        Map<String, ScriptMetadata> metadataMap = buildMetadataMap(scriptFiles);
+        Map<String, ScriptMetadata> metadataMap = new HashMap<>();
+        WpsScriptWrapper.walkUri(metadataMap, LOGGER, scriptsDirFile.toURI(), scriptsDir);
 
         // Ordered map: category name -> list of script base names (sorted)
         Map<String, List<String>> categories = new LinkedHashMap<>();
@@ -112,48 +109,41 @@ public class GenerateFunctionsDocs {
         File functionsDocDir = new File(docsDirFile, "functions");
         functionsDocDir.mkdirs();
 
-        // scanScriptsGrouped returns a TreeMap, so groups are already sorted
-        for (Map.Entry<String, List<File>> groupEntry : scriptFiles.entrySet()) {
-            String categoryName = groupEntry.getKey();
-            List<File> files = new ArrayList<>(groupEntry.getValue());
-            if (files.isEmpty()) {
-                continue;
-            }
-            files.sort(Comparator.comparing(File::getName));
+        for (ScriptMetadata scriptMetadata : metadataMap.values()) {
+            String categoryName = scriptMetadata.group;
 
             File categoryDocDir = new File(functionsDocDir, categoryName);
             categoryDocDir.mkdirs();
 
-            List<String> scriptNames = new ArrayList<>();
+            // Copy referenced wps_images to the category doc directory so
+            // RST .. figure:: directives resolve correctly
+            if (wpsImagesDir != null) {
+                copyReferencedImages(scriptMetadata, wpsImagesDir, categoryDocDir);
+            }
+            String scriptFileName = new File(scriptMetadata.path).getName();
+            String scriptBaseName = scriptFileName.substring(0, scriptFileName.length() - ".groovy".length());
+            String rstContent = generateFunctionRst(scriptBaseName, scriptMetadata);
+            File rstFile = new File(categoryDocDir, scriptBaseName + ".rst");
 
-            for (File groovyFile : files) {
-                String name = groovyFile.getName();
-                String scriptBaseName = name.substring(0, name.length() - ".groovy".length());
-                String id = categoryName + ":" + scriptBaseName;
-                ScriptMetadata metadata = metadataMap.get(id);
+            categories.merge(categoryName, new ArrayList<>(List.of(scriptBaseName)), (existing, newOnes) -> {
+                existing.addAll(newOnes);
+                existing.sort(String::compareTo);
+                return existing;
+            });
 
-                if (metadata == null) {
-                    LOGGER.warn("No metadata found for {}, skipping", id);
+            // Check if content is different before writing to avoid unnecessary file updates (which would trigger Sphinx rebuilds)
+            if (rstFile.exists()) {
+                String existingContent = Files.readString(rstFile.toPath(), StandardCharsets.UTF_8);
+                if (existingContent.equals(rstContent)) {
+                    LOGGER.trace("No changes for {}, skipping write", docsDirFile.toPath().relativize(rstFile.toPath()));
                     continue;
                 }
-
-                // Copy referenced wps_images to the category doc directory so
-                // RST .. figure:: directives resolve correctly
-                if (wpsImagesDir != null) {
-                    copyReferencedImages(metadata, wpsImagesDir, categoryDocDir);
-                }
-
-                String rstContent = generateFunctionRst(scriptBaseName, metadata);
-                File rstFile = new File(categoryDocDir, scriptBaseName + ".rst");
-                try (FileWriter fw = new FileWriter(rstFile, StandardCharsets.UTF_8)) {
-                    fw.write(rstContent);
-                }
-                LOGGER.info("Written: {}", rstFile.getAbsolutePath());
-                scriptNames.add(scriptBaseName);
             }
-            if (!scriptNames.isEmpty()) {
-                categories.put(categoryName, scriptNames);
+            try (FileWriter fw = new FileWriter(rstFile, StandardCharsets.UTF_8)) {
+                fw.write(rstContent);
             }
+            LOGGER.info("Written: {}", rstFile.getAbsolutePath());
+
         }
 
         // Write main Functions.rst
@@ -161,35 +151,14 @@ public class GenerateFunctionsDocs {
         try (FileWriter fw = new FileWriter(functionsRst, StandardCharsets.UTF_8)) {
             fw.write(generateFunctionsIndex(categories));
         }
-        LOGGER.info("Functions index written to {}", functionsRst.getAbsolutePath());
-    }
-
-    /**
-     * Build a map of script id → ScriptMetadata, tolerating individual parse failures.
-     * Script id format: {@code "CategoryName:ScriptBaseName"} (same as {@link ScriptMetadata#id}).
-     */
-    private static Map<String, ScriptMetadata> buildMetadataMap(Map<String, List<File>> scriptFiles) {
-        Map<String, ScriptMetadata> result = new HashMap<>();
-        for (Map.Entry<String, List<File>> entry : scriptFiles.entrySet()) {
-            String group = entry.getKey();
-            for (File file : entry.getValue()) {
-                try {
-                    ScriptMetadata metadata = new ScriptMetadata(group, file);
-                    result.put(metadata.id, metadata);
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to parse metadata for {}/{}: {}", group, file.getName(), e.getMessage());
-                }
-            }
-        }
-        return result;
+        LOGGER.info("Functions index written to {}", functionsRst.getCanonicalPath());
     }
 
     /**
      * Scan all description fields of the given metadata for {@code src="wps_images/..."} references
      * and copy the matching images from {@code wpsImagesDir} to {@code targetDir}.
      */
-    private static void copyReferencedImages(ScriptMetadata metadata, File wpsImagesDir, File targetDir)
-            throws IOException {
+    private static void copyReferencedImages(ScriptMetadata metadata, File wpsImagesDir, File targetDir) throws IOException, NoSuchAlgorithmException {
         List<String> allDescriptions = new ArrayList<>();
         allDescriptions.add(metadata.description);
         for (ScriptInput input : metadata.inputs.values()) {
@@ -213,6 +182,18 @@ public class GenerateFunctionsDocs {
                 File imgSrc = new File(wpsImagesDir, imgName);
                 File imgDst = new File(targetDir, imgName);
                 if (imgSrc.exists()) {
+                    // Check if destination file already exists with the same content to avoid unnecessary writes
+                    if (imgDst.exists()) {
+                        // Using sha256 hash comparison to avoid loading entire files into memory for large images
+                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                        String srcHash = toHex(digest.digest(Files.readAllBytes(imgSrc.toPath())));
+                        String dstHash = toHex(digest.digest(Files.readAllBytes(imgDst.toPath())));
+                        boolean sameContent = srcHash.equals(dstHash);
+                        if (sameContent) {
+                            LOGGER.trace("Image {} already exists in {}, skipping copy", imgName, targetDir);
+                            continue;
+                        }
+                    }
                     Files.copy(imgSrc.toPath(), imgDst.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 } else {
                     LOGGER.warn("Image not found in wps_images: {}", imgName);
@@ -504,9 +485,8 @@ public class GenerateFunctionsDocs {
         sb.append("Below is a list of all the functions that can be run in NoiseModelling.\n");
         sb.append("These functions, written as ``.groovy`` scripts, are available in the ``/scripts/`` folder.\n\n");
 
-        for (Map.Entry<String, List<String>> entry : categories.entrySet()) {
-            String category = entry.getKey();
-            List<String> scripts = entry.getValue();
+        for (String category : categories.keySet().stream().sorted().collect(Collectors.toCollection(ArrayList::new))) {
+            List<String> scripts = categories.get(category);
 
             // Category header — replace underscores with spaces for readability
             String categoryTitle = category.replace("_", " ");
