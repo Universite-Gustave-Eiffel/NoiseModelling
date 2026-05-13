@@ -16,12 +16,9 @@ import io.javalin.http.Handler;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.rendering.template.JavalinThymeleaf;
-import io.javalin.util.JavalinException;
 import io.javalin.util.JavalinLogger;
 import io.javalin.websocket.WsConfig;
-import org.apache.commons.cli.Option;
 import org.apache.log4j.Appender;
-import org.apache.log4j.PropertyConfigurator;
 import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.ScriptFileWatchedProcess;
@@ -38,7 +35,6 @@ import java.net.URI;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -113,8 +109,9 @@ public class NoiseModellingServer {
      * @param args command-line arguments passed to the application. Not utilized currently.
      */
     public static void main(String[] args) {
-        PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
+        // Use internal logging settings
+        Logging.initConsoleLogging();
+
         try {
             // Read configuration from command line
             Configuration configuration = Configuration.createConfigurationFromArguments(args);
@@ -123,7 +120,7 @@ public class NoiseModellingServer {
                 System.exit(0);
             }
             // Initialize additional loggers
-            fileLogger = Logging.configureFileLogger(configuration.workingDirectory, LOGGING_FILE_NAME);
+            fileLogger = Logging.configureLoggerFromWorkingDirectory(configuration.workingDirectory, LOGGING_FILE_NAME);
             // Create WebServer instance
             NoiseModellingServer noiseModellingServer = new NoiseModellingServer(configuration);
             noiseModellingServer.startServer(!configuration.skipOpenBrowser);

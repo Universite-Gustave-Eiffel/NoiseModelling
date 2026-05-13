@@ -17,6 +17,7 @@ import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Geometry;
+import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.script.ExecutionPlan;
 import org.noise_planet.noisemodelling.webserver.script.WpsXmlDocumentGenerator;
 import org.noise_planet.noisemodelling.webserver.script.ScriptMetadata;
@@ -39,7 +40,7 @@ public class TestParseWPSQueries {
     @BeforeAll
     public static void init() throws IOException {
         PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServerHttpTest.class.getResource("log4j.properties")));
+                Objects.requireNonNull(VersionUtils.class.getResource("log4j_tests.properties")));
         wrappers = getWrappers();
     }
 

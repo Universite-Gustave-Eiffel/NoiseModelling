@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URI;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.NumberFormat;
@@ -78,7 +77,7 @@ public class Main {
 
     public static void main(String... args) throws Exception {
         PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
+                Objects.requireNonNull(NoiseModellingServer.class.getResourceAsStream("log4j.properties")));
 
         parseArgsAndRun(args);
     }
@@ -147,7 +146,7 @@ public class Main {
         scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
         boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
-        Appender appender = Logging.configureFileLogger(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
+        Appender appender = Logging.configureLoggerFromWorkingDirectory(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
         try (HikariDataSource ds = createDataSource(commandLine)) {
             // Initialize additional loggers
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
