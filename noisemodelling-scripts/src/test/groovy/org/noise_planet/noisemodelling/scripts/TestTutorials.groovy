@@ -251,28 +251,28 @@ class TestTutorials extends JdbcTestCase {
 
         if (!zipFilePath.toFile().exists()) {
             // Download the file
-            InputStream ins = new URL(fileUrl).openStream();
-            Files.copy(ins, zipFilePath);
+            try (InputStream ins = new URL(fileUrl).openStream()) {
+                Files.copy(ins, zipFilePath);
+            }
 
             // Unzip the file
-            ZipFile zipFile = new ZipFile(zipFilePath.toFile());
-            zipFile.stream().forEach({ entry ->
-                try {
-                    Path entryPath = tempDataDir.resolve(entry.getName());
-                    if (entry.isDirectory()) {
-                        Files.createDirectories(entryPath);
-                    } else {
-                        Files.createDirectories(entryPath.getParent());
-                        InputStream insz = zipFile.getInputStream(entry);
-                        Files.copy( insz, entryPath );
+            try (ZipFile zipFile = new ZipFile(zipFilePath.toFile())) {
+                zipFile.stream().forEach({ entry ->
+                    try {
+                        Path entryPath = tempDataDir.resolve(entry.getName());
+                        if (entry.isDirectory()) {
+                            Files.createDirectories(entryPath);
+                        } else {
+                            Files.createDirectories(entryPath.getParent());
+                            try (InputStream insz = zipFile.getInputStream(entry)) {
+                                Files.copy(insz, entryPath);
+                            }
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            // Clean up
-            zipFile.close();
+                });
+            }
         }
         new Import_OSM().exec(connection, Map.of(
                 "pathFile", osmFile,
