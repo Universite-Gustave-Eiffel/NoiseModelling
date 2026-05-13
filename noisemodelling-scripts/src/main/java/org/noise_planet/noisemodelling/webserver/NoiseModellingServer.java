@@ -60,7 +60,6 @@ import java.util.concurrent.Future;
  */
 public class NoiseModellingServer {
     public static final String LOGGING_FILE_NAME = "webserver.log";
-    private static Appender fileLogger;
     protected final Logger logger = LoggerFactory.getLogger(NoiseModellingServer.class);
     protected Javalin app;
     protected Future<?> scriptWatch;
@@ -120,7 +119,7 @@ public class NoiseModellingServer {
                 System.exit(0);
             }
             // Initialize additional loggers
-            fileLogger = Logging.configureLoggerFromWorkingDirectory(configuration.workingDirectory, LOGGING_FILE_NAME);
+            Logging.configureLoggerFromWorkingDirectory(configuration.workingDirectory, LOGGING_FILE_NAME, true);
             // Create WebServer instance
             NoiseModellingServer noiseModellingServer = new NoiseModellingServer(configuration);
             noiseModellingServer.startServer(!configuration.skipOpenBrowser);
@@ -165,9 +164,7 @@ public class NoiseModellingServer {
                     ((AutoCloseable) serverDataSource).close();
                 }
                 // stop file logger
-                if(fileLogger != null) {
-                    fileLogger.close();
-                }
+                Logging.clearAppenders();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }

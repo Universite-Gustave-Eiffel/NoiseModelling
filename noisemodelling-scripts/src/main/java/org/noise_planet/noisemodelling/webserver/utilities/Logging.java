@@ -54,36 +54,49 @@ public class Logging {
         rootLogger.addAppender(console);
     }
 
-    public static Appender configureLoggerFromWorkingDirectory(String workingDirectory, String loggingFileName) {
+    public static void configureLoggerFromWorkingDirectory(String workingDirectory, String loggingFileName, boolean verbose) {
+        final org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+
         // Check if there is a log4j configuration file in the working directory
         File log4jConfigFile = new File(workingDirectory, "log4j.properties");
         if (log4jConfigFile.exists()) {
             // Replace our current configuration with the one from the file
             org.apache.log4j.PropertyConfigurator.configure(log4jConfigFile.getAbsolutePath());
-            org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-            rootLogger.info("Logger initialized successfully from configuration file: " + log4jConfigFile.getAbsolutePath());
+            if(verbose) {
+                rootLogger.info("Logger initialized successfully from configuration file: " + log4jConfigFile.getAbsolutePath());
+            }
+        } else {
+            if(verbose) {
+                System.out.println("No log4j.properties found in working directory." + " Initializing default logger " +
+                        "configuration.");
+                System.out.println("You can place a log4j.properties file in the working directory to customize " +
+                        "logging behavior.");
+            }
+            try {
+                // Create rolling file appender
+                RollingFileAppender rollingAppender = createRollingFileAppender(workingDirectory, loggingFileName);
+
+                if (rollingAppender.getLayout() == null) {
+                    rollingAppender.setLayout(new org.apache.log4j.PatternLayout(DEFAULT_LOG_FORMAT));
+                }
+                rollingAppender.setImmediateFlush(true);
+
+                rollingAppender.setThreshold(org.apache.log4j.Level.TRACE);
+
+                // init stream
+                rollingAppender.activateOptions();
+
+                // Configure root logger
+                rootLogger.addAppender(rollingAppender);
+
+                rootLogger.info("Logger initialized successfully at: " + new File(workingDirectory, loggingFileName).getAbsolutePath());
+
+            } catch (Exception e) {
+                System.err.println("Failed to configure logger: " + e.getMessage());
+            }
         }
 
-        try {
-            // Create rolling file appender
-            RollingFileAppender rollingAppender = createRollingFileAppender(workingDirectory, loggingFileName);
-
-            if (rollingAppender.getLayout() == null) {
-                rollingAppender.setLayout(new org.apache.log4j.PatternLayout(DEFAULT_LOG_FORMAT));
-            }
-            rollingAppender.setImmediateFlush(true);
-
-            rollingAppender.setThreshold(org.apache.log4j.Level.TRACE);
-
-            // init stream
-            rollingAppender.activateOptions();
-
-            // Configure root logger
-            final org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-            rootLogger.addAppender(rollingAppender);
-
-            rootLogger.info("Logger initialized successfully at: " + new File(workingDirectory, loggingFileName).getAbsolutePath());
-
+        if(verbose) {
             System.out.println("--- LOGGING DIAGNOSTIC ---");
             System.out.println("Root Logger Class: " + rootLogger.getClass().getName());
             System.out.println("Root Logger Level: " + rootLogger.getLevel());
@@ -98,12 +111,21 @@ public class Logging {
                 }
             }
             System.out.println("--------------------------");
-
-            return rollingAppender;
-        } catch (Exception e) {
-            System.err.println("Failed to configure logger: " + e.getMessage());
         }
-        return null;
+    }
+
+    public static void clearAppenders() {
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        // Close file appenders to release file locks
+        Enumeration appenders = rootLogger.getAllAppenders();
+        while (appenders.hasMoreElements()) {
+            Appender app = (Appender) appenders.nextElement();
+            if (app instanceof RollingFileAppender) {
+                app.close();
+            }
+        }
+        // Remove all appenders to reset logger state
+        rootLogger.removeAllAppenders();
     }
 
     @NotNull

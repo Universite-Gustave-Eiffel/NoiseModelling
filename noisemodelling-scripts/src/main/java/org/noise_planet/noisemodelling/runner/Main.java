@@ -76,10 +76,14 @@ public class Main {
     }
 
     public static void main(String... args) throws Exception {
-        PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServer.class.getResourceAsStream("log4j.properties")));
+        // Use internal logging settings
+        Logging.initConsoleLogging();
 
-        parseArgsAndRun(args);
+        try {
+            parseArgsAndRun(args);
+        } finally {
+            Logging.clearAppenders();
+        }
     }
 
     public static void parseArgsAndRun(String... args) {
@@ -146,7 +150,7 @@ public class Main {
         scriptPath = commandLine.getOptionValue(scriptPathOption.getOpt());
         boolean shutdown = !commandLine.hasOption(shutdownOption.getOpt());
 
-        Appender appender = Logging.configureLoggerFromWorkingDirectory(workingDir, NoiseModellingServer.LOGGING_FILE_NAME);
+        Logging.configureLoggerFromWorkingDirectory(workingDir, NoiseModellingServer.LOGGING_FILE_NAME, false);
         try (HikariDataSource ds = createDataSource(commandLine)) {
             // Initialize additional loggers
             RootProgressVisitor progressVisitor = new RootProgressVisitor(1, true, SECONDS_BETWEEN_PROGRESSION_PRINT);
@@ -231,10 +235,6 @@ public class Main {
         } catch (Throwable ex) {
             logger.error(ex.getLocalizedMessage(), ex);
             System.exit(1);
-        } finally {
-            if (appender != null) {
-                appender.close();
-            }
         }
     }
 
