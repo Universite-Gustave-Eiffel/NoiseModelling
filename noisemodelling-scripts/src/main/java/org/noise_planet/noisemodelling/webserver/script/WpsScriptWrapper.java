@@ -132,7 +132,7 @@ public class WpsScriptWrapper {
      * @throws IOException if an I/O error occurs while accessing the URI or reading script files, or if the URI is malformed and cannot be processed correctly
      */
 
-    private static void walkUri(Map<String, ScriptMetadata> grouped, Logger logger, URI resourcesScriptUri, String scriptDirectoryName) throws IOException {
+    public static void walkUri(Map<String, ScriptMetadata> grouped, Logger logger, URI resourcesScriptUri, String scriptDirectoryName) throws IOException {
         String scheme = resourcesScriptUri.getScheme();
 
         if ("jar".equals(scheme)) {

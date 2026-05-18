@@ -12,16 +12,13 @@
 
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
- * @Author Valetin Le Bescond, Université Gustave Eiffel, Ghent University
+ * @Author Valentin Le Bescond, Université Gustave Eiffel, Ghent University
  */
 
 package org.noise_planet.noisemodelling.scripts.Dynamic
 
-
-
 import groovy.sql.Sql
 import groovy.time.TimeCategory
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -33,7 +30,6 @@ import org.locationtech.jts.geom.*
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvar
 import org.noise_planet.noisemodelling.emission.road.cnossosvar.RoadVehicleCnossosvarParameters
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
-
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -46,30 +42,35 @@ description = 'Calculating dynamic road emissions based on vehicles trajectories
         '-  <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b> : 8 columns giving the emission sound level for each octave band (FLOAT).'
 
 inputs = [
-        tableVehicles : [name : 'Individual Vehicles table',
-                  title : "table of the individual Vehicles",
-                  description : "it should contain timestep, geometry (POINT), speed, acceleration, veh_type...",
-                  type: String.class],
-        tableSourceGeom : [name : 'Source geometry table',
-                           title : "table of the source geometry",
-                           description : "table of points source geometry, the output emission will be reattached to" +
-                                   " the index of this table according to the snap distance. Should be SOURCES_GEOM" +
-                                   " See Point_Source_From_Network to convert lines to points",
-                           type: String.class],
+        tableVehicles : [
+                name : 'Individual Vehicles table',
+                title : "table of the individual Vehicles",
+                description : "it should contain timestep, geometry (POINT), speed, acceleration, veh_type...",
+                type: String.class],
+        tableSourceGeom : [
+                name : 'Source geometry table',
+                title : "table of the source geometry",
+                description : "table of points source geometry, the output emission will be reattached to" +
+                               " the index of this table according to the snap distance. Should be SOURCES_GEOM" +
+                               " See Point_Source_From_Network to convert lines to points",
+                type: String.class],
         distance2snap : [name : 'Snap distance',
                   title : "Maximum distance to snap on the network point sources",
                   description : "Maximum distance to snap on the network point sources",
                          min        : 0,
                          max        : 1,
                   type: Double.class],
-        tableFormat : [name : 'Vehicles table format',
-                  title : 'Format of the individual Vehicles table',
-                  description :'Format of the individual Vehicles table. Can be for the moment SUMO or Matsim. See in the code to understand the different format.',
-                  type: String.class],
-        keepNoEmissionGeoms : [name : 'Keep source geometries without emission value',
-                       title : 'Keep source geometries without emission value',
-                       description :'Do not delete source geometries that does not contain any emission value. Default to true, it reduce the computation time when evaluating the attenuation',
-                       min : 0, max: 1, type: Boolean.class]
+        tableFormat : [
+                name : 'Vehicles table format',
+                title : 'Format of the individual Vehicles table',
+                description :'Format of the individual Vehicles table. Can be for the moment SUMO or Matsim. See in the code to understand the different format.',
+                type: String.class],
+        keepNoEmissionGeoms : [
+                name : 'Keep source geometries without emission value',
+                title : 'Keep source geometries without emission value',
+                description :'Do not delete source geometries that does not contain any emission value. Default to true, it reduce the computation time when evaluating the attenuation',
+                default: true, 
+                type: Boolean.class]
 ]
 
 outputs = [
@@ -80,11 +81,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
-
 
 // main function of the script
 def exec(Connection connection, Map input) {
@@ -319,7 +315,4 @@ class VehicleEmissionProcessData {
 
         return res_LV
     }
-
-
-
 }

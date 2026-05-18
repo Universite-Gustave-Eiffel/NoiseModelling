@@ -10,13 +10,15 @@
  *
  */
 
+ /**
+ * @Author Pierre Aumond,  Univ Gustave Eiffel
+ * @Author Adrien Le Bellec,  Univ Gustave Eiffel
+ * @Author Olivier Chiello, Univ Gustave Eiffel
+ */
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -28,20 +30,15 @@ import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.SQLException
-/**
- * @Author Pierre Aumond,  Univ Gustave Eiffel
- * @Author Adrien Le Bellec,  Univ Gustave Eiffel
- * @Author Olivier Chiello, Univ Gustave Eiffel
- */
+
 
 title = 'Compute railway emission noise map from vehicule, traffic table AND section table.'
 description = '&#10145;&#65039; Compute Rail Emission Noise Map from Day, Evening and Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
-        '<hr>' +
-        '&#x2705; The output table is called <b>LW_RAILWAY</b>'
+              '<hr>' +
+              '&#x2705; The output table is called <b>LW_RAILWAY</b>'
 
 inputs = [
         tableRailwayTraffic: [
@@ -96,15 +93,14 @@ inputs = [
         ]
 ]
 
-outputs = [result: [name: 'Result output string',
-                    title: 'Result output string',
-                    description: 'This type of result does not allow the blocks to be linked together.',
-                    type: String.class
+outputs = [
+        result: [
+                name: 'Result output string',
+                title: 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type: String.class
+        ]
 ]
-]
-
-
-
 
 
 // main function of the script
@@ -191,5 +187,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-
-

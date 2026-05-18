@@ -19,7 +19,6 @@ import org.h2gis.utilities.JDBCUtilities
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.*
 import org.slf4j.Logger
@@ -238,7 +237,7 @@ class TestNoiseModelling extends JdbcTestCase {
 
         sql.executeInsert("INSERT INTO SOURCES_EMISSION VALUES (1, 'D', 90.0), (1, 'E', 92.0), (1, 'N', 93.0);");
 
-        new GenerateAtmosphericSettingsTemplate().exec(connection, ["tableSourcesEmission" : "SOURCES_EMISSION"])
+        new Atmospheric_Template().exec(connection, ["tableSourcesEmission": "SOURCES_EMISSION"])
 
         assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
 

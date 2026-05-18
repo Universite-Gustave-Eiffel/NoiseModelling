@@ -18,10 +18,7 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
@@ -29,7 +26,6 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
@@ -59,8 +55,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 def exec(Connection connection, input) {
 
@@ -123,8 +117,6 @@ def exec(Connection connection, input) {
     // print to WPS Builder
     return mapToTable(output, sql, sqlQuery, connection, isTableName)
 }
-
-
 
 
 /**

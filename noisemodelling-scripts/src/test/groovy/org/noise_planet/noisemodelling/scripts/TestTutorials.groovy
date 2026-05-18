@@ -55,7 +55,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
 
@@ -108,7 +108,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
         new Import_Folder().exec(connection,
@@ -120,7 +120,7 @@ class TestTutorials extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("SOURCES"))
        assertTrue(res.contains("BUILDINGS"))
@@ -131,7 +131,7 @@ class TestTutorials extends JdbcTestCase {
 
 
         // Check database
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("RECEIVERS"))
 
@@ -145,7 +145,7 @@ class TestTutorials extends JdbcTestCase {
                                                               "confDiffHorizontal"   : false,
                                                               "frequencyFieldPrepend": "LW"])
 
-        res =  new Display_Database().exec(connection, [:])
+        res =  new Display_Database().exec(connection, ["showColumns":true])
 
         // Check database
         def output = new Table_Visualization_Data().exec(connection, ["tableName": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
@@ -162,7 +162,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
         new Import_File().exec(connection, [
@@ -187,7 +187,7 @@ class TestTutorials extends JdbcTestCase {
 
 
 
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("BUILDINGS"))
         assertTrue(res.contains("DIRECTIVITY"))

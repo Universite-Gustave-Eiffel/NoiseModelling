@@ -1,7 +1,7 @@
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by the DECIDE team FROM the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
  *
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -16,9 +16,7 @@
  * @Author Gwendall Petit, Lab-STICC CNRS UMR 6285 
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
-
 
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine
@@ -32,7 +30,6 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Statement
@@ -45,11 +42,11 @@ description = '&#10145;&#65039; Insert altimetric points coming from linestring 
                 '<li>Digital Elevation Model (DEM) to be enriched</li>' +
                 '<li>A linestring layer (e.g: hydrographic network, ...) in which coordinates have a Z dimension</li>' +
               '</ul>' +
-              'And three optionnal parameters:</br>' +
+              'And three optional parameters:</br>' +
               ' <ul>' +
                 '<li>Input SRID (inputSRID): SRID of the input tables</li>' +
                 '<li>Source (source): Text indicating the source of the linestring layer. Can be useful to distinguish the points in the resulting DEM . If not specified, "LINESTRING" is applied</li>' +
-                '<li>Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name. If not specified, "ENRICHED" is applied</li>' +
+                '<li>Output suffix (outputsuffix): suffix applied at the end of the resuling table name. If not specified, "ENRICHED" is applied</li>' +
               '</ul>'
 
 inputs = [
@@ -76,17 +73,15 @@ inputs = [
         source : [
                 name       : 'Source',
                 title      : 'Source',
-                description: 'Text indicating the source of the linestring layer (Optionnal) </br> </br>'+
-                             '&#128736; If not specified, "LINESTRING" is applied',
-                min        : 0, max: 1,
+                description: 'Text indicating the source of the linestring layer (Optional)',
+                default    : 'LINESTRING',
                 type       : String.class
         ],
-        outputSuffixe : [
-                name       : 'Output suffixe',
-                title      : 'Output suffixe',
-                description: 'Suffixe applied at the end of the resuling table name </br> </br>'+
-                             '&#128736; If not specified, "ENRICHED" is applied',
-                min        : 0, max: 1,
+        outputsuffix : [
+                name       : 'Output suffix',
+                title      : 'Output suffix',
+                description: 'Suffix applied at the end of the resulting table name',
+                default    : 'ENRICHED',
                 type       : String.class
         ]
 ]
@@ -135,12 +130,6 @@ static def parseScript(String sqlInstructions, Sql sql, ProgressVisitor progress
         }
     }
 }
-
-
-
-
-
-
 
 
 def exec(Connection connection, input) {
@@ -213,14 +202,14 @@ def exec(Connection connection, input) {
     }
 
 
-    // If no output table name (outputSuffixe) provided, ENRICHED is applied
+    // If no output table name (outputsuffix) provided, ENRICHED is applied
     
-    String outputSuffixe = 'ENRICHED'
-    if ('outputSuffixe' in input) {
-        outputSuffixe = input["outputSuffixe"] as String
+    String outputsuffix = 'ENRICHED'
+    if ('outputsuffix' in input) {
+        outputsuffix = input["outputsuffix"] as String
     }
 
-    String enrichedDEM = input["inputDEM"] + "_" + input["outputSuffixe"] as String
+    String enrichedDEM = input["inputDEM"] + "_" + input["outputsuffix"] as String
 
     
     // print to command window
@@ -230,7 +219,7 @@ def exec(Connection connection, input) {
     logger.info('# DEM table: ' + inputDEM)
     logger.info('# Linestring table: ' + inputLine)
     logger.info('# Source: ' + source)
-    logger.info('# Output suffixe: ' + outputSuffixe)
+    logger.info('# Output suffix: ' + outputsuffix)
     logger.info('--------------------------------------------')
 
     logger.info('Start enrich the DEM')
@@ -319,7 +308,7 @@ def exec(Connection connection, input) {
     stringBuilder.append(enrich_line)
     stringBuilder.append(enrich_final)
 
-    def binding = ["inputDEM": inputDEM, "inputLine":inputLine, "source": source, "outputSuffixe": outputSuffixe, "srid": srid]
+    def binding = ["inputDEM": inputDEM, "inputLine":inputLine, "source": source, "outputsuffix": outputsuffix, "srid": srid]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
     parseScript(template.toString(), sql, progress, logger)
 

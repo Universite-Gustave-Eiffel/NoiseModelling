@@ -95,7 +95,7 @@ class TestDatabaseManager extends JdbcTestCase {
     @Test
     void testDisplayTables1() {
         SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
-        String res = new Display_Database().exec(connection, [:])
+        String res = new Display_Database().exec(connection, ["showColumns":false])
         assertEquals("BUILDINGS</br></br>", res)
     }
 

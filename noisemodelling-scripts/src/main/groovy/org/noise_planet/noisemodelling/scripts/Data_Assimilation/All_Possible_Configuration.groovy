@@ -1,26 +1,38 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author DIAGNE Ndeye-Maguette, Université Gustave Eiffel
+ */
+
 package org.noise_planet.noisemodelling.scripts.Data_Assimilation
-
-
 
 import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.BatchingStatementWrapper
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
-// ----------------- WPS Metadata ------------------
-title = 'all configurations '
-description = 'process to generate all configurations.'
+
+title = 'All configurations'
+description = 'Process to generate all configurations.'
 inputs = [
         trafficValues: [
                 name: 'Traffic values',
                 title: 'Traffic values',
-                description: 'list of variation values in % for traffic like [0.01,1.0, 2.0,3,4]',
+                description: 'List of variation values in % for traffic like [0.01,1.0, 2.0,3,4]',
                 type: String.class
         ],
         temperatureValues : [
@@ -40,9 +52,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
 
 
 @CompileStatic
@@ -77,7 +86,7 @@ def exec(Connection connection,input) {
  * The generated combinations include values for type of roads primary, secondary, tertiary, others, and temperature.
  *
  * The total number of combinations is calculated as:
- * (number of `vals` elements) ^ (number of paramèters)  * (number of `temps` elements).
+ * (number of `vals` elements) ^ (number of parameters)  * (number of `temps` elements).
  *
  * The sql table  follows the structure:
  * IT, PRIMARY, SECONDARY, TERTIARY, OTHERS, TEMP.

@@ -9,6 +9,7 @@
  * Contact: contact@noise-planet.org
  *
  */
+
 /**
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
@@ -18,11 +19,8 @@
 
 package org.noise_planet.noisemodelling.scripts.Import_and_Export;
 
-;
-
 import groovy.json.JsonSlurper;
 import groovy.sql.Sql
-
 import org.h2gis.utilities.wrapper.ConnectionWrapper;
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory;
@@ -37,10 +35,8 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 import org.openstreetmap.osmosis.core.task.v0_6.Sink;
-
 import org.openstreetmap.osmosis.xml.v0_6.XmlReader;
 import org.openstreetmap.osmosis.xml.common.CompressionMethod;
-
 import crosby.binary.osmosis.OsmosisReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory;
@@ -59,7 +55,7 @@ inputs = [
                 name       : 'Path of the OSM file',
                 title      : 'Path of the OSM file',
                 description: '&#128194; Path of the OSM file, including its extension (.osm, .osm.gz or .osm.pbf).<br>' +
-                        'For example: c:/home/area.osm.pbf',
+                             'For example: c:/home/area.osm.pbf',
                 type       : String.class
         ],
         targetSRID : [
@@ -80,10 +76,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
-
-
 
 
 // main function of the script

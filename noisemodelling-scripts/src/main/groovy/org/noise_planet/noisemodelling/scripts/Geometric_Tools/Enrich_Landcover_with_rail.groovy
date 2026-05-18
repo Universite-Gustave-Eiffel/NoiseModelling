@@ -1,7 +1,7 @@
 /**
  * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
  *
- * This version is developed by the DECIDE team FROM the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
  * <http://noise-planet.org/noisemodelling.html>
  *
  * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
@@ -16,9 +16,7 @@
  * @Author Gwendall Petit, Lab-STICC CNRS UMR 6285 
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
-
 
 import groovy.sql.Sql
 import groovy.text.SimpleTemplateEngine
@@ -32,7 +30,6 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.sql.Statement
@@ -48,9 +45,9 @@ description = '&#10145;&#65039; Insert rail ground surfaces into the input LANDC
               'And four parameters:</br>' +
               ' <ul>' +
                 '<li>Railroads right-of-way (railWidth): Name of column where the railroad right-of-way is stored (Mandatory)</li>' +
-                '<li>Rail platform height (hRail): Railways platform height (Optionnal). Default value = 0.5m</li>' +
-                '<li>Input SRID (inputSRID): SRID of the input tables (Optionnal)</li>' +
-                '<li>Output suffixe (outputSuffixe): Suffixe applied at the end of the resuling table name (Optionnal). If not specified, "ENRICHED" is applied</li>' +
+                '<li>Rail platform height (hRail): Railways platform height (Optional). Default value = 0.5m</li>' +
+                '<li>Input SRID (inputSRID): SRID of the input tables (Optional)</li>' +
+                '<li>Output suffix (outputsuffix): suffix applied at the end of the resuling table name (Optional). If not specified, "ENRICHED" is applied</li>' +
               '</ul>' +
               '<hr>' +
               'In the schema below, orange points will be inserted into the DEM. d2, d3 and d4 are deduced from the information provided in the parameter <b>railWidth</b>, using the following formula:' +
@@ -79,7 +76,7 @@ inputs = [
         gColumn : [
                 name       : 'G column',
                 title      : 'G column',
-                description: 'Ground absorption coeffecient (G) column name',
+                description: 'Ground absorption coefficient (G) column name',
                 type       : String.class
         ],
         inputRail : [
@@ -94,12 +91,11 @@ inputs = [
                 description: 'Name of column where the railways width is stored',
                 type       : String.class
         ],
-        outputSuffixe : [
-                name       : 'Output suffixe',
-                title      : 'Output suffixe',
-                description: 'Suffixe applied at the end of the resuling table name </br> </br>'+
-                             '&#128736; If not specified, "ENRICHED" is applied',
-                min        : 0, max: 1,
+        outputsuffix : [
+                name       : 'Output suffix',
+                title      : 'Output suffix',
+                description: 'Suffix applied at the end of the resulting table name',
+                default    : 'ENRICHED',
                 type       : String.class
         ]
 ]
@@ -222,12 +218,12 @@ def exec(Connection connection, input) {
         srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(inputLandcover))
     }
 
-    // If no output table name (outputSuffixe) provided, ENRICHED is applied
-    String outputSuffixe = 'ENRICHED'
-    if ('outputSuffixe' in input) {
-        outputSuffixe = input["outputSuffixe"] as String
+    // If no output table name (outputsuffix) provided, ENRICHED is applied
+    String outputsuffix = 'ENRICHED'
+    if ('outputsuffix' in input) {
+        outputsuffix = input["outputsuffix"] as String
     }
-    String enrichedLandcover = input["inputLandcover"] + "_" + input["outputSuffixe"] as String
+    String enrichedLandcover = input["inputLandcover"] + "_" + input["outputsuffix"] as String
 
     // print to command window
     logger.info('List of the input parameters:')
@@ -237,7 +233,7 @@ def exec(Connection connection, input) {
     logger.info('# Landcover G column: ' + gColumn)
     logger.info('# Railways network table: ' + inputRail)
     logger.info('# Railways width column: ' + railWidth)
-    logger.info('# Output suffixe: ' + outputSuffixe)
+    logger.info('# Output suffix: ' + outputsuffix)
     logger.info('--------------------------------------------')
 
     logger.info('Start enrich the Landcover')
@@ -353,7 +349,7 @@ def exec(Connection connection, input) {
     stringBuilder.append(import_rail)
     stringBuilder.append(queries_landcover_rail)
 
-    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "outputSuffixe": outputSuffixe, "srid": srid]
+    def binding = ["inputLandcover": inputLandcover, "gColumn": gColumn, "inputRail": inputRail, "railWidth": railWidth, "outputsuffix": outputsuffix, "srid": srid]
     def template = engine.createTemplate(stringBuilder.toString()).make(binding)
     parseScript(template.toString(), sql, progress, logger)
 

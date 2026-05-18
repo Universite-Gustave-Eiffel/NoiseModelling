@@ -166,6 +166,12 @@ Fundings
 
 .. toctree::
     :maxdepth: 2
+    :caption: Functions
+
+    Functions
+
+.. toctree::
+    :maxdepth: 2
     :caption: User Interface
 
     WPS_Blocks

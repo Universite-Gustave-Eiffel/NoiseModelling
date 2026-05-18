@@ -18,8 +18,6 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
-
 import groovy.sql.Sql
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
@@ -37,7 +35,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVis
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
@@ -93,7 +90,8 @@ inputs = [
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +
                         '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b> : Emission noise level in dB can be third-octave 50Hz to 10000Hz (FLOAT) </li> ',
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tableReceivers          : [
                 name       : 'Receivers table name',
@@ -112,7 +110,8 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li> <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Block "Import_Asc_File"',
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tableGroundAbs          : [
                 name       : 'Ground absorption table name',
@@ -121,7 +120,8 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li> <b> THE_GEOM </b>: the 2D geometry of the sources (POLYGON or MULTIPOLYGON) </li>' +
                         '<li> <b> G </b>: the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft) </li> </ul> ',
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tableSourceDirectivity          : [
                 name       : 'Source directivity table name',
@@ -133,7 +133,8 @@ inputs = [
                         '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
                         '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
                         '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tablePeriodAtmosphericSettings          : [
                 name       : 'Atmospheric settings table name for each time period',
@@ -148,38 +149,39 @@ inputs = [
                         '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
                         '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
                         '</ul>' ,
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         paramWallAlpha          : [
                 name       : 'wallAlpha',
                 title      : 'Wall absorption coefficient',
-                description: 'Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully absorbent")' +
-                        '&#128736; Default value: <b>0.1 </b> ',
-                min        : 0, max: 1, type: Double.class
+                description: 'Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully absorbent")',
+                default    : 0.1, 
+                type: Double.class
         ],
         confReflOrder           : [
                 name       : 'Order of reflexion',
                 title      : 'Order of reflexion',
                 description: 'Maximum number of reflections to be taken into account (INTEGER). </br> </br>' +
-                        '&#x1F6A8; Adding 1 order of reflexion can significantly increase the processing time. </br> </br>' +
-                        '&#128736; Default value: <b>1 </b>',
-                min        : 0, max: 1, type: Integer.class
+                             '&#x1F6A8; Adding 1 order of reflexion can significantly increase the processing time.',
+                default    : 1, 
+                type: Integer.class
         ],
         confMaxSrcDist          : [
                 name       : 'Maximum source-receiver distance',
                 title      : 'Maximum source-receiver distance',
                 description: 'Maximum distance between source and receiver (FLOAT, in meters). </br> </br>' +
-                        '&#128736; Default value: <b>150 </b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from source" width="95%" align="center">',
-                min        : 0, max: 1, type: Double.class
+                             '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from source" width="95%" align="center">',
+                default    : 150, 
+                type: Double.class
         ],
         confMaxReflDist         : [
                 name       : 'Maximum source-reflexion distance',
                 title      : 'Maximum source-reflexion distance',
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
-                        '&#128736; Default value: <b>50 </b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
-                min        : 0, max: 1, type: Double.class
+                             '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
+                default    : 50, 
+                type: Double.class
         ],
         confMinWallReflDist: [
                 name       : 'Ignore close reflections',
@@ -193,79 +195,77 @@ inputs = [
                 name       : 'Thread number',
                 title      : 'Thread number',
                 description: 'Number of thread to use on the computer (INTEGER). </br> </br>' +
-                        '&#128736; Default value: <b>0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used</b>',
-                min        : 0, max: 1, type: Integer.class
+                             '&#128736; Default value: <b>0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used)</b>',
+                default    : 0, 
+                type: Integer.class
         ],
         confDiffVertical        : [
                 name       : 'Diffraction on vertical edges',
                 title      : 'Diffraction on vertical edges',
-                description: 'Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
+                description: 'Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only',
+                default    : false, 
+                type: Boolean.class
         ],
         confDiffHorizontal      : [
                 name       : 'Diffraction on horizontal edges',
                 title      : 'Diffraction on horizontal edges',
-                description: 'Compute or not the diffraction on horizontal edges. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1, type: Boolean.class
+                description: 'Compute or not the diffraction on horizontal edges',
+                default    : false,
+                type: Boolean.class
         ],
         confExportSourceId      : [
                 name       : 'Keep source id',
                 title      : 'Separate receiver level by source identifier',
-                description: 'Keep source identifier in output in order to get noise contribution of each noise source. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1,
+                description: 'Keep source identifier in output in order to get noise contribution of each noise source. When only the source geometry is given, the attenuation between each pair of "source-receiver" points is specified (commonly referred to as the "attenuation matrix")',
+                default    : false,
                 type       : Boolean.class
         ],
         confHumidity            : [
                 name       : 'Relative humidity',
                 title      : 'Relative humidity',
-                description: '&#127783; Humidity for noise propagation (%) [0,100]. </br> </br>' +
-                        '&#128736; Default value: <b>70</b>',
-                min        : 0, max: 1,
+                description: '&#127783; Humidity for noise propagation (%) [0,100]',
+                default    : 70,
                 type       : Double.class
         ],
         confTemperature         : [
                 name       : 'Temperature',
                 title      : 'Air temperature',
-                description: '&#127777; Air temperature (°C). </br> </br>' +
-                        '&#128736; Default value: <b> 15</b>',
-                min        : 0, max: 1,
+                description: '&#127777; Air temperature (°C)',
+                default    : 15,
                 type       : Double.class
         ],
         confFavourableOccurrencesDefault: [
                 name       : 'Probability of occurrences',
                 title      : 'Probability of occurrences',
                 description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. </br> </br>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">',
-                min        : 0, max: 1,
+                             '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">',
+                default    : '0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5',
                 type       : String.class
         ],
         confRaysName            : [
                 name       : '',
                 title      : 'Export scene',
                 description: 'Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml) </br> </br>' +
-                        'You can set a table name here in order to save all the rays computed by NoiseModelling. </br> </br>' +
-                        'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
-                        '&#128736; Default value: <b>empty (do not keep rays)</b>',
-                min        : 0, max: 1, type: String.class
+                             'You can set a table name here in order to save all the rays computed by NoiseModelling. </br> </br>' +
+                             'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
+                             '&#128736; <b>If not provided, then do not keep rays</b>',
+                min        : 0, max: 1, 
+                type: String.class
         ],
         confMaxError            : [
                 name       : 'Max Error (dB)',
                 title      : 'Max Error (dB)',
                 description: 'Threshold for excluding negligible sound sources in calculations.' +
-                        'Default value: <b>0.1 This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.</b>',
-                min        : 0, max: 1,
+                             '<b>This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.</b>',
+                default    : 0.1,
                 type       : Double.class
         ],
         frequencyFieldPrepend            : [
                 name       : 'Frequency field name',
                 title      : 'Frequency field name',
-                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.' +
-                        '&#128736; Default value: <b>HZ</b>',
-                min        : 0, max: 1, type: String.class
+                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.',
+                default    : 'HZ',
+                type: String.class
         ]
 ]
 
@@ -277,8 +277,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 
 // main function of the script

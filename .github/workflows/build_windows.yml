@@ -1,6 +1,12 @@
 name: Reusable Windows Build
 
 on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'The git ref to checkout'
+        required: true
+        type: string
   workflow_call:
     inputs:
       git_ref:
