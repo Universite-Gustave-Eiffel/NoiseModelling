@@ -212,8 +212,9 @@ def exec(Connection connection, input) {
     }
 
     def reader
+    InputStream inputStream = null
     if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".pbf")) {
-        InputStream inputStream = new FileInputStream(pathFile);
+        inputStream = new FileInputStream(pathFile);
         reader = new OsmosisReader(inputStream);
     } else if (pathFile.toLowerCase(Locale.getDefault()).endsWith(".osm")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.None);
@@ -223,21 +224,22 @@ def exec(Connection connection, input) {
         throw new IllegalArgumentException("File extension not known.Should be pbf, osm or osm.gz but got " + pathFile)
     }
 
-    OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
-    reader.setSink(handler);
-    reader.run();
+    try {
+        OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
+        reader.setSink(handler);
+        reader.run();
 
-    logger.info('OSM Read done')
+        logger.info('OSM Read done')
 
-    // If eliminateNoTrafficRoads is true, filter the roads by the allowed list.
-    if (eliminateNoTrafficRoads && !ignoreRoads) {
-        def validRoadTypes = [
-            "bus_guideway", "busway", "living_street", "motorway", "motorway_link", "primary", "primary_link",
-            "raceway", "residential", "road", "secondary", "secondary_link", "service", "tertiary", "tertiary_link",
-            "trunk", "trunk_link", "unclassified", "rest_area", "traffic_calming", "traffic_island"
-        ]
-        handler.roads = handler.roads.findAll { validRoadTypes.contains(it.type) }
-    }
+        // If eliminateNoTrafficRoads is true, filter the roads by the allowed list.
+        if (eliminateNoTrafficRoads && !ignoreRoads) {
+            def validRoadTypes = [
+                "bus_guideway", "busway", "living_street", "motorway", "motorway_link", "primary", "primary_link",
+                "raceway", "residential", "road", "secondary", "secondary_link", "service", "tertiary", "tertiary_link",
+                "trunk", "trunk_link", "unclassified", "rest_area", "traffic_calming", "traffic_island"
+            ]
+            handler.roads = handler.roads.findAll { validRoadTypes.contains(it.type) }
+        }
 
 
     if (!ignoreBuilding) {
@@ -322,6 +324,12 @@ def exec(Connection connection, input) {
             sql.execute("INSERT INTO GROUND (ID_WAY, THE_GEOM, PRIORITY, G) VALUES (" + ground.id + ", ST_Transform(ST_GeomFromText('" + ground.geom + "', 4326), " + srid + "), " + ground.priority + ", " + ground.coeff_G + ")")
         }
         sql.execute("CREATE SPATIAL INDEX IF NOT EXISTS GROUND_GEOM_INDEX ON " + "GROUND" + "(THE_GEOM)")
+    }
+
+    } finally {
+        if (inputStream != null) {
+            inputStream.close()
+        }
     }
 
     logger.info('SQL INSERT done')

@@ -230,8 +230,9 @@ public class AscReaderDriver {
                 stmt.execute("DROP TABLE IF EXISTS " + outputTableName);
                 stmt.close();
             }
-            FileInputStream fis = new FileInputStream(fileName);
-            outputTableName = readAsc(connection, new GZIPInputStream(fis), progress, outputTableName, srid);
+            try (FileInputStream fis = new FileInputStream(fileName)) {
+                outputTableName = readAsc(connection, new GZIPInputStream(fis), progress, outputTableName, srid);
+            }
             return new String[]{outputTableName};
         } else {
             throw new SQLException("The asc read driver supports only asc or gz extensions");
