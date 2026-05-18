@@ -48,7 +48,8 @@ jobs:
             mvn install -DskipTests
       - name: Generate Javadoc
         run:  |
-          mvn javadoc:aggregate -Ddoclint=none        
+          mvn javadoc:aggregate -Ddoclint=none
+          mkdir -p noisemodelling-scripts/target/sphinx/html/javadoc
           mv target/reports/apidocs/* noisemodelling-scripts/target/sphinx/html/javadoc/
       - name: Setup Pages
         uses: actions/configure-pages@v4
