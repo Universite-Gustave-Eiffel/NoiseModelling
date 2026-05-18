@@ -104,8 +104,9 @@ def exec(Connection connection, input) {
 
     // Read the OSM file, depending on its extension
     def reader
+    InputStream inputStream = null
     if (pathFile.endsWith(".pbf")) {
-        InputStream inputStream = new FileInputStream(pathFile);
+        inputStream = new FileInputStream(pathFile);
         reader = new OsmosisReader(inputStream);
     } else if (pathFile.endsWith(".osm")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.None);
@@ -113,11 +114,12 @@ def exec(Connection connection, input) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
     }
 
-    OsmHandlerPedestrian handler = new OsmHandlerPedestrian(logger)
-    reader.setSink(handler);
-    reader.run();
+    try {
+        OsmHandlerPedestrian handler = new OsmHandlerPedestrian(logger)
+        reader.setSink(handler);
+        reader.run();
 
-    logger.info('OSM Read done')
+        logger.info('OSM Read done')
 
 
     String tableName = "MAP_BUILDINGS_GEOM";
@@ -346,6 +348,12 @@ def exec(Connection connection, input) {
 
 
     logger.info('SQL Compute Pedestrian Areas Done !')
+
+    } finally {
+        if (inputStream != null) {
+            inputStream.close()
+        }
+    }
 
     resultString = "nodes : " + handler.nb_nodes
     resultString += "<br>\n"
