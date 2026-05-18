@@ -113,9 +113,9 @@ def exec(Connection connection, input) {
     } else if (pathFile.endsWith(".osm.gz")) {
         reader = new XmlReader(new File(pathFile), true, CompressionMethod.GZip);
     }
-
+    OsmHandlerPedestrian handler
     try {
-        OsmHandlerPedestrian handler = new OsmHandlerPedestrian(logger)
+        handler = new OsmHandlerPedestrian(logger)
         reader.setSink(handler);
         reader.run();
 

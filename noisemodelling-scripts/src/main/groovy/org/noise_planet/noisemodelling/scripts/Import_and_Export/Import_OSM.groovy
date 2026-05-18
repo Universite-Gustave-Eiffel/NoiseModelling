@@ -224,8 +224,9 @@ def exec(Connection connection, input) {
         throw new IllegalArgumentException("File extension not known.Should be pbf, osm or osm.gz but got " + pathFile)
     }
 
+    OsmHandler handler;
     try {
-        OsmHandler handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
+        handler = new OsmHandler(logger, ignoreBuilding, ignoreRoads, ignoreGround, removeTunnels)
         reader.setSink(handler);
         reader.run();
 
