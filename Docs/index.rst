@@ -38,7 +38,7 @@ The latest `release page`_ offers three NoiseModelling packages:
 
 * ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface. Please check the :doc:`Tutorial_Requirements` before installing, and refer to :doc:`Tutorial_Get_Started_Script` for CLI usage.
 * ``NoiseModelling_X.X.X_install.exe``: A standalone Windows installer that includes the web GUI and a bundled Java Virtual Machine.
-* ``NoiseModelling-X.X.X.gmg``: A standalone Mac OS installer that includes the web GUI and a bundled Java Virtual Machine.
+* ``NoiseModelling-X.X.X.dmg``: A standalone Mac OS installer that includes the web GUI and a bundled Java Virtual Machine.
 
 In addition, a Docker image is provided in the `packages page`_.
 
