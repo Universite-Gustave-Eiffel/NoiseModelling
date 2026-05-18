@@ -1,9 +1,11 @@
 import org.h2gis.api.ProgressVisitor
-import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.webserver.utilities.Logging
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import groovy.sql.Sql
+
 import java.sql.Connection
 
 title = 'Tutorial script'
@@ -19,22 +21,20 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // 7 steps in this task
 
     // Upload files to database
-    new Import_File().exec(connection, ["pathFile": "resources/ground_type.shp"], tutorialProgress)
+    def groundTable = new Import_File().exec(connection, ["pathFile": "resources/ground_type.shp"], tutorialProgress)["outputTable"]
 
-    new Import_File().exec(connection, ["pathFile": "resources/buildings.shp"], tutorialProgress)
+    def buildingTable = new Import_File().exec(connection, ["pathFile": "resources/buildings.shp"], tutorialProgress)["outputTable"]
 
-    new Import_File().exec(connection, ["pathFile": "resources/receivers.shp"], tutorialProgress)
+    def receiversTable = new Import_File().exec(connection, ["pathFile": "resources/receivers.shp"], tutorialProgress)["outputTable"]
 
-    new Import_File().exec(connection, ["pathFile": "resources/ROADS2.shp"], tutorialProgress)
+    def roadsTable = new Import_File().exec(connection, ["pathFile": "resources/ROADS2.shp"], tutorialProgress)["outputTable"]
 
-    new Import_File().exec(connection, ["pathFile": "resources/dem.geojson"], tutorialProgress)
+    def demTable = new Import_File().exec(connection, ["pathFile": "resources/dem.geojson"], tutorialProgress)["outputTable"]
 
     // Run Calculation
-    new Noise_level_from_traffic().exec(connection, ["tableBuilding": "BUILDINGS", "tableRoads": "ROADS2", "tableReceivers": "RECEIVERS",
-                                                     "tableDEM"     : "DEM", "tableGroundAbs": "GROUND_TYPE"], tutorialProgress)
+    def resultTable = new Noise_level_from_traffic().exec(connection, ["tableBuilding": buildingTable, "tableRoads": roadsTable, "tableReceivers": receiversTable,
+                                                                       "tableDEM"     : demTable, "tableGroundAbs": groundTable], tutorialProgress)
 
-    // Export the results in a file
-    new Export_Table().exec(connection, ["exportPath": "RECEIVERS_LEVEL.shp", "tableToExport": "RECEIVERS_LEVEL"], tutorialProgress)
-
-    logger.info("Result have been exported to " + new File("RECEIVERS_LEVEL.shp").getAbsolutePath())
+    // Return results
+    return Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $resultTable.result LIMIT 5" as String, 120)
 }

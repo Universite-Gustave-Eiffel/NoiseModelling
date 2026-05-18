@@ -305,8 +305,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // -------------------
 
     String sources_table_name = input['tableSources']
-    // do it case-insensitive
-    sources_table_name = sources_table_name.toUpperCase()
+
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
@@ -326,8 +325,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     String receivers_table_name = input['tableReceivers']
-    // do it case-insensitive
-    receivers_table_name = receivers_table_name.toUpperCase()
+
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
     List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
@@ -348,8 +346,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     String building_table_name = input['tableBuilding']
-    // do it case-insensitive
-    building_table_name = building_table_name.toUpperCase()
+
     // Check if srid are in metric projection and are all the same.
     int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
     if (!DataBaseUtilities.isSridMetric(connection, sridBuildings)) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
@@ -359,8 +356,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String dem_table_name = ""
     if (input['tableDEM']) {
         dem_table_name = input['tableDEM']
-        // do it case-insensitive
-        dem_table_name = dem_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
         int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
         if (!DataBaseUtilities.isSridMetric(connection, sridDEM)) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
@@ -371,8 +367,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
-        // do it case-insensitive
-        ground_table_name = ground_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
         int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
         if (!DataBaseUtilities.isSridMetric(connection, sridGROUND)) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
@@ -383,8 +378,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String tableSourceDirectivity = ""
     if (input['tableSourceDirectivity']) {
         tableSourceDirectivity = input['tableSourceDirectivity']
-        // do it case-insensitive
-        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
     }
 
     boolean recordProfile = false

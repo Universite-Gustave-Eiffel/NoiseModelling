@@ -152,8 +152,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         tableName = fileName
     }
 
-    // do it case-insensitive
-    tableName = tableName.toUpperCase()
+    // Apply table name for the database type
+    tableName = TableLocation.capsIdentifier(tableName, dbType)
 
     // Create a connection statement to interact with the database in SQL
     Statement stmt = connection.createStatement()

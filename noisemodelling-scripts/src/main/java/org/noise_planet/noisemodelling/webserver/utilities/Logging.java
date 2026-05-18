@@ -10,14 +10,16 @@
 package org.noise_planet.noisemodelling.webserver.utilities;
 
 import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
+import groovy.sql.Sql;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,16 +38,13 @@ public class Logging {
 
 
     public static void initConsoleLogging() {
-        // 1. Internal debug to see what's happening
-        org.apache.log4j.helpers.LogLog.setInternalDebugging(true);
-
-        // 2. Reset everything to clear hidden configs from JARs
+        // Reset everything to clear hidden configs from JARs
         org.apache.log4j.LogManager.resetConfiguration();
 
         org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
         rootLogger.setLevel(org.apache.log4j.Level.INFO);
 
-        // 3. Create the Console Appender
+        // Create the Console Appender
         org.apache.log4j.ConsoleAppender console = new org.apache.log4j.ConsoleAppender();
         console.setName("stdout");
         console.setLayout(new org.apache.log4j.PatternLayout(DEFAULT_LOG_FORMAT));
@@ -315,4 +314,119 @@ public class Logging {
         fetchedLines.addAndGet(pushedLines.get());
         return sbMatch.toString();
     }
+
+
+    /**
+     * Executes a SQL query and return the result set as an ASCII table.
+     *
+     * @param sql   An instance of groovy.sql.Sql
+     * @param query A String or GString (allows for parameter injection)
+     */
+    public static String formatSqlQueryResult(Sql sql, Object query) {
+        return formatSqlQueryResult(sql, query, 30);
+    }
+
+    /**
+     * Executes a SQL query and return the result set as an ASCII table.
+     *
+     * @param sql         An instance of groovy.sql.Sql
+     * @param query       A String or GString (allows for parameter injection)
+     * @param maxColWidth Maximum width of a column before truncation
+     */
+    public static String formatSqlQueryResult(Sql sql, Object query, int maxColWidth) {
+        List<Map<String, Object>> rawRows = new ArrayList<>();
+        try {
+            List<?> rows = sql.rows(query.toString());
+            for (Object row : rows) {
+                if (row instanceof Map) {
+                    rawRows.add((Map<String, Object>) row);
+                }
+            }
+        } catch (Exception e) {
+            LoggerFactory.getLogger(Logging.class).error("Error executing SQL query: {}", query, e);
+            return "";
+        }
+
+        if (rawRows.isEmpty()) {
+            return String.format("Query returned 0 rows.\nSQL: %s", query);
+        }
+
+        List<String> columnNames = new ArrayList<>();
+        for (Object key : rawRows.get(0).keySet()) {
+            columnNames.add(key.toString());
+        }
+
+        // 1. Pre-format all data (Truncate strings and Round numbers)
+        List<Map<String, String>> formattedRows = new ArrayList<>();
+        for (Map<String, Object> row : rawRows) {
+            Map<String, String> formattedRow = new LinkedHashMap<>();
+            for (String col : columnNames) {
+                Object val = row.get(col);
+                String formattedVal;
+
+                if (val == null) {
+                    formattedVal = "null";
+                } else if (val instanceof Number && !(val instanceof Integer || val instanceof Long || val instanceof BigInteger)) {
+                    // Round numbers to 2 decimal places
+                    formattedVal = String.format(Locale.US, "%.2f", ((Number) val).doubleValue());
+                } else {
+                    // Truncate long strings (like Geometries)
+                    formattedVal = val.toString();
+                    if (formattedVal.length() > maxColWidth) {
+                        formattedVal = formattedVal.substring(0, maxColWidth - 3) + "...";
+                    }
+                }
+                formattedRow.put(col, formattedVal);
+            }
+            formattedRows.add(formattedRow);
+        }
+
+        // 2. Calculate column widths based on formatted data
+        Map<String, Integer> columnWidths = new HashMap<>();
+        for (String col : columnNames) {
+            int headerLen = col.length();
+            int maxDataLen = 0;
+            for (Map<String, String> row : formattedRows) {
+                String val = row.get(col);
+                if (val != null) {
+                    maxDataLen = Math.max(maxDataLen, val.length());
+                }
+            }
+            columnWidths.put(col, Math.max(headerLen, maxDataLen));
+        }
+
+        // 3. Build the ASCII Table
+        StringBuilder lineSeparatorBuilder = new StringBuilder("+");
+        for (String col : columnNames) {
+            int width = columnWidths.get(col);
+            lineSeparatorBuilder.append("-".repeat(Math.max(0, width + 2)));
+            lineSeparatorBuilder.append("+");
+        }
+        String lineSeparator = lineSeparatorBuilder.toString();
+
+        StringBuilder table = new StringBuilder();
+        table.append("\nSQL: ").append(query).append("\n");
+        table.append(lineSeparator).append("\n|");
+
+        // Header
+        for (String col : columnNames) {
+            int width = columnWidths.get(col);
+            table.append(String.format(" %-" + width + "s |", col));
+        }
+        table.append("\n").append(lineSeparator).append("\n");
+
+        // Rows
+        for (Map<String, String> row : formattedRows) {
+            table.append("|");
+            for (String col : columnNames) {
+                int width = columnWidths.get(col);
+                table.append(String.format(" %-" + width + "s |", row.get(col)));
+            }
+            table.append("\n");
+        }
+        table.append(lineSeparator);
+
+        return table.toString();
+    }
+
 }
