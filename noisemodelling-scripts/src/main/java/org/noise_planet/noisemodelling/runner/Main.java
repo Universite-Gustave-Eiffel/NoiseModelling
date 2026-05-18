@@ -32,7 +32,6 @@ import org.noise_planet.noisemodelling.webserver.utilities.LibraryInfo;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.webserver.utilities.PgPassUtilities;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,7 +258,7 @@ public class Main {
             HikariConfig config = new HikariConfig();
             config.setUsername(username);
             config.setPassword(password);
-            config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
+            config.setDataSourceClassName(PostGISJTSDataSource.class.getCanonicalName());
             config.addDataSourceProperty("portNumbers", Integer.parseInt(port));
             config.addDataSourceProperty("databaseName", databaseName);
             config.addDataSourceProperty("serverNames", host);

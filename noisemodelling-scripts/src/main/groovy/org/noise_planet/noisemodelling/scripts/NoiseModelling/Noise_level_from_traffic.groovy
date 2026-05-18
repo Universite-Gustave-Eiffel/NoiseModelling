@@ -72,7 +72,8 @@ inputs = [
                         '<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly ave' +
+                        'rage heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
@@ -333,8 +334,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // -------------------
 
     String sources_table_name = input['tableRoads']
-    // do it case-insensitive
-    sources_table_name = sources_table_name.toUpperCase()
+
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
@@ -348,14 +348,13 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name))
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name, dbType))
     if (pkIndex < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
 
     String receivers_table_name = input['tableReceivers']
-    // do it case-insensitive
-    receivers_table_name = receivers_table_name.toUpperCase()
+
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
     List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
@@ -363,23 +362,22 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
     }
     // Check if srid are in metric projection and are all the same.
-    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
+    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridReceivers)) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
     if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
 
 
     //Get the primary key field of the receiver table
-    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name))
+    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name, dbType))
     if (pkIndexRecv < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
     }
 
     String building_table_name = input['tableBuilding']
-    // do it case-insensitive
-    building_table_name = building_table_name.toUpperCase()
+
     // Check if srid are in metric projection and are all the same.
-    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridBuildings)) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
     if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
@@ -387,10 +385,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String dem_table_name = ""
     if (input['tableDEM']) {
         dem_table_name = input['tableDEM']
-        // do it case-insensitive
-        dem_table_name = dem_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
-        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
+        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridDEM)) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
         if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
@@ -399,10 +396,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
-        // do it case-insensitive
-        ground_table_name = ground_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
-        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
+        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridGROUND)) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
         if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
@@ -411,8 +407,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String tableSourceDirectivity = ""
     if (input['tableSourceDirectivity']) {
         tableSourceDirectivity = input['tableSourceDirectivity']
-        // do it case-insensitive
-        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
     }
 
     boolean recordProfile = false
@@ -534,7 +528,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     // Building height field name
-    pointNoiseMap.setHeightField("HEIGHT")
+    pointNoiseMap.setHeightField(TableLocation.capsIdentifier("height", dbType))
     // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
     if (ground_table_name != "") {
         pointNoiseMap.setSoilTableName(ground_table_name)

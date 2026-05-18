@@ -54,13 +54,6 @@ jobs:
           POSTGRES_DB: noisemodelling_db
           POSTGRES_USER: noisemodelling
           POSTGRES_PASSWORD: noisemodelling
-      - name: Maven Deploy
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean -DskipTests deploy -B
       - name: Unzip production artifacts
         run: |
           # 1. Unzip into a temporary directory
@@ -75,6 +68,21 @@ jobs:
           
           # 4. Cleanup
           rm -rf tmp_extract
+      - name: Integration test, use ScriptRunner with H2GIS
+        run: |
+          bin/ScriptRunner -w /tmp/h2gis_ws -s get_started_tutorial_complex.groovy
+        working-directory: NoiseModelling
+      - name: Integration test, use ScriptRunner with PostGIS
+        run: |
+          bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
+        working-directory: NoiseModelling
+      - name: Maven Deploy snapshot
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
+        run: mvn clean -DskipTests deploy -B
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |
