@@ -124,7 +124,7 @@ class TestDatabaseManager extends JdbcTestCase {
     void testConsoleDisplayTable() {
         SHPRead.importTable(connection, TestDatabaseManager.getResource("buildings.shp").getPath())
         def area = 50
-        def result = Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM BUILDINGS WHERE ST_AREA(THE_GEOM) > $area LIMIT 5", 120, LOGGER)
+        def result = Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM BUILDINGS WHERE ST_AREA(THE_GEOM) > $area LIMIT 5", 120)
         assertTrue(result.contains("ID_WAY"))
     }
 }
