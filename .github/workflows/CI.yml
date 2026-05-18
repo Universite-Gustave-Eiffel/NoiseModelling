@@ -71,6 +71,7 @@ jobs:
       - name: Integration test, use ScriptRunner with H2GIS
         run: |
           bin/ScriptRunner -w /tmp/h2gis_ws -s get_started_tutorial_complex.groovy
+        working-directory: NoiseModelling
       - name: Integration test, use ScriptRunner with PostGIS
         run: |
           bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
