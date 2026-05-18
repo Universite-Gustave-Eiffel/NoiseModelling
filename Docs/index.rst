@@ -41,7 +41,7 @@ The latest `release page`_ offers three NoiseModelling packages:
 * ``NoiseModelling-X.X.X.dmg``: A standalone Mac OS installer that includes the web GUI and a bundled Java Virtual Machine.
 
 .. warning::
-    The Windows and Mac OS installer have not been signed yet. So you may have a security warning when installing and you are invited to follow additional steps to bypass the installation block.
+    The Windows and Mac OS installer have not been signed yet. So you may have a security warning when installing and you are invited to follow additional steps to bypass this issue.
 
 In addition, a Docker image is provided in the `packages page`_.
 
