@@ -391,7 +391,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <executable>${java.home}/bin/java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath />
@@ -408,7 +408,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <executable>${java.home}/bin/java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath />

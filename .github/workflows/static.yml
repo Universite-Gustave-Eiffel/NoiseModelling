@@ -39,31 +39,23 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Generate documentation of NoiseModelling in package phase
+        run:  |
+            mvn install -DskipTests
       - name: Generate Javadoc
-        run: mvn javadoc:aggregate -Ddoclint=none
-      - name: Build NoiseModelling
-        run: mvn install -DskipTests
-      - name: Generate Cnossos report
-        working-directory: noisemodelling-tutorial-01
-        run: mvn exec:java -Dmain.class=org.noise_planet.nmtutorial01.GenerateReferenceDeviation -Dexec.args="../Docs"
-      -  shell: bash
-         run: |
-            mkdir -p Docs/build/html/javadoc
-            mv target/reports/apidocs/* Docs/build/html/javadoc/
-      - uses: actions/setup-python@v5
-      - name: Install dependencies
-        run: |
-          pip install -r Docs/requirements.txt
-      - name: Sphinx build
-        run: |
-          sphinx-build -M html Docs/ Docs/build
+        run:  |
+          mvn javadoc:aggregate -Ddoclint=none        
+          mv target/reports/apidocs/* noisemodelling-scripts/target/sphinx/html/javadoc/
       - name: Setup Pages
         uses: actions/configure-pages@v4
-      - name: Upload artifact
+      - name: Upload static site pages with javadoc
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload static site pages
-          path: 'Docs/build/html'
+          path: 'noisemodelling-scripts/target/sphinx/html'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
