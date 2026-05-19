@@ -45,7 +45,7 @@ jobs:
 
       # Test build
       - name: Build test
-        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
+        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar -P-use-snapshots
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -60,7 +60,7 @@ jobs:
             -DreleaseVersion=${{ github.event.inputs.releaseVersion }} \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }} \
             -DpushChanges=false \
-            -Darguments="-DskipTests -P!use-snapshots"
+            -Darguments="-DskipTests -P-use-snapshots"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -87,11 +87,13 @@ jobs:
     uses: ./.github/workflows/build_windows.yml
     with:
       git_ref: v${{ github.event.inputs.releaseVersion }}
+      use_snapshots: false
   build_macos_dmg:
     needs: prepare_release
     uses: ./.github/workflows/build_macos.yml
     with:
       git_ref: v${{ github.event.inputs.releaseVersion }}
+      use_snapshots: false
   upload_release:
     needs: [prepare_release, build_windows_exe, build_macos_dmg]
     runs-on: ubuntu-latest
@@ -106,7 +108,7 @@ jobs:
         run: |
           # Checkout the release tag to be sure we build the exact release code
           git checkout v${{ github.event.inputs.releaseVersion }}
-          mvn package -DskipTests
+          mvn package -DskipTests -P-use-snapshots
           
           mkdir NoiseModelling
           sudo apt-get update && sudo apt-get install -y libarchive-tools
