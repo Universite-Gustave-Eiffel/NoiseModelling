@@ -7,12 +7,22 @@ on:
         description: 'The git ref to checkout'
         required: true
         type: string
+      use_snapshots:
+        description: 'Enable the Maven profile use-snapshots (set false to disable - used for releases)'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       git_ref:
         description: 'The git ref to checkout'
         required: true
         type: string
+      use_snapshots:
+        description: 'Enable the Maven profile use-snapshots (set false to disable - used for releases)'
+        required: false
+        type: boolean
+        default: true
     outputs:
       # Tier 3: Map Workflow Output -> Job Output
       installer_name:
@@ -52,7 +62,11 @@ jobs:
         with:
           python-version: '3.11'
       - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+        shell: pwsh
+        env:
+          MAVEN_PROFILE: ${{ inputs.use_snapshots && '-Puse-snapshots' || '' }}
+        run: |
+          mvn test install javadoc:test-javadoc javadoc:jar package -B $env:MAVEN_PROFILE
       - name: Extract packaged zip with windows
         run: |
           unzip -o noisemodelling-scripts/target/*.zip -d NoiseModelling
