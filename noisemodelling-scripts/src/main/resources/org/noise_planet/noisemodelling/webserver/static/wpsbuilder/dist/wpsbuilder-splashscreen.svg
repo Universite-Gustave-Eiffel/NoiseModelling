@@ -11,8 +11,8 @@
    inkscape:version="1.4 (e7c3feb, 2024-10-09)"
    xml:space="preserve"
    inkscape:export-filename="wpsbuilder-splashscreen.png"
-   inkscape:export-xdpi="227.10699"
-   inkscape:export-ydpi="227.10699"
+   inkscape:export-xdpi="340.66046"
+   inkscape:export-ydpi="340.66046"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -262,7 +262,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
      inkscape:cx="100.17857"
-     inkscape:cy="207.32143"
+     inkscape:cy="121.60714"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -311,14 +311,14 @@
            style="font-style:italic;font-weight:normal"
            id="tspan3">05/2026</tspan></tspan></text><text
        xml:space="preserve"
-       transform="matrix(1.0874138,0,0,1.0874138,-403.31399,-565.06965)"
+       transform="matrix(1.0874138,0,0,1.0874138,-410.15115,-565.06965)"
        id="text41"
        style="font-weight:800;font-size:15.5057px;line-height:21.1185px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu Ultra-Bold';text-align:start;text-decoration-color:#000000;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect45);display:inline;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.285715;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"><tspan
          x="692.85742"
          y="895.69785"
          id="tspan6"><tspan
            style="font-weight:normal"
-           id="tspan5">6</tspan></tspan></text><path
+           id="tspan5">6.0</tspan></tspan></text><path
        style="fill:#ffffff;stroke:#ffffff;stroke-width:0.103196;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        d="m 344.42379,413.05129 h 21.13247"
        id="path41" /><text
