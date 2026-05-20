@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.noise-planet</groupId>
         <artifactId>noisemodelling-parent</artifactId>
-        <version>5.0.2-SNAPSHOT</version>
+        <version>6.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,9 +16,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <shell.executable/>
-        <shell.arg/>
-        <sphinx.command/>
+        <shell.executable />
+        <shell.arg />
+        <sphinx.command />
     </properties>
     <profiles>
         <profile>
@@ -33,7 +31,7 @@
                 <shell.arg>-c</shell.arg>
                 <!-- Check if python3 exists, if so run the commands, if not echo and exit 0 -->
                 <sphinx.command>
-                    command -v python3 >/dev/null 2>&amp;1 &amp;&amp; (
+                    command -v python3 &gt;/dev/null 2&gt;&amp;1 &amp;&amp; (
                     python3 -m venv target/venv &amp;&amp;
                     target/venv/bin/python -m pip install -r ../Docs/requirements.txt &amp;&amp;
                     target/venv/bin/sphinx-build -M html ../Docs target/sphinx
@@ -50,7 +48,7 @@
                 <shell.executable>cmd</shell.executable>
                 <shell.arg>/c</shell.arg>
                 <sphinx.command>
-                    where python >nul 2>nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
+                    where python &gt;nul 2&gt;nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
                 </sphinx.command>
             </properties>
         </profile>
