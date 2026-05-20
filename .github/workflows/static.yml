@@ -45,10 +45,10 @@ jobs:
           python-version: '3.11'
       - name: Generate documentation of NoiseModelling in package phase
         run:  |
-            mvn install -DskipTests -Dmaven.javadoc.skip=false
+            mvn install -DskipTests
       - name: Generate Javadoc
         run:  |
-          mvn javadoc:aggregate -Ddoclint=none
+          mvn javadoc:aggregate -Dmaven.javadoc.skip=false -Ddoclint=none
           mkdir -p noisemodelling-scripts/target/sphinx/html/javadoc
           mv target/reports/apidocs/* noisemodelling-scripts/target/sphinx/html/javadoc/
       - name: Setup Pages
