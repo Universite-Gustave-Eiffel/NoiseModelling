@@ -47,7 +47,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+        run: mvn test install javadoc:jar package -B -Dmaven.javadoc.skip=false
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
