@@ -65,7 +65,7 @@ jobs:
 
           # 3. Deploy the Release version (the code currently checked out)
           # We use -DskipTests because prepare already ran them.
-          mvn clean deploy -P-use-snapshots -DskipTests -B
+          mvn clean javadoc:test-javadoc javadoc:jar deploy -P-use-snapshots -DskipTests -B
           
           # 4. Switch back to the release branch to continue the workflow
           git checkout release/v${{ github.event.inputs.releaseVersion }}
@@ -116,12 +116,20 @@ jobs:
         run: |
           # Checkout the release tag to be sure we build the exact release code
           git checkout v${{ github.event.inputs.releaseVersion }}
-          mvn package -DskipTests -P-use-snapshots
+          mvn clean package -DskipTests -P-use-snapshots
           
+          # 1. Unzip into a temporary directory
+          unzip -q noisemodelling-scripts/target/*.zip -d tmp_extract
+          
+          # 2. Create target directory
           mkdir NoiseModelling
-          sudo apt-get update && sudo apt-get install -y libarchive-tools
-          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
-          zip -r NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip NoiseModelling/
+          
+          # 3. Move contents from the subfolder to the target
+          # The asterisk-slash-asterisk moves everything inside the first subfolder
+          mv tmp_extract/*/* NoiseModelling/
+          
+          # 4. Cleanup
+          rm -rf tmp_extract
       - name: Download windows Artifact
         uses: actions/download-artifact@v4
         with:

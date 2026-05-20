@@ -11,6 +11,8 @@
     </parent>
 
     <artifactId>noisemodelling-scripts</artifactId>
+    <name>NoiseModelling Scripts</name>
+    <description>WebServer and groovy scripts of NoiseModelling</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
