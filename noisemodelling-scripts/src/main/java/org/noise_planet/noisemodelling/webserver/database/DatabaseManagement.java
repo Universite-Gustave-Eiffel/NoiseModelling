@@ -523,7 +523,7 @@ public class DatabaseManagement {
     /**
      * Fetch the content of the JOB table
      * @param connection
-     * @param filterByUserIdentifier If > 0, will filter the job for a specific user. Administrator see all jobs.
+     * @param filterByUserIdentifier if {@code > 0}, will filter the job for a specific user. Administrator see all jobs.
      * @return Job list
      * @throws SQLException
      */
@@ -568,7 +568,7 @@ public class DatabaseManagement {
     /**
      * Fetch the content of the JOB table
      * @param connection
-     * @param jobId If > 0, will filter the job for a specific user. Administrator see all jobs.
+     * @param jobId if {@code > 0}, will filter the job for a specific user. Administrator see all jobs.
      * @return Job list
      * @throws SQLException
      */

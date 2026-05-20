@@ -65,7 +65,7 @@ jobs:
 
           # 3. Deploy the Release version (the code currently checked out)
           # We use -DskipTests because prepare already ran them.
-          mvn clean javadoc:test-javadoc javadoc:jar deploy -P-use-snapshots -DskipTests -B
+          mvn clean javadoc:jar deploy -P-use-snapshots -DskipTests -B -Dmaven.javadoc.skip=false
           
           # 4. Switch back to the release branch to continue the workflow
           git checkout release/v${{ github.event.inputs.releaseVersion }}
