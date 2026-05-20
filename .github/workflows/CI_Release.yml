@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       # Checkout the source code of the project
       - name: Checkout
@@ -49,7 +50,7 @@ jobs:
       - name: Create Release Branch
         run: |
           git checkout -b release/v${{ github.event.inputs.releaseVersion }}
-      - name: Prepare Release
+      - name: Prepare and perform Release
         # -DpushChanges=false ensures Maven doesn't try to push to main automatically
         run: |
           mvn -B release:prepare \
@@ -58,6 +59,16 @@ jobs:
             -DpushChanges=false \
             -P-use-snapshots \
             -Darguments="-P-use-snapshots"
+          
+          # 2. Temporarily switch to the tag to deploy the Release version
+          git checkout v${{ github.event.inputs.releaseVersion }}
+
+          # 3. Deploy the Release version (the code currently checked out)
+          # We use -DskipTests because prepare already ran them.
+          mvn clean deploy -P-use-snapshots -DskipTests -B
+          
+          # 4. Switch back to the release branch to continue the workflow
+          git checkout release/v${{ github.event.inputs.releaseVersion }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
