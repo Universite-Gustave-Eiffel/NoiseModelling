@@ -355,7 +355,7 @@ a:hover{ text-decoration: underline; }
 
 .splash{
   text-align: center;
-  max-width: 600px;
+  max-width: 1200px;
   padding: 2em;
 }
 
@@ -379,7 +379,7 @@ a:hover{ text-decoration: underline; }
 }
 
 .splash img{
-  max-width: 380px;
+  max-width: 800px;
   width: 100%;
   margin: 1.5em auto;
   display: block;
