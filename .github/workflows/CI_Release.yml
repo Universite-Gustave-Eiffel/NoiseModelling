@@ -42,10 +42,6 @@ jobs:
         run: |
           git config user.email "contact@noise-planet.org"
           git config user.name Noise-Planet
-
-      # Test build
-      - name: Build test
-        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar -P-use-snapshots
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -60,7 +56,8 @@ jobs:
             -DreleaseVersion=${{ github.event.inputs.releaseVersion }} \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }} \
             -DpushChanges=false \
-            -Darguments="-DskipTests -P-use-snapshots"
+            -P-use-snapshots \
+            -Darguments="-P-use-snapshots"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
