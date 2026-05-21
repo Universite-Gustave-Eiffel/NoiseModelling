@@ -9,7 +9,6 @@
     <description>NoiseModelling is an extension of H2GIS</description>
     <properties>
         <groovy-version>5.0.3</groovy-version>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
     <organization>
         <name>UMRAE, CEREMA, Univ Gustave Eiffel</name>
@@ -539,7 +538,6 @@
             <configuration>
                 <doclint>all,-missing</doclint>
                 <quiet>true</quiet>
-                <skip>${maven.javadoc.skip}</skip>
             </configuration>
         </plugin>
     </plugins>

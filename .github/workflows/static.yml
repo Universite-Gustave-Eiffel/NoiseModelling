@@ -35,20 +35,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up JDK 11
+      - name: Set up JDK 21
         uses: actions/setup-java@v1
         with:
-          java-version: 11
+          java-version: 21
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Generate documentation of NoiseModelling in package phase
-        run:  |
-            mvn install -DskipTests
-      - name: Generate Javadoc
-        run:  |
-          mvn javadoc:aggregate -Dmaven.javadoc.skip=false -Ddoclint=none
+        run: |
+          mvn install javadoc:aggregate -Ddoclint=none -DskipTests
           mkdir -p noisemodelling-scripts/target/sphinx/html/javadoc
           mv target/reports/apidocs/* noisemodelling-scripts/target/sphinx/html/javadoc/
       - name: Setup Pages
