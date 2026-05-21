@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: true
+      run_unit_tests:
+        description: 'Run Maven unit tests'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
     inputs:
       git_ref:
@@ -20,6 +25,11 @@ on:
         type: string
       use_snapshots:
         description: 'Enable the Maven profile use-snapshots (set false to disable - used for releases)'
+        required: false
+        type: boolean
+        default: true
+      run_unit_tests:
+        description: 'Run Maven unit tests'
         required: false
         type: boolean
         default: true
@@ -65,8 +75,11 @@ jobs:
         shell: pwsh
         env:
           MAVEN_PROFILE: ${{ inputs.use_snapshots && '-Puse-snapshots' || '' }}
+          # If run_unit_tests is false, add the skip flag
+          SKIP_TESTS: ${{ inputs.run_unit_tests == false && '-DskipTests' || '' }}
         run: |
-          mvn test install javadoc:test-javadoc javadoc:jar package -B $env:MAVEN_PROFILE
+          # Note: 'install' automatically runs tests unless -DskipTests is provided
+          mvn install javadoc:test-javadoc javadoc:jar package -B $env:MAVEN_PROFILE $env:SKIP_TESTS
       - name: Extract packaged zip with windows
         run: |
           unzip -o noisemodelling-scripts/target/*.zip -d NoiseModelling
