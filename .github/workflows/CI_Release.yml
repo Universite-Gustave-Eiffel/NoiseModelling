@@ -96,6 +96,7 @@ jobs:
     with:
       git_ref: v${{ github.event.inputs.releaseVersion }}
       use_snapshots: false
+      run_unit_tests: false
   build_macos_dmg:
     needs: prepare_release
     uses: ./.github/workflows/build_macos.yml
@@ -117,19 +118,6 @@ jobs:
           # Checkout the release tag to be sure we build the exact release code
           git checkout v${{ github.event.inputs.releaseVersion }}
           mvn clean package -DskipTests -P-use-snapshots
-          
-          # 1. Unzip into a temporary directory
-          unzip -q noisemodelling-scripts/target/*.zip -d tmp_extract
-          
-          # 2. Create target directory
-          mkdir NoiseModelling
-          
-          # 3. Move contents from the subfolder to the target
-          # The asterisk-slash-asterisk moves everything inside the first subfolder
-          mv tmp_extract/*/* NoiseModelling/
-          
-          # 4. Cleanup
-          rm -rf tmp_extract
       - name: Download windows Artifact
         uses: actions/download-artifact@v4
         with:
@@ -146,7 +134,7 @@ jobs:
           tag_name: v${{ github.event.inputs.releaseVersion }}
           name: Release ${{ github.event.inputs.releaseVersion }}
           files: |
-            NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
+            noisemodelling-scripts/target/NoiseModelling_${{ github.event.inputs.releaseVersion }}.zip
             release-artifacts/${{ needs.build_windows_exe.outputs.installer_name }}
             release-artifacts/${{ needs.build_macos_dmg.outputs.installer_name }}
           generate_release_notes: true
