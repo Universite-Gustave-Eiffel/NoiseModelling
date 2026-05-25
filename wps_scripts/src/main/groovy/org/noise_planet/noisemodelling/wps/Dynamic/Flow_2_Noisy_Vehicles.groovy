@@ -160,7 +160,7 @@ def exec(Connection connection, input) {
 
     int nIterations = (int) Math.round(duration/timestep);
 
-    int time_offset = 120 // Extend and loop X seconds to ensure produce exact traffic exists, default value was 120
+    int time_offset = 0 // Extend and loop X seconds to ensure produce exact traffic exists, default value was 120
 
     String method = "PROBA"
     if (input['method']) {
@@ -179,9 +179,9 @@ def exec(Connection connection, input) {
 
     sql.execute("DROP TABLE IF EXISTS ROAD_POINTS" )
     sql.execute("CREATE TABLE ROAD_POINTS(ROAD_ID serial, THE_GEOM geometry," +
-            "LV int, LV_SPD real, HV int, HV_SPD real, WBV int, WBV_SPD real, LENGTH real, LANES int)" +
+            "LV int, LV_SPD real, HV int, HV_SPD real, WBV int, WBV_SPD real, LENGTH real, LANES int, SLOPE_PCT real)" +
             "AS SELECT r.PK, ST_Tomultipoint(ST_Densify(the_geom, "+gridStep+"))," +
-            "r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D, r.WBV_D, r.WBV_SPD_D, r.Length, r.LANES " +
+            "r.LV_D, r.LV_SPD_D, r.HGV_D, r.HGV_SPD_D, r.WBV_D, r.WBV_SPD_D, r.Length, r.LANES, r.SLOPE_PCT " +
             "FROM  "+sources_table_name+" r WHERE NOT ST_IsEmpty(r.THE_GEOM) ;")
 
     sql.execute("drop table VEHICLES if exists;" +
@@ -302,7 +302,8 @@ def exec(Connection connection, input) {
                         (int) Math.round(rs.getInt('HGV_D')*duration/3600),
                         rs.getDouble('HGV_SPD_D'),
                         (int) Math.round(rs.getInt('WBV_D')*duration/3600),
-                        rs.getDouble('WBV_SPD_D')
+                        rs.getDouble('WBV_SPD_D'),
+                        rs.getDouble('SLOPE_PCT')
                 )
 
                 sql.query("SELECT * FROM SOURCES_0dB WHERE ROAD_ID = " + road.id, { ResultSet result2 ->
@@ -383,6 +384,7 @@ class Road {
     double wbv_spd
     double length
     double duration
+    double SLope
 
     public List<SourcePoint> source_points = new ArrayList<SourcePoint>()
 
@@ -392,9 +394,9 @@ class Road {
 
     Map<String, LwCorrectionGenerator> lw_corr_generators = new LinkedHashMap<>()
 
-    //int seed = 2528432
-    Random random = new Random();
-    int seed = random.nextInt();
+    int seed = 2528432
+    /*Random random = new Random();
+    int seed = random.nextInt();*/
 
     Road(double duration){
         line_segments.clear()
@@ -404,7 +406,7 @@ class Road {
         this.duration = duration;
     }
 
-    void setRoad(long id, String type, Geometry geom, int lv, double lv_spd, int hv, double hv_spd, int wbv, double wbv_spd) {
+    void setRoad(long id, String type, Geometry geom, int lv, double lv_spd, int hv, double hv_spd, int wbv, double wbv_spd, double Slope) {
         if (geom.getGeometryType() == "MultiLineString") {
             geom = geom.getGeometryN(0)
         }
@@ -421,6 +423,7 @@ class Road {
         this.wbv = wbv
         this.wbv_spd = wbv_spd
         this.length = geom.getLength()
+        this.SLope = Slope
 
         Coordinate[] coordinates = geom.getCoordinates()
         for(int i = 1; i < coordinates.length; i++){
@@ -440,21 +443,21 @@ class Road {
         def samples = distribution.getSamples(lv, duration)
         for (int i = 0; i < lv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(lv_spd / 3.6, length, start, Vehicle.LIGHT_VEHICLE_TYPE, (i % 2 == 1), 0))
+            vehicles.add(new Vehicle(lv_spd / 3.6, length, start, Vehicle.LIGHT_VEHICLE_TYPE, (i % 2 == 1), Slope))
         }
         distribution = new DisplacedNegativeExponentialDistribution(hv, 1, seed, duration)
         start = 0
         samples = distribution.getSamples(hv, duration)
         for (int i = 0; i < hv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(hv_spd / 3.6, length, start, Vehicle.HEAVY_VEHICLE_TYPE, (i % 2 == 1), 0))
+            vehicles.add(new Vehicle(hv_spd / 3.6, length, start, Vehicle.HEAVY_VEHICLE_TYPE, (i % 2 == 1), Slope))
         }
         distribution = new DisplacedNegativeExponentialDistribution(wbv, 1, seed, duration)
         start = 0
         samples = distribution.getSamples(wbv, duration)
         for (int i = 0; i < wbv; i++) {
             start += samples[i]
-            vehicles.add(new Vehicle(wbv_spd / 3.6, length, start, Vehicle.MOTORCYCLE_VEHICLE_TYPE, (i % 2 == 1), 0))
+            vehicles.add(new Vehicle(wbv_spd / 3.6, length, start, Vehicle.MOTORCYCLE_VEHICLE_TYPE, (i % 2 == 1), Slope))
         }
         /*for (Vehicle vehicle: vehicles) {
             vehicle.lw_correction = 0 //lw_corr_generators.get(vehicle.vehicle_type).generate()
@@ -614,6 +617,8 @@ class Vehicle {
     double start_time = 0
     boolean exists = false
     boolean backward = false
+    double LwStd = 0
+    double Slope = 0.0
 
     //double lw_correction = 0.0
 
@@ -622,7 +627,7 @@ class Vehicle {
         return last_id
     }
 
-    Vehicle(double speed, double length, double start, String type, boolean is_back, int road_type) {
+    Vehicle(double speed, double length, double start, String type, boolean is_back, double Slope) {
         max_position = length
         vehicle_type = type
         start_time = start
@@ -630,12 +635,31 @@ class Vehicle {
         id = getNextId()
 
         this.speed = speed
-        /*if (road_type == 0 ) {
-            this.speed = (3 * speed / 4) + (rand.nextGaussian() + 1) * (speed / 4)
-        }*/
+
         if (this.vehicle_type == HEAVY_VEHICLE_TYPE || this.vehicle_type == MEDIUM_VEHICLE_TYPE) {
-            this.speed = Math.min(this.speed, 90 / 3.6) // max 90km/h for heavy vehicles
+            this.speed = Math.min(this.speed, 90 / 3.6)
         }
+
+        double speedKmh = this.speed * 3.6
+
+        def thresholds = [20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+        def values = [
+                "1" : [2.4, 3.56, 2.79, 2.46, 1.84, 1.28, 1.23, 1.16, 1.19],
+                "4b": [2.4, 3.56, 2.79, 2.46, 1.84, 1.28, 1.23, 1.16, 1.19],
+                "3" : [1.74, 2.68, 2.06, 1.35, 1.46, 2.50, 1.54, 1.56, 1.54]
+        ]
+
+        if (values.containsKey(this.vehicle_type)) {
+            for (int i = 0; i < thresholds.size(); i++) {
+                if (speedKmh < thresholds[i]) {
+                    this.LwStd = values[this.vehicle_type][i]
+                    break
+                }
+            }
+        }
+
+        this.Slope = Slope
     }
 
     Vehicle(double speed, double length, double start) {
@@ -688,10 +712,9 @@ class Vehicle {
         for (int i = 0; i < freqs.length; i++) {
 
             RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
-                    speed * 3.6, 0, vehicle_type, 1,  false, 0, id      )
+                    speed * 3.6, 0, vehicle_type, 1,  false, LwStd, id)
             rsParametersDynamic.setRoadSurface("DEF")
-            rsParametersDynamic.setTemperature(20)
-            rsParametersDynamic.setSlopePercentage(0)
+            rsParametersDynamic.setSlopePercentage(Slope)
             rsParametersDynamic.setFrequency(freqs[i])
             // remove lw_correction
             result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic);
@@ -883,6 +906,7 @@ class IndividualVehicleEmissionProcessData {
     Map<Integer, Double> HV = new HashMap<>()
     Map<Integer, Double> WBV = new HashMap<>()
     Map<Integer, Integer> LANES = new HashMap<>()
+    Map<Integer, Double> Slope = new HashMap<>()
     int nCars = 0
 
     double[] getCarsLevel(int idSource) throws SQLException {
@@ -948,7 +972,7 @@ class IndividualVehicleEmissionProcessData {
 
                     RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                     rsParameters.setRoadSurface(RoadSurface)
-                    rsParameters.setSlopePercentage(0)
+                    rsParameters.setSlopePercentage(Slope.get(idSource))
                     rsParameters.setTemperature(Temperature)
                     rsParameters.setFrequency(f)
 
@@ -1002,7 +1026,7 @@ class IndividualVehicleEmissionProcessData {
                     }
 
                     RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
-                    rsParameters.setSlopePercentage(0)
+                    rsParameters.setSlopePercentage(Slope.get(idSource))
                     rsParameters.setRoadSurface(RoadSurface)
                     rsParameters.setTemperature(Temperature)
                     rsParameters.setFrequency(f)
@@ -1057,7 +1081,7 @@ class IndividualVehicleEmissionProcessData {
                     }
 
                     RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
-                    rsParameters.setSlopePercentage(0)
+                    rsParameters.setSlopePercentage(Slope.get(idSource))
                     rsParameters.setRoadSurface(RoadSurface)
                     rsParameters.setTemperature(Temperature)
                     rsParameters.setFrequency(f)
@@ -1095,7 +1119,7 @@ class IndividualVehicleEmissionProcessData {
         //////////////////////
 
         // Remplissage des variables avec le contenu du fichier plan d'exp
-        sql.eachRow('SELECT PK,  LV_SPD, LV_DENS_D,  HV_SPD, HGV_DENS_D,  WBV_SPD, WBV_DENS_D, LANES FROM ' + tablename + ';') { row ->
+        sql.eachRow('SELECT PK,  LV_SPD, LV_DENS_D,  HV_SPD, HGV_DENS_D,  WBV_SPD, WBV_DENS_D, LANES, SLOPE_PCT FROM ' + tablename + ';') { row ->
             int pk = (int) row[0]
             SPEED_LV.put(pk, (double) row[1])
             LV.put(pk, (double) row[2])
@@ -1104,7 +1128,7 @@ class IndividualVehicleEmissionProcessData {
             SPEED_WBV.put(pk, (double) row[5])
             WBV.put(pk, (double) row[6])
             LANES.put(pk, (double) row[7])
-
+            Slope.put(pk, (double) row[8])
 
         }
 

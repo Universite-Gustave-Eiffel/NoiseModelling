@@ -88,7 +88,7 @@ class Run {
 
             // Check if shapefile exists
             if (Files.exists(Paths.get(shpPath))) {
-                RunDynamicFlow(roadName, "PROBA", 5, 180, "0");
+                RunDynamicFlow(roadName, "Poisson", 5, 180, "0");
             } else {
                 System.out.println("⚠️ Shapefile not found, skipped: " + shpPath);
             }
@@ -348,7 +348,7 @@ class Run {
 
         System.out.println("End Noise_From_Attenuation_Matrix! Current time: " + LocalTime.now());
         new Export_Table().exec(connection, [
-                "exportPath"    : String.format('/home/gao/Downloads/Noise/Paris/output/%s_%s_%s_LDAY_GEOM_%s.csv',File_name, method, duration, name),
+                "exportPath"    : String.format('/home/gao/Downloads/Noise/Paris/output_poisson/%s_%s_%s_LDAY_GEOM_%s.csv',File_name, method, duration, name),
                 "tableToExport" : "LT_GEOM"
         ])
 
