@@ -16,13 +16,9 @@
  * @Contributor Ignacio Soto, Ministry for the Ecological Transition, Spain
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
 
-
-
 import groovy.sql.Sql
-
 import org.h2.util.geometry.EWKTUtils
 import org.h2.util.geometry.JTSUtils
 import org.h2gis.api.EmptyProgressVisitor
@@ -43,7 +39,6 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -92,10 +87,8 @@ inputs = [
                 name       : 'Maximum cell size',
                 title      : 'Maximum cell size',
                 description: 'Maximum distance used to split the domain into sub-domains (in meters) (FLOAT).</br><br>' +
-                             'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation.</br></br>' +
-                             '&#128736; Default value: <b>600 </b>',
-                min        : 0, max: 1,
-                default    : 600.0,
+                             'In a logic of optimization of processing times, it allows to limit the number of objects (buildings, roads, …) stored in memory during the Delaunay triangulation',
+                default    : 600,
                 type       : Double.class
         ],
         skipCellNoSourcesMinimalDistance        : [
@@ -110,18 +103,16 @@ inputs = [
                 title      : 'Road width',
                 description: 'Set Road Width (in meters) (FLOAT).</br> </br>' +
                              'No receivers closer than road width distance will be created.</br>' +
-                        ' </br> You can set 0m if you don\'t want to insert roads in the output but still want' +
-                        ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter' +
-                             '&#128736; Default value: <b>2 </b>',
-                min        : 0, max: 1,
+                             ' </br> You can set 0 m if you don\'t want to insert roads in the output but still want' +
+                             ' to skip cells without sources using the \'Skip cell no sources minimal distance\' parameter',
+                default    : 2,
                 type       : Double.class
         ],
         buildingBuffer      : [
                 name       : 'Building buffer',
                 title      : 'Minimum distance to buildings (m)',
-                description: 'Do not add receivers closer than this distance to buildings (in meters). ' +
-                             'Default value: 2',
-                min        : 0, max: 1,
+                description: 'Do not add receivers closer than this distance to buildings (in meters)',
+                default    : 2,
                 type       : Double.class
         ],
         maxArea            : [
@@ -129,51 +120,45 @@ inputs = [
                 title      : 'Maximum Area',
                 description: 'Set Maximum Area (in m2) (FLOAT).</br> </br>' +
                              'No triangles larger than provided area will be created.</br>' +
-                             'Smaller area will create more receivers.</br> </br> ' +
-                             '&#128736; Default value: <b>2500 </b>',
-                min        : 0, max: 1,
+                             'Smaller area will create more receivers',
+                default    : 2500,
                 type       : Double.class
         ],
         height             : [
                 name       : 'Height',
                 title      : 'Height',
-                description: 'Receiver height relative to the ground (in meters) (FLOAT).</br> </br>' +
-                             '&#128736; Default value: <b>4 </b>',
-                min        : 0, max: 1,
+                description: 'Receiver height relative to the ground (in meters) (FLOAT)',
+                default    : 4,
                 type       : Double.class
         ],
         outputTableName    : [
                 name       : 'outputTableName',
                 title      : 'Name of output table',
                 description: 'Name of the output table.</br> </br>' +
-                             'Do not write the name of a table that contains a space.</br> </br>' +
-                             '&#128736; Default value: <b>RECEIVERS </b>',
-                min        : 0, max: 1,
+                             'Do not write the name of a table that contains a space',
+                default    : 'RECEIVERS',
                 type       : String.class
         ],
         isoSurfaceInBuildings: [
                 name        : 'Create IsoSurfaces over buildings',
                 title       : 'Create IsoSurfaces over buildings',
-                description : 'If enabled, isosurfaces will be visible at the location of buildings </br></br>' +
-                              '&#128736; Default value: <b>false </b>',
-                min         : 0, max: 1,
+                description : 'If enabled, isosurfaces will be visible at the location of buildings',
+                default    : false,
                 type        : Boolean.class
         ],
         fenceNegativeBuffer             : [
                 name       : 'Negative buffer',
                 title      : 'Negative buffer',
                 description: 'Reduce the fence(parameter, or sound sources and buildings extent)' +
-                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT).</br> </br>' +
-                        '&#128736; Default value: <b>0 </b>',
-                min        : 0, max: 1,
+                        ' used to generate receivers positions. You should set here the maximum propagation distance (in meters) (FLOAT)',
+                default    : 0,
                 type       : Double.class
         ],
         exportTrianglesGeometries: [
                 name        : 'In the triangles table, export triangles geometries',
                 title       : 'In the triangles table, export triangles geometries',
-                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle. </br></br>' +
-                              '&#128736; Default value: <b>false </b>',
-                min         : 0, max: 1,
+                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle',
+                default    : false,
                 type        : Boolean.class
         ],
 ]
@@ -186,12 +171,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
-
-
 
 
 // Create a spatial index if it does not exist yet on table(geomCol)
@@ -405,6 +384,4 @@ def exec(Connection connection, Map input) {
 
     return [result: receivers_table_name]
 
-
 }
-

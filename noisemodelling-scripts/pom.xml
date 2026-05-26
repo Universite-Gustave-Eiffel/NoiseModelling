@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.noise-planet</groupId>
         <artifactId>noisemodelling-parent</artifactId>
-        <version>5.0.2-SNAPSHOT</version>
+        <version>6.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>noisemodelling-scripts</artifactId>
+    <name>NoiseModelling Scripts</name>
+    <description>WebServer and groovy scripts of NoiseModelling</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <shell.executable/>
-        <shell.arg/>
-        <sphinx.command/>
+        <shell.executable />
+        <shell.arg />
+        <sphinx.command />
     </properties>
     <profiles>
         <profile>
@@ -31,7 +31,7 @@
                 <shell.arg>-c</shell.arg>
                 <!-- Check if python3 exists, if so run the commands, if not echo and exit 0 -->
                 <sphinx.command>
-                    command -v python3 >/dev/null 2>&amp;1 &amp;&amp; (
+                    command -v python3 &gt;/dev/null 2&gt;&amp;1 &amp;&amp; (
                     python3 -m venv target/venv &amp;&amp;
                     target/venv/bin/python -m pip install -r ../Docs/requirements.txt &amp;&amp;
                     target/venv/bin/sphinx-build -M html ../Docs target/sphinx
@@ -48,9 +48,145 @@
                 <shell.executable>cmd</shell.executable>
                 <shell.arg>/c</shell.arg>
                 <sphinx.command>
-                    where python >nul 2>nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
+                    where python &gt;nul 2&gt;nul &amp;&amp; ( python -m venv target/venv &amp;&amp; target\venv\Scripts\activate.bat &amp;&amp; pip install -r ..\Docs\requirements.txt &amp;&amp; sphinx-build -M html ..\Docs target\sphinx ) || echo Python not found. Skipping documentation generation.
                 </sphinx.command>
             </properties>
+        </profile>
+        <profile>
+            <id>macos-bundler</id>
+            <activation>
+                <os><family>mac</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- 1. Sanitize the version string -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>regex-property</id>
+                                <goals>
+                                    <goal>regex-property</goal>
+                                </goals>
+                                <configuration>
+                                    <name>macOS.version</name>
+                                    <value>${project.version}</value>
+                                    <!-- Regex to extract only the X.Y.Z part -->
+                                    <regex>^([0-9]+(\.[0-9]+)*).*</regex>
+                                    <replacement>$1</replacement>
+                                    <failIfNoMatch>false</failIfNoMatch>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-dependencies</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/lib</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- 2. Copy the Main JAR and the Scripts folder -->
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-app-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/lib</outputDirectory>
+                                    <resources>
+                                        <!-- The Main JAR -->
+                                        <resource>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>${project.build.finalName}.jar</include>
+                                                <include>help/**</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-help-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/macos-stage/help</outputDirectory>
+                                    <resources>
+                                        <!-- The help pages -->
+                                        <resource>
+                                            <directory>${project.build.directory}/sphinx/html/</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>create-macos-app</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}/macos-stage</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>lib/${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>org.noise_planet.noisemodelling.webserver.NoiseModellingServer</argument>
+                                        <argument>--type</argument>
+                                        <argument>dmg</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>--name</argument>
+                                        <argument>NoiseModelling</argument>
+                                        <argument>--icon</argument>
+                                        <argument>../installer/Logo_noisemodelling_square.icns</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>${parent.organization.name}</argument>
+                                        <argument>--app-version</argument>
+                                        <argument>${macOS.version}</argument>
+                                        <argument>--mac-package-name</argument>
+                                        <argument>NoiseModelling</argument>
+                                        <argument>--arguments</argument>
+                                        <argument>-u -r ""</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
     <dependencies>
@@ -205,6 +341,11 @@
                     <groupId>org.geotools</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <!-- Exclude log4j 1.2 API to avoid conflicts with slf4j -->
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-1.2-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
     </dependencies>
@@ -244,8 +385,41 @@
                 <version>3.5.1</version>
                 <executions>
                     <execution>
+                        <id>generate-functions-docs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>org.noise_planet.noisemodelling.autodoc.GenerateFunctionsDocs</argument>
+                                <argument>${project.parent.basedir}/Docs</argument>
+                                <argument>${project.basedir}/src/main/groovy/org/noise_planet/noisemodelling/scripts</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-cnossos-report</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>org.noise_planet.noisemodelling.autodoc.GenerateReferenceDeviation</argument>
+                                <argument>${project.parent.basedir}/Docs</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>generate-documentation</id>
-                        <phase>generate-resources</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -381,14 +555,6 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.11.2</version>
-                <configuration>
-                    <skip>true</skip>
                 </configuration>
             </plugin>
             <plugin>

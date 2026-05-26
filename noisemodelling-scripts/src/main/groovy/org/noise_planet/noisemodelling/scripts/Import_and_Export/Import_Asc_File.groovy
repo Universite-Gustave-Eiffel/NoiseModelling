@@ -16,7 +16,6 @@
 
 package org.noise_planet.noisemodelling.scripts.Import_and_Export
 
-
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.functions.io.utility.PRJUtil
 import org.h2gis.functions.spatial.crs.ST_SetSRID
@@ -28,7 +27,6 @@ import org.locationtech.jts.io.WKTWriter
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
@@ -44,7 +42,7 @@ inputs = [
         pathFile : [
                 name       : 'Path of the input File',
                 title      : 'Path of the ESRI Ascii Raster file',
-                description: '&#128194; Path of the ESRI Ascii Raster file you want to import, including its extension. Can be gzip compressed. </br> </br>' +
+                description: '&#128194; Path of the ESRI Ascii Raster file you want to import, including its extension. Files can be gzip compressed. </br> </br>' +
                              'For example: c:/home/receivers.asc or c:/home/receivers.asc.gz',
                 type       : String.class
         ],
@@ -52,10 +50,10 @@ inputs = [
                 name       : 'Projection identifier',
                 title      : 'Projection identifier',
                 description: '&#127757; Original projection identifier (also called SRID) of the .asc files. </br> </br>' +
-                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
-                             '&#128736; Default value: <b>4326 </b> ',
-                type       : Integer.class,
-                min        : 0, max: 1
+                             'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection)',
+                min        : 0,
+                max        : 1,
+                type       : Integer.class
         ],
         fence    : [
                 name       : 'Fence geometry',
@@ -67,9 +65,8 @@ inputs = [
         downscale: [
                 name       : 'Skip pixels on each axis',
                 title      : 'Skip pixels on each axis',
-                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT) </br> </br>' +
-                             '&#128736; Default value: <b>1.0 </b>',
-                min        : 0, max: 1,
+                description: 'Divide the number of rows and columns read by the following coefficient (FLOAT)',
+                default    : 1.0,
                 type       : Integer.class
         ]
 ]
@@ -82,10 +79,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
 
 def exec(Connection connection,Map input) {
 

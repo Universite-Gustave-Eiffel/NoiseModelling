@@ -16,12 +16,9 @@ import io.javalin.http.Handler;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.staticfiles.Location;
 import io.javalin.rendering.template.JavalinThymeleaf;
-import io.javalin.util.JavalinException;
 import io.javalin.util.JavalinLogger;
 import io.javalin.websocket.WsConfig;
-import org.apache.commons.cli.Option;
 import org.apache.log4j.Appender;
-import org.apache.log4j.PropertyConfigurator;
 import org.noise_planet.noisemodelling.VersionUtils;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.noise_planet.noisemodelling.webserver.script.ScriptFileWatchedProcess;
@@ -38,7 +35,6 @@ import java.net.URI;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -64,7 +60,6 @@ import java.util.concurrent.Future;
  */
 public class NoiseModellingServer {
     public static final String LOGGING_FILE_NAME = "webserver.log";
-    private static Appender fileLogger;
     protected final Logger logger = LoggerFactory.getLogger(NoiseModellingServer.class);
     protected Javalin app;
     protected Future<?> scriptWatch;
@@ -113,8 +108,9 @@ public class NoiseModellingServer {
      * @param args command-line arguments passed to the application. Not utilized currently.
      */
     public static void main(String[] args) {
-        PropertyConfigurator.configure(
-                Objects.requireNonNull(NoiseModellingServer.class.getResource("static/log4j.properties")));
+        // Use internal logging settings
+        Logging.initConsoleLogging();
+
         try {
             // Read configuration from command line
             Configuration configuration = Configuration.createConfigurationFromArguments(args);
@@ -123,7 +119,7 @@ public class NoiseModellingServer {
                 System.exit(0);
             }
             // Initialize additional loggers
-            fileLogger = Logging.configureFileLogger(configuration.workingDirectory, LOGGING_FILE_NAME);
+            Logging.configureLoggerFromWorkingDirectory(configuration.workingDirectory, LOGGING_FILE_NAME, true);
             // Create WebServer instance
             NoiseModellingServer noiseModellingServer = new NoiseModellingServer(configuration);
             noiseModellingServer.startServer(!configuration.skipOpenBrowser);
@@ -168,9 +164,7 @@ public class NoiseModellingServer {
                     ((AutoCloseable) serverDataSource).close();
                 }
                 // stop file logger
-                if(fileLogger != null) {
-                    fileLogger.close();
-                }
+                Logging.clearAppenders();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
@@ -196,7 +190,7 @@ public class NoiseModellingServer {
                 staticFileConfig.location = Location.CLASSPATH;
                 staticFileConfig.hostedPath = "/builder";
                 staticFileConfig.directory = "org/noise_planet/noisemodelling/webserver/static/wpsbuilder/";
-                staticFileConfig.roles = configuration.unsecure ? Set.of(Role.ANYONE) : Set.of(Role.RUNNER);
+                staticFileConfig.roles = Set.of(Role.ANYONE);
             });
             config.staticFiles.add(staticFileConfig -> {
                 staticFileConfig.location = Location.CLASSPATH;
@@ -205,11 +199,12 @@ public class NoiseModellingServer {
                 staticFileConfig.roles = Set.of(Role.ANYONE);
             });
             // Serve documentation if the folder exists
-            if(new File("help").exists()) {
+            File helpDir = getHelpDirectory();
+            if(helpDir != null) {
                 config.staticFiles.add(staticFileConfig -> {
                     staticFileConfig.location = Location.EXTERNAL;
                     staticFileConfig.hostedPath = "/builder/help";
-                    staticFileConfig.directory = "help/";
+                    staticFileConfig.directory = helpDir.getAbsolutePath();
                     staticFileConfig.roles = Set.of(Role.ANYONE);
                 });
             } else {
@@ -240,6 +235,33 @@ public class NoiseModellingServer {
         installJobsRoutes();
         installUserManagementRoutes();
         installExceptionHandlers();
+    }
+
+    /**
+     * Determines the location of the "help" directory relative to the JAR file and returns it as a File object.
+     * "Working Directory" issue with macOS App Bundles. When you double-click a .app,
+     * the working directory is not the folder where the app is located; it's usually the system root (/).
+     * @return A File object representing the "help" directory if it exists, or null if it does not exist at the expected location.
+     */
+    public File getHelpDirectory() {
+        // 1. Find where the JAR file is located, jar file is located into lib directory
+        File contentsDir;
+        try {
+            contentsDir = new File(NoiseModellingServer.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile().getParentFile();
+        } catch (Exception e) {
+            // Fallback to current directory if URI fails
+            contentsDir = new File(".");
+        }
+
+        // 2. Define the help directory relative to the JAR
+        File helpDir = new File(contentsDir, "help");
+        // 3. Check if the help directory exists
+        if (helpDir.exists() && helpDir.isDirectory()) {
+            return helpDir;
+        } else {
+            logger.warn("Help directory not found at expected location: {}", helpDir.getAbsolutePath());
+            return null;
+        }
     }
 
     protected void handleBuilderIndex(Context ctx) {

@@ -55,7 +55,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
 
@@ -108,7 +108,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
         new Import_Folder().exec(connection,
@@ -120,7 +120,7 @@ class TestTutorials extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("BUILDINGS")))
 
         // Check database
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("SOURCES"))
        assertTrue(res.contains("BUILDINGS"))
@@ -131,7 +131,7 @@ class TestTutorials extends JdbcTestCase {
 
 
         // Check database
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("RECEIVERS"))
 
@@ -145,7 +145,7 @@ class TestTutorials extends JdbcTestCase {
                                                               "confDiffHorizontal"   : false,
                                                               "frequencyFieldPrepend": "LW"])
 
-        res =  new Display_Database().exec(connection, [:])
+        res =  new Display_Database().exec(connection, ["showColumns":true])
 
         // Check database
         def output = new Table_Visualization_Data().exec(connection, ["tableName": NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME])
@@ -162,7 +162,7 @@ class TestTutorials extends JdbcTestCase {
         Sql sql = new Sql(connection)
 
         // Check empty database
-        Object res = new Display_Database().exec(connection, [:])
+        Object res = new Display_Database().exec(connection, ["showColumns":true])
         assertTrue(res.contains("Database is Empty"))
 
         new Import_File().exec(connection, [
@@ -187,7 +187,7 @@ class TestTutorials extends JdbcTestCase {
 
 
 
-        res = new Display_Database().exec(connection, [:])
+        res = new Display_Database().exec(connection, ["showColumns":true])
 
         assertTrue(res.contains("BUILDINGS"))
         assertTrue(res.contains("DIRECTIVITY"))
@@ -251,28 +251,28 @@ class TestTutorials extends JdbcTestCase {
 
         if (!zipFilePath.toFile().exists()) {
             // Download the file
-            InputStream ins = new URL(fileUrl).openStream();
-            Files.copy(ins, zipFilePath);
+            try (InputStream ins = new URL(fileUrl).openStream()) {
+                Files.copy(ins, zipFilePath);
+            }
 
             // Unzip the file
-            ZipFile zipFile = new ZipFile(zipFilePath.toFile());
-            zipFile.stream().forEach({ entry ->
-                try {
-                    Path entryPath = tempDataDir.resolve(entry.getName());
-                    if (entry.isDirectory()) {
-                        Files.createDirectories(entryPath);
-                    } else {
-                        Files.createDirectories(entryPath.getParent());
-                        InputStream insz = zipFile.getInputStream(entry);
-                        Files.copy( insz, entryPath );
+            try (ZipFile zipFile = new ZipFile(zipFilePath.toFile())) {
+                zipFile.stream().forEach({ entry ->
+                    try {
+                        Path entryPath = tempDataDir.resolve(entry.getName());
+                        if (entry.isDirectory()) {
+                            Files.createDirectories(entryPath);
+                        } else {
+                            Files.createDirectories(entryPath.getParent());
+                            try (InputStream insz = zipFile.getInputStream(entry)) {
+                                Files.copy(insz, entryPath);
+                            }
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            // Clean up
-            zipFile.close();
+                });
+            }
         }
         new Import_OSM().exec(connection, Map.of(
                 "pathFile", osmFile,

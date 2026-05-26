@@ -17,22 +17,20 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.Statement
 
 title = 'Delete all database tables'
-description = '&#10145;&#65039; Delete all non-system tables of the database. </br> </br>'+
+description = '&#10145;&#65039; Delete all non-system tables of the database.</br> </br>'+
               '&#x1F6A8; Use with caution'
 
 inputs = [
         areYouSure: [
-                name: 'Are you sure ?',
+                name: 'Are you sure?',
                 title: 'Are you sure?',
                 description: 'Are you sure you want to delete all the tables in the database?',
                 type: Boolean.class
@@ -47,8 +45,6 @@ outputs = [
                 type: String.class
         ]
 ]
-
-
 
 def exec(Connection connection, input) {
 
@@ -103,4 +99,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-

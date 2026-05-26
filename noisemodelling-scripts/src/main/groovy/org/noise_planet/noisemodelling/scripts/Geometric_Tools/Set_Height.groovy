@@ -16,20 +16,16 @@
 
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryMetaData
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
-title = 'Set_Height'
+title = 'Set Height'
 description = '&#10145;&#65039; Update the geometry by adding a height from the column in the input table that contains the heights or elevations or from a static value.'
 
 inputs = [
@@ -122,7 +118,4 @@ def exec(Connection connection, Map input) {
         return resultString
     }
 
-
 }
-
-

@@ -15,24 +15,19 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.GeometryTableUtilities
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
-title = 'Convert screens to building format.'
-description = '&#10145;&#65039; Convert the screens to the building format. ' +
+title = 'Convert screens to building format'
+description = '&#10145;&#65039; Convert the screens to the building format.' +
               '<hr>' +
               'A width of 10 cm will be defined. If you also give a building table, this WPS script allows you to merge the two layers together. </br> </br> ' +
               'Tables must be projected in a same metric coordinate system (SRID). Use "Change_SRID" WPS Block if needed. </br> </br>' +
@@ -52,7 +47,8 @@ inputs = [
                 type       : String.class
         ],
         tableScreens : [
-                name       : 'Screens table name', title: 'Screens table name',
+                name       : 'Screens table name', 
+                title      : 'Screens table name',
                 description: '<b>Name of the Screens table.</b>  </br> </br>' +
                              'The table must contain: </br>' +
                              '- <b> THE_GEOM </b> : the 2D geometry of the screens (POLYGON or MULTIPOLYGON). </br>' +
@@ -69,10 +65,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
 
 // main function of the script
 def exec(Connection connection, input) {
@@ -188,4 +180,3 @@ def exec(Connection connection, input) {
     return resultString
 
 }
-

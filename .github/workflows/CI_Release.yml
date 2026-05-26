@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       # Checkout the source code of the project
       - name: Checkout
@@ -33,16 +34,15 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       # Configure git user in order to sign release with OrbisGIS user.
       - name: Configure Git User
         run: |
           git config user.email "contact@noise-planet.org"
           git config user.name Noise-Planet
-
-      # Test build
-      - name: Build test
-        run: mvn -ntp clean validate package test javadoc:test-javadoc javadoc:jar
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -50,14 +50,25 @@ jobs:
       - name: Create Release Branch
         run: |
           git checkout -b release/v${{ github.event.inputs.releaseVersion }}
-      - name: Prepare Release
+      - name: Prepare and perform Release
         # -DpushChanges=false ensures Maven doesn't try to push to main automatically
         run: |
           mvn -B release:prepare \
             -DreleaseVersion=${{ github.event.inputs.releaseVersion }} \
             -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }} \
             -DpushChanges=false \
-            -Darguments="-DskipTests -P!use-snapshots"
+            -P-use-snapshots \
+            -Darguments="-P-use-snapshots"
+          
+          # 2. Temporarily switch to the tag to deploy the Release version
+          git checkout v${{ github.event.inputs.releaseVersion }}
+
+          # 3. Deploy the Release version (the code currently checked out)
+          # We use -DskipTests because prepare already ran them.
+          mvn clean javadoc:jar deploy -P-use-snapshots -DskipTests -B
+          
+          # 4. Switch back to the release branch to continue the workflow
+          git checkout release/v${{ github.event.inputs.releaseVersion }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
@@ -84,9 +95,16 @@ jobs:
     uses: ./.github/workflows/build_windows.yml
     with:
       git_ref: v${{ github.event.inputs.releaseVersion }}
-
+      use_snapshots: false
+      run_unit_tests: false
+  build_macos_dmg:
+    needs: prepare_release
+    uses: ./.github/workflows/build_macos.yml
+    with:
+      git_ref: v${{ github.event.inputs.releaseVersion }}
+      use_snapshots: false
   upload_release:
-    needs: [prepare_release, build_windows_exe]
+    needs: [prepare_release, build_windows_exe, build_macos_dmg]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -99,16 +117,16 @@ jobs:
         run: |
           # Checkout the release tag to be sure we build the exact release code
           git checkout v${{ github.event.inputs.releaseVersion }}
-          mvn package -DskipTests
-          
-          mkdir NoiseModelling
-          sudo apt-get update && sudo apt-get install -y libarchive-tools
-          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
-          zip -r NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip NoiseModelling/
+          mvn clean package -DskipTests -P-use-snapshots
       - name: Download windows Artifact
         uses: actions/download-artifact@v4
         with:
           name: windows-installer
+          path: release-artifacts
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build_macos_dmg.outputs.installer_name }}
           path: release-artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -116,8 +134,9 @@ jobs:
           tag_name: v${{ github.event.inputs.releaseVersion }}
           name: Release ${{ github.event.inputs.releaseVersion }}
           files: |
-            NoiseModelling-${{ github.event.inputs.releaseVersion }}.zip
+            noisemodelling-scripts/target/NoiseModelling_${{ github.event.inputs.releaseVersion }}.zip
             release-artifacts/${{ needs.build_windows_exe.outputs.installer_name }}
+            release-artifacts/${{ needs.build_macos_dmg.outputs.installer_name }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

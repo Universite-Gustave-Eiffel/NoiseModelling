@@ -47,29 +47,42 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Building
-        run: mvn test install javadoc:test-javadoc javadoc:jar package -B
+        run: mvn test install javadoc:jar package -B
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DB: noisemodelling_db
           POSTGRES_USER: noisemodelling
           POSTGRES_PASSWORD: noisemodelling
-      - name: Maven Deploy
+      - name: Unzip production artifacts
+        run: |
+          # 1. Unzip into a temporary directory
+          unzip -q noisemodelling-scripts/target/*.zip -d tmp_extract
+          
+          # 2. Create target directory
+          mkdir NoiseModelling
+          
+          # 3. Move contents from the subfolder to the target
+          # The asterisk-slash-asterisk moves everything inside the first subfolder
+          mv tmp_extract/*/* NoiseModelling/
+          
+          # 4. Cleanup
+          rm -rf tmp_extract
+      - name: Integration test, use ScriptRunner with H2GIS
+        run: |
+          bin/ScriptRunner -w /tmp/h2gis_ws -s get_started_tutorial_complex.groovy
+        working-directory: NoiseModelling
+      - name: Integration test, use ScriptRunner with PostGIS
+        run: |
+          bin/ScriptRunner -w /tmp/postgis_ws -s get_started_tutorial_complex.groovy --host localhost --user noisemodelling --password noisemodelling --port 5432 --database noisemodelling_db
+        working-directory: NoiseModelling
+      - name: Maven Deploy snapshot
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         if: ${{ (env.MAVEN_USERNAME != null) && (github.ref == 'refs/heads/main') }}
-        run: mvn clean deploy -B
-      - name: Install bsdtar
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libarchive-tools
-      - name: Unzip production artifacts
-        run: |
-          mkdir NoiseModelling
-          # bsdtar handles .zip and supports --strip-components
-          bsdtar -xvf noisemodelling-scripts/target/*.zip --strip-components=1 -C NoiseModelling
+        run: mvn clean -DskipTests deploy -B
       - name: Generate Sanitized Artifact Name
         id: sanitize
         run: |

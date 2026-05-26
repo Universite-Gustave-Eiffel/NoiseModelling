@@ -16,8 +16,6 @@
  */
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
-
 import groovy.sql.Sql
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.api.ProgressVisitor
@@ -35,7 +33,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVis
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime
@@ -57,9 +54,9 @@ inputs = [
                 name       : 'Buildings table name',
                 title      : 'Buildings table name',
                 description: '&#127968; Name of the Buildings table </br> </br>' +
-                        'The table must contain: </br> <ul>' +
-                        '<li> <b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON) </li>' +
-                        '<li> <b> HEIGHT </b>: the height of the building (FLOAT)</li> </ul>',
+                             'The table must contain: </br> <ul>' +
+                             '<li> <b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON) </li>' +
+                             '<li> <b> HEIGHT </b>: the height of the building (FLOAT)</li> </ul>',
                 type       : String.class
         ],
         tableRoads              : [
@@ -75,7 +72,8 @@ inputs = [
                         '<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
-                        '<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly ave' +
+                        'rage heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>' +
                         '<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>' +
@@ -115,7 +113,8 @@ inputs = [
                         '<li><b> SLOPE </b> : Slope (in %) of the road section. If the field is not filled in, the LINESTRING z-values will be used to calculate the slope and the traffic direction (way field) will be force to 3 (bidirectional). (DOUBLE)</li>' +
                         '<li><b> WAY </b> : Define the way of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill (INTEGER)</li>' +
                         '</ul></br>',
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tableSourceDirectivity          : [
                 name       : 'Source directivity table name',
@@ -127,7 +126,8 @@ inputs = [
                         '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
                         '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
                         '<li> <b> LW63, LW125, LW250, LW500, LW1000, LW2000, LW4000, LW8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tablePeriodAtmosphericSettings          : [
                 name       : 'Atmospheric settings table name for each time period',
@@ -142,7 +142,8 @@ inputs = [
                         '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
                         '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
                         '</ul>' ,
-                min        : 0, max: 1, type: String.class
+                min        : 0, max: 1, 
+                type: String.class
         ],
         tableReceivers          : [
                 name       : 'Receivers table name',
@@ -179,31 +180,32 @@ inputs = [
                 title      : 'Wall absorption coefficient',
                 description: 'Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully absorbent")' +
                         '&#128736; Default value: <b>0.1 </b> ',
-                min        : 0, max: 1, type: Double.class
+                min        : 0, max: 1, 
+                type: Double.class
         ],
         confReflOrder           : [
                 name       : 'Order of reflexion',
                 title      : 'Order of reflexion',
                 description: 'Maximum number of reflections to be taken into account (INTEGER). </br> </br>' +
-                        '&#x1F6A8; Adding 1 order of reflexion can significantly increase the processing time. </br> </br>' +
-                        '&#128736; Default value: <b>1 </b>',
-                min        : 0, max: 1, type: Integer.class
+                             '&#x1F6A8; Adding 1 order of reflexion can significantly increase the processing time',
+                default    : 1, 
+                type: Integer.class
         ],
         confMaxSrcDist          : [
                 name       : 'Maximum source-receiver distance',
                 title      : 'Maximum source-receiver distance',
                 description: 'Maximum distance between source and receiver (FLOAT, in meters). </br> </br>' +
-                        '&#128736; Default value: <b>150 </b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from traffic" width="95%" align="center">',
-                min        : 0, max: 1, type: Double.class
+                             '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from traffic" width="95%" align="center">',
+                default    : 150, 
+                type: Double.class
         ],
         confMaxReflDist         : [
                 name       : 'Maximum source-reflexion distance',
                 title      : 'Maximum source-reflexion distance',
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
-                        '&#128736; Default value: <b>50 </b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from traffic" width="95%" align="center">',
-                min        : 0, max: 1, type: Double.class
+                             '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from traffic" width="95%" align="center">',
+                default    : 50, 
+                type: Double.class
         ],
         confMinWallReflDist: [
                 name       : 'Ignore close reflections',
@@ -217,65 +219,60 @@ inputs = [
                 name       : 'Thread number',
                 title      : 'Thread number',
                 description: 'Number of thread to use on the computer (INTEGER). </br> </br>' +
-                        '&#128736; Default value: <b>0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used</b>',
-                min        : 0, max: 1, type: Integer.class
+                             '&#128736; Default value: <b>0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used</b>',
+                default    : 0, 
+                type: Integer.class
         ],
         confDiffVertical        : [
                 name       : 'Diffraction on vertical edges',
                 title      : 'Diffraction on vertical edges',
-                description: 'Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1,
+                description: 'Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only',
+                default    : false,
                 type       : Boolean.class
         ],
         confDiffHorizontal      : [
                 name       : 'Diffraction on horizontal edges',
                 title      : 'Diffraction on horizontal edges',
-                description: 'Compute or not the diffraction on horizontal edges. </br> </br>' +
-                        '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1,
+                description: 'Compute or not the diffraction on horizontal edges',
+                default    : false,
                 type       : Boolean.class
         ],
         confExportSourceId      : [
-                name       : 'keep source id',
+                name       : 'Keep source id',
                 title      : 'Separate receiver level by source identifier',
-                description: 'Keep source identifier in output in order to get noise contribution of each noise source. </br> </br>' +
-                        '&#128736; Default value: <b> false </b>',
-                min        : 0, max: 1,
+                description: 'Keep source identifier in output in order to get noise contribution of each noise source. When only the source geometry is given, the attenuation between each pair of "source-receiver" points is specified (commonly referred to as the "attenuation matrix")',
+                default    : false,
                 type: Boolean.class
         ],
         confHumidity            : [
                 name       : 'Relative humidity',
                 title      : 'Relative humidity',
-                description: '&#127783; Humidity for noise propagation (%) [0,100]. </br> </br>' +
-                        '&#128736; Default value: <b>70</b>',
-                min        : 0, max: 1,
+                description: '&#127783; Humidity for noise propagation (%) [0,100]',
+                default    : 70,
                 type       : Double.class
         ],
         confTemperature         : [
                 name       : 'Temperature',
                 title      : 'Air temperature',
-                description: '&#127777; Air temperature (°C). </br> </br>' +
-                        '&#128736; Default value: <b> 15</b>',
-                min        : 0, max: 1,
+                description: '&#127777; Air temperature (°C)',
+                default    : 15,
                 type       : Double.class
         ],
         confFavourableOccurrencesDefault: [
                 name       : 'Probability of occurrences',
                 title      : 'Probability of occurrences',
-                description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. </br> </br>' +
-                        '&#128736; Default value: <b>0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5</b> </br> </br>' +
-                        '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from traffic" width="95%" align="center">',
-                min        : 0, max: 1,
+                description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one</br> </br>' +
+                             '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from traffic" width="95%" align="center">',
+                default    : '0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5',
                 type       : String.class
         ],
         confRaysName            : [
                 name       : '',
                 title      : 'Export scene',
                 description: 'Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml) </br> </br>' +
-                        'You can set a table name here in order to save all the rays computed by NoiseModelling. </br> </br>' +
-                        'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
-                        '&#128736; Default value: <b>empty (do not keep rays)</b>',
+                             'You can set a table name here in order to save all the rays computed by NoiseModelling. </br> </br>' +
+                             'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
+                             '&#128736; Default value: <b>empty (do not keep rays)</b>',
                 min        : 0, max: 1,
                 type: String.class
         ],
@@ -283,23 +280,22 @@ inputs = [
                 name       : 'Max Error (dB)',
                 title      : 'Max Error (dB)',
                 description: 'Threshold for excluding negligible sound sources in calculations.' +
-                        'Default value: <b>0.1 This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.</b>',
-                min        : 0, max: 1,
+                             '<b>This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.</b>',
+                default    : 0.1,
                 type       : Double.class
         ],
         frequencyFieldPrepend            : [
                 name       : 'Frequency field name',
                 title      : 'Frequency field name',
-                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.' +
-                        '&#128736; Default value: <b>HZ</b>',
-                min        : 0, max: 1, type: String.class
+                description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000',
+                default    : 'HZ',
+                type: String.class
         ],
         coefficientVersion            : [
                 name       : 'Coefficient version',
                 title      : 'Coefficient version',
-                description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020) </br> </br>' +
-                        '&#128736; Default value: <b>2</b>',
-                min        : 0, max: 1,
+                description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020)',
+                default    : 2,
                 type       : Integer.class
         ]
 ]
@@ -312,9 +308,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 
 // main function of the script
@@ -341,8 +334,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // -------------------
 
     String sources_table_name = input['tableRoads']
-    // do it case-insensitive
-    sources_table_name = sources_table_name.toUpperCase()
+
     // Check if srid are in metric projection.
     int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
     if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
@@ -356,14 +348,13 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name))
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name, dbType))
     if (pkIndex < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
 
     String receivers_table_name = input['tableReceivers']
-    // do it case-insensitive
-    receivers_table_name = receivers_table_name.toUpperCase()
+
     //Get the geometry field of the receiver table
     TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
     List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
@@ -371,23 +362,22 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
     }
     // Check if srid are in metric projection and are all the same.
-    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
+    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridReceivers)) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
     if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
 
 
     //Get the primary key field of the receiver table
-    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name))
+    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name, dbType))
     if (pkIndexRecv < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
     }
 
     String building_table_name = input['tableBuilding']
-    // do it case-insensitive
-    building_table_name = building_table_name.toUpperCase()
+
     // Check if srid are in metric projection and are all the same.
-    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridBuildings)) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
     if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
@@ -395,10 +385,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String dem_table_name = ""
     if (input['tableDEM']) {
         dem_table_name = input['tableDEM']
-        // do it case-insensitive
-        dem_table_name = dem_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
-        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
+        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridDEM)) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
         if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
@@ -407,10 +396,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
-        // do it case-insensitive
-        ground_table_name = ground_table_name.toUpperCase()
+
         // Check if srid are in metric projection and are all the same.
-        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
+        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridGROUND)) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
         if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
@@ -419,8 +407,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String tableSourceDirectivity = ""
     if (input['tableSourceDirectivity']) {
         tableSourceDirectivity = input['tableSourceDirectivity']
-        // do it case-insensitive
-        tableSourceDirectivity = tableSourceDirectivity.toUpperCase()
     }
 
     boolean recordProfile = false
@@ -542,7 +528,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     }
 
     // Building height field name
-    pointNoiseMap.setHeightField("HEIGHT")
+    pointNoiseMap.setHeightField(TableLocation.capsIdentifier("height", dbType))
     // Import table with Snow, Forest, Grass, Pasture field polygons. Attribute G is associated with each polygon
     if (ground_table_name != "") {
         pointNoiseMap.setSoilTableName(ground_table_name)

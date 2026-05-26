@@ -16,10 +16,7 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -32,7 +29,6 @@ import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -41,7 +37,7 @@ import java.util.stream.Collectors
 title = 'Compute road emission noise map from road table.'
 description = '&#10145;&#65039; Compute Road Emission Noise Map from Day Evening Night traffic flow rate and speed estimates (specific format, see input details). </br>' +
               '<hr>' +
-              '&#x2705; The output table is called: <b>LW_ROADS </b> '
+              '&#x2705; The output table is called: <b>LW_ROADS</b>'
 
 inputs = [
         tableRoads: [
@@ -52,28 +48,28 @@ inputs = [
                         " This function recognize the following columns (* mandatory) : </br><ul>" +
                         '<li> <b> PK </b> : If there is a primary key defined, it will be copied with the same name and set as a primary for the output table </li> ' +
                         '<li><b> IDSOURCE </b> : an identifier, if present will be copied as is. It is expected if you will use LW_ROADS as SOURCES_EMISSION in the Noise_Level_From_Source script input (INTEGER)</li>' +
-                        "<li><b> PERIOD </b> Any text that could be time period ex. D, E, N, DEN (Varchar), if present will be copied as is</li>" +
-                        '<li><b> LV </b>  : Hourly average light vehicle count (DOUBLE)</li>' +
+                        "<li><b> PERIOD </b> : Any text that could be time period ex. D, E, N, DEN (Varchar), if present will be copied as is</li>" +
+                        '<li><b> LV </b> : Hourly average light vehicle count (DOUBLE)</li>' +
                         '<li><b> MV </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (DOUBLE)</li>' +
-                        '<li><b> HGV </b>:  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
-                        '<li><b> WAV </b>:  Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
-                        '<li><b> WBV </b>:  Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
-                        '<li><b> LV_SPD </b> :  Hourly average light vehicle speed (DOUBLE)</li>' +
-                        '<li><b> MV_SPD </b> :  Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
-                        '<li><b> HGV_SPD </b> :  Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
-                        '<li><b> WAV_SPD </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
-                        '<li><b> WBV_SPD </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> HGV </b> : Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (DOUBLE)</li>' +
+                        '<li><b> WAV </b> : Hourly average mopeds, tricycles or quads &le; 50 cc count (DOUBLE)</li>' +
+                        '<li><b> WBV </b> : Hourly average motorcycles, tricycles or quads > 50 cc count (DOUBLE)</li>' +
+                        '<li><b> LV_SPD </b> : Hourly average light vehicle speed (DOUBLE)</li>' +
+                        '<li><b> MV_SPD </b> : Hourly average medium heavy vehicles speed (DOUBLE)</li>' +
+                        '<li><b> HGV_SPD </b> : Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
+                        '<li><b> WAV_SPD </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
+                        '<li><b> WBV_SPD </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
                         "<li><b> LV_D </b><b>LV_E </b><b>LV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> MV_D </b><b>MV_E </b><b>MV_N </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> :  Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WAV_D </b><b> WAV_E </b><b> WAV_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> :  Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> :  Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> :  Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> :  Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> :  Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
-                        "<li><b> PVMT </b> :  CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>" +
+                        "<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> : Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> WAV_D </b><b> WAV_E </b><b> WAV_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> WBV_D </b><b> WBV_E </b><b> WBV_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> LV_SPD_D </b><b> LV_SPD_E </b><b>LV_SPD_N </b> : Hourly average light vehicle speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> MV_SPD_D </b><b> MV_SPD_E </b><b>MV_SPD_N </b> : Hourly average medium heavy vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>" +
                         "<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>" +
                         "<li><b> PM_STUD </b> : Average proportion of vehicles equipped with studded tyres during TS_STUD period (0-1) (DOUBLE)</li>" +
                         "<li><b> JUNC_DIST </b> : Distance to junction in meters (DOUBLE)</li>" +
@@ -86,13 +82,11 @@ inputs = [
                 coefficientVersion            : [
                         name       : 'Coefficient version',
                         title      : 'Coefficient version',
-                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020) </br> </br>' +
-                                '&#128736; Default value: <b>2</b>',
-                        min        : 0, max: 1,
+                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020)',
+                        default    : 2,
                         type       : Double.class
                 ]
 ]
-
 
 outputs = [
         result: [
@@ -102,8 +96,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
 
 
 // main function of the script
@@ -296,5 +288,3 @@ def exec(Connection connection, Map input) {
     return resultString
 
 }
-
-

@@ -51,12 +51,13 @@ Academic labs 🧪
 Private company 🏭
 -------------------
 
-* `Archimethod SA`_ (🇨🇭)
+* `UrbanMetrix`_ (previously `Archimethod SA`_) (🇨🇭)
 * `OrbiWise`_ (🇨🇭)
 * `Neovya`_ (🇫🇷)
 * `Quiet Places Ltd`_ (🇬🇧)
 * `MobiLysis`_ (🇨🇭)
 
+.. _UrbanMetrix: https://urbanmetrix.com/
 .. _Archimethod SA: https://archi-method.ch/
 .. _OrbiWise: https://orbiwise.com/
 .. _Neovya: https://www.neovya.com/

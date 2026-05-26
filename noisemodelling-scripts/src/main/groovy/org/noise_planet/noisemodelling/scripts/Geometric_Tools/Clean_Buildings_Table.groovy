@@ -15,26 +15,21 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Clean BUILDINGS Table'
 description = '&#10145;&#65039; Clean the BUILDINGS table, avoiding overlapping areas and unclosed polygons.' +
               '<hr>' +
-              'NoiseModelling propagation code does not support well intersecting polygons </br> </br>' +
+              'NoiseModelling propagation code does not support intersecting polygons well </br> </br>' +
               '&#x2705;  The input table will be erased and replaced by the cleaned one.'
 
 inputs = [
@@ -58,10 +53,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
 
 // main function of the script
 def exec(Connection connection, input) {

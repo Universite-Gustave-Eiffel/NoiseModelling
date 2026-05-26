@@ -1,20 +1,28 @@
 /**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
  * @Author Tomáš Anda
  */
 
 package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.h2gis.utilities.GeometryTableUtilities
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 import java.sql.SQLException
 
@@ -28,23 +36,21 @@ inputs = [
         tableName: [
                 title      : 'Name of the table',
                 name       : 'Name of the table',
-                description: 'Name of the table on which geometries will be simplified.', 
+                description: 'Name of the table on which geometries will be simplified', 
                 type       : String.class
         ],
         distanceTolerance: [
                 name       : 'Distance tolerance',
                 title      : 'Distance tolerance',
-                description: 'Sets the tolerance distance for the simplification (FLOAT). </br> </br> ' +
-                             '&#128736; Default value: <b>1 </b>',
-                min        : 0, max: 1,
+                description: 'Sets the tolerance distance for the simplification (FLOAT)',
+                default    : 1,
                 type       : Double.class
         ],
         preserveTopology: [
                 title      : 'Preserve topology ?',
                 name       : 'Preserve topology ?',
-                description: 'Do you want to preserve topology? </br> </br>' + 
-                             '&#128736; Default value: <b>false </b>',
-                min        : 0, max: 1,
+                description: 'Do you want to preserve topology?',
+                default    : false,
                 type       : Boolean.class
         ]
 ]
@@ -57,9 +63,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
 
 
 def exec(Connection connection, Map input) {
@@ -115,4 +118,3 @@ def exec(Connection connection, Map input) {
 
     return resultString
 }
-

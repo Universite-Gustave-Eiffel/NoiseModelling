@@ -15,13 +15,9 @@
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
 
-
 package org.noise_planet.noisemodelling.scripts.Receivers
 
-
-
 import groovy.sql.Sql
-
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
@@ -32,7 +28,6 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.sql.Connection
 
 title = 'Random Grid'
@@ -63,16 +58,15 @@ inputs = [
                 name       : 'Number of receivers',
                 title      : 'Number of receivers',
                 description: 'Number of receivers to return </br> </br>' +
-                             '&#128736; Default value: <b>100</b> </br> </br>'+
                              '<img src="wps_images/receivers_random_nReceivers.png" alt="Number of receivers" width="95%" align="center">',
+                default    : 100,
                 type       : Integer.class
         ],
         height           : [
                 name :       'Height',
                 title:       'Height', 
-                description: 'Height of receivers (in meters) (FLOAT)</br> </br>' +
-                             '&#128736; Default value: <b>4 </b> ',
-                min  : 0, max: 1,
+                description: 'Height of receivers (in meters) (FLOAT)',
+                default    : 4,
                 type : Double.class
         ],
         fence            : [
@@ -94,7 +88,6 @@ inputs = [
         ]
 ]
 
-
 outputs = [
         result: [
                 name       : 'Created table',
@@ -103,13 +96,6 @@ outputs = [
                 type       : String.class
         ]
 ]
-
-
-
-
-
-
-
 
 
 def exec(Connection connection,Map input) {
