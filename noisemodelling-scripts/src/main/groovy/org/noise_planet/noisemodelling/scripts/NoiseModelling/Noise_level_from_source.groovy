@@ -266,6 +266,13 @@ inputs = [
                 description: 'Frequency field name prepend. Ex. for 1000 Hz frequency the default column name is HZ1000.',
                 default    : 'HZ',
                 type: String.class
+        ],
+        confLineSourceSpacingRatio: [
+                name       : 'Line source spacing ratio',
+                title      : 'Line source spacing ratio',
+                description: 'Dictates the density of source points created from a line sound source. A higher value means more points and finer discretization.',
+                default    : 2.0,
+                type       : Double.class
         ]
 ]
 
@@ -432,6 +439,11 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         frequencyFieldPrepend = input['frequencyFieldPrepend'] as String
     }
 
+    double confLineSourceSpacingRatio = input.getOrDefault("confLineSourceSpacingRatio", 2.0) as Double
+    if (confLineSourceSpacingRatio <= 0) {
+        throw new IllegalArgumentException("Error : confLineSourceSpacingRatio must be greater than 0.")
+    }
+
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
@@ -479,6 +491,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     pointNoiseMap.setComputeVerticalDiffraction(compute_horizontal_diffraction)
     pointNoiseMap.setSoundReflectionOrder(reflexion_order)
     pointNoiseMap.setFrequencyFieldPrepend(frequencyFieldPrepend)
+    pointNoiseMap.getSceneInputSettings().setLineSourceSpacingRatio(confLineSourceSpacingRatio)
 
 
     // Set environmental parameters
