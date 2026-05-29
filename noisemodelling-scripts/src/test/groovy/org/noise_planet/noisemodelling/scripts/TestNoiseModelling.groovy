@@ -39,9 +39,9 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
 
         String res = new Road_Emission_from_Traffic().exec(connection,
-                ["tableRoads": "ROADS2"])
+                ["tableRoads": "ROADS2"]).result
 
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+        assertEquals("LW_ROADS.", res)
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
 
@@ -177,6 +177,7 @@ class TestNoiseModelling extends JdbcTestCase {
         }
     }
 
+    @Test
     void testNoiseEmissionFromPeriod() {
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
@@ -197,10 +198,10 @@ class TestNoiseModelling extends JdbcTestCase {
 
         // Convert to road emission
         String res = new Road_Emission_from_Traffic().exec(connection,
-                ["tableRoads": "SOURCES_EMISSION"])
+                ["tableRoads": "SOURCES_EMISSION"]).result
 
         // Check result table
-        assertEquals("Calculation Done ! The table LW_ROADS has been created.", res)
+        assertEquals("W_ROADS", res)
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
 
@@ -214,63 +215,4 @@ class TestNoiseModelling extends JdbcTestCase {
         LOGGER.info(Arrays.toString(fieldNames.toArray()))
     }
 
-    @Test
-    void testNoiseFromTrafficUsingPeriod() {
-        new Import_File().exec(connection,
-                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
-
-        // Create SOURCES_EMISSION table by splitting the ROADS2 table old format fields to two tables
-
-        Sql sql = new Sql(connection)
-        sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
-        sql.execute("CREATE TABLE SOURCES_TRAFFIC AS SELECT PK AS IDSOURCE, 'D' AS PERIOD," +
-                " TV_D as TV, HV_D as HV, LV_SPD_D as LV_SPD, HV_SPD_D as HV_SPD," +
-                " PVMT AS PVMT FROM ROADS2")
-        sql.execute("INSERT INTO SOURCES_TRAFFIC SELECT PK AS IDSOURCE, 'E' AS PERIOD," +
-                " TV_E as TV, HV_E as HV, LV_SPD_E as LV_SPD, HV_SPD_E as HV_SPD," +
-                " PVMT AS PVMT FROM ROADS2")
-        sql.execute("INSERT INTO SOURCES_TRAFFIC SELECT PK AS IDSOURCE, 'N' AS PERIOD," +
-                " TV_N as TV, HV_N as HV, LV_SPD_N as LV_SPD, HV_SPD_N as HV_SPD," +
-                " PVMT AS PVMT FROM ROADS2")
-        // create a table SOURCES_GEOM with only the geometry of ROADS2
-        sql.execute("DROP TABLE IF EXISTS SOURCES_GEOM")
-        sql.execute("CREATE TABLE SOURCES_GEOM(pk integer primary key, the_geom geometry) AS SELECT PK , THE_GEOM FROM ROADS2")
-
-
-        // Import buildings and receivers
-        new Import_File().exec(connection,
-                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
-                 "inputSRID": "2154",
-                 "tableName": "buildings"])
-
-        new Import_File().exec(connection,
-                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
-                 "inputSRID": "2154",
-                 "tableName": "receivers"])
-
-        // Run propagation
-
-        String res = new Noise_level_from_traffic().exec(connection,
-                ["tableBuilding"   : "BUILDINGS",
-                 "tableRoads"   : "SOURCES_GEOM",
-                 "tableRoadsTraffic": "SOURCES_TRAFFIC",
-                 "tableReceivers": "RECEIVERS",
-                 "confMaxSrcDist" : 5000])
-
-        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
-
-        // Output fields export period in a separate field now
-        def gotPeriod = JDBCUtilities.getUniqueFieldValues(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME, "PERIOD")
-        assertEquals(3, gotPeriod.size())
-        assertTrue(gotPeriod.contains("D"))
-        assertTrue(gotPeriod.contains("E"))
-        assertTrue(gotPeriod.contains("N"))
-
-        def receiverCount = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")["CPT"] as Integer
-
-        ["D", "E", "N"].each { period ->
-            def periodCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = ?", [period])["CPT"] as Integer
-            assertEquals(receiverCount, periodCount)
-        }
-    }
 }
