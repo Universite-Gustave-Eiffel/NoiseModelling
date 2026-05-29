@@ -32,7 +32,7 @@ import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Folder
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.scripts.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
 import org.slf4j.Logger
@@ -80,10 +80,11 @@ class TestTutorials extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("dem.geojson").getPath(),
                  "inputSRID": "2154"])
 
+        new Road_Emission_from_Traffic().exec(connection, [tableRoads : "ROADS2"])
 
-        new Noise_level_from_traffic().exec(connection,
+        new Noise_level_from_source().exec(connection,
                 ["tableBuilding"        : "BUILDINGS",
-                 "tableRoads"           : "ROADS2",
+                 "tableSources"         : "LW_ROADS",
                  "tableReceivers"       : "RECEIVERS",
                  "tableGroundAbs"       : "ground_type",
                  "tableDEM"             : "dem",
@@ -101,6 +102,23 @@ class TestTutorials extends JdbcTestCase {
         def minLevel = sql.firstRow("SELECT MIN(LW1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
 
         assertNotSame(-99.0, minLevel)
+
+
+        def periods = sql.rows("SELECT DISTINCT PERIOD FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
+        def periodValues = periods.collect {
+            it.PERIOD
+        }
+        assertTrue(periodValues.contains("D"))
+        assertTrue(periodValues.contains("E"))
+        assertTrue(periodValues.contains("N"))
+        assertTrue(periodValues.contains("DEN"))
+
+        def receiverCount = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")["CPT"] as Integer
+
+        ["D", "E", "N", "DEN"].each { period ->
+            def periodCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = ?", [period])["CPT"] as Integer
+            assertEquals(receiverCount, periodCount)
+        }
     }
 
 
