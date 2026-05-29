@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  */
 public class Logging {
 
-    public static final String DEFAULT_LOG_FORMAT = "[%t][%c] %-5p %d{dd MMM HH:mm:ss} - %m%n";
+    public static final String DEFAULT_LOG_FORMAT = "[%t][%c{1}] %-5p %d{dd MMM HH:mm:ss} - %m%n";
     public static final Pattern LOG_PATTERN =
             Pattern.compile("^\\[(?<thread>.+?)\\]\\[(?<logger>[^\\]]+)\\]");
     public static final String LINE_SEPARATOR = System.lineSeparator();

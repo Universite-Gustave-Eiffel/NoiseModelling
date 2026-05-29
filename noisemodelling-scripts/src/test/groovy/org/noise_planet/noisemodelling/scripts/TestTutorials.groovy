@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -378,5 +379,13 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(Paths.get(resultsFolder, "EXPOSURES.shp").toFile().exists());
         assertTrue(buildingsPath.toFile().exists());
         assertTrue(roadsPath.toFile().exists());
+    }
+
+    @Test
+    void testGetStartedDev() {
+        new get_started_tutorial_complex().exec(connection, [resourcesFolder : new File(TestTutorials.getResource("ROADS2.shp").getFile()).getParent()], new EmptyProgressVisitor())
+
+        assertTrue(JDBCUtilities.tableExists(connection, "LW_ROADS"))
+        assertTrue(JDBCUtilities.tableExists(connection, "RECEIVERS_LEVEL"))
     }
 }

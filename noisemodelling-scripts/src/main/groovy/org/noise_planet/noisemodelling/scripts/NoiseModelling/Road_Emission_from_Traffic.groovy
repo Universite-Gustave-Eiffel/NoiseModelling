@@ -285,6 +285,6 @@ def exec(Connection connection, Map input) {
     logger.info('End : LW_ROADS from Emission')
 
     // print to WPS Builder
-    return resultString
+    return [result: "LW_ROADS"]
 
 }

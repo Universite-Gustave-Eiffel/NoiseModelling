@@ -54,7 +54,7 @@ Below is an example of a sequence of simple .groovy scripts, using bash instruct
 
 Below is an example of a complex .groovy script, launching the different steps described in the ":doc:`Tutorial_Get_Started_GUI`".
 
-.. literalinclude:: scripts/get_started_tutorial_complex.groovy
+.. literalinclude:: ../noisemodelling-scripts/src/test/groovy/org/noise_planet/noisemodelling/scripts/get_started_tutorial_complex.groovy
    :language: groovy
    :linenos:
 
