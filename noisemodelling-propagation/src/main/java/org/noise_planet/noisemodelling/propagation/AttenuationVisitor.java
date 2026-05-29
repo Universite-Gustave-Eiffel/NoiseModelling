@@ -13,9 +13,7 @@ import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 import java.util.*;
@@ -26,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationComputeOutput multiThreadParent;
+    public CnossosPropagationModel propagationModel;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
     public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
     public boolean keepRays = false;
@@ -42,16 +41,13 @@ public class AttenuationVisitor implements CutPlaneVisitor {
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return PathSearchStrategy.CONTINUE;
         }
+        // Create propagation model and compute rays for the current cutProfile
+        propagationModel = new CnossosPropagationModel(cutProfile,scene);
+        List<CnossosPath> paths = propagationModel.computePaths();
         // Compute attenuation
-        CnossosPropagationModel propagationModel = new CnossosPropagationModel(multiThreadParent);
-        receiverAttenuationLevels = propagationModel.computeAttenuation(cutProfile);
-        pathParameters = propagationModel.getPaths();
-        // Source surface reflectivity
-//        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-//        for(CnossosPath cnossosPath : CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
-//                scene.profileBuilder.exactFrequencyArray, gs)) {
-//            computeAttenuation(cnossosPath);
-//        }
+        for(CnossosPath cnossosPath : paths) {
+            computeAttenuation(cnossosPath);
+        }
         return PathSearchStrategy.CONTINUE;
     }
 
@@ -61,8 +57,8 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     }
 
     private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
-        double[] aGlobalMeteo = AttenuationCnossos.computeCnossosAttenuation(AttenuationParameters, path,
-                multiThreadParent.scene, multiThreadParent.exportAttenuationMatrix);
+        double[] aGlobalMeteo = propagationModel.computeAttenuation(path, AttenuationParameters,
+                multiThreadParent.exportAttenuationMatrix);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
             multiThreadParent.cnossosPathCount.addAndGet(1);
             if(keepRays) {
