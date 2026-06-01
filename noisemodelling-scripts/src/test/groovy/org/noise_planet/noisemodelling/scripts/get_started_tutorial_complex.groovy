@@ -8,6 +8,7 @@ import org.noise_planet.noisemodelling.webserver.utilities.Logging
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import groovy.sql.Sql
+import java.io.File
 
 import java.sql.Connection
 
@@ -17,7 +18,7 @@ description = 'Long description of tutorial script'
 inputs = [ resourcesFolder : [
         description: "Path of the resource folder for input data",
         title: "Resource folder",
-        default: "resources",
+        default: 'resources',
         type: String.class
 ]]
 
@@ -43,7 +44,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     def roadEmissionTable = new Road_Emission_from_Traffic().exec(connection, [tableRoads : roadsTable]).result
 
     // print some lines of road emission
-    Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $roadEmissionTable LIMIT 10" as String)
+    Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $roadEmissionTable ORDER BY IDRECEIVER, PERIOD LIMIT 10" as String)
 
     // Run Calculation
     def resultTable = new Noise_level_from_source().exec(connection, ["tableBuilding": buildingTable, "tableSources": roadEmissionTable, "tableReceivers": receiversTable,

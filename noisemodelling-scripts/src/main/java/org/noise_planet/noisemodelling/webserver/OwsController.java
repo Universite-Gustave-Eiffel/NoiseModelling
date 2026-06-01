@@ -414,7 +414,7 @@ public class OwsController {
                                 ScriptInput scriptInput = scriptMetadata.inputs.get(inputId);
                                 // found expected input, try to cast to expect type if not null
                                 Class<?> expectedInputType = scriptInput.type;
-                                Object convertedInputValue = castInputUsingExpectedInputType(expectedInputType, input.getData().getLiteralData().getValue());
+                                Object convertedInputValue = ScriptMetadata.castInputUsingExpectedInputType(expectedInputType, input.getData().getLiteralData().getValue());
                                 queryInputs.put(inputId, convertedInputValue);
                             } else {
                                 Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
@@ -436,26 +436,6 @@ public class OwsController {
                 }
             }
         }
-        // Provide default inputs specified in the WPS that are not provided by the request
-        scriptMetadata.inputs.entrySet( ).stream().filter(
-                entry -> entry.getValue().defaultValue != null
-                        && !queryInputs.containsKey(entry.getKey()))
-                .forEach(entry -> {
-                    Object defaultValue = entry.getValue().defaultValue;
-                    Class<?> expectedType = entry.getValue().type;
-                    // Groovy may generate BigDecimal instead of expected class
-                    // So cast/convert to the expected type
-                    if(expectedType != null && !expectedType.isAssignableFrom(defaultValue.getClass())) {
-                        try {
-                            defaultValue = castInputUsingExpectedInputType(expectedType, defaultValue.toString());
-                        } catch (Exception ex) {
-                            Logger logger = LoggerFactory.getLogger(ExecutionPlan.class);
-                            logger.info("Warning, failed to cast default value for input '{}', use the original value. Exception: {}",
-                                    entry.getKey(), ex.getMessage());
-                        }
-                    }
-                    queryInputs.put(entry.getKey(), defaultValue);
-                });
         // Expected output
         if(execute.getResponseForm() != null) {
             OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
@@ -466,33 +446,9 @@ public class OwsController {
                 }
             }
         }
-        return new ExecutionPlan(queryInputs, scriptMetadata);
-    }
-
-    /**
-     * Cast the input content to the expected input type defined in the script metadata.
-     *
-     * @param expectedInputType the expected type of the input as defined in the script metadata
-     * @param inputValue the string input value containing the literal data to be cast
-     * @return the cast input content if successful, otherwise returns the original input content
-     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
-     */
-    private static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
-        String typeName = expectedInputType.getName();
-        if (typeName.equals(Long.class.getName())) {
-            return Long.parseLong(inputValue);
-        } else if (typeName.equals(Integer.class.getName())) {
-            return Integer.parseInt(inputValue);
-        } else if (typeName.equals(Float.class.getName())) {
-            return Float.parseFloat(inputValue);
-        } else if (typeName.equals(Double.class.getName())) {
-            return Double.parseDouble(inputValue);
-        } else if (typeName.equals(Boolean.class.getName())) {
-            return Boolean.parseBoolean(inputValue);
-        } else if (typeName.equals(Geometry.class.getName())) {
-            return new org.locationtech.jts.io.WKTReader().read(inputValue);
-        }
-        return inputValue;
+        ExecutionPlan executionPlan = new ExecutionPlan(queryInputs, scriptMetadata);
+        executionPlan.fillInputsWithDefaultValues();
+        return executionPlan;
     }
 
     /**
