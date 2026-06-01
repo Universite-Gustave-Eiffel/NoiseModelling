@@ -32,7 +32,7 @@ public interface PropagationModel {
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return {double[]} Attenuation
      */
-    double[] computeAttenuation(CnossosPath path, AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix);
+    double[] computeAttenuation(AttenuationParameters attenuationParameters, CnossosPath path, boolean isExportAttenuationMatrix);
 
     /**
      * Compute the paths

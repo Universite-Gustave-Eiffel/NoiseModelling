@@ -40,7 +40,7 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return {double[]} Attenuation
      */
-    public double[] computeAttenuation(CnossosPath path, AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
+    public double[] computeAttenuation(AttenuationParameters attenuationParameters, CnossosPath path, boolean isExportAttenuationMatrix) {
         return AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, path,
                 scene, isExportAttenuationMatrix);
     }
