@@ -10,7 +10,6 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
-import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.jdbc.EmissionTableGenerator;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
@@ -22,8 +21,9 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -87,8 +87,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
-    private double[] processAndStoreAttenuation(AttenuationParameters data, CnossosPath proPathParameters, String period) {
-        double[] attenuation = AttenuationCnossos.computeCnossosAttenuation(data, proPathParameters, multiThread.sceneWithEmission,
+    private double[] processAndStoreAttenuation(CnossosPropagationModel propagationModel, AttenuationParameters data, CnossosPath proPathParameters, String period) {
+        double[] attenuation = propagationModel.computeAttenuation( data, proPathParameters,
                 multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
         if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
                 multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
@@ -125,8 +125,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return strategy;
         }
-        List<CnossosPath> cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, scene.defaultGroundAttenuation);
+        // Create propagation model and compute rays for the current cutProfile
+        CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene);
+        List<CnossosPath> cnossosPaths = propagationModel.computePaths(cutProfile);
         for (CnossosPath cnossosPath : cnossosPaths) {
             multiThread.cnossosPathCount.addAndGet(1);
             CutPointSource source = cutProfile.getSource();
@@ -146,7 +147,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 if(!scene.cnossosParametersPerPeriod.isEmpty()) {
                     for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
                             scene.cnossosParametersPerPeriod.entrySet()) {
-                        double[] attenuation = dBToW(processAndStoreAttenuation(cnossosParametersEntry.getValue(),
+                        double[] attenuation = dBToW(processAndStoreAttenuation(propagationModel, cnossosParametersEntry.getValue(),
                                 cnossosPath, cnossosParametersEntry.getKey()));
                         ReceiverNoiseLevel receiverNoiseLevel =
                                 new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
@@ -155,7 +156,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         processNoiseLevel(receiverNoiseLevel);
                     }
                 } else {
-                    double[] attenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters, cnossosPath, ""));
+                    double[] attenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters, cnossosPath, ""));
                     ReceiverNoiseLevel receiverNoiseLevel =
                             new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
                                     new PathFinder.ReceiverPointInfo(receiver), "",
@@ -172,12 +173,12 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         double [] attenuation = new double[0];
                         // look for specific atmospheric settings for this period
                         if(scene.cnossosParametersPerPeriod.containsKey(period)) {
-                            attenuation = dBToW(processAndStoreAttenuation(scene.cnossosParametersPerPeriod.get(period),
+                            attenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.cnossosParametersPerPeriod.get(period),
                                     cnossosPath, period));
                         } else {
                             if(defaultAttenuation.length == 0) {
                                 // None ? ok fallback to default settings
-                                defaultAttenuation = dBToW(processAndStoreAttenuation(scene.defaultCnossosParameters,
+                                defaultAttenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters,
                                         cnossosPath, ""));
                             }
                             attenuation = defaultAttenuation;
@@ -256,15 +257,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
-                CutProfile cutProfile = new CutProfile(new CutPointSource(sourcePointInfo), new CutPointReceiver(receiver));
-                CnossosPath cnossosPath = new CnossosPath(cutProfile);
-                cnossosPath.setFavourable(true);
-                cnossosPath.setPointList(new ArrayList<>());
-                List<Coordinate> pts2D = cutProfile.computePts2D();
-                cnossosPath.setSRSegment(CnossosPathBuilder.computeSegment(pts2D.get(0), pts2D.get(1), new double[] {0, 0}));
-                cnossosPath.getPointList().add(new PointPath(pts2D.get(0), 0, PointPath.POINT_TYPE.SRCE));
-                cnossosPath.getPointList().add(new PointPath(pts2D.get(1), 0, PointPath.POINT_TYPE.RECV));
-                double[] attenuation = dBToW(AttenuationCnossos.computeCnossosAttenuation(scene.defaultCnossosParameters, cnossosPath, scene, false));
+                CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene);
+                double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(scene.defaultCnossosParameters,
+                        sourcePointInfo, receiver, false));
                 // For line source apply a gain on the attenuation
                 if(sourcePointInfo.li > 1) {
                     attenuation = multiplicationArray(attenuation, sourcePointInfo.li);
@@ -278,8 +273,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                 periodEmission.period, scene.defaultCnossosParameters);
                         double[] attenuationPerPeriod = attenuation;
                         if(parameters != scene.defaultCnossosParameters) {
-                            attenuationPerPeriod = dBToW(AttenuationCnossos.computeCnossosAttenuation(parameters,
-                                    cnossosPath, scene, false));
+                            attenuationPerPeriod = dBToW(propagationModel.computeDirectAttenuation(parameters,
+                                    sourcePointInfo, receiver, false));
                             if(sourcePointInfo.li > 1) {
                                 attenuationPerPeriod = multiplicationArray(attenuationPerPeriod, sourcePointInfo.li);
                             }
