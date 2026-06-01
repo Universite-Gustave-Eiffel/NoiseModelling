@@ -85,19 +85,33 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
+        DBTypes dbType = DBUtils.getDBType(connection);
         SceneDatabaseInputSettings inputSettings = noiseMapByReceiverMaker.getSceneInputSettings();
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
             // Check fields to find appropriate expected data
-            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
             if(!inputSettings.sourcesEmissionTableName.isEmpty()) {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
                 if(sourceFields.contains("LV_SPD")) {
                     inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
                 } else {
-                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, inputSettings.sourcesEmissionTableName, TableLocation.capsIdentifier("period", dbType)).stream().map(String::toUpperCase).collect(Collectors.toList());
+                    if(periods.contains("D") && periods.contains("E") && periods.contains("N")) {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN;
+                    } else {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    }
                 }
             } else {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName()).stream().map(String::toUpperCase).collect(Collectors.toList());
+                // Look for Emission/Traffic columns without periods
+                List<Integer> frequencyValuesWithoutPeriod = readFrequenciesFromLwTable(
+                        noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceFields);
+                if(!frequencyValuesWithoutPeriod.isEmpty()) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                } else if (sourceFields.contains("LV_SPD")) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                }
+                // Look for Emission/Traffic columns for each period
                 for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                     String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                     List<Integer> frequencyValues = readFrequenciesFromLwTable(
@@ -115,11 +129,17 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
             }
         }
-
+        if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
+            // By default, we compute the attenuation
+            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
+        }
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection,
+                    noiseMapByReceiverMaker.getSourcesEmissionTableName().isEmpty() ?
+                            noiseMapByReceiverMaker.getSourcesTableName() :
+                            noiseMapByReceiverMaker.getSourcesEmissionTableName());
             List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceField);
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source emission table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");

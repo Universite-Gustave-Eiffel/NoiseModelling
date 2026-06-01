@@ -89,8 +89,12 @@ public class SceneWithEmission extends SceneWithAttenuation {
             Integer frequency = frequencyArray.get(i);
             lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.frequencyFieldPrepend +frequency));
         }
-        String period = rs.getString("PERIOD");
-        addSourceEmission(pk, period, lw);
+        // Check if period field exists use empty string otherwise
+        if(!sourceEmissionFieldsCache.containsKey("PERIOD")) {
+            addSourceEmission(pk, "", lw);
+        } else {
+            addSourceEmission(pk, Objects.toString(rs.getString("PERIOD"), ""), lw);
+        }
     }
 
     @Override
@@ -102,6 +106,9 @@ public class SceneWithEmission extends SceneWithAttenuation {
                 break;
             case INPUT_MODE_LW_DEN:
                 processEmissionDEN(pk, rs);
+                break;
+            case INPUT_MODE_LW:
+                processEmission(pk, rs);
                 break;
         }
     }
@@ -131,9 +138,13 @@ public class SceneWithEmission extends SceneWithAttenuation {
 
     public void addSourceEmission(Long pk, ResultSet rs) throws SQLException {
         switch (sceneDatabaseInputSettings.inputMode) {
+            case INPUT_MODE_TRAFFIC_FLOW_DEN:
+                processTrafficFlowDEN(pk, rs.unwrap(SpatialResultSet.class));
+                break;
             case INPUT_MODE_TRAFFIC_FLOW:
                 processTrafficFlow(pk, rs);
                 break;
+            case INPUT_MODE_LW_DEN:
             case INPUT_MODE_LW:
                 processEmission(pk, rs);
                 break;
