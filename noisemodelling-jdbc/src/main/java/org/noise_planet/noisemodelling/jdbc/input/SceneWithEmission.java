@@ -26,9 +26,6 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicator
  * This is input data, not thread safe, never update anything here during propagation
  */
 public class SceneWithEmission extends SceneWithAttenuation {
-    /** Old style DEN columns traffic period  */
-    Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
-
     //  For each source primary key give the map between period and source power spectrum values
     public Map<Long, ArrayList<PeriodEmission>> wjSources = new HashMap<>();
 
@@ -46,7 +43,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
     public SceneWithEmission() {
     }
 
-    public void processTrafficFlowDEN(Long pk, SpatialResultSet rs) throws SQLException {
+    public void processTrafficFlowDEN(Long pk, SpatialResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
         // Source table PK, GEOM, LV_D, LV_E, LV_N ...
         double[][] lw = EmissionTableGenerator.computeLw(rs, sceneDatabaseInputSettings.coefficientVersion, sourceFieldNames);
         // Will generate D E N emission
@@ -60,11 +57,11 @@ public class SceneWithEmission extends SceneWithAttenuation {
      * @param rs Emission source table IDSOURCE, PERIOD, LV, HV ..
      * @throws SQLException
      */
-    public void processTrafficFlow(Long pk, ResultSet rs) throws SQLException {
+    public void processTrafficFlow(Long pk, ResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
         String period = rs.getString("PERIOD");
         // Use geometry as default slope (if field slope is not provided
         double defaultSlope = 0;
-        if(!sourceEmissionFieldsCache.containsKey("SLOPE")) {
+        if(!sourceFieldNames.containsKey("SLOPE")) {
             int sourceIndex = sourcesPk.indexOf(pk);
             if(sourceIndex >= 0) {
                 defaultSlope = EmissionTableGenerator.getSlope(sourceGeometries.get(sourceIndex));
@@ -73,7 +70,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
         double[] lw = AcousticIndicatorsFunctions.dBToW(
                 EmissionTableGenerator.getEmissionFromTrafficTable(rs, "",
                         defaultSlope,
-                        sceneDatabaseInputSettings.coefficientVersion, sourceEmissionFieldsCache));
+                        sceneDatabaseInputSettings.coefficientVersion, sourceFieldNames));
         addSourceEmission(pk, period, lw);
     }
 
@@ -82,15 +79,22 @@ public class SceneWithEmission extends SceneWithAttenuation {
      * @param rs Emission source table IDSOURCE, PERIOD, LV, HV ..
      * @throws SQLException
      */
-    public void processEmission(Long pk, ResultSet rs) throws SQLException {
+    public void processEmission(Long pk, ResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
         double[] lw = new double[profileBuilder.frequencyArray.size()];
         List<Integer> frequencyArray = profileBuilder.frequencyArray;
         for (int i = 0, frequencyArraySize = frequencyArray.size(); i < frequencyArraySize; i++) {
             Integer frequency = frequencyArray.get(i);
-            lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(sceneDatabaseInputSettings.frequencyFieldPrepend +frequency));
+            String fieldName = sceneDatabaseInputSettings.frequencyFieldPrepend+frequency;
+            int fieldIndex = sourceFieldNames.getOrDefault(fieldName, 0);
+            if(fieldIndex <= 0) {
+                // No emission value here for this frequency, skip the extraction of noise source level
+                // It could be provided later from another table
+                return;
+            }
+            lw[i] = AcousticIndicatorsFunctions.dBToW(rs.getDouble(fieldIndex));
         }
         // Check if period field exists use empty string otherwise
-        if(!sourceEmissionFieldsCache.containsKey("PERIOD")) {
+        if(!sourceFieldNames.containsKey("PERIOD")) {
             addSourceEmission(pk, "", lw);
         } else {
             addSourceEmission(pk, Objects.toString(rs.getString("PERIOD"), ""), lw);
@@ -98,22 +102,22 @@ public class SceneWithEmission extends SceneWithAttenuation {
     }
 
     @Override
-    public void addSource(Long pk, Geometry geom, SpatialResultSet rs) throws SQLException {
-        super.addSource(pk, geom, rs);
+    public void addSource(Long pk, Geometry geom, SpatialResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
+        super.addSource(pk, geom, rs, sourceFieldNames);
         switch (Objects.requireNonNull(sceneDatabaseInputSettings.inputMode)) {
             case INPUT_MODE_TRAFFIC_FLOW_DEN:
-                processTrafficFlowDEN(pk, rs);
+                processTrafficFlowDEN(pk, rs, sourceFieldNames);
                 break;
             case INPUT_MODE_LW_DEN:
-                processEmissionDEN(pk, rs);
+                processEmissionDEN(pk, rs, sourceFieldNames);
                 break;
             case INPUT_MODE_LW:
-                processEmission(pk, rs);
+                processEmission(pk, rs, sourceFieldNames);
                 break;
         }
     }
 
-    private void processEmissionDEN(Long pk, SpatialResultSet rs) throws SQLException {
+    private void processEmissionDEN(Long pk, SpatialResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
         List<Integer> frequencyArray = profileBuilder.frequencyArray;
         for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
             double[] lw = new double[profileBuilder.frequencyArray.size()];
@@ -136,17 +140,15 @@ public class SceneWithEmission extends SceneWithAttenuation {
         }
     }
 
-    public void addSourceEmission(Long pk, ResultSet rs) throws SQLException {
+    public void addSourceEmission(Long pk, ResultSet rs, Map<String, Integer> sourceFieldNames) throws SQLException {
         switch (sceneDatabaseInputSettings.inputMode) {
             case INPUT_MODE_TRAFFIC_FLOW_DEN:
-                processTrafficFlowDEN(pk, rs.unwrap(SpatialResultSet.class));
-                break;
             case INPUT_MODE_TRAFFIC_FLOW:
-                processTrafficFlow(pk, rs);
+                processTrafficFlow(pk, rs, sourceFieldNames);
                 break;
             case INPUT_MODE_LW_DEN:
             case INPUT_MODE_LW:
-                processEmission(pk, rs);
+                processEmission(pk, rs, sourceFieldNames);
                 break;
         }
     }
@@ -174,7 +176,6 @@ public class SceneWithEmission extends SceneWithAttenuation {
     @Override
     public void clearSources() {
         super.clearSources();
-        sourceEmissionFieldsCache.clear();
         wjSources.clear();
     }
 

@@ -91,17 +91,7 @@ class TestTutorials extends JdbcTestCase {
                  "confDiffHorizontal"   : true,
                  "confMaxSrcDist"       : 2000.0,
                  "confReflOrder"        : 0,
-                 "confMaxError"         : 3.0,
-                 "frequencyFieldPrepend": "LW"])
-
-        def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
-        def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
-
-        assertEquals(4*countReceivers, countResult)
-
-        def minLevel = sql.firstRow("SELECT MIN(LW1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
-
-        assertNotSame(-99.0, minLevel)
+                 "confMaxError"         : 3.0])
 
 
         def periods = sql.rows("SELECT DISTINCT PERIOD FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
@@ -112,6 +102,16 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(periodValues.contains("E"))
         assertTrue(periodValues.contains("N"))
         assertTrue(periodValues.contains("DEN"))
+
+        def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
+        def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
+
+        assertEquals(4*countReceivers, countResult)
+
+        def minLevel = sql.firstRow("SELECT MIN(HZ1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
+
+        assertNotSame(-99.0, minLevel)
+
 
         def receiverCount = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")["CPT"] as Integer
 

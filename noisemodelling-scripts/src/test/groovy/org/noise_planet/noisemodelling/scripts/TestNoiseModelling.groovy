@@ -41,7 +41,7 @@ class TestNoiseModelling extends JdbcTestCase {
         String res = new Road_Emission_from_Traffic().exec(connection,
                 ["tableRoads": "ROADS2"]).result
 
-        assertEquals("LW_ROADS.", res)
+        assertEquals("LW_ROADS", res)
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
 
@@ -201,7 +201,7 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableRoads": "SOURCES_EMISSION"]).result
 
         // Check result table
-        assertEquals("W_ROADS", res)
+        assertEquals("LW_ROADS", res)
 
         def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
 
