@@ -345,4 +345,45 @@ class TestNoiseModelling extends JdbcTestCase {
             assertEquals(receiverCount, periodCount)
         }
     }
+
+    @Test
+    void testRaysTableAndLineSourceSpacingRatio() {
+        String RAYS_TABLE = "RAYS"
+        Double LINE_SOURCE_RATIO = 4.0
+        Integer EXPECTED_NB_RAYS = 125716
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+        Sql sql = new Sql(connection)
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding"             : "BUILDINGS",
+                 "tableSources"              : "LW_ROADS",
+                 "tableReceivers"            : "RECEIVERS",
+                 "confRaysName"              : RAYS_TABLE,
+                 "confLineSourceSpacingRatio": LINE_SOURCE_RATIO,
+                 "confReflOrder"             : 0,
+                 "confDiffVertical"          : false,
+                 "confDiffHorizontal"        : false])
+
+        assertTrue(JDBCUtilities.tableExists(connection, RAYS_TABLE))
+        int raysCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + RAYS_TABLE)["CPT"] as Integer
+        LOGGER.info("number or rays with confLineSourceSpacingRatio = " + LINE_SOURCE_RATIO + " : " + raysCount)
+        assertEquals(raysCount, EXPECTED_NB_RAYS)
+    }
+
 }
