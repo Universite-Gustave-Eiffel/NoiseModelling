@@ -345,4 +345,52 @@ class TestNoiseModelling extends JdbcTestCase {
             assertEquals(receiverCount, periodCount)
         }
     }
+
+    @Test
+    void testLineSourceSpacingRatioIncreasesEmitterCountInSimulation() {
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+        Sql sql = new Sql(connection)
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding"             : "BUILDINGS",
+                 "tableSources"              : "LW_ROADS",
+                 "tableReceivers"            : "RECEIVERS",
+                 "confRaysName"              : "RAYS_DEFAULT_RATIO",
+                 "confLineSourceSpacingRatio": 2.0d,
+                 "confReflOrder"             : 0,
+                 "confDiffVertical"          : false,
+                 "confDiffHorizontal"        : false])
+
+        int defaultEmitterCount = sql.firstRow("SELECT COUNT(*) CPT FROM RAYS_DEFAULT_RATIO")["CPT"] as Integer
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding"             : "BUILDINGS",
+                 "tableSources"              : "LW_ROADS",
+                 "tableReceivers"            : "RECEIVERS",
+                 "confRaysName"              : "RAYS_HIGH_RATIO",
+                 "confLineSourceSpacingRatio": 8.0d,
+                 "confReflOrder"             : 0,
+                 "confDiffVertical"          : false,
+                 "confDiffHorizontal"        : false])
+
+        int highRatioEmitterCount = sql.firstRow("SELECT COUNT(*) CPT FROM RAYS_HIGH_RATIO")["CPT"] as Integer
+
+        assertTrue(highRatioEmitterCount > defaultEmitterCount)
+    }
+
 }
