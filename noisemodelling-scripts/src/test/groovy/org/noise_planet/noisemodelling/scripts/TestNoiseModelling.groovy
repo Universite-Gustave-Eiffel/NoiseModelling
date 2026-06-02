@@ -383,7 +383,7 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(JDBCUtilities.tableExists(connection, RAYS_TABLE))
         int raysCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + RAYS_TABLE)["CPT"] as Integer
         LOGGER.info("number or rays with confLineSourceSpacingRatio = " + LINE_SOURCE_RATIO + " : " + raysCount)
-        assertTrue(raysCount == EXPECTED_NB_RAYS)
+        assertEquals(raysCount, EXPECTED_NB_RAYS)
     }
 
 }
