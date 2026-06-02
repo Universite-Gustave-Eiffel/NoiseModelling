@@ -270,7 +270,7 @@ inputs = [
         confLineSourceSpacingRatio: [
                 name       : 'Line source spacing ratio',
                 title      : 'Line source spacing ratio',
-                description: 'Dictates the density of source points created from a line sound source. A higher value means more points and finer discretization.',
+                description: 'Dictates the density of source points created from a line sound source. A higher value means more points and finer discretization : DistanceBetweenPoints = DistanceSourceToReceiver / LineSourceSpacingRatio (this parameter)',
                 default    : 2.0,
                 type       : Double.class
         ]

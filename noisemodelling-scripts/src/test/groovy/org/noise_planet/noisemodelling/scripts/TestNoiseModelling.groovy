@@ -347,7 +347,11 @@ class TestNoiseModelling extends JdbcTestCase {
     }
 
     @Test
-    void testLineSourceSpacingRatioIncreasesEmitterCountInSimulation() {
+    void testRaysTableAndLineSourceSpacingRatio() {
+        String RAYS_TABLE = "RAYS"
+        Double LINE_SOURCE_RATIO = 4.0
+        Integer EXPECTED_NB_RAYS = 125716
+
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
 
@@ -370,27 +374,16 @@ class TestNoiseModelling extends JdbcTestCase {
                 ["tableBuilding"             : "BUILDINGS",
                  "tableSources"              : "LW_ROADS",
                  "tableReceivers"            : "RECEIVERS",
-                 "confRaysName"              : "RAYS_DEFAULT_RATIO",
-                 "confLineSourceSpacingRatio": 2.0d,
+                 "confRaysName"              : RAYS_TABLE,
+                 "confLineSourceSpacingRatio": LINE_SOURCE_RATIO,
                  "confReflOrder"             : 0,
                  "confDiffVertical"          : false,
                  "confDiffHorizontal"        : false])
 
-        int defaultEmitterCount = sql.firstRow("SELECT COUNT(*) CPT FROM RAYS_DEFAULT_RATIO")["CPT"] as Integer
-
-        new Noise_level_from_source().exec(connection,
-                ["tableBuilding"             : "BUILDINGS",
-                 "tableSources"              : "LW_ROADS",
-                 "tableReceivers"            : "RECEIVERS",
-                 "confRaysName"              : "RAYS_HIGH_RATIO",
-                 "confLineSourceSpacingRatio": 8.0d,
-                 "confReflOrder"             : 0,
-                 "confDiffVertical"          : false,
-                 "confDiffHorizontal"        : false])
-
-        int highRatioEmitterCount = sql.firstRow("SELECT COUNT(*) CPT FROM RAYS_HIGH_RATIO")["CPT"] as Integer
-
-        assertTrue(highRatioEmitterCount > defaultEmitterCount)
+        assertTrue(JDBCUtilities.tableExists(connection, RAYS_TABLE))
+        int raysCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + RAYS_TABLE)["CPT"] as Integer
+        LOGGER.info("number or rays with confLineSourceSpacingRatio = " + LINE_SOURCE_RATIO + " : " + raysCount)
+        assertEquals(raysCount, EXPECTED_NB_RAYS)
     }
 
 }
