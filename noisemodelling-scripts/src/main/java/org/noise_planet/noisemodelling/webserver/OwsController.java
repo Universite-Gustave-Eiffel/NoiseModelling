@@ -27,6 +27,7 @@ import org.geotools.wps.WPSConfiguration;
 import org.geotools.xsd.Encoder;
 import org.geotools.xsd.Parser;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
@@ -437,16 +438,21 @@ public class OwsController {
             }
         }
         // Expected output
+        return fetchChainedOutputIdentifier(execute, scriptMetadata, queryInputs);
+    }
+
+    private static @NonNull ExecutionPlan fetchChainedOutputIdentifier(ExecuteType execute, ScriptMetadata scriptMetadata, Map<String, Object> queryInputs) {
+        String outputIdentifier = "";
         if(execute.getResponseForm() != null) {
             OutputDefinitionType outputDefinitionType = execute.getResponseForm().getRawDataOutput();
             if (outputDefinitionType != null) {
-                String outputIdentifier = outputDefinitionType.getIdentifier().getValue();
-                if (scriptMetadata.outputs.containsKey(outputIdentifier)) {
-                    return new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
+                String outputIdentifierValue = outputDefinitionType.getIdentifier().getValue();
+                if (scriptMetadata.outputs.containsKey(outputIdentifierValue)) {
+                    outputIdentifier = outputIdentifierValue;
                 }
             }
         }
-        ExecutionPlan executionPlan = new ExecutionPlan(queryInputs, scriptMetadata);
+        ExecutionPlan executionPlan = new ExecutionPlan(queryInputs, scriptMetadata, outputIdentifier);
         executionPlan.fillInputsWithDefaultValues();
         return executionPlan;
     }
