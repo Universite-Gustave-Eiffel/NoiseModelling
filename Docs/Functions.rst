@@ -51,7 +51,7 @@ Deprecated
 .. toctree::
     :maxdepth: 1
 
-    functions/Deprecated/Road_Emission_from_Traffic
+    functions/Deprecated/Noise_level_from_traffic
 
 Dynamic
 ~~~~~~~
