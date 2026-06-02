@@ -291,7 +291,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Create a sql connection to interact with the database in SQL
     Sql sql = new Sql(connection)
 
-    sql.execute("DROP TABLE RECEIVERS_LEVEL IF EXISTS;")
+    sql.execute("DROP TABLE IF EXISTS RECEIVERS_LEVEL;")
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
@@ -307,19 +307,19 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String sources_table_name = input['tableSources']
 
     // Check if srid are in metric projection.
-    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name))
+    int sridSources = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridSources)) throw new IllegalArgumentException("Error : Please use a metric projection for "+sources_table_name+".")
     if (sridSources == 0) throw new IllegalArgumentException("Error : The table "+sources_table_name+" does not have an associated SRID.")
 
     //Get the geometry field of the source table
-    TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name)
+    TableLocation sourceTableIdentifier = TableLocation.parse(sources_table_name, dbType)
     List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
     if (geomFields.isEmpty()) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier))
     }
 
     //Get the primary key field of the source table
-    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name))
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(sources_table_name, dbType))
     if (pkIndex < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier))
     }
@@ -327,20 +327,20 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String receivers_table_name = input['tableReceivers']
 
     //Get the geometry field of the receiver table
-    TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name)
+    TableLocation receiverTableIdentifier = TableLocation.parse(receivers_table_name, dbType)
     List<String> geomFieldsRcv = GeometryTableUtilities.getGeometryColumnNames(connection, receiverTableIdentifier)
     if (geomFieldsRcv.isEmpty()) {
         throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", receiverTableIdentifier))
     }
     // Check if srid are in metric projection and are all the same.
-    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name))
+    int sridReceivers = GeometryTableUtilities.getSRID(connection, TableLocation.parse(receivers_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridReceivers)) throw new IllegalArgumentException("Error : Please use a metric projection for "+receivers_table_name+".")
     if (sridReceivers == 0) throw new IllegalArgumentException("Error : The table "+receivers_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+receivers_table_name+" are not the same.")
 
 
     //Get the primary key field of the receiver table
-    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name))
+    int pkIndexRecv = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(receivers_table_name, dbType))
     if (pkIndexRecv < 1) {
         throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", receiverTableIdentifier))
     }
@@ -348,7 +348,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     String building_table_name = input['tableBuilding']
 
     // Check if srid are in metric projection and are all the same.
-    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name))
+    int sridBuildings = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name, dbType))
     if (!DataBaseUtilities.isSridMetric(connection, sridBuildings)) throw new IllegalArgumentException("Error : Please use a metric projection for "+building_table_name+".")
     if (sridBuildings == 0) throw new IllegalArgumentException("Error : The table "+building_table_name+" does not have an associated SRID.")
     if (sridReceivers != sridBuildings) throw new IllegalArgumentException("Error : The SRID of table "+building_table_name+" and "+receivers_table_name+" are not the same.")
@@ -358,7 +358,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         dem_table_name = input['tableDEM']
 
         // Check if srid are in metric projection and are all the same.
-        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name))
+        int sridDEM = GeometryTableUtilities.getSRID(connection, TableLocation.parse(dem_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridDEM)) throw new IllegalArgumentException("Error : Please use a metric projection for "+dem_table_name+".")
         if (sridDEM == 0) throw new IllegalArgumentException("Error : The table "+dem_table_name+" does not have an associated SRID.")
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
@@ -369,7 +369,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         ground_table_name = input['tableGroundAbs']
 
         // Check if srid are in metric projection and are all the same.
-        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name))
+        int sridGROUND = GeometryTableUtilities.getSRID(connection, TableLocation.parse(ground_table_name, dbType))
         if (!DataBaseUtilities.isSridMetric(connection, sridGROUND)) throw new IllegalArgumentException("Error : Please use a metric projection for "+ground_table_name+".")
         if (sridGROUND == 0) throw new IllegalArgumentException("Error : The table "+ground_table_name+" does not have an associated SRID.")
         if (sridGROUND != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+ground_table_name+" and "+sources_table_name+" are not the same.")
@@ -465,7 +465,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         pointNoiseMap.setSourcesEmissionTableName(tableSourceEmission)
     }
 
-    sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable))
+    sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable, dbType))
 
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
         parameters.setRaysTable(input['confRaysName'] as String)

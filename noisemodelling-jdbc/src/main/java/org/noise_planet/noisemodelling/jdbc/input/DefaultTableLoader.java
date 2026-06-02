@@ -479,7 +479,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String additionalQuery = "";
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         if(!buildingTableParameters.heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(buildingTableParameters.heightField, dbType);
+            additionalQuery += ", " + TableLocation.capsIdentifier(buildingTableParameters.heightField, dbType);
         }
         if(fetchAlpha) {
             additionalQuery += ", " + buildingTableParameters.alphaFieldName;

@@ -45,6 +45,14 @@ Database Manager
     functions/Database_Manager/Table_Visualization_Data
     functions/Database_Manager/Table_Visualization_Map
 
+Deprecated
+~~~~~~~~~~
+
+.. toctree::
+    :maxdepth: 1
+
+    functions/Deprecated/Road_Emission_from_Traffic
+
 Dynamic
 ~~~~~~~
 

@@ -44,12 +44,12 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     def roadEmissionTable = new Road_Emission_from_Traffic().exec(connection, [tableRoads : roadsTable]).result
 
     // print some lines of road emission
-    Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $roadEmissionTable ORDER BY IDRECEIVER, PERIOD LIMIT 10" as String)
+    Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $roadEmissionTable LIMIT 10" as String)
 
     // Run Calculation
     def resultTable = new Noise_level_from_source().exec(connection, ["tableBuilding": buildingTable, "tableSources": roadEmissionTable, "tableReceivers": receiversTable,
                                                                       "tableDEM"     : demTable, "tableGroundAbs": groundTable], tutorialProgress)
 
     // Return results
-    return Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $resultTable.result LIMIT 5" as String, 120)
+    return Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $resultTable.result ORDER BY IDRECEIVER, PERIOD LIMIT 10" as String, 120)
 }
