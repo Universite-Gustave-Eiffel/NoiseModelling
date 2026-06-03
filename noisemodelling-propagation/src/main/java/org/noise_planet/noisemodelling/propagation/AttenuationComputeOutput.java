@@ -42,22 +42,24 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
     public SceneWithAttenuation scene;
+    public PropagationModel propagationModel;
 
-    public AttenuationComputeOutput(boolean exportPaths, SceneWithAttenuation scene) {
-        this.exportPaths = exportPaths;
-        this.exportAttenuationMatrix = false;
-        this.scene = scene;
-    }
+//    public AttenuationComputeOutput(boolean exportPaths, SceneWithAttenuation scene) {
+//        this.exportPaths = exportPaths;
+//        this.exportAttenuationMatrix = false;
+//        this.scene = scene;
+//    }
 
-    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithAttenuation scene) {
+    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, PropagationModel propagationModel) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.scene = scene;
+        this.propagationModel = propagationModel;
+        this.scene = propagationModel.getScene();
     }
 
-    public Scene getScene() {
-        return scene;
-    }
+//    public Scene getScene() {
+//        return scene;
+//    }
 
     /**
      *

@@ -20,7 +20,7 @@ import java.util.List;
  * @author Martin Glesser
  */
 public interface PropagationModel {
-    SceneWithAttenuation scene = new SceneWithAttenuation();
+//    SceneWithAttenuation scene = new SceneWithAttenuation();
 
     /**
      * Compute the attenuation for a given path
@@ -34,7 +34,6 @@ public interface PropagationModel {
 
     /**
      * Compute the paths for a given geometrical cross-section / cut profile
-     *
      * @param cutProfile geometrical cross-section / cut profile
      * @return {List<CnossosPath>} Paths
      */
@@ -51,4 +50,18 @@ public interface PropagationModel {
      */
     double[] computeDirectAttenuation(AttenuationParameters attenuationParameters, PathFinder.SourcePointInfo source,
                                       PathFinder.ReceiverPointInfo receiver, boolean isExportAttenuationMatrix);
+
+    /**
+     * Getter for scene attribute
+     *
+     * @return {SceneWithAttenuation} Global geometrical information
+     */
+    SceneWithAttenuation getScene();
+
+    /**
+     * Setter for scene attribute
+     *
+     * @param scene Global geometrical information
+     */
+    void setScene(SceneWithAttenuation scene);
 }
