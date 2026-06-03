@@ -28,6 +28,10 @@ import java.util.List;
 public class CnossosPropagationModel implements PropagationModel {
     public SceneWithAttenuation scene;
 
+    public CnossosPropagationModel() {
+        scene = new SceneWithAttenuation();
+    }
+
     public CnossosPropagationModel(SceneWithAttenuation scene) {
         this.scene = scene;
     }

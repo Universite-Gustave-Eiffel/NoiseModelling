@@ -14,6 +14,8 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
+import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.PropagationModelFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -29,6 +31,7 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
     public AtomicLong cnossosPathCount = new AtomicLong();
+    public PropagationModel propagationModel;
 
     /**
      * Create NoiseMap constructor
@@ -36,13 +39,14 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
      * @param resultsCache
      * @param noiseMapDatabaseParameters
      */
-    public AttenuationOutputMultiThread(SceneWithEmission inputData,
+    public AttenuationOutputMultiThread(SceneWithEmission inputData, PropagationModel propagationModel,
                                         ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
+        this.propagationModel = propagationModel;
     }
 
     public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {

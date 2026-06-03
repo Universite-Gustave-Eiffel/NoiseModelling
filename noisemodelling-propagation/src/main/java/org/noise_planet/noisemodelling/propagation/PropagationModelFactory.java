@@ -17,8 +17,8 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationMod
  */
 public class PropagationModelFactory {
     /**
-     * Create a CnossosPropagationModel object.
-     *
+     * Create a CnossosPropagationModel object associated
+     * to a specific scene.
      * @param scene global geometrical information
      * @return propagation model object
      */
@@ -27,18 +27,40 @@ public class PropagationModelFactory {
     }
 
     /**
+     * Create a CnossosPropagationModel object.
+     *
+     * @return propagation model object
+     */
+    public static PropagationModel create(){
+        return new CnossosPropagationModel();
+    }
+
+    /**
      * Create a specific implementation of the PropagationModel interface.
+     *
+     * @param modelName Name of the propagation model
+     * @return propagation model object
+     */
+    public static PropagationModel create(String modelName){
+        switch (modelName.toUpperCase()) {
+            case "CNOSSOS":
+                return new CnossosPropagationModel();
+            default:
+                throw new IllegalArgumentException("Unknown type: " + modelName);
+        }
+    }
+
+    /**
+     * Create a specific implementation of the PropagationModel interface
+     * associated to a specific scene.
      *
      * @param modelName Name of the propagation model
      * @param scene Global geometrical information
      * @return propagation model object
      */
     public static PropagationModel create(String modelName, SceneWithAttenuation scene){
-        switch (modelName.toUpperCase()) {
-            case "CNOSSOS":
-                return new CnossosPropagationModel(scene);
-            default:
-                throw new IllegalArgumentException("Unknown type: " + modelName);
-        }
+        PropagationModel propagationModel = create(modelName);
+        propagationModel.setScene(scene);
+        return propagationModel;
     }
 }

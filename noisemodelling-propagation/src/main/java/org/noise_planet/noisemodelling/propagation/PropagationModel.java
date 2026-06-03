@@ -20,8 +20,6 @@ import java.util.List;
  * @author Martin Glesser
  */
 public interface PropagationModel {
-//    SceneWithAttenuation scene = new SceneWithAttenuation();
-
     /**
      * Compute the attenuation for a given path
      *

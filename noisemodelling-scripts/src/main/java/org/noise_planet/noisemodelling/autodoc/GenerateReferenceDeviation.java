@@ -17,10 +17,7 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.AttenuationComputeOutput;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.AttenuationVisitor;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
+import org.noise_planet.noisemodelling.propagation.*;
 
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
@@ -110,7 +107,8 @@ public class GenerateReferenceDeviation {
         scene.defaultCnossosParameters = attData;
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
 
         AttenuationVisitor attenuationVisitor = (AttenuationVisitor)propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());

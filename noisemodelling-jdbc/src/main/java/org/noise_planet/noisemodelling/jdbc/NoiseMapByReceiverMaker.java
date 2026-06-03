@@ -27,6 +27,8 @@ import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.PropagationModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +51,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /** If true, all processing are aborted and all threads will be shutdown */
     public AtomicBoolean aborted = new AtomicBoolean(false);
     private final NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
-    private IComputeRaysOutFactory computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
+    private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+    private PropagationModel propagationModel;
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
@@ -61,6 +64,8 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+        propagationModel = PropagationModelFactory.create();
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModel, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -430,5 +435,12 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         CutPlaneVisitorFactory create(SceneWithEmission cellData);
     }
 
+    public PropagationModel getPropagationModel() {
+        return propagationModel;
+    }
 
+    public void setPropagationModel(PropagationModel propagationModel) {
+        this.propagationModel = propagationModel;
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModel, noiseMapDatabaseParameters, exitWhenDone, aborted);
+    }
 }
