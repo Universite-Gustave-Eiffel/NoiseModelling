@@ -172,7 +172,7 @@ public class WpsScriptWrapper {
         }
 
         try (Stream<Path> stream = Files.walk(basePath)) {
-            stream.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".groovy"))
+            stream.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".groovy") && !p.endsWith("package-info.groovy"))
                     .forEach(p -> {
                         try {
                             // Relativize identifies the folder structure inside "scripts"
