@@ -45,6 +45,14 @@ Database Manager
     functions/Database_Manager/Table_Visualization_Data
     functions/Database_Manager/Table_Visualization_Map
 
+Deprecated
+~~~~~~~~~~
+
+.. toctree::
+    :maxdepth: 1
+
+    functions/Deprecated/Noise_level_from_traffic
+
 Dynamic
 ~~~~~~~
 
@@ -122,7 +130,6 @@ NoiseModelling
 
     functions/NoiseModelling/Atmospheric_Template
     functions/NoiseModelling/Noise_level_from_source
-    functions/NoiseModelling/Noise_level_from_traffic
     functions/NoiseModelling/PlotDirectivity
     functions/NoiseModelling/Railway_Emission_from_Traffic
     functions/NoiseModelling/Road_Emission_from_Traffic

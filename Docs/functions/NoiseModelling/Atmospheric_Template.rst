@@ -9,7 +9,7 @@ Generate default atmospheric settings from the PERIOD field of a noise emission 
 Overview
 --------
 
-➡️ Generate default atmospherics settings from the PERIOD field of a noise emission table. It is used to export the result table to be edited and reimported to be used into Noise_level_from_source or Noise_level_from_traffic. This table make you able to change the temperature and other settings for each time period of the simulation
+➡️ Generate default atmospherics settings from the PERIOD field of a noise emission table. It is used to export the result table to be edited and reimported to be used into Noise_level_from_source. This table make you able to change the temperature and other settings for each time period of the simulation
 
 Arguments
 ---------

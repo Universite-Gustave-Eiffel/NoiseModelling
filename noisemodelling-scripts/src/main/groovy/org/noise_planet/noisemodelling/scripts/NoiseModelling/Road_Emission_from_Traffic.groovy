@@ -106,6 +106,8 @@ def exec(Connection connection, Map input) {
 
     DBTypes dbType = DBUtils.getDBType(connection)
 
+    def outputTableName = TableLocation.capsIdentifier("lw_roads", dbType)
+
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
@@ -134,7 +136,7 @@ def exec(Connection connection, Map input) {
     List<String> geomFields = GeometryTableUtilities.getGeometryColumnNames(connection, sourceTableIdentifier)
 
     //Get the primary key field of the source table
-    Tuple<String, Integer> primaryKeyColumn = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection, TableLocation.parse( sources_table_name))
+    Tuple<String, Integer> primaryKeyColumn = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(connection, TableLocation.parse( sources_table_name, dbType))
 
     // -------------------
     // Init table LW_ROADS
@@ -152,7 +154,7 @@ def exec(Connection connection, Map input) {
     boolean hasIdSourceField = lowerCaseColumnNames.contains("idsource")
 
     // drop table LW_ROADS if exists and the create and prepare the table
-    sql.execute("drop table if exists LW_ROADS;")
+    sql.execute("drop table if exists $outputTableName;" as String)
 
     // Use lists to collect the column definitions and column names
     def createDefinitions = []
@@ -172,13 +174,15 @@ def exec(Connection connection, Map input) {
     def force3D = false
     if (geomFields.size() > 0) {
         def geomName = geomFields.get(0)
-        createDefinitions << "${geomName} Geometry"
         columnNames << geomName
 
         def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
-        if (tupMeta != null && !tupMeta.second().hasZ()) {
-            force3D = true
-            logger.warn("The geometry field ${geomName} is not 3D. The z value will be forced to 0.05m height.")
+        if (tupMeta != null) {
+            createDefinitions << "$geomName ${tupMeta.second().SQL}"
+            if (!tupMeta.second().hasZ()) {
+                force3D = true
+                logger.warn("The geometry field ${geomName} is not 3D. The z value will be forced to 0.05m height.")
+            }
         }
     }
 
@@ -203,15 +207,15 @@ def exec(Connection connection, Map input) {
 
     // 1. Create the Table Query
     // join() adds commas only between elements
-    def createTableQuery = "CREATE TABLE LW_ROADS (" + createDefinitions.join(", ") + ");"
-    sql.execute(createTableQuery)
+    def createTableQuery = "CREATE TABLE $outputTableName (${createDefinitions.join(", ")});"
+    sql.execute(createTableQuery as String)
 
     // 2. Prepared Insert Query
     int fieldCount = columnNames.size()
     // Create a list of '?' characters equal to the number of fields
     def placeholders = (["?"] * fieldCount).join(", ")
 
-    def qry = "INSERT INTO LW_ROADS (" + columnNames.join(", ") + ") VALUES (" + placeholders + ");"
+    def qry = "INSERT INTO $outputTableName (" + columnNames.join(", ") + ") VALUES (" + placeholders + ");"
 
     // --------------------------------------
     // Start calculation and fill the table
@@ -270,21 +274,21 @@ def exec(Connection connection, Map input) {
 
     if(force3D) {
         // Force the Z height to the road segments
-        sql.execute("UPDATE LW_ROADS SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);")
+        sql.execute("UPDATE $outputTableName SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);" as String)
     }
 
     if(primaryKeyColumn != null) {
         // Set primary key to the road table
-        sql.execute("ALTER TABLE LW_ROADS ADD PRIMARY KEY ("+primaryKeyColumn.first()+");  ")
+        sql.execute("ALTER TABLE $outputTableName ADD PRIMARY KEY (${primaryKeyColumn.first()});  " as String)
     }
 
-    resultString = "Calculation Done ! The table LW_ROADS has been created."
+    resultString = "Calculation Done ! The table $outputTableName has been created."
 
     // print to command window
     logger.info('\nResult : ' + resultString)
-    logger.info('End : LW_ROADS from Emission')
+    logger.info("End : $outputTableName from Emission")
 
     // print to WPS Builder
-    return resultString
+    return [result: outputTableName]
 
 }

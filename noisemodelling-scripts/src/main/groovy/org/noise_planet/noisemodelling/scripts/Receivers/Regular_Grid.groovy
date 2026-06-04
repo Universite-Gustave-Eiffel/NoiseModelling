@@ -132,7 +132,7 @@ def exec(connection, Map input) {
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
     // print to command window
-    logger.info('Start : Random grid')
+    logger.info('Start : Regular grid')
     logger.info("inputs {}", input) // log inputs of the run
 
 
