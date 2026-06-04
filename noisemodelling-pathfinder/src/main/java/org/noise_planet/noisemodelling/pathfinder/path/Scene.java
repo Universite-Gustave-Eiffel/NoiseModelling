@@ -59,6 +59,12 @@ public class Scene {
     public int reflexionOrder = 1;
 
     public double defaultGroundAttenuation = 0;
+    /**
+     * dictates the density of source points created from a line sound source;
+     *      a higher value means more points and finer discretization
+     *      sourcePointDistance = DistanceSourceReceiver / lineSourceSpacingRatio
+     */
+    public double lineSourceSpacingRatio = 2;
 
     public Scene() {
         this.profileBuilder = new ProfileBuilder();
@@ -89,6 +95,8 @@ public class Scene {
     public double maxSrcDist = DEFAULT_MAX_PROPAGATION_DISTANCE;
     /** Maximum reflection wall distance from receiver to source line */
     public double maxRefDist = DEFAULT_MAXIMUM_REF_DIST;
+    /** Maximum receiver-to-wall horizontal distance for the optional reflection cut profile filter */
+    private double closeReceiverReflectionWallDistance = 0;
 
 
     /**
@@ -119,19 +127,6 @@ public class Scene {
     public void addSource(Long pk, Geometry geom, Orientation orientation) {
         addSource(pk, geom);
         sourceOrientation.put(pk, orientation);
-    }
-
-    /**
-     * Replace the sources by the given list
-     * @param sourceGeometries
-     */
-    public void setSources(List<Geometry> sourceGeometries) {
-        sourcesIndex = new QueryRTree();
-        int i = 0;
-        for(Geometry source : sourceGeometries) {
-            sourcesIndex.appendGeometry(source, i++);
-        }
-        this.sourceGeometries = sourceGeometries;
     }
 
     /**
@@ -169,6 +164,14 @@ public class Scene {
 
     public void setDefaultGroundAttenuation(double gS) {
         this.defaultGroundAttenuation = gS;
+    }
+
+    public double getCloseReceiverReflectionWallDistance() {
+        return closeReceiverReflectionWallDistance;
+    }
+
+    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
+        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
     }
 
     public void clearSources() {

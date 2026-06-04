@@ -10,15 +10,12 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.TableLocation;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
 import org.locationtech.jts.geom.*;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 
@@ -38,11 +35,17 @@ public abstract class GridMapMaker {
     // Digital elevation model table. (Contains points or triangles)
     protected String demTable = "";
     protected String sound_lvl_field = "DB_M";
-    // True if Z of sound source and receivers are relative to the ground
-    protected boolean receiverHasAbsoluteZCoordinates = false;
-    protected boolean sourceHasAbsoluteZCoordinates = false;
+    /** True if Z of receivers geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
+     * When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
+     */
+    protected boolean receiverHasSeaLevelZCoordinates = false;
+    /** True if Z of sources geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
+     *  When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
+     */
+    protected boolean sourceHasSeaLevelZCoordinates = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
+    protected double closeReceiverReflectionWallDistance = 0;
     protected double gs = 0;
     // Soil areas are split by the provided size in order to reduce the propagation time
     protected double groundSurfaceSplitSideLength = 200;
@@ -52,7 +55,6 @@ public abstract class GridMapMaker {
     public boolean verbose = true;
     protected boolean computeHorizontalDiffraction = true;
     protected boolean computeVerticalDiffraction = true;
-
     protected GeometryFactory geometryFactory;
 
     // Initialised attributes
@@ -134,14 +136,14 @@ public abstract class GridMapMaker {
         return mainEnvelope.getHeight() / gridDim;
     }
 
-    abstract protected Envelope getComputationEnvelope(Connection connection) throws SQLException;
+    abstract public Envelope getComputationEnvelope(Connection connection) throws SQLException;
 
     /**
      * Fetch scene attributes, compute best computation cell size.
      * @param connection Active connection
-     * @throws java.sql.SQLException
+     * @throws java.sql.SQLException If some table are not found or parameters are invalid
      */
-    public void initialize(Connection connection, ProgressVisitor progression) throws SQLException {
+    public void initialize(Connection connection) throws SQLException {
         if(soundReflectionOrder > 0 && maximumPropagationDistance < maximumReflectionDistance) {
             throw new SQLException(new IllegalArgumentException(
                     "Maximum wall seeking distance cannot be superior than maximum propagation distance"));
@@ -228,7 +230,7 @@ public abstract class GridMapMaker {
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
     public boolean isReceiverHasAbsoluteZCoordinates() {
-        return receiverHasAbsoluteZCoordinates;
+        return receiverHasSeaLevelZCoordinates;
     }
 
     /**
@@ -236,21 +238,21 @@ public abstract class GridMapMaker {
      * @param receiverHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
      */
     public void setReceiverHasAbsoluteZCoordinates(boolean receiverHasAbsoluteZCoordinates) {
-        this.receiverHasAbsoluteZCoordinates = receiverHasAbsoluteZCoordinates;
+        this.receiverHasSeaLevelZCoordinates = receiverHasAbsoluteZCoordinates;
     }
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
     public boolean isSourceHasAbsoluteZCoordinates() {
-        return sourceHasAbsoluteZCoordinates;
+        return sourceHasSeaLevelZCoordinates;
     }
 
     /**
      * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
      */
     public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
-        this.sourceHasAbsoluteZCoordinates = sourceHasAbsoluteZCoordinates;
+        this.sourceHasSeaLevelZCoordinates = sourceHasAbsoluteZCoordinates;
     }
 
     public boolean iszBuildings() {
@@ -352,6 +354,22 @@ public abstract class GridMapMaker {
      */
     public void setMaximumReflectionDistance(double maximumReflectionDistance) {
         this.maximumReflectionDistance = maximumReflectionDistance;
+    }
+
+    /**
+     * @return Maximum receiver-to-wall distance in meters below which reflection cut profiles can be ignored.
+     *         A value of 0 means the optional filter is disabled.
+     */
+    public double getCloseReceiverReflectionWallDistance() {
+        return closeReceiverReflectionWallDistance;
+    }
+
+    /**
+     * @param closeReceiverReflectionWallDistance Maximum receiver-to-wall distance in meters below which
+     *                                            reflection cut profiles can be ignored. A value of 0 disables the filter.
+     */
+    public void setCloseReceiverReflectionWallDistance(double closeReceiverReflectionWallDistance) {
+        this.closeReceiverReflectionWallDistance = closeReceiverReflectionWallDistance;
     }
 
     /**

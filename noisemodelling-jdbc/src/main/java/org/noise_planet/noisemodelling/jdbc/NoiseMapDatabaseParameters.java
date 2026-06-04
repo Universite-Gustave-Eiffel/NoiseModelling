@@ -45,10 +45,6 @@ public class NoiseMapDatabaseParameters {
 
     public enum ExportRaysMethods {TO_RAYS_TABLE, NONE}
     public ExportRaysMethods exportRaysMethod = ExportRaysMethods.NONE;
-    /** Cnossos revisions have multiple coefficients for road emission formulae
-     * this parameter will be removed when the final version of Cnossos will be published
-     */
-    public int coefficientVersion = 2;
 
     // Output config
 
@@ -115,17 +111,23 @@ public class NoiseMapDatabaseParameters {
 
     /**
      * Export rays in table (beware this could take a lot of storage space) or keep on memory or do not keep
-     * @param exportRaysMethod
+     * @param exportRaysMethod Export rays method
      */
     public void setExportRaysMethod(ExportRaysMethods exportRaysMethod) {
         this.exportRaysMethod = exportRaysMethod;
     }
 
 
+    /**
+     * @param exportCnossosPathWithAttenuation With attenuation export also the json of the related cnossos path, for debugging purpose
+     */
     public void setExportCnossosPathWithAttenuation(boolean exportCnossosPathWithAttenuation) {
         this.exportCnossosPathWithAttenuation = exportCnossosPathWithAttenuation;
     }
 
+    /**
+     * @return With attenuation export also the json of the related cnossos path, for debugging purpose
+     */
     public boolean isKeepAbsorption() {
         return keepAbsorption;
     }
@@ -136,18 +138,6 @@ public class NoiseMapDatabaseParameters {
      */
     public void setExportAttenuationMatrix(boolean exportAttenuationMatrix) {
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-    }
-
-    /**
-     * @param coefficientVersion Cnossos revisions have multiple coefficients for road emission formulae this parameter
-     *                          will be removed when the final version of Cnossos will be published
-     */
-    public void setCoefficientVersion(int coefficientVersion) {
-        this.coefficientVersion = coefficientVersion;
-    }
-
-    public int getCoefficientVersion() {
-        return coefficientVersion;
     }
 
     /**
@@ -174,6 +164,10 @@ public class NoiseMapDatabaseParameters {
         this.maximumError = maximumError;
     }
 
+    /**
+     * @param mergeSources If true all sources contributions are merged into a single noise level per receiver.
+     *                     The source identifier is loosed in the output tables.
+     */
     public void setMergeSources(boolean mergeSources) {
         this.mergeSources = mergeSources;
     }
@@ -186,11 +180,16 @@ public class NoiseMapDatabaseParameters {
     }
 
     /**
+     * @param raysTable Table name that contains rays dump (profile)
      */
     public void setRaysTable(String raysTable) {
         this.raysTable = raysTable;
     }
 
+    /**
+     * @return If true all sources contributions are merged into a single noise level per receiver.
+     * The source identifier is loosed in the output tables.
+     */
     public boolean isMergeSources() {
         return mergeSources;
     }

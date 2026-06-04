@@ -1,0 +1,121 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author Aumond Pierre, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.scripts.Geometric_Tools
+
+import groovy.sql.Sql
+import org.h2gis.utilities.GeometryMetaData
+import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.sql.Connection
+
+title = 'Set Height'
+description = '&#10145;&#65039; Update the geometry by adding a height from the column in the input table that contains the heights or elevations or from a static value.'
+
+inputs = [
+        tableName: [
+                title      : 'Name of the table',
+                name       : 'Name of the table',
+                description: 'Name of the table on which the height will be modified.',
+                type       : String.class
+        ],
+        height: [
+                name       : 'New height',
+                title      : 'New height',
+                description: 'New height for the input table (in meters) (FLOAT)',
+                type       : Double.class,
+                min        : 0, max: 1,
+        ],
+        heightColumn: [
+                name       : 'heightColumn',
+                title      : 'heightColumn',
+                description: 'The column name in the input table that contains the heights',
+                type       : String.class,
+                min        : 0, max: 1,
+        ]
+
+]
+
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
+
+def exec(Connection connection, Map input) {
+
+    // output string, the information given back to the user
+    String resultString = ""
+
+    // Create a sql connection to interact with the database in SQL
+    Sql sql = new Sql(connection)
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Set new height')
+    logger.info("inputs {}", input) // log inputs of the run
+
+    String table_name = input['tableName']  as String
+    table_name = table_name.toUpperCase()
+    String geometryColumnName = GeometryTableUtilities.getGeometryColumnNames(connection, table_name).get(0)
+
+    if(input.containsKey('height')){
+        Double h = input['height'] as Double
+        GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
+        metaData.setHasZ(true)
+        metaData.initGeometryType()
+        connection.createStatement().execute(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s USING ST_UPDATEZ(%s, %f)",
+                TableLocation.parse(table_name, DBUtils.getDBType(connection)), geometryColumnName , metaData.getSQL(), geometryColumnName, h))
+
+        resultString = "Process done. Table of " + table_name + " has now a new height set to " + h + "."
+
+        logger.info('End : Set new height')
+
+        return resultString
+    } else if(input.containsKey('heightColumn')){
+        def st = connection.createStatement()
+        String height_column = input['heightColumn'] as String
+        height_column = st.enquoteIdentifier(height_column, false)
+        GeometryMetaData metaData = GeometryTableUtilities.getMetaData(connection, TableLocation.parse(table_name, DBUtils.getDBType(connection)), "THE_GEOM");
+        metaData.setHasZ(true)
+        metaData.initGeometryType()
+        String sqlUpdate = String.format(Locale.ROOT,
+                "ALTER TABLE %s ALTER COLUMN %s %s USING ST_UPDATEZ(%s, %s)",
+                TableLocation.parse(table_name, DBUtils.getDBType(connection)),
+                geometryColumnName,
+                metaData.getSQL(),
+                geometryColumnName,
+                height_column
+        )
+
+        connection.createStatement().execute(sqlUpdate)
+
+        resultString = "Process done. The " + table_name + " table   has now new heights set from column " + height_column + "."
+
+        logger.info('End : Set height by column name')
+
+        return resultString
+    }
+
+}

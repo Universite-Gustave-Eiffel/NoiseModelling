@@ -31,6 +31,7 @@ import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -70,7 +71,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setSoilTableName("LAND_G");
             noiseMapByReceiverMaker.setFrequencyFieldPrepend("DB_M");
-            noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+            noiseMapByReceiverMaker.initialize(connection);
 
             Set<Long> processedReceivers = new HashSet<>();
             Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
@@ -140,7 +141,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
 
             // Use train directivity functions instead of discrete directivity
             noiseMapByReceiverMaker.getSceneInputSettings().setUseTrainDirectivity(true);
@@ -180,7 +180,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
@@ -258,7 +257,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
             noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN);
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
@@ -328,9 +326,9 @@ public class NoiseMapByReceiverMakerTest {
             IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
-            delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setMaximumArea(0);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
@@ -338,6 +336,7 @@ public class NoiseMapByReceiverMakerTest {
 
             noiseMapByReceiverMaker.setMaximumPropagationDistance(100);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
+            noiseMapByReceiverMaker.setComputeVerticalDiffraction(false);
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportReceiverPosition = true;
             noiseMapByReceiverMaker.setGridDim(1);
@@ -351,8 +350,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 
@@ -373,9 +372,9 @@ public class NoiseMapByReceiverMakerTest {
             IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "SOURCES_GEOM");
-            delaunayReceiversMaker.setMaximumArea(800);
+            delaunayReceiversMaker.setMaximumArea(0);
             delaunayReceiversMaker.setGridDim(1);
-            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable());
+            delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
             // Create noise map for 4 periods
             NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS",
@@ -397,8 +396,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 
@@ -433,7 +432,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
@@ -469,11 +467,11 @@ public class NoiseMapByReceiverMakerTest {
 
 
     /**
-     * Place a point source into a building to check if the source is ignored
+     * Place a point source into a building to check if the source is still computed but a warning will be logged
      * @throws Exception
      */
     @Test
-    public void testIgnoredSourceInBuilding() throws Exception {
+    public void testSourceInBuilding() throws Exception {
         try (Statement st = connection.createStatement()) {
             // Import shape file
             // org/noise_planet/noisemodelling/jdbc/PointSource/DEM_Fence.shp
@@ -500,7 +498,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
-            noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().setCoefficientVersion(1);
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportRaysMethod = NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().raysTable = "RAYS";
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportCnossosPathWithAttenuation = true;
@@ -520,7 +517,12 @@ public class NoiseMapByReceiverMakerTest {
                     pathsParameters.add(cnossosPath);
                 }
             }
-            assertEquals(0 , pathsParameters.size());
+            // Diffraction over the walls of the building, but no direct path
+            assertEquals(2 , pathsParameters.size());
+            // Homogenous path with diffraction over the building wall
+            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(0).getPointList().get(1).type);
+            // Favorable path with diffraction over the building wall
+            assertEquals(PointPath.POINT_TYPE.DIFH, pathsParameters.get(1).getPointList().get(1).type);
         }
     }
 }

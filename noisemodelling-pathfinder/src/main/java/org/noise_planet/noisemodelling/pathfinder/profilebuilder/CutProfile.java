@@ -15,6 +15,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
@@ -178,12 +179,77 @@ public class CutProfile {
     }
 
     /**
+     * Compute the G coefficient for path segment using indices instead of CutPoint references.
+     * This avoids indexOf() calls that fail when using transformed CutPoints.
+     * @param i0 Index of first CutPoint in segment
+     * @param i1 Index of last CutPoint in segment
+     * @param buildingRoofG Ground absorption coefficient for building roofs
+     * @return Weighted average of ground absorption coefficients along the segment
+     */
+    @JsonIgnore
+    public double getGPathByIndex(int i0, int i1, double buildingRoofG) {
+        if(i0 == -1 || i1 == -1 || i1 < i0 || i0 >= cutPoints.size() || i1 >= cutPoints.size()) {
+            return 0.0;
+        }
+
+        double totalLength = 0;
+        double rsLength = 0.0;
+
+        boolean aboveRoof = false;
+        for(int index = 0; index < i1; index++) {
+            CutPoint current = cutPoints.get(index);
+            if(current instanceof CutPointWall) {
+                CutPointWall currentWall = (CutPointWall) current;
+                if(!aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_ENTER)) {
+                    aboveRoof = true;
+                } else if(aboveRoof && currentWall.intersectionType.equals(CutPointWall.INTERSECTION_TYPE.BUILDING_EXIT)) {
+                    aboveRoof = false;
+                }
+            }
+            if(index >= i0) {
+                double segmentLength = current.getCoordinate().distance(cutPoints.get(index + 1).getCoordinate());
+                rsLength += segmentLength * (aboveRoof ? buildingRoofG : current.getGroundCoefficient());
+                totalLength += segmentLength;
+            }
+        }
+        return rsLength / totalLength;
+    }
+
+    /**
      *
      * @return
      */
     @JsonIgnore
     public boolean isFreeField() {
         return !hasBuildingIntersection && !hasTopographyIntersection;
+    }
+
+    /**
+     * @param maximumReceiverWallDistance Maximum horizontal receiver-to-wall distance in meters
+     * @return True if this reflection profile contains a last reflection before the receiver and the receiver
+     *         is closer than the provided distance to that reflective wall, even if other events occur afterwards
+     */
+    @JsonIgnore
+    public boolean hasCloseReflectionBeforeReceiver(double maximumReceiverWallDistance) {
+        if(profileType != PROFILE_TYPE.REFLECTION || cutPoints.size() < 3 || maximumReceiverWallDistance < 0) {
+            return false;
+        }
+        CutPointReceiver receiver = getReceiver();
+        if(receiver == null) {
+            return false;
+        }
+        CutPointReflection lastReflectionBeforeReceiver = null;
+        for(int i = cutPoints.size() - 2; i >= 1; i--) {
+            CutPoint cutPoint = cutPoints.get(i);
+            if(cutPoint instanceof CutPointReflection) {
+                lastReflectionBeforeReceiver = (CutPointReflection) cutPoint;
+                break;
+            }
+        }
+        if(lastReflectionBeforeReceiver == null || lastReflectionBeforeReceiver.wall == null) {
+            return false;
+        }
+        return lastReflectionBeforeReceiver.wall.distance(receiver.coordinate) < maximumReceiverWallDistance;
     }
 
 
@@ -210,10 +276,25 @@ public class CutProfile {
      * @return @return the computed coordinate list
      */
     public List<Coordinate> computePts2D(boolean curvedPath) {
+        return computePts2D(curvedPath, null);
+    }
+
+    /**
+     * Compute 2D coordinates, optionally applying curved transformation
+     * @param curvedPath Whether to apply curved transformation
+     * @param transformedCutPointsOut If not null and curvedPath is true, will be populated with transformed CutPoints
+     * @return The computed 2D coordinate list
+     */
+    public List<Coordinate> computePts2D(boolean curvedPath, List<CutPoint> transformedCutPointsOut) {
         List<Coordinate> pts2D;
         if(curvedPath) {
-            pts2D = CurvedProfileGenerator.applyTransformation(cutPoints
-                    , false).stream()
+            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints, false);
+            // If caller wants the transformed cut points, populate the output list
+            if (transformedCutPointsOut != null) {
+                transformedCutPointsOut.clear();
+                transformedCutPointsOut.addAll(transformedCutPoints);
+            }
+            pts2D = transformedCutPoints.stream()
                     .map(CutPoint::getCoordinate)
                     .collect(Collectors.toList());
         } else {
@@ -233,6 +314,11 @@ public class CutProfile {
     }
 
     public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
+        return getConvexHullIndices(coordinates2d, false);
+    }
+
+
+    public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d, boolean ignoreWall) {
         if(coordinates2d.size() != cutPoints.size()) {
             throw new IllegalArgumentException("Coordinates size must be equal to cut points size");
         }
@@ -246,7 +332,7 @@ public class CutProfile {
             // We only add the point at the top of the wall, not the point at the bottom of the wall
             if(currentPoint instanceof CutPointTopography
                     || (currentPoint instanceof CutPointWall
-                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0)) {
+                    && Double.compare(currentPoint.getCoordinate().z, currentPoint.getzGround()) != 0 && !ignoreWall)) {
                 convexHullInput.add(coordinates2d.get(idPoint));
             }
         }

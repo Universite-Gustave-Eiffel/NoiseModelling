@@ -1,0 +1,84 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('Job table')}">
+<body>
+<div id="layout">
+    <div th:replace="~{menu :: menu}"></div>
+    <div id="main" class="content">
+        <div class="header"><h1>Manage jobs</h1>
+            <h2>Processing job management</h2>
+        </div>
+        <form class="pure-form pure-g" th:action="@{|/jobs/delete_all|}" method="POST">
+            <div class="pure-u-1 centered">
+                <button type="submit" class="pure-button pure-button-primary">
+                    Delete All
+                </button>
+            </div>
+        </form>
+        <div th:each="job : ${jobs}" class="job-table-container" style="margin-bottom: 1.5em;">
+            <table class="pure-table pure-table-bordered" style="width: 100%;">
+                <thead>
+                <tr>
+                    <th colspan="2" style="text-align: left;">
+                        Job ID: <span th:text="${job.id}">1</span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="pure-table-greyed">User</td>
+                    <td th:text="${job.email}">john@localhost</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Script</td>
+                    <td th:text="${job.script}">ProcessGroup:process</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Start Date</td>
+                    <td th:text="${job.startDate}">Monday, July 19, 2021 11:39 AM</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">End Date</td>
+                    <td th:text="${job.endDate}">-</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Duration</td>
+                    <td th:text="${job.duration}">-</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Progression</td>
+                    <td th:text="${job.progression}">15 %</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Status</td>
+                    <td th:text="${job.status}">Queued</td>
+                </tr>
+                <tr>
+                    <td class="pure-table-greyed">Logs</td>
+                    <td><a th:href="@{|/job_logs/${job.id}|}" target="_blank">View Logs</a></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="pure-g">
+                <div class="pure-u-1-2 centered">
+                    <form class="pure-form" th:action="@{|/jobs/cancel/${job.id}|}" method="POST">
+                        <button th:disabled="${!job.cancelable}" type="submit" class="pure-button pure-button-primary">
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+                <div class="pure-u-1-2 centered">
+                    <form class="pure-form" th:action="@{|/jobs/delete/${job.id}|}" method="POST">
+                        <button th:disabled="${!job.deletable}" type="submit" class="pure-button pure-button-primary">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

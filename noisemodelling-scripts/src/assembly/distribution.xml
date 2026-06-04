@@ -1,0 +1,65 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0
+          https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <includeBaseDirectory>true</includeBaseDirectory>
+
+    <fileSets>
+        <!-- Include appassembler-generated scripts and lib directory -->
+        <fileSet>
+            <directory>${project.build.directory}/appassembler</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <!-- Include start scripts from src/assembly directory -->
+        <fileSet>
+            <directory>${project.basedir}/src/assembly</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>start_linux_macos.sh</include>
+                <include>start_windows.bat</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <!-- include test resources directory -->
+        <fileSet>
+            <directory>${project.basedir}/src/test/resources/org/noise_planet/noisemodelling/scripts</directory>
+            <outputDirectory>/resources</outputDirectory>
+        </fileSet>
+        <!-- include the documentation directory -->
+        <fileSet>
+            <directory>${project.basedir}/target/sphinx/html</directory>
+            <outputDirectory>/help</outputDirectory>
+        </fileSet>
+        <!-- include groovy source directory -->
+        <fileSet>
+            <directory>${project.basedir}/src/main/groovy/org/noise_planet/noisemodelling/scripts</directory>
+            <outputDirectory>scripts</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>LICENSE</include>
+                <include>README.md</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/test/groovy/org/noise_planet/noisemodelling/scripts</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>get_started_tutorial_complex.groovy</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+    </fileSets>
+</assembly>

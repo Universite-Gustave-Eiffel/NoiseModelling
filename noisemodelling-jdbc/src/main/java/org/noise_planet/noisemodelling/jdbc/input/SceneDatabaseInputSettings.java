@@ -45,6 +45,12 @@ public class SceneDatabaseInputSettings {
     String periodAtmosphericSettingsTableName = "";
     /** Cnossos coefficient version  (1 = 2015, 2 = 2020) */
     int coefficientVersion = 2;
+    /**
+     * dictates the density of source points created from a line sound source;
+     *      a higher value means more points and finer discretization
+     *      sourcePointDistance = DistanceSourceReceiver / lineSourceSpacingRatio
+     */
+    public double lineSourceSpacingRatio = 2;
     public String frequencyFieldPrepend = "HZ";
 
     public SceneDatabaseInputSettings() {
@@ -131,5 +137,22 @@ public class SceneDatabaseInputSettings {
 
     public void setFrequencyFieldPrepend(String frequencyFieldPrepend) {
         this.frequencyFieldPrepend = frequencyFieldPrepend;
+    }
+
+    /**
+     * @return dictates the density of source points created from a line sound source;
+     *      a higher value means more points and finer discretization
+     *      sourcePointDistance = DistanceSourceReceiver / lineSourceSpacingRatio
+     */
+    public double getLineSourceSpacingRatio() {
+        return lineSourceSpacingRatio;
+    }
+
+    /**
+     * dictates the density of source points created from a line sound source;
+     * @param lineSourceSpacingRatio a higher value means more points and finer discretization
+     */
+    public void setLineSourceSpacingRatio(double lineSourceSpacingRatio) {
+        this.lineSourceSpacingRatio = lineSourceSpacingRatio;
     }
 }

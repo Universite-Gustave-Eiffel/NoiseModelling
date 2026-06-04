@@ -10,17 +10,20 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 
+import org.h2gis.functions.spatial.linear_referencing.ST_LineInterpolatePoint;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,60 +73,6 @@ public class TestPathFinder {
         assertEquals(-2.33, intercept, 0.01);
     }
 
-    /**
-     * Test vertical edge diffraction ray computation
-     *
-     * @throws ParseException
-     */
-    @Test
-    public void TestcomputeVerticalEdgeDiffraction() throws ParseException {
-        GeometryFactory factory = new GeometryFactory();
-        WKTReader wktReader = new WKTReader(factory);
-        //Create obstruction test object
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON((5 6, 6 5, 7 5, 7 8, 6 8, 5 7, 5 6))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"), 4, -1);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4, -1);
-        profileBuilder.finishFeeding();
-
-        PathFinder computeRays = new PathFinder(new Scene(profileBuilder));
-        Coordinate p1 = new Coordinate(2, 6.5, 1.6);
-        Coordinate p2 = new Coordinate(14, 6.5, 1.6);
-
-        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
-        int i = 0;
-        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p2.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(false, p1, p2);
-        i = 0;
-        assertEquals(0, p1.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p2.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(false, p2, p1);
-        i = 0;
-        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(13, 10).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(9, 11).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p1.distance(ray.get(i)), 0.02);
-
-        ray = computeRays.computeSideHull(true, p2, p1);
-        i = 0;
-        assertEquals(0, p2.distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(11, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(10, 4).distance(ray.get(i++)), 0.02);
-        assertEquals(0, new Coordinate(6, 5).distance(ray.get(i++)), 0.02);
-        assertEquals(0, p1.distance(ray.get(i)), 0.02);
-    }
-
     @Test
     public void TestSplitLineSourceIntoPoints() {
         GeometryFactory factory = new GeometryFactory();
@@ -142,6 +91,31 @@ public class TestPathFinder {
         assertEquals(2, sourcePoints.size());
         assertEquals(0, new Coordinate(2.25, 2, 0).distance3D(sourcePoints.get(0)), 1e-6);
         assertEquals(0, new Coordinate(4, 1.25, 0).distance3D(sourcePoints.get(1)), 1e-6);
+    }
+
+    @Test
+    public void TestSplitLineSourceIntoPointsRegression() throws ParseException, SQLException {
+        WKTReader wktReader = new WKTReader();
+        LineString lineSource = (LineString) wktReader.read("LINESTRING (171698.4427670392 177701.00951635558, 171706.8669046766 " +
+                "177687.91784651205, 171712.97191399403 177677.7644841401, 171720.4437829301 177663.66767532472, " +
+                "171728.96676823843 177647.13902381528, 171734.72943947717 177634.77051055804, 171739.0868822124 " +
+                "177625.43309380766, 171745.47147686878 177610.67544839345, 171753.22554062092 177591.36253726296, " +
+                "171759.58780549894 177571.8658362897, 171769.10714508523 177535.77365270816, 171772.756902288 177519" +
+                ".09122776985, 171776.23273920204 177500.27220100444, 171778.51597507883 177485.76444646623, 171780" +
+                ".4296797503 177467.1168851778, 171781.83025393772 177445.0297520226, 171789.99859531887 177262" +
+                ".8134907158, 171791.8784187642 177220.3374281656, 171793.76627182262 177175.94801528286, 171794" +
+                ".85835770285 177143.55845900718, 171796.33670644296 177099.5455712648, 171804.84062152542 176921" +
+                ".4135355642, 171805.81436789143 176907.24518988002, 171807.89555734128 176888.98771900777, 171813" +
+                ".93869655454 176851.86881521158, 171816.43073227373 176841.3444906231, 171819.2233892781 176829" +
+                ".58662367053, 171826.7446807982 176804.04324781243, 171836.06368822214 176775.90431953594, 171841" +
+                ".44715023096 176760.3082989417, 171842.8699331516 176756.52086056024, 171846.55237681692 176747" +
+                ".3253388824)");
+        List<Coordinate> sourcePoints = new ArrayList<>();
+        splitLineStringIntoPoints(lineSource, 1550.50, sourcePoints);
+        assertEquals(1, sourcePoints.size());
+        // Check if the point is the middle point of the line
+        Coordinate expectedPoint = ST_LineInterpolatePoint.execute(lineSource, 0.5).getCoordinate();
+        assertEquals(0, expectedPoint.distance(sourcePoints.get(0)), 1e-6);
     }
 
     @Test
@@ -281,5 +255,28 @@ public class TestPathFinder {
         List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source);
         assertTrue(ray.isEmpty());
 
+    }
+
+    @Test
+    public void testMegaHeight() {
+        // create cut profile
+
+        CutProfile cutProfile = new CutProfile();
+        cutProfile.cutPoints.add(new CutPointSource(new Coordinate(843938.5179467835, 6519642.72565055, 0.05)));
+        cutProfile.cutPoints.add(new CutPointWall(13489, new Coordinate(844060.5664716291, 6519616.108346815, 1649.0),
+                new LineSegment(new Coordinate(844062.998140139, 6519613.740667035, 1649.0),
+                                new Coordinate(844060.4359994413, 6519616.235385661, 1649.0)),
+                Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)));
+        cutProfile.cutPoints.add(new CutPointWall(13482, new Coordinate(844086.1833603203, 6519610.521613932, 1649.0),
+                new LineSegment(new Coordinate(844086.6283247864, 6519610.685363031, 1649.0),
+                                new Coordinate(844083.275146627, 6519609.451377079, 1649.0)),
+                Arrays.asList(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1)));
+        cutProfile.cutPoints.add(new CutPointReceiver(new Coordinate(844089.2305787631, 6519609.85705253, 4.0)));
+        cutProfile.hasBuildingIntersection = true;
+
+        List<Coordinate> pts2d = cutProfile.computePts2D(true);
+        for(Coordinate pt : pts2d) {
+            assertFalse(Double.isNaN(pt.y));
+        }
     }
 }

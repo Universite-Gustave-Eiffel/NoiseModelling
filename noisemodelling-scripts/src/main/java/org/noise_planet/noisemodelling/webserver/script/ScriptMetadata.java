@@ -1,0 +1,171 @@
+/**
+ * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and education, as well as by experts in a professional use.
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ * <p>
+ * Official webpage : http://noise-planet.org/noisemodelling.html
+ * Contact: contact@noise-planet.org
+ */
+
+
+package org.noise_planet.noisemodelling.webserver.script;
+
+
+import groovy.lang.GroovyShell;
+import groovy.lang.Script;
+import org.locationtech.jts.geom.Geometry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.*;
+
+/**
+ * Represents the description for a script, with expected inputs and outputs
+ */
+public class ScriptMetadata {
+    // For the synchronous WPS call, release the http connection after this timeout (with a message "long running process..")
+    Logger logger = LoggerFactory.getLogger(ScriptMetadata.class);
+    public static final int DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS = 60;
+    final public String id;
+    final public String group;
+    final public String title;
+    final public String description;
+    final public URI path;
+    final public URI scriptDirectory;
+    final public int executionTimeoutSeconds;
+
+    final public Map<String, ScriptInput> inputs = new HashMap<>();
+    final public Map<String, ScriptOutput> outputs = new HashMap<>();
+
+    /**
+     * Constructs a `ScriptMetadata` instance by parsing metadata from a specified Groovy script file.
+     * The constructor initializes the metadata fields such as `id`, `title`, `description`, `executionTimeoutSeconds`,
+     * and populates the `inputs` and `outputs` maps based on the content of the script. The `id` is generated
+     * using the provided group and the script file name, while the other fields are extracted from the script's
+     * metadata or assigned default values if not specified.
+     *
+     * @param group           a string representing the group or category to which the script belongs, used in generating the script's unique identifier
+     * @param file            a URI pointing to the Groovy script file from which to extract metadata
+     * @param scriptDirectory a URI representing the directory containing the script, used for mounting a special file system if the script is stored into a jar file
+     * @throws IOException if an error occurs while reading or parsing the script file for metadata extraction
+     */
+    public ScriptMetadata(String group, URI file, URI scriptDirectory) throws IOException {
+        this.scriptDirectory = scriptDirectory;
+        this.group = group;
+        Map metadata = parseGroovyScriptMetadata(file);
+        if(metadata.isEmpty()) {
+            throw new IOException("Not a valid Function");
+        }
+        id = group + ":" + Path.of(file).getFileName().toString().replace(".groovy", "");
+        title = metadata.getOrDefault("title", id).toString();
+        description = metadata.getOrDefault("description", "").toString();
+        executionTimeoutSeconds = (Integer) metadata.getOrDefault("executionTimeout", DEFAULT_JOB_EXECUTION_TIMEOUT_SECONDS);
+        path = file;
+
+        // Convert metadata inputs into ScriptInput instances
+        Object inputsValue = metadata.get("inputs");
+        if(inputsValue instanceof Map) {
+            for (Map.Entry<String, Object> input : ((Map<String, Object>) inputsValue).entrySet()) {
+                ScriptInput si = new ScriptInput();
+                si.id = input.getKey().toString();
+                if(input.getValue() instanceof Map) {
+                    Map<String, Object> inputAttributes = (Map)input.getValue();
+                    si.title = inputAttributes.getOrDefault("title", input.getKey()).toString();
+                    si.description = inputAttributes.getOrDefault("description", "").toString();
+                    Object attributeType = inputAttributes.get("type");
+                    if(attributeType instanceof Class) {
+                        si.type = (Class<?>)attributeType;
+                    }
+                    Object minValue = inputAttributes.getOrDefault("min", 1);
+                    si.minOccurs = minValue instanceof Integer ? (Integer)minValue : 1;
+                    Object maxValue = inputAttributes.getOrDefault("max", 1);
+                    si.maxOccurs = maxValue instanceof Integer ? (Integer)maxValue : 1;
+                    si.defaultValue = inputAttributes.getOrDefault("default", null);
+                    // If minOccurs is 0 but no default value is provided
+                    // it means that the input map will not have an entry for this input
+                    if (inputAttributes.containsKey("default")) {
+                        // We can consider that the input is optional as the default value will be used if no value is provided
+                        si.minOccurs  = 0;
+                    }
+                    Object allowedValues = inputAttributes.getOrDefault("allowedValues", new HashSet<>());
+                    if(allowedValues instanceof Collection) {
+                        si.allowedValues = new HashSet<>((Collection<String>)allowedValues);
+                    }
+                }
+                inputs.put(si.id, si);
+            }
+        }
+
+        Object outputsValue = metadata.get("outputs");
+        if(outputsValue instanceof Map) {
+            for (Map.Entry output : ((Map<String, Object>) outputsValue).entrySet()) {
+                ScriptOutput scriptOutput = new ScriptOutput();
+                scriptOutput.id = output.getKey().toString();
+                if(output.getValue() instanceof Map) {
+                    Map<String, Object> outputAttributes = (Map) output.getValue();
+                    scriptOutput.title = (String) outputAttributes.getOrDefault("title", "no titles");
+                    scriptOutput.description = outputAttributes.getOrDefault("description", "").toString();
+                    Object attributeType = outputAttributes.get("type");
+                    if(attributeType instanceof Class) {
+                        scriptOutput.type = (Class<?>)attributeType;
+                    }
+                }
+                outputs.put(scriptOutput.id, scriptOutput);
+            }
+        }
+    }
+
+    /**
+     * Cast the input content to the expected input type defined in the script metadata.
+     *
+     * @param expectedInputType the expected type of the input as defined in the script metadata
+     * @param inputValue the string input value containing the literal data to be cast
+     * @return the cast input content if successful, otherwise returns the original input content
+     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
+     */
+    public static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
+        String typeName = expectedInputType.getName();
+        if (typeName.equals(Long.class.getName())) {
+            return Long.parseLong(inputValue);
+        } else if (typeName.equals(Integer.class.getName())) {
+            return Integer.parseInt(inputValue);
+        } else if (typeName.equals(Float.class.getName())) {
+            return Float.parseFloat(inputValue);
+        } else if (typeName.equals(Double.class.getName())) {
+            return Double.parseDouble(inputValue);
+        } else if (typeName.equals(Boolean.class.getName())) {
+            return Boolean.parseBoolean(inputValue);
+        } else if (typeName.equals(Geometry.class.getName())) {
+            return new org.locationtech.jts.io.WKTReader().read(inputValue);
+        }
+        return inputValue;
+    }
+
+    /**
+     * Parses metadata from a provided Groovy script file and extracts details such as title,
+     * description, inputs, and outputs defined within the script. The method analyzes the script
+     * content to populate a metadata map, which includes blocks of inputs and outputs if defined.
+     *
+     * @param scriptFile the Groovy script file to parse for metadata
+     * @return a map containing metadata fields such as "title", "description", "inputs", and "outputs",
+     * where "inputs" and "outputs" are themselves maps with their respective properties
+     * @throws IOException if an error occurs while reading the script file
+     */
+    private static Map parseGroovyScriptMetadata(URI scriptFile) throws IOException {
+        GroovyShell shell = new GroovyShell();
+        Script script = shell.parse(scriptFile);
+        // Expect at least an exec method
+        if(script.getMetaClass().getMethods().stream().anyMatch(m -> m.getName().equals("exec"))) {
+            script.run();
+            return script.getBinding().getVariables();
+        } else {
+            return Collections.EMPTY_MAP;
+        }
+    }
+
+
+}
+

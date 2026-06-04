@@ -20,6 +20,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointTopography;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -31,10 +32,47 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWallReflection {
+
+    @Test
+    public void testCloseReflectionBeforeReceiverEvenWithPointAfterReflection() {
+        CutProfile cutProfile = new CutProfile();
+        cutProfile.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
+        cutProfile.cutPoints.add(new CutPointSource(new Coordinate(11.49, 0.0, 2.0)));
+
+        CutPoint reflectionBasePoint = new CutPoint(new Coordinate(1.0, 0.0, 2.0), 0.0, 0.0);
+        cutProfile.cutPoints.add(new CutPointReflection(reflectionBasePoint,
+                new LineSegment(new Coordinate(1.0, -2.5, 0.0), new Coordinate(1.0, 2.5, 5.0)),
+                Collections.emptyList()));
+
+        // This point stands for a later event on the path (for example a diffraction-related point).
+        cutProfile.cutPoints.add(new CutPointTopography(new Coordinate(1.2, 0.0, 3.0)));
+        cutProfile.cutPoints.add(new CutPointReceiver(new Coordinate(1.49, 0.0, 2.0)));
+
+        assertTrue(cutProfile.hasCloseReflectionBeforeReceiver(0.5),
+                "The last reflection before the receiver should trigger filtering even if another point follows it.");
+    }
+
+    @Test
+    public void testReflectionOutsideReceiverWallDistanceThreshold() {
+        CutProfile cutProfile = new CutProfile();
+        cutProfile.setProfileType(CutProfile.PROFILE_TYPE.REFLECTION);
+        cutProfile.cutPoints.add(new CutPointSource(new Coordinate(11.51, 0.0, 2.0)));
+
+        CutPoint reflectionBasePoint = new CutPoint(new Coordinate(1.0, 0.0, 2.0), 0.0, 0.0);
+        cutProfile.cutPoints.add(new CutPointReflection(reflectionBasePoint,
+                new LineSegment(new Coordinate(1.0, -2.5, 0.0), new Coordinate(1.0, 2.5, 5.0)),
+                Collections.emptyList()));
+
+        cutProfile.cutPoints.add(new CutPointReceiver(new Coordinate(1.50, 0.0, 2.0)));
+
+        assertFalse(cutProfile.hasCloseReflectionBeforeReceiver(0.5),
+                "The optional filter must only reject reflections with a receiver-to-wall distance strictly below 0.5 m.");
+    }
 
     @Test
     public void testWideWall() {

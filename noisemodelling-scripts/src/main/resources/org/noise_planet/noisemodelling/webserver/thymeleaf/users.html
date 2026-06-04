@@ -1,0 +1,53 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('Manage accounts')}">
+<body>
+<div id="layout">
+    <div th:replace="~{menu :: menu}"></div>
+    <div id="main" class="content">
+        <div class="header"><h1>Manage accounts</h1>
+            <h2>Create new accounts and modify existing ones</h2>
+        </div>
+        <div class="l-box" id="message_div" th:if="${not #strings.isEmpty(message)}">
+            <aside><div th:remove="tag" th:utext="${message}"></div></aside>
+        </div>
+            <table class="pure-table pure-table-bordered">
+                <thead>
+                <tr>
+                    <th>account email</th>
+                    <th>Database size</th>
+                    <th>Register Link</th>
+                    <th>Groups</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="account : ${accounts}">
+                    <td th:text="'👤 '+${account.email}"><a th:href=""></a></td>
+                    <td th:text="${account.dbSize}">15.8 Mb</td>
+                    <td th:text="${account.registerUrl}"></td>
+                    <td th:text="${account.groups}"></td>
+                    <td><a th:href="@{|/edit_user/${account.id}|}">Edit</a></td>
+                </tr>
+                </tbody>
+            </table>
+        <div class="pure-u-1"></div>
+            <form class="pure-form" method="POST" action="">
+                <fieldset class="centered">
+                    <legend>Create a new user</legend>
+                    <input type="email" placeholder="Email" name="USER_EMAIL" required/>
+                        <label th:each="entry : ${groups}"  th:for="'ROLE_'+${entry.key}" >
+                        <input type="checkbox"
+                               th:name="'ROLE_'+${entry.key}"
+                               th:checked="${entry.value}"
+                               th:id="'ROLE_'+${entry.key}" th:text="${entry.key}"/></label>
+                    <button type="submit" class="pure-button pure-button-primary">Add</button>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

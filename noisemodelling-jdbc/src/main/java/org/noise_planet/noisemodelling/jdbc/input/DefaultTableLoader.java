@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
 
@@ -79,24 +80,42 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * Initializes the NoiseMap parameters and attenuation data based on the input mode specified in the NoiseMap parameters.
      * @param connection   the database connection to be used for initialization.
      * @param noiseMapByReceiverMaker the noise map by receiver maker object associated with the computation process.
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs during initialization.
      */
     @Override
     public void initialize(Connection connection, NoiseMapByReceiverMaker noiseMapByReceiverMaker) throws SQLException {
         this.noiseMapByReceiverMaker = noiseMapByReceiverMaker;
+        DBTypes dbType = DBUtils.getDBType(connection);
         SceneDatabaseInputSettings inputSettings = noiseMapByReceiverMaker.getSceneInputSettings();
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
             // Check fields to find appropriate expected data
-            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
             if(!inputSettings.sourcesEmissionTableName.isEmpty()) {
                 List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+                List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, inputSettings.sourcesEmissionTableName, TableLocation.capsIdentifier("period", dbType)).stream().map(String::toUpperCase).collect(Collectors.toList());
                 if(sourceFields.contains("LV_SPD")) {
-                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                    if(periods.contains("D") && periods.contains("E") && periods.contains("N")) {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW_DEN;
+                    } else {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                    }
                 } else {
-                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    if(periods.contains("D") && periods.contains("E") && periods.contains("N")) {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW_DEN;
+                    } else {
+                        inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                    }
                 }
             } else {
-                List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName());
+                List<String> sourceFields = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesTableName()).stream().map(String::toUpperCase).collect(Collectors.toList());
+                // Look for Emission/Traffic columns without periods
+                List<Integer> frequencyValuesWithoutPeriod = readFrequenciesFromLwTable(
+                        noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceFields);
+                if(!frequencyValuesWithoutPeriod.isEmpty()) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW;
+                } else if (sourceFields.contains("LV_SPD")) {
+                    inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_TRAFFIC_FLOW;
+                }
+                // Look for Emission/Traffic columns for each period
                 for (EmissionTableGenerator.STANDARD_PERIOD period : EmissionTableGenerator.STANDARD_PERIOD.values()) {
                     String periodFieldName = EmissionTableGenerator.STANDARD_PERIOD_VALUE[period.ordinal()];
                     List<Integer> frequencyValues = readFrequenciesFromLwTable(
@@ -114,11 +133,17 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
             }
         }
-
+        if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_GUESS) {
+            // By default, we compute the attenuation
+            inputSettings.inputMode = SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION;
+        }
         if(inputSettings.inputMode == SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW) {
             // Load expected frequencies used for computation
             // Fetch source fields
-            List<String> sourceField = JDBCUtilities.getColumnNames(connection, noiseMapByReceiverMaker.getSourcesEmissionTableName());
+            List<String> sourceField = JDBCUtilities.getColumnNames(connection,
+                    noiseMapByReceiverMaker.getSourcesEmissionTableName().isEmpty() ?
+                            noiseMapByReceiverMaker.getSourcesTableName() :
+                            noiseMapByReceiverMaker.getSourcesEmissionTableName());
             List<Integer> frequencyValues = readFrequenciesFromLwTable(noiseMapByReceiverMaker.getFrequencyFieldPrepend(), sourceField);
             if(frequencyValues.isEmpty()) {
                 throw new SQLException("Source emission table "+ noiseMapByReceiverMaker.getSourcesTableName()+" does not contains any frequency bands");
@@ -278,6 +303,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.setBodyBarrier(noiseMapByReceiverMaker.isBodyBarrier());
         scene.maxRefDist = maximumReflectionDistance;
         scene.maxSrcDist = maximumPropagationDistance;
+        scene.setCloseReceiverReflectionWallDistance(noiseMapByReceiverMaker.getCloseReceiverReflectionWallDistance());
+        scene.lineSourceSpacingRatio = noiseMapByReceiverMaker.getSceneInputSettings().getLineSourceSpacingRatio();
         scene.setComputeVerticalDiffraction(noiseMapByReceiverMaker.isComputeVerticalDiffraction());
         scene.setComputeHorizontalDiffraction(noiseMapByReceiverMaker.isComputeHorizontalDiffraction());
 
@@ -316,6 +343,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
+                        if(!noiseMapByReceiverMaker.isReceiverHasAbsoluteZCoordinates()) {
+                            pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
+                        }
                         scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
                     }
                 }
@@ -335,7 +365,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param tableName Table name
      * @param defaultInterpolation Interpolation if applicable
      * @param frequencyFieldPrepend Frequency field name ex. HZ for HZ1000
-     * @return
+     * @return Map of directivity spheres
      */
     public static Map<Integer, DirectivitySphere> fetchDirectivity(Connection connection, String tableName, int defaultInterpolation, String frequencyFieldPrepend) throws SQLException {
         Map<Integer, DirectivitySphere> directionAttributes = new HashMap<>();
@@ -449,7 +479,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String additionalQuery = "";
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
         if(!buildingTableParameters.heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.quoteIdentifier(buildingTableParameters.heightField, dbType);
+            additionalQuery += ", " + TableLocation.capsIdentifier(buildingTableParameters.heightField, dbType);
         }
         if(fetchAlpha) {
             additionalQuery += ", " + buildingTableParameters.alphaFieldName;
@@ -701,6 +731,8 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, SceneWithEmission scene, boolean doIntersection)
             throws SQLException {
+        Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
+        Map<String, Integer> sourceFieldNames = new HashMap<>();
         String sourcesTableName = noiseMapByReceiverMaker.getSourcesTableName();
         GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
@@ -727,6 +759,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             }
             st.setFetchDirection(ResultSet.FETCH_FORWARD);
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                EmissionTableGenerator.cacheFields(sourceFieldNames, rs);
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
@@ -737,13 +770,20 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                             Coordinate[] coordinates = geo.getCoordinates();
                             for (Coordinate coordinate : coordinates) {
                                 // check z value
-                                if (coordinate.getZ() == Coordinate.NULL_ORDINATE) {
+                                if (Double.isNaN(coordinate.getZ())) {
                                     throw new IllegalArgumentException("The table " + sourcesTableName +
                                             " contain at least one source without Z ordinate." +
                                             " You must specify X,Y,Z for each source");
                                 }
                             }
-                            scene.addSource(rs.getLong(pkIndex), geo, rs);
+                            if(!noiseMapByReceiverMaker.isSourceHasAbsoluteZCoordinates()) {
+                                if(scene.profileBuilder.hasDem()) {
+                                    // Coordinates are supposed to be relative to the digital elevation model
+                                    // So we must compute the altitude values
+                                    geo = scene.profileBuilder.makeGeometryRelativeZToAbsolute(geo, true);
+                                }
+                            }
+                            scene.addSource(rs.getLong(pkIndex), geo, rs, sourceFieldNames);
                         }
                     }
                 }
@@ -768,8 +808,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 }
                 st.setFetchDirection(ResultSet.FETCH_FORWARD);
                 try (ResultSet rs = st.executeQuery()) {
+                    EmissionTableGenerator.cacheFields(sourceEmissionFieldsCache, rs);
                     while (rs.next()) {
-                        scene.addSourceEmission(rs.getLong(scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField), rs);
+                        scene.addSourceEmission(rs.getLong(scene.sceneDatabaseInputSettings.sourceEmissionPrimaryKeyField), rs, sourceEmissionFieldsCache);
                     }
                 } finally {
                     if (autoCommit) {

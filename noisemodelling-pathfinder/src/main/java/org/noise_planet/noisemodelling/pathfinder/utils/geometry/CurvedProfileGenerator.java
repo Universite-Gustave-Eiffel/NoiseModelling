@@ -11,7 +11,9 @@
 package org.noise_planet.noisemodelling.pathfinder.utils.geometry;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -58,6 +60,23 @@ public class CurvedProfileGenerator {
             CutPoint newCp = cp.clone();
             newCp.setZGround(groundCoords[i].z);
             newCp.setCoordinate(curvedCoords[i]);
+
+            // If this is a reflection point, also transform the wall coordinates
+            if (newCp instanceof CutPointReflection) {
+                CutPointReflection reflectionPoint = (CutPointReflection) newCp;
+                if (reflectionPoint.wall != null) {
+                    // Transform wall endpoints using the same curved transformation
+                    Coordinate[] wallCoords = new Coordinate[]{
+                            new Coordinate(reflectionPoint.wall.p0),
+                            new Coordinate(reflectionPoint.wall.p1)
+                    };
+                    Coordinate[] transformedWallCoords = applyTransformation(cs, cr, wallCoords, inversed);
+
+                    // Create a NEW LineSegment with transformed coordinates
+                    reflectionPoint.wall = new LineSegment(transformedWallCoords[0], transformedWallCoords[1]);
+                }
+            }
+
             curvedProfile.add(newCp);
         }
         return curvedProfile;
@@ -75,7 +94,7 @@ public class CurvedProfileGenerator {
         Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
 
         // Calculate projected distance between source and receiver on the vertical plane
-        double d = cs.distance3D(cr);
+        double d = cs.distance(cr);
 
         // Calculate radius of curvature (Γ)
         double radius = Math.max(1000, 8 * d);
@@ -87,7 +106,7 @@ public class CurvedProfileGenerator {
 
             // Apply equation (4) for z coordinate transformation
             double z = base -
-                    Math.sqrt(radius * radius - Math.pow(p.distance3D(cs) - d/2, 2));
+                    Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
 
             if(inverse) {
                 z = -z;

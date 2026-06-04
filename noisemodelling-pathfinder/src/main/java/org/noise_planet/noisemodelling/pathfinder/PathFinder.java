@@ -24,10 +24,8 @@ import org.noise_planet.noisemodelling.pathfinder.path.*;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiversCompute;
 import org.noise_planet.noisemodelling.pathfinder.path.MirrorReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.QueryRTree;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
 import org.slf4j.Logger;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.LEFT;
-import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationSide.RIGHT;
 
 /**
  * @author Nicolas Fortin
@@ -489,8 +486,6 @@ public class PathFinder {
         int indexp1 = 0;
         int indexp2 = 0;
 
-        boolean convexHullIntersects = true;
-
         input.add(p1);
         input.add(p2);
 
@@ -506,80 +501,56 @@ public class PathFinder {
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
         int k;
-        while (convexHullIntersects) {
-            ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
-            Geometry convexhull = convexHull.getConvexHull();
 
-            coordinates = convexhull.getCoordinates();
-            // for the length we do not count the return ray from receiver to source (closed polygon here)
-            double convexHullLength = Length.ofLine(
-                    CoordinateArraySequenceFactory.instance()
-                            .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
-            if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
-                    convexHullLength >= data.maxSrcDist) {
-                return new ArrayList<>();
+        ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
+        Geometry convexhull = convexHull.getConvexHull();
+
+        coordinates = convexhull.getCoordinates();
+        // for the length we do not count the return ray from receiver to source (closed polygon here)
+        double convexHullLength = Length.ofLine(
+                CoordinateArraySequenceFactory.instance()
+                        .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
+        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
+                convexHullLength >= data.maxSrcDist) {
+            return new ArrayList<>();
+        }
+
+        input.clear();
+        input.addAll(Arrays.asList(coordinates));
+
+        indexp1 = -1;
+        for (int i = 0; i < coordinates.length - 1; i++) {
+            if (coordinates[i].equals(p1)) {
+                indexp1 = i;
+                break;
             }
-
-            convexHullIntersects = false;
-
-            input.clear();
-            input.addAll(Arrays.asList(coordinates));
-
-            indexp1 = -1;
-            for (int i = 0; i < coordinates.length - 1; i++) {
-                if (coordinates[i].equals(p1)) {
-                    indexp1 = i;
-                    break;
-                }
+        }
+        if (indexp1 == -1) {
+            // P1 does not belong to convex vertices, cannot compute diffraction
+            // TODO handle concave path
+            return new ArrayList<>();
+        }
+        // Transform array to set p1 at index=0
+        Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
+        // Copy from P1 to end in beginning of new array
+        int len = (coordinates.length - 1) - indexp1;
+        System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
+        // Copy from 0 to P1 in the end of array
+        System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
+        coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
+        coordinates = coordinatesShifted;
+        indexp1 = 0;
+        indexp2 = -1;
+        for (int i = 1; i < coordinates.length - 1; i++) {
+            if (coordinates[i].equals(p2)) {
+                indexp2 = i;
+                break;
             }
-            if (indexp1 == -1) {
-                // P1 does not belong to convex vertices, cannot compute diffraction
-                // TODO handle concave path
-                return new ArrayList<>();
-            }
-            // Transform array to set p1 at index=0
-            Coordinate[] coordinatesShifted = new Coordinate[coordinates.length];
-            // Copy from P1 to end in beginning of new array
-            int len = (coordinates.length - 1) - indexp1;
-            System.arraycopy(coordinates, indexp1, coordinatesShifted, 0, len);
-            // Copy from 0 to P1 in the end of array
-            System.arraycopy(coordinates, 0, coordinatesShifted, len, coordinates.length - len - 1);
-            coordinatesShifted[coordinatesShifted.length - 1] = coordinatesShifted[0];
-            coordinates = coordinatesShifted;
-            indexp1 = 0;
-            indexp2 = -1;
-            for (int i = 1; i < coordinates.length - 1; i++) {
-                if (coordinates[i].equals(p2)) {
-                    indexp2 = i;
-                    break;
-                }
-            }
-            if (indexp2 == -1) {
-                // P2 does not belong to convex vertices, cannot compute diffraction
-                // TODO handle concave path
-                return new ArrayList<>();
-            }
-            for (k = 0; k < coordinates.length - 1; k++) {
-                LineSegment freeFieldTestSegment = new LineSegment(coordinates[k], coordinates[k + 1]);
-
-                // Ignore intersection if iterating over other side (not parts of what is returned)
-                if (left && k < indexp2 || !left && k >= indexp2) {
-                    if (!freeFieldSegments.contains(freeFieldTestSegment)) {
-
-                        int inputPointsBefore = input.size();
-
-                        // Visit buildings that are between the provided hull points
-                        data.profileBuilder.getWallsOnPath(coordinates[k], coordinates[k + 1], buildingIntersectionPathVisitor);
-
-                        if (inputPointsBefore == input.size()) {
-                            freeFieldSegments.add(freeFieldTestSegment);
-                        } else {
-                            convexHullIntersects = true;
-                            break;
-                        }
-                    }
-                }
-            }
+        }
+        if (indexp2 == -1) {
+            // P2 does not belong to convex vertices, cannot compute diffraction
+            // TODO handle concave path
+            return new ArrayList<>();
         }
 
         // restore coordinates order from source to receiver
@@ -830,11 +801,14 @@ public class PathFinder {
             // Return mid point
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0;
-            final double targetSegmentSize = geomLength / 2.0;
+            final double targetSegmentSize = geomLength / 2.0; // take middle point
             for (int i = 0; i < points.length - 1; i++) {
                 Coordinate a = points[i];
                 final Coordinate b = points[i + 1];
                 double length = a.distance3D(b);
+                if(Double.isNaN(length)) {
+                    length = a.distance(b);
+                }
                 if (length + segmentLength > targetSegmentSize) {
                     double segmentLengthFraction = (targetSegmentSize - segmentLength) / length;
                     Coordinate midPoint = new Coordinate(a.x + segmentLengthFraction * (b.x - a.x),
@@ -847,7 +821,7 @@ public class PathFinder {
             }
             return geom.getLength();
         } else {
-            double targetSegmentSize = geomLength / ceil(geomLength / segmentSizeConstraint);
+            double targetSegmentSize = Math.max(1, geomLength / ceil(geomLength / segmentSizeConstraint));
             Coordinate[] points = geom.getCoordinates();
             double segmentLength = 0.;
 
@@ -898,110 +872,6 @@ public class PathFinder {
 
 
     /**
-     * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
-     * @param lineString
-     * @param profileBuilder
-     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
-     * @return computed lineString
-     */
-    private static LineString splitLineSource(LineString lineString, ProfileBuilder profileBuilder, double epsilon) {
-        boolean warned = false;
-        ArrayList<Coordinate> newGeomCoordinates = new ArrayList<>();
-        Coordinate[] coordinates = lineString.getCoordinates();
-        for(int idPoint = 0; idPoint < coordinates.length - 1; idPoint++) {
-            Coordinate p0 = coordinates[idPoint];
-            Coordinate p1 = coordinates[idPoint + 1];
-            List<Coordinate> groundProfileCoordinates = new ArrayList<>();
-            profileBuilder.fetchTopographicProfile(groundProfileCoordinates, p0, p1, false);
-            newGeomCoordinates.ensureCapacity(newGeomCoordinates.size() + groundProfileCoordinates.size());
-            if(groundProfileCoordinates.size() < 2) {
-                if(profileBuilder.hasDem()) {
-                    if(!warned) {
-                        LOGGER.warn( "Source line out of DEM area {}",
-                                new WKTWriter(3).write(lineString));
-                        warned = true;
-                    }
-                }
-                newGeomCoordinates.add(p0);
-                newGeomCoordinates.add(p1);
-            } else {
-                if (idPoint == 0) {
-                    newGeomCoordinates.add(new Coordinate(p0.x, p0.y, p0.z + groundProfileCoordinates.get(0).z));
-                }
-                Coordinate previous = groundProfileCoordinates.get(0);
-                for (int groundPoint = 1; groundPoint < groundProfileCoordinates.size() - 1; groundPoint++) {
-                    final Coordinate current = groundProfileCoordinates.get(groundPoint);
-                    final Coordinate next = groundProfileCoordinates.get(groundPoint + 1);
-                    // Do not add topographic points which are simply the linear interpolation between two points
-                    // triangulation add a lot of interpolated lines from line segment DEM
-                    if (CGAlgorithms3D.distancePointSegment(current, previous, next) >= epsilon) {
-                        // interpolate the Z (height) values of the source then add the altitude
-                        previous = current;
-                        newGeomCoordinates.add(
-                                new Coordinate(current.x, current.y, current.z + Vertex.interpolateZ(current, p0, p1)));
-                    }
-                }
-                newGeomCoordinates.add(new Coordinate(p1.x, p1.y, p1.z +
-                        groundProfileCoordinates.get(groundProfileCoordinates.size() - 1).z));
-            }
-        }
-        return GEOMETRY_FACTORY.createLineString(newGeomCoordinates.toArray(new Coordinate[0]));
-    }
-
-    /**
-     * Update ground Z coordinates of sound sources absolute to sea levels
-     */
-    public void makeSourceRelativeZToAbsolute() {
-        List<Geometry> sourceCopy = new ArrayList<>(data.sourceGeometries.size());
-        for (Geometry source : data.sourceGeometries) {
-            Geometry offsetGeometry;
-            if (source instanceof LineString) {
-                offsetGeometry = splitLineSource((LineString) source, data.profileBuilder, ProfileBuilder.MILLIMETER);
-            } else if (source instanceof MultiLineString) {
-                LineString[] newGeom = new LineString[source.getNumGeometries()];
-                for (int idGeom = 0; idGeom < source.getNumGeometries(); idGeom++) {
-                    newGeom[idGeom] = splitLineSource((LineString) source.getGeometryN(idGeom),
-                            data.profileBuilder, ProfileBuilder.MILLIMETER);
-                }
-                offsetGeometry = GEOMETRY_FACTORY.createMultiLineString(newGeom);
-            } else if (source instanceof Point) {
-                Coordinate sourceCoord = source.getCoordinate();
-                offsetGeometry = GEOMETRY_FACTORY.createPoint(new Coordinate(sourceCoord.x, sourceCoord.y,
-                        sourceCoord.z + data.profileBuilder.getZGround(sourceCoord)));
-                // Check if the source is into a building
-                Building building = data.profileBuilder.getBuildingAtCoordinate(sourceCoord);
-                if(building != null && building.getHeight() >= sourceCoord.z) {
-                    LOGGER.warn("Point source has been ignored as it is inside a building (building height {} m), it should be moved higher SOURCE: {}",
-                            building.getHeight(),new WKTWriter(3).write(source));
-                    continue;
-                }
-            } else {
-                throw new IllegalArgumentException("Unsupported source geometry " + source.getGeometryType());
-            }
-            // Offset the geometry with value of elevation for each coordinate
-            sourceCopy.add(offsetGeometry);
-        }
-        data.setSources(sourceCopy);
-    }
-
-    /**
-     * Update ground Z coordinates of sound sources and receivers absolute to sea levels
-     */
-    public void makeRelativeZToAbsolute() {
-        makeSourceRelativeZToAbsolute();
-        makeReceiverRelativeZToAbsolute();
-    }
-
-    /**
-     * Update ground Z coordinates of receivers absolute to sea levels
-     */
-    public void makeReceiverRelativeZToAbsolute() {
-        for(Coordinate receiver : data.receivers) {
-            receiver.setZ(receiver.getZ() + data.profileBuilder.getZGround(receiver));
-        }
-    }
-
-    /**
      * Compute li to equation 4.1 NMPB 2008 (June 2009)
      * @param source
      * @param receiverCoord
@@ -1012,9 +882,9 @@ public class PathFinder {
     private void addLineSource(LineString source, Coordinate receiverCoord, int srcIndex, List<SourcePointInfo> sourceList) {
         ArrayList<Coordinate> pts = new ArrayList<>();
         Coordinate nearestPoint = JTSUtility.getNearestPoint(receiverCoord, source);
-        double segmentSizeConstraint = max(1, receiverCoord.distance3D(nearestPoint) / 2.0);
+        double segmentSizeConstraint = max(1, receiverCoord.distance3D(nearestPoint) / this.data.lineSourceSpacingRatio);
         if (isNaN(segmentSizeConstraint)) {
-            segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / 2.0);
+            segmentSizeConstraint = max(1, receiverCoord.distance(nearestPoint) / this.data.lineSourceSpacingRatio);
         }
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {

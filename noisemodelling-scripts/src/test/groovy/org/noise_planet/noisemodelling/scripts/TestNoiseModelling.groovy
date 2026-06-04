@@ -1,0 +1,258 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+package org.noise_planet.noisemodelling.scripts
+
+import groovy.sql.Sql
+import org.h2.value.ValueBoolean
+import org.h2gis.functions.io.shp.SHPRead
+import org.h2gis.utilities.JDBCUtilities
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import static org.junit.jupiter.api.Assertions.*
+/**
+ * Test parsing of zip file using H2GIS database
+ */
+class TestNoiseModelling extends JdbcTestCase {
+    Logger LOGGER = LoggerFactory.getLogger(TestNoiseModelling.class)
+
+
+    @Test
+    void testRoadEmissionFromDEN() {
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        String res = new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"]).result
+
+        assertEquals("LW_ROADS", res)
+
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
+
+        def expectedOctaveFields = ["PK","THE_GEOM","HZD63","HZD125","HZD250","HZD500","HZD1000","HZD2000","HZD4000","HZD8000",
+                "HZE63","HZE125","HZE250","HZE500","HZE1000","HZE2000","HZE4000","HZE8000",
+                "HZN63","HZN125","HZN250","HZN500","HZN1000","HZN2000","HZN4000","HZN8000"]
+
+        assertArrayEquals(expectedOctaveFields.toArray(new String[expectedOctaveFields.size()]), fieldNames.toArray(new String[fieldNames.size()]))
+
+    }
+
+    @Test
+    void testRailWayEmissionFromDEN(@TempDir File temp) {
+
+        def sql = new Sql(connection)
+
+        sql.execute("DROP TABLE IF EXISTS LW_RAILWAY")
+
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_SECTIONS.shp").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/RAIL_TRAFFIC.dbf").getPath(),
+                 "inputSRID": "2154"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("Train/receivers_Railway_.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName" : "RECEIVERS"])
+
+        new Railway_Emission_from_Traffic().exec(connection,
+                ["tableRailwayTraffic": "RAIL_TRAFFIC",
+                 "tableRailwayTrack": "RAIL_SECTIONS"
+                ])
+
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_RAILWAY")
+
+        def expected = ["PK_SECTION","THE_GEOM","DIR_ID","GS","HZD50","HZD63","HZD80","HZD100","HZD125",
+                        "HZD160","HZD200","HZD250","HZD315","HZD400","HZD500","HZD630","HZD800","HZD1000","HZD1250",
+                        "HZD1600","HZD2000","HZD2500","HZD3150","HZD4000","HZD5000","HZD6300","HZD8000","HZD10000",
+                        "HZE50","HZE63","HZE80","HZE100","HZE125","HZE160","HZE200","HZE250","HZE315","HZE400",
+                        "HZE500","HZE630","HZE800","HZE1000","HZE1250","HZE1600","HZE2000","HZE2500","HZE3150",
+                        "HZE4000","HZE5000","HZE6300","HZE8000","HZE10000","HZN50","HZN63","HZN80","HZN100","HZN125",
+                        "HZN160","HZN200","HZN250","HZN315","HZN400","HZN500","HZN630","HZN800","HZN1000","HZN1250",
+                        "HZN1600","HZN2000","HZN2500","HZN3150","HZN4000","HZN5000","HZN6300","HZN8000","HZN10000","PK"]
+
+        assertArrayEquals(expected.toArray(new String[expected.size()]), fieldNames.toArray(new String[fieldNames.size()]))
+
+
+        SHPRead.importTable(connection, TestDatabaseManager.getResource("Train/buildings2.shp").getPath(),
+                "BUILDINGS", ValueBoolean.TRUE)
+
+        sql.execute("DROP TABLE IF EXISTS LDAY_GEOM")
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding" : "BUILDINGS",
+                 "tableSources"  : "LW_RAILWAY",
+                 "tableReceivers": "RECEIVERS",
+                 "confMaxSrcDist": 500,
+                 "confMaxError"  : 5.0])
+
+        assertTrue(JDBCUtilities.tableExists(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
+
+        def receiversCount = sql.rows("SELECT COUNT(*) CPT FROM "+
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME+" WHERE PERIOD = 'D'")
+
+        assertEquals(688, receiversCount[0]["CPT"] as Integer)
+    }
+
+    @Test
+    void testLdenFromEmission1khz() {
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        // select only 1khz band
+        Sql sql = new Sql(connection)
+
+        sql.execute("CREATE TABLE LW_ROADS2(pk serial primary key, the_geom geometry, HZD1000 double) as select pk, the_geom, HZd1000 from LW_ROADS")
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+
+        String res = new Noise_level_from_source().exec(connection,
+                ["tableBuilding"   : "BUILDINGS",
+                 "tableSources"   : "LW_ROADS2",
+                 "tableReceivers": "RECEIVERS"])
+
+        assertTrue(res.contains(NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME))
+
+        // fetch columns
+        def fields = JDBCUtilities.getColumnNames(connection, NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
+
+        assertArrayEquals(["IDRECEIVER","PERIOD","THE_GEOM", "HZ1000", "LAEQ", "LEQ"].toArray(), fields.toArray())
+    }
+
+    @Test
+    void testAtmosphericSettings() {
+
+        Sql sql = new Sql(connection)
+
+        sql.execute(
+                $/CREATE TABLE SOURCES_EMISSION(
+                      IDSOURCE INTEGER NOT NULL,
+                      PERIOD VARCHAR,
+                      HZ500 DOUBLE);    
+        /$)
+
+        sql.executeInsert("INSERT INTO SOURCES_EMISSION VALUES (1, 'D', 90.0), (1, 'E', 92.0), (1, 'N', 93.0);");
+
+        new Atmospheric_Template().exec(connection, ["tableSourcesEmission": "SOURCES_EMISSION"])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+
+        List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, "SOURCES_ATMOSPHERIC", "PERIOD")
+
+        ["D", "E", "N"].forEach {
+            assertTrue(periods.contains(it))
+        }
+    }
+
+    @Test
+    void testNoiseEmissionFromPeriod() {
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        // Create SOURCES_EMISSION table by splitting the LW_ROADS table old format period to separate lines
+
+        Sql sql = new Sql(connection)
+        sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
+        sql.execute("CREATE TABLE SOURCES_EMISSION AS SELECT PK AS IDSOURCE, 'D' AS PERIOD," +
+                " TV_D as TV, HV_D as HV, LV_SPD_D as LV_SPD, HV_SPD_D as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'E' AS PERIOD," +
+                " TV_E as TV, HV_E as HV, LV_SPD_E as LV_SPD, HV_SPD_E as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'N' AS PERIOD," +
+                " TV_N as TV, HV_N as HV, LV_SPD_N as LV_SPD, HV_SPD_N as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+
+        // Convert to road emission
+        String res = new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "SOURCES_EMISSION"]).result
+
+        // Check result table
+        assertEquals("LW_ROADS", res)
+
+        def fieldNames = JDBCUtilities.getColumnNames(connection, "LW_ROADS")
+
+        // Output fields export period in a separate field now
+        def gotPeriod = JDBCUtilities.getUniqueFieldValues(connection, "LW_ROADS", "PERIOD")
+        assertEquals(3, gotPeriod.size())
+        assertTrue(gotPeriod.contains("D"))
+        assertTrue(gotPeriod.contains("E"))
+        assertTrue(gotPeriod.contains("N"))
+
+        LOGGER.info(Arrays.toString(fieldNames.toArray()))
+    }
+
+    @Test
+    void testRaysTableAndLineSourceSpacingRatio() {
+        String RAYS_TABLE = "RAYS"
+        Double LINE_SOURCE_RATIO = 4.0
+        Integer EXPECTED_NB_RAYS = 125716
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "ROADS2"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("buildings.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "buildings"])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+
+        Sql sql = new Sql(connection)
+
+        new Noise_level_from_source().exec(connection,
+                ["tableBuilding"             : "BUILDINGS",
+                 "tableSources"              : "LW_ROADS",
+                 "tableReceivers"            : "RECEIVERS",
+                 "confRaysName"              : RAYS_TABLE,
+                 "confLineSourceSpacingRatio": LINE_SOURCE_RATIO,
+                 "confReflOrder"             : 0,
+                 "confDiffVertical"          : false,
+                 "confDiffHorizontal"        : false])
+
+        assertTrue(JDBCUtilities.tableExists(connection, RAYS_TABLE))
+        int raysCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + RAYS_TABLE)["CPT"] as Integer
+        LOGGER.info("number or rays with confLineSourceSpacingRatio = " + LINE_SOURCE_RATIO + " : " + raysCount)
+        assertEquals(raysCount, EXPECTED_NB_RAYS)
+    }
+
+}

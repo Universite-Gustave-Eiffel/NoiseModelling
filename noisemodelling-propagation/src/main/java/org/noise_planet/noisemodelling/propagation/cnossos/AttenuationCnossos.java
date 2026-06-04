@@ -182,10 +182,10 @@ public class AttenuationCnossos {
 
         if (pathParameters.isFavourable()) {
             // The lower bound of Aground,F (calculated with unmodified heights) depends on the geometry of the path
-            if (segmentPath.testFormF <= 1) {
+            if (segmentPath.testFormH <= 1) {
                 aGroundMin = -3 * (1 - segmentPath.gm);
             } else {
-                aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormF)));
+                aGroundMin = -3 * (1 - segmentPath.gm) * (1 + 2 * (1 - (1 / segmentPath.testFormH)));
             }
         } else {
             aGroundMin = -3;
@@ -231,7 +231,8 @@ public class AttenuationCnossos {
      */
     private static boolean isValidRcrit(CnossosPath pp, int freq) {
         double lambda = 340.0/freq;
-        return pp.delta > -lambda / 20 && pp.delta > lambda / 4 - pp.deltaPrime || pp.delta > 0;
+        // Eq 2.5.21: if delta >= 0, diffraction always applies; Rayleigh criterion only for delta < 0
+        return pp.delta >= 0 || (pp.delta > -lambda / 20 && pp.delta > lambda / 4 - pp.deltaPrime);
     }
 
     /**
@@ -306,8 +307,8 @@ public class AttenuationCnossos {
                 s = pointPath.coordinate;
             } else if (pointPath.type.equals(REFL)) {
                 // Look for the next DIFH of the receiver
-                for(int idPointNext=0; idPointNext<pointList.size(); idPointNext++) {
-                    PointPath pointPathNext = pointList.get(idPoint);
+                for(int idPointNext=idPoint+1; idPointNext<pointList.size(); idPointNext++) {
+                    PointPath pointPathNext = pointList.get(idPointNext);
                     if (pointPathNext.type.equals(DIFH)) {
                         r = pointPathNext.coordinate;
                         break;
@@ -335,7 +336,8 @@ public class AttenuationCnossos {
                     } else {
                         for (int i = 0; i < data.getFrequencies().size(); i++) {
                             double lambda = 340.0 / data.getFrequencies().get(i);
-                            double Csecond = 1 + (5 * lambda / e * 5 * lambda / e) / 1 / 3 + (5 * lambda / e * 5 * lambda / e);
+                            double x = 5.0 * lambda / e;
+                            double Csecond = (1.0 + x * x) / (1.0/3.0 + x * x);
                             double testForm = 40.0 / lambda * Csecond * deltaPrime;
                             double dLRetro = testForm >= -2 ? 10 * ch * log10(3 + testForm) : 0; // 2.5.37
                             retroDiff[i] = dLRetro;
@@ -377,14 +379,11 @@ public class AttenuationCnossos {
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
         double _delta = proPathParameters.delta;
-        double deltaDStar = (proPathParameters.getSegmentList().get(0).dPrime +
-                proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size() - 1).dPrime -
-                proPathParameters.getSRSegment().dPrime);
 
         double deltaDiffSR = 0;
         double testForm = 40 / lambda * cSecond * _delta;
 
-        if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - deltaDStar)) {
+        if(_delta >= 0 || (_delta > -lambda/20 && _delta > lambda/4 - proPathParameters.deltaPrime)) {
             deltaDiffSR = testForm>=-2 ? 10*ch*log10(3+testForm) : 0;
         } else if(type.equals(DIFH)) {
             return 0;
@@ -409,8 +408,31 @@ public class AttenuationCnossos {
         double aGroundOR = proPathParameters.isFavourable() ? aGroundF(proPathParameters, last, data, frequencyIndex, true) : aGroundH(proPathParameters, last, data, frequencyIndex, true);
 
         //If the source or the receiver are under the mean plane, change the computation of deltaDffSR and deltaGround
-        double deltaGroundSO = -20*log10(1+(pow(10, -aGroundSO/20)-1)*pow(10, -(deltaDiffSPrimeR-deltaDiffSR)/20));
-        double deltaGroundOR = -20*log10(1+(pow(10, -aGroundOR/20)-1)*pow(10, -(deltaDiffSRPrime-deltaDiffSR)/20));
+        //
+        double deltaGroundSO;
+        double deltaGroundOR;
+        if(first.s.y >= first.sMeanPlane.y) {
+            // If the source is above the mean plane
+            deltaGroundSO = -20 * log10(1 + (pow(10, -aGroundSO / 20) - 1) * pow(10,
+                    -(deltaDiffSPrimeR - deltaDiffSR) / 20));
+        } else {
+            // Source is below the mean plane
+            //equation 2.5.31 et 2.5.33
+            //https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:02002L0049-20210729
+            deltaGroundSO = aGroundSO;
+            deltaDiffSR = deltaDiffSPrimeR;
+        }
+        if(last.r.y >= last.rMeanPlane.y) {
+            // If the receiver is above the mean plane
+            deltaGroundOR = -20 * log10(1 + (pow(10, -aGroundOR / 20) - 1) * pow(10,
+                    -(deltaDiffSRPrime - deltaDiffSR) / 20));
+        } else {
+            // Receiver is below the mean plane
+            // equation 2.5.31 et 2.5.33
+            // https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:02002L0049-20210729
+            deltaGroundOR = aGroundOR;
+            deltaDiffSR = deltaDiffSRPrime;
+        }
 
         //Double check NaN values
         if(Double.isNaN(deltaGroundSO)){
@@ -419,7 +441,7 @@ public class AttenuationCnossos {
         }
         if(Double.isNaN(deltaGroundOR)){
             deltaGroundOR = aGroundOR;
-            deltaDiffSR = deltaDiffSPrimeR;
+            deltaDiffSR = deltaDiffSRPrime;
         }
 
         double aDiff = min(25, max(0, deltaDiffSR)) + deltaGroundSO + deltaGroundOR;

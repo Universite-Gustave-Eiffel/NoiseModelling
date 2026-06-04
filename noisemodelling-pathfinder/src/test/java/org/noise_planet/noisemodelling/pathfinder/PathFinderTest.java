@@ -120,7 +120,7 @@ public class PathFinderTest {
     public static void assertCutProfile(CutProfile expected, CutProfile got) {
         assertNotNull(expected);
         assertNotNull(got);
-        assertEquals(expected.cutPoints.size(), got.cutPoints.size(), "Not the same number of cut points");
+        assertEquals(expected.cutPoints.size(), got.cutPoints.size(), got.getProfileType()+ " Not the same number of cut points");
         assertEquals(expected.profileType, got.profileType, "Not the same profile type");
         assertEquals(expected.curvedPath, got.curvedPath, "Not the same curved path attribute value");
 
@@ -811,7 +811,6 @@ public class PathFinderTest {
 
     /**
      * Test TC15 -- Flat ground with homogeneous acoustic properties and four buildings
-     * right : error in value of b cnossos table 149 right path
      */
     @Test
     public void TC15() throws Exception {
@@ -833,6 +832,12 @@ public class PathFinderTest {
                         new Coordinate(93.3, 17.8, 10),
                         new Coordinate(87.3, 6.6, 10),
                         new Coordinate(84.1, 8.3, 10),
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(94.9, 14.1, 10),
+                        new Coordinate(98.02, 12.37, 10),
+                        new Coordinate(92.03, 1.2, 10),
+                        new Coordinate(88.86, 2.9, 10),
                 });
         profileBuilder.addGroundEffect(0, 100, 0.0, 150, 0.5);
         profileBuilder.setzBuildings(true);
@@ -855,7 +860,6 @@ public class PathFinderTest {
 
         //Run computation
         computeRays.run(propDataOut);
-
 
         assertEquals(5, propDataOut.getCutProfiles().size());
 
@@ -1107,10 +1111,6 @@ public class PathFinderTest {
         assertEquals(5, propDataOut.getCutProfiles().size());
 
         assertCutProfiles("TC19", propDataOut.cutProfiles);
-
-        //Different value with the TC because their z-profile left seems to be false, it follows the building top
-        // border while it should not
-        // assertCutProfile("TC19_Left", propDataOut.cutProfiles.poll());
     }
 
     /**
@@ -1558,12 +1558,11 @@ public class PathFinderTest {
                         new Coordinate(184, 91, 0),
                         new Coordinate(196, 22, 0)}, 10, -1)
 
-// this building is ignored in the test case
-//                .addBuilding(new Coordinate[]{
-//                        new Coordinate(250, 70, 0),
-//                        new Coordinate(250, 180, 0),
-//                        new Coordinate(270, 180, 0),
-//                        new Coordinate(270, 70, 0)}, 14, -1)
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(250, 70, 0),
+                        new Coordinate(250, 180, 0),
+                        new Coordinate(270, 180, 0),
+                        new Coordinate(270, 70, 0)}, 14, -1)
 
                 .addBuilding(new Coordinate[]{
                         new Coordinate(332, 32, 0),

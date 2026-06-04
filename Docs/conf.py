@@ -15,7 +15,8 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
+import os
+import xml.etree.ElementTree as ET
 
 # -- Project information -----------------------------------------------------
 
@@ -24,9 +25,22 @@ copyright = u'2022, UMRAE - Lab-STICC'
 author = u'Aumond P., Fortin N., Le Bescond V., Petit G.'
 
 # The short X.Y version
-version = u'5.0'
-# The full version, including alpha/beta/rc tags
-release = u'5.0.0-SNAPSHOT'
+
+def get_version_from_pom():
+    pom_path = os.path.join(os.path.dirname(__file__), '..', 'pom.xml')
+    if os.path.exists(pom_path):
+        tree = ET.parse(pom_path)
+        root = tree.getroot()
+        ns = {'maven': 'http://maven.apache.org/POM/4.0.0'}
+        version_elem = root.find('maven:version', ns)
+        if version_elem is None:
+            version_elem = root.find('version')
+        if version_elem is not None:
+            return version_elem.text
+    return u'5.0.0-SNAPSHOT'
+
+release = get_version_from_pom()
+version = u'.'.join(release.split('.')[:2])
 
 
 # -- General configuration ---------------------------------------------------
@@ -92,7 +106,7 @@ pygments_style = 'sphinx'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'venv']
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -105,7 +119,11 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
+
+# Get rid of duplicate label warnings when using several time the same
+# title
+suppress_warnings = ['autosectionlabel.*']
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

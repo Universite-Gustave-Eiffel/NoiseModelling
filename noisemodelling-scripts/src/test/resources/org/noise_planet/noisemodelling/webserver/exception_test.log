@@ -1,0 +1,109 @@
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:54 - HikariPool-1 - Starting...
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:54 - HikariPool-1 - Added connection conn1: url=jdbc:h2:file:/Users/fortin/github/plamade/noisemodelling-webserver/target/server user=SA
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:54 - HikariPool-1 - Start completed.
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Starting Javalin ...
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - jetty-11.0.25; built: 2025-03-13T00:15:57.301Z; git: a2e9fae3ad8320f2a713d4fa29bba356a99d1295; jvm 11.0.29+7-LTS
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Session workerName=node0
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Started o.e.j.s.ServletContextHandler@2c34402{/,null,AVAILABLE}
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Started ServerConnector@1de5cc88{HTTP/1.1, (http/1.1)}{0.0.0.0:8000}
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Started Server@615e83ac{STARTING}[11.0.25,sto=0] @2050ms
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 -
+       __                  ___           _____
+      / /___ __   ______ _/ (_)___      / ___/
+ __  / / __ `/ | / / __ `/ / / __ \    / __ \
+/ /_/ / /_/ /| |/ / /_/ / / / / / /   / /_/ /
+\____/\__,_/ |___/\__,_/_/_/_/ /_/    \____/
+
+       https://javalin.io/documentation
+
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Javalin started in 89ms \o/
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Static file handler added: StaticFileConfig(hostedPath=/nmnoisemodelling/builder, directory=/Users/fortin/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/wpsbuilder/, location=EXTERNAL, precompress=false, aliasCheck=null, headers={Cache-Control=max-age=0}, mimeTypes={}, roles=[RUNNER]). File system location: '/Users/fortin/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/wpsbuilder/'
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Static file handler added: StaticFileConfig(hostedPath=/nmnoisemodelling, directory=/Users/fortin/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/root/, location=EXTERNAL, precompress=false, aliasCheck=null, headers={Cache-Control=max-age=0}, mimeTypes={}, roles=[ANYONE]). File system location: '/Users/fortin/github/plamade/noisemodelling-webserver/target/classes/org/noise_planet/noisemodelling/webserver/static/root/'
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - Listening on http://localhost:8000/
+[main][io.javalin.Javalin] INFO  15 déc. 15:46:55 - You are running Javalin 6.7.0 (released June 22, 2025. Your Javalin version is 175 days old. Consider checking for a newer version.).
+[JettyServerThreadPool-42][io.javalin.Javalin] INFO  15 déc. 15:46:56 - 404 not found on /favicon.ico
+[JettyServerThreadPool-42][io.javalin.Javalin] INFO  15 déc. 15:47:09 - HikariPool-2 - Starting...
+[JettyServerThreadPool-42][io.javalin.Javalin] INFO  15 déc. 15:47:09 - HikariPool-2 - Added connection conn12: url=jdbc:h2:file:/Users/fortin/github/plamade/noisemodelling-webserver/target/user_001 user=SA
+[JettyServerThreadPool-42][io.javalin.Javalin] INFO  15 déc. 15:47:09 - HikariPool-2 - Start completed.
+[JOB_8][JOB_8] INFO  15 déc. 15:47:09 - inputs {pkName=ID, _progression=org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor@16c4f9e7, _configuration=org.noise_planet.noisemodelling.webserver.Configuration@30cb6bcc, tableName=test}
+[JOB_8][JOB_8] INFO  15 déc. 15:47:09 - Start : Add primary key column or constraint
+[JOB_8][JOB_8] ERROR 15 déc. 15:47:09 - Error executing WPS <p0:Execute xmlns:p0="http://www.opengis.net/wps/1.0.0" service="WPS" version="1.0.0"><p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">Database_Manager:Add_Primary_Key</p1:Identifier><p0:DataInputs><p0:Input><p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">pkName</p1:Identifier><p0:Data><p0:LiteralData>ID</p0:LiteralData></p0:Data></p0:Input><p0:Input><p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">tableName</p1:Identifier><p0:Data><p0:LiteralData>test</p0:LiteralData></p0:Data></p0:Input></p0:DataInputs><p0:ResponseForm><p0:RawDataOutput><p1:Identifier xmlns:p1="http://www.opengis.net/ows/1.1">result</p1:Identifier></p0:RawDataOutput></p0:ResponseForm></p0:Execute>
+java.util.concurrent.ExecutionException: java.lang.RuntimeException: org.codehaus.groovy.runtime.InvokerInvocationException: java.sql.SQLException: Table TEST not found.
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:205)
+	at org.noise_planet.noisemodelling.webserver.OwsController.handleWPSPost(OwsController.java:381)
+	at io.javalin.router.Endpoint.handle(Endpoint.kt:52)
+	at io.javalin.router.ParsedEndpoint.handle(ParsedEndpoint.kt:15)
+	at io.javalin.http.servlet.DefaultTasks.HTTP$lambda$11$lambda$9$lambda$8(DefaultTasks.kt:55)
+	at io.javalin.http.servlet.JavalinServlet.handleTask(JavalinServlet.kt:99)
+	at io.javalin.http.servlet.JavalinServlet.handleSync(JavalinServlet.kt:64)
+	at io.javalin.http.servlet.JavalinServlet.handle(JavalinServlet.kt:50)
+	at io.javalin.http.servlet.JavalinServlet.service(JavalinServlet.kt:30)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:587)
+	at io.javalin.jetty.JavalinJettyServlet.service(JavalinJettyServlet.kt:52)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:587)
+	at org.eclipse.jetty.servlet.ServletHolder.handle(ServletHolder.java:764)
+	at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:529)
+	at org.eclipse.jetty.server.handler.ScopedHandler.nextHandle(ScopedHandler.java:221)
+	at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:1580)
+	at org.eclipse.jetty.server.handler.ScopedHandler.nextHandle(ScopedHandler.java:221)
+	at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1381)
+	at org.eclipse.jetty.server.handler.ScopedHandler.nextScope(ScopedHandler.java:176)
+	at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:484)
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:1553)
+	at org.eclipse.jetty.server.handler.ScopedHandler.nextScope(ScopedHandler.java:174)
+	at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1303)
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:129)
+	at org.eclipse.jetty.server.handler.StatisticsHandler.handle(StatisticsHandler.java:173)
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:122)
+	at org.eclipse.jetty.server.Server.handle(Server.java:563)
+	at org.eclipse.jetty.server.HttpChannel$RequestDispatchable.dispatch(HttpChannel.java:1598)
+	at org.eclipse.jetty.server.HttpChannel.dispatch(HttpChannel.java:753)
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:501)
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:287)
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:314)
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:100)
+	at org.eclipse.jetty.io.SelectableChannelEndPoint$1.run(SelectableChannelEndPoint.java:53)
+	at org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.runTask(AdaptiveExecutionStrategy.java:421)
+	at org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.consumeTask(AdaptiveExecutionStrategy.java:390)
+	at org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.tryProduce(AdaptiveExecutionStrategy.java:277)
+	at org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.run(AdaptiveExecutionStrategy.java:199)
+	at org.eclipse.jetty.util.thread.ReservedThreadExecutor$ReservedThread.run(ReservedThreadExecutor.java:411)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:969)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.doRunJob(QueuedThreadPool.java:1194)
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.run(QueuedThreadPool.java:1149)
+	at java.base/java.lang.Thread.run(Thread.java:829)
+Caused by: java.lang.RuntimeException: org.codehaus.groovy.runtime.InvokerInvocationException: java.sql.SQLException: Table TEST not found.
+	at org.noise_planet.noisemodelling.webserver.script.Job.call(Job.java:118)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+	... 1 more
+Caused by: org.codehaus.groovy.runtime.InvokerInvocationException: java.sql.SQLException: Table TEST not found.
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:343)
+	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:274)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1240)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1013)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:798)
+	at groovy.lang.GroovyObject.invokeMethod(GroovyObject.java:39)
+	at groovy.lang.Script.invokeMethod(Script.java:101)
+	at org.noise_planet.noisemodelling.webserver.script.Job.call(Job.java:112)
+	... 4 more
+Caused by: java.sql.SQLException: Table TEST not found.
+	at org.h2gis.utilities.JDBCUtilities.getIntegerPrimaryKey(JDBCUtilities.java:446)
+	at org.codehaus.groovy.vmplugin.v8.IndyInterface.fromCache(IndyInterface.java:344)
+	at org.noise_planet.noisemodelling.scripts.Database_Manager.Add_Primary_Key.exec(Add_Primary_Key.groovy:84)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:338)
+	... 11 more
+[JOB_9][JOB_9] INFO  15 déc. 16:23:25 - Start : Display database
+[JOB_9][JOB_9] INFO  15 déc. 16:23:25 - inputs {_progression=org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor@34f93c74, _configuration=org.noise_planet.noisemodelling.webserver.Configuration@30cb6bcc, showColumns=true}
+[JOB_9][JOB_9] INFO  15 déc. 16:23:25 - End : Display database
+[Thread-2][io.javalin.Javalin] INFO  15 déc. 17:00:53 - Stopping Javalin ...
+[Thread-2][io.javalin.Javalin] INFO  15 déc. 17:00:53 - Stopped Server@615e83ac{STOPPING}[11.0.25,sto=0]
+[Thread-2][io.javalin.Javalin] INFO  15 déc. 17:00:53 - Stopped ServerConnector@1de5cc88{HTTP/1.1, (http/1.1)}{0.0.0.0:8000}
+[Thread-2][io.javalin.Javalin] INFO  15 déc. 17:00:53 - Stopped o.e.j.s.ServletContextHandler@2c34402{/,null,STOPPED}
+[Thread-2][io.javalin.Javalin] INFO  15 déc. 17:00:53 - Javalin has stopped

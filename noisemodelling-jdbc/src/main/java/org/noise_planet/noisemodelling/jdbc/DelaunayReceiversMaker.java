@@ -10,7 +10,7 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
-import org.h2gis.api.EmptyProgressVisitor;
+import org.h2gis.api.ProgressVisitor;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -29,13 +29,11 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tinfour.common.Vertex;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
@@ -48,10 +46,10 @@ import static org.h2gis.utilities.GeometryTableUtilities.getGeometryColumnNames;
  */
 public class DelaunayReceiversMaker extends GridMapMaker {
     private static final int BATCH_MAX_SIZE = 100;
-    private Logger logger = LoggerFactory.getLogger(DelaunayReceiversMaker.class);
+    private final Logger logger = LoggerFactory.getLogger(DelaunayReceiversMaker.class);
     private double roadWidth = 2;
     private double maximumArea = 75;
-    private long nbreceivers = 0;
+    private long receiversCount = 0;
     private double receiverHeight = 1.6;
     private double buildingBuffer = 2;
     private String exceptionDumpFolder = "";
@@ -59,6 +57,13 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     private double epsilon = 1e-6;
     private double geometrySimplificationDistance = 1;
     private boolean isoSurfaceInBuildings = false;
+    private boolean exportTrianglesGeometries = false;
+
+    /**
+     * Do not evaluate a computation cell if there is no source geometries at least at x meters from the cell envelope
+     * It is ignored if it is NaN or if source table name is not provided
+     */
+    private double minimalSourceGeometriesDistanceToComputeCell = Double.NaN;
 
     /**
      * Create constructor DelaunayReceiversMaker
@@ -67,6 +72,20 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      */
     public DelaunayReceiversMaker(String buildingsTableName, String sourcesTableName) {
         super(buildingsTableName, sourcesTableName);
+    }
+
+    /**
+     * @return True if triangle geometries are exported
+     */
+    public boolean isExportTrianglesGeometries() {
+        return exportTrianglesGeometries;
+    }
+
+    /**
+     * @param exportTrianglesGeometries Set true in order to export triangle geometries
+     */
+    public void setExportTrianglesGeometries(boolean exportTrianglesGeometries) {
+        this.exportTrianglesGeometries = exportTrianglesGeometries;
     }
 
     /**
@@ -92,15 +111,38 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param triangleTableName The name of the database table where the triangles will be stored.
      * @throws SQLException Thrown if a database access error or other SQL-related error occurs.
      */
-    public void run(Connection connection, String verticesTableName, String triangleTableName) throws SQLException {
-        initialize(connection, new EmptyProgressVisitor());
-
+    public void run(Connection connection, String verticesTableName, String triangleTableName, ProgressVisitor progressVisitor) throws SQLException {
+        initialize(connection);
         AtomicInteger pk = new AtomicInteger(0);
-        for(int i=0; i < getGridDim(); i++) {
-            for(int j=0; j < getGridDim(); j++) {
+        ProgressVisitor progressVisitorNM = progressVisitor.subProcess(getGridDim() * getGridDim());
+        for(int i=0; i < getGridDim() && !progressVisitorNM.isCanceled(); i++) {
+            for(int j=0; j < getGridDim() && !progressVisitorNM.isCanceled(); j++) {
+
+                if(!Double.isNaN(minimalSourceGeometriesDistanceToComputeCell) && !sourcesTableName.isEmpty()) {
+                    // Check if there is a source near fence
+                    Envelope cellEnvelope = getCellEnv(mainEnvelope, i,
+                            j, getCellWidth(), getCellHeight());
+                    if(!hasSourcesNearEnvelope(connection, cellEnvelope, minimalSourceGeometriesDistanceToComputeCell)) {
+                        if (verbose) {
+                            int ij = i * gridDim + j + 1;
+                            logger.info("Skip processing of cell {} / {} no source near cell", ij, gridDim * gridDim);
+                        }
+                        progressVisitorNM.endStep();
+                        continue;
+                    }
+                }
                 try {
+                    if (verbose) {
+                        int ij = i * gridDim + j + 1;
+                        logger.info("Processing of cell {} / {}", ij, gridDim * gridDim);
+                    }
                     generateReceivers(connection, i, j, verticesTableName,
                             triangleTableName, pk);
+                    if(verbose) {
+                        int ij = i * gridDim + j + 1;
+                        logger.info("End processing of cell {} / {}", ij, gridDim * gridDim);
+                    }
+                    progressVisitorNM.endStep();
                 } catch (IOException | LayerDelaunayError ex) {
                     throw new SQLException(ex);
                 }
@@ -261,7 +303,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param maxSrcDist Maximum propagation distance
      * @param minRecDist Minimal distance receiver-source
      * @param maximumArea Maximum area of triangles
-     * @throws LayerDelaunayError
+     * @throws LayerDelaunayError if an error occurs during the Delaunay triangulation process.
      */
     public void computeDelaunay(LayerDelaunay cellMesh,
                                 Envelope mainEnvelope, int cellI, int cellJ, double maxSrcDist, Collection<Geometry> sources,
@@ -307,7 +349,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                 minRecDist, buildingBuffer);
 
         // Process delaunay
-        logger.info("Begin delaunay");
         cellMesh.setRetrieveNeighbors(false);
         // Add cell envelope
         if (maximumArea > 1) {
@@ -325,17 +366,16 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             }
         }
         cellMesh.processDelaunay();
-        logger.info("End delaunay");
     }
 
     /**
      * Retrieves the computation envelope based on data stored in the database tables.
      * @param connection the database connection.
      * @return the computation envelope containing the bounding box of the data stored in the specified tables.
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs.
      */
     @Override
-    protected Envelope getComputationEnvelope(Connection connection) throws SQLException {
+    public Envelope getComputationEnvelope(Connection connection) throws SQLException {
         Envelope computationEnvelope = new Envelope();
         DBTypes dbTypes = DBUtils.getDBType(connection);
         if(!sourcesTableName.isEmpty() && JDBCUtilities.getRowCount(connection, sourcesTableName) > 0) {
@@ -363,15 +403,20 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     public static void generateResultTable(Connection connection, String receiverTableName, String trianglesTableName,
                                            AtomicInteger receiverPK, List<Coordinate> vertices,
                                            GeometryFactory geometryFactory, List<Triangle> triangles, int cellI,
-                                           int cellJ, int gridDim) throws SQLException {
+                                           int cellJ, int gridDim, boolean exportTrianglesGeometries) throws SQLException {
 
+        int srid = geometryFactory.getSRID();
         if(!JDBCUtilities.tableExists(connection, receiverTableName)) {
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry not null, PRIMARY KEY (PK))");
+            st.execute("CREATE TABLE "+TableLocation.parse(receiverTableName)+"(pk serial NOT NULL, the_geom geometry(POINTZ, "+srid+") not null, PRIMARY KEY (PK))");
         }
         if(!JDBCUtilities.tableExists(connection, trianglesTableName)) {
             Statement st = connection.createStatement();
-            st.execute("CREATE TABLE "+TableLocation.parse(trianglesTableName)+"(pk serial NOT NULL, the_geom geometry , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+            if(exportTrianglesGeometries) {
+                st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) + "(pk serial NOT NULL, the_geom geometry(POLYGONZ, "+srid+") , PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+            } else {
+                st.execute("CREATE TABLE " + TableLocation.parse(trianglesTableName) + "(pk serial NOT NULL, PK_1 integer not null, PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))");
+            }
         }
         int receiverPkOffset = receiverPK.get();
         // Add vertices to receivers
@@ -392,15 +437,22 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             ps.executeBatch();
         }
         // Add triangles
-        ps = connection.prepareStatement("INSERT INTO "+TableLocation.parse(trianglesTableName)+"(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);");
+        if(exportTrianglesGeometries) {
+            ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(trianglesTableName) + "(the_geom, PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?, ?);");
+        } else {
+            ps = connection.prepareStatement("INSERT INTO " + TableLocation.parse(trianglesTableName) + "(PK_1, PK_2, PK_3, CELL_ID) VALUES (?, ?, ?, ?);");
+        }
         batchSize = 0;
         for(Triangle t : triangles) {
-            ps.setObject(1, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
-                    vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
-            ps.setInt(2, t.getA() + receiverPkOffset);
-            ps.setInt(3, t.getC() + receiverPkOffset);
-            ps.setInt(4, t.getB() + receiverPkOffset);
-            ps.setInt(5, cellI * gridDim + cellJ);
+            int rowIndex = 1;
+            if(exportTrianglesGeometries) {
+                ps.setObject(rowIndex++, geometryFactory.createPolygon(new Coordinate[]{vertices.get(t.getA()),
+                        vertices.get(t.getB()), vertices.get(t.getC()), vertices.get(t.getA())}));
+            }
+            ps.setInt(rowIndex++, t.getA() + receiverPkOffset);
+            ps.setInt(rowIndex++, t.getC() + receiverPkOffset);
+            ps.setInt(rowIndex++, t.getB() + receiverPkOffset);
+            ps.setInt(rowIndex, cellI * gridDim + cellJ);
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
@@ -429,7 +481,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
      * @param fetchEnvelope Fetch envelope
      * @param doIntersection Truncate geometris
      * @param sourceGeometries List to feed
-     * @throws SQLException
+     * @throws SQLException if a database access error occurs
      */
     public void fetchCellSource(Connection connection, Envelope fetchEnvelope, boolean doIntersection, List<Geometry> sourceGeometries)
             throws SQLException {
@@ -477,12 +529,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         }
     }
 
-    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName, String trianglesTableName, AtomicInteger receiverPK) throws SQLException, LayerDelaunayError, IOException {
-
-        int ij = cellI * gridDim + cellJ + 1;
-        if(verbose) {
-            logger.info("Begin processing of cell " + ij + " / " + gridDim * gridDim);
-        }
+    public void generateReceivers(Connection connection, int cellI, int cellJ, String receiverTableName,
+                                  String trianglesTableName, AtomicInteger receiverPK)
+            throws SQLException, LayerDelaunayError, IOException {
         // Compute the first pass delaunay mesh
         // The first pass doesn't take account of additional
         // vertices of neighbor cells at the borders
@@ -494,7 +543,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
 
         List<Geometry> sourceDelaunayGeometries = new LinkedList<>();
 
-        if(!sourcesTableName.isEmpty()) {
+        if(!sourcesTableName.isEmpty() && roadWidth > 0) {
             fetchCellSource(connection, cellEnvelope, true, sourceDelaunayGeometries);
         }
 
@@ -506,6 +555,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                 geometryFactory);
 
         LayerTinfour cellMesh = new LayerTinfour();
+        cellMesh.setVerbose(verbose);
         cellMesh.setEpsilon(epsilon);
         cellMesh.setDumpFolder(exceptionDumpFolder);
         cellMesh.setMaxArea(maximumArea > 1 ? maximumArea : 0);
@@ -538,26 +588,123 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             triangles = new ArrayList<>(cellMesh.getTriangles().size());
             for (Triangle triangle : cellMesh.getTriangles()) {
                 if (triangle.getAttribute() == 0) {
-                    // place only triangles not associated to a building
+                    // Keep only triangles that aren't associated with a building
                     triangles.add(triangle);
                 }
             }
+            // Keep only referenced vertices
+            Map<Integer, Integer> verticesIndexCorrespondence = new HashMap<>(); // Tinfour vertex index to our vertex index
+            List<Coordinate> filteredVertices = new ArrayList<>(vertices.size());
+            for(Triangle triangle : triangles) {
+                for(int i = 0; i < 3; i++) {
+                    updateTriangle(triangle, verticesIndexCorrespondence, i, vertices, filteredVertices);
+                }
+            }
+            vertices = filteredVertices;
         } else {
             triangles = cellMesh.getTriangles();
         }
-        nbreceivers += vertices.size();
+        receiversCount += vertices.size();
 
         generateResultTable(connection, receiverTableName, trianglesTableName, receiverPK, vertices, geometryFactory,
-                triangles, cellI, cellJ, gridDim);
+                triangles, cellI, cellJ, gridDim, exportTrianglesGeometries);
+    }
+
+    /**
+     * Insert into the new vertice list only vertices referenced in the triangles. If the vertex already exists
+     * in the mapping, its corresponding index is used; otherwise, the vertex is added to
+     * the vertices list and mapped to its new index.
+     *
+     * @param triangle The triangle to be updated, where vertex indices are modified as needed.
+     * @param tinFourIndexToListIndex A mapping of original vertex indices to their corresponding
+     *                                indices in the updated vertices list.
+     * @param cornerIndex The corner index of the triangle to update (0, 1, or 2).
+     * @param oldVerticesList The list of original vertices, from which new vertices are sourced if needed.
+     * @param vertices The list of updated vertices, where new vertices are added if they do not exist.
+     */
+    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex,
+                                       int cornerIndex, List<Coordinate> oldVerticesList, List<Coordinate> vertices) {
+        // get the original vertex index
+        int tinFourVertexIndex = triangle.get(cornerIndex);
+        // find if this vertex is already in our vertices list
+        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
+            // use the vertex index inserted by a previous triangle
+            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
+        } else {
+            // Not found, create a new vertex
+            vertices.add(oldVerticesList.get(tinFourVertexIndex));
+            triangle.set(cornerIndex, vertices.size() - 1);
+        }
     }
 
     public double getRoadWidth() {
         return roadWidth;
     }
 
+    /**
+     * Set the buffer around the roads where no receivers will be placed.
+     * If this value is equal to 0m, the roads will not be integrated into the triangulation
+     * So you can exclude cells with {@link #setMinimalSourceGeometriesDistanceToComputeCell(double)} and not use the
+     * road buffer.
+     * @param roadWidth Road width in meters
+     */
     public void setRoadWidth(double roadWidth) {
         this.roadWidth = roadWidth;
     }
+
+    /**
+     * @return Do not evaluate a computation cell if there is no source geometries at least at x meters from the cell envelope
+     */
+    public double getMinimalSourceGeometriesDistanceToComputeCell() {
+        return minimalSourceGeometriesDistanceToComputeCell;
+    }
+
+    /**
+     * Do not evaluate a computation cell if there is no source geometries at least at x meters from the cell envelope.
+     * Evaluated on {@link #run(Connection, String, String, ProgressVisitor)}
+     * It is ignored if it is NaN or if source table name is not provided or does not exists
+     * @param minimalSourceGeometriesDistanceToComputeCell Distance in meters
+     */
+    public void setMinimalSourceGeometriesDistanceToComputeCell(double minimalSourceGeometriesDistanceToComputeCell) {
+        this.minimalSourceGeometriesDistanceToComputeCell = minimalSourceGeometriesDistanceToComputeCell;
+    }
+
+
+
+    /**
+     * Check if there is at least one source geometry near the envelope
+     * @param connection Active connection
+     * @param fetchEnvelope Fetch envelope
+     * @param minimalDistance Minimal distance from envelope
+     * @return True if there is at least one source geometry near the envelope
+     * @throws SQLException if a database access error occurs
+     */
+    public boolean hasSourcesNearEnvelope(Connection connection, Envelope fetchEnvelope, double minimalDistance)
+            throws SQLException {
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        TableLocation sourceTableIdentifier = TableLocation.parse(sourcesTableName, dbType);
+        List<String> geomFields = getGeometryColumnNames(connection, sourceTableIdentifier);
+        if (geomFields.isEmpty()) {
+            throw new SQLException(String.format("The table %s does not exists or does not contain a geometry field", sourceTableIdentifier));
+        }
+        String sourceGeomName = TableLocation.quoteIdentifier(geomFields.get(0));
+        boolean hasSource = false;
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT 1 FROM " + sourcesTableName + " WHERE "
+                        + sourceGeomName + " && ST_EXPAND(?::geometry,?) AND ST_DISTANCE(" + sourceGeomName + ", ?::geometry) <= ? LIMIT 1")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            st.setDouble(2, minimalDistance);
+            st.setObject(3, geometryFactory.toGeometry(fetchEnvelope));
+            st.setDouble(4, minimalDistance);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    hasSource = true;
+                }
+            }
+        }
+        return hasSource;
+    }
+
 
     public double getMaximumArea() {
         return maximumArea;
@@ -575,7 +722,7 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         this.receiverHeight = receiverHeight;
     }
 
-    public long getNbreceivers() {
-        return nbreceivers;
+    public long getReceiversCount() {
+        return receiversCount;
     }
 }

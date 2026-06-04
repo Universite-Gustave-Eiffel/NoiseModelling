@@ -34,6 +34,9 @@ public class CnossosPath extends Path {
     public  double[] aGlobalRaw = new double[0];
     public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
+    /**
+     * Step delta, in meters, between the receiver-source line and the top of the diffraction point in the path.
+     */
     public double delta = Double.MAX_VALUE;
     public double deltaPrime= Double.MAX_VALUE;;
     public double deltaSPrimeR= Double.MAX_VALUE;

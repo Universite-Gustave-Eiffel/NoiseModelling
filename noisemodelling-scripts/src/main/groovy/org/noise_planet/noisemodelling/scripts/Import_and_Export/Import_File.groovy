@@ -1,0 +1,279 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ * @Author Nicolas Fortin, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.scripts.Import_and_Export
+
+import org.apache.commons.io.FilenameUtils
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.functions.io.csv.CSVDriverFunction
+import org.h2gis.functions.io.dbf.DBFDriverFunction
+import org.h2gis.functions.io.fgb.FGBDriverFunction
+import org.h2gis.functions.io.geojson.GeoJsonDriverFunction
+import org.h2gis.functions.io.gpx.GPXDriverFunction
+import org.h2gis.functions.io.osm.OSMDriverFunction
+import org.h2gis.functions.io.shp.SHPDriverFunction
+import org.h2gis.functions.io.tsv.TSVDriverFunction
+import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
+import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.sql.Connection
+import java.sql.ResultSet
+import java.sql.SQLException
+import java.sql.Statement
+
+title = 'Import File'
+description = '&#10145;&#65039; Import file into the database. </br>'+
+        '<hr>' +
+        'Valid file extensions: csv, dbf, geojson, json, geojson.gz, gpx, osm.bz2, osm.gz, osm, shp, tsv </br> </br>' +
+        '<img src="wps_images/import_file.png" alt="Import file" width="95%" align="center">'
+
+inputs = [
+        pathFile : [
+                name       : 'Path of the input File',
+                title      : 'Path of the input File',
+                description: '&#128194; Path of the file you want to import, including its extension. </br></br>' +
+                        'For example: c:/home/buildings.geojson',
+                type       : String.class
+        ],
+        inputSRID: [
+                name       : 'Projection identifier',
+                title      : 'Projection identifier',
+                description: '&#127757; Original projection identifier (also called SRID) of your table. </br> </br>' +
+                        'It should be an <a href="https://epsg.io/" target="_blank">EPSG</a> code, an integer with 4 or 5 digits (ex: <a href="https://epsg.io/3857" target="_blank">3857</a> is Pseudo-Mercator projection). </br> </br>' +
+                        'This entry is optional because many formats already include the projection and you can also import files without geometry attributes.</br> </br>' +
+                        'If the table is geometric and if this parameter is not filled and:</br>' +
+                        '- the file has a .prj file associated: the SRID is deduced from the .prj </br>' +
+                        '- the file has no .prj file associated: we apply the WGS84 (<a href="https://epsg.io/4326" target="_blank">EPSG:4326</a>) code',
+                min        : 0, max: 1,
+                type       : Integer.class
+        ],
+        tableName: [
+                name       : 'Output table name',
+                title      : 'Name of created table',
+                description: 'Name of the table you want to create from the file. </br> </br>' +
+                             '&#128736; Default value: <b>it will take the name of the file without its extension</b> (special characters will be removed and whitespaces will be replace by an underscore.',
+                min        : 0, max: 1,
+                type       : String.class
+        ],
+        ifTableExists: [
+                name         : 'Table exists operation',
+                title        : 'Table exists operation',
+                description  : 'What to do if a table with the same name already exists ?',
+                allowedValues: ["Overwrite", "Skip import", "Raise error"],
+                default      : 'Overwrite',
+                type         : String.class
+        ]
+]
+
+outputs = [
+        outputTable: [
+                name: 'Name of the created table',
+                title: 'Name of the created table',
+                description: 'Name of the created table',
+                type: String.class
+        ]
+]
+
+/**
+ * Main method
+ * @param connection SQL Connection
+ * @param input Map of inputs, should provide the same keys as described in the input metadata
+ * @param progress Can be used to display the progression of the computation, and to check if the user canceled the execution
+ * @return A map as described in the result metadata
+ * @throws SQLException if something went wrong
+ */
+def exec(Connection connection, Map input, ProgressVisitor progress) {
+
+    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
+    // output string, the information given back to the user
+    String resultString = null
+
+
+    // Create a logger to display messages in the geoserver logs and in the command prompt.
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Import File')
+    logger.info("inputs {}", input) // log inputs of the run
+
+
+    // Default SRID (WGS84)
+    Integer srid = 4326
+    // Get user SRID
+    if (input['inputSRID']) {
+        srid = input['inputSRID'] as Integer
+    }
+
+    // Get the path of the file to import
+    String pathFile = input["pathFile"] as String
+    if (!input["pathFile"]) {
+        resultString = "pathFile argument has not been provided."
+        throw new Exception('ERROR : ' + resultString)
+    }
+
+    def file = new File(pathFile)
+    if (!file.exists()) {
+        resultString = pathFile + " is not found."
+        throw new Exception('ERROR : ' + resultString)
+    }
+
+    // Get name of the table
+    String tableName = input["tableName"] as String
+
+    // By default the name of the output table is the same than the file name
+    if (!tableName) {
+        // get the name of the fileName
+        String fileName = FilenameUtils.removeExtension(new File(pathFile).getName())
+        // replace whitespaces by _ in the file name
+        fileName.replaceAll("\\s", "_")
+        // remove special characters in the file name
+        fileName.replaceAll("[^a-zA-Z0-9 ]+", "_")
+        // the tableName will be called as the fileName
+        tableName = fileName
+    }
+
+    // Apply table name for the database type
+    tableName = TableLocation.capsIdentifier(tableName, dbType)
+
+    // Create a connection statement to interact with the database in SQL
+    Statement stmt = connection.createStatement()
+
+    def tableExistsOperation = input.getOrDefault("ifTableExists", "Overwrite")
+
+    boolean tableExists = JDBCUtilities.tableExists(connection, tableName)
+    if(tableExists && "Overwrite" == tableExistsOperation) {
+        // Drop the table if already exists
+        logger.info("Table already exists drop the table..")
+        String dropOutputTable = "drop table if exists " + tableName
+        stmt.execute(dropOutputTable)
+    } else if(tableExists && "Skip import" == tableExistsOperation) {
+        logger.info("Table already exists skip importing the file")
+        return [outputTable: tableName]
+    } else if(tableExists) {
+        throw new IllegalStateException("Table already exists and user choose to raise an error in this case")
+    }
+
+
+    // Get the extension of the file and import
+    String pathFileLower = pathFile.toLowerCase()
+    if (pathFileLower.endsWith(".csv")) {
+        CSVDriverFunction csvDriver = new CSVDriverFunction()
+        csvDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".dbf")) {
+        DBFDriverFunction dbfDriver = new DBFDriverFunction()
+        dbfDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".geojson") || pathFileLower.endsWith(".json") || pathFileLower.endsWith(".geojson.gz")) {
+        GeoJsonDriverFunction geoJsonDriver = new GeoJsonDriverFunction()
+        geoJsonDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".gpx")) {
+        GPXDriverFunction gpxDriver = new GPXDriverFunction()
+        gpxDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".osm.bz2") || pathFileLower.endsWith(".osm.gz") || pathFileLower.endsWith(".osm")) {
+        OSMDriverFunction osmDriver = new OSMDriverFunction()
+        osmDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".shp")) {
+        SHPDriverFunction shpDriver = new SHPDriverFunction()
+        shpDriver.importFile(connection, tableName, new File(pathFile), progress)
+        def columnNames = JDBCUtilities.getColumnNames(connection, TableLocation.parse(tableName, dbType)).collect {it.toLowerCase(Locale.ROOT)}
+        if (columnNames.contains("pk") && columnNames.contains("pk2")) {
+            stmt.execute("ALTER TABLE " + tableName + " DROP COLUMN PK2;")
+            logger.warn("The PK2 column automatically created by the SHP driver has been deleted.")
+        }
+    } else if (pathFileLower.endsWith(".fgb")) {
+        FGBDriverFunction fgbDriver = new FGBDriverFunction()
+        fgbDriver.importFile(connection, tableName, new File(pathFile), progress)
+    } else if (pathFileLower.endsWith(".tsv")) {
+        TSVDriverFunction tsvDriver = new TSVDriverFunction()
+        tsvDriver.importFile(connection, tableName, new File(pathFile), progress)
+    }
+
+    // Read Geometry Index and type of the table
+    List<String> spatialFieldNames = GeometryTableUtilities.getGeometryColumnNames(connection, TableLocation.parse(tableName, DBUtils.getDBType(connection)))
+
+    // If the table does not contain a geometry field
+    if (spatialFieldNames.isEmpty()) {
+        logger.warn("The table " + tableName + " does not contain a geometry field.")
+    } else {
+        String geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, tableName).first();
+        if(!JDBCUtilities.isSpatialIndexed(connection, tableName, geomCol)) {
+            logger.info("Creating spatial index on $tableName..")
+            JDBCUtilities.createSpatialIndex(connection, tableName, geomCol);
+        }
+
+        // Get the SRID of the table
+        Integer tableSrid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(tableName))
+
+        // If the user explicitly provided an SRID and it differs from the table's SRID, raise an error
+        if (tableSrid != 0 && tableSrid != srid && input.containsKey('inputSRID') && input['inputSRID'] != null) {
+            resultString = "The table already has a different SRID than the one you gave."
+            throw new Exception('ERROR : ' + resultString)
+        }
+
+        // Replace default SRID by the srid of the table
+        if (tableSrid != 0) srid = tableSrid
+
+        // Display the actual SRID in the command window
+        logger.info("The SRID of the table is " + srid)
+
+        // If the table does not have an associated SRID, add a SRID
+        if (tableSrid == 0 && !spatialFieldNames.isEmpty()) {
+            connection.createStatement().execute(String.format("SELECT UpdateGeometrySRID('%s', '" + spatialFieldNames.get(0) + "', %d);",
+                    TableLocation.parse(tableName).toString(), srid))
+        }
+
+    }
+
+
+    // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
+    ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
+    int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+    int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName, dbType))
+
+    resultString = "The table " + tableName + " has been uploaded to the database!"
+
+    if (pkIndex == 0) { // no primary key in the table
+        if (pkUserIndex > 0) { // there is a field with name PK
+            try {
+                stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK SET NOT NULL;")
+                stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
+                resultString += String.format(" $tableName has a new primary key constraint on the field named PK")
+                logger.info(String.format("$tableName has a new primary key constraint on PK"))
+            } catch (SQLException ex) {
+                logger.info("Could not set PK as a primary key", ex)
+            }
+        }
+    }
+
+    // print to command window
+    logger.info(resultString)
+    logger.info('End : Import File')
+
+    // Output the name of the output table
+    return [outputTable: tableName]
+
+}
+
+
+def exec(Connection connection, Map input) {
+    return exec(connection, input, new EmptyProgressVisitor())
+}

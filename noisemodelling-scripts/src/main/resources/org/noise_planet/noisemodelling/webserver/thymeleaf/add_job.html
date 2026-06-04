@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head th:replace="~{header :: customHead('Add a new job')}">
+</head>
+<body>
+<div id="layout">
+    <div th:replace="menu :: menu"></div>
+    <div id="main" class="content">
+        <div class="header"><h1>Add a new job</h1>
+            <div class="l-box" id="message_div" th:if="${not #strings.isEmpty(message)}">
+                <aside><p th:text="${message}"></p></aside>
+            </div>
+            <form class="pure-form pure-form-aligned" id="addjobform" action="/manage/do_add_job" method="POST">
+                <fieldset>
+                    <legend>Add a new processing job to the queue</legend>
+                    <div class="pure-control-group"><label for="INSEE_DEPARTMENT">Code Department</label>
+                        <input type="text" placeholder="Code Department" id="INSEE_DEPARTMENT" name="INSEE_DEPARTMENT"/></div>
+                    <div class="pure-control-group"><label for="CONF_ID">Configuration ID</label>
+                        <input type="text" placeholder="Configuration ID" id="CONF_ID" name="CONF_ID" value="4"/>
+                    </div>
+                    <div class="pure-control-group"><label for="CLUSTER_COMPUTE">Compute on cluster</label>
+                        <input type="checkbox" value="true" id="CLUSTER_COMPUTE" name="CLUSTER_COMPUTE" checked="checked"/>
+                    </div>
+                    <div class="pure-controls">
+                        <button id="addButton" type="submit" class="pure-button pure-button-primary">Add
+                        </button>
+                    </div>
+                    <fieldset></fieldset>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

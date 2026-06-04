@@ -1,0 +1,19 @@
+<!DOCTYPE html SYSTEM "http://www.thymeleaf.org/dtd/xhtml1-strict-thymeleaf-4.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('NoiseModelling landing page')}">
+<body>
+<div class="splash-container">
+    <div th:if="${user != null}" ><div th:replace="~{menu :: menu}"></div></div>
+    <div class="splash">
+        <img th:src="@{/builder/dist/wpsbuilder-splashscreen.png}" alt="NoiseModelling">
+        <p th:if="${user == null}" class="splash-subhead">
+            Click on Get Started in order to proceed to authentication
+        </p>
+        <p th:if="${user == null}">
+            <a href="builder" class="pure-button pure-button-primary">Get Started</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

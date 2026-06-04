@@ -3,16 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-NoiseModelling v5.0 User Guide
+NoiseModelling User Guide
 ==========================================
 
 .. figure:: images/home/NoiseModelling_banner.png
    :align: center
 
-Welcome on the **official NoiseModelling v5.0 User Guide**.
+Welcome on the **official NoiseModelling User Guide**.
 
-NoiseModelling is a library capable of producing noise maps. 
-It can be freely used either for research and education, as well as by experts in a professional use.
+NoiseModelling is a free and open-source Java library for producing environmental noise maps from local to national scales, implementing CNOSSOS‑EU road and rail noise emission and propagation methods while linking to H2GIS and PostGIS for spatial analysis.
+It responds to the need for robust noise assessment in public health and environmental planning by enabling simulation and prediction of noise propagation for mitigation design and compliance with EU regulations.
+The software can be used independently or through a graphical interface and is openly available to the research, education, and professional communities.
+It has been widely used for strategic noise mapping, dynamic maps driven by traffic models or sensors, sensitivity studies, and investigations of particular sources such as emergency sirens and drones.
 
 A general overview of the model (v3.4.5 - September 2020) can be found in `this video`_.
 
@@ -28,29 +30,28 @@ A general overview of the model (v3.4.5 - September 2020) can be found in `this 
 .. _this video : https://www.youtube.com/watch?v=V1-niMT9cYE&t=1s
 .. _offical NoiseModelling website : http://noise-planet.org/noisemodelling.html
 
-What's new with the v5.0?
----------------------------
-
-Since the release v5.0, **NoiseModelling validate the** `CNOSSOS-EU`_ **standard method** for the noise emission (road and rail (for France)) and with noise propagation (read ":doc:`Numerical_Model`", ":doc:`Validation`" and ":doc:`Cnossos_Report`"  pages for more information).
-
-**Time periods are not limited to Day Evening and Night anymore**. You can provide the sound source emission for any period you want. You can also define a specific atmospheric condition for each time period now.
-
-The **computation time has been decreased**. The separation between path finding and attenuation has been done in preparation to the implementation of more noise propagation model (ex. Harmonoise).
 
 Packaging
 **************
 
-On the NoiseModelling latest `release page`_, three packages of NoiseModelling are proposed:
+The latest `release page`_ offers three NoiseModelling packages:
 
-* ``NoiseModelling_5.0.0.zip`` : cross-platform version, with GUI (Graphic User Interface)
-* ``NoiseModelling_5.0.0_install.exe`` : windows installer, with GUI
-* ``NoiseModelling_5.0.0_without_gui.zip`` : version without GUI. Usefull to run NoiseModelling using command lines (read ":doc:`Get_Started_Script`" page for more info)
+* ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface. Please check the :doc:`Tutorial_Requirements` before installing, and refer to :doc:`Tutorial_Get_Started_Script` for CLI usage.
+* ``NoiseModelling_X.X.X_install.exe``: A standalone Windows installer that includes the web GUI and a bundled Java Virtual Machine.
+* ``NoiseModelling-X.X.X.dmg``: A standalone Mac OS installer that includes the web GUI and a bundled Java Virtual Machine.
+
+.. warning::
+    The Windows and Mac OS installer have not been signed yet. So you may have a security warning when installing and you are invited to follow additional steps to bypass this issue.
+
+In addition, a Docker image is provided in the `packages page`_.
 
 .. _CNOSSOS-EU: https://publications.jrc.ec.europa.eu/repository/handle/JRC72550
 .. _release page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases/latest
+.. _packages page : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/pkgs/container/noisemodelling
+
 
 Authors
----------------------------
+**************
 
 NoiseModelling project is leaded by acousticians from the *Joint Research Unit in Environmental Acoustics* (`UMRAE`_, Université Gustave Eiffel - Cerema) and Geographic Information Science specialists from `Lab-STICC`_ laboratory (CNRS - DECIDE Team).
 
@@ -60,13 +61,13 @@ The NoiseModelling team owns the majority of the authorship of this application,
 .. _Lab-STICC: https://labsticc.fr
 
 Licence
----------------------------
+**************
 
 NoiseModelling and its documentation are distributed for free under GPL v3 :doc:`License`. 
 
 
 Publications
----------------------------
+**************
 
 NoiseModelling was initially developed in a research context, which has led to numerous scientific publications. For more information, have a look to ":doc:`Scientific_production`" page. 
 To quote this tool, please use the bibliographic reference below:
@@ -79,7 +80,7 @@ To quote this tool, please use the bibliographic reference below:
 
 
 Fundings
----------------------------
+**************
 
 *Research projects:*
 
@@ -153,15 +154,21 @@ Fundings
     :maxdepth: 2
     :caption: Tutorials
 
-    Requirements
-    Get_Started_GUI
-    Noise_Map_From_OSM_Tutorial
-    Noise_Map_From_Point_Source
-    Matsim_Tutorial
-    Dynamic_Tutorial
-    Data_Assimilation_Tutorial
-    Get_Started_Script
+    Tutorial_Requirements
+    Tutorial_Get_Started_GUI
+    Tutorial_Noise_Map_From_Point_Source
+    Tutorial_Noise_Map_From_OSM
+    Tutorial_Matsim
+    Tutorial_Dynamic
+    Tutorial_Data_Assimilation
+    Tutorial_Get_Started_Script
     Tutorials_FAQ
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Functions
+
+    Functions
 
 .. toctree::
     :maxdepth: 2

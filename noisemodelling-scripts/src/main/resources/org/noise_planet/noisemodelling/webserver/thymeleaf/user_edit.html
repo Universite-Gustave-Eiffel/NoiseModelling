@@ -1,0 +1,54 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: customHead('Edit registered user')}">
+<body>
+<div id="layout">
+    <div th:replace="~{menu :: menu}"></div>
+    <div id="main" class="content">
+        <div class="header"><h1>Edit user</h1></div>
+        <div class="l-box" id="message_div" th:if="${not #lists.isEmpty(messages)}">
+            <aside th:each="message : ${messages}"><p th:text="${message}"></p></aside>
+        </div>
+        <form class="pure-form pure-form-aligned" action="" method="POST">
+            <fieldset>
+                <legend>User attributes</legend>
+                <div class="pure-control-group">
+                    <label for="USER_EMAIL">E-mail</label>
+                    <input type="text" id="USER_EMAIL" name="USER_EMAIL" th:value="${email}"/>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>User rights</legend>
+                <div th:each="entry : ${groups}" class="pure-control-group">
+                    <label th:for="${entry.key}" th:text="${entry.key}"></label>
+                    <input type="checkbox"
+                           th:name="'ROLE_'+${entry.key}"
+                           th:checked="${entry.value}"
+                           th:id="'ROLE_'+${entry.key}"/>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Danger zone</legend>
+                <div class="pure-control-group">
+                    <label for="RESET_TOTP">Reset the TOTP</label>
+                    <input type="checkbox" id="RESET_TOTP" name="RESET_TOTP"/>
+                </div>
+                <div class="pure-control-group">
+                    <label for="DELETE_USER">Delete the user</label>
+                    <input th:enabled="${deletable}" type="checkbox" id="DELETE_USER" name="DELETE_USER"/>
+                </div>
+                <div class="pure-control-group">
+                    <label for="DELETE_DATABASE">Delete the database</label>
+                    <input type="checkbox" id="DELETE_DATABASE" name="DELETE_DATABASE"/>
+                </div>
+                <div class="pure-controls">
+                    <button id="addButton" type="submit" class="pure-button pure-button-primary">Update</button>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

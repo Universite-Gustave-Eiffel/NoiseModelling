@@ -13,6 +13,7 @@ import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.io.dbf.DBFRead;
 import org.h2gis.functions.io.shp.SHPRead;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.SpatialResultSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWGeom;
 import org.noise_planet.noisemodelling.jdbc.railway.RailWayLWIterator;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 
 import java.io.IOException;
@@ -38,12 +40,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
+import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 
 public class TableLoaderTest {
 
     private Connection connection;
+    public static double[] aWeightingArray = Arrays.stream(
+            asOctaveBands(ProfileBuilder.DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE)).
+            mapToDouble(value -> value).toArray();
 
     @BeforeEach
     public void tearUp() throws Exception {
@@ -66,7 +70,7 @@ public class TableLoaderTest {
             assertTrue(rs.next());
             expectedNumberOfRows = rs.getInt(1);
         }
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayEmissionCnossos.json");
 
         int numberOfRows = 0;
         while (railWayLWIterator.hasNext()) {
@@ -154,6 +158,12 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
 
+        // Update using new string-based identifiers
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN ROUGHNESS VARCHAR");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN TRANSFER VARCHAR");
+        connection.createStatement().execute("UPDATE RAILTRACK SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER = CONCAT('SNCF', TRANSFER)");
+
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN");
         RailWayLWGeom v = railWayLWIterator.next();
         assertNotNull(v);
@@ -166,6 +176,47 @@ public class TableLoaderTest {
 
     }
 
+    /**
+     * Test with SNCF-prefixed string track parameter keys (VARCHAR columns)
+     * to validate that the merged RailwayEmissionCnossos.json works with properly prefixed keys
+     * read directly from the database (e.g. "SNCF7", "SNCF1").
+     */
+    @Test
+    public void testNoiseEmissionRailWay_OC5_SNCFPrefixed() throws SQLException, IOException {
+        // Import geometry from existing OC test data
+        SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrack.shp").getFile());
+
+        // Re-create RAILTRACK with VARCHAR columns for TRANSFER, ROUGHNESS, IMPACT, BRIDGE
+        // using SNCF-prefixed values matching the merged RailwayEmissionCnossos.json keys
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN TRANSFER");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN ROUGHNESS");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN IMPACT");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK DROP COLUMN BRIDGE");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN TRANSFER VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN ROUGHNESS VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN IMPACT VARCHAR(20)");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ADD COLUMN BRIDGE VARCHAR(20)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER='SNCF7', ROUGHNESS='SNCF1', IMPACT='', BRIDGE=''");
+
+        // Import train traffic data from existing OC test
+        DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/OC/RailTrain.dbf").getFile());
+
+        // Use the merged RailwayEmissionCnossos.json with SNCF-prefixed keys
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection, "RAILTRACK", "RAILTRAIN",
+                "RailwayVehiclesCnossos.json", "RailwayTrainsets.json", "RailwayEmissionCnossos.json");
+        RailWayLWGeom v = railWayLWIterator.next();
+        assertNotNull(v);
+        v.setNbTrack(2);
+        RailWayParameters railWayLW = v.getRailWayLW();
+        assertNotNull(railWayLW);
+        assertFalse(railWayLW.getRailwaySourceList().isEmpty(), "Railway source list should not be empty with SNCF-prefixed keys");
+        List<LineString> geometries = v.getRailWayLWGeometry();
+        assertNotNull(geometries);
+
+        v = railWayLWIterator.next();
+        assertFalse(railWayLWIterator.hasNext());
+    }
+
     @Test
     public void testNoiseEmissionRailWay_BM() throws SQLException, IOException {
         double[] dBA = new double[]{-30,-26.2,-22.5,-19.1,-16.1,-13.4,-10.9,-8.6,-6.6,-4.8,-3.2,-1.9,-0.8,0,0.6,1,1.2,1.3,1.2,1,0.5,-0.1,-1.1,-2.5};
@@ -173,9 +224,15 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrack.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/BM/RailTrain.dbf").getFile());
 
+        // Update using new string-based identifiers
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN ROUGHNESS VARCHAR");
+        connection.createStatement().execute("ALTER TABLE RAILTRACK ALTER COLUMN TRANSFER VARCHAR");
+        connection.createStatement().execute("UPDATE RAILTRACK SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
+        connection.createStatement().execute("UPDATE RAILTRACK SET TRANSFER = CONCAT('SNCF', TRANSFER)");
+
         HashMap<String, double[]> Resultats = new HashMap<>();
 
-        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayCnossosSNCF_2021.json");
+        RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAILTRACK", "RAILTRAIN","RailwayVehiclesCnossos.json","RailwayTrainsets.json", "RailwayEmissionCnossos.json");
         double resD,resE,resN;
 
         while (railWayLWIterator.hasNext()) {
@@ -231,7 +288,13 @@ public class TableLoaderTest {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_SECTIONS.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("Test/556/RAIL_TRAFIC.dbf").getFile());
 
-        HashMap<String, double[]> Resultats = new HashMap<>();
+        // Update using new string-based identifiers
+        connection.createStatement().execute("ALTER TABLE RAIL_SECTIONS ALTER COLUMN ROUGHNESS VARCHAR");
+        connection.createStatement().execute("ALTER TABLE RAIL_SECTIONS ALTER COLUMN TRANSFER VARCHAR");
+        connection.createStatement().execute("UPDATE RAIL_SECTIONS SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
+        connection.createStatement().execute("UPDATE RAIL_SECTIONS SET TRANSFER = CONCAT('SNCF', TRANSFER)");
+
+        HashMap<String, double[]> results = new HashMap<>();
 
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"RAIL_SECTIONS", "RAIL_TRAFIC");
 
@@ -281,9 +344,13 @@ public class TableLoaderTest {
 
             String idSection = v.getIdSection();
 
-            Resultats.put(idSection,new double[]{resD, resE, resN});
+            results.put(idSection,new double[]{resD, resE, resN});
 
         }
+
+        // check results
+
+
     }
 
 
@@ -291,9 +358,14 @@ public class TableLoaderTest {
     public void testNoiseEmissionRailWayForPropa() throws SQLException, IOException {
         SHPRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Section2.shp").getFile());
         DBFRead.importTable(connection, TableLoaderTest.class.getResource("PropaRail/Rail_Traffic.dbf").getFile());
+        // Update using new string-based identifiers
+        connection.createStatement().execute("ALTER TABLE RAIL_SECTION2 ALTER COLUMN ROUGHNESS VARCHAR");
+        connection.createStatement().execute("ALTER TABLE RAIL_SECTION2 ALTER COLUMN TRANSFER VARCHAR");
+        connection.createStatement().execute("UPDATE RAIL_SECTION2 SET ROUGHNESS = CONCAT('SNCF', ROUGHNESS)");
+        connection.createStatement().execute("UPDATE RAIL_SECTION2 SET TRANSFER = CONCAT('SNCF', TRANSFER)");
 
         EmissionTableGenerator.makeTrainLWTable(connection, "Rail_Section2", "Rail_Traffic",
-                "LW_RAILWAY", "HZ");
+                "LW_RAILWAY", "HZ", RailWayLWIterator.RAILWAY_VEHICLES_CNOSSOS_JSON, RailWayLWIterator.RAILWAY_TRAINSETS_JSON, RailWayLWIterator.RAILWAY_EMISSION_CNOSSOS_JSON);
 
         // Get Class to compute LW
         RailWayLWIterator railWayLWIterator = new RailWayLWIterator(connection,"Rail_Section2", "Rail_Traffic");
@@ -392,7 +464,7 @@ public class TableLoaderTest {
 
         noiseMap.setFrequencyFieldPrepend("LW");
 
-        noiseMap.initialize(connection, new EmptyProgressVisitor());
+        noiseMap.initialize(connection);
 
         DefaultTableLoader tableLoader = (DefaultTableLoader)noiseMap.getTableLoader();
 
@@ -421,7 +493,7 @@ public class TableLoaderTest {
                 "LW_ROADS_FENCE",
                 "RECEIVERS");
 
-        noiseMapByReceiverMaker.initialize(connection, new EmptyProgressVisitor());
+        noiseMapByReceiverMaker.initialize(connection);
 
         Map<CellIndex, Integer> populatedCells = noiseMapByReceiverMaker.searchPopulatedCells(connection);
 
@@ -429,4 +501,22 @@ public class TableLoaderTest {
         assertEquals(nbReceivers, populatedCells.values().stream().reduce(Integer::sum).orElse(0));
     }
 
+    @Test
+    public void testRoadNoiseEmission() throws SQLException, IOException {
+        try(Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS TRAFFIC_TEST (PK SERIAL, LV_D REAL, LV_SPD_D REAL, HGV_D REAL, HGV_SPD_D REAL, PVMT VARCHAR);\n"
+                    + "INSERT INTO TRAFFIC_TEST(LV_D, LV_SPD_D, HGV_D, HGV_SPD_D, PVMT) VALUES (3747.23, 50, 479.02, 50, 'FR_R2');");
+        }
+        Map<String, Integer> sourceEmissionFieldsCache = new HashMap<>();
+        double globalLevel = 0;
+        try(SpatialResultSet rs = connection.createStatement().executeQuery("SELECT * FROM TRAFFIC_TEST").unwrap(SpatialResultSet.class)) {
+            assertTrue(rs.next());
+            // new double[][] {ld, le, ln}
+            double[][] lw = EmissionTableGenerator.computeLw(rs, 1, sourceEmissionFieldsCache);
+            double[] dbLw = AcousticIndicatorsFunctions.wToDb(lw[0]);
+            double[] dbALw = AcousticIndicatorsFunctions.sumArray(dbLw, aWeightingArray);
+            globalLevel = AcousticIndicatorsFunctions.sumArray(AcousticIndicatorsFunctions.dBToW(dbALw)); // add day value only
+        }
+        assertEquals(89.6, AcousticIndicatorsFunctions.wToDb(globalLevel), 0.1);
+    }
 }

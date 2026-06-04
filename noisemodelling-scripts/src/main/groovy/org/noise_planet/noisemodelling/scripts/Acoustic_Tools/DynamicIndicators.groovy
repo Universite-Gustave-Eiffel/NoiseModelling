@@ -1,0 +1,110 @@
+/**
+ * NoiseModelling is an open-source tool designed to produce environmental noise maps on very large urban areas. It can be used as a Java library or be controlled through a user friendly web interface.
+ *
+ * This version is developed by the DECIDE team from the Lab-STICC (CNRS) and by the Mixt Research Unit in Environmental Acoustics (Université Gustave Eiffel).
+ * <http://noise-planet.org/noisemodelling.html>
+ *
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ *
+ * Contact: contact@noise-planet.org
+ *
+ */
+
+/**
+ * @Author Pierre Aumond, Université Gustave Eiffel
+ */
+
+package org.noise_planet.noisemodelling.scripts.Acoustic_Tools
+
+
+
+import groovy.sql.Sql
+
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import java.sql.Connection
+
+title = 'Compute dynamic indicators'
+description = 'Computes dynamic percentile indicators (L10, L50, L90) for each row in the table'
+
+inputs = [
+        columnName   : [
+                name       : 'Column name',
+                title      : 'Column name',
+                description: 'Column name on which to perform the calculation. (STRING) </br> For example : LEAQ',
+                type       : String.class
+        ],
+        tableName: [
+                title      : 'Name of the table',
+                name       : 'Name of the table',
+                description: 'Name of the table on which to perform the calculation. The table must contain multiple sound level values for a single receiver. The columns of the table should be named HZ63, HZ125,..., HZ8000 with an HZ prefix that can be changed. (STRING) </br> For example : RECEIVERS_LEVEL',
+                type       : String.class
+        ],
+        outputTableName: [
+                title      : 'Name of the output table',
+                name       : 'Name of the output table',
+                description: 'Name of the output table',
+                default    : 'tableName_DYN_IND',
+                type       : String.class,
+        ]
+]
+
+outputs = [
+        result: [
+                name       : 'Result output string',
+                title      : 'Result output string',
+                description: 'This type of result does not allow the blocks to be linked together.',
+                type       : String.class
+        ]
+]
+
+
+def exec(Connection connection, Map input) {
+
+    // output string, the information given back to the user
+    String resultString = null
+
+    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
+
+    // print to command window
+    logger.info('Start : Add Leq and LAeq column')
+    logger.info("inputs {}", input) // log inputs of the run
+
+    // Open connection
+    Sql sql = new Sql(connection)
+
+    // -------------------
+    // Get inputs
+    // -------------------
+
+    // Get name of the prefix
+    String columnName = input['columnName'] as String
+    // do it case-insensitive
+    columnName = columnName.toUpperCase()
+
+    // Get name of the table
+    String table = input["tableName"] as String
+    // do it case-insensitive
+    table = table.toUpperCase()
+
+    String outputTableName =  table + "_DYN_IND";
+    if(input.containsKey("outputTableName")) {
+        outputTableName = input["outputTableName"] as String
+    }
+
+    sql.execute("DROP TABLE " + outputTableName + " IF EXISTS;")
+    sql.execute("CREATE TABLE " + outputTableName + " AS SELECT THE_GEOM, " +
+            "ROUND(MEDIAN(" + columnName + "), 1) L50, " +
+            "ROUND(percentile_cont(0.9) WITHIN GROUP (ORDER BY " + columnName + "), 1) L10," +
+            "ROUND(percentile_cont(0.1) WITHIN GROUP (ORDER BY " + columnName + "), 1) L90 FROM " + table + " GROUP BY THE_GEOM;")
+
+    resultString = "L10,L50 and L90 have been computed in the table: " + outputTableName + "."
+
+    // print to command window
+    logger.info('End : Add Dynamic Indicator')
+
+    // print to WPS Builder
+    return resultString
+
+}
