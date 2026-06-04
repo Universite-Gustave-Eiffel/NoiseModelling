@@ -326,7 +326,7 @@ public class NoiseMapByReceiverMakerTest {
             IsoSurface isoSurface = new IsoSurface(IsoSurface.NF31_133_ISO, srid);
             // Generate delaunay triangulation
             DelaunayReceiversMaker delaunayReceiversMaker = new DelaunayReceiversMaker("BUILDINGS", "ROADS_TRAFF");
-            delaunayReceiversMaker.setMaximumArea(3000);
+            delaunayReceiversMaker.setMaximumArea(0);
             delaunayReceiversMaker.setGridDim(1);
             delaunayReceiversMaker.run(connection, "RECEIVERS", isoSurface.getTriangleTable(), new EmptyProgressVisitor());
 
@@ -350,8 +350,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 
@@ -396,8 +396,8 @@ public class NoiseMapByReceiverMakerTest {
             int resultRowCount = JDBCUtilities.getRowCount(connection,
                     noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().receiversLevelTable);
 
-            // D E N, should be 3 more rows than receivers
-            assertEquals(receiversRowCount * 3, resultRowCount);
+            // D E N and DEN, should be 4 more rows than receivers
+            assertEquals(receiversRowCount * 4, resultRowCount);
         }
     }
 

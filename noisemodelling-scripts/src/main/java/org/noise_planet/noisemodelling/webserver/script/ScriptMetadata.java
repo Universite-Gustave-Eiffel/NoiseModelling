@@ -13,6 +13,7 @@ package org.noise_planet.noisemodelling.webserver.script;
 
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
+import org.locationtech.jts.geom.Geometry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,6 +113,32 @@ public class ScriptMetadata {
                 outputs.put(scriptOutput.id, scriptOutput);
             }
         }
+    }
+
+    /**
+     * Cast the input content to the expected input type defined in the script metadata.
+     *
+     * @param expectedInputType the expected type of the input as defined in the script metadata
+     * @param inputValue the string input value containing the literal data to be cast
+     * @return the cast input content if successful, otherwise returns the original input content
+     * @throws org.locationtech.jts.io.ParseException if there is an error parsing a Geometry input
+     */
+    public static Object castInputUsingExpectedInputType(Class<?> expectedInputType, String inputValue) throws org.locationtech.jts.io.ParseException {
+        String typeName = expectedInputType.getName();
+        if (typeName.equals(Long.class.getName())) {
+            return Long.parseLong(inputValue);
+        } else if (typeName.equals(Integer.class.getName())) {
+            return Integer.parseInt(inputValue);
+        } else if (typeName.equals(Float.class.getName())) {
+            return Float.parseFloat(inputValue);
+        } else if (typeName.equals(Double.class.getName())) {
+            return Double.parseDouble(inputValue);
+        } else if (typeName.equals(Boolean.class.getName())) {
+            return Boolean.parseBoolean(inputValue);
+        } else if (typeName.equals(Geometry.class.getName())) {
+            return new org.locationtech.jts.io.WKTReader().read(inputValue);
+        }
+        return inputValue;
     }
 
     /**

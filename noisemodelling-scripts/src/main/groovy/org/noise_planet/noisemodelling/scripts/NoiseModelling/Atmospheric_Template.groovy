@@ -24,8 +24,8 @@ import java.sql.Connection
 
 title = 'Generate default atmospheric settings from the PERIOD field of a noise emission table'
 description = '&#10145;&#65039; Generate default atmospherics settings from the PERIOD field of a noise emission table.' +
-        ' It is used to export the result table to be edited and reimported to be used into Noise_level_from_source or' +
-        ' Noise_level_from_traffic. This table make you able to change the temperature and other settings for each time period of the simulation'
+        ' It is used to export the result table to be edited and reimported to be used into Noise_level_from_source.' +
+        ' This table make you able to change the temperature and other settings for each time period of the simulation'
 
 inputs = [
         tableSourcesEmission            : [
@@ -94,5 +94,5 @@ def exec(Connection connection, Map input) {
         defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period)
     }
 
-    return "Calculation Done ! The table $tablePeriodAtmosphericSettings have been created, you can now export it, edit it and reimport to be used into Noise_level_from_source or Noise_level_from_traffic."
+    return "Calculation Done ! The table $tablePeriodAtmosphericSettings have been created, you can now export it, edit it and reimport to be used into Noise_level_from_source."
 }
