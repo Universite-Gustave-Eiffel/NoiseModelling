@@ -36,6 +36,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        multiThreadParent.cutProfileCount.addAndGet(1);
         final SceneWithAttenuation scene = multiThreadParent.scene;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
@@ -52,7 +53,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
 
     }
 
@@ -60,7 +61,6 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         double[] aGlobalMeteo = propagationModel.computeAttenuation(AttenuationParameters, path,
                 multiThreadParent.exportAttenuationMatrix);
         if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            multiThreadParent.cnossosPathCount.addAndGet(1);
             if(keepRays) {
                 pathParameters.add(path);
             }

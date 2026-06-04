@@ -34,7 +34,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
     public boolean exportPaths;
     public boolean exportAttenuationMatrix;
-    public AtomicLong cnossosPathCount = new AtomicLong();
+    public AtomicInteger cutProfileCount = new AtomicInteger();
     public AtomicLong nb_couple_receiver_src = new AtomicLong();
     public AtomicLong nb_obstr_test = new AtomicLong();
     public AtomicLong nb_image_receiver = new AtomicLong();

@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Double.isNaN;
 import static java.lang.Math.*;
@@ -247,7 +248,7 @@ public class PathFinder {
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
         AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
+        dataOut.startReceiver(receiverPointInfo, sourceList);
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {

@@ -67,7 +67,7 @@ public class DefaultCutPlaneVisitor implements CutPlaneVisitor, CutPlaneVisitorF
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
 
     }
 

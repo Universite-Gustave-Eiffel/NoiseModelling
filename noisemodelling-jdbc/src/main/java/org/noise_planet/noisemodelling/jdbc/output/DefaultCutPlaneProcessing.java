@@ -51,6 +51,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      */
     @Override
     public CutPlaneVisitorFactory create(SceneWithEmission scene) {
+        propagationModel.setScene(scene);
         return new AttenuationOutputMultiThread(scene, propagationModel, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 

@@ -28,6 +28,7 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationMod
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.wToDb;
@@ -87,7 +88,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
-    private double[] processAndStoreAttenuation(CnossosPropagationModel propagationModel, AttenuationParameters data, CnossosPath proPathParameters, String period) {
+    private double[] processAndStoreAttenuation(CnossosPropagationModel propagationModel,
+                                                AttenuationParameters data, CnossosPath proPathParameters, String period) {
         double[] attenuation = propagationModel.computeAttenuation( data, proPathParameters,
                 multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
         if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
@@ -118,6 +120,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        multiThread.cutProfileCount.addAndGet(1);
         cutProfileCount.addAndGet(1);
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
@@ -129,7 +132,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene);
         List<CnossosPath> cnossosPaths = propagationModel.computePaths(cutProfile);
         for (CnossosPath cnossosPath : cnossosPaths) {
-            multiThread.cnossosPathCount.addAndGet(1);
             CutPointSource source = cutProfile.getSource();
             CutPointReceiver receiver = cutProfile.getReceiver();
 
@@ -243,8 +245,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
-        this.cutProfileCount = cutProfileCount;
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList) {
+        multiThread.cutProfileCount = cutProfileCount;
         // Quickly evaluate the maximum expected power level at receiver location
         // using all nearby sources maximum emission in reflective direct field
         if(isMaximumErrorPruningEnabled() && !multiThread.sceneWithEmission.wjSources.isEmpty()) {
