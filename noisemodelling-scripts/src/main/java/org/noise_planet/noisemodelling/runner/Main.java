@@ -206,6 +206,7 @@ public class Main {
                 }
                 Map<String, Object> inputs = new HashMap<>(customParameters);
                 ExecutionPlan executionPlan = new ExecutionPlan(inputs, scriptMetadata);
+                executionPlan.fillInputsWithDefaultValues();
                 Object result = Job.runScript(executionPlan, progressVisitor, ds);
                 if (result != null) {
                     logger.info(result.toString());

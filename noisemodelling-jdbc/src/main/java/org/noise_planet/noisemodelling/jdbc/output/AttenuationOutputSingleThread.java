@@ -411,6 +411,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
         }
         if (dbSettings.isMergeSources()) {
+            // If Merge source is activated, the following code will push empty values (-99dB) when no rays have reached the receiver
             Set<String> difference = new HashSet<>(multiThread.sceneWithEmission.periodSet);
             if(computeLden) {
                 difference.add(EmissionTableGenerator.DEN_PERIOD);

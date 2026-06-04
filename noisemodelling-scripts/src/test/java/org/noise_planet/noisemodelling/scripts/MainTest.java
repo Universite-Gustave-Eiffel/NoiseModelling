@@ -87,4 +87,28 @@ public class MainTest {
             assertTrue(JDBCUtilities.tableExists(connection, "BUILDINGS"), "Table BUILDINGS should exist in PostGIS");
         }
     }
+
+    @Test
+    public void testPostGISTutorialGroovy(@TempDir File temp) throws Exception {
+        String pgHost = System.getenv("POSTGRES_HOST");
+        Assumptions.assumeTrue(pgHost != null && !pgHost.isEmpty(), "POSTGRES_HOST is not defined, skipping PostGIS test");
+
+        String pgUser = Optional.ofNullable(System.getenv("POSTGRES_USER")).orElse("noisemodelling");
+        String pgPass = Optional.ofNullable(System.getenv("POSTGRES_PASSWORD")).orElse("noisemodelling");
+        String pgPort = Optional.ofNullable(System.getenv("POSTGRES_PORT")).orElse("5432");
+        String pgDb = Optional.ofNullable(System.getenv("POSTGRES_DB")).orElse("noisemodelling_db");
+
+        Main.main("-w", temp.getAbsolutePath(),
+                "-d", pgDb,
+                "-u", pgUser,
+                "-p", pgPass,
+                "-s", "src/test/groovy/org/noise_planet/noisemodelling/scripts/get_started_tutorial_complex.groovy",
+                "--port", pgPort,
+                "--host", pgHost,
+                "--resourcesFolder", "src/test/resources/org/noise_planet/noisemodelling/scripts");
+
+        try (Connection connection = JdbcTestCase.createPostgisDataSourceFromEnv().getConnection()) {
+            assertTrue(JDBCUtilities.tableExists(connection, "RECEIVERS_LEVEL"), "Table RECEIVERS_LEVEL should exist in PostGIS");
+        }
+    }
 }

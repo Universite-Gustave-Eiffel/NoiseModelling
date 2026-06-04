@@ -13,6 +13,7 @@
 package org.noise_planet.noisemodelling.scripts
 
 import groovy.sql.Sql
+import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
@@ -31,7 +32,7 @@ import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_Folder
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_OSM
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
-import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_traffic
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 import org.noise_planet.noisemodelling.scripts.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Delaunay_Grid
 import org.slf4j.Logger
@@ -79,27 +80,45 @@ class TestTutorials extends JdbcTestCase {
                 ["pathFile" : TestNoiseModelling.getResource("dem.geojson").getPath(),
                  "inputSRID": "2154"])
 
+        new Road_Emission_from_Traffic().exec(connection, [tableRoads : "ROADS2"])
 
-        new Noise_level_from_traffic().exec(connection,
+        new Noise_level_from_source().exec(connection,
                 ["tableBuilding"        : "BUILDINGS",
-                 "tableRoads"           : "ROADS2",
+                 "tableSources"         : "LW_ROADS",
                  "tableReceivers"       : "RECEIVERS",
                  "tableGroundAbs"       : "ground_type",
                  "tableDEM"             : "dem",
                  "confDiffHorizontal"   : true,
                  "confMaxSrcDist"       : 2000.0,
                  "confReflOrder"        : 0,
-                 "confMaxError"         : 3.0,
-                 "frequencyFieldPrepend": "LW"])
+                 "confMaxError"         : 3.0])
+
+
+        def periods = sql.rows("SELECT DISTINCT PERIOD FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
+        def periodValues = periods.collect {
+            it.PERIOD
+        }
+        assertTrue(periodValues.contains("D"))
+        assertTrue(periodValues.contains("E"))
+        assertTrue(periodValues.contains("N"))
+        assertTrue(periodValues.contains("DEN"))
 
         def countReceivers = sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer
         def countResult = sql.firstRow("SELECT COUNT(*) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Integer
 
         assertEquals(4*countReceivers, countResult)
 
-        def minLevel = sql.firstRow("SELECT MIN(LW1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
+        def minLevel = sql.firstRow("SELECT MIN(HZ1000) FROM $NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME".toString())[0] as Double
 
         assertNotSame(-99.0, minLevel)
+
+
+        def receiverCount = sql.firstRow("SELECT COUNT(*) CPT FROM RECEIVERS")["CPT"] as Integer
+
+        ["D", "E", "N", "DEN"].each { period ->
+            def periodCount = sql.firstRow("SELECT COUNT(*) CPT FROM " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = ?", [period])["CPT"] as Integer
+            assertEquals(receiverCount, periodCount)
+        }
     }
 
 
@@ -378,5 +397,13 @@ class TestTutorials extends JdbcTestCase {
         assertTrue(Paths.get(resultsFolder, "EXPOSURES.shp").toFile().exists());
         assertTrue(buildingsPath.toFile().exists());
         assertTrue(roadsPath.toFile().exists());
+    }
+
+    @Test
+    void testGetStartedDev() {
+        new get_started_tutorial_complex().exec(connection, [resourcesFolder : new File(TestTutorials.getResource("ROADS2.shp").getFile()).getParent()], new EmptyProgressVisitor())
+
+        assertTrue(JDBCUtilities.tableExists(connection, "LW_ROADS"))
+        assertTrue(JDBCUtilities.tableExists(connection, "RECEIVERS_LEVEL"))
     }
 }

@@ -10,7 +10,7 @@ Below we list the most important ones, indicating, where necessary, the default 
 
 
 
-The following parameters may be found in the scripts dealing with noise emission or propagation (*e.g* ``Noise_level_from_traffic``, ``Noise_level_from_source```, ...)
+The following parameters may be found in the scripts dealing with noise emission or propagation (*e.g* :doc:`functions/NoiseModelling/Noise_level_from_source`, ...)
 
 
 Probability of occurrences

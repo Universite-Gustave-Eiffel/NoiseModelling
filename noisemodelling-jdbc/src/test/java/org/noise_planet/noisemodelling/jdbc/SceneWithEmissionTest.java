@@ -24,8 +24,10 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
+import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
@@ -724,6 +726,30 @@ public class SceneWithEmissionTest {
             assertTrue(diff < maxError,
                     "Difference between line and point sources at receiver " + i +
                             " (" + receiverLabels.get(i) + ") is " + String.format("%.2f dB, expected < %.2f dB", diff, maxError));
+        }
+    }
+
+    /**
+     * Test if HZ fields in Source geometry table is recognized (no time periods)
+     * @throws Exception
+     */
+    @Test
+    public void testSceneInputStructureGuessLwInGeometryTable() throws Exception {
+        try(Connection connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(
+                "testSceneInputStructureGuessLwInGeometryTable", true, ""))) {
+            // Insert dummy data
+            connection.createStatement().execute(Utils.getRunScriptRes("testGeometryWithLWFields.sql"));
+            NoiseMapByReceiverMaker maker = new NoiseMapByReceiverMaker("BUILDINGS", "SOURCES", "RECEIVERS");
+            maker.setGridDim(1);
+            maker.initialize(connection);
+            assertEquals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_LW, maker.getSceneInputSettings().getInputMode(),
+                    "Scene input structure should be correctly identified as having LW in geometry table");
+            SceneWithEmission sceneWithEmission = maker.getTableLoader().create(connection, new CellIndex(0, 0), new HashSet<>());
+            assertEquals(1, sceneWithEmission.sourceGeometries.size());
+            assertTrue(sceneWithEmission.wjSources.containsKey(1L), "Source with PK=1 should be present in wjSources");
+            assertEquals(24, sceneWithEmission.wjSources.get(1L).get(0).emission.length);
+            assertEquals(dBToW(100.0), sceneWithEmission.wjSources.get(1L).get(0).emission[0], 1e-6,
+                    "First frequency band should have correct LW value converted to W");
         }
     }
 }

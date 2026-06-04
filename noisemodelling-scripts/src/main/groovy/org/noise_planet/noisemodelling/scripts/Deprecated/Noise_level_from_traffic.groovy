@@ -14,7 +14,7 @@
  * @Author Pierre Aumond, Université Gustave Eiffel
  * @Author Nicolas Fortin, Université Gustave Eiffel
  */
-package org.noise_planet.noisemodelling.scripts.NoiseModelling
+package org.noise_planet.noisemodelling.scripts.Deprecated
 
 import groovy.sql.Sql
 import org.h2gis.api.EmptyProgressVisitor
@@ -27,12 +27,12 @@ import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
-import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
+import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
 import java.sql.Connection
 import java.sql.SQLException
 import java.time.LocalDateTime

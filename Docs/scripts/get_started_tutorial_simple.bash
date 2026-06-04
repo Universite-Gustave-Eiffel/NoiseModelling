@@ -13,7 +13,7 @@
 
 
 # Step 5: Run Calculation
-./bin/ScriptRunner -w ./ -s scripts/NoiseModelling/Noise_level_from_traffic.groovy --tableBuilding BUILDINGS --tableRoads ROADS2 --tableReceivers RECEIVERS --tableDEM DEM --tableGroundAbs GROUND_TYPE
+./bin/ScriptRunner -w ./ -s scripts/NoiseModelling/Noise_level_from_sources.groovy --tableBuilding BUILDINGS --tableSources ROADS2 --tableReceivers RECEIVERS --tableDEM DEM --tableGroundAbs GROUND_TYPE
 
 # Step 6: Export (& see) the results
 ./bin/ScriptRunner -w ./ -s scripts/Import_and_Export/Export_Table.groovy --exportPath RECEIVERS_LEVEL.shp --tableToExport RECEIVERS_LEVEL

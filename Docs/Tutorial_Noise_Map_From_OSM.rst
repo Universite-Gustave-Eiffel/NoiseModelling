@@ -115,7 +115,7 @@ Step 3: Generate a Receiver table
 
 The locations of noise level evaluation points needs to be defined.
 
-Use ``Delaunay_Grid`` with the previously generated ``BUILDINGS`` table as the buildings table and ``ROADS`` as *Sources table name*.
+Use :doc:`functions/Receivers/Delaunay_Grid`` with the previously generated ``BUILDINGS`` table as the buildings table and ``ROADS`` as *Sources table name*.
 Other parameters are optional.
 
 Don't forget to view your resulting layer in ``WPSBuilder`` or in your GIS to check that it meets your expectations.
@@ -126,7 +126,7 @@ This processing block will give the possibility to generate a noise map later.
 Step 4: Associate emission noise level with roads
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``Road_Emission_from_Traffic`` block is used to generate a road layer, called ``LW_ROADS``, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
+The :doc:`functions/NoiseModelling/Road_Emission_from_Traffic` block is used to generate a road layer, called ``LW_ROADS``, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
 
 Don't forget to view your resulting layers *(see Step 2)* to check that it meets your expectations.
 
@@ -134,13 +134,13 @@ Don't forget to view your resulting layers *(see Step 2)* to check that it meets
 Step 5: Source to Receiver Propagation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``Noise_level_from_source`` block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (use the created table ``LW_ROADS`` as *Source geometry table name*) propagated to the receivers according to the CNOSSOS-EU. propagation laws.
+The :doc:`functions/NoiseModelling/Noise_level_from_source` block allows to generate a layer of receiver points with associated sound levels corresponding to the sound level emitted by the sources (use the created table ``LW_ROADS`` as *Source geometry table name*) propagated to the receivers according to the CNOSSOS-EU. propagation laws.
 
 
 Step 6: Create Isosurfaces map
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Create an interpolation of levels between receivers points using the block ``Create_Isosurface``.
+Create an interpolation of levels between receivers points using the block :doc:`functions/Acoustic_Tools/Create_Isosurface`.
 
 Set ``RECEIVERS_LEVEL`` as ``Name of the noise table``.
 
