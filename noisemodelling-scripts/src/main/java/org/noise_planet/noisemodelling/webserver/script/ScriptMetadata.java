@@ -56,6 +56,9 @@ public class ScriptMetadata {
         this.scriptDirectory = scriptDirectory;
         this.group = group;
         Map metadata = parseGroovyScriptMetadata(file);
+        if(metadata.isEmpty()) {
+            throw new IOException("Not a valid Function");
+        }
         id = group + ":" + Path.of(file).getFileName().toString().replace(".groovy", "");
         title = metadata.getOrDefault("title", id).toString();
         description = metadata.getOrDefault("description", "").toString();
@@ -154,8 +157,13 @@ public class ScriptMetadata {
     private static Map parseGroovyScriptMetadata(URI scriptFile) throws IOException {
         GroovyShell shell = new GroovyShell();
         Script script = shell.parse(scriptFile);
-        script.run();
-        return script.getBinding().getVariables();
+        // Expect at least an exec method
+        if(script.getMetaClass().getMethods().stream().anyMatch(m -> m.getName().equals("exec"))) {
+            script.run();
+            return script.getBinding().getVariables();
+        } else {
+            return Collections.EMPTY_MAP;
+        }
     }
 
 
