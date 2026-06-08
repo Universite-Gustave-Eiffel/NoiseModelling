@@ -138,15 +138,15 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             this.cnossosPaths.addAll(cnossosPaths);
         }
 
-        for (CnossosPath cnossosPath : cnossosPaths) {
-            CutPointSource source = cutProfile.getSource();
-            CutPointReceiver receiver = cutProfile.getReceiver();
-            long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
-            if(scene.wjSources.isEmpty()) {
-                // No emission push only attenuation for each period
-                if(!scene.cnossosParametersPerPeriod.isEmpty()) {
-                    for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
-                            scene.cnossosParametersPerPeriod.entrySet()) {
+        CutPointSource source = cutProfile.getSource();
+        CutPointReceiver receiver = cutProfile.getReceiver();
+        long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
+        if(scene.wjSources.isEmpty()) {
+            // No emission push only attenuation for each period
+            if(!scene.cnossosParametersPerPeriod.isEmpty()) {
+                for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
+                        scene.cnossosParametersPerPeriod.entrySet()) {
+                    for (CnossosPath cnossosPath : cnossosPaths) {
                         double[] attenuation = dBToW(processAndStoreAttenuation(propagationModel, cnossosParametersEntry.getValue(),
                                 cnossosPath, cnossosParametersEntry.getKey()));
                         ReceiverNoiseLevel receiverNoiseLevel =
@@ -155,7 +155,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                         attenuation);
                         processNoiseLevel(receiverNoiseLevel);
                     }
-                } else {
+                }
+            } else {
+                for (CnossosPath cnossosPath : cnossosPaths) {
                     double[] attenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters, cnossosPath, ""));
                     ReceiverNoiseLevel receiverNoiseLevel =
                             new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
@@ -163,80 +165,95 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                     attenuation);
                     processNoiseLevel(receiverNoiseLevel);
                 }
-            } else {
-                // Apply period attenuation to emission for each time period covered by the source emission
-                double[] defaultAttenuation = new double[0];
-                if(scene.wjSources.containsKey(sourcePk)) {
-                    ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                    for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
-                        String period = periodEmission.period;
-                        double [] attenuation = new double[0];
-                        // look for specific atmospheric settings for this period
-                        if(scene.cnossosParametersPerPeriod.containsKey(period)) {
+            }
+        } else {
+            // Apply period attenuation to emission for each time period covered by the source emission
+            double[] defaultAttenuation = new double[0];
+            if(scene.wjSources.containsKey(sourcePk)) {
+                ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
+                for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
+                    String period = periodEmission.period;
+                    double [] attenuation = new double[0];
+                    // look for specific atmospheric settings for this period
+                    if(scene.cnossosParametersPerPeriod.containsKey(period)) {
+                        for (CnossosPath cnossosPath : cnossosPaths) {
                             attenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.cnossosParametersPerPeriod.get(period),
                                     cnossosPath, period));
-                        } else {
-                            if(defaultAttenuation.length == 0) {
-                                // None ? ok fallback to default settings
-                                defaultAttenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters,
-                                        cnossosPath, ""));
+                            double[] levels = multiplicationArray(attenuation, periodEmission.emission);
+                            ReceiverNoiseLevel receiverNoiseLevel =
+                                    new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
+                                            new PathFinder.ReceiverPointInfo(receiver), period, levels);
+                            processNoiseLevel(receiverNoiseLevel);
+                            if(isMaximumErrorPruningEnabled()) {
+                                double powerSum = sumArray(levels);
+                                wjAtReceiver.merge(period, powerSum, Double::sum);
                             }
-                            attenuation = defaultAttenuation;
                         }
-                        double[] levels = multiplicationArray(attenuation, periodEmission.emission);
-                        ReceiverNoiseLevel receiverNoiseLevel =
-                                new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
-                                        new PathFinder.ReceiverPointInfo(receiver), period, levels);
-                        processNoiseLevel(receiverNoiseLevel);
-                        if(isMaximumErrorPruningEnabled()) {
-                            double powerSum = sumArray(levels);
-                            wjAtReceiver.merge(period, powerSum, Double::sum);
+                    } else {
+//                        if(defaultAttenuation.length == 0) {
+//                            // None ? ok fallback to default settings
+//                            defaultAttenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters,
+//                                    cnossosPath, ""));
+//                        }
+//                        attenuation = defaultAttenuation;
+                        for (CnossosPath cnossosPath : cnossosPaths) {
+                            attenuation = dBToW(processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters,
+                                    cnossosPath, ""));
+                            double[] levels = multiplicationArray(attenuation, periodEmission.emission);
+                            ReceiverNoiseLevel receiverNoiseLevel =
+                                    new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
+                                            new PathFinder.ReceiverPointInfo(receiver), period, levels);
+                            processNoiseLevel(receiverNoiseLevel);
+                            if(isMaximumErrorPruningEnabled()) {
+                                double powerSum = sumArray(levels);
+                                wjAtReceiver.merge(period, powerSum, Double::sum);
+                            }
                         }
                     }
                 }
             }
-            // To reduce the computation time, we evaluate the potential remaining power
-            // at the receiver and stop processing further sources if we are already close enough to
-            // the expected final level at the receiver (if maximumError is defined in dbSettings)
-            if(isMaximumErrorPruningEnabled() && scene.wjSources.containsKey(sourcePk)) {
-                boolean keepRunning = false;
-                // Update remaining expected max power for each source period.
-                // We remove the currently processed source point from the precomputed budget.
-                ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                SourcePointKey sourcePointKey = new SourcePointKey(source);
-                for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
-                    final String period = periodEmission.period;
-                    if (maximumWjExpectedSplAtReceiver.containsKey(period)) {
-                        maximumWjExpectedSplAtReceiver.get(period).remove(sourcePointKey);
-                        if (maximumWjExpectedSplAtReceiver.get(period).isEmpty()) {
-                            maximumWjExpectedSplAtReceiver.remove(period);
-                        }
+        }
+        // To reduce the computation time, we evaluate the potential remaining power
+        // at the receiver and stop processing further sources if we are already close enough to
+        // the expected final level at the receiver (if maximumError is defined in dbSettings)
+        if(isMaximumErrorPruningEnabled() && scene.wjSources.containsKey(sourcePk)) {
+            boolean keepRunning = false;
+            // Update remaining expected max power for each source period.
+            // We remove the currently processed source point from the precomputed budget.
+            ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
+            SourcePointKey sourcePointKey = new SourcePointKey(source);
+            for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
+                final String period = periodEmission.period;
+                if (maximumWjExpectedSplAtReceiver.containsKey(period)) {
+                    maximumWjExpectedSplAtReceiver.get(period).remove(sourcePointKey);
+                    if (maximumWjExpectedSplAtReceiver.get(period).isEmpty()) {
+                        maximumWjExpectedSplAtReceiver.remove(period);
                     }
                 }
-                for (Map.Entry<String, Double> entry : wjAtReceiver.entrySet()) {
-                    final String period = entry.getKey();
-                    final double levelAtReceiver = entry.getValue();
+            }
+            for (Map.Entry<String, Double> entry : wjAtReceiver.entrySet()) {
+                final String period = entry.getKey();
+                final double levelAtReceiver = entry.getValue();
 
-                    if(!maximumWjExpectedSplAtReceiver.containsKey(period)) {
-                        // Nothing to evaluate here, as there is no expected further power for this period.
-                        continue;
-                    }
+                if(!maximumWjExpectedSplAtReceiver.containsKey(period)) {
+                    // Nothing to evaluate here, as there is no expected further power for this period.
+                    continue;
+                }
 
-                    // Evaluate the current noise level at receiver compared to the final
-                    // expected noise level at the receiver.
-                    double nonProcessedPower = maximumWjExpectedSplAtReceiver.get(period).values().stream()
-                            .reduce(Double::sum).orElse(0.0);
-                    double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(levelAtReceiver + nonProcessedPower);
-                    double dBDiff = maximumExpectedLevelInDb - wToDb(levelAtReceiver);
-                    if (dBDiff > dbSettings.maximumError) {
-                        // For this period we still expect to see some significant sources further away.
-                        keepRunning = true;
-                        break;
-                    }
+                // Evaluate the current noise level at receiver compared to the final
+                // expected noise level at the receiver.
+                double nonProcessedPower = maximumWjExpectedSplAtReceiver.get(period).values().stream()
+                        .reduce(Double::sum).orElse(0.0);
+                double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(levelAtReceiver + nonProcessedPower);
+                double dBDiff = maximumExpectedLevelInDb - wToDb(levelAtReceiver);
+                if (dBDiff > dbSettings.maximumError) {
+                    // For this period we still expect to see some significant sources further away.
+                    keepRunning = true;
+                    break;
                 }
-                if(!keepRunning) {
-                    strategy = PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER;
-                }
+            }
+            if(!keepRunning) {
+                strategy = PathSearchStrategy.PROCESS_SOURCE_BUT_SKIP_RECEIVER;
             }
         }
         return strategy;
