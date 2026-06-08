@@ -19,16 +19,17 @@
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
 import groovy.sql.Sql
-import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.Connection
-import java.sql.Statement
 
+import java.sql.Connection
 
 title = 'Display first rows of a query result.'
 description = '&#10145;&#65039; Display the content of a SQL query result. </br>' +
@@ -80,11 +81,13 @@ def exec(Connection connection, input) {
     List output
     String finalQuery
     boolean isTableName = !sqlQuery.toUpperCase().trim().startsWith("SELECT ")
-
+    DBTypes dbType = DBUtils.getDBType(connection)
     if (isTableName) {
-        // If the input is a table name, create a SELECT query
-        Statement statement = connection.createStatement()
-        finalQuery = String.format("SELECT * FROM %s", statement.enquoteIdentifier(sqlQuery, false))
+        // Use the caps specific to the database, user can force case by using double quotes
+        if(!sqlQuery.contains("\"")) {
+            sqlQuery = TableLocation.capsIdentifier(sqlQuery, dbType)
+        }
+        finalQuery = "SELECT * FROM $sqlQuery" as String
     } else {
         // If the input is already a SQL query, use it as is
         // Additional validation: prevent common SQL injection patterns
@@ -128,20 +131,21 @@ def exec(Connection connection, input) {
 static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Connection connection, boolean isTableName) {
 
     StringBuilder output = new StringBuilder()
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     Map first = list.first()
 
     if (isTableName) {
         // Only show total count and metadata for table names
         try {
-            output.append("The total number of rows is " + sql.firstRow('SELECT COUNT(*) FROM ' + queryOrTableName.toUpperCase())[0])
+            output.append("The total number of rows is " + JDBCUtilities.getRowCount(connection, queryOrTableName))
         } catch (Exception e) {
             output.append("Unable to determine total row count for this query")
         }
 
         //get SRID of the table
         try {
-            int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(queryOrTableName))
+            int srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(queryOrTableName, dbType))
 
             if (srid > 0) {
                 output.append("</br>")
@@ -157,7 +161,7 @@ static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Conne
 
         //get primary key of the table
         try {
-            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(queryOrTableName))
+            int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(queryOrTableName, dbType))
 
             if (pkIndex > 0) {
                 output.append("</br>")
