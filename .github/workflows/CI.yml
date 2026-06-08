@@ -36,11 +36,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       # Setup the jdk using version 11 of Adoptium Temurin
-      - name: Setup java 11 using Adoptium Temurin
+      - name: Setup java 25 using Adoptium Temurin
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '25'
           server-id: central
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD

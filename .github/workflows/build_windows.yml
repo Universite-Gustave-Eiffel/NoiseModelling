@@ -57,11 +57,11 @@ jobs:
             $HOME/.m2/
           key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
       # Setup the jdk using version 11 of Adoptium Temurin
-      - name: Setup java 11 using Adoptium Temurin
+      - name: Setup java 25 using Adoptium Temurin
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '25'
           server-id: central
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
@@ -119,7 +119,7 @@ jobs:
           dir installer\app\bin
       - name: Download Windows JRE (Adoptium)
         run: |
-          $jreUrl = "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse"
+          $jreUrl = "https://api.adoptium.net/v3/binary/latest/25/ga/windows/x64/jre/hotspot/normal/eclipse"
           Invoke-WebRequest -Uri $jreUrl -OutFile jre.zip
           Expand-Archive -Path jre.zip -DestinationPath jre_raw -Force
           $innerDir = (Get-ChildItem jre_raw | Where-Object PSIsContainer | Select-Object -First 1).FullName

@@ -60,10 +60,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.15.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>25</source>
+                    <target>25</target>
                 </configuration>
             </plugin>
             <!-- Sign -->
@@ -503,7 +503,7 @@
             <dependency>
                 <groupId>org.matsim</groupId>
                 <artifactId>matsim</artifactId>
-                <version>14.0</version>
+                <version>2026.0</version>
             </dependency>
             <!-- Test dependencies -->
             <dependency>

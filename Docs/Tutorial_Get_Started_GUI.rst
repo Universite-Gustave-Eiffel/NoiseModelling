@@ -8,8 +8,9 @@ Step 1: Download NoiseModelling
 
 Download the latest release of NoiseModelling on `Github`_.
 
-* Windows: you can directly download and run the ``NoiseModelling_5.x.x_install.exe`` installer file *(or you can also follow the Linux / Mac instructions below)*
-* Linux or Mac: download the ``NoiseModelling_5.x.x.zip`` file and unzip it into a chosen directory
+* Windows: you can directly download and run the ``NoiseModelling_*.exe`` installer file *(or you can also follow the Linux instructions below if you have the :doc:`Tutorial_Requirements`)*
+* MacOS: you can directly download and run the ``NoiseModelling_*.dmg`` installer file *(or you can also follow the Linux instructions below if you have the :doc:`Tutorial_Requirements`)*
+* Linux : download the ``NoiseModelling_6.x.x.zip`` file and unzip it into a chosen directory
 
 .. warning::
     The chosen directory can be anywhere, but make sure you have write access. If you are using a company computer, the Program Files folder is probably not a good idea.
@@ -17,12 +18,7 @@ Download the latest release of NoiseModelling on `Github`_.
 .. warning::
     For **Linux** and **Mac** users, please make sure your Java environment is correctly set up. For more information, please read the page :doc:`Tutorial_Requirements`. **Windows** users who are using the ``.exe`` file are not concerned, since the Java Runtime Environment is **already embedded**.
 
-.. note::
-    Starting from version 3.3, NoiseModelling releases include the user interface described in this tutorial.
-
 .. _Github : https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
-
-
 
 Step 2: Start NoiseModelling GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
