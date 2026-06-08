@@ -121,7 +121,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
         multiThread.cutProfileCount.addAndGet(1);
-        cutProfileCount.addAndGet(1);
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
@@ -131,19 +130,18 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         // Create propagation model and compute rays for the current cutProfile
         CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene);
         List<CnossosPath> cnossosPaths = propagationModel.computePaths(cutProfile);
+        // export path if required
+        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
+                .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
+            // Use only one ray as the ray is the same if we not keep absorption values
+            // Copy path content in order to keep original ids for other method calls
+            this.cnossosPaths.addAll(cnossosPaths);
+        }
+
         for (CnossosPath cnossosPath : cnossosPaths) {
             CutPointSource source = cutProfile.getSource();
             CutPointReceiver receiver = cutProfile.getReceiver();
-
             long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
-
-            // export path if required
-            if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
-                    .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-                // Use only one ray as the ray is the same if we not keep absorption values
-                // Copy path content in order to keep original ids for other method calls
-                this.cnossosPaths.add(cnossosPath);
-            }
             if(scene.wjSources.isEmpty()) {
                 // No emission push only attenuation for each period
                 if(!scene.cnossosParametersPerPeriod.isEmpty()) {
