@@ -10,6 +10,8 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
@@ -32,22 +34,18 @@ public interface PropagationModel {
 
     /**
      * Compute the paths for a given geometrical cross-section / cut profile
-     * @param cutProfile geometrical cross-section / cut profile
      * @return {List<CnossosPath>} Paths
      */
-    List<CnossosPath> computePaths(CutProfile cutProfile);
+    List<CnossosPath> computePaths();
 
     /**
      * Compute attenuation along direct path between source and receiver
      *
      * @param attenuationParameters parameters of the computation
-     * @param source source point information
-     * @param receiver receiver point information
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return {double[]} Attenuation
      */
-    double[] computeDirectAttenuation(AttenuationParameters attenuationParameters, PathFinder.SourcePointInfo source,
-                                      PathFinder.ReceiverPointInfo receiver, boolean isExportAttenuationMatrix);
+    double[] computeDirectAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix);
 
     /**
      * Getter for scene attribute
@@ -62,4 +60,21 @@ public interface PropagationModel {
      * @param scene Global geometrical information
      */
     void setScene(SceneWithAttenuation scene);
+
+    /**
+     * Setter for cutProfile attribute
+     *
+     * @param cutProfile Geometrical cut profile
+     */
+    void setCutProfile(CutProfile cutProfile);
+
+    /**
+     * Setter for cutProfile attribute
+     *
+     * @param source source point information
+     * @param receiver receiver point information
+     */
+    void setCutProfile(PathFinder.SourcePointInfo source,
+                              PathFinder.ReceiverPointInfo receiver);
+
 }

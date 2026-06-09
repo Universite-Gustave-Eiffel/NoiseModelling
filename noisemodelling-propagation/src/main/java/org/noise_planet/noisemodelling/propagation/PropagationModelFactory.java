@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.propagation;
 
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 /**
@@ -22,8 +23,8 @@ public class PropagationModelFactory {
      * @param scene global geometrical information
      * @return propagation model object
      */
-    public static PropagationModel create(SceneWithAttenuation scene){
-        return new CnossosPropagationModel(scene);
+    public static PropagationModel create(SceneWithAttenuation scene, CutProfile cutProfile){
+        return new CnossosPropagationModel(scene, cutProfile);
     }
 
     /**
@@ -58,9 +59,10 @@ public class PropagationModelFactory {
      * @param scene Global geometrical information
      * @return propagation model object
      */
-    public static PropagationModel create(String modelName, SceneWithAttenuation scene){
+    public static PropagationModel create(String modelName, SceneWithAttenuation scene, CutProfile cutProfile){
         PropagationModel propagationModel = create(modelName);
         propagationModel.setScene(scene);
+        propagationModel.setCutProfile(cutProfile);
         return propagationModel;
     }
 }

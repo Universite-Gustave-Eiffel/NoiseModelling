@@ -126,7 +126,8 @@ public class AttenuationComputeOutputCnossosTest {
         sceneWithAttenuation.defaultCnossosParameters.setTemperature(TEMPERATURE);
 
         // Create propagation model
-        PropagationModel propagationModel = PropagationModelFactory.create(sceneWithAttenuation);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(sceneWithAttenuation);
 
         //Out and computation settings
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true,
@@ -6034,7 +6035,8 @@ public class AttenuationComputeOutputCnossosTest {
         scene.defaultCnossosParameters = attData;
 
         //Out and computation settings
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -6085,7 +6087,8 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -6142,7 +6145,8 @@ public class AttenuationComputeOutputCnossosTest {
         scene.defaultCnossosParameters = attData;
 
         //Run computation
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true,
                 propagationModel);
 
@@ -6239,7 +6243,8 @@ public class AttenuationComputeOutputCnossosTest {
         scene.defaultCnossosParameters = attData;
 
         //Run computation
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut0 = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder pathFinder = new PathFinder(scene);
         pathFinder.setThreadCount(1);
@@ -6281,7 +6286,8 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setTemperature(TEMPERATURE);
 
         //Out and computation settings
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -6324,7 +6330,8 @@ public class AttenuationComputeOutputCnossosTest {
         scene.defaultCnossosParameters = attData;
 
         //Out and computation settings
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder computeRays = new PathFinder(scene);
         computeRays.setThreadCount(1);
@@ -6388,7 +6395,8 @@ public class AttenuationComputeOutputCnossosTest {
             attData.setWindRose(favourableConditionDirections);
 
             //Out and computation settings
-            PropagationModel propagationModel = PropagationModelFactory.create(scene);
+            PropagationModel propagationModel = PropagationModelFactory.create();
+            propagationModel.setScene(scene);
             AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
             PathFinder pathFinder = new PathFinder(scene);
             pathFinder.setThreadCount(1);
@@ -6448,7 +6456,8 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
 
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder pathFinder = new PathFinder(scene);
         pathFinder.setThreadCount(1);
@@ -6592,7 +6601,8 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
 
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder pathFinder = new PathFinder(scene);
         pathFinder.setThreadCount(1);
@@ -6817,7 +6827,8 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
 
-        PropagationModel propagationModel = PropagationModelFactory.create(scene);
+        PropagationModel propagationModel = PropagationModelFactory.create();
+        propagationModel.setScene(scene);
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, propagationModel);
         PathFinder pathFinder = new PathFinder(scene);
         pathFinder.setThreadCount(1);

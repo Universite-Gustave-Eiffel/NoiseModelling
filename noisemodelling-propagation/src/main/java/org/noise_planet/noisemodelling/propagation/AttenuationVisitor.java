@@ -43,8 +43,8 @@ public class AttenuationVisitor implements CutPlaneVisitor {
             return PathSearchStrategy.CONTINUE;
         }
         // Create propagation model and compute rays for the current cutProfile
-        propagationModel = new CnossosPropagationModel(scene);
-        List<CnossosPath> paths = propagationModel.computePaths(cutProfile);
+        propagationModel = new CnossosPropagationModel(scene, cutProfile);
+        List<CnossosPath> paths = propagationModel.computePaths();
         // Compute attenuation
         for(CnossosPath cnossosPath : paths) {
             computeAttenuation(cnossosPath);
