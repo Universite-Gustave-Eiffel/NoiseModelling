@@ -52,13 +52,16 @@ public class CnossosPropagationModel implements PropagationModel {
      * Compute the attenuation for a given path
      *
      * @param attenuationParameters parameters of the computation
-     * @param path path used for the attenuation computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {double[]} Attenuation
+     * @return {List<double[]>} Attenuation for the homogeneous and favourable path
      */
-    public double[] computeAttenuation(AttenuationParameters attenuationParameters, CnossosPath path, boolean isExportAttenuationMatrix) {
-        return AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, path,
-                scene, isExportAttenuationMatrix);
+    public List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
+        List<double[]> attenuation = new ArrayList<>();
+        for (CnossosPath cnossosPath : this.getPaths()) {
+            attenuation.add(AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, cnossosPath,
+                    scene, isExportAttenuationMatrix));
+        }
+        return attenuation;
     }
 
     /**

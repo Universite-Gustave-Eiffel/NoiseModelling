@@ -44,11 +44,23 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         }
         // Create propagation model and compute rays for the current cutProfile
         propagationModel = new CnossosPropagationModel(scene, cutProfile);
-        List<CnossosPath> paths = propagationModel.computePaths();
-        // Compute attenuation
-        for(CnossosPath cnossosPath : paths) {
-            computeAttenuation(cnossosPath);
+        // Push attenuation for each period
+        if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
+            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
+                    multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
+                processAndStoreAttenuation(propagationModel, cnossosParametersEntry.getKey(),
+                        cnossosParametersEntry.getValue());
+            }
+        } else {
+            processAndStoreAttenuation(propagationModel, "",
+                    multiThreadParent.scene.defaultCnossosParameters);
         }
+
+//        List<CnossosPath> paths = propagationModel.computePaths();
+//        // Compute attenuation
+//        for(CnossosPath cnossosPath : paths) {
+//            computeAttenuation(cnossosPath);
+//        }
         return PathSearchStrategy.CONTINUE;
     }
 
@@ -57,34 +69,52 @@ public class AttenuationVisitor implements CutPlaneVisitor {
 
     }
 
-    private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
-        double[] aGlobalMeteo = propagationModel.computeAttenuation(AttenuationParameters, path,
+    private void processAndStoreAttenuation(CnossosPropagationModel propagationModel, String period,
+                                            AttenuationParameters AttenuationParameters) {
+        if(keepRays) {
+            List<CnossosPath> paths = propagationModel.getPaths();
+            pathParameters.addAll(paths);
+        }
+        List<double[]> attenuationList = propagationModel.computeAttenuation(AttenuationParameters,
                 multiThreadParent.exportAttenuationMatrix);
-        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            if(keepRays) {
-                pathParameters.add(path);
+        for (double[] aGlobalMeteo : attenuationList) {
+            if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+                receiverAttenuationLevels.add(new ReceiverNoiseLevel(
+                        new PathFinder.SourcePointInfo(propagationModel.cutProfile.getSource()),
+                        new PathFinder.ReceiverPointInfo(propagationModel.cutProfile.getReceiver()),
+                        period, aGlobalMeteo));
             }
-            receiverAttenuationLevels.add(new ReceiverNoiseLevel(
-                    new PathFinder.SourcePointInfo(path.getCutProfile().getSource()),
-                    new PathFinder.ReceiverPointInfo(path.getCutProfile().getReceiver()),
-                    period, aGlobalMeteo));
         }
     }
 
-    /**
-     * Process Cnossos propagation path to compute attenuation
-     * @param path Propagation path result
-     */
-    public void computeAttenuation(CnossosPath path) {
-        if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
-            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
-                    multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
-                processPath(cnossosParametersEntry.getKey(), cnossosParametersEntry.getValue(), path);
-            }
-        } else {
-            processPath("", multiThreadParent.scene.defaultCnossosParameters, path);
-        }
-    }
+//        private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
+//        double[] aGlobalMeteo = propagationModel.computeAttenuation(AttenuationParameters, path,
+//                multiThreadParent.exportAttenuationMatrix);
+//        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+//            if(keepRays) {
+//                pathParameters.add(path);
+//            }
+//            receiverAttenuationLevels.add(new ReceiverNoiseLevel(
+//                    new PathFinder.SourcePointInfo(path.getCutProfile().getSource()),
+//                    new PathFinder.ReceiverPointInfo(path.getCutProfile().getReceiver()),
+//                    period, aGlobalMeteo));
+//        }
+//    }
+
+//    /**
+//     * Process Cnossos propagation path to compute attenuation
+//     * @param path Propagation path result
+//     */
+//    public void computeAttenuation(CnossosPath path) {
+//        if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
+//            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
+//                    multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
+//                processPath(cnossosParametersEntry.getKey(), cnossosParametersEntry.getValue(), path);
+//            }
+//        } else {
+//            processPath("", multiThreadParent.scene.defaultCnossosParameters, path);
+//        }
+//    }
 
     /**
      * No more propagation paths will be pushed for this receiver identifier

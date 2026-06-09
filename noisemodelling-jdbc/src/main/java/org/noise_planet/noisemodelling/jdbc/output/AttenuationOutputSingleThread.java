@@ -92,9 +92,19 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                                 AttenuationParameters data, String period, double[] emission, long sourcePk) {
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        for (CnossosPath proPathParameters : propagationModel.getPaths()) {
-            double[] attenuation = dBToW(propagationModel.computeAttenuation( data, proPathParameters,
-                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix));
+        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
+                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
+            List<CnossosPath> cnossosPaths = propagationModel.getPaths();
+            for (CnossosPath proPathParameters : cnossosPaths) {
+                CnossosPath cnossosPath = new CnossosPath(proPathParameters);
+                cnossosPath.setTimePeriod(period);
+                this.cnossosPaths.add(cnossosPath);
+            }
+        }
+        List<double[]> attenuationList = propagationModel.computeAttenuation( data,
+                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
+        for (double[] attenuationDb : attenuationList) {
+            double[] attenuation = dBToW(attenuationDb);
             double[] levels;
             if(emission.length != 0 ) {
                 levels = multiplicationArray(attenuation, emission);
@@ -104,12 +114,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 }
             } else {
                 levels = attenuation;
-            }
-            if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
-                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-                CnossosPath cnossosPath = new CnossosPath(proPathParameters);
-                cnossosPath.setTimePeriod(period);
-                cnossosPaths.add(cnossosPath);
             }
             CutPointSource source = propagationModel.cutProfile.getSource();
             CutPointReceiver receiver = propagationModel.cutProfile.getReceiver();

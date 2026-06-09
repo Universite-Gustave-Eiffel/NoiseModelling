@@ -26,11 +26,10 @@ public interface PropagationModel {
      * Compute the attenuation for a given path
      *
      * @param attenuationParameters parameters of the computation
-     * @param path path used for the attenuation computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {double[]} Attenuation
+     * @return {List<double[]>} Attenuation
      */
-    double[] computeAttenuation(AttenuationParameters attenuationParameters, CnossosPath path, boolean isExportAttenuationMatrix);
+    List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix);
 
     /**
      * Compute the paths for a given geometrical cross-section / cut profile
