@@ -259,7 +259,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
-                CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene, sourcePointInfo, receiver);
+                CnossosPropagationModel propagationModel = new CnossosPropagationModel();
+                propagationModel.setScene(scene);
+                propagationModel.setCutProfile(sourcePointInfo, receiver);
                 double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(
                         scene.defaultCnossosParameters,false));
                 // For line source apply a gain on the attenuation

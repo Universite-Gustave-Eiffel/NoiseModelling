@@ -37,12 +37,6 @@ public class CnossosPropagationModel implements PropagationModel {
         this.cutProfile = cutProfile;
     }
 
-    public CnossosPropagationModel(SceneWithAttenuation scene, PathFinder.SourcePointInfo source,
-                                   PathFinder.ReceiverPointInfo receiver) {
-        this.scene = scene;
-        this.cutProfile = new CutProfile(new CutPointSource(source), new CutPointReceiver(receiver));
-    }
-
     /**
      * Compute the paths for a given geometrical cross-section / cut profile
      *
