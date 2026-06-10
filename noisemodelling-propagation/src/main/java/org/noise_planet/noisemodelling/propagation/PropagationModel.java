@@ -10,11 +10,10 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
-import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,6 +21,7 @@ import java.util.List;
  * @author Martin Glesser
  */
 public interface PropagationModel {
+
     /**
      * Compute the attenuation for a given path
      *
@@ -30,12 +30,6 @@ public interface PropagationModel {
      * @return {List<double[]>} Attenuation
      */
     List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix);
-
-    /**
-     * Compute the paths for a given geometrical cross-section / cut profile
-     * @return {List<CnossosPath>} Paths
-     */
-    List<CnossosPath> computePaths();
 
     /**
      * Compute attenuation along direct path between source and receiver
@@ -61,6 +55,13 @@ public interface PropagationModel {
     void setScene(SceneWithAttenuation scene);
 
     /**
+     * Getter for curProfile attribute
+     *
+     * @return {CutProfile} Geometrical cut profile
+     */
+    CutProfile getCutProfile();
+
+    /**
      * Setter for cutProfile attribute
      *
      * @param cutProfile Geometrical cut profile
@@ -75,5 +76,17 @@ public interface PropagationModel {
      */
     void setCutProfile(PathFinder.SourcePointInfo source,
                               PathFinder.ReceiverPointInfo receiver);
+
+    /**
+     * Getter for CnossosPaths attribute
+     * This method is only implemented by the Cnossos propagation
+     * model. Default implementation ensure that other propagation
+     * model returns an empty list.
+     *
+     * @return {List<CnossosPath>} List of paths
+     */
+    default List<CnossosPath> getPaths(){
+        return new ArrayList<>();
+    }
 
 }

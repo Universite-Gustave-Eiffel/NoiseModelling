@@ -30,18 +30,18 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;
     ThreadPool postProcessingThreadPool = new ThreadPool();
     Future<Boolean> noiseMapWriterFuture;
-    PropagationModel propagationModel;
+    String propagationModelName;
 
     /**
      * @param noiseMapDatabaseParameters Database settings
      * @param exitWhenDone Tell table writer thread to empty current stacks then stop waiting for new data
      * @param aborted If true, all processing are aborted and all threads will be shutdown
      */
-    public DefaultCutPlaneProcessing(PropagationModel propagationModel, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
+    public DefaultCutPlaneProcessing(String propagationModelName, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModel = propagationModel;
+        this.propagationModelName = propagationModelName;
     }
 
     /**
@@ -51,8 +51,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      */
     @Override
     public CutPlaneVisitorFactory create(SceneWithEmission scene) {
-        propagationModel.setScene(scene);
-        return new AttenuationOutputMultiThread(scene, propagationModel, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
+        return new AttenuationOutputMultiThread(scene, propagationModelName, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     @Override

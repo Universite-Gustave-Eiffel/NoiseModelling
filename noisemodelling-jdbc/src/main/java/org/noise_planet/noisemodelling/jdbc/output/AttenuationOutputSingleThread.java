@@ -19,10 +19,8 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
@@ -88,11 +86,13 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
-    private PathSearchStrategy processAndStoreAttenuation(CnossosPropagationModel propagationModel,
-                                                AttenuationParameters data, String period, double[] emission, long sourcePk) {
+    private PathSearchStrategy processAndStoreAttenuation(PropagationModel propagationModel,
+                                                          AttenuationParameters data, String period, double[] emission, long sourcePk) {
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
+        // export path per period if required, in the case of a Cnossos propagation model
+        if(propagationModel instanceof CnossosPropagationModel &&
+                multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
                 multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
             List<CnossosPath> cnossosPaths = propagationModel.getPaths();
             for (CnossosPath proPathParameters : cnossosPaths) {
@@ -115,8 +115,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             } else {
                 levels = attenuation;
             }
-            CutPointSource source = propagationModel.cutProfile.getSource();
-            CutPointReceiver receiver = propagationModel.cutProfile.getReceiver();
+            CutPointSource source = propagationModel.getCutProfile().getSource();
+            CutPointReceiver receiver = propagationModel.getCutProfile().getReceiver();
             ReceiverNoiseLevel receiverNoiseLevel =
                     new ReceiverNoiseLevel(new PathFinder.SourcePointInfo(source),
                             new PathFinder.ReceiverPointInfo(receiver), period,
@@ -196,10 +196,13 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             return strategy;
         }
         // Create propagation model and compute rays for the current cutProfile
-        CnossosPropagationModel propagationModel = new CnossosPropagationModel(scene, cutProfile);
-        // export path if required
-        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
-                .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
+        PropagationModel propagationModel = PropagationModelFactory.create(multiThread.propagationModelName);
+        propagationModel.setScene(scene);
+        propagationModel.setCutProfile(cutProfile);
+        // export path if required, in the case of a Cnossos propagation model
+        if(propagationModel instanceof CnossosPropagationModel &&
+                multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
+                        .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
             // Use only one ray as the ray is the same if we not keep absorption values
             // Copy path content in order to keep original ids for other method calls
             this.cnossosPaths.addAll(propagationModel.getPaths());
@@ -211,10 +214,10 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         if(scene.wjSources.isEmpty()) {
             // No emission push only attenuation for each period
             if(!scene.cnossosParametersPerPeriod.isEmpty()) {
-                for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
+                for (Map.Entry<String, AttenuationParameters> propagationParametersEntry :
                         scene.cnossosParametersPerPeriod.entrySet()) {
-                    strategy = processAndStoreAttenuation(propagationModel, cnossosParametersEntry.getValue(),
-                            cnossosParametersEntry.getKey(), new double[0], sourcePk);
+                    strategy = processAndStoreAttenuation(propagationModel, propagationParametersEntry.getValue(),
+                            propagationParametersEntry.getKey(), new double[0], sourcePk);
                 }
             } else {
                 strategy = processAndStoreAttenuation(propagationModel, scene.defaultCnossosParameters,
@@ -263,7 +266,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
-                CnossosPropagationModel propagationModel = new CnossosPropagationModel();
+                PropagationModel propagationModel = PropagationModelFactory.create(multiThread.propagationModelName);
                 propagationModel.setScene(scene);
                 propagationModel.setCutProfile(sourcePointInfo, receiver);
                 double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(
@@ -380,9 +383,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
+        // Push propagation rays (only in case of Cnossos propagation model)
         if(!this.cnossosPaths.isEmpty()) {
             if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
-                // Push propagation rays
                 pushInStack(multiThread.resultsCache.cnossosPaths, this.cnossosPaths);
             }
         }

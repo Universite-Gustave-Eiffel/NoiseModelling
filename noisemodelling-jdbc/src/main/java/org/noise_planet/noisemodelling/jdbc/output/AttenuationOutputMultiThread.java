@@ -31,7 +31,7 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
     public AtomicInteger cutProfileCount = new AtomicInteger();
-    public PropagationModel propagationModel;
+    public String propagationModelName;
 
     /**
      * Create NoiseMap constructor
@@ -39,18 +39,24 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
      * @param resultsCache
      * @param noiseMapDatabaseParameters
      */
-    public AttenuationOutputMultiThread(SceneWithEmission inputData, PropagationModel propagationModel,
+    public AttenuationOutputMultiThread(SceneWithEmission inputData, String propagationModelName,
                                         ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModel = propagationModel;
+        this.propagationModelName = propagationModelName;
     }
 
     public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {
         this.sceneWithEmission = sceneWithEmission;
+        this.propagationModelName = "cnossos";
+    }
+
+    public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission, String propagationModelName) {
+        this.sceneWithEmission = sceneWithEmission;
+        this.propagationModelName = propagationModelName;
     }
 
     /**

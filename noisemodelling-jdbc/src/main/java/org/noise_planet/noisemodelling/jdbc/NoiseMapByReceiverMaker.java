@@ -55,7 +55,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
-    private PropagationModel propagationModel;
+    private String propagationModelName;
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
@@ -64,8 +64,8 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-        propagationModel = PropagationModelFactory.create();
-        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModel, noiseMapDatabaseParameters, exitWhenDone, aborted);
+        propagationModelName = "cnossos";
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModelName, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -435,12 +435,12 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         CutPlaneVisitorFactory create(SceneWithEmission cellData);
     }
 
-    public PropagationModel getPropagationModel() {
-        return propagationModel;
+    public String getPropagationModelName() {
+        return propagationModelName;
     }
 
-    public void setPropagationModel(PropagationModel propagationModel) {
-        this.propagationModel = propagationModel;
-        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModel, noiseMapDatabaseParameters, exitWhenDone, aborted);
+    public void setPropagationModel(String propagationModelName) {
+        this.propagationModelName = propagationModelName;
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModelName, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 }
