@@ -231,6 +231,17 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <!-- Override the 'jogl' repo introduced by matsim, in the future with maven 4, <repositories> tags will be stripped out before being published into maven -->
+        <repository>
+            <id>jogl</id>
+            <url>https://0.0.0.0</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled> <!-- Disable snapshots to stop it from checking for updates every build -->
+            </snapshots>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
