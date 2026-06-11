@@ -35,7 +35,6 @@ public interface CutPlaneVisitor {
      *
      * @param receiver        Receiver information
      * @param sourceList      All sources in the range of this receiver sorted by the distance from the receiver
-     * @param cutProfileCount
      */
     void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList);
 
