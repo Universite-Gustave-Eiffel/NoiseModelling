@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
+import org.noise_planet.noisemodelling.propagation.template.TemplatePropagationModel;
 
 /**
  * Factory class for propagation model creation
@@ -46,6 +47,8 @@ public class PropagationModelFactory {
         switch (modelName.toUpperCase()) {
             case "CNOSSOS":
                 return new CnossosPropagationModel();
+            case "TEMPLATE":
+                return new TemplatePropagationModel();
             default:
                 throw new IllegalArgumentException("Unknown type: " + modelName);
         }

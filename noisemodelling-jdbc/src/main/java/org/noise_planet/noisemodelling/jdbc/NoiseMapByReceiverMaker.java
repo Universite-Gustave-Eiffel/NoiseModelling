@@ -27,8 +27,6 @@ import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
-import org.noise_planet.noisemodelling.propagation.PropagationModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
