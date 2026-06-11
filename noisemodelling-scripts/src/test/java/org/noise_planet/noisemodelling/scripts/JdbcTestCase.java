@@ -20,11 +20,13 @@ import org.h2.util.OsgiDataSourceFactory;
 import org.h2gis.functions.factory.H2GISFunctions;
 import org.h2gis.postgis_jts.ConnectionWrapper;
 import org.h2gis.utilities.JDBCUtilities;
+import org.h2gis.utilities.dbtypes.DBTypes;
+import org.h2gis.utilities.dbtypes.DBUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.noise_planet.noisemodelling.VersionUtils;
-import org.noise_planet.noisemodelling.webserver.NoiseModellingServerHttpTest;
+import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
@@ -104,8 +106,11 @@ public class JdbcTestCase {
 
     @BeforeEach
     void initConnection() throws SQLException {
-        dataSource = createDataSource("sa", "sa", false);
-        isH2GISDatabase = !(dataSource instanceof HikariDataSource);
+        dataSource = DatabaseManagement.createH2DataSource("jdbc:h2:mem:junit"+System.currentTimeMillis(), "sa", "sa", "", false);
+        try(Connection rawConnection = dataSource.getConnection()) {
+            DBTypes dbType = DBUtils.getDBType(rawConnection);
+            isH2GISDatabase = (dbType == DBTypes.H2GIS || dbType == DBTypes.H2);
+        }
         if(isH2GISDatabase) {
             connection = JDBCUtilities.wrapConnection(dataSource.getConnection());
             H2GISFunctions.load(connection);

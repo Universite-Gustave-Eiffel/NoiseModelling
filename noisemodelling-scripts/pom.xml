@@ -178,6 +178,8 @@
                                         <argument>${macOS.version}</argument>
                                         <argument>--mac-package-name</argument>
                                         <argument>NoiseModelling</argument>
+                                        <argument>--mac-package-identifier</argument>
+                                        <argument>org.noise-planet.noisemodelling</argument>
                                         <argument>--arguments</argument>
                                         <argument>-u -r ""</argument>
                                     </arguments>
