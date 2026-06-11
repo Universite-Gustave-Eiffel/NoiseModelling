@@ -42,7 +42,7 @@ public class TemplatePropagationModel implements PropagationModel {
      *
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {List<double[]>} Attenuation for the homogeneous and favourable path
+     * @return Attenuation for the homogeneous and favourable path
      */
     public List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         // Attenuation computation here
@@ -58,7 +58,7 @@ public class TemplatePropagationModel implements PropagationModel {
      *
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {double[]} Attenuation
+     * @return Attenuation
      */
     public double[] computeDirectAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix){
         // Direct attenuation computation here
@@ -86,7 +86,7 @@ public class TemplatePropagationModel implements PropagationModel {
     }
 
     /**
-     * Getter for curProfile attribute
+     * Getter for cutProfile attribute
      *
      * @return {CutProfile} Geometrical cut profile
      */

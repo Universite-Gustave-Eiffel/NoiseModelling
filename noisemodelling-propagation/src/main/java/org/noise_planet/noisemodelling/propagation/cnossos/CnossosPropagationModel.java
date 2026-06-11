@@ -40,7 +40,7 @@ public class CnossosPropagationModel implements PropagationModel {
     /**
      * Compute the paths for a given geometrical cross-section / cut profile
      *
-     * @return {List<CnossosPath>} Paths
+     * @return List of CnossosPaths
      */
     public List<CnossosPath> computePaths(){
         double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
@@ -53,7 +53,7 @@ public class CnossosPropagationModel implements PropagationModel {
      *
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {List<double[]>} Attenuation for the homogeneous and favourable path
+     * @return Attenuation for the homogeneous and favourable path
      */
     public List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         List<double[]> attenuation = new ArrayList<>();
@@ -69,7 +69,7 @@ public class CnossosPropagationModel implements PropagationModel {
      *
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {double[]} Attenuation
+     * @return Attenuation
      */
     public double[] computeDirectAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix){
         CnossosPath cnossosPath = new CnossosPath(cutProfile);
@@ -102,7 +102,7 @@ public class CnossosPropagationModel implements PropagationModel {
     }
 
     /**
-     * Getter for curProfile attribute
+     * Getter for cutProfile attribute
      *
      * @return {CutProfile} Geometrical cut profile
      */
@@ -134,7 +134,7 @@ public class CnossosPropagationModel implements PropagationModel {
     /**
      * Getter for paths attribute
      *
-     * @return {List<CnossosPath>} List of paths
+     * @return List of CnossosPaths
      */
     public List<CnossosPath> getPaths(){
         if (paths.isEmpty())

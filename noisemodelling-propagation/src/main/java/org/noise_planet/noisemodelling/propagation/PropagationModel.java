@@ -27,7 +27,7 @@ public interface PropagationModel {
      *
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return {List<double[]>} Attenuation
+     * @return List of attenuations
      */
     List<double[]> computeAttenuation(AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix);
 
@@ -55,7 +55,7 @@ public interface PropagationModel {
     void setScene(SceneWithAttenuation scene);
 
     /**
-     * Getter for curProfile attribute
+     * Getter for cutProfile attribute
      *
      * @return {CutProfile} Geometrical cut profile
      */
@@ -83,7 +83,7 @@ public interface PropagationModel {
      * model. Default implementation ensure that other propagation
      * model returns an empty list.
      *
-     * @return {List<CnossosPath>} List of paths
+     * @return List of paths
      */
     default List<CnossosPath> getPaths(){
         return new ArrayList<>();
