@@ -42,7 +42,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
     public SceneWithAttenuation scene;
-    public PropagationModel propagationModel;
+    public String propagationModelName;
 
 //    public AttenuationComputeOutput(boolean exportPaths, SceneWithAttenuation scene) {
 //        this.exportPaths = exportPaths;
@@ -50,16 +50,23 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
 //        this.scene = scene;
 //    }
 
-    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, PropagationModel propagationModel) {
+    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, String propagationModelName, SceneWithAttenuation scene) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.propagationModel = propagationModel;
-        this.scene = propagationModel.getScene();
+        this.propagationModelName = propagationModelName;
+        this.scene = scene;
     }
 
-//    public Scene getScene() {
-//        return scene;
-//    }
+    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithAttenuation scene) {
+        this.exportPaths = exportPaths;
+        this.exportAttenuationMatrix = exportAttenuationMatrix;
+        this.propagationModelName = "cnossos";
+        this.scene = scene;
+    }
+
+    public Scene getScene() {
+        return scene;
+    }
 
     /**
      *
