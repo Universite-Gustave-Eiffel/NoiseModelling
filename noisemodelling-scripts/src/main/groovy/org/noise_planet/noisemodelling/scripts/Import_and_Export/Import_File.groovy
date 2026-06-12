@@ -245,14 +245,14 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
 
     // If the table has a PK column and doesn't have any Primary Key Constraint, then automatically associate a Primary Key
-    ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)
-    int pkUserIndex = JDBCUtilities.getFieldIndex(rs.getMetaData(), "PK")
+    boolean hasPkField = JDBCUtilities.getColumnNames(connection, TableLocation.parse(tableName, dbType)).stream()
+            .anyMatch({ it.equalsIgnoreCase("pk") })
     int pkIndex = JDBCUtilities.getIntegerPrimaryKey(connection, TableLocation.parse(tableName, dbType))
 
     resultString = "The table " + tableName + " has been uploaded to the database!"
 
     if (pkIndex == 0) { // no primary key in the table
-        if (pkUserIndex > 0) { // there is a field with name PK
+        if (hasPkField) { // there is a field with name PK
             try {
                 stmt.execute("ALTER TABLE " + tableName + " ALTER COLUMN PK SET NOT NULL;")
                 stmt.execute("ALTER TABLE " + tableName + " ADD PRIMARY KEY (PK);  ")
