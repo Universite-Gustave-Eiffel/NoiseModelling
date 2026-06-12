@@ -49,24 +49,9 @@ public class DatabaseManagement {
     public static DateFormat mediumDateFormatEN =
             new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss");
 
-    /**
-     * Create H2Database datasource
-     * @param databaseDirectory Where to store the database
-     * @param databaseName Name of the database
-     * @param userName Admin username
-     * @param userPassword Admin password
-     * @param secureBaseEncryptionSecret Encryption database password, optional (empty)
-     * @param initializeSpatial If true initialize H2GIS
-     * @return DataSource instance
-     * @throws SQLException If something wrong happened
-     */
-    public static HikariDataSource createH2DataSource(String databaseDirectory, String databaseName, String userName,
+    public static HikariDataSource createH2DataSource(String connectionUrl, String userName,
                                                       String userPassword, String secureBaseEncryptionSecret,
                                                       boolean initializeSpatial) throws SQLException {
-        HikariConfig config = new HikariConfig();
-
-        StringBuilder connectionUrl = getConnectionUrl(databaseDirectory, databaseName,
-                !secureBaseEncryptionSecret.isEmpty());
 
         Properties properties = new Properties();
         properties.setProperty(H2GISDBFactory.JDBC_URL, connectionUrl.toString());
@@ -75,6 +60,7 @@ public class DatabaseManagement {
                 secureBaseEncryptionSecret.isEmpty() ? userPassword : secureBaseEncryptionSecret + " " + userPassword);
 
         javax.sql.DataSource h2DataSource = H2GISDBFactory.createDataSource(properties);
+        HikariConfig config = new HikariConfig();
         config.setDataSource(h2DataSource);
         config.setConnectionTestQuery("SELECT 1");
         config.setConnectionTimeout(30000);
@@ -91,6 +77,26 @@ public class DatabaseManagement {
         }
         return dataSource;
     }
+    /**
+     * Create H2Database datasource
+     * @param databaseDirectory Where to store the database
+     * @param databaseName Name of the database
+     * @param userName Admin username
+     * @param userPassword Admin password
+     * @param secureBaseEncryptionSecret Encryption database password, optional (empty)
+     * @param initializeSpatial If true initialize H2GIS
+     * @return DataSource instance
+     * @throws SQLException If something wrong happened
+     */
+    public static HikariDataSource createH2DataSource(String databaseDirectory, String databaseName, String userName,
+                                                      String userPassword, String secureBaseEncryptionSecret,
+                                                      boolean initializeSpatial) throws SQLException {
+
+        String connectionUrl = getConnectionUrl(databaseDirectory, databaseName,
+                !secureBaseEncryptionSecret.isEmpty());
+
+        return createH2DataSource(connectionUrl, userName, userPassword, secureBaseEncryptionSecret ,initializeSpatial);
+    }
 
     /**
      * Build H2 connection URL
@@ -100,7 +106,7 @@ public class DatabaseManagement {
      * @return Connection URL
      */
     @NotNull
-    public static StringBuilder getConnectionUrl(String databaseDirectory, String databaseName,
+    public static String getConnectionUrl(String databaseDirectory, String databaseName,
                                                   boolean databaseEncryption) {
         StringBuilder connectionUrl = new StringBuilder();
         connectionUrl.append(H2GISDBFactory.START_URL);
@@ -113,7 +119,7 @@ public class DatabaseManagement {
         if (databaseEncryption) {
             connectionUrl.append(";CIPHER=AES");
         }
-        return connectionUrl;
+        return connectionUrl.toString();
     }
 
 
