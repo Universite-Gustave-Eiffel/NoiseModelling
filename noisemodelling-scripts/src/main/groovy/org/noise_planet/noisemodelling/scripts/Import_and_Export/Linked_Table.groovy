@@ -47,13 +47,13 @@ inputs = [
                              'For H2 <pre>jdbc:h2:tcp://localhost/D:/data/test</pre>',
                 type       : String.class
         ],
-        username: [
+        lt_username: [
                 name       : 'User name',
                 title      : 'User name',
                 description: 'User name when connecting to the external database',
                 type       : String.class
         ],
-        password: [
+        lt_password: [
                 name       : 'User password',
                 title      : 'User password',
                 description: 'User password when connecting to the external database',
@@ -114,8 +114,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     def localTableName = input['localTableName'] as String
     def driverClass = input.getOrDefault('driverClass', 'org.h2gis.postgis_jts.Driver')
     def databaseUrl = input['databaseUrl'] as String
-    def username = input['username'] as String
-    def password = input['password'] as String
+    def username = input['lt_username'] as String
+    def password = input['lt_password'] as String
     def remoteSchemaName = input['remoteSchemaName'] ? (input['remoteSchemaName'] as String) : "public"
     def remoteTableName = input['remoteTableName'] as String
     def force = input['force'] ? "FORCE" : ""
