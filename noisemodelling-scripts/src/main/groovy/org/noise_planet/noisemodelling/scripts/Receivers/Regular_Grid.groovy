@@ -17,6 +17,7 @@
 
 package org.noise_planet.noisemodelling.scripts.Receivers
 
+import groovy.sql.Sql
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
@@ -25,12 +26,12 @@ import org.h2gis.utilities.TableLocation
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.*
-import groovy.sql.Sql
+
+import java.sql.Connection
+import java.sql.SQLException
 
 title = 'Regular Grid'
 description = '&#10145;&#65039; Computes a regular grid of receivers. </br>' +
@@ -160,11 +161,6 @@ def exec(Connection connection, Map input) {
 
     double h = input.getOrDefault("height",4.0) as Double
 
-    boolean createTriangles = false
-    if(input['outputTriangleTable']) {
-        createTriangles = Boolean.parseBoolean(input['outputTriangleTable'] as String)
-    }
-
     String sources_table_name = ""
     if (input['sourcesTableName']) {
         sources_table_name = TableLocation.capsIdentifier(input['sourcesTableName'] as String, dbType)
@@ -221,7 +217,7 @@ def exec(Connection connection, Map input) {
         logger.info("Delete receivers near sources")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
-    if(createTriangles) {
+    if(outputTriangleTable) {
         logger.info("Create index on ROW and COL columns")
         sql.execute("CREATE INDEX idx_${receivers_table_name}_row_col ON $receivers_table_name(ID_ROW, ID_COL);" as String)
 
@@ -241,10 +237,10 @@ def exec(Connection connection, Map input) {
                 " PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))" as String)
         sql.execute("INSERT INTO TRIANGLES($geometryInsertQuery PK_1, PK_2, PK_3, CELL_ID) " +
                 "SELECT $geometrySelectQuery  A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
-                "  FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
+                "  FROM $receivers_table_name A, $receivers_table_name B, $receivers_table_name C " +
                 "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL AND " +
                 "A.ID_ROW = C.ID_ROW + 1 AND A.ID_COL = C.ID_COL + 1 UNION ALL SELECT $geometrySelectQuery " +
-                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0 FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
+                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0 FROM $receivers_table_name A, $receivers_table_name B, $receivers_table_name C " +
                 "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL + 1 AND A.ID_ROW = C.ID_ROW AND A.ID_COL = C.ID_COL + 1;" as String)
     }
 
