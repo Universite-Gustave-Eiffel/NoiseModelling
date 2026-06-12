@@ -19,6 +19,8 @@ package org.noise_planet.noisemodelling.scripts.Database_Manager
 
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
@@ -69,7 +71,8 @@ def exec(Connection connection, input) {
         StringBuilder sb = new StringBuilder()
 
         // Get every table names
-        List<String> tables = JDBCUtilities.getTableNames(connection, null, "PUBLIC", "%", null)
+        DBTypes dbType = DBUtils.getDBType(connection)
+        List<String> tables = JDBCUtilities.getTableNames(connection, null, TableLocation.capsIdentifier("public", dbType), "%", "TABLE")
         // Loop over the tables
         tables.each { t ->
             TableLocation tab = TableLocation.parse(t)
