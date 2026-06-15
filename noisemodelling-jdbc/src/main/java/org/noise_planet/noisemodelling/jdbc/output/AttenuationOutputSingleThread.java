@@ -98,17 +98,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                                           long sourcePk, boolean isDefaultParameters) {
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
-        // export path per period if required, in the case of a Cnossos propagation model
-        if(propagationModel instanceof CnossosPropagationModel &&
-                multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
-                multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-            List<CnossosPath> cnossosPaths = propagationModel.getPaths();
-            for (CnossosPath proPathParameters : cnossosPaths) {
-                CnossosPath cnossosPath = new CnossosPath(proPathParameters);
-                cnossosPath.setTimePeriod(period);
-                this.cnossosPaths.add(cnossosPath);
-            }
-        }
         // Avoid multiple attenuation computation with default attenuation parameters
         List<double[]> attenuationList;
         if(isDefaultParameters && !defaultAttenuation.isEmpty()){
@@ -116,6 +105,17 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         } else {
             attenuationList = propagationModel.computeAttenuation( data,
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
+            // export path per period if required, in the case of a Cnossos propagation model
+            if(propagationModel instanceof CnossosPropagationModel &&
+                    multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
+                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
+                List<CnossosPath> cnossosPaths = propagationModel.getPaths();
+                for (CnossosPath proPathParameters : cnossosPaths) {
+                    CnossosPath cnossosPath = new CnossosPath(proPathParameters);
+                    cnossosPath.setTimePeriod(period);
+                    this.cnossosPaths.add(cnossosPath);
+                }
+            }
         }
         if(isDefaultParameters && defaultAttenuation.isEmpty()) {
             defaultAttenuation = attenuationList;
@@ -244,9 +244,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             // Apply period attenuation to emission for each time period covered by the source emission
             if(scene.wjSources.containsKey(sourcePk)) {
                 ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
+                defaultAttenuation = new ArrayList<>();
                 for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                     String period = periodEmission.period;
-                    defaultAttenuation = new ArrayList<>();
                     // look for specific atmospheric settings for this period
                     if(scene.cnossosParametersPerPeriod.containsKey(period)) {
                         strategy = processAndStoreAttenuation(propagationModel,
