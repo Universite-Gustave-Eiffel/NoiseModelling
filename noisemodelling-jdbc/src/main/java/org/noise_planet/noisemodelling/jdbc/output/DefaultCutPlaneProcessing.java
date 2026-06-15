@@ -92,7 +92,9 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     public void stop() throws SQLException {
         exitWhenDone.set(true);
         try {
-            noiseMapWriterFuture.get();
+            if(noiseMapWriterFuture != null) {
+                noiseMapWriterFuture.get();
+            }
         } catch (Exception e) {
             throw new SQLException(e);
         }

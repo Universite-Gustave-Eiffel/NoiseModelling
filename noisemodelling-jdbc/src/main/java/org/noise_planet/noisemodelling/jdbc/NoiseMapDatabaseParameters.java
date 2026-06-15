@@ -62,6 +62,7 @@ public class NoiseMapDatabaseParameters {
 
     public String receiversLevelTable = DEFAULT_RECEIVERS_LEVEL_TABLE_NAME;
     public String raysTable = "RAYS";
+    public File sceneExportFolder = null;
 
     public File sqlOutputFile;
     public Boolean sqlOutputFileCompression = true;
@@ -184,6 +185,20 @@ public class NoiseMapDatabaseParameters {
      */
     public void setRaysTable(String raysTable) {
         this.raysTable = raysTable;
+    }
+
+    /**
+     * @return The storage location of the 3D scene files or null
+     */
+    public File getSceneExportFolder() {
+        return sceneExportFolder;
+    }
+
+    /**
+     * @param sceneExportFolder The storage location of the 3D scene files or null
+     */
+    public void setSceneExportFolder(File sceneExportFolder) {
+        this.sceneExportFolder = sceneExportFolder;
     }
 
     /**

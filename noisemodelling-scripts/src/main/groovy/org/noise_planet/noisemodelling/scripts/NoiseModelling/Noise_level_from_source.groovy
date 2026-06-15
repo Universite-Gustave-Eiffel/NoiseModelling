@@ -243,12 +243,12 @@ inputs = [
                 type       : String.class
         ],
         confRaysName            : [
-                name       : '',
+                name       : 'Export scene',
                 title      : 'Export scene',
-                description: 'Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml) </br> </br>' +
-                             'You can set a table name here in order to save all the rays computed by NoiseModelling. </br> </br>' +
+                description: 'You can provide a table name to export the propagation rays with the attenuation computation details into the specified table (ex:RAYS).' +
+                             'You can also provide a folder path URL (ex: <code>file:///Z:/data/scene3d/</code>) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains' +
                              'The number of rays has been limited in this script in order to avoid memory exception. </br> </br>' +
-                             '&#128736; <b>If not provided, then do not keep rays</b>',
+                             '&#128736; <b>If not provided nothing is exported</b>',
                 min        : 0, max: 1, 
                 type: String.class
         ],
@@ -480,11 +480,20 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     sql.execute("drop table if exists " + TableLocation.parse(pointNoiseMap.noiseMapDatabaseParameters.receiversLevelTable, dbType))
 
     if (input['confRaysName'] && !((input['confRaysName'] as String).isEmpty())) {
-        parameters.setRaysTable(input['confRaysName'] as String)
-        parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
-        parameters.exportAttenuationMatrix = true
-        parameters.exportCnossosPathWithAttenuation = true
-        parameters.keepAbsorption = true
+        String confRaysName = input['confRaysName'] as String
+        if(confRaysName.toLowerCase().startsWith("file:")) {
+            File exportFolder = new File(new URI(confRaysName))
+            if(!exportFolder.isDirectory()) {
+                throw new IllegalArgumentException("Error : The provided path for confRaysName is not a valid directory: " + confRaysName)
+            }
+            parameters.setSceneExportFolder(exportFolder)
+        } else {
+            parameters.setRaysTable(input['confRaysName'] as String)
+            parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
+            parameters.exportAttenuationMatrix = true
+            parameters.exportCnossosPathWithAttenuation = true
+            parameters.keepAbsorption = true
+        }
     }
 
     pointNoiseMap.setComputeHorizontalDiffraction(compute_vertical_diffraction)
