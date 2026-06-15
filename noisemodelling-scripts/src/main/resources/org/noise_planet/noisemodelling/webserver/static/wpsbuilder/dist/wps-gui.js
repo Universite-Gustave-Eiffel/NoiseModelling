@@ -62173,6 +62173,10 @@ wps.editor.prototype.showEditForm = function(node) {
   // we need to remove any input map div if we had one before, otherwise the map won't render again
   $('.input-map').detach();
   $('#tab-inputs').html(html);
+  // When loading input, auto resize it
+  $('#tab-inputs').find('textarea.form-control').each(function() {
+      autoResize(this);
+  });
   var me = this;
   var ids;
   if (inputIds.length > 0) {
