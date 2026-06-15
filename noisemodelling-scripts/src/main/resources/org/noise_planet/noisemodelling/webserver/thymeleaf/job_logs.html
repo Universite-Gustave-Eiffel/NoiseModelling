@@ -16,7 +16,7 @@
     <script th:src="@{|/js/logs_ws.js|}"></script>
     <script th:inline="javascript">
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const path = "[(@{/job_logs_stream/})]";
+        const path = "[(@{/ws/job_logs_stream/})]";
         const jobId = [(${jobId})];
         openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
     </script>

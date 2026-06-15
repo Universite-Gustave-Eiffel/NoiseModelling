@@ -301,7 +301,7 @@ public class NoiseModellingServer {
      */
     protected void installJobsRoutes() {
         app.get("/job_logs/{job_id}", owsController::jobLogs, Role.RUNNER);
-        app.ws("/job_logs_stream/{job_id}", this::manageLogsWebSocket, Role.RUNNER);
+        app.ws("/ws/job_logs_stream/{job_id}", this::manageLogsWebSocket, Role.RUNNER);
         app.post("/jobs/delete/{job_id}", owsController::jobDelete, Role.RUNNER);
         app.post("/jobs/delete_all", owsController::jobDeleteAll, Role.RUNNER);
         app.post("/jobs/cancel/{job_id}", owsController::jobCancel, Role.RUNNER);
@@ -322,7 +322,7 @@ public class NoiseModellingServer {
         app.post("/edit_user/{userId}", userController::userEdit,  Role.ADMINISTRATOR);
         app.get("/logout", userController::logout, Role.ANYONE);
         app.get("/about", userController::about, Role.ADMINISTRATOR);
-        app.ws("/memory_stats_stream", this::manageMemoryWebSocket, Role.ADMINISTRATOR);
+        app.ws("/ws/memory_stats_stream", this::manageMemoryWebSocket, Role.ADMINISTRATOR);
     }
 
     /**

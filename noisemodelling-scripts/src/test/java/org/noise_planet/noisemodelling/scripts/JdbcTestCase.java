@@ -26,9 +26,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.noise_planet.noisemodelling.VersionUtils;
+import org.noise_planet.noisemodelling.runner.PostGISJTSDataSource;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
 import org.osgi.service.jdbc.DataSourceFactory;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +73,7 @@ public class JdbcTestCase {
         HikariConfig config = new HikariConfig();
         config.setUsername(params.user);
         config.setPassword(params.password);
-        config.setDataSourceClassName(PGSimpleDataSource.class.getCanonicalName());
+        config.setDataSourceClassName(PostGISJTSDataSource.class.getCanonicalName());
         config.addDataSourceProperty("portNumbers", Integer.parseInt(params.port));
         config.addDataSourceProperty("databaseName", params.database);
         config.addDataSourceProperty("serverNames", params.host);
