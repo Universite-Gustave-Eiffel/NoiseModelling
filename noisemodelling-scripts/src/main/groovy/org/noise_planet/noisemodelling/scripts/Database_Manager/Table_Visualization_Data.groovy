@@ -118,22 +118,23 @@ def exec(Connection connection, input) {
 
 
     // print to WPS Builder
-    return mapToTable(output, sql, sqlQuery, connection, isTableName)
+    return mapToTable(output, sqlQuery, connection, isTableName)
 }
 
 
 /**
  * Convert a list to HTML table
- * @param list
+ * @param queryResultSet Result of Sql.rows
+ * @param queryOrTableName SQL Query or table name used to generate the results
  * @param isTableName true if the query was a simple table name, false if it was a custom SQL query
- * @return
+ * @return HTML representation of the result
  */
-static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Connection connection, boolean isTableName) {
+static String mapToTable(List<Map> queryResultSet, String queryOrTableName, Connection connection, boolean isTableName) {
 
     StringBuilder output = new StringBuilder()
     DBTypes dbType = DBUtils.getDBType(connection)
 
-    Map first = list.first()
+    Map first = queryResultSet.first()
 
     if (isTableName) {
         // Only show total count and metadata for table names
@@ -178,7 +179,7 @@ static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Conne
         output.append("</br> </br> ")
     } else {
         output.append("SQL Query: <code>" + queryOrTableName + "</code></br>")
-        output.append("Showing first " + list.size() + " rows</br> </br> ")
+        output.append("Showing first " + queryResultSet.size() + " rows</br> </br> ")
     }
 
     // Add CSS styling for table cells with scroll support
@@ -197,7 +198,7 @@ static String mapToTable(List<Map> list, Sql sql, String queryOrTableName, Conne
 
     output.append("</tr></thead><tbody>")
     WKTWriter wktWriter = new WKTWriter(3)
-    list.each { map ->
+    queryResultSet.each { map ->
         if (map.size() > 0) {
 
             def values = map.values()

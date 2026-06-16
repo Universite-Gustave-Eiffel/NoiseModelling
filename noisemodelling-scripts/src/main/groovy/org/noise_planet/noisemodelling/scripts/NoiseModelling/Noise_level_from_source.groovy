@@ -246,7 +246,7 @@ inputs = [
                 name       : 'Export scene',
                 title      : 'Export scene',
                 description: 'You can provide a table name to export the propagation rays with the attenuation computation details into the specified table (ex:RAYS).' +
-                             'You can also provide a folder path URL (ex: <code>file:///Z:/data/scene3d/</code>) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains. The export format is KML and can be viewed into earth.google.com .' +
+                             'You can also provide a folder path URI (ex: <code>file:///c:/data/scene3d/</code> or <code>file:/home/user/scene3d/</code>) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains. The export format is KML and can be viewed into earth.google.com .' +
                              '&#128736; <b>If not provided nothing is exported</b>',
                 min        : 0, max: 1, 
                 type: String.class
