@@ -422,12 +422,26 @@ public class KMLDocument {
     }
 
     public void exportSources(Scene scene) {
-        // Create a folder for sources
         try {
+            // Create a style for sources (red lines and points)
+            xmlOut.writeStartElement("Style");
+            xmlOut.writeAttribute("id", "sourceStyle");
+            xmlOut.writeStartElement("LineStyle");
+            xmlOut.writeStartElement("color");
+            xmlOut.writeCharacters("ff0000ff"); // Red
+            xmlOut.writeEndElement();//color
+            // set width of the line
+            xmlOut.writeStartElement("width");
+            xmlOut.writeCharacters("12"); // px
+            xmlOut.writeEndElement();//width
+            xmlOut.writeEndElement();//LineStyle
+            xmlOut.writeEndElement();//Style
+
             xmlOut.writeStartElement("Schema");
             xmlOut.writeAttribute("name", "Sources");
             xmlOut.writeAttribute("id", "sources");
             xmlOut.writeEndElement();//Write schema
+            // Create a folder for sources
             xmlOut.writeStartElement("Folder");
             xmlOut.writeStartElement("name");
             xmlOut.writeCharacters("sources");
@@ -444,6 +458,10 @@ public class KMLDocument {
                 StringBuffer stringBuffer = new StringBuffer();
                 writer.write(source, stringBuffer);
                 writeRawXml(stringBuffer.toString());
+                //Set style for source
+                xmlOut.writeStartElement("styleUrl");
+                xmlOut.writeCharacters("#sourceStyle");
+                xmlOut.writeEndElement();//styleUrl
                 xmlOut.writeEndElement();//Write Placemark
             }
             xmlOut.writeEndElement();//Folder
@@ -455,7 +473,7 @@ public class KMLDocument {
     /**
      * Export processed input data of the ProfileBuilder
      * @param outputStream Ready stream of data
-     * @param builder initialized profile builder instance
+     * @param scene initialized scene
      * @param srid Input projection system (will be transformed to 4326)
      * @throws IOException Exception
      */

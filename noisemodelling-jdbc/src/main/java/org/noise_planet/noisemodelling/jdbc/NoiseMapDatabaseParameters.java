@@ -51,8 +51,9 @@ public class NoiseMapDatabaseParameters {
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = 0;
 
-    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
-
+    /**
+     * @return the maximum number of rays to output
+     */
     public int getMaximumRaysOutputCount() {
         return maximumRaysOutputCount;
     }
