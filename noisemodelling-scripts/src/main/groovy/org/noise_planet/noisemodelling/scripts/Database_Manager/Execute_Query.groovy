@@ -60,20 +60,22 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
-    Statement stat = connection.createStatement();
-    ScriptReader r = new ScriptReader(new StringReader(input.sqlQueries as String));
     StringBuilder outputData = new StringBuilder()
     Sql sql = new Sql(connection)
     def mapper = new ObjectMapper()
     def exportInHTML = !input.containsKey("outputFormat") || "HTML".equalsIgnoreCase(input.outputFormat as String)
-    while (true) {
-        String query = r.readStatement();
-        if (query == null) {
-            break;
-        }
-        if (StringUtils.isWhitespaceOrEmpty(query)) {
-            continue;
-        }
+
+    List<String> statementList = new LinkedList<>()
+    ScriptReader scriptReader = new ScriptReader(new StringReader(input.sqlQueries as String));
+
+    String statement = scriptReader.readStatement()
+    while (statement != null && !StringUtils.isWhitespaceOrEmpty(statement)) {
+        statementList.add(statement)
+        statement = scriptReader.readStatement()
+    }
+    ProgressVisitor subProgress = progress.subProcess(statementList.size())
+    for(final String query in statementList) {
+        logger.info("Executing query: ${query}")
         sql.execute(query, { isResultSet, result ->
             if(isResultSet) {
                 if (exportInHTML) {
@@ -86,8 +88,13 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
                     }
                     outputData.append(mapper.writeValueAsString([query: query, result: result]))
                 }
+            } else {
+                if(exportInHTML) {
+                    outputData.append("<p>Query executed successfully: ${query}. Updated ${sql.updateCount} rows</p>")
+                }
             }
         })
+        subProgress.endStep()
     }
     if(!exportInHTML) {
         outputData.append("]")
