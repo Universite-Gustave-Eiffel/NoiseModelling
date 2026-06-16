@@ -21,6 +21,8 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
@@ -90,6 +92,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     public static ObjectWriter createJsonWriter() {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.addMixIn(LineSegment.class, LineSegmentMixin.class);
         mapper.registerModule(new JtsModule());
         return mapper.writer();
     }
@@ -100,6 +104,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     public static CnossosPath jsonToPropagationPath(String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
         return mapper.readValue(json, CnossosPath.class);
     }
 
