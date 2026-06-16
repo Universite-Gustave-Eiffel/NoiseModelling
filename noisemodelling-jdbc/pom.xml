@@ -51,6 +51,11 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
+            <!-- JTS datatype for JSON serialization -->
+            <groupId>com.graphhopper.external</groupId>
+            <artifactId>jackson-datatype-jts</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
         </dependency>

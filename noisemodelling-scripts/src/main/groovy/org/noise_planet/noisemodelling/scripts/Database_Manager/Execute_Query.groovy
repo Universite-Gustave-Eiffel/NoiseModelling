@@ -18,18 +18,17 @@
 
 package org.noise_planet.noisemodelling.scripts.Database_Manager
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.deser.std.JsonNodeDeserializer
+
+import com.fasterxml.jackson.databind.ObjectWriter
 import groovy.sql.Sql
 import org.h2.util.ScriptReader
 import org.h2.util.StringUtils
 import org.h2gis.api.ProgressVisitor
+import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.sql.Connection
-import java.sql.ResultSet
-import java.sql.Statement
 
 title = 'Run SQL queries and display the results'
 description = '&#10145;&#65039; Run multiple SQL queries and display the results.</br>'
@@ -60,13 +59,14 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
 
-    StringBuilder outputData = new StringBuilder()
+    final StringBuilder outputData = new StringBuilder()
     Sql sql = new Sql(connection)
-    def mapper = new ObjectMapper()
+    ObjectWriter writer = NoiseMapWriter.createJsonWriter()
     def exportInHTML = !input.containsKey("outputFormat") || "HTML".equalsIgnoreCase(input.outputFormat as String)
 
     List<String> statementList = new LinkedList<>()
-    ScriptReader scriptReader = new ScriptReader(new StringReader(input.sqlQueries as String));
+    ScriptReader scriptReader = new ScriptReader(new StringReader(input.sqlQueries as String))
+    scriptReader.setSkipRemarks(true)
 
     String statement = scriptReader.readStatement()
     while (statement != null && !StringUtils.isWhitespaceOrEmpty(statement)) {
@@ -76,6 +76,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     ProgressVisitor subProgress = progress.subProcess(statementList.size())
     for(final String query in statementList) {
         logger.info("Executing query: ${query}")
+        long startTime = System.currentTimeMillis()
         sql.execute(query, { isResultSet, result ->
             if(isResultSet) {
                 if (exportInHTML) {
@@ -86,17 +87,20 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
                     } else {
                         outputData.append(", \n")
                     }
-                    outputData.append(mapper.writeValueAsString([query: query, result: result]))
+                    outputData.append(writer.writeValueAsString([query: query, result: result]))
                 }
             } else {
                 if(exportInHTML) {
-                    outputData.append("<p>Query executed successfully: ${query}. Updated ${sql.updateCount} rows</p>")
+                    outputData.append("<p>SQL Query: <code>${query}</code></p><p>Updated ${result as Integer} ${result > 1 ? 'rows' : 'row'} in ${System.currentTimeMillis() - startTime} ms</p>")
                 }
             }
         })
         subProgress.endStep()
     }
     if(!exportInHTML) {
+        if (outputData.isEmpty()) {
+            outputData.append("[\n")
+        }
         outputData.append("]")
     }
 

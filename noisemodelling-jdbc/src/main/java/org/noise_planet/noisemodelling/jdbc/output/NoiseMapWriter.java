@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc.output;
 
+import com.bedatadriven.jackson.datatype.jts.JtsModule;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -20,8 +21,6 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneDatabaseInputSettings;
 import org.noise_planet.noisemodelling.jdbc.utils.StringPreparedStatements;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
-import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.slf4j.Logger;
@@ -40,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
 
 /**
  * Process that run SQL query to feed tables
@@ -86,11 +84,14 @@ public class NoiseMapWriter implements Callable<Boolean> {
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
         if(databaseParameters.exportCnossosPathWithAttenuation) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
-            mapper.addMixIn(LineSegment.class, LineSegmentMixin.class);
-            jsonWriter = mapper.writer();
+            jsonWriter = createJsonWriter();
         }
+    }
+
+    public static ObjectWriter createJsonWriter() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JtsModule());
+        return mapper.writer();
     }
 
     public String propagationPathAsJSON(CnossosPath path) throws JsonProcessingException {

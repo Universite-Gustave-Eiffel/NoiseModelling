@@ -516,6 +516,12 @@
                 <artifactId>matsim</artifactId>
                 <version>2026.0</version>
             </dependency>
+            <dependency>
+                <groupId>com.graphhopper.external</groupId>
+                <artifactId>jackson-datatype-jts</artifactId>
+                <version>2.21.0</version>
+                <scope>compile</scope>
+            </dependency>
             <!-- Test dependencies -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
