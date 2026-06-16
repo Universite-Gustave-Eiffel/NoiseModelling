@@ -14,6 +14,9 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
+import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,32 +32,34 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
     public AtomicInteger cutProfileCount = new AtomicInteger();
-    public String propagationModelName;
+    public PropagationModel propagationModel;
 
     /**
      * Create NoiseMap constructor
-     * @param inputData
-     * @param resultsCache
-     * @param noiseMapDatabaseParameters
+     *
+     * @param inputData Geometrical information about the propagation scene
+     * @param resultsCache Results cache
+     * @param noiseMapDatabaseParameters Propagation parameters
      */
-    public AttenuationOutputMultiThread(SceneWithEmission inputData, String propagationModelName,
+    public AttenuationOutputMultiThread(SceneWithEmission inputData, PropagationModelCreator propagationModelCreator,
                                         ResultsCache resultsCache, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.resultsCache = resultsCache;
         this.sceneWithEmission = inputData;
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModelName = propagationModelName;
+        this.propagationModel = propagationModelCreator.create();
     }
 
+    /**
+     * Constructor for AttenuationOutputMultiThread with Cnossos propagation model
+     * (for testing purpose).
+     *
+     * @param sceneWithEmission Geometrical information about the propagation scene
+     */
     public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {
         this.sceneWithEmission = sceneWithEmission;
-        this.propagationModelName = "cnossos";
-    }
-
-    public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission, String propagationModelName) {
-        this.sceneWithEmission = sceneWithEmission;
-        this.propagationModelName = propagationModelName;
+        this.propagationModel = new CnossosPropagationModel();
     }
 
     /**

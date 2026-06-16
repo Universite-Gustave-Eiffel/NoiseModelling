@@ -107,7 +107,7 @@ public class GenerateReferenceDeviation {
         scene.defaultCnossosParameters = attData;
 
         //Out and computation settings
-        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, "cnossos", scene);
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
 
         AttenuationVisitor attenuationVisitor = (AttenuationVisitor)propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());

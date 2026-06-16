@@ -14,6 +14,7 @@ import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.*;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 
 import java.util.*;
@@ -42,25 +43,12 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
     public SceneWithAttenuation scene;
-    public String propagationModelName;
-
-//    public AttenuationComputeOutput(boolean exportPaths, SceneWithAttenuation scene) {
-//        this.exportPaths = exportPaths;
-//        this.exportAttenuationMatrix = false;
-//        this.scene = scene;
-//    }
-
-    public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, String propagationModelName, SceneWithAttenuation scene) {
-        this.exportPaths = exportPaths;
-        this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.propagationModelName = propagationModelName;
-        this.scene = scene;
-    }
+    public PropagationModel propagationModel;
 
     public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithAttenuation scene) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.propagationModelName = "cnossos";
+        this.propagationModel = new CnossosPropagationModel();
         this.scene = scene;
     }
 

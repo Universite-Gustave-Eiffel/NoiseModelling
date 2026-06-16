@@ -127,7 +127,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Out and computation settings
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true,
-                "cnossos", sceneWithAttenuation);
+                sceneWithAttenuation);
 
         CutPlaneVisitor cutPlaneVisitor = propDataOut.subProcess(new EmptyProgressVisitor());
         PathFinder.ReceiverPointInfo lastReceiver = new PathFinder.ReceiverPointInfo(-1,-1,new Coordinate());

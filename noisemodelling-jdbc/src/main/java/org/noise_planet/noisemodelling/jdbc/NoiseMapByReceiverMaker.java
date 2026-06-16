@@ -27,6 +27,7 @@ import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,17 +54,20 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
-    private String propagationModelName;
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
-    /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
-
+    /**
+     * Constructor for NoiseMapByReceiverMaker object.
+     *
+     * @param buildingsTableName Buildings table
+     * @param sourcesTableName  Source table
+     * @param receiverTableName Receiver table
+     */
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
-        propagationModelName = "cnossos";
-        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModelName, noiseMapDatabaseParameters, exitWhenDone, aborted);
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -431,14 +435,20 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
          * @return an object that computes paths out for noise map computation.
          */
         CutPlaneVisitorFactory create(SceneWithEmission cellData);
-    }
 
-    public String getPropagationModelName() {
-        return propagationModelName;
-    }
+        /**
+         * Setter for propagationModelCreator
+         *
+         * @param propagationModelCreator interface for PropagationModel creation
+         */
+        void setPropagationModelCreator(PropagationModelCreator propagationModelCreator);
 
-    public void setPropagationModel(String propagationModelName) {
-        this.propagationModelName = propagationModelName;
-        computeRaysOutFactory = new DefaultCutPlaneProcessing(propagationModelName, noiseMapDatabaseParameters, exitWhenDone, aborted);
+        /**
+         * Getter for propagationModelCreator
+         *
+         * @return interface for PropagationModel creation
+         */
+        PropagationModelCreator getPropagationModelCreator();
+
     }
 }

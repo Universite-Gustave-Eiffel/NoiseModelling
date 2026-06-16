@@ -10,12 +10,12 @@ import org.noise_planet.noisemodelling.pathfinder.utils.profiler.JVMMemoryMetric
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProgressMetric;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ReceiverStatsMetric;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
+import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
@@ -30,18 +30,17 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;
     ThreadPool postProcessingThreadPool = new ThreadPool();
     Future<Boolean> noiseMapWriterFuture;
-    String propagationModelName;
+    PropagationModelCreator propagationModelCreator = new CnossosPropagationModelCreator();
 
     /**
      * @param noiseMapDatabaseParameters Database settings
      * @param exitWhenDone Tell table writer thread to empty current stacks then stop waiting for new data
      * @param aborted If true, all processing are aborted and all threads will be shutdown
      */
-    public DefaultCutPlaneProcessing(String propagationModelName, NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
+    public DefaultCutPlaneProcessing(NoiseMapDatabaseParameters noiseMapDatabaseParameters, AtomicBoolean exitWhenDone, AtomicBoolean aborted) {
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModelName = propagationModelName;
     }
 
     /**
@@ -51,7 +50,7 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
      */
     @Override
     public CutPlaneVisitorFactory create(SceneWithEmission scene) {
-        return new AttenuationOutputMultiThread(scene, propagationModelName, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
+        return new AttenuationOutputMultiThread(scene, propagationModelCreator, resultsCache, noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     @Override
@@ -102,5 +101,23 @@ public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.ICompu
         // Shutdown the thread pool
         // previously submitted tasks are executed, but no new tasks will be accepted.
         postProcessingThreadPool.shutdown();
+    }
+
+    /**
+     * Setter for propagationModelCreator
+     *
+     * @param propagationModelCreator interface for PropagationModel creation
+     */
+    public void setPropagationModelCreator(PropagationModelCreator propagationModelCreator){
+        this.propagationModelCreator = propagationModelCreator;
+    }
+
+    /**
+     * Getter for propagationModelCreator
+     *
+     * @return interface for PropagationModel creation
+     */
+    public PropagationModelCreator getPropagationModelCreator(){
+        return this.propagationModelCreator;
     }
 }

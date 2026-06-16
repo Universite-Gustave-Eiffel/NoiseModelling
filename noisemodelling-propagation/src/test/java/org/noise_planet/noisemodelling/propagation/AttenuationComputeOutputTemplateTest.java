@@ -1,24 +1,18 @@
 package org.noise_planet.noisemodelling.propagation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.h2gis.api.EmptyProgressVisitor;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
-import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.template.TemplatePropagationModel;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumArray;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.sumDbArray;
 
 public class AttenuationComputeOutputTemplateTest {
     private static final double HUMIDITY = 70;
@@ -52,10 +46,9 @@ public class AttenuationComputeOutputTemplateTest {
             cutProfile = loadCutProfile(inputStream);
         }
 
-        PropagationModel propagationModel = PropagationModelFactory.create(
-                "template", sceneWithAttenuation, cutProfile);
+        PropagationModel propagationModel = new TemplatePropagationModel();
 
-        return propagationModel.computeAttenuation(
+        return propagationModel.computeAttenuation(sceneWithAttenuation, cutProfile, new ArrayList<>(),
                 sceneWithAttenuation.defaultCnossosParameters, false);
     }
 
