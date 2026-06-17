@@ -61998,6 +61998,7 @@ wps.editor.prototype.showEditForm = function(node) {
       textarea.id = id;
       textarea.className = 'form-control input-sm';
       textarea.textContent = value; // Browser automatically escapes this safely
+      textarea.setAttribute('oninput', 'autoResize(this)');
       html += textarea.outerHTML;
     }
     html += saveButton;
@@ -62172,6 +62173,10 @@ wps.editor.prototype.showEditForm = function(node) {
   // we need to remove any input map div if we had one before, otherwise the map won't render again
   $('.input-map').detach();
   $('#tab-inputs').html(html);
+  // When loading input, auto resize it
+  $('#tab-inputs').find('textarea.form-control').each(function() {
+      autoResize(this);
+  });
   var me = this;
   var ids;
   if (inputIds.length > 0) {
@@ -62956,6 +62961,7 @@ wps.ui.prototype.checkInput = function(nodeId, name, id) {
     $("#" + name + "-field").addClass("has-success");
     this.editor_.setValue(false, id, value);
   }
+  this.autoSave();
 };
 
 wps.ui.prototype.save = function(ui) {
@@ -64418,3 +64424,13 @@ wps.ui.prototype.createProcess = function(process) {
   return d;
 };
 
+function autoResize(el) {
+    const element = (typeof jQuery !== 'undefined' && el instanceof jQuery) ? el[0] : el;
+
+    if (element && element.style) {
+        element.style.height = 'auto'; // Reset so it can shrink
+        element.style.height = element.scrollHeight + 'px'; // Set to content height
+    } else {
+        console.warn("autoResize: The provided object is not a valid DOM element", el);
+    }
+}

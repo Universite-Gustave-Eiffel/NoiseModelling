@@ -1181,3 +1181,12 @@ i.spinner {
   color: #5cb85c;
   font-size: 16px;
 }
+
+textarea.input-sm {
+    height: auto;
+    width: 100%;
+    field-sizing: content;
+    min-height: 40px;
+    padding: 8px;
+    box-sizing: border-box;
+}

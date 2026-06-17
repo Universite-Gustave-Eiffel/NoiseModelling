@@ -327,7 +327,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      * @param stack Stack to feed
      * @param data rays
      */
-    public void pushInStack(ConcurrentLinkedDeque<CnossosPath> stack, Collection<CnossosPath> data) {
+    public void pushInStack(ConcurrentLinkedDeque<CnossosPath> stack, List<CnossosPath> data) {
         while(multiThread.resultsCache.queueSize.get() > dbSettings.outputMaximumQueue) {
             try {
                 Thread.sleep(10);
@@ -346,14 +346,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 // too many rays, remove unwanted rays
                 int newListSize = data.size() - (int)(newTotalRays - dbSettings.getMaximumRaysOutputCount());
                 if(newListSize > 0) {
-                    List<CnossosPath> subList = new ArrayList<CnossosPath>(newListSize);
-                    for (CnossosPath pathParameters : data) {
-                        subList.add(pathParameters);
-                        if (subList.size() >= newListSize) {
-                            break;
-                        }
-                    }
-                    data = subList;
+                    data = new ArrayList<>(data.subList(0, newListSize));
                 } else {
                     data = Collections.emptyList();
                 }

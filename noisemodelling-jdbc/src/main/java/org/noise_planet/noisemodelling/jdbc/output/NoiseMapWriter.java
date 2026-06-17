@@ -9,6 +9,7 @@
 
 package org.noise_planet.noisemodelling.jdbc.output;
 
+import com.bedatadriven.jackson.datatype.jts.JtsModule;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -40,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 
 import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.*;
-import static org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions.dBToW;
 
 /**
  * Process that run SQL query to feed tables
@@ -86,11 +86,16 @@ public class NoiseMapWriter implements Callable<Boolean> {
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
         if(databaseParameters.exportCnossosPathWithAttenuation) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
-            mapper.addMixIn(LineSegment.class, LineSegmentMixin.class);
-            jsonWriter = mapper.writer();
+            jsonWriter = createJsonWriter();
         }
+    }
+
+    public static ObjectWriter createJsonWriter() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.addMixIn(LineSegment.class, LineSegmentMixin.class);
+        mapper.registerModule(new JtsModule());
+        return mapper.writer();
     }
 
     public String propagationPathAsJSON(CnossosPath path) throws JsonProcessingException {
@@ -99,6 +104,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     public static CnossosPath jsonToPropagationPath(String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
         return mapper.readValue(json, CnossosPath.class);
     }
 

@@ -26,10 +26,14 @@ import org.noise_planet.noisemodelling.jdbc.output.DefaultCutPlaneProcessing;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -53,6 +57,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
+    public String exportKmlName = "cell_%d_%d.kml";
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
@@ -298,6 +303,11 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
                                         ProgressVisitor progression, Set<Long> skipReceivers) throws SQLException, IOException {
         SceneWithEmission scene = prepareCell(connection, cellIndex, skipReceivers);
 
+        File sceneExportFolder = getNoiseMapDatabaseParameters().getSceneExportFolder();
+        if(sceneExportFolder != null) {
+            exportScene(cellIndex, sceneExportFolder, scene);
+        }
+
         if(verbose) {
             logger.info(String.format("This computation area contains %d receivers %d sound sources and %d buildings",
                     scene.receivers.size(), scene.sourceGeometries.size(),
@@ -319,6 +329,33 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
         computeRays.run(computeRaysOut);
 
         return computeRaysOut;
+    }
+
+    /**
+     * Export processed scene input data
+     * @param cellIndex Index of the current processing cell
+     * @param sceneExportFolder Where to store the file
+     * @param scene Current cell input data
+     * @throws IOException io issues
+     */
+    public void exportScene(CellIndex cellIndex, File sceneExportFolder, Scene scene) throws IOException {
+        // Export the scene as KML
+        if(sceneExportFolder.exists()) {
+            File kmlFile = new File(sceneExportFolder,
+                    String.format(Locale.ROOT, exportKmlName, cellIndex.getLatitudeIndex(),
+                            cellIndex.getLongitudeIndex()));
+            logger.info("Exporting scene to KML file {}", kmlFile.getAbsolutePath());
+            try(FileOutputStream fileOutputStream = new FileOutputStream(kmlFile)) {
+                try {
+                    KMLDocument.exportProfileBuilderData(fileOutputStream, scene,
+                            geometryFactory.getSRID());
+                } catch (IOException ex) {
+                    logger.warn("Error while creating the KML file {}, skipping it", sceneExportFolder.getAbsolutePath(), ex);
+                }
+            }
+        } else {
+            logger.warn("Scene export folder {} does not exists, skip writing files", sceneExportFolder.getAbsolutePath());
+        }
     }
 
     /**

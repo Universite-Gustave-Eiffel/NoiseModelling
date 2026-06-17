@@ -181,7 +181,7 @@ def ensureSpatialIndex(Connection connection, String table) {
     }
 }
 
-def exec(Connection connection, Map input) {
+def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -190,26 +190,27 @@ def exec(Connection connection, Map input) {
     logger.info('Start : Delaunay grid')
     logger.info("inputs {}", input) // log inputs of the run
 
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     String receivers_table_name = "RECEIVERS"
     if (input['outputTableName']) {
         receivers_table_name = input['outputTableName']
     }
-    receivers_table_name = receivers_table_name.toUpperCase()
+    receivers_table_name = TableLocation.capsIdentifier(receivers_table_name, dbType)
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
     } else {
-        return "Source table must be specified"
+        throw new IllegalArgumentException("Source table must be specified")
     }
-    sources_table_name = sources_table_name.toUpperCase()
+    sources_table_name = TableLocation.capsIdentifier(sources_table_name, dbType)
 
     String building_table_name = "BUILDINGS"
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
-    building_table_name = building_table_name.toUpperCase()
+    building_table_name = TableLocation.capsIdentifier(building_table_name, dbType)
 
     boolean isoSurfaceInBuildings = false;
     if(input['isoSurfaceInBuildings']) {
@@ -285,7 +286,6 @@ def exec(Connection connection, Map input) {
 
 
     connection = new ConnectionWrapper(connection)
-    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     // Clean previous outputs so we can regenerate a fresh grid.
     // Delete previous receivers grid
@@ -385,3 +385,9 @@ def exec(Connection connection, Map input) {
     return [result: receivers_table_name]
 
 }
+
+def exec(Connection connection, Map input) {
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+    return exec(connection, input, progressLogger)
+}
+
