@@ -41,7 +41,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     AttenuationOutputMultiThread multiThread;
     NoiseMapDatabaseParameters dbSettings;
     public List<CnossosPath> cnossosPaths = new ArrayList<>();
-    private List<double[]> defaultAttenuation;
 
     /**
      * Collected attenuation/noise level on the current receiver
@@ -87,19 +86,20 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
-    private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data, String period, double[] emission,
-                                                          long sourcePk) {
-        return processAndStoreAttenuation(cutProfile, data, period, emission, sourcePk, false);
+    private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
+                                                          String period, double[] emission, long sourcePk) {
+        return processAndStoreAttenuation(cutProfile, data, period, emission, sourcePk, new ArrayList<>());
     }
 
-    private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data, String period, double[] emission,
-                                                          long sourcePk, boolean isDefaultParameters) {
+    private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
+                                                          String period, double[] emission, long sourcePk,
+                                                          List<double[]> defaultAttenuation) {
         PropagationModel propagationModel = multiThread.propagationModel;
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         // Avoid multiple attenuation computation with default attenuation parameters
         List<double[]> attenuationList;
-        if(isDefaultParameters && !defaultAttenuation.isEmpty()){
+        if(!defaultAttenuation.isEmpty()){
             attenuationList = defaultAttenuation;
         } else {
             List<CnossosPath> cnossosPaths = propagationModel.computePaths(scene, cutProfile);
@@ -115,10 +115,11 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     this.cnossosPaths.add(cnossosPath);
                 }
             }
+            defaultAttenuation.addAll(attenuationList);
         }
-        if(isDefaultParameters && defaultAttenuation.isEmpty()) {
-            defaultAttenuation = attenuationList;
-        }
+//        if(isDefaultParameters && defaultAttenuation.isEmpty()) {
+//            defaultAttenuation = attenuationList;
+//        }
         for (double[] attenuationDb : attenuationList) {
             double[] attenuation = dBToW(attenuationDb);
             double[] levels;
@@ -241,7 +242,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             // Apply period attenuation to emission for each time period covered by the source emission
             if(scene.wjSources.containsKey(sourcePk)) {
                 ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                defaultAttenuation = new ArrayList<>();
+                List<double[]>  defaultAttenuation = new ArrayList<>();
                 for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                     String period = periodEmission.period;
                     // look for specific atmospheric settings for this period
@@ -251,7 +252,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                                 periodEmission.emission, sourcePk);
                     } else {
                         strategy = processAndStoreAttenuation(cutProfile, scene.defaultCnossosParameters,
-                                period, periodEmission.emission, sourcePk, true);
+                                period, periodEmission.emission, sourcePk, defaultAttenuation);
                     }
                 }
             }
