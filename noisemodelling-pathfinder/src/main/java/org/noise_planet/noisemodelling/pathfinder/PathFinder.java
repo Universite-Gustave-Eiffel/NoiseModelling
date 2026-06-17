@@ -248,7 +248,7 @@ public class PathFinder {
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
         // the maximum expected power at receivers level
         AtomicInteger cutProfileCount = new AtomicInteger(0);
-        dataOut.startReceiver(receiverPointInfo, sourceList);
+        dataOut.startReceiver(receiverPointInfo, sourceList, cutProfileCount);
 
         long sourceCollectTime = 0;
         if(profilerThread != null) {
