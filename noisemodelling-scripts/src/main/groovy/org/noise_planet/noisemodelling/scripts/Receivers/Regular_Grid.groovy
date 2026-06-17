@@ -235,13 +235,14 @@ def exec(Connection connection, Map input) {
         }
         sql.execute("CREATE TABLE TRIANGLES(pk serial NOT NULL $geometryCreateTableQuery, PK_1 integer not null," +
                 " PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))" as String)
-        sql.execute("INSERT INTO TRIANGLES($geometryInsertQuery PK_1, PK_2, PK_3, CELL_ID) " +
-                "SELECT $geometrySelectQuery  A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
-                "  FROM $receivers_table_name A, $receivers_table_name B, $receivers_table_name C " +
-                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL AND " +
-                "A.ID_ROW = C.ID_ROW + 1 AND A.ID_COL = C.ID_COL + 1 UNION ALL SELECT $geometrySelectQuery " +
-                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0 FROM $receivers_table_name A, $receivers_table_name B, $receivers_table_name C " +
-                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL + 1 AND A.ID_ROW = C.ID_ROW AND A.ID_COL = C.ID_COL + 1;" as String)
+
+        sql.execute("INSERT INTO TRIANGLES ($geometryInsertQuery PK_1, PK_2, PK_3, CELL_ID) " +
+                "SELECT $geometrySelectQuery  A.PK, B.PK, C.PK, 0 FROM $receivers_table_name A JOIN " +
+                "$receivers_table_name B ON B.ID_ROW = A.ID_ROW - 1 AND B.ID_COL = A.ID_COL JOIN " +
+                "$receivers_table_name C ON C.ID_ROW = A.ID_ROW - 1 AND C.ID_COL = A.ID_COL - 1 UNION ALL  " +
+                "SELECT $geometrySelectQuery  A.PK, B.PK, C.PK, 0 FROM $receivers_table_name A JOIN " +
+                "$receivers_table_name B ON B.ID_ROW = A.ID_ROW - 1 AND B.ID_COL = A.ID_COL - 1 JOIN " +
+                "$receivers_table_name C ON C.ID_ROW = A.ID_ROW AND C.ID_COL = A.ID_COL - 1;" as String)
     }
 
 
