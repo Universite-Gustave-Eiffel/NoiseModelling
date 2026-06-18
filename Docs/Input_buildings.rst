@@ -86,7 +86,7 @@ There is no DEM layer
 * The Z coordinate correspond to ``Zobject``
 	* It's ok, your data is already ready to be used by NoiseModelling
 * The Z coordinate correspond to ``Zground``
-	* You are invited to correct ``Z`` value(s) by changing the information by yourself or by using the dedicated WPS block called ``Correct_building_altitude``
+	* You are invited to correct ``Z`` value(s) by changing the information by yourself or by using the dedicated block called ``Correct_building_altitude``
 
 Below is an example with a initial geometry (coordinates are exprimed in French Lambert 93 (`EPSG:2154`_) system) with a ``Zground`` value coupled with ``HEIGHT`` information. After correction, the geometry has a correct Z value, which corresponds to ``Zobject``.
 

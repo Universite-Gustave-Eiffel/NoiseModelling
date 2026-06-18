@@ -1,4 +1,4 @@
-Create your own WPS block
+Create your own block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Presentation
@@ -8,13 +8,13 @@ The OGC Web Processing Service (`WPS`_) Standard provides rules for standardizin
 
 .. _WPS : https://www.ogc.org/standards/wps
 
-WPS scripts for NoiseModelling are written in Groovy language. They are located in the ``NoiseModelling/scripts/`` directory.
+Scripts for NoiseModelling are written in Groovy language. They are located in the ``NoiseModelling/scripts/`` directory.
 
 .. note::
     Don't be shy, if you think your script can be useful to the community, you can redistribute it using github or by sending it directly to us.
 
 .. tip::
-    The best way to make your own WPS is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.
+    The best way to make your own script is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.
 
 General Structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +28,7 @@ General Structure
     import java.sql.Connection
     import org.h2gis.api.ProgressVisitor
 
-2. WPS Script meta data
+2. Script meta data
 -------------------------
 
 .. code-block:: groovy
@@ -44,7 +44,7 @@ General Structure
     ]
 
     // Optional (default 60 seconds)
-    // For synchronous WPS, it will wait this time (in seconds) before returning a message, but it will still run the execution in the background
+    // For synchronous execution, it will wait this time (in seconds) before returning a message, but it will still run the execution in the background
     executionTimeout = 120
 
 
@@ -80,4 +80,4 @@ General Structure
 
 5. Make your method available
 
-You have to save the script into the folder ``NoiseModelling/scripts/``. You have to refresh the web page WPS Builder in order to see your new script.
+You have to save the script into the folder ``NoiseModelling/scripts/``. You have to refresh the web page Builder in order to see your new script.

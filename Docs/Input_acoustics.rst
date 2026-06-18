@@ -1,7 +1,7 @@
 Acoustic parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the different WPS scripts of NoiseModelling, you will find many input parameters, mandatory or optional. 
+In the different scripts of NoiseModelling, you will find many input parameters, mandatory or optional. 
 
 Below we list the most important ones, indicating, where necessary, the default values and those we recommend (from an acoustic point of view).
 
