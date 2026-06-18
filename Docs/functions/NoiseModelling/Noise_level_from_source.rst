@@ -117,6 +117,13 @@ Optional inputs
 
    Default: ``70``
 
+``confLineSourceSpacingRatio`` — *Line source spacing ratio*
+   Dictates the density of source points created from a line sound source. A higher value means more points and finer discretization : DistanceBetweenPoints = DistanceSourceToReceiver / LineSourceSpacingRatio (this parameter)
+
+   Type: ``Double``
+
+   Default: ``2.0``
+
 ``confMaxError`` — *Max Error (dB)*
    Threshold for excluding negligible sound sources in calculations.This parameter is ignored if no emission level is specified or if you set it to 0 dB. This parameter have a great impact on computation time.
 

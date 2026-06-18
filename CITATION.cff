@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as shown below."
+authors:
+- family-names: "Joint Research Unit in Environmental Acoustics (UMRAE, Université Gustave Eiffel - Cerema)"
+- family-names: "Lab-STICC laboratory (CNRS - DECIDE Team)."
+title: "NoiseModelling"
+version: 6.0.0
+doi: 10.3390/ijgi8030130
+date-released: 2026-05-21
+url: "https://noise-planet.org/noisemodelling.html"
