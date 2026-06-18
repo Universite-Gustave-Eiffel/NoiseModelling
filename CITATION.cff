@@ -1,10 +1,22 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as shown below."
 authors:
-- family-names: "Joint Research Unit in Environmental Acoustics (UMRAE, Université Gustave Eiffel - Cerema)"
-- family-names: "Lab-STICC laboratory (CNRS - DECIDE Team)."
-title: "NoiseModelling"
-version: 6.0.0
+- family-names: "Bocher"
+  given-names: "Erwan"
+  orcid: "https://orcid.org/0000-0002-4936-7079"
+- family-names: "Guillaume"
+  given-names: "Gwenaël"
+  orcid: "https://orcid.org/0000-0002-0582-6827"
+- family-names: "Picaut"
+  given-names: "Judicaël"
+  orcid: "https://orcid.org/0000-0002-0586-2414"
+- family-names: "Petit"
+  given-names: "Gwendall"
+  orcid: "https://orcid.org/0000-0002-4750-9600"
+- family-names: "Fortin"
+  given-names: "Nicolas"
+title: "NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps"
+version: 2.1.2
 doi: 10.3390/ijgi8030130
-date-released: 2026-05-21
-url: "https://noise-planet.org/noisemodelling.html"
+date-released: 2018-08-21
+url: "https://www.mdpi.com/2220-9964/8/3/130"
