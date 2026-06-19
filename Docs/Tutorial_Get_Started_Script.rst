@@ -21,7 +21,7 @@ Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
-    For all users (**Linux** , **Mac** and **Windows**), please make sure your Java environment is well configured. For more information, please read the page :doc:`Tutorial_Requirements`.
+    For all users (**Linux** , **Mac** and **Windows**), please make sure your Java environment is well configured. For more information, please read the page :doc:`Installation_guide`.
 
 
 1. Simple command line
