@@ -1,0 +1,40 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: NoiseModelling
+message: >
+  If you use NoiseModelling, please cite it as shown below.
+  Note: a JOSS paper is currently under review and should be
+  preferred for academic citations once published:
+  https://github.com/openjournals/joss-reviews/issues/9171
+type: software
+authors:
+  - family-names: Bocher
+    given-names: Erwan
+    orcid: 'https://orcid.org/0000-0002-4936-7079'
+  - family-names: Guillaume
+    given-names: Gwenaël
+    orcid: 'https://orcid.org/0000-0002-0582-6827'
+  - family-names: Picaut
+    given-names: Judicaël
+    orcid: 'https://orcid.org/0000-0002-0586-2414'
+  - family-names: Petit
+    given-names: Gwendall
+    orcid: 'https://orcid.org/0000-0002-4750-9600'
+  - family-names: Fortin
+    given-names: Nicolas
+  - {}
+identifiers:
+  - type: doi
+    value: 10.3390/ijgi8030130
+    description: >-
+      NoiseModelling: An Open Source GIS Based Tool to
+      Produce Environmental Noise Maps
+repository-code: >-
+  https://github.com/Universite-Gustave-Eiffel/NoiseModelling/
+url: 'https://noisemodelling.readthedocs.io'
+license: GPL-3.0
+version: 2.1.2
+date-released: '2018-08-21'
+
