@@ -14,7 +14,7 @@ Scripts for NoiseModelling are written in Groovy language. They are located in t
     Don't be shy, if you think your script can be useful to the community, you can redistribute it using github or by sending it directly to us.
 
 .. tip::
-    The best way to make your own script is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.
+    The best way to make your own Block is to be inspired by those that are already made. See how the tutorial is built or contact us for many more examples.
 
 General Structure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

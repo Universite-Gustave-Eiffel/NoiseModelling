@@ -15,7 +15,7 @@ Table SOURCES_GEOM definition
 
 .. warning::
     * In the list below, the columns noted with ``*`` are mandatory
-    * This description is only valid for ``Noise_level_from_traffic`` and ``Road_Emission_from_Traffic`` scripts. For the other scripts, it is necessary to refer to the description of their input data
+    * This description is only valid for ``Noise_level_from_traffic`` and ``Road_Emission_from_Traffic`` Blocks. For the other Blocks, it is necessary to refer to the description of their input data
 
 
 .. note::

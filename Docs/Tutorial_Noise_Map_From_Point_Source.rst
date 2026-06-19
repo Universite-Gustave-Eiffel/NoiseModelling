@@ -236,7 +236,7 @@ Press ``OK`` to apply and close the dialog. Your noise map is now well colorized
 Step 4: Change the default parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To produce this noise map, we used, in most of scripts, default parameters (*e.g* the height of the source, the number of reflections, the air temperature, …). You are prompted to redo some of the previous steps by changing some of the settings. You will then be able to visually see what impact they have on the final noise map.
+To produce this noise map, we used, in most Blocks, default parameters (*e.g* the height of the source, the number of reflections, the air temperature, …). You are prompted to redo some of the previous steps by changing some of the settings. You will then be able to visually see what impact they have on the final noise map.
 
 .. note::
    To change optional parameters *(the yellow boxes)* just select them and fill the needed information in the right-side menu.
@@ -384,7 +384,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` script. Fill the following pa
 Create isosurface
 -----------------------------------------------
 
-Use the ``Acoustic_Tools:Create_Isosurface`` script. Fill the following parameters and click on ``Run Process`` button:
+Use the ``Acoustic_Tools:Create_Isosurface`` Block. Fill the following parameters and click on ``Run Process`` button:
 
 * ``Sound levels table`` : ``RECEIVERS_LEVEL``
 * ``Polygon smoothing coefficient`` : 0.4

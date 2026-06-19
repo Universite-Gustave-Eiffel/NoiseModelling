@@ -344,7 +344,7 @@ Two tables are created:
 2. Calculate noise levels
 **************************
 
-Now, users can calculate the noise levels, emitted from the road sources. To do so, execute the ``Noise_level_from_source`` script.
+Now, users can calculate the noise levels, emitted from the road sources. To do so, execute the ``Noise_level_from_source`` Block.
 
 Execution
 **********

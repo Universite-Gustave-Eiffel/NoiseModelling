@@ -51,7 +51,7 @@ You can use the output of a processing block (like ``Import File``) as the input
 I want to run the same processing but using a script not using my web browser, how to do it ?
 ------------------------------------------------------------------------------------------
 
-NoiseModelling WebServer is using the standard protocol named OGC Web Processing Service (`WPS`_) Interface Standard. When you run a Block, the Builder generates an equivalent Python script in the Python tab of the user interface. You can just copy/paste the script in a Python console and it should work (no dependency) as long as the NoiseModelling program is running in the background.
+NoiseModelling WebServer is using the standard protocol named OGC Web Processing Service (`WPS`_) Interface Standard. When you run a Block, the Builder generates an equivalent Python script in the Python tab of the user interface. You can just copy/paste the script in a Python console and it should work (no dependency) as long as the NoiseModelling software is running in the background.
 
 The generated Python script is using the synchronous WPS execution, so the server will not respond until the process is done or after the 60 seconds default timeout.
 
