@@ -61,5 +61,19 @@
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/dependency-sources</directory>
+            <outputDirectory>lib-src</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>lib-src</outputDirectory>
+            <includes>
+                <include>${project.build.finalName}-sources.jar</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>
