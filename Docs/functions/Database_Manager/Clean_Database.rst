@@ -22,6 +22,16 @@ Mandatory inputs
 
    Type: ``Boolean``
 
+Optional inputs
+~~~~~~~~~~~~~~~
+
+``schema`` — *Schema*
+   Schema of the database to clean.
+
+   Type: ``String``
+
+   Default: ``public``
+
 Output
 ------
 

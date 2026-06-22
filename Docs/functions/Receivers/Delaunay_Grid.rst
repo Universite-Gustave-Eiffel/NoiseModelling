@@ -114,6 +114,13 @@ Optional inputs
 
    Default: ``RECEIVERS``
 
+``outputTableNameTriangles`` — *Name of triangles output table*
+   Name of the triangles output table.
+
+   Type: ``String``
+
+   Default: ``TRIANGLES``
+
 ``roadWidth`` — *Road width*
    Set Road Width (in meters) (FLOAT). No receivers closer than road width distance will be created.  You can set 0 m if you don't want to insert roads in the output but still want to skip cells without sources using the 'Skip cell no sources minimal distance' parameter
 
