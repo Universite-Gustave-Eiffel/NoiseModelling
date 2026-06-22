@@ -11,7 +11,7 @@ Get Started
     * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database
     * ``noisemodelling-pathfinder`` : to determine the noise path
     * ``noisemodelling-propagation`` : to calculate the noise propagation
-    * ``noisemodelling-scripts`` : Host the web server, the groovy scripts and the final packaging instructions
+    * ``noisemodelling-scripts`` : Host the web server, the Groovy scripts (Blocks) and the final packaging instructions
 
 #. Enjoy & feel free to contact us!
 

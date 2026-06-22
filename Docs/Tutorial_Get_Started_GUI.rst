@@ -19,9 +19,9 @@ In this tutorial, we have 5 layers, zoomed in on the city center of `Lorient`_ (
 
 In the ``resources/`` sub-folder of the NoiseModelling installation, you will find all the data that will be used in the tutorials.
 
-You will import these layers into your database using the ``Import File`` blocks.
+You will import these layers into your database using the ``Import File`` Blocks.
 
-- Drag the ``Import File`` block into the Builder window
+- Drag the ``Import File`` Block into the Builder window
 - Select the ``Path of the input File`` box and enter ``resources/buildings.shp`` in the ``pathFile`` field *(on the right-side column)*
 - Then click on ``Run Process`` after selecting one of the input/output boxes of your process
 
@@ -41,13 +41,13 @@ Files are uploaded to the database when the Console window displays the name of 
 .. note::
     - If you get the message ``Error opening database``, please refer to the note in :ref:`sec_download` in the :doc:`Installation_guide`.
     - The process is supposed to be quick (<5 sec.). In case of a timeout, try restarting NoiseModelling (see :ref:`sec_start_nm` in the :doc:`Installation_guide`).
-    - Orange blocks are mandatory
-    - Beige blocks are optional
-    - If all input blocks are optional, you must modify at least one of these blocks to be able to run the process
+    - Orange Blocks are mandatory
+    - Beige Blocks are optional
+    - If all input Blocks are optional, you must modify at least one of these Blocks to be able to run the process
     - Blocks get a solid border when they are ready to run
-    - Read the :doc:`WPS_Builder` page for more information
+    - Read the :doc:`Builder` page for more information
 
-Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` WPS script (in the "Database_Manager" section). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` block).
+Once done, you can check whether the tables were correctly imported into the database. To do so, drag/drop and execute the ``Display_Database`` Block (in the "Database_Manager" section). You should see on the right panel the table list (and their columns if you checked the option in the ``Display columns of the tables`` Block).
 
 .. figure:: images/tutorial/get_started_gui/Tutorial1_display_db.png
     :align: center
@@ -58,7 +58,7 @@ Step 3: Convert road traffic into noise emission sources lines
 
 The first step is to convert the traffic information on the roads to noise levels (vehicles per hour to an average value in dB)
 
-Drag & Drop the ``Road Emission from Traffic`` block into the WPS Builder window.
+Drag & Drop the ``Road Emission from Traffic`` Block into the Builder window.
 
 Enter the name of the corresponding table in your database:
 
@@ -71,9 +71,9 @@ As a result, the table ``LW_ROADS`` will be created in your database. This table
 Step 4: Run Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run the calculation, drag the ``Noise_level_from_sources`` block into the WPS Builder window.
+To run the calculation, drag the ``Noise_level_from_sources`` Block into the Builder window.
 
-Then, select the orange blocks and enter the name of the corresponding table in your database:
+Then, select the orange Blocks and enter the name of the corresponding table in your database:
 
 - Building table name: ``BUILDINGS``
 - Source table name: ``LW_ROADS`` This table contains the road geometries with the noise emission values for day, evening and night
@@ -84,7 +84,7 @@ Then, select the orange blocks and enter the name of the corresponding table in 
 - Maximum source-receiver distance: set ``2000`` meters (do not look for sound sources further than 2 km)
 - Order of reflection: set ``0`` to disable it (faster but less accurate)
 
-The beige blocks correspond to optional parameters (e.g. ``DEM table name``, ``Ground absorption table name``, ``Diffraction on vertical edges``, ...).
+The beige Blocks correspond to optional parameters (e.g. ``DEM table name``, ``Ground absorption table name``, ``Diffraction on vertical edges``, ...).
 
 When ready, you can press ``Run Process``.
 
@@ -97,7 +97,7 @@ As a result, the table ``RECEIVERS_LEVEL`` will be created in your database. Thi
 Step 5: Export (& see) the results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can now export the output tables *(one by one)* in your preferred export format using the ``Export_Table`` block, giving the path of the file you want to create.
+You can now export the output tables *(one by one)* in your preferred export format using the ``Export_Table`` Block, giving the path of the file you want to create.
 
 .. warning::
     Don't forget to add the file extension (*e.g.* ``c:/home/receivers_level.geojson`` or ``c:/home/receivers_level.shp``). (Read more info about file extensions here: :doc:`Tutorials_FAQ`)
@@ -139,7 +139,7 @@ To display the result for a specific period, filter the rendering by the field P
 Step 6: Know the possibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now that you have finished this introduction tutorial, take the time to read the description of each of the WPS blocks available in your NoiseModelling version.
+Now that you have finished this introduction tutorial, take the time to read the description of each of the Blocks available in your NoiseModelling version.
 
 By clicking on each of the inputs or outputs, you will find a lot of information.
 

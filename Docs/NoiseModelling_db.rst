@@ -15,14 +15,14 @@ This database does not need to be configured or installed on the system. It's tr
 
 To visualize and manage NoiseModelling data (*e.g* roads, buildings or landcover layers) you have the choice between the three following approaches *(listed from simple to advanced)*:
 
-#. Use WPS blocks (inside)
+#. Use blocks (inside)
 #. Use H2/H2GIS web client
 #. Use DBeaver client
 
-1. Use WPS blocks
+1. Use blocks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once NoiseModelling UI is launched (open `http://localhost:8000/ <http://localhost:8000/>`_ in your web browser), you can manage your data thanks to the ``Database_Manager`` WPS blocks folder *(on the left side)*. In particular, you can do these actions:
+Once NoiseModelling UI is launched (open `http://localhost:8000/ <http://localhost:8000/>`_ in your web browser), you can manage your data thanks to the ``Database_Manager`` Blocks folder *(on the left side)*. In particular, you can do these actions:
 
 - ``Add_Primary_Key``: allows to add a primary key on a column of a specific layer (table)
 - ``Clean_Database``: remove all the layers (tables) from NoiseModelling *(can be useful when starting a new project)*
@@ -31,7 +31,7 @@ Once NoiseModelling UI is launched (open `http://localhost:8000/ <http://localho
 - ``Table_Visualization_Data``: display the layer (table) as an array of values  
 - ``Table_Visualization_Map``: if the layer (table) is geographic (contains geometry(ies)), display the data in a map 
 
-Below is an illustration with the ``Display_Database`` WPS block
+Below is an illustration with the ``Display_Database`` Block
 
 .. figure:: images/NoiseModelling_db/nm_db_view.png
     :align: center

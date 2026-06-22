@@ -176,14 +176,14 @@ Fundings
     :maxdepth: 2
     :caption: User Interface
 
-    WPS_Blocks
-    WPS_Builder
+    Blocks
+    Builder
 
 .. toctree::
     :maxdepth: 2
     :caption: For Advanced Users
 
-    Own_Wps
+    Own_Blocks
     NoiseModelling_db
     NoiseModellingOnPostGIS
 

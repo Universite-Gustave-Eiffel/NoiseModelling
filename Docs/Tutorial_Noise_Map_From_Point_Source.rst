@@ -132,7 +132,7 @@ Step 2: Import input data in NoiseModelling
 
 Once NoiseModelling is launched (see ``Step 2: Start NoiseModelling GUI`` in :doc:`Tutorial_Get_Started_GUI` page), load the four ``BUILDINGS``, ``ROADS`` and ``GROUND_TYPE``, ``POINT_SOURCE`` layers (see ``Step 4: Load input files`` for more details).
 
-If you use the ``Database_Manager:Display_Database`` WPS script, you should see your four tables like below:
+If you use the ``Database_Manager:Display_Database`` script, you should see your four tables like below:
 
 .. figure:: images/tutorial/Noise_Map_From_Point_Source/table_list_NM.png
    :align: center
@@ -145,7 +145,7 @@ We are now ready to generate the noise map, based on a unique source point.
 Create the receivers grid
 ---------------------------
 
-Use the ``Receivers:Delaunay_Grid`` WPS script. Fill the two following mandatory parameters *(in orange)* and click on ``Run Process`` button:
+Use the ``Receivers:Delaunay_Grid`` script. Fill the two following mandatory parameters *(in orange)* and click on ``Run Process`` button:
 
 * ``Source table name`` : ``POINT_SOURCE``
 * ``Buildings table name`` : ``BUILDINGS``
@@ -158,7 +158,7 @@ Once done, you should have a new table : ``RECEIVERS`` *(illustrated below with 
 Calculate noise levels
 ---------------------------
 
-Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the three following mandatory parameters *(in orange)*:
+Use the ``NoiseModelling:Noise_level_from_source`` script. Fill the three following mandatory parameters *(in orange)*:
 
 * ``Source table name`` : ``POINT_SOURCE``
 * ``Receivers table name`` : ``RECEIVERS``
@@ -171,13 +171,13 @@ A new table ``RECEIVERS_LEVEL`` is created.
 Generate noise level isosurfaces
 ----------------------------------
 
-Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following mandatory parameter *(in orange)* and click on ``Run Process`` button:
+Use the ``Acoustic_Tools:Create_Isosurface`` script. Fill the following mandatory parameter *(in orange)* and click on ``Run Process`` button:
 
 * ``Sound levels table`` : ``RECEIVERS_LEVEL``
 
 A new table ``CONTOURING_NOISE_MAP`` is created.
 
-Now, you can export this table into a .shapefile, using the ``Import_and_Export:Export_Table`` WPS script.
+Now, you can export this table into a .shapefile, using the ``Import_and_Export:Export_Table`` script.
 
 You can then visualize this file into QGIS *(just load the file as seen before)*. The resulting table *(in grey)* is illustrated below
 
@@ -236,7 +236,7 @@ Press ``OK`` to apply and close the dialog. Your noise map is now well colorized
 Step 4: Change the default parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To produce this noise map, we used, in most of WPS scripts, default parameters (*e.g* the height of the source, the number of reflections, the air temperature, …). You are prompted to redo some of the previous steps by changing some of the settings. You will then be able to visually see what impact they have on the final noise map.
+To produce this noise map, we used, in most Blocks, default parameters (*e.g* the height of the source, the number of reflections, the air temperature, …). You are prompted to redo some of the previous steps by changing some of the settings. You will then be able to visually see what impact they have on the final noise map.
 
 .. note::
    To change optional parameters *(the yellow boxes)* just select them and fill the needed information in the right-side menu.
@@ -353,13 +353,13 @@ Now, in NoiseModelling we have to:
 * Reimport the ``Point_Source.geojson`` file in order to take into account the changes
 * Import the ``dem.geojson`` file, which is placed here ``resources/dem.geojson``. By taking into account the ground elevation, this file will help us to get better results.
 
-To do so, just use the ``Import and Export:Import file`` WPS script.
+To do so, just use the ``Import and Export:Import file`` script.
 
 
 Generate the Delaunay triangulation
 -----------------------------------------------
 
-Use the ``Receivers:Delaunay_Grid`` WPS script. Fill the following parameters and click on ``Run Process`` button:
+Use the ``Receivers:Delaunay_Grid`` script. Fill the following parameters and click on ``Run Process`` button:
 
 * ``Sources table name`` : ``POINT_SOURCE``
 * ``Maximum Area`` : ``60``  
@@ -370,7 +370,7 @@ Use the ``Receivers:Delaunay_Grid`` WPS script. Fill the following parameters an
 Compute noise level from source
 -----------------------------------------------
 
-Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the following parameters and click on ``Run Process`` button:
+Use the ``NoiseModelling:Noise_level_from_source`` script. Fill the following parameters and click on ``Run Process`` button:
 
 * ``Sources table name`` : ``POINT_SOURCE``
 * ``Buildings table name`` : ``BUILDINGS``
@@ -384,7 +384,7 @@ Use the ``NoiseModelling:Noise_level_from_source`` WPS script. Fill the followin
 Create isosurface
 -----------------------------------------------
 
-Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following parameters and click on ``Run Process`` button:
+Use the ``Acoustic_Tools:Create_Isosurface`` Block. Fill the following parameters and click on ``Run Process`` button:
 
 * ``Sound levels table`` : ``RECEIVERS_LEVEL``
 * ``Polygon smoothing coefficient`` : 0.4
@@ -392,7 +392,7 @@ Use the ``Acoustic_Tools:Create_Isosurface`` WPS script. Fill the following para
 Export and visualize resulting tables
 -----------------------------------------------
 
-Use the ``Import_and_Export:Export_Table`` WPS script to export the ``CONTOURING_NOISE_MAP`` table into a shapefile called ``CONTOURING_NOISE_MAP_DIRECTIVITY``.
+Use the ``Import_and_Export:Export_Table`` script to export the ``CONTOURING_NOISE_MAP`` table into a shapefile called ``CONTOURING_NOISE_MAP_DIRECTIVITY``.
 
 Then, load ``CONTOURING_NOISE_MAP_DIRECTIVITY.shp`` into QGIS and filter the period to ``DEN``. Apply the ``noisemap_style.sld`` style, and compare with ``CONTOURING_NOISE_MAP.shp`` produced in Step 3.
 
