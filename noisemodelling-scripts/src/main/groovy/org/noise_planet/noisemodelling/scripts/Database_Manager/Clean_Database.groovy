@@ -40,7 +40,7 @@ inputs = [
         schema: [
                 name: 'Schema',
                 title: 'Schema',
-                description: 'Schema of the database to clean.',
+                description: 'Database schema to clean. A schema is a container that organizes tables, views, and other database objects. If you are unsure, leave this set to the default schema, "public"',
                 type: String.class,
                 default: 'public'
         ]
