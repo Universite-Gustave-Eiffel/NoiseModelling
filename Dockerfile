@@ -5,7 +5,7 @@ FROM maven:3.9.16-eclipse-temurin-25-noble AS builder
 WORKDIR /build
 
 # Install bsdtar (found in libarchive-tools on Debian/Ubuntu-based images)
-RUN apt-get update && apt-get install -y libarchive-tools && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libarchive-tools python3 && rm -rf /var/lib/apt/lists/*
 
 # Copy your project files
 COPY . /build/
