@@ -161,6 +161,13 @@ inputs = [
                 default    : false,
                 type        : Boolean.class
         ],
+        outputTableNameTriangles    : [
+                name       : 'outputTableNameTriangles',
+                title      : 'Name of triangles output table',
+                description: 'Name of the triangles output table.',
+                default    : 'TRIANGLES',
+                type       : String.class
+        ]
 ]
 
 outputs = [
@@ -197,6 +204,8 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
         receivers_table_name = input['outputTableName']
     }
     receivers_table_name = TableLocation.capsIdentifier(receivers_table_name, dbType)
+    def outputTableNameTriangles = TableLocation.capsIdentifier(
+            input.getOrDefault("outputTableNameTriangles", "TRIANGLES") as String, dbType)
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
@@ -275,7 +284,8 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
     //  2) Bounding box extracted from another table via 'fenceTableName'
     // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
     if (input['fenceTableName']) {
-        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, input['fenceTableName'] as String).first()
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String, dbType), geomCol)
         if(fence.getSRID() == 0) {
             fence.setSRID(srid)
         }
@@ -351,7 +361,7 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     long startTime = System.currentTimeMillis()
     try {
-        delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
+        delaunayReceiversMaker.run(connection, receivers_table_name, outputTableNameTriangles, progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
                 "input geometries for debugging purpose")
