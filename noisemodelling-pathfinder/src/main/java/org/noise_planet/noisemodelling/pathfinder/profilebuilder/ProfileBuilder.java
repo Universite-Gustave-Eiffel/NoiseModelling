@@ -880,13 +880,15 @@ public class ProfileBuilder {
             }
             topoTree.build();
         }
-        //Update building z
+        //Update building z - per-coordinate approach: 2D roof (flat) is the special case of 3D
+        // where all vertices receive the same computed Z (using height)
         if(topoTree != null) {
             for (Building b : buildings) {
-                if(isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
-                    b.poly2D_3D();
-                    b.poly.apply(new ElevationFilter.UpdateZ(b.height + b.updateZTopo(this)));
-                }
+                b.poly2D_3D();  // Normalize: NaN Z → 0, valid Z kept (3D roof preserved)
+                b.updateZTopo(this);  // Compute minimum DEM under building (needed for Building.getZ())
+                LOGGER.info(b.poly.toText());
+                b.poly.apply(new RoofElevationFilter(this, b.height));
+                LOGGER.info(b.poly.toText());
             }
             for (Wall w : walls) {
                 if(isNaN(w.p0.z) || w.p0.z == 0.0) {
@@ -898,13 +900,11 @@ public class ProfileBuilder {
             }
         } else {
             for (Building b : buildings) {
-                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
-                        isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
-
-                    b.poly2D_3D();
-                    b.poly.apply(new ElevationFilter.UpdateZ(b.height));
+                if(b != null && b.poly != null && b.poly.getCoordinate() != null) {
+                    b.poly2D_3D();  // Normalize: NaN Z → 0, valid Z kept (3D roof preserved)
+                    b.updateZTopo(this);  // Compute minimum DEM under building (needed for Building.getZ())
+                    b.poly.apply(new SimpleRoofElevationFilter(b.height));
                 }
-
             }
             for (Wall w : walls) {
                 if(isNaN(w.p0.z) || w.p0.z == 0.0) {
@@ -1781,4 +1781,73 @@ public class ProfileBuilder {
      * Hold two integers. Used to store unique triangle segments
      */
 
+
+    /**
+     * Coordinate filter that sets building roof elevation per-vertex.
+     * For 2D footprints (Z=0 or NaN after normalization): sets Z = ground elevation + height.
+     * For 3D footprints (valid Z values): preserves them as-is.
+     * The 2D flat-roof case is simply the special case where all vertices receive the same computed Z.
+     */
+    public static class RoofElevationFilter implements CoordinateSequenceFilter {
+        boolean done = false;
+        final ProfileBuilder profileBuilder;
+        final double height;
+        final AtomicInteger triangleHint = new AtomicInteger(-1);
+
+        public RoofElevationFilter(ProfileBuilder profileBuilder, double height) {
+            this.profileBuilder = profileBuilder;
+            this.height = height;
+        }
+
+        @Override
+        public boolean isGeometryChanged() { return true; }
+
+        @Override
+        public boolean isDone() { return done; }
+
+        @Override
+        public void filter(CoordinateSequence seq, int i) {
+            double z = seq.getOrdinate(i, 2);
+            if (isNaN(z) || z == 0.0) {
+                // 2D case: compute Z from ground elevation + building height
+                double groundZ = profileBuilder.getZGround(seq.getCoordinate(i), triangleHint);
+                seq.setOrdinate(i, 2, groundZ + height);
+            }
+            // else: 3D case, keep existing valid Z (roof already has altitude information)
+            if (i == seq.size()) {
+                done = true;
+            }
+        }
+    }
+
+    /**
+     * Same as {@link RoofElevationFilter} but without topography (ground elevation = 0).
+     */
+    public static class SimpleRoofElevationFilter implements CoordinateSequenceFilter {
+        boolean done = false;
+        final double height;
+
+        public SimpleRoofElevationFilter(double height) {
+            this.height = height;
+        }
+
+        @Override
+        public boolean isGeometryChanged() { return true; }
+
+        @Override
+        public boolean isDone() { return done; }
+
+        @Override
+        public void filter(CoordinateSequence seq, int i) {
+            double z = seq.getOrdinate(i, 2);
+            if (isNaN(z) || z == 0.0) {
+                // 2D case: compute Z from building height only
+                seq.setOrdinate(i, 2, height);
+            }
+            // else: 3D case, keep existing valid Z
+            if (i == seq.size()) {
+                done = true;
+            }
+        }
+    }
 }

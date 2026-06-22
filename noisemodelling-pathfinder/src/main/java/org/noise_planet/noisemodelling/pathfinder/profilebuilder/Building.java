@@ -16,6 +16,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.lang.Double.isNaN;
+
 
 public class Building extends Obstruction {
     /** Building footprint. */
@@ -47,16 +49,23 @@ public class Building extends Obstruction {
     }
 
     /**
-     *
+     * Normalize building polygon Z values: NaN Z are set to 0.0, valid Z are kept unchanged.
+     * This preserves 3D roof shapes (varying Z) while still normalizing 2D footprints.
      */
     public void poly2D_3D(){
-
         GeometryFactory f = new GeometryFactory();
+        boolean hasNaNZ = false;
 
         LinearRing shell2D = poly.getExteriorRing();
         Coordinate[] newCoordinate = new Coordinate[shell2D.getNumPoints()];
         for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
-            newCoordinate[idCoordinate] = new Coordinate(shell2D.getCoordinateN(idCoordinate).getX(),shell2D.getCoordinateN(idCoordinate).getY(),0.0);
+            double z = shell2D.getCoordinateN(idCoordinate).getZ();
+            if (isNaN(z)) {
+                z = 0.0;
+                hasNaNZ = true;
+            }
+            newCoordinate[idCoordinate] = new Coordinate(shell2D.getCoordinateN(idCoordinate).getX(),
+                    shell2D.getCoordinateN(idCoordinate).getY(), z);
         }
 
         LinearRing shell3D = f.createLinearRing(newCoordinate);
@@ -66,17 +75,21 @@ public class Building extends Obstruction {
             LinearRing lr2D = poly.getInteriorRingN(idHole);
             newCoordinate = new Coordinate[lr2D.getNumPoints()];
             for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
+                double z = lr2D.getCoordinateN(idCoordinate).getZ();
+                if (isNaN(z)) {
+                    z = 0.0;
+                    hasNaNZ = true;
+                }
                 newCoordinate[idCoordinate] = new Coordinate(lr2D.getCoordinateN(idCoordinate).getX(),
-                        lr2D.getCoordinateN(idCoordinate).getY(),
-                        0.0);
+                        lr2D.getCoordinateN(idCoordinate).getY(), z);
             }
-
             holes[idHole]=f.createLinearRing(newCoordinate);
         }
 
-
-        Polygon newPoly = f.createPolygon(shell3D, holes);
-        this.poly = newPoly;
+        if (hasNaNZ) {
+            Polygon newPoly = f.createPolygon(shell3D, holes);
+            this.poly = newPoly;
+        }
     }
 
 
