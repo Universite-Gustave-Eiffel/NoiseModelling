@@ -13,7 +13,7 @@ Prerequisites
 * We assume you already installed/configured Java and installed NoiseModelling. If not, follow Step 1 in ":doc:`Tutorial_Get_Started_GUI`" page
 
 .. warning::
-   If you have just finished the ":doc:`Tutorial_Get_Started_GUI`" tutorial, please clean your database with the WPS block ``Clean_Database``. Don't forget to check the ``Are you sure`` check box before running the process.
+   If you have just finished the ":doc:`Tutorial_Get_Started_GUI`" tutorial, please clean your database with the block ``Clean_Database``. Don't forget to check the ``Are you sure`` check box before running the process.
 
 Step 1:  Get OSM data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,7 +51,7 @@ In the email you will receive from BBBike, use the link to download your data. Y
 Import to the database
 ------------------------------------------------
 
-To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` WPS block (note that this block also allows to load ``.osm`` or ``.osm.gz`` files).
+To import the ``.pbf`` file into the NoiseModelling database, we use the ``Import_OSM`` block (note that this block also allows to load ``.osm`` or ``.osm.gz`` files).
 
 #. ``Target projection identifier``: enter the corresponding SRID *(see note below)* (*e.g.* ``2154`` for french Lambert 93)
 #. ``Path of the OSM file``: enter the address of your ``my_area.osm.pbf`` file (*e.g.* ``/home/noisemodelling/my_area.osm.pbf``)
@@ -63,7 +63,7 @@ Once done, three tables must be created: ``BUILDINGS``, ``GROUND`` and ``ROADS``
 .. note::
    About the Coordinate System (EPSG code)
    
-   In several input files, you need to specify coordinates, *e.g* road network. You can't use the WGS84 coordinates (i.e. GPS coordinates). Acoustic propagation formulas make the assumption that coordinates are metric. Many countries and regions have custom coordinate system defined, optimized for usages in their appropriate areas. It might be best to ask some GIS specialists in your region of interest what the most commonly used local coordinate system is and use that as well for your data. If you don’t have any clue about what coordinate system is used in your region, it might be best to use the Universal Transverse Mercator coordinate system. This coordinate system divides the world into multiple bands, each six degrees width and separated into a northern and southern part, which is called UTM zones (see http://en.wikipedia.org/wiki/UTM_zones#UTM_zone for more details). For each zone, an optimized coordinate system is defined. Choose the UTM zone which covers your region (Wikipedia has a nice map showing the zones) and use its coordinate system.
+   In several input files, you need to specify coordinates, *e.g* road network. You can't use the WGS84 coordinates (i.e. GPS coordinates). Acoustic propagation formulas make the assumption that coordinates are metric. Many countries and regions have custom coordinate system defined, optimized for usages in their appropriate areas. It might be best to ask some GIS specialists in your region of interest what the most commonly used local coordinate system is and use that as well for your data. If you don't have any clue about what coordinate system is used in your region, it might be best to use the Universal Transverse Mercator coordinate system. This coordinate system divides the world into multiple bands, each six degrees width and separated into a northern and southern part, which is called UTM zones (see http://en.wikipedia.org/wiki/UTM_zones#UTM_zone for more details). For each zone, an optimized coordinate system is defined. Choose the UTM zone which covers your region (Wikipedia has a nice map showing the zones) and use its coordinate system.
 
    Here is the map : https://upload.wikimedia.org/wikipedia/commons/e/ed/Utm-zones.jpg
 
@@ -83,9 +83,9 @@ Now, to be sure that OSM data are corresponding to our need, we can take time to
 With NoiseModelling GUI
 --------------------------------
 
-* The contents of the database can be viewed using ``Display_Database`` WPS script.
-* A spatial layer can be visualized using ``Table_Visualization_Map`` WPS script.
-* A data table can be visualized using ``Table_Visualization_Data`` WPS script.
+* The contents of the database can be viewed using ``Display_Database`` script.
+* A spatial layer can be visualized using ``Table_Visualization_Map`` script.
+* A data table can be visualized using ``Table_Visualization_Data`` script.
 
 With H2 or DBeaver client
 ------------------------------------
@@ -95,7 +95,7 @@ While NoiseModelling is open, if you are working with the default H2/H2GIS datab
 Export tables into files
 --------------------------------
 
-* Export a table: It is also possible to export the tables via ``Export_Table`` WPS script, in Shapefile, CSV or GeoJSON format.
+* Export a table: It is also possible to export the tables via ``Export_Table`` script, in Shapefile, CSV or GeoJSON format.
 
 * View the files: Then open these files into your preferred Geographic Information System (*e.g* `QGIS`_, `OpenJUMP`_, ...). You can then graphically visualize your geometries layer, but also the data contained in it. Take the time to familiarize yourself with your chosen GIS.
 
@@ -118,7 +118,7 @@ The locations of noise level evaluation points needs to be defined.
 Use :doc:`functions/Receivers/Delaunay_Grid`` with the previously generated ``BUILDINGS`` table as the buildings table and ``ROADS`` as *Sources table name*.
 Other parameters are optional.
 
-Don't forget to view your resulting layer in ``WPSBuilder`` or in your GIS to check that it meets your expectations.
+Don't forget to view your resulting layer in ``Builder`` or in your GIS to check that it meets your expectations.
 
 This processing block will give the possibility to generate a noise map later.
 
@@ -126,7 +126,7 @@ This processing block will give the possibility to generate a noise map later.
 Step 4: Associate emission noise level with roads
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :doc:`functions/NoiseModelling/Road_Emission_from_Traffic` block is used to generate a road layer, called ``LW_ROADS``, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the WPS Block.
+The ``Road_Emission_from_Traffic`` block is used to generate a road layer, called ``LW_ROADS``, containing LW emission noise level values in accordance with the emission laws of the CNOSSOS model. The format of the input road layer can be found in the description of the Block.
 
 Don't forget to view your resulting layers *(see Step 2)* to check that it meets your expectations.
 

@@ -36,9 +36,11 @@ Packaging
 
 The latest `release page`_ offers three NoiseModelling packages:
 
-* ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface. Please check the :doc:`Tutorial_Requirements` before installing, and refer to :doc:`Tutorial_Get_Started_Script` for CLI usage.
+* ``NoiseModelling_X.X.X.zip``: A cross-platform version for Windows, Linux, and macOS. It includes the web GUI and a command-line interface.
 * ``NoiseModelling_X.X.X_install.exe``: A standalone Windows installer that includes the web GUI and a bundled Java Virtual Machine.
 * ``NoiseModelling-X.X.X.dmg``: A standalone Mac OS installer that includes the web GUI and a bundled Java Virtual Machine.
+
+Please check the :doc:`Installation_guide` before installing, and refer to :doc:`Tutorial_Get_Started_Script` for CLI usage.
 
 .. warning::
     The Windows and Mac OS installer have not been signed yet. So you may have a security warning when installing and you are invited to follow additional steps to bypass this issue.
@@ -132,6 +134,7 @@ Fundings
     
     Architecture
     Numerical_Model
+    Installation_guide
     Validation
     Scientific_production
     Community
@@ -154,7 +157,6 @@ Fundings
     :maxdepth: 2
     :caption: Tutorials
 
-    Tutorial_Requirements
     Tutorial_Get_Started_GUI
     Tutorial_Noise_Map_From_Point_Source
     Tutorial_Noise_Map_From_OSM
@@ -174,14 +176,14 @@ Fundings
     :maxdepth: 2
     :caption: User Interface
 
-    WPS_Blocks
-    WPS_Builder
+    Blocks
+    Builder
 
 .. toctree::
     :maxdepth: 2
     :caption: For Advanced Users
 
-    Own_Wps
+    Own_Blocks
     NoiseModelling_db
     NoiseModellingOnPostGIS
 

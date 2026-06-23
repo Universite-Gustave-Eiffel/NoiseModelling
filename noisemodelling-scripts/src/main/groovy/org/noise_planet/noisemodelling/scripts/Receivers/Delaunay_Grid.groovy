@@ -161,6 +161,13 @@ inputs = [
                 default    : false,
                 type        : Boolean.class
         ],
+        outputTableNameTriangles    : [
+                name       : 'outputTableNameTriangles',
+                title      : 'Name of triangles output table',
+                description: 'Name of the triangles output table.',
+                default    : 'TRIANGLES',
+                type       : String.class
+        ]
 ]
 
 outputs = [
@@ -181,7 +188,7 @@ def ensureSpatialIndex(Connection connection, String table) {
     }
 }
 
-def exec(Connection connection, Map input) {
+def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -190,26 +197,29 @@ def exec(Connection connection, Map input) {
     logger.info('Start : Delaunay grid')
     logger.info("inputs {}", input) // log inputs of the run
 
+    DBTypes dbType = DBUtils.getDBType(connection)
 
     String receivers_table_name = "RECEIVERS"
     if (input['outputTableName']) {
         receivers_table_name = input['outputTableName']
     }
-    receivers_table_name = receivers_table_name.toUpperCase()
+    receivers_table_name = TableLocation.capsIdentifier(receivers_table_name, dbType)
+    def outputTableNameTriangles = TableLocation.capsIdentifier(
+            input.getOrDefault("outputTableNameTriangles", "TRIANGLES") as String, dbType)
 
     String sources_table_name = "SOURCES"
     if (input['sourcesTableName']) {
         sources_table_name = input['sourcesTableName']
     } else {
-        return "Source table must be specified"
+        throw new IllegalArgumentException("Source table must be specified")
     }
-    sources_table_name = sources_table_name.toUpperCase()
+    sources_table_name = TableLocation.capsIdentifier(sources_table_name, dbType)
 
     String building_table_name = "BUILDINGS"
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
-    building_table_name = building_table_name.toUpperCase()
+    building_table_name = TableLocation.capsIdentifier(building_table_name, dbType)
 
     boolean isoSurfaceInBuildings = false;
     if(input['isoSurfaceInBuildings']) {
@@ -274,7 +284,8 @@ def exec(Connection connection, Map input) {
     //  2) Bounding box extracted from another table via 'fenceTableName'
     // Implemented by IsotoCedex (adapted from Building_Grid.groovy)
     if (input['fenceTableName']) {
-        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), 'THE_GEOM')
+        def geomCol = GeometryTableUtilities.getFirstGeometryColumnNameAndIndex(connection, input['fenceTableName'] as String).first()
+        fence = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String, dbType), geomCol)
         if(fence.getSRID() == 0) {
             fence.setSRID(srid)
         }
@@ -285,7 +296,6 @@ def exec(Connection connection, Map input) {
 
 
     connection = new ConnectionWrapper(connection)
-    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
 
     // Clean previous outputs so we can regenerate a fresh grid.
     // Delete previous receivers grid
@@ -351,7 +361,7 @@ def exec(Connection connection, Map input) {
 
     long startTime = System.currentTimeMillis()
     try {
-        delaunayReceiversMaker.run(connection, receivers_table_name, "TRIANGLES", progressLogger)
+        delaunayReceiversMaker.run(connection, receivers_table_name, outputTableNameTriangles, progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +
                 "input geometries for debugging purpose")
@@ -385,3 +395,9 @@ def exec(Connection connection, Map input) {
     return [result: receivers_table_name]
 
 }
+
+def exec(Connection connection, Map input) {
+    RootProgressVisitor progressLogger = new RootProgressVisitor(1, true, 1)
+    return exec(connection, input, progressLogger)
+}
+

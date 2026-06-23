@@ -56,6 +56,13 @@ Optional inputs
 
    Default: ``10``
 
+``exportTrianglesGeometries`` — *In the triangles table, export triangles geometries*
+   If enabled, the TRIANGLES table will contain the geometry of each triangle (outputTriangleTable must be enabled too)
+
+   Type: ``Boolean``
+
+   Default: ``false``
+
 ``fence`` — *Extent filter*
    Create receivers only in the provided polygon (fence)
 

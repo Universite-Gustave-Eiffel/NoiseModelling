@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file. Note: a JOSS paper is currently under review and should be preferred for academic citations once published:https://github.com/openjournals/joss-reviews/issues/9171"
+type: software
+title: NoiseModelling
+version: 6.0.0
+date-released: 2026-05-20
+authors:
+  - name: "NoiseModelling team"
+url: "https://noisemodelling.readthedocs.io"
+repository-code: "https://github.com/Universite-Gustave-Eiffel/NoiseModelling/"
+
+preferred-citation:
+  type: article
+  title: "NoiseModelling: An Open Source GIS Based Tool to Produce Environmental Noise Maps"
+  authors:
+    - family-names: Bocher
+      given-names: Erwan
+    - family-names: Guillaume
+      given-names: Gwenaël
+    - family-names: Picaut
+      given-names: Judicaël
+    - family-names: Petit
+      given-names: Gwendall
+    - family-names: Fortin
+      given-names: Nicolas
+  journal: "ISPRS International Journal of Geo-Information"
+  volume: 8
+  issue: 3
+  pages: 130
+  year: 2019
+  doi: "10.3390/ijgi8030130"
+  url: "https://www.mdpi.com/2220-9964/8/3/130"

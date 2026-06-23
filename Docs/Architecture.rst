@@ -20,26 +20,26 @@ The documentation below presents the architecture of NoiseModelling with its dif
 1. NoiseModelling libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NoiseModelling is made of 5 main `librairies`_:
+NoiseModelling is made of 5 main `libraries`_:
 
 * ``noisemodelling-emission`` : to determine the noise emission
 * ``noisemodelling-pathfinder`` : to determine the noise path
 * ``noisemodelling-propagation`` : to calculate the noise propagation
 * ``noisemodelling-jdbc`` : to connect NoiseModelling to a database
-* ``noisemodelling-scripts`` : Groovy scripts and web server
+* ``noisemodelling-scripts`` : Groovy scripts (Blocks) and web server
 
 These libraries may be used independently of each other. Note that the ``noisemodelling-jdbc`` library *(JDBC = Java DataBase Connectivity)* is central since it allows the three others to communicate with each other as soon as the data are stored in a database *(which is the default situation)*.
 
-.. _librairies: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/
+.. _libraries: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/
 
 
 2. Database connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thanks to the ``noisemodelling-jdbc`` library, NoiseModelling can access and communicate with databases. This system is quite adapted to store, manage and process (spatial) data. Here, the user has the choice between to database (free, open-source and powerful) couples:
+Thanks to the ``noisemodelling-jdbc`` library, NoiseModelling can access and communicate with databases. This system is quite adapted to store, manage and process (spatial) data. Here, the user has the choice between two database (free, open-source and powerful) couples:
 
 * `H2`_ / `H2GIS`_, which is configured and embedded by default. In this case, the user has nothing to do.
-* `PostGreSQL`_ / `PostGIS`_. In this case, the user has to configure the connexion (read ":doc:`NoiseModellingOnPostGIS`" page for more information).
+* `PostGreSQL`_ / `PostGIS`_. In this case, the user has to configure the connection (read ":doc:`NoiseModellingOnPostGIS`" page for more information).
 
 In both cases, database can be local or remote.
 
@@ -53,9 +53,9 @@ In both cases, database can be local or remote.
 3. NoiseModelling with a GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-NoiseModelling has a Graphical User Interface (GUI). It is accessible through a web browser and the web page is named ":doc:`WPS_Builder`".
+NoiseModelling has a Graphical User Interface (GUI). It is accessible through a web browser and the web page is named ":doc:`Builder`".
 
-In order for "WPS Builder" to communicate with the NoiseModelling libraries, we use a standard name `Web Processing Service`_ (Defined by the Open Geospatial Consortium `OGC`_) API to execute WPS scripts. Theses scripts are written in the `Groovy`_ language.
+In order for the Builder to communicate with the NoiseModelling libraries, we use a standard named `Web Processing Service`_ (defined by the Open Geospatial Consortium `OGC`_) API to execute scripts. These scripts are written in the `Groovy`_ language and are called "Blocks".
 
 You can see NoiseModelling with a GUI in action in the page ":doc:`Tutorial_Get_Started_GUI`".
 
@@ -71,11 +71,11 @@ You can use NoiseModelling with command lines. To do so,
 
 #. Open a terminal
 #. Go in the NoiseModelling directory
-#. Call the WPS .groovy script you want, with the needed arguments
+#. Call the .groovy script (Block) you want, with the needed arguments
 
 
 .. Note::
-    The ``.groovy`` script may be simple (the ones already provided with NoiseModelling, executing one task) or complex (tailor made by users and calling one or many ``.groovy`` script(s)).
+    The ``.groovy`` script (Block) may be simple (the ones already provided with NoiseModelling, executing one task) or complex (tailor-made by users and calling one or many ``.groovy`` script(s) (Blocks)).
 
 
 .. Note::

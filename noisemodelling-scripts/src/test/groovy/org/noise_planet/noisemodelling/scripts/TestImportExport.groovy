@@ -218,8 +218,8 @@ class TestImportExport extends JdbcTestCase {
             new Linked_Table().exec(connection, [
                     localTableName: "RECEIVERS",
                     databaseUrl: "jdbc:postgresql_h2://$parameters.host:$parameters.port/$parameters.database",
-                    username: parameters.user,
-                    password: parameters.password,
+                    lt_username: parameters.user,
+                    lt_password: parameters.password,
                     remoteTableName: 'receivers'], new EmptyProgressVisitor())
 
             // Read on the H2GIS side the receivers table stored in the PostGIS database

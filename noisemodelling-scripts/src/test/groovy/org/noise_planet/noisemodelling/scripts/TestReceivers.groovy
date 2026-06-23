@@ -424,6 +424,8 @@ class TestReceivers extends JdbcTestCase {
                                              "fence"            : gFence.toString()])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+
+        assertEquals(18, sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer)
     }
 
     @Test
@@ -439,7 +441,9 @@ class TestReceivers extends JdbcTestCase {
                                              "delta"            : 50,
                                              "fenceTableName"   : "BUILDINGS"])
 
-        assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
+        assertEquals(2154, GeometryTableUtilities.getSRID(connection, "RECEIVERS"))
+
+        assertEquals(854, sql.firstRow("SELECT COUNT(*) FROM RECEIVERS")[0] as Integer)
     }
 
 
@@ -483,9 +487,10 @@ class TestReceivers extends JdbcTestCase {
         SHPRead.importTable(connection, TestReceivers.getResource("buildings.shp").getPath())
         SHPRead.importTable(connection, TestReceivers.getResource("roads.shp").getPath())
 
-        new Regular_Grid().exec(connection, ["fenceTableName"     : "BUILDINGS",
-                                             "delta"              : 50,
-                                             "outputTriangleTable": true])
+        new Regular_Grid().exec(connection, ["fenceTableName"           : "BUILDINGS",
+                                             "delta"                    : 50,
+                                             "outputTriangleTable"      : true,
+                                             "exportTrianglesGeometries": true])
 
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
 

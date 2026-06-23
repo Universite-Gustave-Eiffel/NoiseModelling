@@ -42,6 +42,7 @@ Database Manager
     functions/Database_Manager/Clean_Database
     functions/Database_Manager/Display_Database
     functions/Database_Manager/Drop_a_Table
+    functions/Database_Manager/Execute_Query
     functions/Database_Manager/Table_Visualization_Data
     functions/Database_Manager/Table_Visualization_Map
 

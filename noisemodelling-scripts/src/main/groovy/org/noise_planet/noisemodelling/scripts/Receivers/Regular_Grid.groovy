@@ -17,17 +17,21 @@
 
 package org.noise_planet.noisemodelling.scripts.Receivers
 
+import groovy.sql.Sql
 import org.h2gis.functions.spatial.crs.ST_SetSRID
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeometryTableUtilities
+import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.TableLocation
+import org.h2gis.utilities.dbtypes.DBTypes
+import org.h2gis.utilities.dbtypes.DBUtils
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.sql.*
-import groovy.sql.Sql
+
+import java.sql.Connection
+import java.sql.SQLException
 
 title = 'Regular Grid'
 description = '&#10145;&#65039; Computes a regular grid of receivers. </br>' +
@@ -103,7 +107,14 @@ inputs = [
                 description: 'Output a triangle table in order to be used to generate iso contours with Create_Isosurface',
                 min        : 0, max: 1,
                 type       : Boolean.class
-        ]
+        ],
+        exportTrianglesGeometries: [
+                name        : 'In the triangles table, export triangles geometries',
+                title       : 'In the triangles table, export triangles geometries',
+                description : 'If enabled, the TRIANGLES table will contain the geometry of each triangle (outputTriangleTable must be enabled too)',
+                default    : false,
+                type        : Boolean.class
+        ],
 ]
 
 outputs = [
@@ -116,13 +127,18 @@ outputs = [
 ]
 
 
-def exec(connection, Map input) {
+def exec(Connection connection, Map input) {
 
     Sql sql = new Sql(connection)
 
     // output string, the information given back to the user
     String resultString = null
 
+    DBTypes dbType = DBUtils.getDBType(connection)
+
+    boolean outputTriangleTable = input.outputTriangleTable as Boolean
+
+    boolean exportTrianglesGeometries = input.exportTrianglesGeometries as Boolean
 
     if (!input.containsKey('fenceTableName') && !input.containsKey('fence')) {
         throw new SQLException("Fence geometry or fence table name must be provided, could be the buildings table or source table.")
@@ -138,41 +154,33 @@ def exec(connection, Map input) {
 
     String receivers_table_name = "RECEIVERS"
     if (input['receiverstablename']) {
-        receivers_table_name = input['receiverstablename']
+        receivers_table_name = TableLocation.capsIdentifier(input['receiverstablename'] as String, dbType)
     }
-    receivers_table_name = receivers_table_name.toUpperCase()
 
     double delta = input.getOrDefault("delta",10.0) as Double
 
     double h = input.getOrDefault("height",4.0) as Double
 
-    boolean createTriangles = false
-    if(input['outputTriangleTable']) {
-        createTriangles = Boolean.parseBoolean(input['outputTriangleTable'] as String)
-    }
-
     String sources_table_name = ""
     if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
+        sources_table_name = TableLocation.capsIdentifier(input['sourcesTableName'] as String, dbType)
     }
-    sources_table_name = sources_table_name.toUpperCase()
 
     String building_table_name = ""
     if (input['buildingTableName']) {
-        building_table_name = input['buildingTableName']
+        building_table_name = TableLocation.capsIdentifier(input['buildingTableName'] as String, dbType)
     }
-    building_table_name = building_table_name.toUpperCase()
 
     // Try to find the best SRID for receivers table
     int srid = 0
     if(input['fenceTableName']) {
-        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(input['fenceTableName'] as String))
+        srid = GeometryTableUtilities.getSRID(connection, input['fenceTableName'] as String)
     }
     if(srid == 0 && input['buildingTableName']) {
-        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(building_table_name) as String)
+        srid = GeometryTableUtilities.getSRID(connection, building_table_name)
     }
     if (srid == 0 && input['sourcesTableName']) {
-        srid = GeometryTableUtilities.getSRID(connection, TableLocation.parse(sources_table_name) as String)
+        srid = GeometryTableUtilities.getSRID(connection, sources_table_name)
     }
 
     Geometry fenceGeom = null
@@ -186,22 +194,20 @@ def exec(connection, Map input) {
             throw new Exception("Unable to find buildings or sources SRID, ignore fence parameters")
         }
     } else {
-        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String), "THE_GEOM")
+        fenceGeom = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse(input['fenceTableName'] as String, dbType), "THE_GEOM")
     }
 
     //Delete previous receivers grid.
     sql.execute(String.format("DROP TABLE IF EXISTS %s", receivers_table_name))
 
-    sql.execute("CREATE TABLE " + receivers_table_name + "(THE_GEOM GEOMETRY, ID_COL INTEGER, ID_ROW INTEGER) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, " + h + "), " + srid + ") THE_GEOM, ID_COL, ID_ROW FROM ST_MakeGridPoints(ST_GeomFromText('" + fenceGeom + "')," + delta + "," + delta + ");")
-    sql.execute("ALTER TABLE " + receivers_table_name + " ADD COLUMN PK SERIAL PRIMARY KEY")
-
-    logger.info("Create spatial index on " + receivers_table_name)
-    sql.execute("Create spatial index on " + receivers_table_name + "(the_geom);")
-
-    if (input['fence']) {
-        // Delete points outside geom but inside
-        sql.execute("DELETE FROM " + receivers_table_name + " WHERE NOT ST_Intersects(THE_GEOM, :geom)", ['geom': fenceGeom])
+    def whereClause = ""
+    if(fenceGeom != null) {
+        whereClause = " WHERE ST_Intersects(ST_SETSRID(THE_GEOM, $srid), :geom)"
     }
+
+    logger.info("Creating regular grid of receivers with offset $delta m and height $h m")
+    sql.execute("CREATE TABLE $receivers_table_name(THE_GEOM GEOMETRY, ID_COL INTEGER, ID_ROW INTEGER) AS SELECT ST_SETSRID(ST_UPDATEZ(THE_GEOM, $h), $srid) THE_GEOM, ID_COL, ID_ROW FROM ST_MakeGridPoints(ST_GeomFromText('$fenceGeom'), $delta, $delta) $whereClause", ['geom': fenceGeom])
+    sql.execute("ALTER TABLE $receivers_table_name" + " ADD COLUMN PK SERIAL PRIMARY KEY" as String)
 
     if (input['buildingTableName']) {
         logger.info("Delete receivers inside buildings")
@@ -211,23 +217,37 @@ def exec(connection, Map input) {
         logger.info("Delete receivers near sources")
         sql.execute("delete from " + receivers_table_name + " g where exists (select 1 from " + sources_table_name + " r where st_expand(g.the_geom, 1) && r.the_geom and st_distance(g.the_geom, r.the_geom) < 1 limit 1);")
     }
-    if(createTriangles) {
+    if(outputTriangleTable) {
+        logger.info("Create index on ROW and COL columns")
+        sql.execute("CREATE INDEX idx_${receivers_table_name}_row_col ON $receivers_table_name(ID_ROW, ID_COL);" as String)
+
         sql.execute("DROP TABLE IF EXISTS TRIANGLES")
-        sql.execute("CREATE TABLE TRIANGLES(pk serial NOT NULL, the_geom geometry(POLYGON Z, "+srid+"), PK_1 integer not null," +
-                " PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))")
-        sql.execute("INSERT INTO TRIANGLES(THE_GEOM, PK_1, PK_2, PK_3, CELL_ID) " +
-                "SELECT ST_ConvexHull(ST_UNION(A.THE_GEOM, ST_UNION(B.THE_GEOM, C.THE_GEOM))) THE_GEOM, " +
-                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
-                "  FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
-                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL AND " +
-                "A.ID_ROW = C.ID_ROW + 1 AND A.ID_COL = C.ID_COL + 1;")
-        sql.execute("INSERT INTO TRIANGLES(THE_GEOM, PK_1, PK_2, PK_3, CELL_ID) " +
-                "SELECT ST_ConvexHull(ST_UNION(A.THE_GEOM, ST_UNION(B.THE_GEOM, C.THE_GEOM))) THE_GEOM, " +
-                "A.PK PK_1, B.PK PK_2, C.PK PK_3, 0" +
-                "  FROM "+receivers_table_name+" A, "+receivers_table_name+" B, "+receivers_table_name+" C " +
-                "WHERE A.ID_ROW = B.ID_ROW + 1 AND A.ID_COL  = B.ID_COL + 1" +
-                " AND A.ID_ROW = C.ID_ROW AND A.ID_COL = C.ID_COL + 1;")
+        logger.info("Create triangles table")
+        def geometryCreateTableQuery = ""
+        if(exportTrianglesGeometries) {
+            geometryCreateTableQuery = ", THE_GEOM GEOMETRY(POLYGON Z, $srid)"
+        }
+        def geometrySelectQuery = ""
+        def geometryInsertQuery = ""
+        if(exportTrianglesGeometries) {
+            geometrySelectQuery = "ST_Normalize(ST_MakePolygon(ST_MakeLine(A.THE_GEOM, B.THE_GEOM, C.THE_GEOM, A.THE_GEOM))) THE_GEOM, "
+            geometryInsertQuery = "THE_GEOM, "
+        }
+        sql.execute("CREATE TABLE TRIANGLES(pk serial NOT NULL $geometryCreateTableQuery, PK_1 integer not null," +
+                " PK_2 integer not null, PK_3 integer not null, cell_id integer not null, PRIMARY KEY (PK))" as String)
+
+        sql.execute("INSERT INTO TRIANGLES ($geometryInsertQuery PK_1, PK_2, PK_3, CELL_ID) " +
+                "SELECT $geometrySelectQuery  A.PK, B.PK, C.PK, 0 FROM $receivers_table_name A JOIN " +
+                "$receivers_table_name B ON B.ID_ROW = A.ID_ROW - 1 AND B.ID_COL = A.ID_COL JOIN " +
+                "$receivers_table_name C ON C.ID_ROW = A.ID_ROW - 1 AND C.ID_COL = A.ID_COL - 1 UNION ALL  " +
+                "SELECT $geometrySelectQuery  A.PK, B.PK, C.PK, 0 FROM $receivers_table_name A JOIN " +
+                "$receivers_table_name B ON B.ID_ROW = A.ID_ROW - 1 AND B.ID_COL = A.ID_COL - 1 JOIN " +
+                "$receivers_table_name C ON C.ID_ROW = A.ID_ROW AND C.ID_COL = A.ID_COL - 1;" as String)
     }
+
+
+    logger.info("Create spatial index on " + receivers_table_name)
+    JDBCUtilities.createSpatialIndex(connection, TableLocation.parse(receivers_table_name, dbType), "THE_GEOM")
 
     return [result: receivers_table_name]
 }

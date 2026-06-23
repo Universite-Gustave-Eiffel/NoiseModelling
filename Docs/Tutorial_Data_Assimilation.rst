@@ -21,7 +21,7 @@ To play with this tutorial, you will need:
 
 * a working installation of NoiseModelling (NM) with at least version 5. If needed, get the last release on the official `GitHub repository`_,
 * the tutorial's datasets, stored in the folder ``.../NoiseModelling/resources/dataAssimilation/``,
-* the dedicated WPS ``.groovy`` scripts, stored in the folder ``.../NoiseModelling/scripts/DataAssimilation/``.
+* the dedicated Groovy scripts (Blocks), stored in the folder ``.../NoiseModelling/scripts/DataAssimilation/``.
 
 .. _GitHub repository: https://github.com/Universite-Gustave-Eiffel/NoiseModelling/releases
 
@@ -80,15 +80,15 @@ Below is a map, showing the seven sensors (red points), with their identifier ``
 
 How to compute the assimilation?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To compute the data assimilation, you will have to execute several WPS ``.groovy`` scripts. You can play with them in two ways:
+To compute the data assimilation, you will have to execute several Groovy scripts (Blocks). You can play with them in two ways:
 
 
-* with the NoiseModelling's GUI (Graphic User Interface). In this case, the WPS blocks are listed in the ``Data_Assimilation`` tab *(see screenshot below)*,
+* with the NoiseModelling's GUI (Graphic User Interface). In this case, the Blocks are listed in the ``Data_Assimilation`` tab *(see screenshot below)*,
 * in command line (see how to :doc:`Tutorial_Get_Started_Script`). In this case, just note that they are stored in the folder ``.../NoiseModelling_x.x.x/scripts/DataAssimilation/``,
-* in a .groovy script, calling one or various WPS .groovy scripts.
+* in a Groovy script (Block), calling one or various Groovy scripts (Blocks).
 
 .. image:: ./images/tutorial/Data_Assimilation/NM_GUI_wps_list.png
-    :alt: List of WPS blocks
+    :alt: List of Blocks
 
 Data Simulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,7 +101,7 @@ Step 1 : Generate all possible combinations
 
 Generates all possible combinations of values from two given lists and inserts them into a table named ``ALL_CONFIGURATIONS``.
 
-To calculate the combinations, you have to execute the WPS script ``All_Possible_Configuration``.
+To calculate the combinations, you have to execute the script ``All_Possible_Configuration``.
 
 
 
@@ -112,7 +112,7 @@ Two input parameters are needed:
 
 
 
-Execute ``All_Possible_Configuration`` WPS block
+Execute ``All_Possible_Configuration`` Block
 **************************************************
 
 With the **NoiseModelling GUI**
@@ -127,7 +127,7 @@ With **command lines**
    :linenos:
 
 
-With **Groovy script**
+With **Groovy script (Block)**
 
 .. code-block:: groovy
 
@@ -162,13 +162,13 @@ The first 10 lines of this table are shown below:
 .. warning::
     The total number of combinations can be huge. This value is defined as: (number of ``trafficValues`` elements) ^ 4  * (number of ``temperatureValues`` elements). 
 
-    In our example, we have ``"trafficValues": "0.01, 1.0, 2.0"`` and ``"temperatureValues": "10,15,20"``, so the number of combinations = 3 ^ 4 * 3 = 243 *(before filtration - see ‘note‘ tab just below)*
+    In our example, we have ``"trafficValues": "0.01, 1.0, 2.0"`` and ``"temperatureValues": "10,15,20"``, so the number of combinations = 3 ^ 4 * 3 = 243 *(before filtration - see 'note' tab just below)*
 
     Even though this table is very important, only part of it will be used for all the maps to be simulated (see :ref:`Step 5 <Generate_all_traffic_emissions_and_maps>`)
 
 
 .. note::
-    When the combinations are calculated, **a filter is applied to remove inconsistent pairs** (e.g. an ‘other’ type road with much more traffic than a ‘primary‘ road).
+    When the combinations are calculated, **a filter is applied to remove inconsistent pairs** (e.g. an 'other' type road with much more traffic than a 'primary' road).
 
     As a result, only pairs meeting the following rule are retained: ``traffic on a lower type of road / traffic on a higher type of road <= 20``
 
@@ -178,9 +178,9 @@ The first 10 lines of this table are shown below:
 Step 2 : Import sensor positions
 ---------------------------------------
 
-Using the ``Import_File`` WPS script*, import the location of the sensors into the NoiseModelling's database from the .geojson file ``device_mapping_sf.geojson``. This file will be stored in a table called ``SENSORS_LOCATION``.
+Using the ``Import_File`` Block*, import the location of the sensors into the NoiseModelling's database from the .geojson file ``device_mapping_sf.geojson``. This file will be stored in a table called ``SENSORS_LOCATION``.
 
-\* in the ``scripts/Ìmport_and_Export/`` folder
+\* in the ``scripts/Import_and_Export/`` folder
 
 🌍 Since we are in the Geneva area, we are using the ``CH1903+`` metric coordinate system (identified as `EPSG:2056`_).
 
@@ -189,7 +189,7 @@ Using the ``Import_File`` WPS script*, import the location of the sensors into t
 * ``tableName`` : ``SENSORS_LOCATION``
 
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -215,7 +215,7 @@ Once done, you have the table ``SENSORS_LOCATION``, presented below.
 Step 3 : Prepare sensor data
 ---------------------------------------
 
-Now we can extract and prepare the sensors, for a given period. To do so, we are using the ``Prepare_Sensors`` WPS .groovy script stored in the folder ``.../scripts/DataAssimilation/``.
+Now we can extract and prepare the sensors, for a given period. To do so, we are using the ``Prepare_Sensors`` Groovy script (Block) stored in the folder ``.../scripts/DataAssimilation/``.
 
 This script has the following parameters:
 
@@ -236,7 +236,7 @@ For this tutorial, you can fill with these informations:
 * Working directory path with input files (``workingFolder``) : ``./resources/dataAssimilation/`` (enter the full URL e.g ``/home/myUserName/Documents/NoiseModelling/resources/dataAssimilation/``)
 * Target projection identifier (``targetSRID``) : ``2056``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -267,7 +267,7 @@ Once executed, two tables are created:
 Step 4: Import buildings and roads
 ---------------------------------------
 
-Now, using the ``Ìmport_OSM`` block, you can import buildings and road network (with predicted traffic flows) from the ``geneva.osm.pbf`` OSM file.
+Now, using the ``Import_OSM`` Block, you can import buildings and road network (with predicted traffic flows) from the ``geneva.osm.pbf`` OSM file.
 
 Execution
 **********
@@ -279,7 +279,7 @@ Execution
 
 **The other parameters are left as default**
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -296,7 +296,7 @@ Result
 The tables ``BUILDINGS`` and ``ROADS`` are created.
 
 .. note::
-    If you are using NoiseModelling with the GUI and wish to visualize the data in a map, you can use the ``Table_Visualization_Map`` block. Below is the result with the two table ``BUILDINGS`` *(left)* and ``ROADS`` *(right)*.
+    If you are using NoiseModelling with the GUI and wish to visualize the data in a map, you can use the ``Table_Visualization_Map`` Block. Below is the result with the two table ``BUILDINGS`` *(left)* and ``ROADS`` *(right)*.
 
     .. image:: ./images/tutorial/Data_Assimilation/BUILDINGS_ROADS.png
         :alt: BUILDINGS and ROADS
@@ -308,10 +308,10 @@ Step 5 : Generate all traffic emissions and maps
 
 This step consists in generating all the traffic emissions by modifying traffic data according to the road type, using data from ``ALL_CONFIGURATIONS`` (see :ref:`Step 1 <all_configuration_result>`).
 
-1. Generate emissisons
+1. Generate emissions
 ***********************
 
-To do so, users have first to execute the ``Data_Simulation`` WPS block, which has only one **optionnal** parameter :
+To do so, users have first to execute the ``Data_Simulation`` Block, which has only one **optional** parameter :
 
 * ``noiseMapLimit`` : final number of maps to be generated (%). If a value is filled, a random selection is applied to keep the percentage(%) of expected maps, based on the LHS (`Latin Hypercube Sampling`_) method.
 
@@ -324,7 +324,7 @@ For this tutorial, you can fill with this information:
 
 * ``noiseMapLimit`` : ``80``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -344,7 +344,7 @@ Two tables are created:
 2. Calculate noise levels
 **************************
 
-Now, users can calculate the noise levels, emitted from the road sources. To do so, execute the ``Noise_level_from_source`` WPS script.
+Now, users can calculate the noise levels, emitted from the road sources. To do so, execute the ``Noise_level_from_source`` Block.
 
 Execution
 **********
@@ -360,7 +360,7 @@ For this tutorial, you can fill with this information:
 * Diffraction on vertical edges (``confDiffVertical``): ``false``
 * Diffraction on horizontal edges (``confDiffHorizontal``): ``false``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -391,11 +391,11 @@ Step 6 : Extract best configuration
 
 Many maps have been generated. So now, the best map, **minimizing the difference between the measurements and the simulation**, must be chosen.
 
-To do so, users have to execute the ``Extract_Best_Configuration`` WPS script. There are 3 parameters to enter here:
+To do so, users have to execute the ``Extract_Best_Configuration`` script. There are 3 parameters to enter here:
 
 * Measurement table (``observationTable``): name of the table where observed data are stored,
 * Noise map table (``noiseMapTable``): name of the table where simulated data are stored,
-* Temperature tolerance threshold (``tempToleranceThreshold``): tolerance threshold (exprimed in °C) for the temperature that allows to extract the map that have a temperature value close to the real temperature.
+* Temperature tolerance threshold (``tempToleranceThreshold``): tolerance threshold (expressed in °C) for the temperature that allows to extract the map that have a temperature value close to the real temperature.
 
 This process will:
 
@@ -412,7 +412,7 @@ For this tutorial, you can fill with this information:
 * ``noiseMapTable`` : ``RECEIVERS_LEVEL``
 * ``tempToleranceThreshold`` : ``5``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -437,7 +437,7 @@ As a result, the ``BEST_CONFIGURATION_FULL`` table is created (see table below).
 * ``SECONDARY_VAL`` : ... secondary roads ...
 * ``TERTIARY_VAL`` : ... tertiary roads ... 
 * ``OTHERS_VAL`` : ... other roads ... 
-* ``TEMP_VAL`` : temperature (Interger)
+* ``TEMP_VAL`` : temperature (Integer)
 
 
 .. csv-table:: Table ``BEST_CONFIGURATION_FULL`` showing one best configuration for each of the time steps
@@ -457,7 +457,7 @@ Step 7 : Generate new receivers
 
 Create a regular grid of receivers between the buildings.
 
-To do so, use the ``Regular_Grid`` WPS script (in the ``/Receivers/`` wps scripts folder).
+To do so, use the ``Regular_Grid`` script (in the ``/Receivers/`` scripts folder).
 
 Execution
 **********
@@ -469,7 +469,7 @@ For this tutorial, you can fill with this information:
 * Source table name (``sourcesTableName``): ``ROADS``
 * Offset (``delta``): ``200`` (1 receiver every 200m)
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -503,12 +503,12 @@ Step 8 : Adding sensors as receivers
 Execution
 **********
 
-In the ``Merged_Sensors_Receivers`` WPS block, fill these information:
+In the ``Merged_Sensors_Receivers`` Block, fill these information:
 
 * The receiver table (``tableReceivers``): ``RECEIVERS``
 * The sensors table (``tableSensors``): ``SENSORS_LOCATION``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -532,7 +532,7 @@ Step 9 : Generate dynamic road emissions
 
 For each time step (here 15 min), generate an emissions map for all the receivers, corresponding to the best configuration (for this time step).
 
-To do so, use the ``NMs_4_BestConfigs`` WPS block. This block has two inputs:
+To do so, use the ``NMs_4_BestConfigs`` Block. This Block has two inputs:
 
 * The best configuration table (``bestConfig``)
 * The road emission table (``roadEmission``)
@@ -543,7 +543,7 @@ Execution
 * ``bestConfig`` : ``BEST_CONFIGURATION_FULL``
 * ``roadEmission`` : ``LW_ROADS``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -572,7 +572,7 @@ The table ``LW_ROADS_best`` is created, with the following structure:
 Step 10 : Generate the noise levels
 ---------------------------------------
 
-Using the ``Noise_level_from_source`` WPS block, we can finally compute the noise level from the network sources emission (``LW_ROADS_best``) based on all the receivers.
+Using the ``Noise_level_from_source`` Block, we can finally compute the noise level from the network sources emission (``LW_ROADS_best``) based on all the receivers.
 
 Execution
 **********
@@ -586,7 +586,7 @@ Execution
 * Diffraction on vertical edges (``confDiffVertical``): ``false``
 * Diffraction on horizontal edges (``confDiffHorizontal``): ``false``
 
-If you are using the Groovy script
+If you are using the Groovy script (Block)
 
 .. code-block:: groovy
 
@@ -611,7 +611,7 @@ Step 11 : Create & visualize the resulting table
 
 Create a table, called ``ASSIMILATED_MAPS``, containing both sound levels and configuration parameters.
 
-To do so, execute the ``Create_Assimilated_Maps`` WPS block, with the 3 following parameters:
+To do so, execute the ``Create_Assimilated_Maps`` Block, with the 3 following parameters:
 
 * ``bestConfigTable`` : the best configuration table name
 * ``receiverLevel`` : the receivers level table name
@@ -653,7 +653,7 @@ The resulting ``ASSIMILATED_MAPS`` table has the following columns:
 Visualize the map
 ******************
 
-You can now export the ``ASSIMILATED_MAPS`` table, for example as a Shapefile, using the ``Export_Table`` WPS block and then import it into your favorite GIS app (such as `QGIS`_) to visualize the results.
+You can now export the ``ASSIMILATED_MAPS`` table, for example as a Shapefile, using the ``Export_Table`` Block and then import it into your favorite GIS app (such as `QGIS`_) to visualize the results.
 
 * ``exportPath`` : ``results/ASSIMILATED_MAPS.shp``
 * ``tableToExport``: ``ASSIMILATED_MAPS``

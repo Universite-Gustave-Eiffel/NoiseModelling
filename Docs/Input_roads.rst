@@ -15,7 +15,7 @@ Table SOURCES_GEOM definition
 
 .. warning::
     * In the list below, the columns noted with ``*`` are mandatory
-    * This description is only valid for :doc:`functions/NoiseModelling/Noise_level_from_source` block. For the other blocks, it is necessary to refer to the description of their input data
+    * This description is only valid :doc:`functions/NoiseModelling/Noise_level_from_source` Block. For the other Blocks, it is necessary to refer to the description of their input data
 
 
 .. note::

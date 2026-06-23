@@ -43,7 +43,7 @@ Step 1: Import Buildings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The first thing we're going to do is to import buildings.
-We use the ``Import_OSM`` WPS block to do that. There are several options. Put the ``nantes_mini.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
+We use the ``Import_OSM`` block to do that. There are several options. Put the ``nantes_mini.osm.pbf`` path in the 'pathFile' input and set the 'SRID' input to `2154`_ *(which is the EPSG code for the french regulatory system)*.
 Since we're only interested in buildings, you can also check the ``Do not import roads`` option as well as the ```Do not import Surface acoustic absorption`` option.
 
 .. _2154: https://epsg.io/2154
@@ -51,7 +51,7 @@ Since we're only interested in buildings, you can also check the ``Do not import
 .. figure:: images/tutorial/matsim/osm_pbf_wps.png
    :align: center
 
-You should end up with a ``BUILDINGS`` table containing the city center buildings. If you want to visualize the buildings in NoiseModelling, you can use the ``Table visualization Map`` WPS block (in the *Database Manager* section) with ``Name of the table`` set to *BUILDINGS* and ``Projection identifier`` set to *2154*.
+You should end up with a ``BUILDINGS`` table containing the city center buildings. If you want to visualize the buildings in NoiseModelling, you can use the ``Table visualization Map`` block (in the *Database Manager* section) with ``Name of the table`` set to *BUILDINGS* and ``Projection identifier`` set to *2154*.
 
 .. figure:: images/tutorial/matsim/buildings_table.png
    :align: center
@@ -60,7 +60,7 @@ Step 2: Import MATSim Traffic Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now we can import the traffic data from the MATSim simulation.
-To do that, we use the ``Traffic_From_Events`` WPS block.
+To do that, we use the ``Traffic_From_Events`` block.
 
 The mandatory inputs are:
 
@@ -99,7 +99,7 @@ Step 3: Import MATSim Activities
 
 The next step consists in importing the activities locations from the MATSim simulation.In MATSim, activities are also called facilities.
 
-Let's use the ``Import_Activities`` WPS bloc. The inputs descriptions are quite straightforward:
+Let's use the ``Import_Activities`` bloc. The inputs descriptions are quite straightforward:
 
 - Name of created table: ``ACTIVITIES``
 - Projection identifier: ``2154``
@@ -122,15 +122,15 @@ This is irrelevant for a MATSim simulation but here we want to calculate noise l
 
 So we want to assign a properly placed receiver for every activity we imported. We do that in 2 steps:
 
-1. we calculate all the "valid" receiver positions using the ``Building_Grid`` WPS bloc
+1. we calculate all the "valid" receiver positions using the ``Building_Grid`` bloc
 2. we choose, for each activity the right receiver.
 
-There are 2 ways to execute step 4.2. We can simply choose the closest receiver for every activity, using the ``Receivers_From_Activity_Closest`` WPS bloc.
-Or we can randomly choose a receiver on the closest building of each activity using the ``Receivers_From_Activity_Random`` WPS bloc.
+There are 2 ways to execute step 4.2. We can simply choose the closest receiver for every activity, using the ``Receivers_From_Activity_Closest`` bloc.
+Or we can randomly choose a receiver on the closest building of each activity using the ``Receivers_From_Activity_Random`` bloc.
 
 Here we are going to use the latter way, the random one.
 
-Let's calculate all the receivers around our buildings using the ``Building_Grid`` WPS bloc with the following inputs:
+Let's calculate all the receivers around our buildings using the ``Building_Grid`` bloc with the following inputs:
 
 - Buildings table table: ``BUILDINGS``
 - Distance between receivers: ``5.0``
@@ -138,7 +138,7 @@ Let's calculate all the receivers around our buildings using the ``Building_Grid
 
 That will place receivers around all the buildings, at 4 meter high and 5 meters apart.
 
-Now, we must use the ``Receivers_From_Activity_Random`` WPS bloc. The inputs are simple, you just have to specify the names of the previously created tables
+Now, we must use the ``Receivers_From_Activity_Random`` bloc. The inputs are simple, you just have to specify the names of the previously created tables
 
 - Name of created table: ``ACTIVITY_RECEIVERS``
 - Name of the table containing the activities: ``ACTIVITIES``
@@ -160,7 +160,7 @@ Step 5: Calculate Noise Receiver Levels
 
 In this step, we want to calculate a noise level for every receiver, every 15 minutes (96 maps in total).
 
-We'll use the ``Noise_level_from_source`` WPS bloc. When the using the ``Sources emission table name``, the WPS bloc will automatically take into account the time bins defined in the emission table.
+We'll use the ``Noise_level_from_source`` bloc. When the using the ``Sources emission table name``, the bloc will automatically take into account the time bins defined in the emission table.
 For more details about the different parameters, browse the NoiseModelling general documentation.
 
 Let's use the previously generated table to launch our propagation calculation.
@@ -242,11 +242,11 @@ Going Further
 ---------------------
 
 Now maybe we just want to compute actual noise maps instead of just the noise levels at some specific points.
-In this case we'd want to use a different receiver grid using the ``Delaunay_Grid`` WPS bloc.
+In this case we'd want to use a different receiver grid using the ``Delaunay_Grid`` bloc.
 
-Then we can use the same ``Noise_level_from_source`` WPS blocs to calculate the noise levels at every receiver at every timestep.
+Then we can use the same ``Noise_level_from_source`` blocs to calculate the noise levels at every receiver at every timestep.
 
-You can then run a ``Create_Isosurface`` WPS bloc to create a noise map, it will also automatically detect the PERIOD and produce one noise map per time bin.
+You can then run a ``Create_Isosurface`` bloc to create a noise map, it will also automatically detect the PERIOD and produce one noise map per time bin.
 
 Here is an example of a noise map for the 10h to 10h15 time period:
 

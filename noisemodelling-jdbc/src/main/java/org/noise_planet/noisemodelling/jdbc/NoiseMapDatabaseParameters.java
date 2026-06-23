@@ -51,8 +51,9 @@ public class NoiseMapDatabaseParameters {
     /** maximum dB Error, stop calculation if the sum of further sources contributions are smaller than this value */
     public double maximumError = 0;
 
-    public int geojsonColumnSizeLimit = 1000000; // sql column size limitation for geojson
-
+    /**
+     * @return the maximum number of rays to output
+     */
     public int getMaximumRaysOutputCount() {
         return maximumRaysOutputCount;
     }
@@ -62,6 +63,7 @@ public class NoiseMapDatabaseParameters {
 
     public String receiversLevelTable = DEFAULT_RECEIVERS_LEVEL_TABLE_NAME;
     public String raysTable = "RAYS";
+    public File sceneExportFolder = null;
 
     public File sqlOutputFile;
     public Boolean sqlOutputFileCompression = true;
@@ -184,6 +186,20 @@ public class NoiseMapDatabaseParameters {
      */
     public void setRaysTable(String raysTable) {
         this.raysTable = raysTable;
+    }
+
+    /**
+     * @return The storage location of the 3D scene files or null
+     */
+    public File getSceneExportFolder() {
+        return sceneExportFolder;
+    }
+
+    /**
+     * @param sceneExportFolder The storage location of the 3D scene files or null
+     */
+    public void setSceneExportFolder(File sceneExportFolder) {
+        this.sceneExportFolder = sceneExportFolder;
     }
 
     /**

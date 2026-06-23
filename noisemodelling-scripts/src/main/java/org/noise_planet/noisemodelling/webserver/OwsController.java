@@ -730,9 +730,11 @@ public class OwsController {
                 }
 
                 // After a specified delay, abort the process if it can't handle the progress monitor cancel
+                final Logger jobLogger = LoggerFactory.getLogger(Job.getThreadName(jobId));
+                jobLogger.info("Job {} cancellation requested, will abort the job after {} seconds if it is still running.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
                 scheduledExecutorService.schedule(() -> {
                     if (job.isRunning() && job.getFuture() != null) {
-                        logger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
+                        jobLogger.warn("Aborting job {} after {} seconds.", jobId, DEFAULT_ABORT_JOB_DELAY_SECONDS);
                         // Release/Close the connections of this datasource
                         // to avoid corruption of the database
                         if(userDataSources.get(job.getUserId()) instanceof Closeable) {

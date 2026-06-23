@@ -282,6 +282,12 @@ def exec(Connection connection, Map input) {
         sql.execute("ALTER TABLE $outputTableName ADD PRIMARY KEY (${primaryKeyColumn.first()});  " as String)
     }
 
+    // Create spatial index
+    if(geomFields.size() > 0) {
+        logger.info("Create spatial index on the geometry field ${geomFields.get(0)}")
+        JDBCUtilities.createSpatialIndex(connection, TableLocation.parse(outputTableName, dbType), geomFields.get(0))
+    }
+
     resultString = "Calculation Done ! The table $outputTableName has been created."
 
     // print to command window

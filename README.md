@@ -66,8 +66,8 @@ It has been widely used for strategic noise mapping, dynamic maps driven by traf
 ![QGIS Temporal Controller interface showing a timeline for noise map playback](Docs/images/tutorial/dynamic/temporal_bar_nav.gif)
 *Example: Navigating through a dynamic noise map using the QGIS Temporal Controller.*
 
-![The NoiseModelling WPS Builder interface](Docs/images/WPS_Builder/wps_demo.png)
-*Example: The WPS Builder allows users to visually configure simulation parameters and execute spatial tasks.*
+![The NoiseModelling Builder interface](Docs/images/Builder/wps_demo.png)
+*Example: The Builder allows users to visually configure simulation parameters and execute spatial tasks.*
 
 
 Documentation
