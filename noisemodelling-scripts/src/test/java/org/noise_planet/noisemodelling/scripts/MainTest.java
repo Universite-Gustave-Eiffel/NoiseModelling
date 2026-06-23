@@ -129,8 +129,9 @@ public class MainTest {
         String roadsPath = MainTest.class.getResource("ROADS2.shp").getPath();
 
         try (Connection connection = JdbcTestCase.createPostgisDataSourceFromEnv().getConnection()) {
-            new Clean_Database().exec(connection, Map.of("areYouSure", true));
-            assertFalse(JDBCUtilities.tableExists(connection, "RECEIVERS"), "Table RECEIVERS should not exist in PostGIS");
+            connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS TESTDELAUNAY");
+            new Clean_Database().exec(connection, Map.of("areYouSure", true, "schema", "testdelaunay"));
+            assertFalse(JDBCUtilities.tableExists(connection, "testdelaunay.receivers"), "Table RECEIVERS should not exist in PostGIS");
         }
 
         Main.main("-w", temp.getAbsolutePath(),
@@ -141,7 +142,7 @@ public class MainTest {
                 "--port", pgPort,
                 "--host", pgHost,
                 "--pathFile", buildingsPath,
-                "--tableName", "BUILDINGS");
+                "--tableName", "testdelaunay.buildings");
 
         Main.main("-w", temp.getAbsolutePath(),
                 "-d", pgDb,
@@ -151,7 +152,7 @@ public class MainTest {
                 "--port", pgPort,
                 "--host", pgHost,
                 "--pathFile", roadsPath,
-                "--tableName", "ROADS");
+                "--tableName", "testdelaunay.roads");
 
         Main.main("-w", temp.getAbsolutePath(),
                 "-d", pgDb,
@@ -160,12 +161,13 @@ public class MainTest {
                 "-s", "src/main/groovy/org/noise_planet/noisemodelling/scripts/Receivers/Delaunay_Grid.groovy",
                 "--port", pgPort,
                 "--host", pgHost,
-                "--tableBuilding", "BUILDINGS",
-                "--sourcesTableName", "ROADS"
+                "--tableBuilding", "testdelaunay.buildings",
+                "--sourcesTableName", "testdelaunay.roads",
+                "--outputTableName", "testdelaunay.receivers"
                 );
 
         try (Connection connection = JdbcTestCase.createPostgisDataSourceFromEnv().getConnection()) {
-            assertTrue(JDBCUtilities.tableExists(connection, "RECEIVERS"), "Table RECEIVERS should exist in PostGIS");
+            assertTrue(JDBCUtilities.tableExists(connection, "testdelaunay.receivers"), "Table RECEIVERS should exist in PostGIS");
         }
     }
 }

@@ -27,18 +27,18 @@ Mandatory inputs
 
    Type: ``String``
 
-``password`` — *User password*
+``lt_password`` — *User password*
    User password when connecting to the external database
+
+   Type: ``String``
+
+``lt_username`` — *User name*
+   User name when connecting to the external database
 
    Type: ``String``
 
 ``remoteTableName`` — *External table name*
    External Table name or query. If a query is used instead of the original table name, then the table is read only. Queries must be enclosed in parenthesis: (SELECT * FROM ORDERS).
-
-   Type: ``String``
-
-``username`` — *User name*
-   User name when connecting to the external database
 
    Type: ``String``
 

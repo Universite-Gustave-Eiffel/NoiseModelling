@@ -161,7 +161,7 @@ Optional inputs
    Default: ``0``
 
 ``confRaysName`` — *Export scene*
-   Save each mnt, buildings and propagation rays into the specified table (ex:RAYS) or file URL (ex: file:///Z:/dir/map.kml)  You can set a table name here in order to save all the rays computed by NoiseModelling.  The number of rays has been limited in this script in order to avoid memory exception.  🛠 If not provided, then do not keep rays
+   You can provide a table name to export the propagation rays with the attenuation computation details into the specified table (ex:RAYS).You can also provide a folder path URI (ex: file:///C:/Users/joe/My%20Documents/3D%20Scene/ or file:/home/user/scene3d/; you can paste the path in the browser address to convert it to an URI) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains. The export format is KML and can be viewed into earth.google.com .🛠 If not provided nothing is exported
 
    Type: ``String``
 

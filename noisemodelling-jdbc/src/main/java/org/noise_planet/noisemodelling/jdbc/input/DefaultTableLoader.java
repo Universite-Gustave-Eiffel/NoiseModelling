@@ -486,7 +486,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         }
         String pkBuilding = "";
         final int indexPk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class),
-                new TableLocation(buildingTableParameters.buildingsTableName, dbType));
+                TableLocation.parse(buildingTableParameters.buildingsTableName, dbType));
         if(indexPk > 0) {
             pkBuilding = JDBCUtilities.getColumnName(connection, buildingTableParameters.buildingsTableName, indexPk);
             additionalQuery += ", " + pkBuilding;
@@ -744,7 +744,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         String sourceGeomName = geomFields.get(0);
         Geometry domainConstraint = geometryFactory.toGeometry(fetchEnvelope);
         Tuple<String, Integer> primaryKey = JDBCUtilities.getIntegerPrimaryKeyNameAndIndex(
-                connection.unwrap(Connection.class), new TableLocation(sourcesTableName, dbType));
+                connection.unwrap(Connection.class), TableLocation.parse(sourcesTableName, dbType));
         if (primaryKey == null) {
             throw new IllegalArgumentException(String.format("Source table %s does not contain a primary key", sourceTableIdentifier));
         }
