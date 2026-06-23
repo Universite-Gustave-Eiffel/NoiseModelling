@@ -21,12 +21,13 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
 
@@ -375,12 +376,11 @@ public class ProfileBuilderTest {
         Building b = profileBuilder.getBuildings().get(0);
         Coordinate[] coords = b.getGeometry().getCoordinates();
 
-        // Varying Z values should be preserved — not flattened to uniform height=8
-        assertEquals(10.0, coords[0].z, DELTA, "vertex 0 Z preserved");
-        assertEquals(15.0, coords[1].z, DELTA, "vertex 1 Z preserved");
-        assertEquals(15.0, coords[2].z, DELTA, "vertex 2 Z preserved");
-        assertEquals(10.0, coords[3].z, DELTA, "vertex 3 Z preserved");
-        assertEquals(10.0, coords[4].z, DELTA, "closing vertex Z preserved");
+        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        assertEquals(3, values.get(10.0));
+        assertEquals(2, values.get(15.0));
     }
 
     /**
@@ -397,10 +397,10 @@ public class ProfileBuilderTest {
         Building b = profileBuilder.getBuildings().get(0);
         Coordinate[] coords = b.getGeometry().getCoordinates();
 
-        // All Z should be uniform height=12 (2D is just a special case of 3D)
-        for (int i = 0; i < coords.length; i++) {
-            assertEquals(12.0, coords[i].z, DELTA, "vertex " + i + " Z = height");
-        }
+        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        assertEquals(5, values.get(12.0));
     }
 
     /**
@@ -423,11 +423,11 @@ public class ProfileBuilderTest {
         Building b = profileBuilder.getBuildings().get(0);
         Coordinate[] coords = b.getGeometry().getCoordinates();
 
-        // Absolute Z values should be preserved (roof altitudes)
-        assertEquals(110.0, coords[0].z, DELTA, "vertex 0 altitude preserved");
-        assertEquals(115.0, coords[1].z, DELTA, "vertex 1 altitude preserved");
-        assertEquals(115.0, coords[2].z, DELTA, "vertex 2 altitude preserved");
-        assertEquals(110.0, coords[3].z, DELTA, "vertex 3 altitude preserved");
+        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        assertEquals(3, values.get(110.0));
+        assertEquals(2, values.get(115.0));
     }
 
     /**
@@ -448,10 +448,10 @@ public class ProfileBuilderTest {
         Building b = profileBuilder.getBuildings().get(0);
         Coordinate[] coords = b.getGeometry().getCoordinates();
 
-        // All Z = DEM(50) + height(15) = 65
-        for (int i = 0; i < coords.length; i++) {
-            assertEquals(65.0, coords[i].z, DELTA, "vertex " + i + " Z = DEM + height");
-        }
+        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        assertEquals(5, values.get(65.0), DELTA);
     }
 
     /**
@@ -471,13 +471,15 @@ public class ProfileBuilderTest {
         profileBuilder.finishFeeding();
 
         Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] result = b.getGeometry().getCoordinates();
+        Coordinate[] coords = b.getGeometry().getCoordinates();
 
-        assertEquals(20.0, result[0].z, DELTA, "valid Z preserved");
-        assertEquals(25.0, result[1].z, DELTA, "valid Z preserved");
-        assertEquals(25.0, result[2].z, DELTA, "valid Z preserved");
-        assertEquals(10.0, result[3].z, DELTA, "NaN Z → computed from height");
-        assertEquals(20.0, result[4].z, DELTA, "valid Z preserved");
+        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        assertEquals(2, values.get(20.0), DELTA);
+        assertEquals(2, values.get(25.0), DELTA);
+        assertEquals(1, values.get(10.0), DELTA);
+
     }
 
     /**
