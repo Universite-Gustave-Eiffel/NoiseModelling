@@ -22,6 +22,7 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 
@@ -298,9 +299,19 @@ public class MirrorReceiversCompute {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
-                    } else{
-                        // update reflection point for inferior reflection order
-                        reflectionPoint = li.getIntersection(0);
+                    } else {
+                        // Check that the reflection point lies within the wall's height (Z)
+                        Coordinate intersect3D = li.getIntersection(0);
+                        // intersect3D z is actually sitting between the two lines at there 2D intersection.
+                        // So we need to recompute the Z value on the srcMirrRcvLine at intersection coordinates
+                        double zIntersect = Vertex.interpolateZ(intersect3D, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
+                        double zWall = Vertex.interpolateZ(intersect3D, currentWall.p0, currentWall.p1);
+                        if (zIntersect > zWall) {
+                            // Reflection would pass above the wall top — reject this mirror receiver
+                            return;
+                        }
+                        // update reflection point for inferior reflection order with interpolated Z
+                        reflectionPoint = new Coordinate(intersect3D.x, intersect3D.y, zIntersect);
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }

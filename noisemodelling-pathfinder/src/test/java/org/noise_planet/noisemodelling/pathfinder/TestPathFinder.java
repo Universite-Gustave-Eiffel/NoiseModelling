@@ -279,4 +279,46 @@ public class TestPathFinder {
             assertFalse(Double.isNaN(pt.y));
         }
     }
+
+    /**
+     * Test that wall height is taken into account when computing reflections
+     * Based on TC26 geometry but with source/receiver elevated above the wall top (Z=4).
+     */
+    @Test
+    public void testWallHeightForReflections() throws Exception {
+        GeometryFactory factory = new GeometryFactory();
+
+        // Wall at Z=4 — shorter than both source and receiver
+        ProfileBuilder builder = new ProfileBuilder();
+        // Add building
+        // screen
+        builder.addWall(new Coordinate[]{
+                        new Coordinate(74.0, 52.0, 6),
+                        new Coordinate(130.0, 60.0, 8)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
+
+                .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0)
+                .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5)
+                .setzBuildings(true)
+                .finishFeeding();
+
+        // Source and receiver both ABOVE the wall height (Z=4)
+        Scene rayData = new ProfileBuilderDecorator(builder)
+                .addSource(10, 10, 0.05)
+                .addReceiver(120, 50, 9) // just 1 meter higher than TC 26 to pass over wall
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.)
+                .build();
+        rayData.reflexionOrder = 1;
+
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        // Only direct path expected — no reflection (source & receiver are above the wall)
+        assertEquals(1, propDataOut.getCutProfiles().size(),
+            "No reflection should be computed on the building in this case");
+        assertEquals(CutProfile.PROFILE_TYPE.DIRECT, propDataOut.cutProfiles.poll().getProfileType());
+    }
 }

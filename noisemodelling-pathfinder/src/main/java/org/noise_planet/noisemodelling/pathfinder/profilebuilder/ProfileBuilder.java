@@ -886,9 +886,7 @@ public class ProfileBuilder {
             for (Building b : buildings) {
                 b.poly2D_3D();  // Normalize: NaN Z → 0, valid Z kept (3D roof preserved)
                 b.updateZTopo(this);  // Compute minimum DEM under building (needed for Building.getZ())
-                LOGGER.info(b.poly.toText());
                 b.poly.apply(new RoofElevationFilter(this, b.height));
-                LOGGER.info(b.poly.toText());
             }
             for (Wall w : walls) {
                 if(isNaN(w.p0.z) || w.p0.z == 0.0) {
@@ -930,6 +928,7 @@ public class ProfileBuilder {
                 walls.add(w);
                 w.setPrimaryKey(building.getPrimaryKey());
                 w.copyAlphas(building);
+                w.setHeight(building.getHeight());
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
@@ -1775,12 +1774,6 @@ public class ProfileBuilder {
             //Ignore
         }
     }
-
-
-    /**
-     * Hold two integers. Used to store unique triangle segments
-     */
-
 
     /**
      * Coordinate filter that sets building roof elevation per-vertex.
