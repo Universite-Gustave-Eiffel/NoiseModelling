@@ -13,9 +13,7 @@ import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.AttenuationCnossos;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPathBuilder;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,9 +24,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationComputeOutput multiThreadParent;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
-    public List<CnossosPath> pathParameters = new ArrayList<CnossosPath>();
-    public boolean keepRays = false;
+    public List<CnossosPath> pathParameters = new ArrayList<>();
+    public boolean keepRays;
 
+    /**
+     * Constructor for AttenuationVisitor object
+     *
+     * @param multiThreadParent Multithread data class
+     */
     public AttenuationVisitor(AttenuationComputeOutput multiThreadParent) {
         this.multiThreadParent = multiThreadParent;
         this.keepRays = multiThreadParent.exportPaths;
@@ -36,59 +39,64 @@ public class AttenuationVisitor implements CutPlaneVisitor {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        multiThreadParent.cutProfileCount.addAndGet(1);
         final SceneWithAttenuation scene = multiThreadParent.scene;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return PathSearchStrategy.CONTINUE;
         }
-        // Source surface reflectivity
-        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-        for(CnossosPath cnossosPath : CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, gs)) {
-            computeAttenuation(cnossosPath);
+        // Push attenuation for each period
+        if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
+            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
+                    multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
+                processAndStoreAttenuation(scene, cutProfile, cnossosParametersEntry.getKey(),
+                        cnossosParametersEntry.getValue());
+            }
+        } else {
+            processAndStoreAttenuation(scene, cutProfile, "",
+                    multiThreadParent.scene.defaultCnossosParameters);
         }
+
         return PathSearchStrategy.CONTINUE;
     }
 
     @Override
-    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList, AtomicInteger cutProfileCount) {
+    public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
+                              AtomicInteger cutProfileCount) {
 
-    }
-
-    private void processPath(String period, AttenuationParameters AttenuationParameters, CnossosPath path) {
-        double[] aGlobalMeteo = AttenuationCnossos.computeCnossosAttenuation(AttenuationParameters, path,
-                multiThreadParent.scene, multiThreadParent.exportAttenuationMatrix);
-        if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
-            multiThreadParent.cnossosPathCount.addAndGet(1);
-            if(keepRays) {
-                pathParameters.add(path);
-            }
-            receiverAttenuationLevels.add(new ReceiverNoiseLevel(
-                    new PathFinder.SourcePointInfo(path.getCutProfile().getSource()),
-                    new PathFinder.ReceiverPointInfo(path.getCutProfile().getReceiver()),
-                    period, aGlobalMeteo));
-        }
     }
 
     /**
-     * Process Cnossos propagation path to compute attenuation
-     * @param path Propagation path result
+     * Compute and store attenuation
+     *
+     * @param scene Geometrical information about the propagation scene
+     * @param cutProfile Geometrical cross-section
+     * @param period Period identifier
+     * @param AttenuationParameters parameters of the propagation computation
      */
-    public void computeAttenuation(CnossosPath path) {
-        if(!multiThreadParent.scene.cnossosParametersPerPeriod.isEmpty()) {
-            for (Map.Entry<String, AttenuationParameters> cnossosParametersEntry :
-                    multiThreadParent.scene.cnossosParametersPerPeriod.entrySet()) {
-                processPath(cnossosParametersEntry.getKey(), cnossosParametersEntry.getValue(), path);
+    private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
+                                            String period, AttenuationParameters AttenuationParameters) {
+        PropagationModel propagationModel = multiThreadParent.propagationModel;
+        List<CnossosPath> paths = propagationModel.computePaths(scene, cutProfile);
+        List<double[]> attenuationList = propagationModel.computeAttenuation(scene, cutProfile, paths,
+                AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
+        for (double[] aGlobalMeteo : attenuationList) {
+            if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
+                receiverAttenuationLevels.add(new ReceiverNoiseLevel(
+                        new PathFinder.SourcePointInfo(cutProfile.getSource()),
+                        new PathFinder.ReceiverPointInfo(cutProfile.getReceiver()),
+                        period, aGlobalMeteo));
             }
-        } else {
-            processPath("", multiThreadParent.scene.defaultCnossosParameters, path);
+        }
+        if(keepRays) {
+            pathParameters.addAll(paths);
         }
     }
 
     /**
      * No more propagation paths will be pushed for this receiver identifier
      *
-     * @param receiver
+     * @param receiver receiver point information
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {

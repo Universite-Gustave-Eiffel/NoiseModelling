@@ -1,0 +1,31 @@
+{
+  "cutPoints" : [ {
+    "type" : "Source",
+    "coordinate" : {
+      "x" : 0.0,
+      "y" : 0.0,
+      "z" : 0.75
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.0,
+    "sourcePk" : -1,
+    "li" : 1.0,
+    "orientation" : {
+      "yaw" : 0.0,
+      "pitch" : 0.0,
+      "roll" : 0.0
+    }
+  }, {
+    "type" : "Receiver",
+    "coordinate" : {
+      "x" : 75.0,
+      "y" : 0.0,
+      "z" : 5.0
+    },
+    "zGround" : 0.0,
+    "groundCoefficient" : 0.0,
+    "receiverPk" : 0
+  } ],
+  "curvedPath" : false,
+  "profileType" : "DIRECT"
+}

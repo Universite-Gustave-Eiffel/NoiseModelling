@@ -29,6 +29,7 @@ import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.documents.KMLDocument;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
+import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     /** If true, all processing are aborted and all threads will be shutdown */
     public AtomicBoolean aborted = new AtomicBoolean(false);
     private final NoiseMapDatabaseParameters noiseMapDatabaseParameters = new NoiseMapDatabaseParameters();
-    private IComputeRaysOutFactory computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
+    private IComputeRaysOutFactory computeRaysOutFactory;
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
@@ -61,11 +62,17 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
 
-    /** ?? for train source ? TODO is it related to sources ? if yes then provide a special column for this kind of source */
-
+    /**
+     * Constructor for NoiseMapByReceiverMaker object.
+     *
+     * @param buildingsTableName Buildings table
+     * @param sourcesTableName  Source table
+     * @param receiverTableName Receiver table
+     */
     public NoiseMapByReceiverMaker(String buildingsTableName, String sourcesTableName, String receiverTableName) {
         super(buildingsTableName, sourcesTableName);
         this.receiverTableName = receiverTableName;
+        computeRaysOutFactory = new DefaultCutPlaneProcessing(noiseMapDatabaseParameters, exitWhenDone, aborted);
     }
 
     /**
@@ -465,7 +472,20 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
          * @return an object that computes paths out for noise map computation.
          */
         CutPlaneVisitorFactory create(SceneWithEmission cellData);
+
+        /**
+         * Setter for propagationModelCreator
+         *
+         * @param propagationModelCreator interface for PropagationModel creation
+         */
+        void setPropagationModelCreator(PropagationModelCreator propagationModelCreator);
+
+        /**
+         * Getter for propagationModelCreator
+         *
+         * @return interface for PropagationModel creation
+         */
+        PropagationModelCreator getPropagationModelCreator();
+
     }
-
-
 }

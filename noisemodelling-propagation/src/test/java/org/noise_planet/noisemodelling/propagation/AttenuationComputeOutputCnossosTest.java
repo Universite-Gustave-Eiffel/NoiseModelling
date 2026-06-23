@@ -6162,7 +6162,6 @@ public class AttenuationComputeOutputCnossosTest {
         scene.setComputeHorizontalDiffraction(false);
         scene.setComputeVerticalDiffraction(true);
         scene.setBodyBarrier(true);
-
         AttenuationComputeOutput propDataOut2 = new AttenuationComputeOutput(true, true, scene);
         PathFinder computeRays2 = new PathFinder(scene);
         computeRays2.run(propDataOut2);
@@ -6578,6 +6577,7 @@ public class AttenuationComputeOutputCnossosTest {
         attData.setHumidity(HUMIDITY);
         attData.setTemperature(TEMPERATURE);
         scene.defaultCnossosParameters = attData;
+
 
         AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
         PathFinder pathFinder = new PathFinder(scene);

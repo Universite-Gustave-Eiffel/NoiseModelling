@@ -7,7 +7,7 @@ import org.h2gis.api.ProgressVisitor;
  */
 public interface CutPlaneVisitorFactory {
 
-    /**
+     /**
      * @param visitor Progression information, used to cancel processing too
      * @return CutPlaneVisitor instance processed by a single thread
      */
