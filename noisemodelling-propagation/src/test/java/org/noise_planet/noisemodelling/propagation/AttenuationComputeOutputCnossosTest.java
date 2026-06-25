@@ -16,9 +16,12 @@ import org.locationtech.jts.algorithm.CGAlgorithms3D;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
+import org.noise_planet.noisemodelling.pathfinder.DefaultCutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilderDecorator;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.*;
@@ -6771,6 +6774,63 @@ public class AttenuationComputeOutputCnossosTest {
         assertTrue(propDataOut.getPropagationPaths().stream().allMatch(path ->
                         path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT),
                 "Only direct paths should remain after filtering the near-receiver reflection profile.");
+    }
+
+
+    /**
+     * Test that wall height is taken into account when computing reflections.
+     * Source and receiver are positioned such that the direct line passes above
+     * the wall: the reflection must be rejected by CnossosPathBuilder.
+     */
+    @Test
+    public void testWallHeightForReflections() throws Exception {
+        GeometryFactory factory = new GeometryFactory();
+
+        // Wall at Z=4 — shorter than both source and receiver
+        ProfileBuilder builder = new ProfileBuilder();
+        // Add building
+        // screen
+        builder.addWall(new Coordinate[]{
+                        new Coordinate(74.0, 52.0, 6),
+                        new Coordinate(130.0, 60.0, 8)}, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1)
+
+                .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0)
+                .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5)
+                .setzBuildings(true)
+                .finishFeeding();
+
+        // Source and receiver both ABOVE the wall height (Z=4)
+        Scene rayData = new ProfileBuilderDecorator(builder)
+                .addSource(10, 10, 0.05)
+                .addReceiver(120, 50, 9) // just 1 meter higher than TC 26 to pass over wall
+                .hEdgeDiff(true)
+                .vEdgeDiff(true)
+                .setGs(0.)
+                .build();
+        rayData.reflexionOrder = 1;
+
+        DefaultCutPlaneVisitor propDataOut = new DefaultCutPlaneVisitor(true);
+        PathFinder computeRays = new PathFinder(rayData);
+        computeRays.setThreadCount(1);
+        computeRays.run(propDataOut);
+
+        // Process cut profiles through CnossosPathBuilder — this is where the wall height
+        // check for reflections happens
+        List<CnossosPath> allPaths = new ArrayList<>();
+        for (CutProfile cutProfile : propDataOut.getCutProfiles()) {
+            allPaths.addAll(CnossosPathBuilder.computeCnossosPathsFromCutProfile(
+                    cutProfile, rayData.isBodyBarrier(),
+                    builder.exactFrequencyArray, 0.0));
+        }
+
+        // DIRECT profile produces 2 paths (homogeneous + favourable).
+        // REFLECTION profile should produce 0 — rejected because reflection point is above the wall.
+        assertEquals(2, allPaths.size(),
+                "Only direct path expected — reflection must be rejected by wall height check");
+        // Verify all remaining paths are direct (none are reflections)
+        for (CnossosPath path : allPaths) {
+            assertEquals(CutProfile.PROFILE_TYPE.DIRECT, path.getCutProfile().getProfileType());
+        }
     }
 
     private AttenuationComputeOutput computeReflectionOnBuildingWallNearReceiver(boolean enableReflectionProfileFilter)

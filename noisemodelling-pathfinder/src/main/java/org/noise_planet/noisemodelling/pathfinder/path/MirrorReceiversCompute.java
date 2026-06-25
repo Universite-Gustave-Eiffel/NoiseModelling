@@ -277,7 +277,8 @@ public class MirrorReceiversCompute {
         @Override
         public void visitItem(Object item) {
             visitedNode++;
-            // try to excluded walls without taking into account the topography and other factors
+            // try to exclude walls without taking into account the topography and other factors
+            // we intentionnaly do not check for wall height here as meteo conditions might virtually raise or lower the wall.
 
             MirrorReceiver receiverImage = (MirrorReceiver) item;
             // Check propagation distance
@@ -300,18 +301,13 @@ public class MirrorReceiversCompute {
                         // No reflection on this wall
                         return;
                     } else {
-                        // Check that the reflection point lies within the wall's height (Z)
-                        Coordinate intersect3D = li.getIntersection(0);
-                        // intersect3D z is actually sitting between the two lines at there 2D intersection.
+                        // Set the correct height for the reflection point.
+                        // intersect3D's height is actually sitting vertically between the two lines.
+                        // But we want the reflection point to be on the line between the source and the receiver image
                         // So we need to recompute the Z value on the srcMirrRcvLine at intersection coordinates
-                        double zIntersect = Vertex.interpolateZ(intersect3D, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
-                        double zWall = Vertex.interpolateZ(intersect3D, currentWall.p0, currentWall.p1);
-                        if (zIntersect > zWall) {
-                            // Reflection would pass above the wall top — reject this mirror receiver
-                            return;
-                        }
-                        // update reflection point for inferior reflection order with interpolated Z
-                        reflectionPoint = new Coordinate(intersect3D.x, intersect3D.y, zIntersect);
+                        Coordinate intersectionPoint = li.getIntersection(0);
+                        double zIntersect = Vertex.interpolateZ(intersectionPoint, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
+                        reflectionPoint = new Coordinate(intersectionPoint.x, intersectionPoint.y, zIntersect);
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }
