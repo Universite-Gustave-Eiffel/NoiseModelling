@@ -506,14 +506,14 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                 double oldAlpha = buildingTableParameters.defaultWallAbsorption;
                 while (rs.next()) {
                     //if we don't have height of building
-                    Geometry building = rs.getGeometry();
-                    if(building != null) {
+                    Geometry buildingGeom = rs.getGeometry();
+                    if(buildingGeom != null) {
                         Geometry intersectedGeometry = null;
                         try {
-                            intersectedGeometry = building.intersection(envGeo);
+                            intersectedGeometry = buildingGeom.intersection(envGeo);
                         } catch (TopologyException ex) {
                             WKTWriter wktWriter = new WKTWriter(3);
-                            LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(building),wktWriter.write(envGeo)), ex);
+                            LOGGER.error(String.format("Error with input buildings geometry\n%s\n%s",wktWriter.write(buildingGeom),wktWriter.write(envGeo)), ex);
                         }
                         if(intersectedGeometry instanceof Polygon || intersectedGeometry instanceof MultiPolygon || intersectedGeometry instanceof LineString) {
                             if(fetchAlpha) {
@@ -527,23 +527,23 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                             for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
                                 Geometry geometry = intersectedGeometry.getGeometryN(i);
                                 if(geometry instanceof Polygon && !geometry.isEmpty()) {
-                                    Building poly = new Building((Polygon) geometry,
-                                            buildingTableParameters.heightField.isEmpty() ?
-                                                    Double.MAX_VALUE :
-                                                    rs.getDouble(buildingTableParameters.heightField),
-                                            oldAlpha, pk, buildingTableParameters.zBuildings);
-                                    buildings.add(poly);
+                                    Double relativeHeight = buildingTableParameters.heightField.isEmpty() ?
+                                            Double.NaN :
+                                            rs.getDouble(buildingTableParameters.heightField);
+                                    Building building = new Building((Polygon) geometry, relativeHeight, oldAlpha, pk);
+                                    buildings.add(building);
                                 } else if (geometry instanceof LineString) {
                                     // decompose linestring into segments
                                     LineString lineString = (LineString) geometry;
                                     Coordinate[] coordinates = lineString.getCoordinates();
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
+                                        Double relativeHeight = buildingTableParameters.heightField.isEmpty() ?
+                                                Double.NaN : rs.getDouble(buildingTableParameters.heightField);
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
                                         wall.setG(oldAlpha);
                                         wall.setPrimaryKey(pk);
-                                        wall.setHeight(buildingTableParameters.heightField.isEmpty() ?
-                                                Double.MAX_VALUE : rs.getDouble(buildingTableParameters.heightField));
+                                        wall.setRelativeHeight(relativeHeight);
                                         walls.add(wall);
                                     }
                                 }
@@ -560,9 +560,6 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         public String heightField = "HEIGHT";
         public String alphaFieldName = "G";
         public double defaultWallAbsorption = 100000;
-        /** if true take into account z value on Buildings Polygons
-         * In this case, z represent the altitude (from the sea to the top of the wall) */
-        public boolean zBuildings = false;
 
         public BuildingTableParameters() {
         }

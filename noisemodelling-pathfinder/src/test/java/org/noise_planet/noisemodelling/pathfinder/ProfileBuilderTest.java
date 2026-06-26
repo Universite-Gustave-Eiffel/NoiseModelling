@@ -323,7 +323,6 @@ public class ProfileBuilderTest {
                         new Coordinate(84.1, 8.3, 10),
                 });
         profileBuilder.addGroundEffect(0, 100, 0.0, 150, 0.5);
-        profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
         CutProfile cutProfile = profileBuilder.getProfile(new Coordinate(50,10,1), new Coordinate(100, 15, 5));
@@ -493,7 +492,7 @@ public class ProfileBuilderTest {
         profileBuilder.finishFeeding();
 
         Building b = profileBuilder.getBuildings().get(0);
-        assertEquals(15.0, b.getHeight(), DELTA, "getHeight returns declared height");
-        assertEquals(15.0, b.getZ(), DELTA, "getZ = minimumZDEM(0) + height(15)");
+        assertEquals(15.0, b.getRelativeHeight(), DELTA, "getHeight returns declared height");
+        assertEquals(15.0, b.getAverageZ(), DELTA, "getZ = minimumZDEM(0) + height(15)");
     }
 }

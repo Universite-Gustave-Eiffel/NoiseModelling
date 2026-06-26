@@ -1,15 +1,9 @@
 package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
-import org.locationtech.jts.geom.LineString;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
+import java.util.Arrays;
 
 
 public class Wall extends Obstruction {
@@ -18,8 +12,16 @@ public class Wall extends Obstruction {
     /** Id or index of the source building or topographic triangle. */
     public final int originId;
     public long primaryKey = -1;
-    /** Wall height, if -1, use z coordinate. */
-    public double height;
+
+    /** Input relative height of the wall. Can be NaN if the relative height is not defined */
+    public double relativeHeight;
+
+    /** Do the wall coordinates all have Z values? */
+    public boolean hasValidZCoordinates = false;
+
+    /** Is the wall definition valid? */
+    boolean isValid;
+
     public Coordinate p0;
     public Coordinate p1;
     public LineSegment ls;
@@ -36,6 +38,10 @@ public class Wall extends Obstruction {
         this.ls = line;
         this.originId = originId;
         this.type = type;
+//
+//        this.hasValidZCoordinates = validateZCoordinates();
+//        this.isValid = hasValidZCoordinates;
+
     }
 
     /**
@@ -50,6 +56,14 @@ public class Wall extends Obstruction {
         this.ls = new LineSegment(p0, p1);
         this.originId = originId;
         this.type = type;
+    }
+
+
+    /**
+     * Test if both point of the wall LineSegment have a valid Z value (not NaN)
+     */
+    private boolean validateZCoordinates() {
+        return (!Double.isNaN(p0.getZ()) && !Double.isNaN(p1.getZ()));
     }
 
     /**
@@ -79,10 +93,10 @@ public class Wall extends Obstruction {
 
     /**
      * Sets the wall height.
-     * @param height Wall height.
+     * @param relativeHeight Wall height.
      */
-    public void setHeight(double height) {
-        this.height = height;
+    public void setRelativeHeight(double relativeHeight) {
+        this.relativeHeight = relativeHeight;
     }
 
     public LineSegment getLineSegment() {
@@ -101,8 +115,8 @@ public class Wall extends Obstruction {
      * Retrieve the height of the wall.
      * @return Height of the wall.
      */
-    public double getHeight() {
-        return height;
+    public double getRelativeHeight() {
+        return relativeHeight;
     }
 
     public ProfileBuilder.IntersectionType getType() {

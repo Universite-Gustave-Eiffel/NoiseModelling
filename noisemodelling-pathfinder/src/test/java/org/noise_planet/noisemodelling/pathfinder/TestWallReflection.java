@@ -170,7 +170,6 @@ public class TestWallReflection {
 
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.setzBuildings(false); // building Z is height not altitude
         Csv csv = new Csv();
         WKTReader wktReader = new WKTReader();
         try(ResultSet rs = csv.read(new FileReader(

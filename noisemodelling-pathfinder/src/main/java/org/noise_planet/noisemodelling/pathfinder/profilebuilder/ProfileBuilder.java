@@ -107,10 +107,6 @@ public class ProfileBuilder {
     /** Global envelope of the builder. */
     private Envelope envelope;
 
-    /** if true take into account z value on Buildings Polygons
-     * In this case, z represent the altitude (from the sea to the top of the wall) */
-    private boolean zBuildings = false;
-
     public static final int[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new int[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
     public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 1258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
     public static final Double[] DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE = new Double[] {-30.2, -26.2, -22.5, -19.1, -16.1, -13.4, -10.9, -8.6, -6.6, -4.8, -3.2, -1.9, -0.8, 0.0, 0.6, 1.0, 1.2, 1.3, 1.2, 1.0, 0.5, -0.1, -1.1, -2.5};
@@ -118,18 +114,6 @@ public class ProfileBuilder {
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
     public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
-
-    /**
-     * @param zBuildings if true take into account z value on Buildings Polygons
-     *                   In this case, z represent the altitude (from the sea to the top of the wall). If false, Z is
-     *                   ignored and the height attribute of the Building/Wall is used to extrude the building from the DEM
-     * @return this
-     */
-    public ProfileBuilder setzBuildings(boolean zBuildings) {
-        this.zBuildings = zBuildings;
-        return this;
-    }
-
 
     /**
      * Main empty constructor.
@@ -193,6 +177,13 @@ public class ProfileBuilder {
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
             LOGGER.error("Cannot add a building with null or empty geometry.");
+        }
+        else if (!building.isValid) {
+            LOGGER.warn(
+                String.format(Locale.ROOT,
+                    "Building with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's polygon points",
+                    building.primaryKey)
+            );
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -398,10 +389,10 @@ public class ProfileBuilder {
         for (Coordinate coordinate : coordinates) {
             // Check if the source is into a building
             Building building = getBuildingAtCoordinate(coordinate);
-            if (building != null && building.getHeight() >= coordinate.z) {
+            if (building != null && building.getRelativeHeight() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
                                 " (building height {} m), it should be moved higher Geometry: {}",
-                        building.getHeight(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                        building.getRelativeHeight(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
         }
@@ -480,7 +471,7 @@ public class ProfileBuilder {
             return null;
         }
         Polygon poly = (Polygon)geom;
-        addBuilding(new Building(poly, height, alphas, id, zBuildings));
+        addBuilding(new Building(poly, height, alphas, id));
         return this;
     }
 
@@ -561,7 +552,7 @@ public class ProfileBuilder {
 
             for(int i=0; i<geom.getNumPoints()-1; i++) {
                 Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
-                wall.setHeight(height);
+                wall.setRelativeHeight(height);
                 wall.setAlpha(alphas);
                 addWall(wall);
             }
@@ -880,37 +871,26 @@ public class ProfileBuilder {
             }
             topoTree.build();
         }
-        //Update building z - per-coordinate approach: 2D roof (flat) is the special case of 3D
-        // where all vertices receive the same computed Z (using height)
-        if(topoTree != null) {
-            for (Building b : buildings) {
-                b.poly2D_3D();  // Normalize: NaN Z → 0, valid Z kept (3D roof preserved)
-                b.updateZTopo(this);  // Compute minimum DEM under building (needed for Building.getZ())
-                b.poly.apply(new RoofElevationFilter(this, b.height, true));
+
+        for (Building b : buildings) {
+            if (!b.isValid) {
+                LOGGER.error(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's polygon points", b.primaryKey));
+                return null; // we return here because the invalid buildings should already be filtered out at this point
             }
-            for (Wall w : walls) {
-                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
-                    w.p0.z = w.height + getZGround(w.p0);
-                }
-                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
-                    w.p1.z = w.height + getZGround(w.p1);
-                }
+            if (!b.hasValidZCoordinates) {
+                // These are not needed if we use applyRelativeHeightAndTopo right after
+                b.force3D();  // forces3D and set all Z to 0.0
+                b.updateZTopo(this); // get DEM = 0.0 if this.topoTree is null
+
+                b.applyRelativeHeightAndTopo(this);
             }
-        } else {
-            for (Building b : buildings) {
-                if(b != null && b.poly != null && b.poly.getCoordinate() != null) {
-                    b.poly2D_3D();  // Normalize: NaN Z → 0, valid Z kept (3D roof preserved)
-                    b.updateZTopo(this);  // Compute minimum DEM under building (needed for Building.getZ())
-                    b.poly.apply(new RoofElevationFilter(this, b.height, false));
-                }
+        }
+        for (Wall w : walls) {
+            if(isNaN(w.p0.z) || w.p0.z == 0.0) {
+                w.p0.z = w.relativeHeight + getZGround(w.p0);
             }
-            for (Wall w : walls) {
-                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
-                    w.p0.z = w.height;
-                }
-                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
-                    w.p1.z = w.height;
-                }
+            if(isNaN(w.p1.z) || w.p1.z == 0.0) {
+                w.p1.z = w.relativeHeight + getZGround(w.p1);
             }
         }
         //Process buildings
@@ -928,11 +908,10 @@ public class ProfileBuilder {
                 walls.add(w);
                 w.setPrimaryKey(building.getPrimaryKey());
                 w.copyAlphas(building);
-                w.setHeight(building.getHeight());
+                w.setRelativeHeight(building.getRelativeHeight());
                 processedWalls.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
             }
-            building.setWalls(walls);
         }
         for (int j = 0; j < walls.size(); j++) {
             Wall wall = walls.get(j);
@@ -1775,45 +1754,4 @@ public class ProfileBuilder {
         }
     }
 
-    /**
-     * Coordinate filter that sets building roof elevation per-vertex.
-     * For 2D footprints (Z=0 or NaN after normalization): sets Z = ground elevation + height.
-     * For 3D footprints (valid Z values): preserves them as-is.
-     */
-    public static class RoofElevationFilter implements CoordinateSequenceFilter {
-        boolean done = false;
-        final boolean useTopo;
-        final ProfileBuilder profileBuilder;
-        final double height;
-        final AtomicInteger triangleHint = new AtomicInteger(-1);
-
-        public RoofElevationFilter(ProfileBuilder profileBuilder, double height, boolean useTopo) {
-            this.useTopo = useTopo;
-            this.profileBuilder = profileBuilder;
-            this.height = height;
-        }
-
-        @Override
-        public boolean isGeometryChanged() { return true; }
-
-        @Override
-        public boolean isDone() { return done; }
-
-        @Override
-        public void filter(CoordinateSequence seq, int i) {
-            double z = seq.getOrdinate(i, 2);
-            if (isNaN(z) || z == 0.0) {
-                // 2D case: compute Z from ground elevation + building height
-                double groundZ = 0.0;
-                if (useTopo) {
-                    groundZ = profileBuilder.getZGround(seq.getCoordinate(i), triangleHint);
-                }
-                seq.setOrdinate(i, 2, groundZ + height);
-            }
-            // else: 3D case, keep existing valid Z (roof already has altitude information)
-            if (i == seq.size()) {
-                done = true;
-            }
-        }
-    }
 }
