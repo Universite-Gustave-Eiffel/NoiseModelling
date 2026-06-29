@@ -26,7 +26,7 @@ Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``schema`` — *Schema*
-   Schema of the database to clean.
+   Database schema to clean. A schema is a container that organizes tables, views, and other database objects. If you are unsure, leave this set to the default schema, "public"
 
    Type: ``String``
 

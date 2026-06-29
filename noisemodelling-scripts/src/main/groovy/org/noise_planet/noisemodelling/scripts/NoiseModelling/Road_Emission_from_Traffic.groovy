@@ -17,6 +17,10 @@
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
+import org.h2gis.api.EmptyProgressVisitor
+import org.h2gis.api.ProgressVisitor
+import org.h2gis.functions.spatial.edit.ST_UpdateZ
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.SpatialResultSet
@@ -85,6 +89,13 @@ inputs = [
                         description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020)',
                         default    : 2,
                         type       : Double.class
+                ],
+                outputTable: [
+                        name       : 'Output table name',
+                        title      : 'Output table name',
+                        description: '&#128736; Name of the output table. If the table already exists, it will be dropped and replaced by the new one.',
+                        default    : 'LW_ROADS',
+                        type       : String.class
                 ]
 ]
 
@@ -99,20 +110,20 @@ outputs = [
 
 
 // main function of the script
-def exec(Connection connection, Map input) {
+@CompileStatic
+def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     int coefficientVersion =  input.getOrDefault("coefficientVersion",2) as Integer
 
 
     DBTypes dbType = DBUtils.getDBType(connection)
 
-    def outputTableName = TableLocation.capsIdentifier("lw_roads", dbType)
+    def outputTableName = TableLocation.capsIdentifier(input.getOrDefault("outputTable", "lw_roads") as String, dbType)
 
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
-    connection = new ConnectionWrapper(connection)
-
-    // output string, the information given back to the user
-    String resultString = null
+    if(!connection.isWrapperFor(ConnectionWrapper.class)) {
+        connection = new ConnectionWrapper(connection)
+    }
 
     // Create a logger to display messages in the geoserver logs and in the command prompt.
     Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
@@ -171,18 +182,15 @@ def exec(Connection connection, Map input) {
         columnNames << "IDSOURCE"
     }
 
-    def force3D = false
     if (geomFields.size() > 0) {
         def geomName = geomFields.get(0)
         columnNames << geomName
 
         def tupMeta = GeometryTableUtilities.getFirstColumnMetaData(connection, sourceTableIdentifier)
         if (tupMeta != null) {
+            tupMeta.second().setHasZ(true)
             createDefinitions << "$geomName ${tupMeta.second().SQL}"
-            if (!tupMeta.second().hasZ()) {
-                force3D = true
-                logger.warn("The geometry field ${geomName} is not 3D. The z value will be forced to 0.05m height.")
-            }
+            logger.warn("The geometry field ${geomName} z value will be forced to 0.05m height.")
         }
     }
 
@@ -224,17 +232,19 @@ def exec(Connection connection, Map input) {
     // Get size of the table (number of road segments
     PreparedStatement st = connection.prepareStatement("SELECT COUNT(*) AS total FROM " + sources_table_name)
     ResultSet rs1 = st.executeQuery().unwrap(ResultSet.class)
-    while (rs1.next()) {
-        def nbRoads = rs1.getInt("total")
-        logger.info('The table '+sources_table_name+' has ' + nbRoads + ' lines.')
-    }
+    int nbRoads = sql.firstRow("SELECT COUNT(*) AS total FROM $sources_table_name" as String).total as int
+    logger.info("The table {} has {} lines.", sources_table_name, nbRoads)
+
+    ProgressVisitor subProgress = progress.subProcess(nbRoads)
 
     sql.withBatch(100, qry) { ps ->
         st = connection.prepareStatement("SELECT * FROM " + sources_table_name)
+        st.setFetchSize(500);
+        st.setFetchDirection(ResultSet.FETCH_FORWARD)
         SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
 
         Map<String, Integer> sourceFieldsCache = new HashMap<>()
-        while (rs.next()) {
+        while (rs.next() && !progress.isCanceled()) {
             List<Object> parameters = new ArrayList<>()
             if(primaryKeyColumn != null) {
                 parameters.add(rs.getInt(primaryKeyColumn.first()))
@@ -243,7 +253,7 @@ def exec(Connection connection, Map input) {
                 parameters.add(rs.getInt("IDSOURCE"))
             }
             if(geomFields.size() > 0) {
-                parameters.add(rs.getGeometry(geomFields.get(0)))
+                parameters.add(ST_UpdateZ.updateZ(rs.getGeometry(geomFields.get(0)), 0.05d))
             }
             if(hasPeriodField) {
                 parameters.add(rs.getString("PERIOD"))
@@ -269,12 +279,8 @@ def exec(Connection connection, Map input) {
                 }
             }
             ps.addBatch(parameters)
+            subProgress.endStep()
         }
-    }
-
-    if(force3D) {
-        // Force the Z height to the road segments
-        sql.execute("UPDATE $outputTableName SET THE_GEOM = ST_UPDATEZ(The_geom, 0.05);" as String)
     }
 
     if(primaryKeyColumn != null) {
@@ -288,13 +294,15 @@ def exec(Connection connection, Map input) {
         JDBCUtilities.createSpatialIndex(connection, TableLocation.parse(outputTableName, dbType), geomFields.get(0))
     }
 
-    resultString = "Calculation Done ! The table $outputTableName has been created."
-
     // print to command window
-    logger.info('\nResult : ' + resultString)
+    logger.info("Result : Calculation Done ! The table $outputTableName has been created.")
     logger.info("End : $outputTableName from Emission")
 
     // print to WPS Builder
     return [result: outputTableName]
 
+}
+
+def exec(Connection connection, Map input) {
+    return exec(connection, input, new EmptyProgressVisitor())
 }

@@ -122,7 +122,10 @@ public class NoiseModellingServerHttpTest {
                     try {
                         // Get the folders after "scripts" in the path and create the same structure in the temporary directory
                         Path relativePath = resourcePath.relativize(path);
-                        Files.createDirectories(temporaryDirectory.resolve("scripts").resolve(relativePath.getParent()));
+                        Path parentPath = relativePath.getParent();
+                        if(parentPath != null) {
+                            Files.createDirectories(temporaryDirectory.resolve("scripts").resolve(parentPath));
+                        }
                         Path targetPath = temporaryDirectory.resolve("scripts").resolve(relativePath);
                         Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {

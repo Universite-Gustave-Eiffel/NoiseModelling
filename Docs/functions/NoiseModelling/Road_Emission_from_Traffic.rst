@@ -96,6 +96,13 @@ Optional inputs
 
    Default: ``2``
 
+``outputTable`` — *Output table name*
+   🛠 Name of the output table. If the table already exists, it will be dropped and replaced by the new one.
+
+   Type: ``String``
+
+   Default: ``LW_ROADS``
+
 Output
 ------
 
