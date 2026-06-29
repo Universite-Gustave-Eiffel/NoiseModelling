@@ -20,7 +20,7 @@ Mandatory inputs
 
 ``tableRoads`` — *Roads table name*
    Name of the Roads table.
-   If you provide the PERIOD field you do not provide the fields with the extension  _D _E _N. This function recognize the following columns (* mandatory) :
+   If you provide the PERIOD field you do not need to provide the fields with the extension  _D _E _N. This function recognize the following columns (* mandatory) :
    
    *   PK  : If there is a primary key defined, it will be copied with the same name and set as a primary for the output table
    
@@ -48,6 +48,8 @@ Mandatory inputs
    
    *  WBV_SPD  : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)
    
+   *  TEMP  : Hourly average air temperature (DOUBLE)
+   
    *  LV_D LV_E LV_N  : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)
    
    *  MV_D MV_E MV_N  : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)
@@ -67,6 +69,8 @@ Mandatory inputs
    *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
    
    *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   
+   *  TEMP_D  TEMP_E  TEMP_N  : Hourly average air temperature (6-18h)(18-22h)(22-6h) (DOUBLE)
    
    *  PVMT  : CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)
    
