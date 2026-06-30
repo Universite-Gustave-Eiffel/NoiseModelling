@@ -630,12 +630,15 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                     while (rs.next()) {
                         Geometry pt = rs.getGeometry();
                         if(pt != null) {
-                            Coordinate ptCoordinate = pt.getCoordinate();
-                            profileBuilder.addTopographicPoint(ptCoordinate);
-                            if(!Double.isNaN(ptCoordinate.z)) {
-                                sumZ+=ptCoordinate.z;
-                                topoCount+=1;
+                            Coordinate ptCoordinate = pt.getCoordinate();                            
+                            if(Double.isNaN(ptCoordinate.getZ())) {                                
+                                throw new IllegalArgumentException("The table " + demTable +
+                                        " contains at least one DEM geometry without Z ordinate." +
+                                        " You must specify X,Y,Z for each DEM point/linestring vertex.");
                             }
+                            sumZ+=ptCoordinate.z;
+                            topoCount+=1;
+                            profileBuilder.addTopographicPoint(ptCoordinate);
                         }
                     }
                 }
