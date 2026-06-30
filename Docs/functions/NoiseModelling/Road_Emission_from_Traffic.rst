@@ -48,8 +48,6 @@ Mandatory inputs
    
    *  WBV_SPD  : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)
    
-   *  TEMP  : Hourly average air temperature (DOUBLE)
-   
    *  LV_D LV_E LV_N  : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)
    
    *  MV_D MV_E MV_N  : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)
@@ -69,6 +67,8 @@ Mandatory inputs
    *  WAV_SPD_D  WAV_SPD_E  WAV_SPD_N  : Hourly average mopeds, tricycles or quads ≤ 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
    
    *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
+   
+   *  TEMP  : Hourly average air temperature (DOUBLE)
    
    *  TEMP_D  TEMP_E  TEMP_N  : Hourly average air temperature (6-18h)(18-22h)(22-6h) (DOUBLE)
    
