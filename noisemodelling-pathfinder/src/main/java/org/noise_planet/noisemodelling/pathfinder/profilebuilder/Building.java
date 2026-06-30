@@ -37,7 +37,7 @@ public class Building extends Obstruction {
     long primaryKey;
 
     /**
-     * Main constructor. setting Alphas version
+     * Main constructor. setting Alphas version and or g version
      * @param poly   {@link Geometry} footprint of the building.
      * @param relativeHeight Height of the building.
      * @param alphas Absorption coefficients.
@@ -61,6 +61,13 @@ public class Building extends Obstruction {
         this.isValid = (hasValidZCoordinates || !Double.isNaN(relativeHeight));
     }
 
+    /**
+     * Main constructor. setting Alphas version
+     * @param poly   {@link Geometry} footprint of the building.
+     * @param relativeHeight Height of the building.
+     * @param alphas Absorption coefficients.
+     * @param key Primary key of the building in the database.
+     */
     public Building(Polygon poly, double relativeHeight, List<Double> alphas, long key) {
         this(poly, relativeHeight, alphas, Double.NaN, key);
     }
@@ -152,8 +159,7 @@ public class Building extends Obstruction {
     /**
      * Compute all polygon points Z (absolute altitude) based on defined relativeHeight and topo if it exists
      * Erases all previous Z values
-     * @param profileBuilder
-     * @return
+     * @param profileBuilder profileBuilder reference
      */
     public void applyRelativeHeightAndTopo(ProfileBuilder profileBuilder) {
         for (Coordinate coordinate : this.poly.getCoordinates()) {
@@ -165,8 +171,7 @@ public class Building extends Obstruction {
 
     /**
      * Compute minimum Z ground under the building contour
-     * @param profileBuilder
-     * @return
+     * @param profileBuilder profileBuilder reference
      */
     public double updateZTopo(ProfileBuilder profileBuilder) {
         Coordinate[] coordinates = poly.getBoundary().getCoordinates();

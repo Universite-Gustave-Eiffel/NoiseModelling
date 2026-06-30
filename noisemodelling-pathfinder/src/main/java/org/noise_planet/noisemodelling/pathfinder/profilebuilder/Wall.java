@@ -21,7 +21,7 @@ public class Wall extends LineObstruction {
     boolean isValid;
 
     /**
-     * Constructor using segment and id and relative height.
+     * Constructor using a lineSegment, id and relative height.
      * @param line     Segment of the wall.
      * @param originId Id or index of the source building or topographic triangle.
      */
@@ -80,7 +80,6 @@ public class Wall extends LineObstruction {
         this.isValid = hasValidZCoordinates || !Double.isNaN(relativeHeight);
     }
 
-
     /**
      * Retrieve the height of the wall.
      * @return Height of the wall.
@@ -97,8 +96,7 @@ public class Wall extends LineObstruction {
     /**
      * Compute all line points Z (absolute altitude) based on defined relativeHeight and topo if it exists
      * Erases all previous Z values
-     * @param profileBuilder
-     * @return
+     * @param profileBuilder profileBuilder reference
      */
     public void applyRelativeHeightAndTopo(ProfileBuilder profileBuilder) {
         line.p0.setZ(profileBuilder.getZGround(line.p0) + relativeHeight);
