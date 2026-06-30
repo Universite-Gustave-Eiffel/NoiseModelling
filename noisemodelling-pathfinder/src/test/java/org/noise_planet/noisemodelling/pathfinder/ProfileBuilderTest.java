@@ -73,10 +73,10 @@ public class ProfileBuilderTest {
     @Test
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10, -1);
         assertNotNull(profileBuilder.finishFeeding());
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56, -1);
 
         List<Building> list = profileBuilder.getBuildings();
         assertEquals(1, list.size());
@@ -464,7 +464,7 @@ public class ProfileBuilderTest {
                 new Coordinate(0, 0, 20),
                 new Coordinate(10, 0, 25),
                 new Coordinate(10, 10, 25),
-                new Coordinate(0, 10),    // NaN Z — 2D fallback
+                new Coordinate(0, 10),    // NaN Z — realtaive height fallback
                 new Coordinate(0, 0, 20),
         }, 10.0);
         profileBuilder.finishFeeding();
@@ -475,10 +475,7 @@ public class ProfileBuilderTest {
         Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-        assertEquals(2, values.get(20.0), DELTA);
-        assertEquals(2, values.get(25.0), DELTA);
-        assertEquals(1, values.get(10.0), DELTA);
-
+        assertEquals(5, values.get(10.0), DELTA);
     }
 
     /**

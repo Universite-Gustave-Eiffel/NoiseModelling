@@ -428,7 +428,6 @@ public class SceneWithEmissionTest {
                         new Coordinate(14, 4, 4),
                         new Coordinate(3, 16, 4),
                 }, 8, alphaWall, 1);
-        profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
 
@@ -579,7 +578,6 @@ public class SceneWithEmissionTest {
                         new Coordinate(14, 4, 4),
                         new Coordinate(3, 16, 4),
                 }, 8, alphaWall, 1);
-        profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
         SceneWithEmission scene = new SceneWithEmission(profileBuilder);

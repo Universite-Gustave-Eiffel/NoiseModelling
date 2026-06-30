@@ -12,11 +12,10 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import org.locationtech.jts.geom.*;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.Double.isNaN;
-
 
 public class Building extends Obstruction {
     /** Building coordinates. */
@@ -35,7 +34,7 @@ public class Building extends Obstruction {
     double minimumZDEM = Double.NaN;
 
     /** Primary key of the building in the database. */
-    long primaryKey = -1;
+    long primaryKey;
 
     /**
      * Main constructor. setting Alphas version
@@ -44,16 +43,26 @@ public class Building extends Obstruction {
      * @param alphas Absorption coefficients.
      * @param key Primary key of the building in the database.
      */
-    public Building(Polygon poly, double relativeHeight, List<Double> alphas, long key) {
+    public Building(Polygon poly, double relativeHeight, List<Double> alphas, double g, long key) {
         this.poly = poly;
         // Fix clock wise orientation of the polygon and inner holes
         this.poly.normalize();
         this.relativeHeight = relativeHeight;
-        setAlpha(alphas);
         this.primaryKey = key;
+
+        if (!alphas.isEmpty()) {
+            setAlpha(alphas);
+        }
+        if (!Double.isNaN(g)) {
+            setG(g);
+        }
 
         this.hasValidZCoordinates = this.validateZCoordinates();
         this.isValid = (hasValidZCoordinates || !Double.isNaN(relativeHeight));
+    }
+
+    public Building(Polygon poly, double relativeHeight, List<Double> alphas, long key) {
+        this(poly, relativeHeight, alphas, Double.NaN, key);
     }
 
     /**
@@ -64,20 +73,8 @@ public class Building extends Obstruction {
      * @param key Primary key of the building in the database.
      */
     public Building(Polygon poly, double relativeHeight, double g, long key) {
-        this.poly = poly;
-        // Fix clock wise orientation of the polygon and inner holes
-        if(this.poly != null) {
-            this.poly.normalize();
-        }
-        this.relativeHeight = relativeHeight;
-        setG(g);
-        this.primaryKey = key;
-
-        this.hasValidZCoordinates = this.validateZCoordinates();
-        this.isValid = (hasValidZCoordinates || !Double.isNaN(relativeHeight));
+        this(poly, relativeHeight, Collections.emptyList(), g, key);
     }
-
-
 
     /**
      * Forces poly to have Z coordinates.
@@ -124,7 +121,7 @@ public class Building extends Obstruction {
      * Test if all vertex in the building polygon coordinates have a valid Z value (not NaN)
      */
     private boolean validateZCoordinates() {
-        return Arrays.stream(this.poly.getCoordinates()).allMatch(coord -> !Double.isNaN(coord.getZ()));
+        return Arrays.stream(this.poly.getCoordinates()).noneMatch(coord -> Double.isNaN(coord.getZ()));
     }
 
     /**
@@ -184,9 +181,11 @@ public class Building extends Obstruction {
 
     public double getAverageZ() {
         if (hasValidZCoordinates) {
-            return Arrays.stream(poly.getCoordinates()).mapToDouble(Coordinate::getZ).average().getAsDouble();
-        } else {
-            return minimumZDEM + relativeHeight;
+            OptionalDouble average = Arrays.stream(poly.getCoordinates()).mapToDouble(Coordinate::getZ).average();
+            if (average.isPresent()) {
+                return average.getAsDouble();
+            }
         }
+        return minimumZDEM + relativeHeight;
     }
 }

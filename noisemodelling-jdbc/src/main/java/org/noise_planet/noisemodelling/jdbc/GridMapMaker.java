@@ -255,14 +255,6 @@ public abstract class GridMapMaker {
         this.sourceHasSeaLevelZCoordinates = sourceHasAbsoluteZCoordinates;
     }
 
-    public boolean iszBuildings() {
-        return buildingTableParameters.zBuildings;
-    }
-
-    public void setzBuildings(boolean zBuildings) {
-        buildingTableParameters.zBuildings = zBuildings;
-    }
-
     /**
      * Extracted from NMPB 2008-2 7.3.2
      * Soil areas POLYGON, with a dimensionless coefficient G:

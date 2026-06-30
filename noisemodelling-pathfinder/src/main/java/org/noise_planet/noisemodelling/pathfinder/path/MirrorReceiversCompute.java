@@ -207,7 +207,7 @@ public class MirrorReceiversCompute {
                     sb.append("\",0");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     sb.append("\"");
                     sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
@@ -215,15 +215,15 @@ public class MirrorReceiversCompute {
                     sb.append("\",4");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     sb.append("\"");
-                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
+                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().line.p0, res.getWall().line.p1}).
                             buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
                     sb.append("\",1");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     res = res.getParentMirror();
                     if(res != null) {

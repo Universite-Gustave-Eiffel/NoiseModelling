@@ -6116,8 +6116,8 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(3, -100, 0),
-                        new Coordinate(3, 100, 0)
+                        new Coordinate(3, -100),
+                        new Coordinate(3, 100)
                 }, 2.5,alphas,1)
                 .finishFeeding();
 
@@ -6159,7 +6159,7 @@ public class AttenuationComputeOutputCnossosTest {
         // Soft barrier (a=0.5)
 
         alphas = Arrays.asList(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
-        scene.profileBuilder.processedWalls.get(0).setAlpha(alphas);
+        scene.profileBuilder.processedObstructions.get(0).setAlpha(alphas);
         scene.reflexionOrder=1;
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
@@ -6172,8 +6172,8 @@ public class AttenuationComputeOutputCnossosTest {
         double[] values2 = propDataOut2.receiversAttenuationLevels.pop().levels;
 
         // No barrier
-        scene.profileBuilder.processedWalls.get(0).p0.z = 0;
-        scene.profileBuilder.processedWalls.get(0).p1.z = 0;
+        scene.profileBuilder.processedObstructions.get(0).line.p0.z = 0;
+        scene.profileBuilder.processedObstructions.get(0).line.p1.z = 0;
         scene.reflexionOrder=1;
         scene.maxSrcDist = 1000;
         scene.setComputeHorizontalDiffraction(false);
@@ -6416,12 +6416,12 @@ public class AttenuationComputeOutputCnossosTest {
         // e ≈ distance between building tops ≈ 40m (significant contribution to deltaPrime)
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(75, -50, 0), new Coordinate(80, -50, 0),
-                        new Coordinate(80, 50, 0), new Coordinate(75, 50, 0)
+                        new Coordinate(75, -50), new Coordinate(80, -50),
+                        new Coordinate(80, 50), new Coordinate(75, 50)
                 }, 10.0)
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(120, -50, 0), new Coordinate(125, -50, 0),
-                        new Coordinate(125, 50, 0), new Coordinate(120, 50, 0)
+                        new Coordinate(120, -50), new Coordinate(125, -50),
+                        new Coordinate(125, 50), new Coordinate(120, 50)
                 }, 10.0)
                 .finishFeeding();
 
@@ -6563,8 +6563,8 @@ public class AttenuationComputeOutputCnossosTest {
         List<Double> alphas = Arrays.asList(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(20, -100, 0),
-                        new Coordinate(20, 100, 0)
+                        new Coordinate(20, -100),
+                        new Coordinate(20, 100)
                 }, 6.0, alphas, 1)
                 .finishFeeding();
 
@@ -6796,7 +6796,6 @@ public class AttenuationComputeOutputCnossosTest {
 
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -10, 100)), 0.0)
                 .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -10, 100)), 0.5)
-                .setzBuildings(true)
                 .finishFeeding();
 
         // Source and receiver both ABOVE the wall height (Z=4)
@@ -6841,10 +6840,10 @@ public class AttenuationComputeOutputCnossosTest {
 
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(0.0, -2.5, 0.0),
-                        new Coordinate(1.0, -2.5, 0.0),
-                        new Coordinate(1.0, 2.5, 0.0),
-                        new Coordinate(0.0, 2.5, 0.0)
+                        new Coordinate(0.0, -2.5),
+                        new Coordinate(1.0, -2.5),
+                        new Coordinate(1.0, 2.5),
+                        new Coordinate(0.0, 2.5)
                 }, 5.0)
                 .finishFeeding();
 

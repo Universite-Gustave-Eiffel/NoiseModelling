@@ -28,7 +28,7 @@ public class CutPointWall  extends CutPoint {
 
     /**
      * Obstacle index in the subdomain
-     * @see ProfileBuilder#processedWalls
+     * @see ProfileBuilder#processedObstructions
      */
     @JsonIgnore
     public int processedWallIndex = -1;

@@ -472,8 +472,8 @@ public class PathFinderTest {
 
                 // Add building
                 .addWall(new Coordinate[]{
-                                new Coordinate(100, 240, 0),
-                                new Coordinate(265, -180, 0)},
+                                new Coordinate(100, 240),
+                                new Coordinate(265, -180)},
                         6, 1)
                 // Add ground effect
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
@@ -515,8 +515,8 @@ public class PathFinderTest {
 
                 // Add building
                 .addWall(new Coordinate[]{
-                                new Coordinate(175, 50, 0),
-                                new Coordinate(190, 10, 0)},
+                                new Coordinate(175, 50),
+                                new Coordinate(190, 10)},
                         6, 1)
                 // Add ground effect
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)

@@ -3,14 +3,12 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 
-import java.util.Arrays;
 
+public class Wall extends LineObstruction {
 
-public class Wall extends Obstruction {
-    /** Type of the wall */
+    /** Type of the wall: Building if coming from a polygon building or Wall if coming from a linestring definition*/
     public final ProfileBuilder.IntersectionType type;
-    /** Id or index of the source building or topographic triangle. */
-    public final int originId;
+
     public long primaryKey = -1;
 
     /** Input relative height of the wall. Can be NaN if the relative height is not defined */
@@ -22,10 +20,20 @@ public class Wall extends Obstruction {
     /** Is the wall definition valid? */
     boolean isValid;
 
-    public Coordinate p0;
-    public Coordinate p1;
-    public LineSegment ls;
-    public int processedWallIndex;
+    /**
+     * Constructor using segment and id and relative height.
+     * @param line     Segment of the wall.
+     * @param originId Id or index of the source building or topographic triangle.
+     */
+    public Wall(LineSegment line, int originId, ProfileBuilder.IntersectionType type, double relativeHeight) {
+        this.line = line;
+        this.originId = originId;
+        this.type = type;
+        this.relativeHeight = relativeHeight;
+
+        this.hasValidZCoordinates = validateZCoordinates();
+        this.isValid = hasValidZCoordinates || !Double.isNaN(relativeHeight);
+    }
 
     /**
      * Constructor using segment and id.
@@ -33,15 +41,7 @@ public class Wall extends Obstruction {
      * @param originId Id or index of the source building or topographic triangle.
      */
     public Wall(LineSegment line, int originId, ProfileBuilder.IntersectionType type) {
-        this.p0 = line.p0;
-        this.p1 = line.p1;
-        this.ls = line;
-        this.originId = originId;
-        this.type = type;
-//
-//        this.hasValidZCoordinates = validateZCoordinates();
-//        this.isValid = hasValidZCoordinates;
-
+        this(line, originId, type, Double.NaN);
     }
 
     /**
@@ -51,19 +51,14 @@ public class Wall extends Obstruction {
      * @param originId Id or index of the source building or topographic triangle.
      */
     public Wall(Coordinate p0, Coordinate p1, int originId, ProfileBuilder.IntersectionType type) {
-        this.p0 = p0;
-        this.p1 = p1;
-        this.ls = new LineSegment(p0, p1);
-        this.originId = originId;
-        this.type = type;
+        this(new LineSegment(p0, p1), originId, type);
     }
-
 
     /**
      * Test if both point of the wall LineSegment have a valid Z value (not NaN)
      */
     private boolean validateZCoordinates() {
-        return (!Double.isNaN(p0.getZ()) && !Double.isNaN(p1.getZ()));
+        return (!Double.isNaN(line.p0.getZ()) && !Double.isNaN(line.p1.getZ()));
     }
 
     /**
@@ -77,39 +72,14 @@ public class Wall extends Obstruction {
     }
 
     /**
-     * @return Index of this wall in the ProfileBuild list
-     */
-    public int getProcessedWallIndex() {
-        return processedWallIndex;
-    }
-
-    /**
-     * @param processedWallIndex Index of this wall in the ProfileBuild list
-     */
-    public Wall setProcessedWallIndex(int processedWallIndex) {
-        this.processedWallIndex = processedWallIndex;
-        return this;
-    }
-
-    /**
      * Sets the wall height.
      * @param relativeHeight Wall height.
      */
     public void setRelativeHeight(double relativeHeight) {
         this.relativeHeight = relativeHeight;
+        this.isValid = hasValidZCoordinates || !Double.isNaN(relativeHeight);
     }
 
-    public LineSegment getLineSegment() {
-        return ls;
-    }
-
-    /**
-     * Retrieve the id or index of the source building or topographic triangle.
-     * @return Id or index of the source building or topographic triangle.
-     */
-    public int getOriginId() {
-        return originId;
-    }
 
     /**
      * Retrieve the height of the wall.
@@ -121,5 +91,18 @@ public class Wall extends Obstruction {
 
     public ProfileBuilder.IntersectionType getType() {
         return type;
+    }
+
+
+    /**
+     * Compute all line points Z (absolute altitude) based on defined relativeHeight and topo if it exists
+     * Erases all previous Z values
+     * @param profileBuilder
+     * @return
+     */
+    public void applyRelativeHeightAndTopo(ProfileBuilder profileBuilder) {
+        line.p0.setZ(profileBuilder.getZGround(line.p0) + relativeHeight);
+        line.p1.setZ(profileBuilder.getZGround(line.p1) + relativeHeight);
+        hasValidZCoordinates = validateZCoordinates();
     }
 }

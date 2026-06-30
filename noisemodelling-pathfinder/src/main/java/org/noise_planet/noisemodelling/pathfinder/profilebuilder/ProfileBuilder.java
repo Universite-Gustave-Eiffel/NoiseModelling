@@ -36,10 +36,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 /**
- * Builder constructing profiles from buildings, topography and ground effects.
+ * Builder constructing profiles from buildings, topography, and ground effects.
  */
 public class ProfileBuilder {
     public static final double epsilon = 1e-7;
@@ -75,9 +74,9 @@ public class ProfileBuilder {
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
-    private STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
+    private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** RTree with Buildings's walls linestrings, walls linestring, GroundEffect linestrings
-     * The object is an integer. It's an index of the array {@link #processedWalls} */
+     * The object is an integer. It's an index of the array {@link #processedObstructions} */
     public STRtree rtree;
     private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
 
@@ -101,8 +100,8 @@ public class ProfileBuilder {
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
 
-    /** List of processed walls. */
-    public final List<Wall> processedWalls = new ArrayList<>();
+    /** List of processed LineObstructions. */
+    public final List<LineObstruction> processedObstructions = new ArrayList<>();
 
     /** Global envelope of the builder. */
     private Envelope envelope;
@@ -145,8 +144,8 @@ public class ProfileBuilder {
         exactFrequencyArray = new ArrayList<>();
         aWeightingArray = new ArrayList<>();
         initializeFrequencyArrayFromReference(this.frequencyArray, exactFrequencyArray, aWeightingArray);
-        for (Wall wall : processedWalls) {
-            wall.initialize(exactFrequencyArray);
+        for (Obstruction obstruction : processedObstructions) {
+            obstruction.initialize(exactFrequencyArray);
         }
         for (Building building : buildings) {
             building.initialize(exactFrequencyArray);
@@ -529,8 +528,15 @@ public class ProfileBuilder {
      * @param wall
      */
     public ProfileBuilder addWall(Wall wall) {
+        if (!wall.isValid) {
+            LOGGER.warn(
+                    String.format(Locale.ROOT,
+                            "Wall (a LineString in the BUILDINGS table) with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's line points",
+                            wall.primaryKey)
+            );
+        }
         walls.add(wall);
-        wallTree.insert(new Envelope(wall.p0, wall.p1), walls.size());
+        wallTree.insert(new Envelope(wall.line.p0, wall.line.p1), walls.size());
         return this;
     }
 
@@ -699,8 +705,8 @@ public class ProfileBuilder {
         return this;
     }
 
-    public List<Wall> getProcessedWalls() {
-        return processedWalls;
+    public List<LineObstruction> getProcessedObstructions() {
+        return processedObstructions;
     }
 
     /**
@@ -886,11 +892,12 @@ public class ProfileBuilder {
             }
         }
         for (Wall w : walls) {
-            if(isNaN(w.p0.z) || w.p0.z == 0.0) {
-                w.p0.z = w.relativeHeight + getZGround(w.p0);
+            if (!w.isValid) {
+                LOGGER.error(String.format(Locale.ROOT, "Wall with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's line points", w.primaryKey));
+                return null; // we return here because the invalid walls should already be filtered out at this point
             }
-            if(isNaN(w.p1.z) || w.p1.z == 0.0) {
-                w.p1.z = w.relativeHeight + getZGround(w.p1);
+            if (!w.hasValidZCoordinates) {
+                w.applyRelativeHeightAndTopo(this);
             }
         }
         //Process buildings
@@ -904,25 +911,25 @@ public class ProfileBuilder {
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
+                Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedObstructionIndex(processedObstructions.size());
                 walls.add(w);
                 w.setPrimaryKey(building.getPrimaryKey());
                 w.copyAlphas(building);
                 w.setRelativeHeight(building.getRelativeHeight());
-                processedWalls.add(w);
-                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
+                processedObstructions.add(w);
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
             }
         }
         for (int j = 0; j < walls.size(); j++) {
             Wall wall = walls.get(j);
-            Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
+            Coordinate[] coords = new Coordinate[]{wall.line.p0, wall.line.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
+                Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.WALL).setProcessedObstructionIndex(processedObstructions.size());
                 w.copyAlphas(wall);
                 w.setPrimaryKey(wall.primaryKey);
-                processedWalls.add(w);
-                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
+                processedObstructions.add(w);
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
             }
         }
         // Set buildings and walls unmodifiable
@@ -947,8 +954,8 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
-                    rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
+                    processedObstructions.add(new GroundLine(line, j).setProcessedObstructionIndex(processedObstructions.size()));
+                    rtree.insert(new Envelope(line.p0, line.p1), processedObstructions.size() - 1);
                 }
             }
         }
@@ -986,9 +993,9 @@ public class ProfileBuilder {
         List<Wall> list = new ArrayList<>();
         List<Integer> indexes = rtree.query(env);
         for(int i : indexes) {
-            Wall w = getProcessedWalls().get(i);
-            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
-                list.add(w);
+            LineObstruction obstruction = getProcessedObstructions().get(i);
+            if(obstruction instanceof Wall) {
+                list.add((Wall) obstruction);
             }
         }
         return list;
@@ -1177,7 +1184,7 @@ public class ProfileBuilder {
         newCutPoints.add(wallCutPoint);
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         // add a point at the bottom of the building on the exterior side of the building
-        Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
+        Vector2D facetVector = Vector2D.create(facetLine.line.p0, facetLine.line.p1);
         // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
         // it works also with polygon holes as interiors are CCW
         Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
@@ -1198,7 +1205,7 @@ public class ProfileBuilder {
     }
 
 
-    private boolean processGroundEffect(int processedWallIndex, Coordinate intersection, Wall facetLine,
+    private boolean processGroundEffect(int processedWallIndex, Coordinate intersection, GroundLine facetLine,
                                     LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
 
@@ -1266,37 +1273,41 @@ public class ProfileBuilder {
                     }
                     processed.add((Integer) result);
                     int i = (Integer) result;
-                    Wall facetLine = processedWalls.get(i);
-                    Coordinate intersection = fullLine.intersection(facetLine.ls);
+                    LineObstruction facetLine = processedObstructions.get(i);
+                    Coordinate intersection = fullLine.intersection(facetLine.line);
                     if (intersection != null) {
                         intersection = new Coordinate(intersection);
-                        if (!isNaN(facetLine.p0.z) && !isNaN(facetLine.p1.z)) {
+                        if (!isNaN(facetLine.line.p0.z) && !isNaN(facetLine.line.p1.z)) {
                             // same z in the line, so useless to compute interpolation between points
-                            if (Double.compare(facetLine.p0.z, facetLine.p1.z) == 0) {
-                                intersection.z = facetLine.p0.z;
+                            if (Double.compare(facetLine.line.p0.z, facetLine.line.p1.z) == 0) {
+                                intersection.z = facetLine.line.p0.z;
                             } else {
-                                intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
+                                intersection.z = Vertex.interpolateZ(intersection, facetLine.line.p0, facetLine.line.p1);
                             }
                         }
-                        switch (facetLine.type) {
-                            case BUILDING:
-                                if (!processBuilding(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
-                            case WALL:
-                                if (!processWall(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
-                            case GROUND_EFFECT:
-                                if (!processGroundEffect(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
+                        if (facetLine instanceof Wall) {
+                            Wall facetWall = (Wall) facetLine;
+                            switch (facetWall.type) {
+                                case BUILDING:
+                                    if (!processBuilding(i, intersection, facetWall, fullLine, newCutPoints,
+                                            stopAtObstacleOverSourceReceiver, profile)) {
+                                        return;
+                                    }
+                                    break;
+                                case WALL:
+                                    if (!processWall(i, intersection, facetWall, fullLine, newCutPoints,
+                                            stopAtObstacleOverSourceReceiver, profile)) {
+                                        return;
+                                    }
+                                    break;
+                            }
+                        }
+                        if (facetLine instanceof GroundLine) {
+                            GroundLine facetGroundLine = (GroundLine) facetLine;
+                            if (!processGroundEffect(i, intersection, facetGroundLine, fullLine, newCutPoints,
+                                    stopAtObstacleOverSourceReceiver, profile)) {
+                                return;
+                            }
                         }
                     }
                 }
