@@ -26,8 +26,8 @@ outputs = [result: [name: 'Result output string', title: 'Result output string',
 
 def exec(Connection connection, Map input, ProgressVisitor progress) {
     Logger logger = LoggerFactory.getLogger("tutorial")
-    ProgressVisitor tutorialProgress = progress.subProcess(7)
-    // 7 steps in this task
+    ProgressVisitor tutorialProgress = progress.subProcess(8)
+    // 8 steps in this task
 
     def resourceFolder = input.resourcesFolder as String
     // Upload files to database
@@ -41,7 +41,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     def demTable = new Import_File().exec(connection, ["pathFile": new File(resourceFolder, "dem.geojson")], tutorialProgress)["outputTable"]
 
-    def roadEmissionTable = new Road_Emission_from_Traffic().exec(connection, [tableRoads : roadsTable]).result
+    def roadEmissionTable = new Road_Emission_from_Traffic().exec(connection, [tableRoads : roadsTable], tutorialProgress).result
 
     // print some lines of road emission
     Logging.formatSqlQueryResult(new Sql(connection), "SELECT * FROM $roadEmissionTable LIMIT 10" as String)

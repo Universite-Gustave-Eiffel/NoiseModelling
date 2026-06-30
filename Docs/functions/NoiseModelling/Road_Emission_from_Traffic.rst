@@ -20,7 +20,7 @@ Mandatory inputs
 
 ``tableRoads`` — *Roads table name*
    Name of the Roads table.
-   If you provide the PERIOD field you do not provide the fields with the extension  _D _E _N. This function recognize the following columns (* mandatory) :
+   If you provide the PERIOD field you do not need to provide the fields with the extension  _D _E _N. This function recognize the following columns (* mandatory) :
    
    *   PK  : If there is a primary key defined, it will be copied with the same name and set as a primary for the output table
    
@@ -68,6 +68,10 @@ Mandatory inputs
    
    *  WBV_SPD_D  WBV_SPD_E  WBV_SPD_N  : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)
    
+   *  TEMP  : Hourly average air temperature (DOUBLE)
+   
+   *  TEMP_D  TEMP_E  TEMP_N  : Hourly average air temperature (6-18h)(18-22h)(22-6h) (DOUBLE)
+   
    *  PVMT  : CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)
    
    *  TS_STUD  : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)
@@ -95,6 +99,13 @@ Optional inputs
    Type: ``Double``
 
    Default: ``2``
+
+``outputTable`` — *Output table name*
+   🛠 Name of the output table. If the table already exists, it will be dropped and replaced by the new one.
+
+   Type: ``String``
+
+   Default: ``LW_ROADS``
 
 Output
 ------
