@@ -63,7 +63,6 @@ inputs = [
                         '<li><b> HGV_SPD </b> : Hourly average heavy duty vehicles speed (DOUBLE)</li>' +
                         '<li><b> WAV_SPD </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (DOUBLE)</li>' +
                         '<li><b> WBV_SPD </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (DOUBLE)</li>' +
-                        '<li><b> TEMP </b> : Hourly average air temperature (DOUBLE)</li>' +
                         "<li><b> LV_D </b><b>LV_E </b><b>LV_N </b> : Hourly average light vehicle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> MV_D </b><b>MV_E </b><b>MV_N </b> : Hourly average medium heavy vehicles, delivery vans > 3.5 tons,  buses, touring cars, etc. with two axles and twin tyre mounting on rear axle count (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> HGV_D </b><b> HGV_E </b><b> HGV_N </b> : Hourly average heavy duty vehicles, touring cars, buses, with three or more axles (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
@@ -74,6 +73,7 @@ inputs = [
                         "<li><b> HGV_SPD_D </b><b> HGV_SPD_E </b><b> HGV_SPD_N </b> : Hourly average heavy duty vehicles speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> WAV_SPD_D </b><b> WAV_SPD_E </b><b> WAV_SPD_N </b> : Hourly average mopeds, tricycles or quads &le; 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> WBV_SPD_D </b><b> WBV_SPD_E </b><b> WBV_SPD_N </b> : Hourly average motorcycles, tricycles or quads > 50 cc speed (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
+                        "<li><b> TEMP </b> : Hourly average air temperature (DOUBLE)</li>" +
                         "<li><b> TEMP_D </b><b> TEMP_E </b><b> TEMP_N </b> : Hourly average air temperature (6-18h)(18-22h)(22-6h) (DOUBLE)</li>" +
                         "<li><b> PVMT </b> : CNOSSOS road pavement identifier (ex: NL05)(default NL08) (VARCHAR)</li>" +
                         "<li><b> TS_STUD </b> : A limited period Ts (in months) over the year where a average proportion pm of light vehicles are equipped with studded tyres (0-12) (DOUBLE)</li>" +
