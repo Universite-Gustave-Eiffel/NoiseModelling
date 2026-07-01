@@ -36,7 +36,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import java.awt.Color;
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -258,7 +257,7 @@ public class KMLDocument {
         for(Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
-            double z = profileBuilder.getBuilding(idPoly ).getZ();
+            double z = profileBuilder.getBuilding(idPoly ).getAverageZ();
             // z is building height + average ground height
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));
@@ -309,7 +308,7 @@ public class KMLDocument {
         wallWriter.setTesselate(true);
         wallWriter.setAltitudeMode(profileBuilder.hasDem() ? KMLWriter.ALTITUDE_MODE_ABSOLUTE : KMLWriter.ALTITUDE_MODE_RELATIVETOGROUND);
         for(Wall wall : walls) {
-            Coordinate[] original = new Coordinate[]{wall.p0,wall.p1};
+            Coordinate[] original = new Coordinate[]{wall.line.p0,wall.line.p1};
             Coordinate[] coordinates = new Coordinate[original.length];
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(original[i]);

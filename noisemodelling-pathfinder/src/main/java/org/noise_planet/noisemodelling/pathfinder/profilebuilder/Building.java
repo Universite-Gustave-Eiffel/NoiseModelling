@@ -11,52 +11,100 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.geom.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 public class Building extends Obstruction {
-    /** Building footprint. */
+    /** Building coordinates. */
     Polygon poly;
-    /** Height of the building. */
-    final double height;
-    /**
-     * Minimum Z ground under building contour
-     */
+
+    /** Input relative height of the building. Can be NaN if the relative height is not defined */
+    final double relativeHeight;
+
+    /** Does the building coordinates all have Z values */
+    boolean hasValidZCoordinates = false;
+
+    /** Is the building definition valid */
+    boolean isValid;
+
+    /** Minimum Z ground under building contour */
     double minimumZDEM = Double.NaN;
 
-    /** if true take into account z value on Buildings Polygons */
-    final boolean zBuildings;
-
     /** Primary key of the building in the database. */
-    long primaryKey = -1;
-    List<Wall> walls = new ArrayList<>();
+    long primaryKey;
 
-    public Building(Polygon geometry, double height, double g, long pk, boolean zBuildings) {
-        this.poly = geometry;
+    /**
+     * Main constructor. setting Alphas version and or g version
+     * @param poly   {@link Geometry} footprint of the building.
+     * @param relativeHeight Height of the building.
+     * @param alphas Absorption coefficients.
+     * @param key Primary key of the building in the database.
+     */
+    public Building(Polygon poly, double relativeHeight, List<Double> alphas, double g, long key) {
+        this.poly = poly;
         // Fix clock wise orientation of the polygon and inner holes
-        if(this.poly != null) {
-            this.poly.normalize();
+        this.poly.normalize();
+        this.relativeHeight = relativeHeight;
+        this.primaryKey = key;
+
+        if (!alphas.isEmpty()) {
+            setAlpha(alphas);
         }
-        this.height = height;
-        setG(g);
-        this.primaryKey = pk;
-        this.zBuildings = zBuildings;
+        if (!Double.isNaN(g)) {
+            setG(g);
+        }
+
+        this.hasValidZCoordinates = this.validateZCoordinates();
+        this.isValid = (hasValidZCoordinates || !Double.isNaN(relativeHeight));
     }
 
     /**
-     *
+     * Main constructor. setting Alphas version
+     * @param poly   {@link Geometry} footprint of the building.
+     * @param relativeHeight Height of the building.
+     * @param alphas Absorption coefficients.
+     * @param key Primary key of the building in the database.
      */
-    public void poly2D_3D(){
+    public Building(Polygon poly, double relativeHeight, List<Double> alphas, long key) {
+        this(poly, relativeHeight, alphas, Double.NaN, key);
+    }
 
+    /**
+     * Main constructor. setting g version
+     * @param poly   {@link Geometry} footprint of the building.
+     * @param relativeHeight Height of the building.
+     * @param g G value.
+     * @param key Primary key of the building in the database.
+     */
+    public Building(Polygon poly, double relativeHeight, double g, long key) {
+        this(poly, relativeHeight, Collections.emptyList(), g, key);
+    }
+
+    /**
+     * Forces poly to have Z coordinates.
+     * If _any_ point in the polygon doesn't have a valid Z, forces all polygon Z values to 0.0, valid Z are lost in this operation
+     */
+    public void force3D() {
+        if (hasValidZCoordinates) {
+            return; // already 3D
+        }
+        forceZeroZ();
+    }
+
+    /**
+     * Forces all points in the polygon to have 0.0 z value
+     */
+    public void forceZeroZ() {
         GeometryFactory f = new GeometryFactory();
 
         LinearRing shell2D = poly.getExteriorRing();
         Coordinate[] newCoordinate = new Coordinate[shell2D.getNumPoints()];
         for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
-            newCoordinate[idCoordinate] = new Coordinate(shell2D.getCoordinateN(idCoordinate).getX(),shell2D.getCoordinateN(idCoordinate).getY(),0.0);
+            newCoordinate[idCoordinate] = new Coordinate(shell2D.getCoordinateN(idCoordinate).getX(),
+                    shell2D.getCoordinateN(idCoordinate).getY(), 0.0);
         }
 
         LinearRing shell3D = f.createLinearRing(newCoordinate);
@@ -67,41 +115,27 @@ public class Building extends Obstruction {
             newCoordinate = new Coordinate[lr2D.getNumPoints()];
             for (int idCoordinate=0;idCoordinate<newCoordinate.length;idCoordinate++) {
                 newCoordinate[idCoordinate] = new Coordinate(lr2D.getCoordinateN(idCoordinate).getX(),
-                        lr2D.getCoordinateN(idCoordinate).getY(),
-                        0.0);
+                        lr2D.getCoordinateN(idCoordinate).getY(), 0.0);
             }
-
             holes[idHole]=f.createLinearRing(newCoordinate);
         }
 
-
-        Polygon newPoly = f.createPolygon(shell3D, holes);
-        this.poly = newPoly;
+        this.poly = f.createPolygon(shell3D, holes);
     }
 
 
     /**
-     * Main constructor.
-     * @param poly   {@link Geometry} footprint of the building.
-     * @param height Height of the building.
-     * @param alphas Absorption coefficients.
-     * @param key Primary key of the building in the database.
+     * Test if all vertex in the building polygon coordinates have a valid Z value (not NaN)
      */
-    public Building(Polygon poly, double height, List<Double> alphas, long key, boolean zBuildings) {
-        this.poly = poly;
-        // Fix clock wise orientation of the polygon and inner holes
-        this.poly.normalize();
-        this.height = height;
-        setAlpha(alphas);
-        this.primaryKey = key;
-        this.zBuildings = zBuildings;
+    private boolean validateZCoordinates() {
+        return Arrays.stream(this.poly.getCoordinates()).noneMatch(coord -> Double.isNaN(coord.getZ()));
     }
 
     /**
      * get Height from Building
      * @return height
      */
-    public double getHeight() { return height; }
+    public double getRelativeHeight() { return relativeHeight; }
 
 
     /**
@@ -121,10 +155,23 @@ public class Building extends Obstruction {
         return primaryKey;
     }
 
+
+    /**
+     * Compute all polygon points Z (absolute altitude) based on defined relativeHeight and topo if it exists
+     * Erases all previous Z values
+     * @param profileBuilder profileBuilder reference
+     */
+    public void applyRelativeHeightAndTopo(ProfileBuilder profileBuilder) {
+        for (Coordinate coordinate : this.poly.getCoordinates()) {
+            double zTopo = profileBuilder.getZGround(coordinate);
+            coordinate.setZ(zTopo + this.relativeHeight);
+        }
+        this.hasValidZCoordinates = this.validateZCoordinates();
+    }
+
     /**
      * Compute minimum Z ground under the building contour
-     * @param profileBuilder
-     * @return
+     * @param profileBuilder profileBuilder reference
      */
     public double updateZTopo(ProfileBuilder profileBuilder) {
         Coordinate[] coordinates = poly.getBoundary().getCoordinates();
@@ -137,23 +184,13 @@ public class Building extends Obstruction {
         return minimumZDEM;
     }
 
-    public double getZ() {
-        if(Double.isNaN(minimumZDEM) || Double.isNaN(height)) {
-            return poly.getCoordinate().z;
-        } else {
-            return minimumZDEM + height;
+    public double getAverageZ() {
+        if (hasValidZCoordinates) {
+            OptionalDouble average = Arrays.stream(poly.getCoordinates()).mapToDouble(Coordinate::getZ).average();
+            if (average.isPresent()) {
+                return average.getAsDouble();
+            }
         }
-    }
-
-    /**
-     *
-     * @param walls
-     */
-    public void setWalls(List<Wall> walls) {
-        this.walls = walls;
-    }
-
-    public Collection<? extends Wall> getWalls() {
-        return walls;
+        return minimumZDEM + relativeHeight;
     }
 }

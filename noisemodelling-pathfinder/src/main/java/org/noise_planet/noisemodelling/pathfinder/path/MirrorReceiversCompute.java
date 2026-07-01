@@ -22,6 +22,7 @@ import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
 import org.locationtech.jts.math.Vector2D;
 import org.locationtech.jts.operation.buffer.BufferParameters;
+import org.locationtech.jts.triangulate.quadedge.Vertex;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 
@@ -206,7 +207,7 @@ public class MirrorReceiversCompute {
                     sb.append("\",0");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     sb.append("\"");
                     sb.append(wktWriter.write(factory.createPoint(res.getReceiverPos()).buffer(0.1,
@@ -214,15 +215,15 @@ public class MirrorReceiversCompute {
                     sb.append("\",4");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     sb.append("\"");
-                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().p0, res.getWall().p1}).
+                    sb.append(wktWriter.write(factory.createLineString(new Coordinate[]{res.getWall().line.p0, res.getWall().line.p1}).
                             buffer(0.05, 8, BufferParameters.CAP_SQUARE)));
                     sb.append("\",1");
                     sb.append(",").append(refIndex);
                     sb.append(",").append(refOrder);
-                    sb.append(",").append(res.getWall().getProcessedWallIndex());
+                    sb.append(",").append(res.getWall().getProcessedObstructionIndex());
                     sb.append(",").append(t).append("\n");
                     res = res.getParentMirror();
                     if(res != null) {
@@ -276,7 +277,8 @@ public class MirrorReceiversCompute {
         @Override
         public void visitItem(Object item) {
             visitedNode++;
-            // try to excluded walls without taking into account the topography and other factors
+            // try to exclude walls without taking into account the topography and other factors
+            // we intentionnaly do not check for wall height here as meteo conditions might virtually raise or lower the wall.
 
             MirrorReceiver receiverImage = (MirrorReceiver) item;
             // Check propagation distance
@@ -298,9 +300,14 @@ public class MirrorReceiversCompute {
                     if(!li.hasIntersection()) {
                         // No reflection on this wall
                         return;
-                    } else{
-                        // update reflection point for inferior reflection order
-                        reflectionPoint = li.getIntersection(0);
+                    } else {
+                        // Set the correct height for the reflection point.
+                        // intersect3D's height is actually sitting vertically between the two lines.
+                        // But we want the reflection point to be on the line between the source and the receiver image
+                        // So we need to recompute the Z value on the srcMirrRcvLine at intersection coordinates
+                        Coordinate intersectionPoint = li.getIntersection(0);
+                        double zIntersect = Vertex.interpolateZ(intersectionPoint, srcMirrRcvLine.p0, srcMirrRcvLine.p1);
+                        reflectionPoint = new Coordinate(intersectionPoint.x, intersectionPoint.y, zIntersect);
                     }
                     currentReceiverImage = currentReceiverImage.getParentMirror();
                 }

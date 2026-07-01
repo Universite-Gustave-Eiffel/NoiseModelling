@@ -91,9 +91,9 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
         int id = (Integer) item;
         if(!itemProcessed.contains(id)) {
             itemProcessed.add(id);
-            Wall processedWall = profileBuilder.getProcessedWalls().get(id);
+            LineObstruction processedObstruction = profileBuilder.getProcessedObstructions().get(id);
             // Check if the wall intersects with the segment (only in 2D so it is useless to have a curved path)
-            if(processedWall.getLineSegment().distance(intersectionLine) < ProfileBuilder.epsilon) {
+            if(processedObstruction.getLineSegment().distance(intersectionLine) < ProfileBuilder.epsilon) {
                 addItem(id);
             }
         }
@@ -106,7 +106,11 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
      * @param id the wall id to be added
      */
     public void addItem(int id) {
-        Wall processedWall = profileBuilder.getProcessedWalls().get(id);
+        LineObstruction processedObstruction = profileBuilder.getProcessedObstructions().get(id);
+        if (!(processedObstruction instanceof Wall)) {
+            return;
+        }
+        Wall processedWall = (Wall) processedObstruction;
         if(processedWall.type == ProfileBuilder.IntersectionType.BUILDING) {
             if (pushedBuildingsWideAnglePoints.contains(processedWall.originId)) {
                 // This building has already been pushed to input hull
@@ -145,12 +149,12 @@ public final class BuildingIntersectionPathVisitor implements ItemVisitor {
             }
             // Create the diffraction point outside the wall segment
             // Diffraction point must not intersect with wall
-            Vector2D translationVector = new Vector2D(processedWall.p0, processedWall.p1).normalize()
+            Vector2D translationVector = new Vector2D(processedWall.line.p0, processedWall.line.p1).normalize()
                     .multiply(ProfileBuilder.wideAngleTranslationEpsilon);
-            Coordinate extendedP0 = new Coordinate(processedWall.p0.x - translationVector.getX(),
-                    processedWall.p0.y - translationVector.getY(), processedWall.p0.z);
-            Coordinate extendedP1 = new Coordinate(processedWall.p1.x + translationVector.getX(),
-                    processedWall.p1.y + translationVector.getY(), processedWall.p1.z);
+            Coordinate extendedP0 = new Coordinate(processedWall.line.p0.x - translationVector.getX(),
+                    processedWall.line.p0.y - translationVector.getY(), processedWall.line.p0.z);
+            Coordinate extendedP1 = new Coordinate(processedWall.line.p1.x + translationVector.getX(),
+                    processedWall.line.p1.y + translationVector.getY(), processedWall.line.p1.z);
             List<Coordinate> roofPoints = Arrays.asList(extendedP0, extendedP1);
             if(curved) {
                 // Adjust the altitude of the building roof points to be in the curved coordinate system

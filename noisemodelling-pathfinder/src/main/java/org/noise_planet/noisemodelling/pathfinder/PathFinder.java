@@ -680,7 +680,7 @@ public class PathFinder {
             // segment or not
             Coordinate destinationPt = new Coordinate(src.position);
 
-            linters.computeIntersection(seg.p0, seg.p1,
+            linters.computeIntersection(seg.line.p0, seg.line.p1,
                     receiverReflection.getReceiverPos(),
                     destinationPt);
             while (linters.hasIntersection()) {
@@ -722,7 +722,7 @@ public class PathFinder {
                     receiverReflectionCursor = receiverReflectionCursor.getParentMirror();
                     // Update intersection data
                     seg = receiverReflectionCursor.getWall();
-                    linters.computeIntersection(seg.p0, seg.p1,
+                    linters.computeIntersection(seg.line.p0, seg.line.p1,
                             receiverReflectionCursor
                                     .getReceiverPos(),
                             destinationPt
