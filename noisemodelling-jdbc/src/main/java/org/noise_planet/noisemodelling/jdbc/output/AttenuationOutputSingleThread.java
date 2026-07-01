@@ -66,9 +66,12 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     ProgressVisitor progressVisitor;
 
     /**
-     * Constructs a NoiseMapInStack object with a multithreaded parent NoiseMap instance.
+     * Constructs a AttenuationOutputSingleThread object with a multithreaded parent
+     * AttenuationOutputMultiThread instance.
      * This class is not thread-safe
-     * @param multiThreadParent
+     *
+     * @param multiThreadParent multi thread cell computation manager
+     * @param progressVisitor progress information
      */
     public AttenuationOutputSingleThread(AttenuationOutputMultiThread multiThreadParent, ProgressVisitor progressVisitor) {
         this.multiThread = multiThreadParent;
@@ -86,11 +89,32 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
+    /**
+     * Compute the attenuation for a given geometrical cross-section and store the results.
+     *
+     * @param cutProfile geometrical cross-section
+     * @param data attenuation computation parameters
+     * @param period period identifier
+     * @param emission source emission levels for the period
+     * @param sourcePk source identifier
+     * @return path search strategy
+     */
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk) {
         return processAndStoreAttenuation(cutProfile, data, period, emission, sourcePk, new ArrayList<>());
     }
 
+    /**
+     * Compute the attenuation for a given geometrical cross-section and store the results.
+     *
+     * @param cutProfile geometrical cross-section
+     * @param data attenuation computation parameters
+     * @param period period identifier
+     * @param emission source emission levels for the period
+     * @param sourcePk source identifier
+     * @param defaultAttenuation attenuation computed with default parameters
+     * @return path search strategy
+     */
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk,
                                                           List<double[]> defaultAttenuation) {
@@ -117,9 +141,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
             defaultAttenuation.addAll(attenuationList);
         }
-//        if(isDefaultParameters && defaultAttenuation.isEmpty()) {
-//            defaultAttenuation = attenuationList;
-//        }
         for (double[] attenuationDb : attenuationList) {
             double[] attenuation = dBToW(attenuationDb);
             double[] levels;
@@ -188,7 +209,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * Update internal map with new attenuation
-     * @param noiseLevel
+     * @param noiseLevel receiver noise level
      */
     private void processNoiseLevel(ReceiverNoiseLevel noiseLevel) {
         int keyToUpdate = UNKNOWN_SOURCE_ID;
@@ -224,7 +245,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         }
 
         CutPointSource source = cutProfile.getSource();
-        CutPointReceiver receiver = cutProfile.getReceiver();
         long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
         if(scene.wjSources.isEmpty()) {
             // No emission push only attenuation for each period
@@ -377,10 +397,11 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             return new double[0];
         }
     }
+
     /**
      * No more propagation paths will be pushed for this receiver identifier
      *
-     * @param receiver
+     * @param receiver attributes of the receiver point
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
@@ -478,8 +499,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
         /**
          * merge attenuation/noise level in w
-         * @param other
-         * @return
+         * @param other noise level as a function of the period
+         * @return noise level as a function of the period
          */
         public TimePeriodParameters update(TimePeriodParameters other) {
             for (Map.Entry<String, double[]> entry : other.levelsPerPeriod.entrySet()) {
