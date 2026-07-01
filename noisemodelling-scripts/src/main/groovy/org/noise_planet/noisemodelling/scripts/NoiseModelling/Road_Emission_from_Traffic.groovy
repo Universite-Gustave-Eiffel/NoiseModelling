@@ -16,6 +16,7 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
+import groovy.sql.BatchingPreparedStatementWrapper
 import groovy.sql.Sql
 import groovy.transform.CompileStatic
 import org.h2gis.api.EmptyProgressVisitor
@@ -110,9 +111,7 @@ outputs = [
         ]
 ]
 
-
 // main function of the script
-@CompileStatic
 def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     int coefficientVersion =  input.getOrDefault("coefficientVersion",2) as Integer
@@ -244,45 +243,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         st.setFetchSize(500);
         st.setFetchDirection(ResultSet.FETCH_FORWARD)
         SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)
-
-        Map<String, Integer> sourceFieldsCache = new HashMap<>()
-        while (rs.next() && !progress.isCanceled()) {
-            List<Object> parameters = new ArrayList<>()
-            if(primaryKeyColumn != null) {
-                parameters.add(rs.getInt(primaryKeyColumn.first()))
-            }
-            if(hasIdSourceField) {
-                parameters.add(rs.getInt("IDSOURCE"))
-            }
-            if(geomFields.size() > 0) {
-                parameters.add(ST_UpdateZ.updateZ(rs.getGeometry(geomFields.get(0)), 0.05d))
-            }
-            if(hasPeriodField) {
-                parameters.add(rs.getString("PERIOD"))
-                // Slope value will be overwritten if the slope field is present
-                double slope = EmissionTableGenerator.getSlope(rs)
-                double[] emissionValues = EmissionTableGenerator.getEmissionFromTrafficTable(rs, "", slope, coefficientVersion, sourceFieldsCache)
-                for(double val : emissionValues) {
-                    parameters.add(val)
-                }
-            } else {
-                double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
-                def lday = AcousticIndicatorsFunctions.wToDb(results[0])
-                def levening = AcousticIndicatorsFunctions.wToDb(results[1])
-                def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
-                for(def val : lday) {
-                    parameters.add(val)
-                }
-                for(def val : levening) {
-                    parameters.add(val)
-                }
-                for(def val : lnight) {
-                    parameters.add(val)
-                }
-            }
-            ps.addBatch(parameters)
-            subProgress.endStep()
-        }
+        convertTrafficToEmission(rs, progress, primaryKeyColumn, hasIdSourceField, geomFields, hasPeriodField,
+                coefficientVersion, ps, subProgress)
     }
 
     if(primaryKeyColumn != null) {
@@ -303,6 +265,52 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // print to WPS Builder
     return [result: outputTableName]
 
+}
+
+@CompileStatic
+private static void convertTrafficToEmission(SpatialResultSet rs, ProgressVisitor progress,
+                                             Tuple<String, Integer> primaryKeyColumn, boolean hasIdSourceField,
+                                             List<String> geomFields, boolean hasPeriodField, int coefficientVersion,
+                                             BatchingPreparedStatementWrapper ps, ProgressVisitor subProgress) {
+    Map<String, Integer> sourceFieldsCache = new HashMap<>()
+    while (rs.next() && !progress.isCanceled()) {
+        List<Object> parameters = new ArrayList<>()
+        if (primaryKeyColumn != null) {
+            parameters.add(rs.getInt(primaryKeyColumn.first()))
+        }
+        if (hasIdSourceField) {
+            parameters.add(rs.getInt("IDSOURCE"))
+        }
+        if (geomFields.size() > 0) {
+            parameters.add(ST_UpdateZ.updateZ(rs.getGeometry(geomFields.get(0)), 0.05d))
+        }
+        if (hasPeriodField) {
+            parameters.add(rs.getString("PERIOD"))
+            // Slope value will be overwritten if the slope field is present
+            double slope = EmissionTableGenerator.getSlope(rs)
+            double[] emissionValues = EmissionTableGenerator.getEmissionFromTrafficTable(rs, "", slope,
+                    coefficientVersion, sourceFieldsCache)
+            for (double val : emissionValues) {
+                parameters.add(val)
+            }
+        } else {
+            double[][] results = EmissionTableGenerator.computeLw(rs, coefficientVersion, sourceFieldsCache)
+            def lday = AcousticIndicatorsFunctions.wToDb(results[0])
+            def levening = AcousticIndicatorsFunctions.wToDb(results[1])
+            def lnight = AcousticIndicatorsFunctions.wToDb(results[2])
+            for (def val : lday) {
+                parameters.add(val)
+            }
+            for (def val : levening) {
+                parameters.add(val)
+            }
+            for (def val : lnight) {
+                parameters.add(val)
+            }
+        }
+        ps.addBatch(parameters)
+        subProgress.endStep()
+    }
 }
 
 def exec(Connection connection, Map input) {
