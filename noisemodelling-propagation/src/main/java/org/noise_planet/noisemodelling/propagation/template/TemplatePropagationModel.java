@@ -38,7 +38,7 @@ public class TemplatePropagationModel implements PropagationModel {
      * @param cutProfile Geometrical cross-section
      * @param paths List of propagation paths (Cnossos specific)
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
+     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      * @return Attenuation for the homogeneous and favourable path
      */
     public List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<AttenuationOutput> paths,
@@ -59,7 +59,7 @@ public class TemplatePropagationModel implements PropagationModel {
      * @param receiver receiver point information
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
+     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      * @return Attenuation
      */
     public double[] computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
