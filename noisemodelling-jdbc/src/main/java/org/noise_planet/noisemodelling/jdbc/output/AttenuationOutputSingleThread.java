@@ -22,6 +22,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 import java.util.*;
@@ -128,7 +129,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         if(!defaultAttenuation.isEmpty()){
             attenuationList = defaultAttenuation;
         } else {
-            List<AttenuationOutput> attenuationOutputs = propagationModel.computePaths(scene, cutProfile);
+            List<CnossosPath> attenuationOutputs = propagationModel.computePaths(scene, cutProfile);
             attenuationList = propagationModel.computeAttenuation(scene, cutProfile, attenuationOutputs, data,
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
             // export path per period if required, in the case of a Cnossos propagation model

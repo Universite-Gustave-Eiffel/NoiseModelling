@@ -48,7 +48,15 @@ public class CnossosPath {
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
     double gs;
     // computed in Augmented Path
-    public boolean keepAbsorption = false;
+
+    /**
+     * Step delta, in meters, between the receiver-source line and the top of the diffraction point in the path.
+     */
+    public double delta = Double.MAX_VALUE;
+    public double deltaPrime= Double.MAX_VALUE;
+    public double deltaSPrimeR= Double.MAX_VALUE;
+    public double deltaSRPrime= Double.MAX_VALUE;
+    public double e=0;
 
     public CnossosPath() {
     }

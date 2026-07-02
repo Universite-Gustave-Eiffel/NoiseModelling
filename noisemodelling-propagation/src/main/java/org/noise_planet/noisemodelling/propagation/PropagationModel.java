@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 import java.util.List;
 
@@ -25,12 +26,11 @@ public interface PropagationModel {
      *
      * @param scene Geometrical information about the propagation scene
      * @param cutProfile Geometrical cross-section
-     * @param paths List of propagation paths (Cnossos specific)
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return Attenuation for the homogeneous and favourable path
+     * @param isExportAttenuationMatrix if true, store intermediate values in AttenuationOutput for debugging purpose
+     * @return List of AttenuationOutput objects (some propagation models return several AttenuationOutput per cutProfile)
      */
-    List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<AttenuationOutput> paths,
+    List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix);
 
@@ -42,20 +42,10 @@ public interface PropagationModel {
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return Attenuation
+     * @return AttenuationOutput object
      */
-    double[] computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
+    AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
                                       SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix);
 
-    /**
-     * Compute the propagation paths for a given geometrical cross-section / cut profile
-     * (Specific to Cnossos propagation model, will be removed after pathFinder module
-     * refacto)
-     *
-     * @param scene Geometrical information about the propagation scene
-     * @param cutProfile Geometrical cross-section
-     * @return List of Cnossos propagation paths
-     */
-    List<AttenuationOutput> computePaths(SceneWithAttenuation scene, CutProfile cutProfile);
 }

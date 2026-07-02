@@ -16,7 +16,12 @@ import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 /**
  * Output of the attenuation computation (data class).
  */
-public class AttenuationOutput extends CnossosPath {
+public class AttenuationOutput {
+    CutProfile cutProfile;
+
+    /**
+     * Intermediate attenuation.
+     */
     public  double[] aAtm = new double[0];
     public  double[] aDiv = new double[0];
     public  double[] aRef = new double[0];
@@ -35,24 +40,23 @@ public class AttenuationOutput extends CnossosPath {
     public  double[] aGlobalRaw = new double[0];
     public double[] aDif = new double[0];
     public double[] aSource = new double[0]; // directivity attenuation
-    /**
-     * Step delta, in meters, between the receiver-source line and the top of the diffraction point in the path.
-     */
-    public double delta = Double.MAX_VALUE;
-    public double deltaPrime= Double.MAX_VALUE;;
-    public double deltaSPrimeR= Double.MAX_VALUE;
-    public double deltaSRPrime= Double.MAX_VALUE;
-    public ABoundary aBoundary = new ABoundary();;
+
+    public ABoundary aBoundary = new ABoundary();
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
-    public double e=0;
     public double deltaRetro= Double.MAX_VALUE;
+    public boolean keepAbsorption = false;
+
+    /**
+     * CNOSSOS specific attributes
+     */
+    public CnossosPath propagationPath = new CnossosPath();
 
     public void init(int size) {
         this.aAtm = new double[size];
         this.aDiv = new double[size];
         this.aRef = new double[size];
-        this.double_aBoundary = new double[size];;
-        this.aGlobal = new double[size];;
+        this.double_aBoundary = new double[size];
+        this.aGlobal = new double[size];
         this.aDif = new double[size];
         this.aGlobal = new double[size];
         this.aSource = new double[size];
@@ -63,11 +67,12 @@ public class AttenuationOutput extends CnossosPath {
     }
 
     public AttenuationOutput(CutProfile cutProfile) {
-        super(cutProfile);
+        this.cutProfile = cutProfile;
     }
 
     public AttenuationOutput(AttenuationOutput other) {
-        super(other);
+        this.cutProfile = other.cutProfile;
+        this.aGlobalRaw = other.aGlobalRaw;
         this.aAtm = other.aAtm;
         this.aDiv = other.aDiv;
         this.aRef = other.aRef;
@@ -84,6 +89,7 @@ public class AttenuationOutput extends CnossosPath {
         this.groundAttenuation = other.groundAttenuation;
         this.e = other.e;
         this.deltaRetro = other.deltaRetro;
+        this.propagationPath = other.propagationPath;
     }
 
     public static class ABoundary {
