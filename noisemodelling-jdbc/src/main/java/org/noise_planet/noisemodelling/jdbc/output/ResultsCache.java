@@ -26,7 +26,7 @@ public class ResultsCache implements ProfilerThread.Metric {
     public final AtomicLong queueSize = new AtomicLong(0);
     public final AtomicLong totalRaysInserted = new AtomicLong(0);
     public final ConcurrentLinkedDeque<ReceiverNoiseLevel> receiverLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<AttenuationOutput> cnossosPaths = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
 
 
     @Override

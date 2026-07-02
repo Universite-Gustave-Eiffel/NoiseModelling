@@ -411,8 +411,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
             try {
                 if(!resultsCache.receiverLevels.isEmpty()) {
                     processStack(databaseParameters.receiversLevelTable, resultsCache.receiverLevels);
-                } else if(!resultsCache.cnossosPaths.isEmpty()) {
-                    processRaysStack(resultsCache.cnossosPaths);
+                } else if(!resultsCache.attenuationOutputs.isEmpty()) {
+                    processRaysStack(resultsCache.attenuationOutputs);
                 } else {
                     if(exitWhenDone.get()) {
                         break;

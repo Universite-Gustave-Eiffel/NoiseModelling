@@ -200,8 +200,8 @@ public class SceneWithEmissionTest {
         assertEquals(baselineReceiverKeys, optimizedReceiverKeys,
                 "Optimized run should keep the same source-period receiver contributions as baseline");
 
-        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.cnossosPaths);
-        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.cnossosPaths);
+        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.attenuationOutputs);
+        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.attenuationOutputs);
         assertEquals(baselineRayKeys, optimizedRayKeys,
                 "Optimized run should keep the same source-period ray contributions as baseline");
 
@@ -605,7 +605,7 @@ public class SceneWithEmissionTest {
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(profileBuilder, 112.0));
 
         AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
-        assertTrue(baseline.resultsCache.cnossosPaths.stream().anyMatch(cnossosPath ->
+        assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(cnossosPath ->
                         cnossosPath.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
                 "Baseline scene should include at least one reflection path");
 
