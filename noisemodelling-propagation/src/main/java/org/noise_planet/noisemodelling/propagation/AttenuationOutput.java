@@ -7,15 +7,16 @@
  * Contact: contact@noise-planet.org
  */
 
-package org.noise_planet.noisemodelling.propagation.cnossos;
+package org.noise_planet.noisemodelling.propagation;
 
 
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.propagation.cnossos.Path;
 
 /**
  * Attenuation computed from vertical Profile and scene settings following CNOSSOS-EU method.
  */
-public class CnossosPath extends Path {
+public class AttenuationOutput extends Path {
     public  double[] aAtm = new double[0];
     public  double[] aDiv = new double[0];
     public  double[] aRef = new double[0];
@@ -58,14 +59,14 @@ public class CnossosPath extends Path {
         this.aRetroDiff = new double[size];
     }
 
-    public CnossosPath() {
+    public AttenuationOutput() {
     }
 
-    public CnossosPath(CutProfile cutProfile) {
+    public AttenuationOutput(CutProfile cutProfile) {
         super(cutProfile);
     }
 
-    public CnossosPath(CnossosPath other) {
+    public AttenuationOutput(AttenuationOutput other) {
         super(other);
         this.aAtm = other.aAtm;
         this.aDiv = other.aDiv;

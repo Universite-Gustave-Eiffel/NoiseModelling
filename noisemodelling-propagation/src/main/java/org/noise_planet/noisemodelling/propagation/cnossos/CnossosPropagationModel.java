@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.PropagationModel;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
@@ -38,7 +39,7 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param cutProfile Geometrical cross-section
      * @return List of Cnossos propagation paths
      */
-    public List<CnossosPath> computePaths(SceneWithAttenuation scene, CutProfile cutProfile){
+    public List<AttenuationOutput> computePaths(SceneWithAttenuation scene, CutProfile cutProfile){
         double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
         return CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
                 scene.profileBuilder.exactFrequencyArray, gs);
@@ -54,11 +55,11 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return Attenuation for the homogeneous and favourable path
      */
-    public List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<CnossosPath> paths,
+    public List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<AttenuationOutput> paths,
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix) {
         List<double[]> attenuationList = new ArrayList<>();
-        for (CnossosPath path : paths){
+        for (AttenuationOutput path : paths){
             attenuationList.add(AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, path,
                     scene, isExportAttenuationMatrix));
         }
@@ -79,7 +80,7 @@ public class CnossosPropagationModel implements PropagationModel {
                                              SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
                                              boolean isExportAttenuationMatrix){
         CutProfile cutProfile = new CutProfile(new CutPointSource(source), new CutPointReceiver(receiver));
-        CnossosPath cnossosPath = new CnossosPath(cutProfile);
+        AttenuationOutput cnossosPath = new AttenuationOutput(cutProfile);
         cnossosPath.setFavourable(true);
         cnossosPath.setPointList(new ArrayList<>());
         List<Coordinate> pts2D = cutProfile.computePts2D();

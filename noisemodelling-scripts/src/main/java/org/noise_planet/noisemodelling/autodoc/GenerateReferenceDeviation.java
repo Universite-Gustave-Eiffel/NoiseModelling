@@ -19,7 +19,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.*;
 
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,8 +198,8 @@ public class GenerateReferenceDeviation {
                 utName));
     }
 
-    private static CnossosPath fetchPath(List<CnossosPath> paths, CutProfile.PROFILE_TYPE profileType, boolean favourable) {
-        for(CnossosPath path : paths) {
+    private static AttenuationOutput fetchPath(List<AttenuationOutput> paths, CutProfile.PROFILE_TYPE profileType, boolean favourable) {
+        for(AttenuationOutput path : paths) {
             if(path.getCutProfile().profileType == profileType && path.isFavourable() == favourable) {
                 return path;
             }
@@ -207,8 +207,8 @@ public class GenerateReferenceDeviation {
         return null;
     }
 
-    private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<CnossosPath> paths, double[] powerLevel) {
-        CnossosPath homogenous = fetchPath(paths, profileType, false);
+    private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<AttenuationOutput> paths, double[] powerLevel) {
+        AttenuationOutput homogenous = fetchPath(paths, profileType, false);
         String utName = PATH_NAMES[profileType.ordinal()];
         assert homogenous != null;
         double[] actualLH = addArray(homogenous.aGlobalRaw, powerLevel);
@@ -229,7 +229,7 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            CnossosPath favourablePath = fetchPath(paths, profileType, true);
+            AttenuationOutput favourablePath = fetchPath(paths, profileType, true);
             if(favourablePath != null) {
                 double[] actualLF = addArray(favourablePath.aGlobalRaw, powerLevel);
                 double[] expectedLF = asArray(expectedValues.get("LF"));

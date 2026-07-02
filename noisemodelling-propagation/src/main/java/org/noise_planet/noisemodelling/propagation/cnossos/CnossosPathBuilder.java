@@ -13,6 +13,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointWall;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +32,7 @@ public class CnossosPathBuilder {
     public static final double ALPHA0 = 2e-4;
     private static final double EPSILON = 1e-7;
 
-    public static void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, CnossosPath pathParameters,
+    public static void computeRayleighDiff(SegmentPath srSeg, CutProfile cutProfile, AttenuationOutput pathParameters,
                                      LineSegment dSR, List<SegmentPath> segments, List<PointPath> points,
                                      List<Coordinate> pts2D, Coordinate[] pts2DGround, List<Integer> cut2DGroundIndex,
                                            List<Double> exactFrequencyArray) {
@@ -193,17 +194,17 @@ public class CnossosPathBuilder {
      * @param gS Ground factor of the source area
      * @return The cnossos path or null
      */
-    public static List<CnossosPath> computeCnossosPathsFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
-        List<CnossosPath> cnossosPaths = new ArrayList<>();
+    public static List<AttenuationOutput> computeCnossosPathsFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS) {
+        List<AttenuationOutput> cnossosPaths = new ArrayList<>();
         if(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
-            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, false);
+            AttenuationOutput cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, false);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
             cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, true);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
         } else if (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT) {
-            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, cutProfile.curvedPath);
+            AttenuationOutput cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, cutProfile.curvedPath);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
         }
         return cnossosPaths;
@@ -219,7 +220,7 @@ public class CnossosPathBuilder {
      * @param favourable Compute the favourable contribution for the provided profile
      * @return The cnossos path or null
      */
-    public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favourable) {
+    public static AttenuationOutput computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favourable) {
         if(favourable &&
                 (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                         cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
@@ -279,7 +280,7 @@ public class CnossosPathBuilder {
         srPath.setPoints2DGround(pts2DGround);
         srPath.dc = CGAlgorithms3D.distance(cutProfile.getReceiver().getCoordinate(),
                 cutProfile.getSource().getCoordinate());
-        CnossosPath cnossosPath = new CnossosPath(cutProfile);
+        AttenuationOutput cnossosPath = new AttenuationOutput(cutProfile);
         cnossosPath.setFavourable(favourable);
         cnossosPath.setPointList(points);
         cnossosPath.setSegmentList(segments);

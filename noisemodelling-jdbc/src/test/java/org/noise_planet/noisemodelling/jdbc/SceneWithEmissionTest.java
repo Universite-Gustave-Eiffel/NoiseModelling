@@ -27,14 +27,13 @@ import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,9 +183,9 @@ public class SceneWithEmissionTest {
         return counts;
     }
 
-    private static Map<String, Integer> countSourcePeriodRays(Collection<CnossosPath> cnossosPaths) {
+    private static Map<String, Integer> countSourcePeriodRays(Collection<AttenuationOutput> cnossosPaths) {
         Map<String, Integer> counts = new HashMap<>();
-        for (CnossosPath cnossosPath : cnossosPaths) {
+        for (AttenuationOutput cnossosPath : cnossosPaths) {
             String key = cnossosPath.getTimePeriod() + "#" + cnossosPath.getCutProfile().getSource().sourcePk;
             counts.merge(key, 1, Integer::sum);
         }

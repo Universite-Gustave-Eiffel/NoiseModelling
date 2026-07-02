@@ -11,7 +11,6 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 import java.util.List;
 
@@ -31,7 +30,7 @@ public interface PropagationModel {
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
      * @return Attenuation for the homogeneous and favourable path
      */
-    List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<CnossosPath> paths,
+    List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<AttenuationOutput> paths,
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix);
 
@@ -58,5 +57,5 @@ public interface PropagationModel {
      * @param cutProfile Geometrical cross-section
      * @return List of Cnossos propagation paths
      */
-    List<CnossosPath> computePaths(SceneWithAttenuation scene, CutProfile cutProfile);
+    List<AttenuationOutput> computePaths(SceneWithAttenuation scene, CutProfile cutProfile);
 }

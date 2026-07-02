@@ -13,7 +13,6 @@ import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitor;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationComputeOutput multiThreadParent;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
-    public List<CnossosPath> pathParameters = new ArrayList<>();
+    public List<AttenuationOutput> pathParameters = new ArrayList<>();
     public boolean keepRays;
 
     /**
@@ -77,7 +76,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                             String period, AttenuationParameters AttenuationParameters) {
         PropagationModel propagationModel = multiThreadParent.propagationModel;
-        List<CnossosPath> paths = propagationModel.computePaths(scene, cutProfile);
+        List<AttenuationOutput> paths = propagationModel.computePaths(scene, cutProfile);
         List<double[]> attenuationList = propagationModel.computeAttenuation(scene, cutProfile, paths,
                 AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
         for (double[] aGlobalMeteo : attenuationList) {
