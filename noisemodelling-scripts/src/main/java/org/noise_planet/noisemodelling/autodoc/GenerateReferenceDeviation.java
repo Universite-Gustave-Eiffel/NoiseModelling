@@ -90,7 +90,7 @@ public class GenerateReferenceDeviation {
         return result;
     }
 
-    private static AttenuationComputeOutput computeCnossosPath(String... utNames)
+    private static AttenuationComputeOutput computeAttenuationOutput(String... utNames)
             throws IOException {
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
@@ -300,8 +300,8 @@ public class GenerateReferenceDeviation {
                         verticalCutFileNames.add(utName+"_Reflection");
                         verticalCutFileNamesWithoutLateral.add(utName+"_Reflection");
                     }
-                    AttenuationComputeOutput attenuationComputeOutput = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
-                    AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
+                    AttenuationComputeOutput attenuationComputeOutput = computeAttenuationOutput(verticalCutFileNames.toArray(new String[]{}));
+                    AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeAttenuationOutput(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
                     addUTDeviation(utName, stringBuilderTable, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel, fullPass, directPass);
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");

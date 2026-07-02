@@ -26,7 +26,8 @@ import java.util.List;
 import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.GeometryUtils.projectPointOnSegment;
 
 /**
- * PropagationPath
+ * Propagation path from vertical Profile and scene settings following CNOSSOS-EU method.
+ *
  * @author Nicolas Fortin
  * @author Pierre Aumond
  */
@@ -34,7 +35,7 @@ import static org.noise_planet.noisemodelling.pathfinder.utils.geometry.Geometry
 // todo get out all the useless computations and functions
 // todo please revise public, private, etc.
 
-public class Path {
+public class CnossosPath {
     public static final int FOOTER_RESERVED_SIZE = 120; // reserved size for geojson footer
     CutProfile cutProfile; // vertical plane between source and receiver used to compute the propagation ray path attributes
     // given by user
@@ -49,15 +50,15 @@ public class Path {
     // computed in Augmented Path
     public boolean keepAbsorption = false;
 
-    public Path() {
+    public CnossosPath() {
     }
 
-    public Path(CutProfile cutProfile) {
+    public CnossosPath(CutProfile cutProfile) {
         this.cutProfile = cutProfile;
         setSourceOrientation(cutProfile.getSource().orientation);
     }
 
-    public Path(Path other) {
+    public CnossosPath(CnossosPath other) {
         this.cutProfile = other.cutProfile;
         this.srSegment = other.srSegment;
         this.pointList = other.pointList;
@@ -193,7 +194,7 @@ public class Path {
     public void setSRSegment(SegmentPath srSegment) {this.srSegment = srSegment;}
 
 
-    public Path(List<SegmentPath> segmentList) {
+    public CnossosPath(List<SegmentPath> segmentList) {
         this.segmentList = segmentList;
     }
 

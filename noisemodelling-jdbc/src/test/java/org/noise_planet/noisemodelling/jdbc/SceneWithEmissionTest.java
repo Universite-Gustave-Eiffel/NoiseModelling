@@ -183,10 +183,10 @@ public class SceneWithEmissionTest {
         return counts;
     }
 
-    private static Map<String, Integer> countSourcePeriodRays(Collection<AttenuationOutput> cnossosPaths) {
+    private static Map<String, Integer> countSourcePeriodRays(Collection<AttenuationOutput> attenuationOutputs) {
         Map<String, Integer> counts = new HashMap<>();
-        for (AttenuationOutput cnossosPath : cnossosPaths) {
-            String key = cnossosPath.getTimePeriod() + "#" + cnossosPath.getCutProfile().getSource().sourcePk;
+        for (AttenuationOutput attenuationOutput : attenuationOutputs) {
+            String key = attenuationOutput.getTimePeriod() + "#" + attenuationOutput.getCutProfile().getSource().sourcePk;
             counts.merge(key, 1, Integer::sum);
         }
         return counts;
@@ -605,8 +605,8 @@ public class SceneWithEmissionTest {
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(profileBuilder, 112.0));
 
         AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
-        assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(cnossosPath ->
-                        cnossosPath.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
+        assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(attenuationOutput ->
+                        attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
                 "Baseline scene should include at least one reflection path");
 
         AttenuationOutputMultiThread optimized = runSceneWithMaximumError(scene, maxError);

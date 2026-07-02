@@ -11,12 +11,12 @@ package org.noise_planet.noisemodelling.propagation;
 
 
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.cnossos.Path;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 /**
- * Attenuation computed from vertical Profile and scene settings following CNOSSOS-EU method.
+ * Output of the attenuation computation (data class).
  */
-public class AttenuationOutput extends Path {
+public class AttenuationOutput extends CnossosPath {
     public  double[] aAtm = new double[0];
     public  double[] aDiv = new double[0];
     public  double[] aRef = new double[0];

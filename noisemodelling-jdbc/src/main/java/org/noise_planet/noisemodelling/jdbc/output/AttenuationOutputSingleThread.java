@@ -136,9 +136,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
                 for (AttenuationOutput proPathParameters : attenuationOutputs) {
-                    AttenuationOutput cnossosPath = new AttenuationOutput(proPathParameters);
-                    cnossosPath.setTimePeriod(period);
-                    this.attenuationOutputs.add(cnossosPath);
+                    AttenuationOutput attenuationOutput = new AttenuationOutput(proPathParameters);
+                    attenuationOutput.setTimePeriod(period);
+                    this.attenuationOutputs.add(attenuationOutput);
                 }
             }
             defaultAttenuation.addAll(attenuationList);
