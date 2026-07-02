@@ -98,15 +98,16 @@ public class NoiseMapWriter implements Callable<Boolean> {
         return mapper.writer();
     }
 
-    public String propagationPathAsJSON(AttenuationOutput path) throws JsonProcessingException {
+    public String attenuationOutputAsJSON(AttenuationOutput path) throws JsonProcessingException {
         return jsonWriter.writeValueAsString(path);
     }
 
-    public static AttenuationOutput jsonToPropagationPath(String json) throws JsonProcessingException {
+    public static AttenuationOutput jsonToAttenuationOutput(String json) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
         mapper.registerModule(new JtsModule());
         return mapper.readValue(json, AttenuationOutput.class);
+
     }
 
     /**
@@ -161,7 +162,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(databaseParameters.exportCnossosPathWithAttenuation) {
                 String json = "";
                 try {
-                    json = propagationPathAsJSON(row);
+                    json = attenuationOutputAsJSON(row);
                 } catch (IOException ex) {
                     //ignore
                 }
