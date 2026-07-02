@@ -76,7 +76,7 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
      *
      * @return a list of Path propagation
      */
-    public List<AttenuationOutput> getPropagationPaths() {
+    public List<AttenuationOutput> getAttenuationOutputs() {
         return new ArrayList<>(pathParameters);
     }
 

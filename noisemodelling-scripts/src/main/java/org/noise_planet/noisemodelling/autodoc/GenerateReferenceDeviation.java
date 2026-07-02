@@ -305,15 +305,15 @@ public class GenerateReferenceDeviation {
                     addUTDeviation(utName, stringBuilderTable, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel, fullPass, directPass);
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
-                    addUTDeviationDetails(CutProfile.PROFILE_TYPE.DIRECT, stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                    addUTDeviationDetails(CutProfile.PROFILE_TYPE.DIRECT, stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     if(pathsExpected.has("Right")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.RIGHT, stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.RIGHT, stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
                     if(pathsExpected.has("Left")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.LEFT, stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.LEFT, stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
                     if(pathsExpected.has("Reflection")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.REFLECTION, stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.REFLECTION, stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
                 }
                 fileWriter.write(String.format(Locale.ROOT, "| Conform\n" +
