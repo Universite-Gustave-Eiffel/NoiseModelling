@@ -287,7 +287,7 @@ public class RoadCnossos {
 
     public static double evaluate(RoadCnossosParameters roadCnossosParameters) throws IOException {
         final int freqParam = roadCnossosParameters.getFrequency();
-        final double Temperature = roadCnossosParameters.getTemperature();
+        final double temperature = roadCnossosParameters.getTemperature();
         final double Ts_stud = roadCnossosParameters.getTsStud();
         final double Pm_stud = roadCnossosParameters.getqStudRatio();
         final double Junc_dist = roadCnossosParameters.getJunc_dist();
@@ -311,9 +311,9 @@ public class RoadCnossos {
         }
 
         // Effect of air temperature on rolling noise correction Eq 2.2.10
-        lvRoadLvl = lvRoadLvl + getDeltaTemperature(Temperature, "1"); // K = 0.08
-        medRoadLvl = medRoadLvl + getDeltaTemperature(Temperature, "2"); // K = 0.04
-        hgvRoadLvl = hgvRoadLvl + getDeltaTemperature(Temperature, "3"); // K = 0.04
+        lvRoadLvl = lvRoadLvl + getDeltaTemperature(temperature, "1"); // K = 0.08
+        medRoadLvl = medRoadLvl + getDeltaTemperature(temperature, "2"); // K = 0.04
+        hgvRoadLvl = hgvRoadLvl + getDeltaTemperature(temperature, "3"); // K = 0.04
 
         /**
          * Propulsion Noise

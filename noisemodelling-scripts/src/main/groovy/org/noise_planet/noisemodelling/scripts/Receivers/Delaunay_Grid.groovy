@@ -361,6 +361,7 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
 
     long startTime = System.currentTimeMillis()
     try {
+        delaunayReceiversMaker.getBuildingTableParameters().setHeightField("") // This field is not used when creating a delaunay triangulation
         delaunayReceiversMaker.run(connection, receivers_table_name, outputTableNameTriangles, progressLogger)
     } catch (LayerDelaunayError ex) {
         logger.error("Got an error use the errorDumpFolder parameter with a folder path in order to save the " +

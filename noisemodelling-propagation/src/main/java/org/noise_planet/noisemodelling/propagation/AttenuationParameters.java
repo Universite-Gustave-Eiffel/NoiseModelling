@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
 
 /**
  * Data input for a propagation Path process.
- *@author Pierre Aumond
+ * @author Pierre Aumond
+ * @author Judicaël Picaut, UMRAE
  */
 public class AttenuationParameters {
 
@@ -366,7 +367,6 @@ public class AttenuationParameters {
      * @param pressure atmospheric pressure (in Pa)
      * @param tempKelvin Temperature in Kelvin (in K)
      * @return atmospheric attenuation coefficient (db/km)
-     * @author Judicaël Picaut, UMRAE
      */
     public static double getCoefAttAtmosSpps(double frequency, double humidity, double pressure, double tempKelvin) {
         // Sound celerity
