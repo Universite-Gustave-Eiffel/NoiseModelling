@@ -43,9 +43,6 @@ public class CnossosPath {
     private List<PointPath> pointList; // list of points (source, receiver or diffraction and reflection points)
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favourable; // if true, favourable meteorological condition path with curved rays
-    private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
-    Orientation sourceOrientation = new Orientation(0,0,0);
-    public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
     double gs;
     // computed in Augmented Path
 
@@ -63,7 +60,6 @@ public class CnossosPath {
 
     public CnossosPath(CutProfile cutProfile) {
         this.cutProfile = cutProfile;
-        setSourceOrientation(cutProfile.getSource().orientation);
     }
 
     public CnossosPath(CnossosPath other) {
@@ -72,11 +68,7 @@ public class CnossosPath {
         this.pointList = other.pointList;
         this.segmentList = other.segmentList;
         this.favourable = other.favourable;
-        this.timePeriod = other.timePeriod;
-        this.sourceOrientation = other.sourceOrientation;
-        this.raySourceReceiverDirectivity = other.raySourceReceiverDirectivity;
         this.gs = other.gs;
-        this.keepAbsorption = other.keepAbsorption;
     }
 
     /**
@@ -103,37 +95,6 @@ public class CnossosPath {
      */
     public void setCutProfile(CutProfile cutProfile) {
         this.cutProfile = cutProfile;
-    }
-
-
-    /**
-     * @return time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
-     */
-    public String getTimePeriod() {
-        return timePeriod;
-    }
-
-    /**
-     * @param timePeriod time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
-     */
-    public void setTimePeriod(String timePeriod) {
-        this.timePeriod = timePeriod;
-    }
-
-    public Orientation getSourceOrientation() {
-        return sourceOrientation;
-    }
-
-    public void setSourceOrientation(Orientation sourceOrientation) {
-        this.sourceOrientation = sourceOrientation;
-    }
-
-    public Orientation getRaySourceReceiverDirectivity() {
-        return raySourceReceiverDirectivity;
-    }
-
-    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
-        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
     }
 
     /**

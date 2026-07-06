@@ -154,11 +154,11 @@ public class NoiseMapWriter implements Callable<Boolean> {
             AttenuationOutput row = stack.pop();
             resultsCache.queueSize.decrementAndGet();
             int parameterIndex = 1;
-            LineString lineString = row.asGeom();
+            LineString lineString = row.propagationPath.asGeom();
             lineString.setSRID(srid);
             ps.setObject(parameterIndex++, lineString);
-            ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
-            ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
+            ps.setLong(parameterIndex++, row.propagationPath.getCutProfile().getReceiver().receiverPk);
+            ps.setLong(parameterIndex++, row.propagationPath.getCutProfile().getSource().sourcePk);
             if(databaseParameters.exportCnossosPathWithAttenuation) {
                 String json = "";
                 try {
@@ -175,7 +175,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
-            ps.setBoolean(parameterIndex++, row.isFavourable());
+            ps.setBoolean(parameterIndex++, row.propagationPath.isFavourable());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {

@@ -598,18 +598,17 @@ public class AttenuationCnossos {
      * Compute the Attenuation for each frequency with a given sourceId, sourceLi and sourceId
      *
      * @param data Attenuation parameters
-     * @param cnossosPath Cnossos paths
      * @param scene Scene with attenuation data
      * @param attenuationOutput Output of the attenuation computation
      * @param exportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      */
-    public static void computeCnossosAttenuation(AttenuationParameters data, CnossosPath cnossosPath,
-                                                     SceneWithAttenuation scene, AttenuationOutput attenuationOutput,
-                                                              boolean exportAttenuationMatrix) {
+    public static void computeCnossosAttenuation(AttenuationParameters data, SceneWithAttenuation scene,
+                                                 AttenuationOutput attenuationOutput, boolean exportAttenuationMatrix) {
         if (data == null) {
             attenuationOutput.aGlobal = new double[0];
             return;
         }
+        CnossosPath cnossosPath = attenuationOutput.propagationPath;
         // cache frequencies
         double[] frequencies = new double[0];
         if(scene != null) {
@@ -745,8 +744,8 @@ public class AttenuationCnossos {
         // restore the Map relative propagation direction from the emission propagation relative to the sound source orientation
         // just swap the inverse boolean parameter
         // @see ComputeCnossosRays#computeOrientation
-        Vector3D fieldVectorPropagation = Orientation.rotate(cnossosPath.getSourceOrientation(),
-                Orientation.toVector(cnossosPath.raySourceReceiverDirectivity), false);
+        Vector3D fieldVectorPropagation = Orientation.rotate(attenuationOutput.getCutProfile().getSourceOrientation(),
+                Orientation.toVector(attenuationOutput.getCutProfile().raySourceReceiverDirectivity), false);
         int roseIndex = AttenuationParameters.getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
         if(!cnossosPath.isFavourable()) {
             // Homogenous conditions
@@ -804,7 +803,7 @@ public class AttenuationCnossos {
         double sourceLi = cnossosPath.getCutProfile().getSource().li;
 
         if(scene != null && !scene.isOmnidirectional(sourceId)) {
-            Orientation directivityToPick = cnossosPath.raySourceReceiverDirectivity;
+            Orientation directivityToPick = attenuationOutput.getCutProfile().raySourceReceiverDirectivity;
             double[] attSource = scene.getSourceAttenuation( sourceId,
                     frequencies, Math.toRadians(directivityToPick.yaw),
                     Math.toRadians(directivityToPick.pitch));
@@ -821,9 +820,7 @@ public class AttenuationCnossos {
             }
         }
         // Keep global attenuation
-        if(exportAttenuationMatrix) {
-            attenuationOutput.aGlobal = aGlobalMeteoRay.clone();
-        }
+        attenuationOutput.aGlobal = aGlobalMeteoRay.clone();
     }
 
 }

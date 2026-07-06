@@ -19,6 +19,7 @@ import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +51,9 @@ public class CutProfile {
     public boolean curvedPath = false;
 
     public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
+
+//    Orientation sourceOrientation = new Orientation(0,0,0);
+    public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
 
     /**
      * Empty constructor for deserialization
@@ -487,4 +491,17 @@ public class CutProfile {
         return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
                 (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;
     }
+
+    public Orientation getSourceOrientation() {
+        return this.getSource().orientation;
+    }
+
+    public Orientation getRaySourceReceiverDirectivity() {
+        return raySourceReceiverDirectivity;
+    }
+
+    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
+        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
+    }
+
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationComputeOutput multiThreadParent;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
-    public List<AttenuationOutput> pathParameters = new ArrayList<>();
+    public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
     public boolean keepRays;
 
     /**
@@ -76,10 +76,10 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                             String period, AttenuationParameters AttenuationParameters) {
         PropagationModel propagationModel = multiThreadParent.propagationModel;
-        List<AttenuationOutput> paths = propagationModel.computePaths(scene, cutProfile);
-        List<double[]> attenuationList = propagationModel.computeAttenuation(scene, cutProfile, paths,
+        List<AttenuationOutput> attenuationList = propagationModel.computeAttenuation(scene, cutProfile,
                 AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
-        for (double[] aGlobalMeteo : attenuationList) {
+        for (AttenuationOutput attenuationOutput : attenuationList) {
+            double[] aGlobalMeteo = attenuationOutput.getaGlobal();
             if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {
                 receiverAttenuationLevels.add(new ReceiverNoiseLevel(
                         new PathFinder.SourcePointInfo(cutProfile.getSource()),
@@ -88,7 +88,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
             }
         }
         if(keepRays) {
-            pathParameters.addAll(paths);
+            attenuationOutputs.addAll(attenuationList);
         }
     }
 
@@ -99,10 +99,10 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
-        if(keepRays && !pathParameters.isEmpty()) {
-            multiThreadParent.pathParameters.addAll(this.pathParameters);
-            multiThreadParent.propagationPathsSize.addAndGet(pathParameters.size());
-            this.pathParameters.clear();
+        if(keepRays && !attenuationOutputs.isEmpty()) {
+            multiThreadParent.attenuationOutputs.addAll(this.attenuationOutputs);
+            multiThreadParent.propagationPathsSize.addAndGet(attenuationOutputs.size());
+            this.attenuationOutputs.clear();
         }
         if(multiThreadParent.receiversAttenuationLevels != null) {
             // Push merged sources into multi-thread parent

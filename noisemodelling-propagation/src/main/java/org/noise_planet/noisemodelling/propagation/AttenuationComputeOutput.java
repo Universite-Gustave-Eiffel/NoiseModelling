@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
-    public Deque<AttenuationOutput> pathParameters = new ConcurrentLinkedDeque<>();
+    public Deque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
     public AtomicInteger propagationPathsSize = new AtomicInteger(0);
     public boolean exportPaths;
     public boolean exportAttenuationMatrix;
@@ -77,11 +77,11 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
      * @return a list of Path propagation
      */
     public List<AttenuationOutput> getAttenuationOutputs() {
-        return new ArrayList<>(pathParameters);
+        return new ArrayList<>(attenuationOutputs);
     }
 
-    public void clearPropagationPaths() {
-        pathParameters.clear();
+    public void clearAttenuationOutputs() {
+        attenuationOutputs.clear();
         propagationPathsSize.set(0);
     }
 

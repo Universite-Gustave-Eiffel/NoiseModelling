@@ -11,13 +11,16 @@ package org.noise_planet.noisemodelling.propagation;
 
 
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 
 /**
  * Output of the attenuation computation (data class).
  */
 public class AttenuationOutput {
-    CutProfile cutProfile;
+    public CutProfile cutProfile;
+    private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
+
 
     /**
      * Intermediate attenuation.
@@ -67,6 +70,7 @@ public class AttenuationOutput {
     }
 
     public AttenuationOutput(CutProfile cutProfile) {
+
         this.cutProfile = cutProfile;
     }
 
@@ -81,16 +85,46 @@ public class AttenuationOutput {
         this.aGlobal = other.aGlobal;
         this.aDif = other.aDif;
         this.aSource = other.aSource;
-        this.delta = other.delta;
-        this.deltaPrime = other.deltaPrime;
-        this.deltaSPrimeR = other.deltaSPrimeR;
-        this.deltaSRPrime = other.deltaSRPrime;
         this.aBoundary = other.aBoundary;
         this.groundAttenuation = other.groundAttenuation;
-        this.e = other.e;
         this.deltaRetro = other.deltaRetro;
         this.propagationPath = other.propagationPath;
+        this.keepAbsorption = other.keepAbsorption;
+        this.timePeriod = other.timePeriod;
     }
+
+    /**
+     * @return time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
+     */
+    public String getTimePeriod() {
+        return timePeriod;
+    }
+
+    /**
+     * @param timePeriod time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
+     */
+    public void setTimePeriod(String timePeriod) {
+        this.timePeriod = timePeriod;
+    }
+
+    /**
+     * @return Get vertical plane between source and receiver
+     */
+    public CutProfile getCutProfile() {
+        return cutProfile;
+    }
+
+    /**
+     * @param cutProfile vertical plane between source and receiver
+     */
+    public void setCutProfile(CutProfile cutProfile) {
+        this.cutProfile = cutProfile;
+    }
+
+    /**
+     * @return global attenuation
+     */
+    public double[] getaGlobal() { return aGlobal; }
 
     public static class ABoundary {
         public double[] deltaDiffSR;
