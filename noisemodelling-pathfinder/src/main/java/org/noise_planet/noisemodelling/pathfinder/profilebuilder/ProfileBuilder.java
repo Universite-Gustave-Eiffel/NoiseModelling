@@ -175,14 +175,14 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
-            LOGGER.error(
+            throw  new IllegalArgumentException(
                 String.format(Locale.ROOT,
                     "Building with PK : %s is not valid, it has a null or empty geometry.",
                     building.primaryKey)
             );
         }
         else if (!building.isValid) {
-            LOGGER.error(
+            throw  new IllegalArgumentException(
                 String.format(Locale.ROOT,
                     "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
                     building.primaryKey)
@@ -267,8 +267,7 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
         if(!(geom instanceof Polygon)) {
-            LOGGER.error("Building geometry should be Polygon");
-            return null;
+            throw  new IllegalArgumentException("Building geometry should be Polygon");
         }
         Polygon poly = (Polygon) geom;
         addBuilding(new Building(poly, alphas, id));
@@ -410,7 +409,7 @@ public class ProfileBuilder {
             Building building = getBuildingAtCoordinate(coordinate);
             if (building != null && building.getAverageZ() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
-                                " (building average height {} m), it should be moved higher Geometry: {}",
+                                " (building average altitude : {} m), it should be moved higher Geometry: {}",
                         building.getAverageZ(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
@@ -480,7 +479,7 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addWall(Wall wall) {
         if (!wall.isValid) {
-            LOGGER.warn(
+            throw new IllegalArgumentException(
                 String.format(Locale.ROOT,
                     "Wall (a LineString in the BUILDINGS table) with PK : %s is not valid. it doesn't provide a Z value for all it's line points",
                     wall.primaryKey)
@@ -784,14 +783,12 @@ public class ProfileBuilder {
 
         for (Building b : buildings) {
             if (!b.isValid) {
-                LOGGER.error(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't provide a Z value for all it's polygon points", b.primaryKey));
-                return null; // we return here because the invalid buildings should already be filtered out at this point
+                throw new IllegalArgumentException(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't provide a Z value for all it's polygon points", b.primaryKey));
             }
         }
         for (Wall w : walls) {
             if (!w.isValid) {
-                LOGGER.error(String.format(Locale.ROOT, "Wall with PK : %s is not valid. it doesn't provide a Z value for all it's line points", w.primaryKey));
-                return null; // we return here because the invalid walls should already be filtered out at this point
+                throw new IllegalArgumentException(String.format(Locale.ROOT, "Wall with PK : %s is not valid. it doesn't provide a Z value for all it's line points", w.primaryKey));
             }
         }
         //Process buildings

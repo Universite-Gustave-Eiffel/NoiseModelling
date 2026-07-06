@@ -53,7 +53,7 @@ In this context, geometry coordinates have to be in 3D, with:
 
 
 .. warning::
-	If the buildings geometries are properly defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
 
 Z coordinate deduction
 -----------------------
@@ -86,7 +86,7 @@ There is no DEM layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
-	If the buildings geometries are properly defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
 
 * The Z coordinate correspond to ``Zobject``
 	* It's ok, your data is already ready to be used by NoiseModelling

@@ -541,12 +541,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                 }
                                 boolean needsToUpdateZ = Arrays.stream(coordinates).anyMatch(c -> Double.isNaN(c.getZ()));
                                 if (needsToUpdateZ && !fetchHeight) {
-                                    LOGGER.warn(
-                                        String.format(Locale.ROOT,
-                                            "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points AND no HEIGHT information has been found in the database table",
-                                            pk)
-                                    );
-                                    continue;
+                                    throw new IllegalArgumentException("The table " + buildingTableParameters.buildingsTableName +
+                                            " contain at least one building without Z ordinate and without a " + buildingTableParameters.heightField + "column. " +
+                                            " You must specify X,Y,Z for each building OR specify X,Y and HEIGHT");
                                 }
                                 if (fetchHeight) {
                                     double height = rs.getDouble(buildingTableParameters.heightField);
