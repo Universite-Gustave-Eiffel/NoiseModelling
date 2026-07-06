@@ -552,7 +552,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         List<Wall> walls = new LinkedList<>();
         Envelope expandedCell = new Envelope(cellEnvelope);
         expandedCell.expandBy(buildingBuffer);
-        // TODO : should we load the DEM here ?
         DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters, cellEnvelope, buildings, walls,
                 new ProfileBuilder(), geometryFactory);
 
