@@ -20,7 +20,7 @@ Table definition
 	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
 	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
 * ``HEIGHT``
-	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D
+	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D, ignored otherwise
 	* Type: Double
 * ``POP``
 	* Description: number of inhabitant in the building 
