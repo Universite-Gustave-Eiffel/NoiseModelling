@@ -50,9 +50,9 @@ public class ProfileBuilderTest {
     @Test
     public void buildingAddingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10, -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23, -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
 
         profileBuilder.finishFeeding();
 
@@ -73,10 +73,10 @@ public class ProfileBuilderTest {
     @Test
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
         assertNotNull(profileBuilder.finishFeeding());
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23, -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
 
         List<Building> list = profileBuilder.getBuildings();
         assertEquals(1, list.size());
@@ -211,8 +211,8 @@ public class ProfileBuilderTest {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
 
         profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"), 10);
-        profileBuilder.addBuilding(READER.read("POLYGON((4.5 7, 4.5 8.5, 6.5 8.5, 4.5 7))"), 3.3);
-        profileBuilder.addBuilding(READER.read("POLYGON((7 6, 10 6, 10 2, 7 2, 7 6))"), 5.6);
+        profileBuilder.addBuilding(READER.read("POLYGON((4.5 7 3.3, 4.5 8.5 3.3, 6.5 8.5 3.3, 4.5 7 3.3))"));
+        profileBuilder.addBuilding(READER.read("POLYGON((7 6 5.6, 10 6 5.6, 10 2 5.6, 7 2 5.6, 7 6 5.6))"));
 
         profileBuilder.addTopographicLine((LineString) READER.read("LINESTRING (4 1 1.5, 5 7 1.0, 8 9 1.5)"));
         profileBuilder.addTopographicPoint(new Coordinate(7, 9, 2.5));
@@ -358,138 +358,5 @@ public class ProfileBuilderTest {
                 index.stream().mapToInt(Integer::intValue).toArray());
 
 
-    }
-
-    /**
-     * Test that 3D building roofs (polygons with varying Z coordinates) are preserved.
-     * The 2D flat roof is a special case of 3D where all vertices receive the same computed Z.
-     */
-    @Test
-    public void test3DRoofPreservedNoTopo() throws ParseException {
-        // Building with varying Z roof vertices (e.g. from 3D city model)
-        Polygon poly3D = (Polygon) READER.read("POLYGON((0 0 10, 10 0 15, 10 10 15, 0 10 10, 0 0 10))");
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(poly3D, 8.0); // height=8 is ignored for 3D vertices
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] coords = b.getGeometry().getCoordinates();
-
-        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        assertEquals(3, values.get(10.0));
-        assertEquals(2, values.get(15.0));
-    }
-
-    /**
-     * Test that 2D buildings (no Z) get uniform height — the 2D flat roof
-     * is the special case where all vertices happen to receive the same Z.
-     */
-    @Test
-    public void test2DRoofFlatSpecialCase() throws ParseException {
-        Polygon poly2D = (Polygon) READER.read("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))");
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(poly2D, 12.0);
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] coords = b.getGeometry().getCoordinates();
-
-        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        assertEquals(5, values.get(12.0));
-    }
-
-    /**
-     * Test that 3D building roofs are preserved even with topography (DEM).
-     * The Z values represent absolute altitudes and should stay as-is.
-     */
-    @Test
-    public void test3DRoofPreservedWithTopo() throws ParseException {
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        // Add DEM with ground at 100m
-        profileBuilder.addTopographicPoint(new Coordinate(0, 0, 100));
-        profileBuilder.addTopographicPoint(new Coordinate(10, 0, 100));
-        profileBuilder.addTopographicPoint(new Coordinate(10, 10, 100));
-        profileBuilder.addTopographicPoint(new Coordinate(0, 10, 100));
-
-        Polygon poly3D = (Polygon) READER.read("POLYGON((0 0 110, 10 0 115, 10 10 115, 0 10 110, 0 0 110))");
-        profileBuilder.addBuilding(poly3D, 8.0);
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] coords = b.getGeometry().getCoordinates();
-
-        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        assertEquals(3, values.get(110.0));
-        assertEquals(2, values.get(115.0));
-    }
-
-    /**
-     * Test that 2D buildings with topography get DEM + height (uniform).
-     */
-    @Test
-    public void test2DRoofWithTopography() throws ParseException {
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addTopographicPoint(new Coordinate(0, 0, 50));
-        profileBuilder.addTopographicPoint(new Coordinate(10, 0, 50));
-        profileBuilder.addTopographicPoint(new Coordinate(10, 10, 50));
-        profileBuilder.addTopographicPoint(new Coordinate(0, 10, 50));
-
-        Polygon poly2D = (Polygon) READER.read("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))");
-        profileBuilder.addBuilding(poly2D, 15.0);
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] coords = b.getGeometry().getCoordinates();
-
-        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        assertEquals(5, values.get(65.0), DELTA);
-    }
-
-    /**
-     * Test mixed scenario: some vertices have valid Z (3D), others have NaN (2D fallback).
-     */
-    @Test
-    public void testMixed3D2DRoof() {
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        // Three vertices at varying Z, one vertex with NaN Z (should fall back to height)
-        profileBuilder.addBuilding(new Coordinate[]{
-                new Coordinate(0, 0, 20),
-                new Coordinate(10, 0, 25),
-                new Coordinate(10, 10, 25),
-                new Coordinate(0, 10),    // NaN Z — realtaive height fallback
-                new Coordinate(0, 0, 20),
-        }, 10.0);
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        Coordinate[] coords = b.getGeometry().getCoordinates();
-
-        Map<Double, Long> values = Arrays.stream(coords).map(c -> c.z)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        assertEquals(5, values.get(10.0), DELTA);
-    }
-
-    /**
-     * Test that Building.getZ() and getHeight() work correctly after 3D roof processing.
-     */
-    @Test
-    public void testBuildingGetZAfterRoofProcessing() throws ParseException {
-        Polygon poly2D = (Polygon) READER.read("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))");
-        ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(poly2D, 15.0);
-        profileBuilder.finishFeeding();
-
-        Building b = profileBuilder.getBuildings().get(0);
-        assertEquals(15.0, b.getRelativeHeight(), DELTA, "getHeight returns declared height");
-        assertEquals(15.0, b.getAverageZ(), DELTA, "getZ = minimumZDEM(0) + height(15)");
     }
 }

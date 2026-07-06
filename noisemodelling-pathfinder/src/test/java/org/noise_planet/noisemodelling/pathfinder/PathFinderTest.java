@@ -472,9 +472,9 @@ public class PathFinderTest {
 
                 // Add building
                 .addWall(new Coordinate[]{
-                                new Coordinate(100, 240),
-                                new Coordinate(265, -180)},
-                        6, 1)
+                                new Coordinate(100, 240, 6),
+                                new Coordinate(265, -180, 6)},
+                        1)
                 // Add ground effect
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
                 .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5)
@@ -515,9 +515,9 @@ public class PathFinderTest {
 
                 // Add building
                 .addWall(new Coordinate[]{
-                                new Coordinate(175, 50),
-                                new Coordinate(190, 10)},
-                        6, 1)
+                                new Coordinate(175, 50, 6),
+                                new Coordinate(190, 10, 6)},
+                        1)
                 // Add ground effect
                 .addGroundEffect(factory.toGeometry(new Envelope(0, 50, -250, 250)), 0.9)
                 .addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5)
@@ -873,7 +873,7 @@ public class PathFinderTest {
         profileBuilder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
-                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
+                }, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
         profileBuilder.finishFeeding();
 
         //Propagation data building
@@ -917,7 +917,7 @@ public class PathFinderTest {
         profileBuilder.addWall(new Coordinate[]{
                         new Coordinate(114, 52, 15),
                         new Coordinate(170, 60, 15)
-                }, 15, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
+                }, Arrays.asList(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.5), -1);
         profileBuilder.finishFeeding();
 
         //Propagation data building
@@ -1382,15 +1382,15 @@ public class PathFinderTest {
         ProfileBuilder builder = new ProfileBuilder();
 
         builder.addBuilding(new Coordinate[]{
-                        new Coordinate(75, 34),
-                        new Coordinate(110, 34),
-                        new Coordinate(110, 26),
-                        new Coordinate(75, 26)}, 9, buildingsAbs)
+                        new Coordinate(75, 34, 9),
+                        new Coordinate(110, 34, 9),
+                        new Coordinate(110, 26, 9),
+                        new Coordinate(75, 26, 9)}, buildingsAbs)
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(83, 18),
-                        new Coordinate(118, 18),
-                        new Coordinate(118, 10),
-                        new Coordinate(83, 10)}, 6, buildingsAbs)
+                        new Coordinate(83, 18, 6),
+                        new Coordinate(118, 18, 6),
+                        new Coordinate(118, 10, 6),
+                        new Coordinate(83, 10, 6)}, buildingsAbs)
                 // Ground Surface
 
                 .addWall(new Coordinate[]{
@@ -1533,56 +1533,56 @@ public class PathFinderTest {
 
         // Add building
         builder.addBuilding(new Coordinate[]{
-                        new Coordinate(113, 10),
-                        new Coordinate(127, 16),
-                        new Coordinate(102, 70),
-                        new Coordinate(88, 64)}, 6, -1)
+                        new Coordinate(113, 10, 6),
+                        new Coordinate(127, 16, 6),
+                        new Coordinate(102, 70, 6),
+                        new Coordinate(88, 64, 6)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(176, 19),
-                        new Coordinate(164, 88),
-                        new Coordinate(184, 91),
-                        new Coordinate(196, 22)}, 10, -1)
+                        new Coordinate(176, 19, 10),
+                        new Coordinate(164, 88, 10),
+                        new Coordinate(184, 91, 10),
+                        new Coordinate(196, 22, 10)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(250, 70),
-                        new Coordinate(250, 180),
-                        new Coordinate(270, 180),
-                        new Coordinate(270, 70)}, 14, -1)
+                        new Coordinate(250, 70, 14),
+                        new Coordinate(250, 180, 14),
+                        new Coordinate(270, 180, 14),
+                        new Coordinate(270, 70, 14)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(332, 32),
-                        new Coordinate(348, 126),
-                        new Coordinate(361, 108),
-                        new Coordinate(349, 44)}, 10, -1)
+                        new Coordinate(332, 32, 10),
+                        new Coordinate(348, 126, 10),
+                        new Coordinate(361, 108, 10),
+                        new Coordinate(349, 44, 10)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(400, 5),
-                        new Coordinate(400, 85),
-                        new Coordinate(415, 85),
-                        new Coordinate(415, 5)}, 9, -1)
+                        new Coordinate(400, 5, 9),
+                        new Coordinate(400, 85, 9),
+                        new Coordinate(415, 85, 9),
+                        new Coordinate(415, 5, 9)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(444, 47),
-                        new Coordinate(436, 136),
-                        new Coordinate(516, 143),
-                        new Coordinate(521, 89),
-                        new Coordinate(506, 87),
-                        new Coordinate(502, 127),
-                        new Coordinate(452, 123),
-                        new Coordinate(459, 48)}, 12, -1)
+                        new Coordinate(444, 47, 12),
+                        new Coordinate(436, 136, 12),
+                        new Coordinate(516, 143, 12),
+                        new Coordinate(521, 89, 12),
+                        new Coordinate(506, 87, 12),
+                        new Coordinate(502, 127, 12),
+                        new Coordinate(452, 123, 12),
+                        new Coordinate(459, 48, 12)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(773, 12),
-                        new Coordinate(728, 90),
-                        new Coordinate(741, 98),
-                        new Coordinate(786, 20)}, 14, -1)
+                        new Coordinate(773, 12, 14),
+                        new Coordinate(728, 90, 14),
+                        new Coordinate(741, 98, 14),
+                        new Coordinate(786, 20, 14)}, -1)
 
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(972, 82),
-                        new Coordinate(979, 121),
-                        new Coordinate(993, 118),
-                        new Coordinate(986, 79)}, 8, -1)
+                        new Coordinate(972, 82, 8),
+                        new Coordinate(979, 121, 8),
+                        new Coordinate(993, 118, 8),
+                        new Coordinate(986, 79, 8)}, -1)
                 .addGroundEffect(-11, 1011, -300, 300,0.5);
 
 

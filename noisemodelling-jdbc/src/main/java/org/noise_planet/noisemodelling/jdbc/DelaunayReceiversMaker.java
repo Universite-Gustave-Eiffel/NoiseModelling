@@ -26,6 +26,7 @@ import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunay;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerTinfour;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -551,8 +552,9 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         List<Wall> walls = new LinkedList<>();
         Envelope expandedCell = new Envelope(cellEnvelope);
         expandedCell.expandBy(buildingBuffer);
-        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters,cellEnvelope, buildings, walls,
-                geometryFactory);
+        // TODO : should we load the DEM here ?
+        DefaultTableLoader.fetchCellBuildings(connection, buildingTableParameters, cellEnvelope, buildings, walls,
+                new ProfileBuilder(), geometryFactory);
 
         LayerTinfour cellMesh = new LayerTinfour();
         cellMesh.setVerbose(verbose);

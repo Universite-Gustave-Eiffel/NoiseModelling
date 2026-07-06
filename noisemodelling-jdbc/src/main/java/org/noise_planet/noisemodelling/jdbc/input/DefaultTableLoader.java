@@ -8,6 +8,7 @@
  */
 package org.noise_planet.noisemodelling.jdbc.input;
 
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.utilities.*;
 import org.h2gis.utilities.dbtypes.DBTypes;
 import org.h2gis.utilities.dbtypes.DBUtils;
@@ -287,12 +288,13 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
         // optimization
-        // Fetch buildings in extendedEnvelope
-        fetchCellBuildings(connection, noiseMapByReceiverMaker.getBuildingTableParameters(), expandedCellEnvelop,
-                scene.profileBuilder, geometryFactory);
 
         //if we have topographic points data
         fetchCellDem(connection, expandedCellEnvelop, scene.profileBuilder);
+
+        // Fetch buildings in extendedEnvelope
+        fetchCellBuildings(connection, noiseMapByReceiverMaker.getBuildingTableParameters(), expandedCellEnvelop,
+                scene.profileBuilder, geometryFactory);
 
         // Fetch soil areas
         fetchCellSoilAreas(connection, expandedCellEnvelop, scene.profileBuilder);
@@ -448,7 +450,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                           GeometryFactory geometryFactory) throws SQLException {
         List<Building> buildings = new LinkedList<>();
         List<Wall> walls = new LinkedList<>();
-        fetchCellBuildings(connection,buildingTableParameters, fetchEnvelope, buildings, walls, geometryFactory);
+        fetchCellBuildings(connection,buildingTableParameters, fetchEnvelope, buildings, walls, builder, geometryFactory);
         for(Building building : buildings) {
             builder.addBuilding(building);
         }
@@ -464,6 +466,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param fetchEnvelope   the envelope representing the cell to fetch building data for.
      * @param buildings       the list to which the fetched buildings will be added.
      * @param walls Wall list to feed
+     * @param builder        the profile builder, used here to get potential ground elevation data
      * @param geometryFactory geometry factory instance with SRID set.
      * @throws SQLException   if an SQL exception occurs while fetching the building data.
      */
@@ -472,14 +475,20 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                           Envelope fetchEnvelope,
                                           List<Building> buildings,
                                           List<Wall> walls,
+                                          ProfileBuilder builder,
                                           GeometryFactory geometryFactory) throws SQLException {
         Geometry envGeo = geometryFactory.toGeometry(fetchEnvelope);
         boolean fetchAlpha = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName,
                 buildingTableParameters.alphaFieldName);
         String additionalQuery = "";
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        if(!buildingTableParameters.heightField.isEmpty()) {
-            additionalQuery += ", " + TableLocation.capsIdentifier(buildingTableParameters.heightField, dbType);
+        var heightField = buildingTableParameters.heightField;
+        boolean fetchHeight = false;
+        if(!heightField.isEmpty()) {
+            fetchHeight = JDBCUtilities.hasField(connection, buildingTableParameters.buildingsTableName, heightField);
+            if (fetchHeight) {
+                additionalQuery += ", " + TableLocation.capsIdentifier(heightField, dbType);
+            }
         }
         if(fetchAlpha) {
             additionalQuery += ", " + buildingTableParameters.alphaFieldName;
@@ -526,24 +535,37 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                             }
                             for(int i=0; i<intersectedGeometry.getNumGeometries(); i++) {
                                 Geometry geometry = intersectedGeometry.getGeometryN(i);
-                                if(geometry instanceof Polygon && !geometry.isEmpty()) {
-                                    Double relativeHeight = buildingTableParameters.heightField.isEmpty() ?
-                                            Double.NaN :
-                                            rs.getDouble(buildingTableParameters.heightField);
-                                    Building building = new Building((Polygon) geometry, relativeHeight, oldAlpha, pk);
+                                Coordinate[] coordinates = geometry.getCoordinates();
+                                if (geometry.isEmpty()) {
+                                    continue;
+                                }
+                                boolean needsToUpdateZ = Arrays.stream(coordinates).anyMatch(c -> Double.isNaN(c.getZ()));
+                                if (needsToUpdateZ && !fetchHeight) {
+                                    LOGGER.warn(
+                                        String.format(Locale.ROOT,
+                                            "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points AND no HEIGHT information has been found in the database table",
+                                            pk)
+                                    );
+                                    continue;
+                                }
+                                if (fetchHeight) {
+                                    double height = rs.getDouble(buildingTableParameters.heightField);
+                                    if (needsToUpdateZ) {
+                                        double minTopoZ = Arrays.stream(coordinates).mapToDouble(builder::getZGround).min().orElse(0.0);
+                                        geometry = ST_UpdateZ.updateZ(geometry, minTopoZ + height);
+                                    }
+                                }
+                                if (geometry instanceof Polygon) {
+                                    Building building = new Building((Polygon) geometry, oldAlpha, pk);
                                     buildings.add(building);
-                                } else if (geometry instanceof LineString) {
-                                    // decompose linestring into segments
-                                    LineString lineString = (LineString) geometry;
-                                    Coordinate[] coordinates = lineString.getCoordinates();
+                                }
+                                else if (geometry instanceof LineString) {
+                                    coordinates = geometry.getCoordinates();
                                     for(int vertex=0; vertex < coordinates.length - 1; vertex++) {
-                                        Double relativeHeight = buildingTableParameters.heightField.isEmpty() ?
-                                                Double.NaN : rs.getDouble(buildingTableParameters.heightField);
                                         Wall wall = new Wall(new LineSegment(coordinates[vertex], coordinates[vertex+1]),
                                                 -1, ProfileBuilder.IntersectionType.WALL);
                                         wall.setG(oldAlpha);
                                         wall.setPrimaryKey(pk);
-                                        wall.setRelativeHeight(relativeHeight);
                                         walls.add(wall);
                                     }
                                 }
@@ -605,7 +627,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
      * @param profileBuilder the profile builder mesh to which the DEM data will be added.
      * @throws SQLException if an SQL exception occurs while fetching the DEM data.
      */
-    protected void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder profileBuilder) throws SQLException {
+    public void fetchCellDem(Connection connection, Envelope fetchEnvelope, ProfileBuilder profileBuilder) throws SQLException {
         String demTable = noiseMapByReceiverMaker.getDemTable();
         if(!demTable.isEmpty()) {
             GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();

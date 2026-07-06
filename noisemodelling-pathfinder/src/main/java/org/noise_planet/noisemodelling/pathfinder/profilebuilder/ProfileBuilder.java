@@ -52,7 +52,7 @@ public class ProfileBuilder {
     private static final GeometryFactory FACTORY = new GeometryFactory();
     private static final double DELTA = 1e-3;
 
-    /** If true, no more data can be add. */
+    /** If true, no more data can be added. */
     private boolean isFeedingFinished = false;
     /** Wide angle points of a building polygon */
     private final Map<Integer, ArrayList<Coordinate>> buildingsWideAnglePoints = new HashMap<>();
@@ -175,12 +175,16 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
-            LOGGER.error("Cannot add a building with null or empty geometry.");
+            LOGGER.error(
+                String.format(Locale.ROOT,
+                    "Building with PK : %s is not valid, it has a null or empty geometry.",
+                    building.primaryKey)
+            );
         }
         else if (!building.isValid) {
-            LOGGER.warn(
+            LOGGER.error(
                 String.format(Locale.ROOT,
-                    "Building with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's polygon points",
+                    "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
                     building.primaryKey)
             );
         }
@@ -217,31 +221,14 @@ public class ProfileBuilder {
         return addBuilding(coords, -1);
     }
 
-    /**
-     * Add the given {@link Geometry} footprint and height as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height) {
-        return addBuilding(geom, height, new ArrayList<>());
-    }
 
     /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param height Building height.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height) {
-        return addBuilding(coords, height, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as building.
      * @param geom   Building footprint.
-     * @param id     Database primary key.
+     * @param id     Database id.
      */
     public ProfileBuilder addBuilding(Geometry geom, int id) {
-        return addBuilding(geom, NaN, id);
+        return addBuilding(geom, new ArrayList<>(), id);
     }
 
     /**
@@ -250,34 +237,67 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, int id) {
-        return addBuilding(coords, NaN, id);
+        return addBuilding(coords, new ArrayList<>(), id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as building.
+     * Add the given {@link Geometry} footprint, and alphas (absorption coefficients) as building.
      * @param geom   Building footprint.
-     * @param height Building height.
-     * @param id     Database id.
+     * @param alphas Absorption coefficients.
      */
-    public ProfileBuilder addBuilding(Geometry geom, double height, int id) {
-        return addBuilding(geom, height, new ArrayList<>(), id);
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
+        return addBuilding(geom, alphas, -1);
     }
 
     /**
      * Add the given {@link Geometry} footprint.
      * @param coords Building footprint coordinates.
-     * @param height Building height.
-     * @param id     Database primary key.
+     * @param alphas Absorption coefficients.
      */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, int id) {
-        return addBuilding(coords, height, new ArrayList<>(), id);
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
+        return addBuilding(coords, alphas, -1);
     }
 
+    /**
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database primary key
+     * as building.
+     * @param geom   Building footprint.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
+        if(!(geom instanceof Polygon)) {
+            LOGGER.error("Building geometry should be Polygon");
+            return null;
+        }
+        Polygon poly = (Polygon) geom;
+        addBuilding(new Building(poly, alphas, id));
+        return this;
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(!coords[0].equals2D(coords[l-1])) {
+            // Not closed linestring
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), alphas, id);
+    }
 
     /**
      * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
      * @param lineString
-     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
+     * @param epsilon ignore elevation points where linear interpolation distance is inferior that this value
      * @return computed lineString
      */
     public LineString splitGeometryLineToDem(LineString lineString, double epsilon) {
@@ -388,10 +408,10 @@ public class ProfileBuilder {
         for (Coordinate coordinate : coordinates) {
             // Check if the source is into a building
             Building building = getBuildingAtCoordinate(coordinate);
-            if (building != null && building.getRelativeHeight() >= coordinate.z) {
+            if (building != null && building.getAverageZ() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
-                                " (building height {} m), it should be moved higher Geometry: {}",
-                        building.getRelativeHeight(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                                " (building average height {} m), it should be moved higher Geometry: {}",
+                        building.getAverageZ(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
         }
@@ -399,155 +419,40 @@ public class ProfileBuilder {
 
 
     /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas) {
-        return addBuilding(geom, height, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas) {
-        return addBuilding(coords, height, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
-        return addBuilding(geom, NaN, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
-        return addBuilding(coords, NaN, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
-        return addBuilding(geom, NaN, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
-        return addBuilding(coords, NaN, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database primary key
-     * as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(!(geom instanceof Polygon)) {
-            LOGGER.error("Building geometry should be Polygon");
-            return null;
-        }
-        Polygon poly = (Polygon)geom;
-        addBuilding(new Building(poly, height, alphas, id));
-        return this;
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas, int id) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(!coords[0].equals2D(coords[l-1])) {
-            // Not closed linestring
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), height, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
-     * @param height Wall height.
      * @param id     Database key.
      */
-    public ProfileBuilder addWall(LineString geom, double height, int id) {
-        return addWall(geom, height, new ArrayList<>(), id);
+    public ProfileBuilder addWall(LineString geom, int id) {
+        return addWall(geom, new ArrayList<>(), id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param height Wall height.
-     * @param id     Database key.
-     */
-    public ProfileBuilder addWall(Coordinate[] coords, double height, int id) {
-        return addWall(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param coords Wall footprint coordinates.
      * @param id     Database key.
      */
     public ProfileBuilder addWall(Coordinate[] coords, int id) {
-        return addWall(FACTORY.createLineString(coords), 0.0, new ArrayList<>(), id);
+        return addWall(FACTORY.createLineString(coords), new ArrayList<>(), id);
     }
 
+
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param wall
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
      */
-    public ProfileBuilder addWall(Wall wall) {
-        if (!wall.isValid) {
-            LOGGER.warn(
-                    String.format(Locale.ROOT,
-                            "Wall (a LineString in the BUILDINGS table) with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's line points",
-                            wall.primaryKey)
-            );
-        }
-        walls.add(wall);
-        wallTree.insert(new Envelope(wall.line.p0, wall.line.p1), walls.size());
-        return this;
+    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
+        return addWall(FACTORY.createLineString(coords), alphas, id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
-     * @param height Wall height.
      * @param alphas Absorption coefficient.
      * @param id     Database key.
      */
-    public ProfileBuilder addWall(LineString geom, double height, List<Double> alphas, int id) {
+    public ProfileBuilder addWall(LineString geom, List<Double> alphas, int id) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
@@ -558,7 +463,6 @@ public class ProfileBuilder {
 
             for(int i=0; i<geom.getNumPoints()-1; i++) {
                 Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
-                wall.setRelativeHeight(height);
                 wall.setAlpha(alphas);
                 addWall(wall);
             }
@@ -571,22 +475,22 @@ public class ProfileBuilder {
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param id     Database key.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
+     * @param wall
      */
-    public ProfileBuilder addWall(Coordinate[] coords, double height, List<Double> alphas, int id) {
-        return addWall(FACTORY.createLineString(coords), height, alphas, id);
+    public ProfileBuilder addWall(Wall wall) {
+        if (!wall.isValid) {
+            LOGGER.warn(
+                String.format(Locale.ROOT,
+                    "Wall (a LineString in the BUILDINGS table) with PK : %s is not valid. it doesn't provide a Z value for all it's line points",
+                    wall.primaryKey)
+            );
+        }
+        walls.add(wall);
+        wallTree.insert(new Envelope(wall.line.p0, wall.line.p1), walls.size());
+        return this;
     }
 
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param id     Database key.
-     */
-    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
-        return addWall(FACTORY.createLineString(coords), 0.0, alphas, id);
-    }
 
     /**
      * Add the topographic point in the data, to complete the topographic data.
@@ -880,24 +784,14 @@ public class ProfileBuilder {
 
         for (Building b : buildings) {
             if (!b.isValid) {
-                LOGGER.error(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's polygon points", b.primaryKey));
+                LOGGER.error(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't provide a Z value for all it's polygon points", b.primaryKey));
                 return null; // we return here because the invalid buildings should already be filtered out at this point
-            }
-            if (!b.hasValidZCoordinates) {
-                // These are not needed if we use applyRelativeHeightAndTopo right after
-                b.force3D();  // forces3D and set all Z to 0.0
-                b.updateZTopo(this); // get DEM = 0.0 if this.topoTree is null
-
-                b.applyRelativeHeightAndTopo(this);
             }
         }
         for (Wall w : walls) {
             if (!w.isValid) {
-                LOGGER.error(String.format(Locale.ROOT, "Wall with PK : %s is not valid. It doesn't have a relative HEIGHT set. ANd it doesn't provide a Z value for all it's line points", w.primaryKey));
+                LOGGER.error(String.format(Locale.ROOT, "Wall with PK : %s is not valid. it doesn't provide a Z value for all it's line points", w.primaryKey));
                 return null; // we return here because the invalid walls should already be filtered out at this point
-            }
-            if (!w.hasValidZCoordinates) {
-                w.applyRelativeHeightAndTopo(this);
             }
         }
         //Process buildings
@@ -907,15 +801,12 @@ public class ProfileBuilder {
             Building building = buildings.get(j);
             buildingsWideAnglePoints.put(j + 1,
                     getWideAnglePointsOnPolygon(building.poly.getExteriorRing(), 0, 2 * Math.PI));
-            List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
                 Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedObstructionIndex(processedObstructions.size());
-                walls.add(w);
                 w.setPrimaryKey(building.getPrimaryKey());
                 w.copyAlphas(building);
-                w.setRelativeHeight(building.getRelativeHeight());
                 processedObstructions.add(w);
                 rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
             }

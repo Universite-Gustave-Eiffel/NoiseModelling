@@ -6004,17 +6004,17 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(10, -5),
-                        new Coordinate(20, -5),
-                        new Coordinate(20, 5),
-                        new Coordinate(10, 5)
-                }, 0.0)
+                        new Coordinate(10, -5, 0.0),
+                        new Coordinate(20, -5, 0.0),
+                        new Coordinate(20, 5, 0.0),
+                        new Coordinate(10, 5, 0.0)
+                })
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(-10, -5),
-                        new Coordinate(-20, -5),
-                        new Coordinate(-20, 5),
-                        new Coordinate(-10, 5)
-                }, 0.0)
+                        new Coordinate(-10, -5, 0.0),
+                        new Coordinate(-20, -5, 0.0),
+                        new Coordinate(-20, 5, 0.0),
+                        new Coordinate(-10, 5, 0.0)
+                })
                 .finishFeeding();
 
         //Propagation data building
@@ -6056,17 +6056,17 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(-5, 10),
-                        new Coordinate(-5, 20),
-                        new Coordinate(5, 20),
-                        new Coordinate(5, 10)
-                }, 1.0)
+                        new Coordinate(-5, 10, 1.0),
+                        new Coordinate(-5, 20, 1.0),
+                        new Coordinate(5, 20, 1.0),
+                        new Coordinate(5, 10, 1.0)
+                })
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(-5, -10 ),
-                        new Coordinate(-5, -20 ),
-                        new Coordinate(5, -20),
-                        new Coordinate(5, -10)
-                }, 1.0)
+                        new Coordinate(-5, -10, 1.0),
+                        new Coordinate(-5, -20, 1.0),
+                        new Coordinate(5, -20, 1.0),
+                        new Coordinate(5, -10, 1.0)
+                })
                 .finishFeeding();
 
         //Propagation data building
@@ -6116,9 +6116,9 @@ public class AttenuationComputeOutputCnossosTest {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(3, -100),
-                        new Coordinate(3, 100)
-                }, 2.5,alphas,1)
+                        new Coordinate(3, -100, 2.5),
+                        new Coordinate(3, 100, 2.5)
+                },alphas,1)
                 .finishFeeding();
 
         //Propagation data building
@@ -6416,13 +6416,13 @@ public class AttenuationComputeOutputCnossosTest {
         // e ≈ distance between building tops ≈ 40m (significant contribution to deltaPrime)
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(75, -50), new Coordinate(80, -50),
-                        new Coordinate(80, 50), new Coordinate(75, 50)
-                }, 10.0)
+                        new Coordinate(75, -50, 10.0), new Coordinate(80, -50, 10.0),
+                        new Coordinate(80, 50, 10.0), new Coordinate(75, 50, 10.0)
+                })
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(120, -50), new Coordinate(125, -50),
-                        new Coordinate(125, 50), new Coordinate(120, 50)
-                }, 10.0)
+                        new Coordinate(120, -50, 10.0), new Coordinate(125, -50, 10.0),
+                        new Coordinate(125, 50, 10.0), new Coordinate(120, 50, 10.0)
+                })
                 .finishFeeding();
 
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
@@ -6563,9 +6563,9 @@ public class AttenuationComputeOutputCnossosTest {
         List<Double> alphas = Arrays.asList(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         profileBuilder
                 .addWall(new Coordinate[]{
-                        new Coordinate(20, -100),
-                        new Coordinate(20, 100)
-                }, 6.0, alphas, 1)
+                        new Coordinate(20, -100, 6.0),
+                        new Coordinate(20, 100, 6.0)
+                }, alphas, 1)
                 .finishFeeding();
 
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
@@ -6840,11 +6840,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         profileBuilder
                 .addBuilding(new Coordinate[]{
-                        new Coordinate(0.0, -2.5),
-                        new Coordinate(1.0, -2.5),
-                        new Coordinate(1.0, 2.5),
-                        new Coordinate(0.0, 2.5)
-                }, 5.0)
+                        new Coordinate(0.0, -2.5, 5.0),
+                        new Coordinate(1.0, -2.5, 5.0),
+                        new Coordinate(1.0, 2.5, 5.0),
+                        new Coordinate(0.0, 2.5, 5.0)
+                })
                 .finishFeeding();
 
         SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);

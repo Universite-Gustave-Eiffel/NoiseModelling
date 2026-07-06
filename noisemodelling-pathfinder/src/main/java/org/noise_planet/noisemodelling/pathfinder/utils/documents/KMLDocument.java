@@ -257,7 +257,7 @@ public class KMLDocument {
         for(Building building : buildings) {
             Coordinate[] original = building.getGeometry().getCoordinates();
             Coordinate[] coordinates = new Coordinate[original.length];
-            double z = profileBuilder.getBuilding(idPoly ).getAverageZ();
+            double z = profileBuilder.getBuilding( idPoly ).getAverageZ();
             // z is building height + average ground height
             for(int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = copyCoord(new Coordinate(original[i].x, original[i].y, z));

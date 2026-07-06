@@ -142,8 +142,8 @@ public class TestPathFinder {
         //Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
         //Create obstruction test object
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON((5 5, 7 5, 7 6, 8 6, 8 8, 5 8, 5 5))"), 4.3);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7, 10 7, 10 9, 9 9, 9 7))"), 4.3);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((5 5  4.3, 7 5  4.3, 7 6  4.3, 8 6  4.3, 8 8  4.3, 5 8  4.3, 5 5  4.3))"));
+        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7  4.3, 10 7  4.3, 10 9  4.3, 9 9  4.3, 9 7  4.3))"));
         profileBuilder.finishFeeding();
 
         Scene processData = new Scene(profileBuilder);
