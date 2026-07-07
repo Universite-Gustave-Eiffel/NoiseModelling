@@ -41,7 +41,7 @@ public interface PropagationModel {
      * @param receiver receiver point information
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
+     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      * @return AttenuationOutput object
      */
     AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
