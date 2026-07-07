@@ -101,7 +101,6 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
         if(keepRays && !attenuationOutputs.isEmpty()) {
             multiThreadParent.attenuationOutputs.addAll(this.attenuationOutputs);
-            multiThreadParent.propagationPathsSize.addAndGet(attenuationOutputs.size());
             this.attenuationOutputs.clear();
         }
         if(multiThreadParent.receiversAttenuationLevels != null) {

@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
     public Deque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
-    public AtomicInteger propagationPathsSize = new AtomicInteger(0);
     public boolean exportPaths;
     public boolean exportAttenuationMatrix;
     public AtomicInteger cutProfileCount = new AtomicInteger();
@@ -82,7 +81,6 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
 
     public void clearAttenuationOutputs() {
         attenuationOutputs.clear();
-        propagationPathsSize.set(0);
     }
 
     public void appendReflexionPath(long added) {
