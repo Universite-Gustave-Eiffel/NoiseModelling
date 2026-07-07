@@ -54,7 +54,6 @@ public class CutProfile {
 
     /**
     *  Orientation sourceOrientation = new Orientation(0,0,0); */
-    @JsonIgnore
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
 
     /**
@@ -498,7 +497,6 @@ public class CutProfile {
         return this.getSource().orientation;
     }
 
-    @JsonIgnore
     public Orientation getRaySourceReceiverDirectivity() {
         return raySourceReceiverDirectivity;
     }
