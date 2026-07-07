@@ -147,12 +147,6 @@ public class MainTest {
                 "--pathFile", buildingsPath,
                 "--tableName", "testdelaunay.buildings");
 
-        try(Connection connection = postgisDataSource.getConnection()) {
-            // Remove height field in BUILDINGS table (to check if it is working without this field)
-            connection.createStatement().execute("ALTER TABLE testdelaunay.buildings DROP COLUMN HEIGHT");
-        }
-
-
         Main.main("-w", temp.getAbsolutePath(),
                 "-d", pgDb,
                 "-u", pgUser,
