@@ -22,8 +22,6 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -240,8 +238,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return strategy;
         }
-        // Create propagation model and compute rays for the current cutProfile
-        PropagationModel propagationModel = multiThread.propagationModel;
         CutPointSource source = cutProfile.getSource();
         long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
         if(scene.wjSources.isEmpty()) {

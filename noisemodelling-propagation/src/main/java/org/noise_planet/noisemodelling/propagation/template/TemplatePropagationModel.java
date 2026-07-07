@@ -47,7 +47,7 @@ public class TemplatePropagationModel implements PropagationModel {
         // Attenuation computation here
         List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
         AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile);
-        attenuationOutput.aGlobal = new double[0];
+        attenuationOutput.aGlobal = new double[]{0};
         attenuationOutputs.add(attenuationOutput);
         //
         return attenuationOutputs;

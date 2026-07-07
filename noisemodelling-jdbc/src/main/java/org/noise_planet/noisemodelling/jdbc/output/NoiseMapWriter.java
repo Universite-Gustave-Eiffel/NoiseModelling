@@ -157,8 +157,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
             LineString lineString = row.propagationPath.asGeom();
             lineString.setSRID(srid);
             ps.setObject(parameterIndex++, lineString);
-            ps.setLong(parameterIndex++, row.propagationPath.getCutProfile().getReceiver().receiverPk);
-            ps.setLong(parameterIndex++, row.propagationPath.getCutProfile().getSource().sourcePk);
+            ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
+            ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
             if(databaseParameters.exportCnossosPathWithAttenuation) {
                 String json = "";
                 try {
