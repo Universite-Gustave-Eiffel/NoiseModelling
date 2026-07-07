@@ -52,7 +52,9 @@ public class CutProfile {
 
     public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
 
-//    Orientation sourceOrientation = new Orientation(0,0,0);
+    /**
+    *  Orientation sourceOrientation = new Orientation(0,0,0); */
+    @JsonIgnore
     public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
 
     /**
@@ -491,11 +493,12 @@ public class CutProfile {
         return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
                 (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;
     }
-
+    @JsonIgnore
     public Orientation getSourceOrientation() {
         return this.getSource().orientation;
     }
 
+    @JsonIgnore
     public Orientation getRaySourceReceiverDirectivity() {
         return raySourceReceiverDirectivity;
     }

@@ -98,8 +98,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
         return mapper.writer();
     }
 
-    public String attenuationOutputAsJSON(AttenuationOutput path) throws JsonProcessingException {
-        return jsonWriter.writeValueAsString(path);
+    public String attenuationOutputAsJSON(AttenuationOutput attenuationOutput) throws JsonProcessingException {
+        return jsonWriter.writeValueAsString(attenuationOutput);
     }
 
     public static AttenuationOutput jsonToAttenuationOutput(String json) throws JsonProcessingException {

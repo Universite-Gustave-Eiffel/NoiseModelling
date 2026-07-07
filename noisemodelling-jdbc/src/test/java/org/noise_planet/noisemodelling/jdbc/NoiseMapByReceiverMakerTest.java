@@ -280,27 +280,27 @@ public class NoiseMapByReceiverMakerTest {
 
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
-            List<AttenuationOutput> pathsParameters = new ArrayList<>();
+            List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
             try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString("PATH"));
-                    pathsParameters.add(attenuationOutput);
+                    attenuationOutputs.add(attenuationOutput);
                 }
             }
-            assertEquals(4 , pathsParameters.size());
-            AttenuationOutput attenuationOutput = pathsParameters.remove(0);
+            assertEquals(4 , attenuationOutputs.size());
+            AttenuationOutput attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(1, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is front of source
             assertEquals(new Orientation(0, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
-            attenuationOutput = pathsParameters.remove(0);
+            attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(2, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is behind of the source
             assertEquals(new Orientation(180, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
-            attenuationOutput = pathsParameters.remove(0);
+            attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(3, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the right of the source
             assertEquals(new Orientation(90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
-            attenuationOutput = pathsParameters.remove(0);
+            attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(4, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the left of the source
             assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());

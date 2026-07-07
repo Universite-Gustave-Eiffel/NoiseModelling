@@ -260,7 +260,7 @@ public class AttenuationCnossos {
         List<PointPath> diffPts = path.getPointList().stream().
                 filter(pointPath -> pointPath.type.equals(DIFH_RCRIT) || pointPath.type.equals(DIFH)
                         || pointPath.type.equals(DIFV)).collect(Collectors.toList());
-        attenuationOutput.init(data.getFrequencies().size());
+        attenuationOutput.aBoundary.init(data.getFrequencies().size());
         // Without diff
         for(int i=0; i<data.getFrequencies().size(); i++) {
             int finalI = i;
@@ -381,7 +381,8 @@ public class AttenuationCnossos {
      * @param type Type of diffraction
      * @return the value of ADiv
      */
-    private static double aDif(CnossosPath cnossosPath, AttenuationOutput attenuationOutput,AttenuationParameters data, int frequencyIndex, PointPath.POINT_TYPE type) {
+    private static double aDif(CnossosPath cnossosPath, AttenuationOutput attenuationOutput,
+                               AttenuationParameters data, int frequencyIndex, PointPath.POINT_TYPE type) {
         SegmentPath first = cnossosPath.getSegmentList().getFirst();
         SegmentPath last = cnossosPath.getSegmentList().getLast();
 
