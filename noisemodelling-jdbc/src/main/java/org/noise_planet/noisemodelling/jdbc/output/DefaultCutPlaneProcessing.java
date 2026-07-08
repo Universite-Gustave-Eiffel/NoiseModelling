@@ -1,6 +1,7 @@
 package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.h2gis.api.ProgressVisitor;
+import org.noise_planet.noisemodelling.jdbc.IComputeRaysOutFactory;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters;
 import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
@@ -18,7 +19,7 @@ import java.sql.SQLException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class DefaultCutPlaneProcessing implements NoiseMapByReceiverMaker.IComputeRaysOutFactory {
+public class DefaultCutPlaneProcessing implements IComputeRaysOutFactory {
     ResultsCache resultsCache = new ResultsCache();
     final NoiseMapDatabaseParameters noiseMapDatabaseParameters;
     NoiseMapWriter noiseMapWriter;
