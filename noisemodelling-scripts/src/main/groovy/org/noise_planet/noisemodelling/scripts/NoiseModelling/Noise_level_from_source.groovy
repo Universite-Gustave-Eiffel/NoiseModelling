@@ -58,8 +58,8 @@ inputs = [
                 title      : 'Buildings table name',
                 description: '&#127968; Name of the Buildings table</br> </br>' +
                         'The table must contain: </br><ul>' +
-                        '<li><b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON)</li>' +
-                        '<li><b> HEIGHT </b>: the height of the building (FLOAT)</li>' +
+                        '<li><b> THE_GEOM </b>: the 2D or 3D geometry of the building (POLYGON, MULTIPOLYGON or LINESTRING). If the geometry is 2D then the *HEIGHT* column is mandatory. LineString is used to add noise barriers</li>' +
+                        '<li><b> HEIGHT </b>: Optional, the height of the building above the ground (mandatory if geometry is 2D, ignored if geometry is 3D) (FLOAT)</li>' +
                         '<li><b> G </b>: Optional, Wall absorption value if g is [0, 1] or wall surface impedance' +
                         ' ([N.s.m-4] static air flow resistivity of material) if G is [20, 20000]' +
                         ' (default is 0.1 if the column G does not exists) (FLOAT)</li></ul>',

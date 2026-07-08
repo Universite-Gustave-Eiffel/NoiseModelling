@@ -36,10 +36,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.lang.Double.NaN;
 import static java.lang.Double.isNaN;
 import static org.locationtech.jts.algorithm.Orientation.isCCW;
-import static org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder.IntersectionType.*;
 
 /**
- * Builder constructing profiles from buildings, topography and ground effects.
+ * Builder constructing profiles from buildings, topography, and ground effects.
  */
 public class ProfileBuilder {
     public static final double epsilon = 1e-7;
@@ -53,7 +52,7 @@ public class ProfileBuilder {
     private static final GeometryFactory FACTORY = new GeometryFactory();
     private static final double DELTA = 1e-3;
 
-    /** If true, no more data can be add. */
+    /** If true, no more data can be added. */
     private boolean isFeedingFinished = false;
     /** Wide angle points of a building polygon */
     private final Map<Integer, ArrayList<Coordinate>> buildingsWideAnglePoints = new HashMap<>();
@@ -75,9 +74,9 @@ public class ProfileBuilder {
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
-    private STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
+    private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** RTree with Buildings's walls linestrings, walls linestring, GroundEffect linestrings
-     * The object is an integer. It's an index of the array {@link #processedWalls} */
+     * The object is an integer. It's an index of the array {@link #processedObstructions} */
     public STRtree rtree;
     private STRtree groundEffectsRtree = new STRtree(TREE_NODE_CAPACITY);
 
@@ -101,15 +100,11 @@ public class ProfileBuilder {
     /** Receivers .*/
     private final List<Coordinate> receivers = new ArrayList<>();
 
-    /** List of processed walls. */
-    public final List<Wall> processedWalls = new ArrayList<>();
+    /** List of processed LineObstructions. */
+    public final List<LineObstruction> processedObstructions = new ArrayList<>();
 
     /** Global envelope of the builder. */
     private Envelope envelope;
-
-    /** if true take into account z value on Buildings Polygons
-     * In this case, z represent the altitude (from the sea to the top of the wall) */
-    private boolean zBuildings = false;
 
     public static final int[] DEFAULT_FREQUENCIES_THIRD_OCTAVE = new int[] {50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000};
     public static final Double[] DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE = new Double[] {50.1187234, 63.0957344, 79.4328235, 100.0, 125.892541, 158.489319, 199.526231, 251.188643, 316.227766, 398.107171, 501.187234, 630.957344, 794.328235, 1000.0, 1258.92541, 1584.89319, 1995.26231, 2511.88643, 3162.27766, 3981.07171, 5011.87234, 6309.57344, 7943.28235, 10000.0};
@@ -118,18 +113,6 @@ public class ProfileBuilder {
     public List<Integer> frequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_THIRD_OCTAVE));
     public List<Double> exactFrequencyArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_EXACT_THIRD_OCTAVE));
     public List<Double> aWeightingArray = Arrays.asList(AcousticIndicatorsFunctions.asOctaveBands(DEFAULT_FREQUENCIES_A_WEIGHTING_THIRD_OCTAVE));
-
-    /**
-     * @param zBuildings if true take into account z value on Buildings Polygons
-     *                   In this case, z represent the altitude (from the sea to the top of the wall). If false, Z is
-     *                   ignored and the height attribute of the Building/Wall is used to extrude the building from the DEM
-     * @return this
-     */
-    public ProfileBuilder setzBuildings(boolean zBuildings) {
-        this.zBuildings = zBuildings;
-        return this;
-    }
-
 
     /**
      * Main empty constructor.
@@ -161,8 +144,8 @@ public class ProfileBuilder {
         exactFrequencyArray = new ArrayList<>();
         aWeightingArray = new ArrayList<>();
         initializeFrequencyArrayFromReference(this.frequencyArray, exactFrequencyArray, aWeightingArray);
-        for (Wall wall : processedWalls) {
-            wall.initialize(exactFrequencyArray);
+        for (Obstruction obstruction : processedObstructions) {
+            obstruction.initialize(exactFrequencyArray);
         }
         for (Building building : buildings) {
             building.initialize(exactFrequencyArray);
@@ -192,7 +175,18 @@ public class ProfileBuilder {
      */
     public ProfileBuilder addBuilding(Building building) {
         if(building.poly == null || building.poly.isEmpty()) {
-            LOGGER.error("Cannot add a building with null or empty geometry.");
+            throw  new IllegalArgumentException(
+                String.format(Locale.ROOT,
+                    "Building with PK : %s is not valid, it has a null or empty geometry.",
+                    building.primaryKey)
+            );
+        }
+        else if (!building.isValid) {
+            throw  new IllegalArgumentException(
+                String.format(Locale.ROOT,
+                    "Building with PK : %s is not valid, it doesn't provide a Z value for all it's polygon points",
+                    building.primaryKey)
+            );
         }
         else if(!isFeedingFinished) {
             if(envelope == null) {
@@ -227,31 +221,14 @@ public class ProfileBuilder {
         return addBuilding(coords, -1);
     }
 
-    /**
-     * Add the given {@link Geometry} footprint and height as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height) {
-        return addBuilding(geom, height, new ArrayList<>());
-    }
 
     /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param height Building height.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height) {
-        return addBuilding(coords, height, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as building.
      * @param geom   Building footprint.
-     * @param id     Database primary key.
+     * @param id     Database id.
      */
     public ProfileBuilder addBuilding(Geometry geom, int id) {
-        return addBuilding(geom, NaN, id);
+        return addBuilding(geom, new ArrayList<>(), id);
     }
 
     /**
@@ -260,34 +237,66 @@ public class ProfileBuilder {
      * @param id     Database primary key.
      */
     public ProfileBuilder addBuilding(Coordinate[] coords, int id) {
-        return addBuilding(coords, NaN, id);
+        return addBuilding(coords, new ArrayList<>(), id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as building.
+     * Add the given {@link Geometry} footprint, and alphas (absorption coefficients) as building.
      * @param geom   Building footprint.
-     * @param height Building height.
-     * @param id     Database id.
+     * @param alphas Absorption coefficients.
      */
-    public ProfileBuilder addBuilding(Geometry geom, double height, int id) {
-        return addBuilding(geom, height, new ArrayList<>(), id);
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
+        return addBuilding(geom, alphas, -1);
     }
 
     /**
      * Add the given {@link Geometry} footprint.
      * @param coords Building footprint coordinates.
-     * @param height Building height.
-     * @param id     Database primary key.
+     * @param alphas Absorption coefficients.
      */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, int id) {
-        return addBuilding(coords, height, new ArrayList<>(), id);
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
+        return addBuilding(coords, alphas, -1);
     }
 
+    /**
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database primary key
+     * as building.
+     * @param geom   Building footprint.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
+        if(!(geom instanceof Polygon)) {
+            throw  new IllegalArgumentException("Building geometry should be Polygon");
+        }
+        Polygon poly = (Polygon) geom;
+        addBuilding(new Building(poly, alphas, id));
+        return this;
+    }
+
+    /**
+     * Add the given {@link Geometry} footprint.
+     * @param alphas Absorption coefficients.
+     * @param id     Database primary key.
+     */
+    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
+        Coordinate[] polyCoords;
+        int l = coords.length;
+        if(!coords[0].equals2D(coords[l-1])) {
+            // Not closed linestring
+            polyCoords = Arrays.copyOf(coords, l+1);
+            polyCoords[l] = new Coordinate(coords[0]);
+        }
+        else {
+            polyCoords = coords;
+        }
+        return addBuilding(FACTORY.createPolygon(polyCoords), alphas, id);
+    }
 
     /**
      * Apply a linestring over the digital elevation model by offsetting the z value with the ground elevation.
      * @param lineString
-     * @param epsilon ignore elevation point where linear interpolation distance is inferior that this value
+     * @param epsilon ignore elevation points where linear interpolation distance is inferior that this value
      * @return computed lineString
      */
     public LineString splitGeometryLineToDem(LineString lineString, double epsilon) {
@@ -398,10 +407,10 @@ public class ProfileBuilder {
         for (Coordinate coordinate : coordinates) {
             // Check if the source is into a building
             Building building = getBuildingAtCoordinate(coordinate);
-            if (building != null && building.getHeight() >= coordinate.z) {
+            if (building != null && building.getAverageZ() >= coordinate.z) {
                 LOGGER.warn("Geometry (Source point or Receiver point) has been defined inside a building" +
-                                " (building height {} m), it should be moved higher Geometry: {}",
-                        building.getHeight(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
+                                " (building average altitude : {} m), it should be moved higher Geometry: {}",
+                        building.getAverageZ(), new WKTWriter(3).write(new GeometryFactory().createPoint(coordinate)));
                 break;
             }
         }
@@ -409,148 +418,40 @@ public class ProfileBuilder {
 
 
     /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas) {
-        return addBuilding(geom, height, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas) {
-        return addBuilding(coords, height, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas) {
-        return addBuilding(geom, NaN, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param alphas Absorption coefficients.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas) {
-        return addBuilding(coords, NaN, alphas, -1);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height and alphas (absorption coefficients) as building.
-     * @param geom   Building footprint.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, List<Double> alphas, int id) {
-        return addBuilding(geom, NaN, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param coords Building footprint coordinates.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, List<Double> alphas, int id) {
-        return addBuilding(coords, NaN, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database primary key
-     * as building.
-     * @param geom   Building footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Geometry geom, double height, List<Double> alphas, int id) {
-        if(!(geom instanceof Polygon)) {
-            LOGGER.error("Building geometry should be Polygon");
-            return null;
-        }
-        Polygon poly = (Polygon)geom;
-        addBuilding(new Building(poly, height, alphas, id, zBuildings));
-        return this;
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint.
-     * @param height Building height.
-     * @param alphas Absorption coefficients.
-     * @param id     Database primary key.
-     */
-    public ProfileBuilder addBuilding(Coordinate[] coords, double height, List<Double> alphas, int id) {
-        Coordinate[] polyCoords;
-        int l = coords.length;
-        if(!coords[0].equals2D(coords[l-1])) {
-            // Not closed linestring
-            polyCoords = Arrays.copyOf(coords, l+1);
-            polyCoords[l] = new Coordinate(coords[0]);
-        }
-        else {
-            polyCoords = coords;
-        }
-        return addBuilding(FACTORY.createPolygon(polyCoords), height, alphas, id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
-     * @param height Wall height.
      * @param id     Database key.
      */
-    public ProfileBuilder addWall(LineString geom, double height, int id) {
-        return addWall(geom, height, new ArrayList<>(), id);
+    public ProfileBuilder addWall(LineString geom, int id) {
+        return addWall(geom, new ArrayList<>(), id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param height Wall height.
-     * @param id     Database key.
-     */
-    public ProfileBuilder addWall(Coordinate[] coords, double height, int id) {
-        return addWall(FACTORY.createLineString(coords), height, new ArrayList<>(), id);
-    }
-
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param coords Wall footprint coordinates.
      * @param id     Database key.
      */
     public ProfileBuilder addWall(Coordinate[] coords, int id) {
-        return addWall(FACTORY.createLineString(coords), 0.0, new ArrayList<>(), id);
+        return addWall(FACTORY.createLineString(coords), new ArrayList<>(), id);
     }
 
+
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param wall
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
+     * @param coords Wall footprint coordinates.
+     * @param id     Database key.
      */
-    public ProfileBuilder addWall(Wall wall) {
-        walls.add(wall);
-        wallTree.insert(new Envelope(wall.p0, wall.p1), walls.size());
-        return this;
+    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
+        return addWall(FACTORY.createLineString(coords), alphas, id);
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
      * @param geom   Wall footprint.
-     * @param height Wall height.
      * @param alphas Absorption coefficient.
      * @param id     Database key.
      */
-    public ProfileBuilder addWall(LineString geom, double height, List<Double> alphas, int id) {
+    public ProfileBuilder addWall(LineString geom, List<Double> alphas, int id) {
         if(!isFeedingFinished) {
             if(envelope == null) {
                 envelope = geom.getEnvelopeInternal();
@@ -561,7 +462,6 @@ public class ProfileBuilder {
 
             for(int i=0; i<geom.getNumPoints()-1; i++) {
                 Wall wall = new Wall(geom.getCoordinateN(i), geom.getCoordinateN(i+1), id, IntersectionType.BUILDING);
-                wall.setHeight(height);
                 wall.setAlpha(alphas);
                 addWall(wall);
             }
@@ -574,22 +474,22 @@ public class ProfileBuilder {
     }
 
     /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param id     Database key.
+     * Add the given {@link Geometry} footprint, alphas (absorption coefficients) and a database id as wall.
+     * @param wall
      */
-    public ProfileBuilder addWall(Coordinate[] coords, double height, List<Double> alphas, int id) {
-        return addWall(FACTORY.createLineString(coords), height, alphas, id);
+    public ProfileBuilder addWall(Wall wall) {
+        if (!wall.isValid) {
+            throw new IllegalArgumentException(
+                String.format(Locale.ROOT,
+                    "Wall (a LineString in the BUILDINGS table) with PK : %s is not valid. it doesn't provide a Z value for all it's line points",
+                    wall.primaryKey)
+            );
+        }
+        walls.add(wall);
+        wallTree.insert(new Envelope(wall.line.p0, wall.line.p1), walls.size());
+        return this;
     }
 
-    /**
-     * Add the given {@link Geometry} footprint, height, alphas (absorption coefficients) and a database id as wall.
-     * @param coords Wall footprint coordinates.
-     * @param id     Database key.
-     */
-    public ProfileBuilder addWall(Coordinate[] coords, List<Double> alphas, int id) {
-        return addWall(FACTORY.createLineString(coords), 0.0, alphas, id);
-    }
 
     /**
      * Add the topographic point in the data, to complete the topographic data.
@@ -708,8 +608,8 @@ public class ProfileBuilder {
         return this;
     }
 
-    public List<Wall> getProcessedWalls() {
-        return processedWalls;
+    public List<LineObstruction> getProcessedObstructions() {
+        return processedObstructions;
     }
 
     /**
@@ -880,39 +780,15 @@ public class ProfileBuilder {
             }
             topoTree.build();
         }
-        //Update building z
-        if(topoTree != null) {
-            for (Building b : buildings) {
-                if(isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0 || !zBuildings) {
-                    b.poly2D_3D();
-                    b.poly.apply(new ElevationFilter.UpdateZ(b.height + b.updateZTopo(this)));
-                }
-            }
-            for (Wall w : walls) {
-                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
-                    w.p0.z = w.height + getZGround(w.p0);
-                }
-                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
-                    w.p1.z = w.height + getZGround(w.p1);
-                }
-            }
-        } else {
-            for (Building b : buildings) {
-                if(b != null && b.poly != null && b.poly.getCoordinate() != null && (!zBuildings ||
-                        isNaN(b.poly.getCoordinate().z) || b.poly.getCoordinate().z == 0.0)) {
 
-                    b.poly2D_3D();
-                    b.poly.apply(new ElevationFilter.UpdateZ(b.height));
-                }
-
+        for (Building b : buildings) {
+            if (!b.isValid) {
+                throw new IllegalArgumentException(String.format(Locale.ROOT, "Building with PK : %s is not valid. It doesn't provide a Z value for all it's polygon points", b.primaryKey));
             }
-            for (Wall w : walls) {
-                if(isNaN(w.p0.z) || w.p0.z == 0.0) {
-                    w.p0.z = w.height;
-                }
-                if(isNaN(w.p1.z) || w.p1.z == 0.0) {
-                    w.p1.z = w.height;
-                }
+        }
+        for (Wall w : walls) {
+            if (!w.isValid) {
+                throw new IllegalArgumentException(String.format(Locale.ROOT, "Wall with PK : %s is not valid. it doesn't provide a Z value for all it's line points", w.primaryKey));
             }
         }
         //Process buildings
@@ -922,29 +798,26 @@ public class ProfileBuilder {
             Building building = buildings.get(j);
             buildingsWideAnglePoints.put(j + 1,
                     getWideAnglePointsOnPolygon(building.poly.getExteriorRing(), 0, 2 * Math.PI));
-            List<Wall> walls = new ArrayList<>();
             Coordinate[] coords = building.poly.getCoordinates();
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedWallIndex(processedWalls.size());
-                walls.add(w);
+                Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.BUILDING).setProcessedObstructionIndex(processedObstructions.size());
                 w.setPrimaryKey(building.getPrimaryKey());
                 w.copyAlphas(building);
-                processedWalls.add(w);
-                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
+                processedObstructions.add(w);
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
             }
-            building.setWalls(walls);
         }
         for (int j = 0; j < walls.size(); j++) {
             Wall wall = walls.get(j);
-            Coordinate[] coords = new Coordinate[]{wall.p0, wall.p1};
+            Coordinate[] coords = new Coordinate[]{wall.line.p0, wall.line.p1};
             for (int i = 0; i < coords.length - 1; i++) {
                 LineSegment lineSegment = new LineSegment(coords[i], coords[i + 1]);
-                Wall w = new Wall(lineSegment, j, IntersectionType.WALL).setProcessedWallIndex(processedWalls.size());
+                Wall w = (Wall) new Wall(lineSegment, j, IntersectionType.WALL).setProcessedObstructionIndex(processedObstructions.size());
                 w.copyAlphas(wall);
                 w.setPrimaryKey(wall.primaryKey);
-                processedWalls.add(w);
-                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedWalls.size()-1);
+                processedObstructions.add(w);
+                rtree.insert(lineSegment.toGeometry(FACTORY).getEnvelopeInternal(), processedObstructions.size()-1);
             }
         }
         // Set buildings and walls unmodifiable
@@ -969,8 +842,8 @@ public class ProfileBuilder {
                 Coordinate[] coords = poly.getCoordinates();
                 for (int k = 0; k < coords.length - 1; k++) {
                     LineSegment line = new LineSegment(coords[k], coords[k + 1]);
-                    processedWalls.add(new Wall(line, j, GROUND_EFFECT).setProcessedWallIndex(processedWalls.size()));
-                    rtree.insert(new Envelope(line.p0, line.p1), processedWalls.size() - 1);
+                    processedObstructions.add(new GroundLine(line, j).setProcessedObstructionIndex(processedObstructions.size()));
+                    rtree.insert(new Envelope(line.p0, line.p1), processedObstructions.size() - 1);
                 }
             }
         }
@@ -1008,9 +881,9 @@ public class ProfileBuilder {
         List<Wall> list = new ArrayList<>();
         List<Integer> indexes = rtree.query(env);
         for(int i : indexes) {
-            Wall w = getProcessedWalls().get(i);
-            if(w.getType().equals(BUILDING) || w.getType().equals(WALL)) {
-                list.add(w);
+            LineObstruction obstruction = getProcessedObstructions().get(i);
+            if(obstruction instanceof Wall) {
+                list.add((Wall) obstruction);
             }
         }
         return list;
@@ -1199,7 +1072,7 @@ public class ProfileBuilder {
         newCutPoints.add(wallCutPoint);
         double zRayReceiverSource = Vertex.interpolateZ(intersection, fullLine.p0, fullLine.p1);
         // add a point at the bottom of the building on the exterior side of the building
-        Vector2D facetVector = Vector2D.create(facetLine.p0, facetLine.p1);
+        Vector2D facetVector = Vector2D.create(facetLine.line.p0, facetLine.line.p1);
         // exterior polygon segments are CW, so the exterior of the polygon is on the left side of the vector
         // it works also with polygon holes as interiors are CCW
         Vector2D exteriorVector = facetVector.rotate(LEFT_SIDE).normalize().multiply(MILLIMETER);
@@ -1220,7 +1093,7 @@ public class ProfileBuilder {
     }
 
 
-    private boolean processGroundEffect(int processedWallIndex, Coordinate intersection, Wall facetLine,
+    private boolean processGroundEffect(int processedWallIndex, Coordinate intersection, GroundLine facetLine,
                                     LineSegment fullLine, List<CutPoint> newCutPoints,
                                     boolean stopAtObstacleOverSourceReceiver, CutProfile profile) {
 
@@ -1288,37 +1161,41 @@ public class ProfileBuilder {
                     }
                     processed.add((Integer) result);
                     int i = (Integer) result;
-                    Wall facetLine = processedWalls.get(i);
-                    Coordinate intersection = fullLine.intersection(facetLine.ls);
+                    LineObstruction facetLine = processedObstructions.get(i);
+                    Coordinate intersection = fullLine.intersection(facetLine.line);
                     if (intersection != null) {
                         intersection = new Coordinate(intersection);
-                        if (!isNaN(facetLine.p0.z) && !isNaN(facetLine.p1.z)) {
+                        if (!isNaN(facetLine.line.p0.z) && !isNaN(facetLine.line.p1.z)) {
                             // same z in the line, so useless to compute interpolation between points
-                            if (Double.compare(facetLine.p0.z, facetLine.p1.z) == 0) {
-                                intersection.z = facetLine.p0.z;
+                            if (Double.compare(facetLine.line.p0.z, facetLine.line.p1.z) == 0) {
+                                intersection.z = facetLine.line.p0.z;
                             } else {
-                                intersection.z = Vertex.interpolateZ(intersection, facetLine.p0, facetLine.p1);
+                                intersection.z = Vertex.interpolateZ(intersection, facetLine.line.p0, facetLine.line.p1);
                             }
                         }
-                        switch (facetLine.type) {
-                            case BUILDING:
-                                if (!processBuilding(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
-                            case WALL:
-                                if (!processWall(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
-                            case GROUND_EFFECT:
-                                if (!processGroundEffect(i, intersection, facetLine, fullLine, newCutPoints,
-                                        stopAtObstacleOverSourceReceiver, profile)) {
-                                    return;
-                                }
-                                break;
+                        if (facetLine instanceof Wall) {
+                            Wall facetWall = (Wall) facetLine;
+                            switch (facetWall.type) {
+                                case BUILDING:
+                                    if (!processBuilding(i, intersection, facetWall, fullLine, newCutPoints,
+                                            stopAtObstacleOverSourceReceiver, profile)) {
+                                        return;
+                                    }
+                                    break;
+                                case WALL:
+                                    if (!processWall(i, intersection, facetWall, fullLine, newCutPoints,
+                                            stopAtObstacleOverSourceReceiver, profile)) {
+                                        return;
+                                    }
+                                    break;
+                            }
+                        }
+                        if (facetLine instanceof GroundLine) {
+                            GroundLine facetGroundLine = (GroundLine) facetLine;
+                            if (!processGroundEffect(i, intersection, facetGroundLine, fullLine, newCutPoints,
+                                    stopAtObstacleOverSourceReceiver, profile)) {
+                                return;
+                            }
                         }
                     }
                 }
@@ -1775,10 +1652,5 @@ public class ProfileBuilder {
             //Ignore
         }
     }
-
-
-    /**
-     * Hold two integers. Used to store unique triangle segments
-     */
 
 }

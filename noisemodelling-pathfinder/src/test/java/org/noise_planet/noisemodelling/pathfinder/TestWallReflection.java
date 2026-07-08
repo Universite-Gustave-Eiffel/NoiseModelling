@@ -95,12 +95,16 @@ public class TestWallReflection {
         ProfileBuilder profileBuilder = new ProfileBuilder();
         Csv csv = new Csv();
         WKTReader wktReader = new WKTReader();
+        double height = 10.0;
         try(ResultSet rs = csv.read(new FileReader(
                 TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
                 new String[]{"geom", "id"})) {
             assertTrue(rs.next()); //skip column name
             while(rs.next()) {
-                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+                Geometry geometry = wktReader.read(rs.getString(1));
+                Coordinate[] coordinates = geometry.getCoordinates();
+                coordinates = Arrays.stream(coordinates).map(c -> new Coordinate(c.x, c.y, height)).toArray(Coordinate[]::new);
+                profileBuilder.addBuilding(coordinates, rs.getInt(2));
             }
         }
         profileBuilder.finishFeeding();
@@ -170,26 +174,30 @@ public class TestWallReflection {
 
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.setzBuildings(false); // building Z is height not altitude
         Csv csv = new Csv();
         WKTReader wktReader = new WKTReader();
+        double height = 10.0;
+        double demHeight = 500.0;
         try(ResultSet rs = csv.read(new FileReader(
                         TestWallReflection.class.getResource("testNReflexionBuildings.csv").getFile()),
                 new String[]{"geom", "id"})) {
             assertTrue(rs.next()); //skip column name
             while(rs.next()) {
-                profileBuilder.addBuilding(wktReader.read(rs.getString(1)), 10, rs.getInt(2));
+                Geometry geometry = wktReader.read(rs.getString(1));
+                Coordinate[] coordinates = geometry.getCoordinates();
+                coordinates = Arrays.stream(coordinates).map(c -> new Coordinate(c.x, c.y, height + demHeight)).toArray(Coordinate[]::new);
+                profileBuilder.addBuilding(coordinates, rs.getInt(2));
             }
         }
-        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,500.00));
-        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,500.00));
+        profileBuilder.addTopographicPoint(new Coordinate(598962.08,646370.83,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(599252.92,646370.11,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(599254.37,646100.19,demHeight));
+        profileBuilder.addTopographicPoint(new Coordinate(598913.00,646104.52,demHeight));
         profileBuilder.finishFeeding();
         assertEquals(5, profileBuilder.getBuildingCount());
         Scene inputData = new Scene(profileBuilder);
-        inputData.addReceiver(new Coordinate(599093.85,646227.90, 504));
-        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, 501)));
+        inputData.addReceiver(new Coordinate(599093.85,646227.90, demHeight + 4.0));
+        inputData.addSource(factory.createPoint(new Coordinate(599095.21, 646283.77, demHeight + 1.0)));
         inputData.setComputeHorizontalDiffraction(false);
         inputData.setComputeVerticalDiffraction(false);
         inputData.maxRefDist = 80;

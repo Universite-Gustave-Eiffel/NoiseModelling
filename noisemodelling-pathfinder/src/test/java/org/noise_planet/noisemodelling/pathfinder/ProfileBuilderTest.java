@@ -21,12 +21,13 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.noise_planet.noisemodelling.pathfinder.PathFinderTest.assertZProfil;
 
@@ -49,9 +50,9 @@ public class ProfileBuilderTest {
     @Test
     public void buildingAddingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10, -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23, -1);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56, -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
 
         profileBuilder.finishFeeding();
 
@@ -72,10 +73,10 @@ public class ProfileBuilderTest {
     @Test
     public void finishBuildingFeedingTest() throws ParseException {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
-        profileBuilder.addBuilding(READER.read("POLYGON((1 1,5 1,5 5,1 5,1 1))"), 10);
+        profileBuilder.addBuilding(READER.read("POLYGON((1 1 10,5 1 10,5 5 10,1 5 10,1 1 10))"), -1);
         assertNotNull(profileBuilder.finishFeeding());
-        profileBuilder.addBuilding(READER.read("POLYGON((10 10,15 10,15 15,10 15,10 10))"), 23);
-        profileBuilder.addBuilding(READER.read("POLYGON((6 8,8 10,8 4,6 8))"), 56);
+        profileBuilder.addBuilding(READER.read("POLYGON((10 10 23,15 10 23,15 15 23,10 15 23,10 10 23))"), -1);
+        profileBuilder.addBuilding(READER.read("POLYGON((6 8 56,8 10 56,8 4 56,6 8 56))"), -1);
 
         List<Building> list = profileBuilder.getBuildings();
         assertEquals(1, list.size());
@@ -210,8 +211,8 @@ public class ProfileBuilderTest {
         ProfileBuilder profileBuilder = new ProfileBuilder(3, 3, 3, 2);
 
         profileBuilder.addBuilding(READER.read("POLYGON((2 2 10, 1 3 15, 2 4 10, 3 3 12, 2 2 10))"), 10);
-        profileBuilder.addBuilding(READER.read("POLYGON((4.5 7, 4.5 8.5, 6.5 8.5, 4.5 7))"), 3.3);
-        profileBuilder.addBuilding(READER.read("POLYGON((7 6, 10 6, 10 2, 7 2, 7 6))"), 5.6);
+        profileBuilder.addBuilding(READER.read("POLYGON((4.5 7 3.3, 4.5 8.5 3.3, 6.5 8.5 3.3, 4.5 7 3.3))"));
+        profileBuilder.addBuilding(READER.read("POLYGON((7 6 5.6, 10 6 5.6, 10 2 5.6, 7 2 5.6, 7 6 5.6))"));
 
         profileBuilder.addTopographicLine((LineString) READER.read("LINESTRING (4 1 1.5, 5 7 1.0, 8 9 1.5)"));
         profileBuilder.addTopographicPoint(new Coordinate(7, 9, 2.5));
@@ -322,7 +323,6 @@ public class ProfileBuilderTest {
                         new Coordinate(84.1, 8.3, 10),
                 });
         profileBuilder.addGroundEffect(0, 100, 0.0, 150, 0.5);
-        profileBuilder.setzBuildings(true);
         profileBuilder.finishFeeding();
 
         CutProfile cutProfile = profileBuilder.getProfile(new Coordinate(50,10,1), new Coordinate(100, 15, 5));

@@ -19,7 +19,6 @@ package org.noise_planet.noisemodelling.scripts.Geometric_Tools
 
 import groovy.sql.Sql
 import org.h2gis.utilities.GeometryTableUtilities
-import org.h2gis.utilities.GeometryTableUtilities
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.h2gis.utilities.TableLocation
 import org.slf4j.Logger

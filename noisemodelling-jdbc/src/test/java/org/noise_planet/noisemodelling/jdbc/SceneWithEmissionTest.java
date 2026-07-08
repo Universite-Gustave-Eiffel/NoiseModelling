@@ -423,12 +423,11 @@ public class SceneWithEmissionTest {
                 .addWall(new Coordinate[]{
                         new Coordinate(6, 0, 4),
                         new Coordinate(-5, 12, 4),
-                }, 8, alphaWall, 0)
+                }, alphaWall, 0)
                 .addWall(new Coordinate[]{
                         new Coordinate(14, 4, 4),
                         new Coordinate(3, 16, 4),
-                }, 8, alphaWall, 1);
-        profileBuilder.setzBuildings(true);
+                }, alphaWall, 1);
         profileBuilder.finishFeeding();
 
 
@@ -495,7 +494,7 @@ public class SceneWithEmissionTest {
         builder.addGroundEffect(factory.toGeometry(new Envelope(50, 150, -250, 250)), 0.5);
         builder.addGroundEffect(factory.toGeometry(new Envelope(150, 225, -250, 250)), 0.2);
 
-        builder.addBuilding(wktReader.read("POLYGON ((-111 -35, -111 82, 70 82, 70 285, 282 285, 282 -35, -111 -35))"), 10, -1);
+        builder.addBuilding(wktReader.read("POLYGON ((-111 -35 10, -111 82 10, 70 82 10, 70 285 10, 282 285 10, 282 -35 10, -111 -35 10))"), -1);
 
         builder.finishFeeding();
 
@@ -575,12 +574,11 @@ public class SceneWithEmissionTest {
                 .addWall(new Coordinate[]{
                         new Coordinate(6, 0, 4),
                         new Coordinate(-5, 12, 4),
-                }, 8, alphaWall, 0)
+                }, alphaWall, 0)
                 .addWall(new Coordinate[]{
                         new Coordinate(14, 4, 4),
                         new Coordinate(3, 16, 4),
-                }, 8, alphaWall, 1);
-        profileBuilder.setzBuildings(true);
+                }, alphaWall, 1);
         profileBuilder.finishFeeding();
 
         SceneWithEmission scene = new SceneWithEmission(profileBuilder);
