@@ -301,7 +301,7 @@ public class MirrorReceiversCompute {
                         // No reflection on this wall
                         return;
                     } else {
-                        // Set the correct height for the reflection point.
+                        // Set the height for the reflection point.
                         // intersect3D's height is actually sitting vertically between the two lines.
                         // But we want the reflection point to be on the line between the source and the receiver image
                         // So we need to recompute the Z value on the srcMirrRcvLine at intersection coordinates
