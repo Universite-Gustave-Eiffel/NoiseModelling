@@ -281,6 +281,7 @@ public class CnossosPathBuilder {
                 cutProfile.getSource().getCoordinate());
         CnossosPath cnossosPath = new CnossosPath(cutProfile);
         cnossosPath.setFavourable(favourable);
+        cutProfile.setFavourable(favourable);
         cnossosPath.setPointList(points);
         cnossosPath.setSegmentList(segments);
         cnossosPath.setSRSegment(srPath);
@@ -372,7 +373,7 @@ public class CnossosPathBuilder {
                 Orientation emissionDirection = computeOrientation(cutProfile.getSource().orientation,
                         cutProfile.cutPoints.get(i0).getCoordinate(), targetPosition);
                 points.getFirst().orientation = emissionDirection;
-                cnossosPath.setRaySourceReceiverDirectivity(emissionDirection);
+                cutProfile.setRaySourceReceiverDirectivity(emissionDirection);
                 src = pts2D.get(i0);
             }
             // Add reflection/vertical edge diffraction points/segments between i0 i1

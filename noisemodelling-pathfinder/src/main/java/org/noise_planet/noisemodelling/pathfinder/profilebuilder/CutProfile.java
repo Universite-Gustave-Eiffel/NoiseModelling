@@ -51,6 +51,9 @@ public class CutProfile {
 
     public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
 
+    public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
+    private boolean favourable;
+
     /**
      * Empty constructor for deserialization
      */
@@ -89,6 +92,14 @@ public class CutProfile {
      */
     public boolean isCurvedPath() {
         return curvedPath;
+    }
+
+    public boolean isFavourable() {
+        return favourable;
+    }
+
+    public void setFavourable(boolean favourable) {
+        this.favourable = favourable;
     }
 
     /**
@@ -213,6 +224,14 @@ public class CutProfile {
             }
         }
         return rsLength / totalLength;
+    }
+
+    public Orientation getRaySourceReceiverDirectivity() {
+        return raySourceReceiverDirectivity;
+    }
+
+    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
+        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
     }
 
     /**

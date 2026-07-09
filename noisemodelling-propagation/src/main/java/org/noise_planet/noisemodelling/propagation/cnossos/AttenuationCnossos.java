@@ -746,7 +746,7 @@ public class AttenuationCnossos {
         // just swap the inverse boolean parameter
         // @see ComputeCnossosRays#computeOrientation
         Vector3D fieldVectorPropagation = Orientation.rotate(attenuationOutput.getCutProfile().getSourceOrientation(),
-                Orientation.toVector(cnossosPath.getRaySourceReceiverDirectivity()), false);
+                Orientation.toVector(attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity()), false);
         int roseIndex = AttenuationParameters.getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
         if(!cnossosPath.isFavourable()) {
             // Homogenous conditions
@@ -767,6 +767,7 @@ public class AttenuationCnossos {
             // Favourable conditions
             if (data.getWindRose()[roseIndex] != 0) {
                 cnossosPath.setFavourable(true);
+                attenuationOutput.getCutProfile().setFavourable(true);
                 aBoundary = AttenuationCnossos.aBoundary(cnossosPath, attenuationOutput, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(cnossosPath, data);
                 for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
@@ -804,7 +805,7 @@ public class AttenuationCnossos {
         double sourceLi = cnossosPath.getCutProfile().getSource().li;
 
         if(scene != null && !scene.isOmnidirectional(sourceId)) {
-            Orientation directivityToPick = cnossosPath.getRaySourceReceiverDirectivity();
+            Orientation directivityToPick = attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity();
             double[] attSource = scene.getSourceAttenuation( sourceId,
                     frequencies, Math.toRadians(directivityToPick.yaw),
                     Math.toRadians(directivityToPick.pitch));

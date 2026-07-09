@@ -175,8 +175,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
-//            ps.setBoolean(parameterIndex++, row.propagationPath.isFavourable());
-            ps.setBoolean(parameterIndex++, true);
+            ps.setBoolean(parameterIndex++, row.getCutProfile().isFavourable());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {

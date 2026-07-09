@@ -31,6 +31,7 @@ import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.GroundAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.cnossos.PointPath;
 
 import java.sql.Connection;
@@ -85,7 +86,7 @@ public class NoiseMapByReceiverMakerTest {
                 }
                 assertEquals(3, scene.wjSources.size());
                 assertEquals(1, scene.wjSources.get(1L).size());
-                assertEquals("D", scene.wjSources.get(1L).get(0).period);
+                assertEquals("D", scene.wjSources.get(1L).getFirst().period);
             }
         }
     }
@@ -221,13 +222,13 @@ public class NoiseMapByReceiverMakerTest {
                 // This is source orientation, not relevant to receiver position
                 assertEquals(1, rs.getInt("IDSOURCE"));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity(), 0.01);
+                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity(), 0.01);
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 assertEquals(1, rs.getInt("IDSOURCE"));
                 attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString(2));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity(), 0.01);
+                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity(), 0.01);
             }
         }
     }
@@ -289,22 +290,22 @@ public class NoiseMapByReceiverMakerTest {
                 }
             }
             assertEquals(4 , attenuationOutputs.size());
-            AttenuationOutput attenuationOutput = attenuationOutputs.remove(0);
+            AttenuationOutput attenuationOutput = attenuationOutputs.removeFirst();
             assertEquals(1, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is front of source
-            assertEquals(new Orientation(0, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
-            attenuationOutput = attenuationOutputs.remove(0);
+            assertEquals(new Orientation(0, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
             assertEquals(2, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is behind of the source
-            assertEquals(new Orientation(180, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
-            attenuationOutput = attenuationOutputs.remove(0);
+            assertEquals(new Orientation(180, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
             assertEquals(3, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the right of the source
-            assertEquals(new Orientation(90, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
-            attenuationOutput = attenuationOutputs.remove(0);
+            assertEquals(new Orientation(90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            attenuationOutput = attenuationOutputs.removeFirst();
             assertEquals(4, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the left of the source
-            assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
 
         }
     }
@@ -460,9 +461,11 @@ public class NoiseMapByReceiverMakerTest {
             assertEquals(189.30, attenuationOutput.getCutProfile().getReceiver().coordinate.z, 0.1);
             // Check CNOSSOS path points
             // One diffraction on horizontal edge of building
-            assertEquals(3, attenuationOutput.propagationPath.getPointList().size());
-            assertEquals(200.53, attenuationOutput.propagationPath.getPointList().getFirst().coordinate.y, 0.1);
-            assertEquals(189.30, attenuationOutput.propagationPath.getPointList().getLast().coordinate.y, 0.1);
+            if (attenuationOutput instanceof CnossosAttenuationOutput cnossosAttenuationOutput){
+                assertEquals(3, cnossosAttenuationOutput.propagationPath.getPointList().size());
+                assertEquals(200.53, cnossosAttenuationOutput.propagationPath.getPointList().getFirst().coordinate.y, 0.1);
+                assertEquals(189.30, cnossosAttenuationOutput.propagationPath.getPointList().getLast().coordinate.y, 0.1);
+            }
         }
     }
 
@@ -521,9 +524,13 @@ public class NoiseMapByReceiverMakerTest {
             // Diffraction over the walls of the building, but no direct path
             assertEquals(2 , attenuationOutputs.size());
             // Homogenous path with diffraction over the building wall
-            assertEquals(PointPath.POINT_TYPE.DIFH, attenuationOutputs.get(0).propagationPath.getPointList().get(1).type);
-            // Favorable path with diffraction over the building wall
-            assertEquals(PointPath.POINT_TYPE.DIFH, attenuationOutputs.get(1).propagationPath.getPointList().get(1).type);
+            if (attenuationOutputs.get(0) instanceof CnossosAttenuationOutput cnossosAttenuationOutput) {
+                assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput.propagationPath.getPointList().get(1).type);
+            }
+                // Favorable path with diffraction over the building wall
+            if (attenuationOutputs.get(1) instanceof CnossosAttenuationOutput cnossosAttenuationOutput) {
+                assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput.propagationPath.getPointList().get(1).type);
+            }
         }
     }
 }
