@@ -12,7 +12,7 @@ package org.noise_planet.noisemodelling.propagation.cnossos;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
-import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.slf4j.Logger;
@@ -72,7 +72,7 @@ public class AttenuationCnossos {
      * @return list double with the values of AGround
      */
     public static double[] getAGroundCore(CnossosPath cnossosPath, SegmentPath segmentPath,
-                                          AttenuationOutput attenuationOutput, AttenuationParameters data) {
+                                          CnossosAttenuationOutput attenuationOutput, AttenuationParameters data) {
 
         double[] aGround = new double[data.getFrequencies().size()];
         double aGroundMin;
@@ -163,7 +163,7 @@ public class AttenuationCnossos {
      * @return list double with the values of AGround
      */
     private static double[] aGround(SegmentPath segmentPath, CnossosPath cnossosPath,
-                                    AttenuationOutput attenuationOutput, AttenuationParameters data) {
+                                    CnossosAttenuationOutput attenuationOutput, AttenuationParameters data) {
         // Here there is a debate if use the condition isgDisc or not
         // In Directive 2015-2019, isgDisc == true because the term – 3(1 – Gm) takes into account the fact that when the source and the receiver are far apart, the first reflection source side is no longer on the platform but on natural land.
         if (!(segmentPath.gPath == 0 && data.isgDisc())) {
@@ -253,7 +253,7 @@ public class AttenuationCnossos {
      * @param data Parameters of the attenuation computation
      * @return array of double with the values of ABoundary
      */
-    public static double[] aBoundary(CnossosPath path, AttenuationOutput attenuationOutput,
+    public static double[] aBoundary(CnossosPath path, CnossosAttenuationOutput attenuationOutput,
                                      AttenuationParameters data) {
         double[] aGround = new double[data.getFrequencies().size()];
         double[] aDif = new double[data.getFrequencies().size()];
@@ -381,7 +381,7 @@ public class AttenuationCnossos {
      * @param type Type of diffraction
      * @return the value of ADiv
      */
-    private static double aDif(CnossosPath cnossosPath, AttenuationOutput attenuationOutput,
+    private static double aDif(CnossosPath cnossosPath, CnossosAttenuationOutput attenuationOutput,
                                AttenuationParameters data, int frequencyIndex, PointPath.POINT_TYPE type) {
         SegmentPath first = cnossosPath.getSegmentList().getFirst();
         SegmentPath last = cnossosPath.getSegmentList().getLast();
@@ -518,7 +518,7 @@ public class AttenuationCnossos {
      * @param idFreq Frequency index
      * @return homogeneous ground Atktenuation in db
      */
-    public static double aGroundH(CnossosPath cnossosPath, SegmentPath path, AttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq) {
+    public static double aGroundH(CnossosPath cnossosPath, SegmentPath path, CnossosAttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq) {
         return aGroundH(cnossosPath, path, attenuationOutput, data, idFreq, false);
     }
 
@@ -532,7 +532,7 @@ public class AttenuationCnossos {
      * @param forceGPath
      * @return homogeneous ground Attenuation in db
      */
-    public static double aGroundH(CnossosPath cnossosPath, SegmentPath path, AttenuationOutput attenuationOutput,AttenuationParameters data, int idFreq, boolean forceGPath) {
+    public static double aGroundH(CnossosPath cnossosPath, SegmentPath path, CnossosAttenuationOutput attenuationOutput,AttenuationParameters data, int idFreq, boolean forceGPath) {
         double[] values = computeCfKValues(cnossosPath, path, data, idFreq, forceGPath);
         double cf = values[0];
         double k = values[1];
@@ -556,7 +556,7 @@ public class AttenuationCnossos {
     }
 
     //Todo check if the favourable testform should be use instead
-    public static double aGroundF(CnossosPath cnossosPath, SegmentPath path, AttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq) {
+    public static double aGroundF(CnossosPath cnossosPath, SegmentPath path, CnossosAttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq) {
         return aGroundF(cnossosPath, path, attenuationOutput, data, idFreq, false);
     }
 
@@ -570,7 +570,7 @@ public class AttenuationCnossos {
      * @param forceGPath
      * @return favourable ground Attenuation in db
      */
-    public static double aGroundF(CnossosPath cnossosPath, SegmentPath path, AttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq, boolean forceGPath) {
+    public static double aGroundF(CnossosPath cnossosPath, SegmentPath path, CnossosAttenuationOutput attenuationOutput, AttenuationParameters data, int idFreq, boolean forceGPath) {
         double[] values = computeCfKValues(cnossosPath, path, data, idFreq);
         double cf = values[0];
         double k = values[1];
@@ -604,7 +604,7 @@ public class AttenuationCnossos {
      * @param exportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      */
     public static void computeCnossosAttenuation(AttenuationParameters data, SceneWithAttenuation scene,
-                                                 AttenuationOutput attenuationOutput, boolean exportAttenuationMatrix) {
+                                                 CnossosAttenuationOutput attenuationOutput, boolean exportAttenuationMatrix) {
         if (data == null) {
             attenuationOutput.aGlobal = new double[0];
             return;

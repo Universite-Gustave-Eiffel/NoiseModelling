@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
@@ -56,10 +57,11 @@ public class CnossosPropagationModel implements PropagationModel {
         // Compute attenuation for each path
         List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
         for (CnossosPath cnossosPath : cnossosPaths){
-            AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile);
+            CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
             attenuationOutput.propagationPath = cnossosPath;
             AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
                     isExportAttenuationMatrix);
+            attenuationOutput.setLineString(cnossosPath.asGeom());
             attenuationOutputs.add(attenuationOutput);
         }
         return attenuationOutputs;
@@ -86,7 +88,7 @@ public class CnossosPropagationModel implements PropagationModel {
         propagationPath.setSRSegment(CnossosPathBuilder.computeSegment(pts2D.get(0), pts2D.get(1), new double[] {0, 0}));
         propagationPath.getPointList().add(new PointPath(pts2D.get(0), 0, PointPath.POINT_TYPE.SRCE));
         propagationPath.getPointList().add(new PointPath(pts2D.get(1), 0, PointPath.POINT_TYPE.RECV));
-        AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile);
+        CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
         attenuationOutput.propagationPath = propagationPath;
         AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
                 isExportAttenuationMatrix);

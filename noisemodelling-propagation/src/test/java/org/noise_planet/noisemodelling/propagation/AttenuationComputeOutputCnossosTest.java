@@ -192,7 +192,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(2, propDataOut.getAttenuationOutputs().size(), "Number of paths");
 
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
 
         //Actual values
         double[] actualWH = attenuationOutput.groundAttenuation.w;
@@ -214,8 +214,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_LOWEST);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         double[] actualWF = attenuationOutput.groundAttenuation.w;
         double[] actualCfF = attenuationOutput.groundAttenuation.cf;
@@ -277,7 +277,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
 
 
         double[] actualWH = attenuationOutput.groundAttenuation.w;
@@ -302,8 +302,8 @@ public class AttenuationComputeOutputCnossosTest {
 
 
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         double[] actualWF = attenuationOutput.groundAttenuation.w;
         double[] actualCfF = attenuationOutput.groundAttenuation.cf;
@@ -366,7 +366,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         //Actual values
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         double[] actualWH = attenuationOutput.groundAttenuation.w;
         double[] actualCfH = attenuationOutput.groundAttenuation.cf;
         double[] actualAGroundH = attenuationOutput.groundAttenuation.aGround;
@@ -387,8 +387,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("ABoundaryH", expectedABoundaryH, actualABoundaryH, ERROR_EPSILON_VERY_LOW);
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         double[] actualWF = attenuationOutput.groundAttenuation.w;
         double[] actualCfF = attenuationOutput.groundAttenuation.cf;
@@ -451,7 +451,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = sumArray(expectedL,A_WEIGHTING);
 
         //Actual values
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         double[] actualWH = attenuationOutput.groundAttenuation.w;
         double[] actualCfH = attenuationOutput.groundAttenuation.cf;
         double[] actualAGroundH = attenuationOutput.groundAttenuation.aGround;
@@ -474,8 +474,8 @@ public class AttenuationComputeOutputCnossosTest {
 
         // Direct path (F)
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         double[] expectedWF = new double[]{0.00, 0.00, 0.00, 0.02, 0.09, 0.50, 2.53, 11.96};
         double[] expectedCfF = new double[]{200.18, 216.12, 221.91, 116.87, 17.87, 2.02, 0.39, 0.08};
         double[] expectedAGroundF = new double[]{-2.00, -2.00, -2.00, -2.00, -0.95, -2.00, -2.00, -2.00};
@@ -527,7 +527,7 @@ public class AttenuationComputeOutputCnossosTest {
         //Assertion
         assertPaths(pts, gPaths, Collections.singletonList(propDataOut.getAttenuationOutputs().getFirst())); // table17
 
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
 
         assertPlanes(meanPlanes, attenuationOutput.propagationPath.getSRSegment()); // table 18
         assertPlanes(meanPlanes, attenuationOutput.propagationPath.getSegmentList()); // table 18
@@ -571,8 +571,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
 
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
 
         double[] actualAGroundF = attenuationOutput.groundAttenuation.aGround;
@@ -608,7 +608,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
 
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
 
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutput.getCutProfile().getProfileType());
@@ -740,8 +740,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
 
         double[] actualWF = attenuationOutput.groundAttenuation.w;
@@ -778,7 +778,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
 
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutput.getCutProfile().getProfileType());
         assertEquals(2, attenuationOutput.propagationPath.getSegmentList().size());
@@ -905,8 +905,8 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH", expectedLH, actualLH, ERROR_EPSILON_VERY_LOW);
 
 
-        AttenuationOutput attenuationOutputH = attenuationOutput;
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputH = attenuationOutput;
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         double[] actualDeltaDiffSRF = attenuationOutput.aBoundary.deltaDiffSR;
         double[] actualAGroundSOF = attenuationOutput.aBoundary.aGroundSO;
@@ -963,26 +963,26 @@ public class AttenuationComputeOutputCnossosTest {
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -1279,26 +1279,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -1557,26 +1557,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -1817,26 +1817,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -2104,26 +2104,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -2341,26 +2341,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -2598,26 +2598,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -2862,26 +2862,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -3104,18 +3104,18 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -3306,18 +3306,18 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -3512,18 +3512,18 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -3744,26 +3744,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
@@ -4070,7 +4070,7 @@ public class AttenuationComputeOutputCnossosTest {
 
     }
 
-    private static double[] getAGlobal(AttenuationOutput attenuationOutputLeftH) {
+    private static double[] getAGlobal(CnossosAttenuationOutput attenuationOutputLeftH) {
         return attenuationOutputLeftH.aGlobal;
     }
 
@@ -4083,11 +4083,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
 
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
@@ -4184,19 +4184,19 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
@@ -4464,26 +4464,26 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(6, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
         
@@ -4747,11 +4747,11 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
@@ -4876,18 +4876,18 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -5133,34 +5133,34 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(8, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputRightH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputRightH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputRightF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputRightF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputRightF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutputRightF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftH = propDataOut.getAttenuationOutputs().get(4);
+        CnossosAttenuationOutput attenuationOutputLeftH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutputLeftH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputLeftF = propDataOut.getAttenuationOutputs().get(5);
+        CnossosAttenuationOutput attenuationOutputLeftF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutputLeftF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutputLeftF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(6);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(6);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(7);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(7);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -5477,14 +5477,14 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(3, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
@@ -5591,18 +5591,18 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        final AttenuationOutput attenuationOutputDirectH = propDataOut.getAttenuationOutputs().getFirst();
+        final CnossosAttenuationOutput attenuationOutputDirectH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutputDirectH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectH.getCutProfile().getProfileType());
-        AttenuationOutput attenuationOutputDirectF = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput attenuationOutputDirectF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutputDirectF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutputDirectF.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionH = propDataOut.getAttenuationOutputs().get(2);
+        CnossosAttenuationOutput attenuationOutputReflectionH = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutputReflectionH.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionH.getCutProfile().getProfileType());
 
-        AttenuationOutput attenuationOutputReflectionF = propDataOut.getAttenuationOutputs().get(3);
+        CnossosAttenuationOutput attenuationOutputReflectionF = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutputReflectionF.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutputReflectionF.getCutProfile().getProfileType());
 
@@ -5618,7 +5618,7 @@ public class AttenuationComputeOutputCnossosTest {
                 {0.0, 0.0, 0.0, 4.0, 90.10, 1.0, 1.0}
         };
 
-        AttenuationOutput directPath = attenuationOutputDirectH;
+        CnossosAttenuationOutput directPath = attenuationOutputDirectH;
 
         assertPlanes(segmentsMeanPlanesH, directPath.propagationPath.getSegmentList());
         assertMirrorPoint(expectedSPrime,expectedRPrime,directPath.propagationPath.getSegmentList().getFirst().sPrime,
@@ -5832,7 +5832,7 @@ public class AttenuationComputeOutputCnossosTest {
         double[] expectedLA = new double[]{42.91, 50.07, 54.09, 55.88, 55.10, 49.65, 26.31, -60.00};
 
         // Test Direct Path in homogeneous conditions
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutput.getCutProfile().getProfileType());
 
@@ -5857,7 +5857,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("LH - vertical plane", expectedLH, actualLH, ERROR_EPSILON_LOWEST);
 
         // Retrieve and test favourable direct path
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
 
         assertTrue(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, attenuationOutput.getCutProfile().getProfileType());
@@ -5874,7 +5874,7 @@ public class AttenuationComputeOutputCnossosTest {
 
         // Test Right Path in homogeneous conditions
 
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(2);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2);
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutput.getCutProfile().getProfileType());
 
@@ -5908,7 +5908,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         // Right favourable path
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(3);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(3);
         assertTrue(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.RIGHT, attenuationOutput.getCutProfile().getProfileType());
 
@@ -5931,7 +5931,7 @@ public class AttenuationComputeOutputCnossosTest {
 
 
         // left non favourable path
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(4);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(4);
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutput.getCutProfile().getProfileType());
 
@@ -5954,7 +5954,7 @@ public class AttenuationComputeOutputCnossosTest {
         assertDoubleArrayEquals("L (H) - lateral left", expectedLeftLH, sumArray(attenuationOutput.aGlobalRaw, LW_SOURCE), ERROR_EPSILON_VERY_LOW);
 
         // Left favourable path
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(5);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(5);
         assertTrue(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.LEFT, attenuationOutput.getCutProfile().getProfileType());
 
@@ -6039,8 +6039,8 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
-        SegmentPath s0 = propDataOut.getAttenuationOutputs().get(0).propagationPath.getSRSegment();
-        SegmentPath s1 = propDataOut.getAttenuationOutputs().get(1).propagationPath.getSRSegment();
+        SegmentPath s0 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst()).propagationPath.getSRSegment();
+        SegmentPath s1 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1)).propagationPath.getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -6092,8 +6092,8 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        SegmentPath s0 = propDataOut.getAttenuationOutputs().get(0).propagationPath.getSRSegment();
-        SegmentPath s1 = propDataOut.getAttenuationOutputs().get(2).propagationPath.getSRSegment();
+        SegmentPath s0 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst()).propagationPath.getSRSegment();
+        SegmentPath s1 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2)).propagationPath.getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -6282,8 +6282,8 @@ public class AttenuationComputeOutputCnossosTest {
 
         assertEquals(4, propDataOut.getAttenuationOutputs().size());
 
-        SegmentPath s0 = propDataOut.getAttenuationOutputs().get(0).propagationPath.getSRSegment();
-        SegmentPath s1 = propDataOut.getAttenuationOutputs().get(2).propagationPath.getSRSegment();
+        SegmentPath s0 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst()).propagationPath.getSRSegment();
+        SegmentPath s1 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(2)).propagationPath.getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -6321,8 +6321,8 @@ public class AttenuationComputeOutputCnossosTest {
 
         //Run computation
         computeRays.run(propDataOut);
-        SegmentPath s0 = propDataOut.getAttenuationOutputs().get(0).propagationPath.getSRSegment();
-        SegmentPath s1 = propDataOut.getAttenuationOutputs().get(1).propagationPath.getSRSegment();
+        SegmentPath s0 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst()).propagationPath.getSRSegment();
+        SegmentPath s1 = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1)).propagationPath.getSRSegment();
         assertEquals(s0.dp, s1.dp);
         assertEquals(s0.testFormH, s1.testFormH);
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
@@ -6443,9 +6443,10 @@ public class AttenuationComputeOutputCnossosTest {
         pathFinder.run(propDataOut);
 
         // Find the favorable direct path with multi-diffraction (3+ segments = 2+ diffraction edges)
-        AttenuationOutput favDirectPath = null;
-        AttenuationOutput homDirectPath = null;
-        for (AttenuationOutput path : propDataOut.getAttenuationOutputs()) {
+        CnossosAttenuationOutput favDirectPath = null;
+        CnossosAttenuationOutput homDirectPath = null;
+        for (AttenuationOutput pathGenric : propDataOut.getAttenuationOutputs()) {
+            CnossosAttenuationOutput path = (CnossosAttenuationOutput) pathGenric;
             if (path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT
                     && path.propagationPath.getSegmentList().size() >= 3) {
                 if (path.propagationPath.isFavourable()) {
@@ -6511,9 +6512,9 @@ public class AttenuationComputeOutputCnossosTest {
         assertNotNull(propDataOut);
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
-        AttenuationOutput homPath = propDataOut.getAttenuationOutputs().get(0);
+        CnossosAttenuationOutput homPath = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst());
         assertFalse(homPath.propagationPath.isFavourable());
-        AttenuationOutput favPath = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput favPath = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(favPath.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, favPath.getCutProfile().getProfileType());
 
@@ -6587,9 +6588,10 @@ public class AttenuationComputeOutputCnossosTest {
         pathFinder.run(propDataOut);
 
         // Find favorable and homogeneous direct paths with diffraction
-        AttenuationOutput favDirectPath = null;
-        AttenuationOutput homDirectPath = null;
-        for (AttenuationOutput path : propDataOut.getAttenuationOutputs()) {
+        CnossosAttenuationOutput favDirectPath = null;
+        CnossosAttenuationOutput homDirectPath = null;
+        for (AttenuationOutput pathGeneric : propDataOut.getAttenuationOutputs()) {
+            CnossosAttenuationOutput path = (CnossosAttenuationOutput) pathGeneric;
             if (path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.DIRECT
                     && path.propagationPath.getSegmentList().size() >= 2) {
                 if (path.propagationPath.isFavourable()) {
@@ -6658,9 +6660,9 @@ public class AttenuationComputeOutputCnossosTest {
         assertNotNull(propDataOut);
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
 
-        AttenuationOutput homPath = propDataOut.getAttenuationOutputs().get(0);
+        CnossosAttenuationOutput homPath = ((CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst());
         assertFalse(homPath.propagationPath.isFavourable());
-        AttenuationOutput favPath = propDataOut.getAttenuationOutputs().get(1);
+        CnossosAttenuationOutput favPath = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(favPath.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.DIRECT, favPath.getCutProfile().getProfileType());
 
@@ -6696,7 +6698,7 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = computeCnossosAttenuation(AttenuationComputeOutputCnossosTest.class.getResource("RegressionTestReflection1.json"));
         assertNotNull(propDataOut);
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutput.getCutProfile().getProfileType());
         // check if attenuationOutput.aDif array is positive
@@ -6705,7 +6707,7 @@ public class AttenuationComputeOutputCnossosTest {
         // Check attenuation is attenuationOutput.aGlobal < 0 dB
         assertTrue(Arrays.stream(attenuationOutput.aGlobal).allMatch(d -> d < 0));
         assertTrue(Arrays.stream(attenuationOutput.aGlobalRaw).allMatch(d -> d < 0));
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutput.getCutProfile().getProfileType());
         // check if attenuationOutput.aDif array is positive
@@ -6725,7 +6727,7 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = computeCnossosAttenuation(AttenuationComputeOutputCnossosTest.class.getResource("RegressionTestReflection2.json"));
         assertNotNull(propDataOut);
         assertEquals(2, propDataOut.getAttenuationOutputs().size());
-        AttenuationOutput attenuationOutput = propDataOut.getAttenuationOutputs().getFirst();
+        CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().getFirst();
         assertFalse(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutput.getCutProfile().getProfileType());
         // check if attenuationOutput.aDif array is positive
@@ -6734,7 +6736,7 @@ public class AttenuationComputeOutputCnossosTest {
         // Check attenuation is attenuationOutput.aGlobal < 0 dB
         assertTrue(Arrays.stream(attenuationOutput.aGlobal).allMatch(d -> d < 0));
         assertTrue(Arrays.stream(attenuationOutput.aGlobalRaw).allMatch(d -> d < 0));
-        attenuationOutput = propDataOut.getAttenuationOutputs().get(1);
+        attenuationOutput = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(1);
         assertTrue(attenuationOutput.propagationPath.isFavourable());
         assertEquals(CutProfile.PROFILE_TYPE.REFLECTION, attenuationOutput.getCutProfile().getProfileType());
         // check if attenuationOutput.aDif array is positive
@@ -6750,11 +6752,13 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = computeReflectionOnBuildingWallNearReceiver(false);
 
         List<AttenuationOutput> reflectionPaths = propDataOut.getAttenuationOutputs().stream()
+                .map(path->(CnossosAttenuationOutput) path)
                 .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
                 .collect(Collectors.toList());
         assertFalse(reflectionPaths.isEmpty(),
                 "A reflection path should exist on the building wall when source and receiver are on the same side.");
-        assertTrue(reflectionPaths.stream().anyMatch(path ->
+        assertTrue(reflectionPaths.stream().map(path->(CnossosAttenuationOutput) path)
+                        .anyMatch(path ->
                         path.propagationPath.getPointList().stream().anyMatch(point -> point.type == PointPath.POINT_TYPE.REFL)),
                 "At least one computed reflection path should contain a reflection point on the wall.");
     }
@@ -6764,6 +6768,7 @@ public class AttenuationComputeOutputCnossosTest {
         AttenuationComputeOutput propDataOut = computeReflectionOnBuildingWallNearReceiver(true);
 
         List<AttenuationOutput> reflectionPaths = propDataOut.getAttenuationOutputs().stream()
+                .map(path->(CnossosAttenuationOutput) path)
                 .filter(path -> path.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION)
                 .collect(Collectors.toList());
         assertTrue(reflectionPaths.isEmpty(),
@@ -6867,7 +6872,7 @@ public class AttenuationComputeOutputCnossosTest {
         pathFinder.run(propDataOut);
 
         for (int i = 0; i < propDataOut.getAttenuationOutputs().size(); i++) {
-            AttenuationOutput path = propDataOut.getAttenuationOutputs().get(i);
+            CnossosAttenuationOutput path = (CnossosAttenuationOutput) propDataOut.getAttenuationOutputs().get(i);
             LOGGER.info("Path {} profileType={}", i, path.getCutProfile().getProfileType());
             LOGGER.info("Path {} segmentList={}", i, objectMapper.writeValueAsString(path.propagationPath.getSegmentList()));
             LOGGER.info("Path {} pointList={}", i, objectMapper.writeValueAsString(path.propagationPath.getPointList()));
@@ -6885,7 +6890,7 @@ public class AttenuationComputeOutputCnossosTest {
     private static void assertPaths(double[][][] expectedPts, double[][] expectedGPaths, List<AttenuationOutput> actualAttenuationOutput) {
         assertEquals(expectedPts.length, actualAttenuationOutput.size(), "Expected path count is different than actual path count.");
         for(int i=0; i<expectedPts.length; i++) {
-            AttenuationOutput attenuationOutput = actualAttenuationOutput.get(i);
+            CnossosAttenuationOutput attenuationOutput = (CnossosAttenuationOutput) actualAttenuationOutput.get(i);
             for(int j=0; j<expectedPts[i].length; j++){
                 PointPath point = attenuationOutput.propagationPath.getPointList().get(j);
                 assertEquals(expectedPts[i][j][0], point.coordinate.x, DELTA_COORDS, "Path "+i+" point "+j+" coord X");
