@@ -21,7 +21,6 @@ public class AttenuationOutput {
     public CutProfile cutProfile;
     private String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
 
-
     /**
      * Intermediate attenuation.
      */

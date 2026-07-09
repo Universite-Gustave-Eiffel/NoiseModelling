@@ -17,6 +17,8 @@ import java.util.List;
 
 /**
  * Interface for point to point propagation models.
+ * Note : the instances of the different implementations of
+ * the interface are thread-safe.
  * @author Martin Glesser
  */
 public interface PropagationModel {

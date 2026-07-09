@@ -24,9 +24,12 @@ import java.util.List;
 
 /**
  * CNOSSOS P2P propagation model
+ * Note : the instances of the class are thread-safe.
  * @author Martin Glesser
  */
 public class CnossosPropagationModel implements PropagationModel {
+    List<CnossosPath> cnossosPaths = new ArrayList<>();
+
     /**
      * Constructor for CnossosPropagationModel objects
      */
@@ -45,9 +48,11 @@ public class CnossosPropagationModel implements PropagationModel {
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix) {
         // Compute favorable and homogeneous propagation paths
-        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-        List<CnossosPath> cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, gs);
+        if (cnossosPaths.isEmpty()) {
+            double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
+            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                    scene.profileBuilder.exactFrequencyArray, gs);
+        }
         // Compute attenuation for each path
         List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
         for (CnossosPath cnossosPath : cnossosPaths){

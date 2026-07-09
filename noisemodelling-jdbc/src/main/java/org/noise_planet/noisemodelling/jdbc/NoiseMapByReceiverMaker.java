@@ -439,11 +439,4 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
          */
         SceneWithEmission create(Connection connection, CellIndex cellIndex, Set<Long> skipReceivers) throws SQLException;
     }
-
-//    /**
-//     * A factory interface for creating objects that compute rays out for noise map computation.
-//     */
-//    public interface IComputeRaysOutFactory extends org.noise_planet.noisemodelling.jdbc.IComputeRaysOutFactory {
-//
-//    }
 }

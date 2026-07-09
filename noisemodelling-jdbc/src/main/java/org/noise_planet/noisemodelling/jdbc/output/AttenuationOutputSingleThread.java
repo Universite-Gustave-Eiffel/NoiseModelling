@@ -39,6 +39,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private static final int UNKNOWN_SOURCE_ID = -1;
     AttenuationOutputMultiThread multiThread;
     NoiseMapDatabaseParameters dbSettings;
+    PropagationModel propagationModel;
     public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
 
     /**
@@ -119,7 +120,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk,
                                                           List<AttenuationOutput> defaultAttenuation) {
-        PropagationModel propagationModel = multiThread.propagationModel;
+//        PropagationModel propagationModel = multiThread.propagationModel;
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         // Avoid multiple attenuation computation with default attenuation parameters
@@ -231,6 +232,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        // Create a PropagationModel instance (in the case of CNOSSOS propagation model, a new instance needs to be
+        // created for each cutProfile to ensure a new computation of the cnossosPaths).
+        propagationModel = multiThread.propagationModelCreator.create();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         multiThread.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
@@ -278,6 +282,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
             AtomicInteger cutProfileCount) {
         this.cutProfileCount = cutProfileCount;
+        // Create a PropagationModel instance
+        propagationModel = multiThread.propagationModelCreator.create();
         // Quickly evaluate the maximum expected power level at receiver location
         // using all nearby sources maximum emission in reflective direct field
         if(isMaximumErrorPruningEnabled() && !multiThread.sceneWithEmission.wjSources.isEmpty()) {
@@ -290,7 +296,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
-                PropagationModel propagationModel = multiThread.propagationModel;
                 double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(sourcePointInfo, receiver,
                         scene, scene.defaultCnossosParameters,false).getaGlobal());
                 // For line source apply a gain on the attenuation

@@ -17,6 +17,7 @@ import org.noise_planet.noisemodelling.pathfinder.CutPlaneVisitorFactory;
 import org.noise_planet.noisemodelling.propagation.PropagationModel;
 import org.noise_planet.noisemodelling.propagation.PropagationModelCreator;
 import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +33,7 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
     public AtomicBoolean exitWhenDone = new AtomicBoolean(false);
     public AtomicBoolean aborted = new AtomicBoolean(false);
     public AtomicInteger cutProfileCount = new AtomicInteger();
-    public PropagationModel propagationModel;
+    public PropagationModelCreator propagationModelCreator;
 
     /**
      * Create NoiseMap constructor
@@ -48,7 +49,7 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
         this.noiseMapDatabaseParameters = noiseMapDatabaseParameters;
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        this.propagationModel = propagationModelCreator.create();
+        this.propagationModelCreator = propagationModelCreator;
     }
 
     /**
@@ -59,7 +60,7 @@ public class AttenuationOutputMultiThread implements CutPlaneVisitorFactory {
      */
     public AttenuationOutputMultiThread(SceneWithEmission sceneWithEmission) {
         this.sceneWithEmission = sceneWithEmission;
-        this.propagationModel = new CnossosPropagationModel();
+        this.propagationModelCreator = new CnossosPropagationModelCreator();
     }
 
     /**

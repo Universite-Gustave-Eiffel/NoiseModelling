@@ -75,7 +75,9 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      */
     private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                             String period, AttenuationParameters AttenuationParameters) {
-        PropagationModel propagationModel = multiThreadParent.propagationModel;
+        // Create a PropagationModel instance
+        PropagationModel propagationModel = multiThreadParent.propagationModelCreator.create();
+//        PropagationModel propagationModel = multiThreadParent.propagationModel;
         List<AttenuationOutput> attenuationList = propagationModel.computeAttenuation(scene, cutProfile,
                 AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
         for (AttenuationOutput attenuationOutput : attenuationList) {

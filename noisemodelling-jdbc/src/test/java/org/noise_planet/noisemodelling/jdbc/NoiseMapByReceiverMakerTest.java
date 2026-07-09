@@ -185,6 +185,7 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
             noiseMapByReceiverMaker.setBodyBarrier(true);
+            noiseMapByReceiverMaker.setThreadCount(1);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -220,13 +221,13 @@ public class NoiseMapByReceiverMakerTest {
                 // This is source orientation, not relevant to receiver position
                 assertEquals(1, rs.getInt("IDSOURCE"));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), attenuationOutput.cutProfile.raySourceReceiverDirectivity, 0.01);
+                assertOrientationEquals(new Orientation(330.2084079818916,-5.947213381005439,0.0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity(), 0.01);
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 assertEquals(1, rs.getInt("IDSOURCE"));
                 attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString(2));
                 assertOrientationEquals(new Orientation(45, 0.81, 0), attenuationOutput.cutProfile.getSourceOrientation(), 0.01);
-                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), attenuationOutput.cutProfile.raySourceReceiverDirectivity, 0.01);
+                assertOrientationEquals(new Orientation(336.9922375343167,-4.684918495003125,0.0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity(), 0.01);
             }
         }
     }
@@ -262,7 +263,6 @@ public class NoiseMapByReceiverMakerTest {
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().exportAttenuationMatrix = true;
             noiseMapByReceiverMaker.getNoiseMapDatabaseParameters().mergeSources = true;
             noiseMapByReceiverMaker.setBodyBarrier(true);
-            noiseMapByReceiverMaker.setThreadCount(1);
 
             // Use train directivity functions instead of discrete directivity
             DefaultTableLoader defaultTableLoader = ((DefaultTableLoader) noiseMapByReceiverMaker.getPropagationProcessDataFactory());
@@ -292,19 +292,19 @@ public class NoiseMapByReceiverMakerTest {
             AttenuationOutput attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(1, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is front of source
-            assertEquals(new Orientation(0, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(0, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
             attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(2, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is behind of the source
-            assertEquals(new Orientation(180, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(180, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
             attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(3, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the right of the source
-            assertEquals(new Orientation(90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(90, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
             attenuationOutput = attenuationOutputs.remove(0);
             assertEquals(4, attenuationOutput.getCutProfile().getReceiver().receiverPk);
             // receiver is on the left of the source
-            assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity());
+            assertEquals(new Orientation(360-90, 0, 0), attenuationOutput.propagationPath.getRaySourceReceiverDirectivity());
 
         }
     }
