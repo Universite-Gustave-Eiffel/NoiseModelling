@@ -55,8 +55,8 @@ inputs = [
                 title      : 'Buildings table name',
                 description: '&#127968; Name of the Buildings table </br> </br>' +
                              'The table must contain: </br> <ul>' +
-                             '<li> <b> THE_GEOM </b>: the 2D geometry of the building (POLYGON or MULTIPOLYGON) </li>' +
-                             '<li> <b> HEIGHT </b>: the height of the building (FLOAT)</li> </ul>',
+                            '<li><b> THE_GEOM </b>: the 2D or 3D geometry of the building (POLYGON or MULTIPOLYGON). If the geometry is 2D then the *HEIGHT* column is mandatory</li>' +
+                            '<li><b> HEIGHT </b>: Optional, the height of the building above the ground (mandatory if geometry is 2D, ignored if geometry is 3D) (FLOAT)</li>',
                 type       : String.class
         ],
         tableRoads              : [

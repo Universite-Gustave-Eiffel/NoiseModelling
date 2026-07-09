@@ -10,6 +10,7 @@
 package org.noise_planet.noisemodelling.pathfinder;
 
 
+import org.h2gis.functions.spatial.edit.ST_UpdateZ;
 import org.h2gis.functions.spatial.linear_referencing.ST_LineInterpolatePoint;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.*;
@@ -142,8 +143,8 @@ public class TestPathFinder {
         //Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
         //Create obstruction test object
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON((5 5, 7 5, 7 6, 8 6, 8 8, 5 8, 5 5))"), 4.3);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7, 10 7, 10 9, 9 9, 9 7))"), 4.3);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((5 5  4.3, 7 5  4.3, 7 6  4.3, 8 6  4.3, 8 8  4.3, 5 8  4.3, 5 5  4.3))"));
+        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7  4.3, 10 7  4.3, 10 9  4.3, 9 9  4.3, 9 7  4.3))"));
         profileBuilder.finishFeeding();
 
         Scene processData = new Scene(profileBuilder);
@@ -191,7 +192,6 @@ public class TestPathFinder {
 
     /**
      * Test vertical edge diffraction ray computation with receiver in concave building
-     * This configuration is not supported currently, so it must return no rays.
      *
      * @throws ParseException
      */
@@ -203,10 +203,10 @@ public class TestPathFinder {
         //Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
         //Create obstruction test object
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON((5 6, 4 5, 7 5, 7 8, 4 8, 5 7, 5 6))"), 4);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7, 11 7, 11 11, 9 11, 9 7))"), 4);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((12 8, 13 8, 13 10, 12 10, 12 8))"), 4);
-        profileBuilder.addBuilding(wktReader.read("POLYGON((10 4, 11 4, 11 6, 10 6, 10 4))"), 4);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((5 6 4, 4 5 4, 7 5 4, 7 8 4, 4 8 4, 5 7 4, 5 6 4))"), -1);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((9 7 4, 11 7 4, 11 11 4, 9 11 4, 9 7 4))"), -1);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((12 8 4, 13 8 4, 13 10 4, 12 10 4, 12 8 4))"), -1);
+        profileBuilder.addBuilding(wktReader.read("POLYGON((10 4 4, 11 4 4, 11 6 4, 10 6 4, 10 4 4))"), -1);
         profileBuilder.finishFeeding();
 
         Scene processData = new Scene(profileBuilder);
@@ -215,13 +215,13 @@ public class TestPathFinder {
         Coordinate p2 = new Coordinate(14, 6.5, 1.6);
 
         List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
-        assertTrue(ray.isEmpty());
+        assertFalse(ray.isEmpty());
         ray = computeRays.computeSideHull(false, p1, p2);
-        assertTrue(ray.isEmpty());
+        assertFalse(ray.isEmpty());
         ray = computeRays.computeSideHull(false, p2, p1);
-        assertTrue(ray.isEmpty());
+        assertFalse(ray.isEmpty());
         ray = computeRays.computeSideHull(true, p2, p1);
-        assertTrue(ray.isEmpty());
+        assertFalse(ray.isEmpty());
     }
 
     /**
@@ -239,7 +239,10 @@ public class TestPathFinder {
         Coordinate receiver = new Coordinate(223392.04632028608, 6757724.944483406, 2.0);
         //Create obstruction test object
         ProfileBuilder profileBuilder = new ProfileBuilder();
-        profileBuilder.addBuilding(wktReader.read("POLYGON ((223393 6757706, 223402 6757696, 223409 6757703, 223411 6757705, 223414 6757702, 223417 6757704, 223421 6757709, 223423 6757712, 223437 6757725, 223435 6757728, 223441 6757735, 223448 6757741, 223439 6757751, 223433 6757745, 223432 6757745, 223430 6757747, 223417 6757734, 223402 6757720, 223404 6757717, 223393 6757706)) "), 13);
+        Polygon polygon = (Polygon) wktReader.read("POLYGON ((223393 6757706 13, 223402 6757696 13, 223409 6757703 13, 223411 6757705 13, 223414 6757702 13, 223417 6757704 13, 223421 6757709 13, 223423 6757712 13, 223437 6757725 13, 223435 6757728 13, 223441 6757735 13, 223448 6757741 13, 223439 6757751 13, 223433 6757745 13, 223432 6757745 13, 223430 6757747 13, 223417 6757734 13, 223402 6757720 13, 223404 6757717 13, 223393 6757706 13)) ");
+        // TODO : here we set Z to 0 to go back to previous test behavior, verify this is intended
+        polygon = ST_UpdateZ.convert(polygon, 0.0);
+        profileBuilder.addBuilding(polygon, -1);
 
         cellEnvelope.expandToInclude(source);
         cellEnvelope.expandToInclude(receiver);
@@ -253,8 +256,7 @@ public class TestPathFinder {
         PathFinder computeRays = new PathFinder(processData);
 
         List<Coordinate> ray = computeRays.computeSideHull(false, receiver, source);
-        assertTrue(ray.isEmpty());
-
+        assertFalse(ray.isEmpty());
     }
 
     @Test

@@ -19,8 +19,8 @@ Table definition
 * ``THE_GEOM`` *
 	* Description: building's geometry, or thin wall (linestring). It can be in 2D (stuck to the ground) or in 3D (see :ref:`Geometry modelling` section below)
 	* Type: Geometry (``POLYGON`` or ``MULTIPOLYGON`` or ``LINESTRING``)
-* ``HEIGHT`` *
-	* Description: building's height *(in meters)* 
+* ``HEIGHT``
+	* Description: building's height above the ground *(in meters)*. Optional, used only if the geometry is defined in 2D, ignored otherwise
 	* Type: Double
 * ``POP``
 	* Description: number of inhabitant in the building 
@@ -52,6 +52,8 @@ In this context, geometry coordinates have to be in 3D, with:
 * ``Z`` = ``Zobject`` : coordinate corresponding to the gutter or the roof altitude(s), ...
 
 
+.. warning::
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
 
 Z coordinate deduction
 -----------------------
@@ -82,6 +84,9 @@ There is no DEM layer
 
 2. The geometry has a Z coordinate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+	If the buildings geometries are defined with a Z coordinate for every point, the ``HEIGHT`` field is ignored
 
 * The Z coordinate correspond to ``Zobject``
 	* It's ok, your data is already ready to be used by NoiseModelling

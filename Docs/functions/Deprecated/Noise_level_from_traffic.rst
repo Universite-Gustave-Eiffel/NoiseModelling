@@ -31,9 +31,9 @@ Mandatory inputs
 ``tableBuilding`` — *Buildings table name*
    🏠 Name of the Buildings table  The table must contain:
    
-   *   THE_GEOM : the 2D geometry of the building (POLYGON or MULTIPOLYGON)
+   *  THE_GEOM : the 2D or 3D geometry of the building (POLYGON or MULTIPOLYGON). If the geometry is 2D then the *HEIGHT* column is mandatory
    
-   *   HEIGHT : the height of the building (FLOAT)
+   *  HEIGHT : Optional, the height of the building above the ground (mandatory if geometry is 2D, ignored if geometry is 3D) (FLOAT)
 
    Type: ``String``
 
