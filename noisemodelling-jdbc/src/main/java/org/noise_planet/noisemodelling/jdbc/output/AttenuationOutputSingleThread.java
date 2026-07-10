@@ -61,6 +61,14 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      */
     Map<String, HashMap<SourcePointKey, Double>> maximumWjExpectedSplAtReceiver = new HashMap<>();
 
+    /**
+     * MaxError DB Processing variable
+     * Sum of the maximumWjExpectedSplAtReceiver values for each period.
+     * Updated when a value is added or removed, so the pruning check does not have
+     * to sum the values of all the remaining sources for every propagation path.
+     */
+    Map<String, Double> maximumWjExpectedSplAtReceiverTotal = new HashMap<>();
+
     public AtomicInteger cutProfileCount = new AtomicInteger(0);
 
     ProgressVisitor progressVisitor;
@@ -178,9 +186,13 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                     final String periodLabel = periodEmission.period;
                     if (maximumWjExpectedSplAtReceiver.containsKey(periodLabel)) {
-                        maximumWjExpectedSplAtReceiver.get(periodLabel).remove(sourcePointKey);
+                        Double removedPower = maximumWjExpectedSplAtReceiver.get(periodLabel).remove(sourcePointKey);
+                        if (removedPower != null) {
+                            maximumWjExpectedSplAtReceiverTotal.merge(periodLabel, -removedPower, Double::sum);
+                        }
                         if (maximumWjExpectedSplAtReceiver.get(periodLabel).isEmpty()) {
                             maximumWjExpectedSplAtReceiver.remove(periodLabel);
+                            maximumWjExpectedSplAtReceiverTotal.remove(periodLabel);
                         }
                     }
                 }
@@ -195,8 +207,9 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
                     // Evaluate the current noise level at receiver compared to the final
                     // expected noise level at the receiver.
-                    double nonProcessedPower = maximumWjExpectedSplAtReceiver.get(entryPeriod).values().stream()
-                            .reduce(Double::sum).orElse(0.0);
+                    // The sum can be slightly negative because of rounding, clamp it to zero.
+                    double nonProcessedPower = Math.max(0.0,
+                            maximumWjExpectedSplAtReceiverTotal.getOrDefault(entryPeriod, 0.0));
                     double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(levelAtReceiver + nonProcessedPower);
                     double dBDiff = maximumExpectedLevelInDb - wToDb(levelAtReceiver);
                     if (dBDiff > dbSettings.maximumError) {
@@ -299,6 +312,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 wjAtReceiver.put(period, 0.0);
             }
             maximumWjExpectedSplAtReceiver.clear();
+            maximumWjExpectedSplAtReceiverTotal.clear();
 
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
@@ -334,6 +348,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                             sourceLevel = maximumWjExpectedSplAtReceiver.get(periodEmission.period);
                         }
                         sourceLevel.merge(new SourcePointKey(sourcePointInfo), sumPower, Double::sum);
+                        maximumWjExpectedSplAtReceiverTotal.merge(periodEmission.period, sumPower, Double::sum);
                     }
                 }
             }
@@ -465,6 +480,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         }
         receiverAttenuationList.clear();
         maximumWjExpectedSplAtReceiver.clear();
+        maximumWjExpectedSplAtReceiverTotal.clear();
         wjAtReceiver.clear();
         this.attenuationOutputs.clear();
     }
