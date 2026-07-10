@@ -109,6 +109,14 @@ def exec(Connection connection, input) {
     String timeString = "PERIOD"
     String prefix = "HZ"
 
+    // H2 executes joins as nested loops with index lookups: without an index whose leading
+    // column is the join key, the join below degenerates to a full scan of one table for
+    // every row of the other one. Index both sides so the planner can pick either join order.
+    String lwTableName = TableLocation.parse(lwTable, dbType).getTable()
+    String attenuationTableName = TableLocation.parse(attenuationTable, dbType).getTable()
+    sql.execute("CREATE INDEX IF NOT EXISTS ${lwTableName}_${lwTable_sourceId}_IDX ON $lwTable ($lwTable_sourceId)".toString())
+    sql.execute("CREATE INDEX IF NOT EXISTS ${attenuationTableName}_IDSOURCE_IDX ON $attenuationTable (IDSOURCE)".toString())
+
     // Groovy Dollar slashy string that contain the queries
 
     def query2 = $/CREATE TABLE $outputTable AS SELECT lg.IDRECEIVER,
