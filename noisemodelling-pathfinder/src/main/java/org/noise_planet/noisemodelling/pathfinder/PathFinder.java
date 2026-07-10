@@ -180,18 +180,6 @@ public class PathFinder {
         MirrorReceiversCompute receiverMirrorIndex = null;
 
         long reflectionPreprocessTime = 0;
-        if(data.reflexionOrder > 0) {
-            Envelope receiverPropagationEnvelope = new Envelope(receiverPointInfo.getCoordinates());
-            receiverPropagationEnvelope.expandBy(data.maxSrcDist);
-            List<Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
-            receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
-                    data.maxSrcDist, data.maxRefDist);
-            if(profilerThread != null) {
-                reflectionPreprocessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start,
-                        TimeUnit.NANOSECONDS);
-            }
-        }
-
 
         long startSourceCollect = 0;
         if(profilerThread != null) {
@@ -253,6 +241,24 @@ public class PathFinder {
         long sourceCollectTime = 0;
         if(profilerThread != null) {
             sourceCollectTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startSourceCollect, TimeUnit.NANOSECONDS);
+        }
+
+        // Build the receiver images index after the source collection, so the (expensive)
+        // construction is skipped for the receivers without any source in range
+        if(data.reflexionOrder > 0 && !sourceList.isEmpty()) {
+            long startReflectionPreprocess = 0;
+            if(profilerThread != null) {
+                startReflectionPreprocess = System.nanoTime();
+            }
+            Envelope receiverPropagationEnvelope = new Envelope(receiverPointInfo.getCoordinates());
+            receiverPropagationEnvelope.expandBy(data.maxSrcDist);
+            List<Wall> buildWalls = data.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+            receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiverPointInfo.position, data.reflexionOrder,
+                    data.maxSrcDist, data.maxRefDist);
+            if(profilerThread != null) {
+                reflectionPreprocessTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startReflectionPreprocess,
+                        TimeUnit.NANOSECONDS);
+            }
         }
 
         AtomicInteger processedSources = new AtomicInteger(0);
