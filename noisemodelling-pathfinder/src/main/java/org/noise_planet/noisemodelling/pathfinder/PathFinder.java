@@ -675,6 +675,10 @@ public class PathFinder {
         for (MirrorReceiver receiverReflection : mirrorResults) {
             Wall seg = receiverReflection.getWall();
             List<MirrorReceiver> rayPath = new ArrayList<>();
+            // Set to true only when the full chain of reflections has a reflection point,
+            // the loop below stops early on degenerate geometry (for example when the source
+            // lies exactly on the wall, the reflection point is the source itself)
+            boolean completeReflectionChain = false;
             MirrorReceiver receiverReflectionCursor = receiverReflection;
             // Test whether intersection point is on the wall
             // segment or not
@@ -713,6 +717,7 @@ public class PathFinder {
                 rayPath.add(reflResult);
                 if (receiverReflectionCursor
                         .getParentMirror() == null) { // Direct to the receiver
+                    completeReflectionChain = true;
                     break; // That was the last reflection
                 } else {
                     // There is another reflection
@@ -728,6 +733,10 @@ public class PathFinder {
                             destinationPt
                     );
                 }
+            }
+            if (!completeReflectionChain) {
+                // The reflection chain could not be completed, ignore this image receiver
+                continue;
             }
             // Compute direct path between source and first reflection point, add profile to the data
             CutProfile segmentCutProfile = data.profileBuilder.getProfile(src.position, rayPath.get(0).getReflectionPosition(),
