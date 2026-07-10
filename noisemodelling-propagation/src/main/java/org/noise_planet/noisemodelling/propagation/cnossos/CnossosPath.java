@@ -44,8 +44,6 @@ public class CnossosPath {
     private List<SegmentPath> segmentList; // list of segments [S,O1] and [On-1,R] (O1 and On-1 are respectively the first diffraction point and On-1 the last diffration point)
     private boolean favourable; // if true, favourable meteorological condition path with curved rays
     double gs;
-    // computed in Augmented Path
-    // public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
 
     /**
      * Step delta, in meters, between the receiver-source line and the top of the diffraction point in the path.
@@ -97,14 +95,6 @@ public class CnossosPath {
     public void setCutProfile(CutProfile cutProfile) {
         this.cutProfile = cutProfile;
     }
-
-//    public Orientation getRaySourceReceiverDirectivity() {
-//        return raySourceReceiverDirectivity;
-//    }
-//
-//    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
-//        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
-//    }
 
     /**
      * @return Ground factor of the source area. Gs=0 for road platforms, slab tracks. Gs=1 for rail tracks on ballast

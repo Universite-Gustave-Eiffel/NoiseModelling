@@ -200,7 +200,7 @@ public class GenerateReferenceDeviation {
 
     private static AttenuationOutput fetchPath(List<AttenuationOutput> paths, CutProfile.PROFILE_TYPE profileType, boolean favourable) {
         for(AttenuationOutput attenuationOutput : paths) {
-            if(attenuationOutput.getCutProfile().profileType == profileType && attenuationOutput.propagationPath.isFavourable() == favourable) {
+            if(attenuationOutput.getCutProfile().profileType == profileType && attenuationOutput.isFavourable() == favourable) {
                 return attenuationOutput;
             }
         }

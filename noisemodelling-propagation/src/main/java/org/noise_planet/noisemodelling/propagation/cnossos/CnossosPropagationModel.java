@@ -10,7 +10,6 @@
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.LineString;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
@@ -62,6 +61,7 @@ public class CnossosPropagationModel implements PropagationModel {
             AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
                     isExportAttenuationMatrix);
             attenuationOutput.setLineString(cnossosPath.asGeom());
+            attenuationOutput.setFavourable(cnossosPath.isFavourable());
             attenuationOutputs.add(attenuationOutput);
         }
         return attenuationOutputs;

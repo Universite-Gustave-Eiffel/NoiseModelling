@@ -281,7 +281,6 @@ public class CnossosPathBuilder {
                 cutProfile.getSource().getCoordinate());
         CnossosPath cnossosPath = new CnossosPath(cutProfile);
         cnossosPath.setFavourable(favourable);
-        cutProfile.setFavourable(favourable);
         cnossosPath.setPointList(points);
         cnossosPath.setSegmentList(segments);
         cnossosPath.setSRSegment(srPath);
