@@ -62,7 +62,7 @@ public class SceneWithEmission extends SceneWithAttenuation {
         // Use geometry as default slope (if field slope is not provided
         double defaultSlope = 0;
         if(!sourceFieldNames.containsKey("SLOPE")) {
-            int sourceIndex = sourcesPk.indexOf(pk);
+            int sourceIndex = sourcesPkIndex.getOrDefault(pk, -1);
             if(sourceIndex >= 0) {
                 defaultSlope = EmissionTableGenerator.getSlope(sourceGeometries.get(sourceIndex));
             }

@@ -43,6 +43,8 @@ public class Scene {
 
     public List<Long> receiversPk = new ArrayList<>();
     public List<Long> sourcesPk = new ArrayList<>();
+    /** Index of each source primary key in the sourcesPk list */
+    public Map<Long, Integer> sourcesPkIndex = new HashMap<>();
     /** coordinate of receivers */
     public List<Coordinate> receivers = new ArrayList<>();
     /** Profile builder */
@@ -116,6 +118,7 @@ public class Scene {
     public void addSource(Long pk, Geometry geom) {
         addSource(geom);
         sourcesPk.add(pk);
+        sourcesPkIndex.putIfAbsent(pk, sourcesPk.size() - 1);
     }
 
     /**
@@ -178,6 +181,7 @@ public class Scene {
         sourceGeometries.clear();
         sourceOrientation.clear();
         sourcesPk.clear();
+        sourcesPkIndex.clear();
         sourcesIndex = new QueryRTree();
     }
 }
