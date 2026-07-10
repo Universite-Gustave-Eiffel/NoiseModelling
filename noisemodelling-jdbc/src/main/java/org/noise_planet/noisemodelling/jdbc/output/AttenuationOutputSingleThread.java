@@ -159,16 +159,17 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                     }
                 }
                 for (Map.Entry<String, Double> entry : wjAtReceiver.entrySet()) {
+                    final String entryPeriod = entry.getKey();
                     final double levelAtReceiver = entry.getValue();
 
-                    if (!maximumWjExpectedSplAtReceiver.containsKey(period)) {
+                    if (!maximumWjExpectedSplAtReceiver.containsKey(entryPeriod)) {
                         // Nothing to evaluate here, as there is no expected further power for this period.
                         continue;
                     }
 
                     // Evaluate the current noise level at receiver compared to the final
                     // expected noise level at the receiver.
-                    double nonProcessedPower = maximumWjExpectedSplAtReceiver.get(period).values().stream()
+                    double nonProcessedPower = maximumWjExpectedSplAtReceiver.get(entryPeriod).values().stream()
                             .reduce(Double::sum).orElse(0.0);
                     double maximumExpectedLevelInDb = AcousticIndicatorsFunctions.wToDb(levelAtReceiver + nonProcessedPower);
                     double dBDiff = maximumExpectedLevelInDb - wToDb(levelAtReceiver);
