@@ -12,8 +12,6 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.CoordinateSequence;
-import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
@@ -22,7 +20,9 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CutProfile {
@@ -345,17 +345,21 @@ public class CutProfile {
             GeometryFactory geomFactory = new GeometryFactory();
             Coordinate[] coordsArray = convexHullInput.toArray(new Coordinate[0]);
             ConvexHull convexHull = new ConvexHull(coordsArray, geomFactory);
-            Coordinate[] convexHullCoords = convexHull.getConvexHull().getCoordinates();
-            int indexFirst = Arrays.asList(convexHull.getConvexHull().getCoordinates()).indexOf(coordinates2d.get(0));
-            int indexLast = Arrays.asList(convexHull.getConvexHull().getCoordinates()).lastIndexOf(coordinates2d.get(coordinates2d.size() - 1));
+            Coordinate[] hullCoords = convexHull.getConvexHull().getCoordinates();
+            List<Coordinate> hullCoordsList = Arrays.asList(hullCoords);
+            int indexFirst = hullCoordsList.indexOf(coordinates2d.get(0));
+            int indexLast = hullCoordsList.lastIndexOf(coordinates2d.get(coordinates2d.size() - 1));
             if(indexFirst == -1 || indexLast == -1 || indexFirst > indexLast) {
                 throw new IllegalArgumentException("Wrong input data ");
             }
-            convexHullCoords = Arrays.copyOfRange(convexHullCoords, indexFirst, indexLast + 1);
-            CoordinateSequence coordinatesSequence = geomFactory.getCoordinateSequenceFactory().create(convexHullCoords);
-            Geometry geom = geomFactory.createLineString(coordinatesSequence);
-            Geometry uniqueGeom = geom.union(); // Removes duplicate coordinates
-            convexHullCoords = uniqueGeom.getCoordinates();
+            // Remove consecutive duplicate coordinates (previously done with a costly union())
+            List<Coordinate> uniqueCoords = new ArrayList<>(indexLast - indexFirst + 1);
+            for (int i = indexFirst; i <= indexLast; i++) {
+                if (uniqueCoords.isEmpty() || !uniqueCoords.get(uniqueCoords.size() - 1).equals(hullCoords[i])) {
+                    uniqueCoords.add(hullCoords[i]);
+                }
+            }
+            Coordinate[] convexHullCoords = uniqueCoords.toArray(new Coordinate[0]);
             // Convert the result back to your format (List<Point2D> pts)
             if (convexHullCoords.length == 3) {
                 convexHullPoints = Arrays.asList(convexHullCoords);
@@ -371,7 +375,16 @@ public class CutProfile {
         } else {
             convexHullPoints = convexHullInput;
         }
-        return convexHullPoints.stream().map(coordinates2d::indexOf).collect(Collectors.toList());
+        // Map each hull point back to its index in the profile
+        Map<Coordinate, Integer> coordinateIndex = new HashMap<>(coordinates2d.size());
+        for (int i = coordinates2d.size() - 1; i >= 0; i--) {
+            coordinateIndex.put(coordinates2d.get(i), i);
+        }
+        List<Integer> hullIndices = new ArrayList<>(convexHullPoints.size());
+        for (Coordinate coordinate : convexHullPoints) {
+            hullIndices.add(coordinateIndex.getOrDefault(coordinate, -1));
+        }
+        return hullIndices;
     }
 
     /**
