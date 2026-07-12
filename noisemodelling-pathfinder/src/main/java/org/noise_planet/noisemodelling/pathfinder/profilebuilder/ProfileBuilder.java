@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.algorithm.CGAlgorithms3D;
+import org.locationtech.jts.algorithm.RobustLineIntersector;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
@@ -1150,7 +1151,9 @@ public class ProfileBuilder {
         // Split line into segments for structures based on RTree in order to limit the number of queries
         // (for large area of the line segment envelope)
         List<LineSegment> lines = splitSegment(fullLine.p0, fullLine.p1, maxLineLength);
-        List<CutPoint> newCutPoints = new LinkedList<>();
+        List<CutPoint> newCutPoints = new ArrayList<>();
+        // getIntersection returns an internal coordinate, it must be copied before the intersector is reused
+        RobustLineIntersector intersector = new RobustLineIntersector();
         try {
             for (int j = 0; j < lines.size()
                     && !(profile.hasBuildingIntersection && stopAtObstacleOverSourceReceiver); j++) {
@@ -1162,7 +1165,8 @@ public class ProfileBuilder {
                     processed.add((Integer) result);
                     int i = (Integer) result;
                     LineObstruction facetLine = processedObstructions.get(i);
-                    Coordinate intersection = fullLine.intersection(facetLine.line);
+                    intersector.computeIntersection(fullLine.p0, fullLine.p1, facetLine.line.p0, facetLine.line.p1);
+                    Coordinate intersection = intersector.hasIntersection() ? intersector.getIntersection(0) : null;
                     if (intersection != null) {
                         intersection = new Coordinate(intersection);
                         if (!isNaN(facetLine.line.p0.z) && !isNaN(facetLine.line.p1.z)) {
