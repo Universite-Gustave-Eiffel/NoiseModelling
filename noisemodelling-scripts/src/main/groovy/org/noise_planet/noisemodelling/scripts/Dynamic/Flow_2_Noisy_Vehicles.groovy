@@ -32,6 +32,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.sql.Connection
+import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.stream.Collectors
@@ -200,16 +201,26 @@ def exec(Connection connection, input) {
 
         String insert = "INSERT INTO SOURCES_EMISSION VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
+        // the source points of each road are fetched by ROAD_ID below
+        sql.execute("CREATE INDEX ON SOURCES_GEOM(ROAD_ID)")
+
         int roadCount = JDBCUtilities.getRowCount(connection, sources_table_name)
 
-        sql.query("SELECT * FROM    "+sources_table_name+"   ;    ", { ResultSet result ->
+        // group the inserts in batches instead of one INSERT statement per emitting point,
+        // keeping autocommit on: on H2 one large transaction is slower than autocommit batches
+        PreparedStatement batchInsert = connection.prepareStatement(insert)
+        int pendingInserts = 0
+
+        sql.query("SELECT * FROM    " + sources_table_name + "   ;    ", { ResultSet result ->
 
             SpatialResultSet rs = result.unwrap(SpatialResultSet.class)
-            int k=1
+            int k = 1
 
             while (rs.next()) {
                 Road road = new Road()
-                logger.info(k + "/" + roadCount + "    % " + 100*k/roadCount)
+                if (k % 100 == 0 || k == roadCount) {
+                    logger.info(k + "/" + roadCount + "    % " + 100 * k / roadCount)
+                }
                 k++
 
                 road.setRoad(
@@ -238,24 +249,26 @@ def exec(Connection connection, input) {
 
                     for (SourcePoint source in road.source_points) {
                         if (source.levels[0]> 0.0){
-                            sql.execute(insert, [
-                                    time,
-                                    source.id,
-                                    source.levels[0],
-                                    source.levels[1],
-                                    source.levels[2],
-                                    source.levels[3],
-                                    source.levels[4],
-                                    source.levels[5],
-                                    source.levels[6],
-                                    source.levels[7]
-                            ])
+                            batchInsert.setInt(1, time)
+                            batchInsert.setLong(2, source.id)
+                            for (int freq = 0; freq < 8; freq++) {
+                                batchInsert.setDouble(3 + freq, source.levels[freq])
+                            }
+                            batchInsert.addBatch()
+                            if (++pendingInserts >= 500) {
+                                batchInsert.executeBatch()
+                                pendingInserts = 0
+                            }
                         }
                     }
 
                 }
             }
         })
+        if (pendingInserts > 0) {
+            batchInsert.executeBatch()
+        }
+        batchInsert.close()
     }
     sql.execute("CREATE INDEX ON SOURCES_EMISSION(PERIOD, IDSOURCE)")
     sql.execute("drop table VEHICLES_PROBA if exists;")
