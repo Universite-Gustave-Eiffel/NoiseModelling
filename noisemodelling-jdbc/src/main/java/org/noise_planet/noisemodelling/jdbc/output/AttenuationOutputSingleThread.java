@@ -120,7 +120,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk,
                                                           List<AttenuationOutput> defaultAttenuation) {
-//        PropagationModel propagationModel = multiThread.propagationModel;
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         // Avoid multiple attenuation computation with default attenuation parameters
@@ -230,10 +229,17 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 TimePeriodParameters::update);
     }
 
+    /**
+     * Manage attenuation computation each time a cutProfile is found.
+     * Note: in the case of CNOSSOS propagation model, a new instance of PropagationModel needs to be
+     * created for each cutProfile to ensure a new computation of the cnossosPaths.
+     *
+     * @param cutProfile vertical profile
+     * @return Search strategy
+     */
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
-        // Create a PropagationModel instance (in the case of CNOSSOS propagation model, a new instance needs to be
-        // created for each cutProfile to ensure a new computation of the cnossosPaths).
+        // Create a PropagationModel instance
         propagationModel = multiThread.propagationModelCreator.create();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         multiThread.cutProfileCount.addAndGet(1);
@@ -411,7 +417,6 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             }
         }
         // Convert to dB then pushed cached entries for this receiver into multi-thread instance
-
         boolean computeLden = isComputeLden();
         Set<String> collectedPeriod = new HashSet<>();
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {

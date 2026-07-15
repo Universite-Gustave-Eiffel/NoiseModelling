@@ -24,6 +24,7 @@ public class AttenuationVisitor implements CutPlaneVisitor {
     public AttenuationComputeOutput multiThreadParent;
     public List<ReceiverNoiseLevel> receiverAttenuationLevels = new ArrayList<>();
     public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+    PropagationModel propagationModel;
     public boolean keepRays;
 
     /**
@@ -36,8 +37,18 @@ public class AttenuationVisitor implements CutPlaneVisitor {
         this.keepRays = multiThreadParent.exportPaths;
     }
 
+    /**
+     * Manage attenuation computation each time a cutProfile is found.
+     * Note: in the case of CNOSSOS propagation model, a new instance of PropagationModel needs to be
+     * created for each cutProfile to ensure a new computation of the cnossosPaths.
+     *
+     * @param cutProfile vertical profile
+     * @return Search strategy
+     */
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        // Create a PropagationModel instance
+        propagationModel = multiThreadParent.propagationModelCreator.create();
         multiThreadParent.cutProfileCount.addAndGet(1);
         final SceneWithAttenuation scene = multiThreadParent.scene;
         if(scene.getCloseReceiverReflectionWallDistance() > 0
@@ -75,9 +86,6 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      */
     private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                             String period, AttenuationParameters AttenuationParameters) {
-        // Create a PropagationModel instance
-        PropagationModel propagationModel = multiThreadParent.propagationModelCreator.create();
-//        PropagationModel propagationModel = multiThreadParent.propagationModel;
         List<AttenuationOutput> attenuationList = propagationModel.computeAttenuation(scene, cutProfile,
                 AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
         for (AttenuationOutput attenuationOutput : attenuationList) {
