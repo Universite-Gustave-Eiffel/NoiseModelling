@@ -461,11 +461,11 @@ public class NoiseMapByReceiverMakerTest {
             assertEquals(189.30, attenuationOutput.getCutProfile().getReceiver().coordinate.z, 0.1);
             // Check CNOSSOS path points
             // One diffraction on horizontal edge of building
-            if (attenuationOutput instanceof CnossosAttenuationOutput cnossosAttenuationOutput){
-                assertEquals(3, cnossosAttenuationOutput.propagationPath.getPointList().size());
-                assertEquals(200.53, cnossosAttenuationOutput.propagationPath.getPointList().getFirst().coordinate.y, 0.1);
-                assertEquals(189.30, cnossosAttenuationOutput.propagationPath.getPointList().getLast().coordinate.y, 0.1);
-            }
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutput);
+            CnossosAttenuationOutput cnossosAttenuationOutput = (CnossosAttenuationOutput) attenuationOutput;
+            assertEquals(3, cnossosAttenuationOutput.propagationPath.getPointList().size());
+            assertEquals(200.53, cnossosAttenuationOutput.propagationPath.getPointList().getFirst().coordinate.y, 0.1);
+            assertEquals(189.30, cnossosAttenuationOutput.propagationPath.getPointList().getLast().coordinate.y, 0.1);
         }
     }
 
@@ -524,13 +524,13 @@ public class NoiseMapByReceiverMakerTest {
             // Diffraction over the walls of the building, but no direct path
             assertEquals(2 , attenuationOutputs.size());
             // Homogenous path with diffraction over the building wall
-            if (attenuationOutputs.get(0) instanceof CnossosAttenuationOutput cnossosAttenuationOutput) {
-                assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput.propagationPath.getPointList().get(1).type);
-            }
-                // Favorable path with diffraction over the building wall
-            if (attenuationOutputs.get(1) instanceof CnossosAttenuationOutput cnossosAttenuationOutput) {
-                assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput.propagationPath.getPointList().get(1).type);
-            }
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.getFirst());
+            CnossosAttenuationOutput cnossosAttenuationOutput0 = (CnossosAttenuationOutput) attenuationOutputs.getFirst();
+            assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput0.propagationPath.getPointList().get(1).type);
+            // Favorable path with diffraction over the building wall
+            assertInstanceOf(CnossosAttenuationOutput.class, attenuationOutputs.get(1));
+            CnossosAttenuationOutput cnossosAttenuationOutput1 = (CnossosAttenuationOutput) attenuationOutputs.get(1);
+            assertEquals(PointPath.POINT_TYPE.DIFH, cnossosAttenuationOutput1.propagationPath.getPointList().get(1).type);
         }
     }
 }
