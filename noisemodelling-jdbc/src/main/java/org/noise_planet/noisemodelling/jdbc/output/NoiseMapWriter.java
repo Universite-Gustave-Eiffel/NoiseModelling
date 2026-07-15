@@ -111,8 +111,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
     }
 
     /**
-     * Processes the stack of CnossosPath objects and inserts their data into the rays table.
-     * @param stack the stack of CnossosPath objects containing the data to be inserted into the rays table
+     * Processes the stack of AttenuationOutput objects and inserts their data into the rays table.
+     * @param stack the stack of AttenuationOutput objects containing the data to be inserted into the rays table
      * @throws SQLException if an SQL exception occurs while executing the INSERT query
      */
     void processRaysStack(ConcurrentLinkedDeque<AttenuationOutput> stack) throws SQLException {
@@ -328,7 +328,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Creates a primary key or index on the specified table depending on the configuration.
-     * @param tableName
+     * @param tableName Name of the table
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
         boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
@@ -350,9 +350,9 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Executes the specified SQL query.
-     * @param query
-     * @throws SQLException
-     * @throws IOException
+     * @param query SQL query to be processed
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while writing
      */
     private void processQuery(String query) throws SQLException, IOException {
         if(sqlFilePath == null) {
@@ -366,8 +366,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Initializes the noise map calculation by setting up required database tables based on the specified parameters.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while processing the query
      */
     public void init() throws SQLException, IOException {
         if(databaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
@@ -404,10 +404,9 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Main loop for processing attenuated paths and stacking results.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
      */
-    void mainLoop() throws SQLException, IOException {
+    void mainLoop() throws SQLException {
         while (!aborted.get()) {
             try {
                 if(!resultsCache.receiverLevels.isEmpty()) {
@@ -430,8 +429,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Creates primary keys for the computed noise level tables.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while processing the query
      */
     void createKeys()  throws SQLException, IOException {
         // Set primary keys
