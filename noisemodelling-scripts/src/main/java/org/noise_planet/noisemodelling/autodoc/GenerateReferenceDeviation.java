@@ -20,6 +20,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import org.noise_planet.noisemodelling.propagation.*;
 
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,7 +209,7 @@ public class GenerateReferenceDeviation {
     }
 
     private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<AttenuationOutput> paths, double[] powerLevel) {
-        AttenuationOutput homogenous = fetchPath(paths, profileType, false);
+        CnossosAttenuationOutput homogenous = (CnossosAttenuationOutput) fetchPath(paths, profileType, false);
         String utName = PATH_NAMES[profileType.ordinal()];
         assert homogenous != null;
         double[] actualLH = addArray(homogenous.aGlobalRaw, powerLevel);
@@ -229,7 +230,7 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            AttenuationOutput favourablePath = fetchPath(paths, profileType, true);
+            CnossosAttenuationOutput favourablePath = (CnossosAttenuationOutput) fetchPath(paths, profileType, true);
             if(favourablePath != null) {
                 double[] actualLF = addArray(favourablePath.aGlobalRaw, powerLevel);
                 double[] expectedLF = asArray(expectedValues.get("LF"));
