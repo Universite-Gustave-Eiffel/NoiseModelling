@@ -31,7 +31,6 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -490,7 +489,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
             parameters.setRaysTable(input['confRaysName'] as String)
             parameters.setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE)
             parameters.exportAttenuationMatrix = true
-            parameters.exportCnossosPathWithAttenuation = true
+            parameters.exportAttenuationOutput = true
             parameters.keepAbsorption = true
         }
     }

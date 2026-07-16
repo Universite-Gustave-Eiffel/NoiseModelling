@@ -86,7 +86,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             jsonWriter = createJsonWriter();
         }
     }
@@ -130,7 +130,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                 equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         StringBuilder query = new StringBuilder("INSERT INTO " + databaseParameters.raysTable +
                 "(the_geom , IDRECEIVER , IDSOURCE");
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             query.append(", PATH");
         }
         if(databaseParameters.exportAttenuationMatrix) {
@@ -141,7 +141,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         query.append(", FAVOURABLE");
         query.append(") VALUES (?, ?, ?");
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             query.append(", ?");
         }
         if(databaseParameters.exportAttenuationMatrix) {
@@ -169,7 +169,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             ps.setObject(parameterIndex++, lineString);
             ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
             ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
-            if(databaseParameters.exportCnossosPathWithAttenuation) {
+            if(databaseParameters.exportAttenuationOutput) {
                 String json = "";
                 try {
                     json = attenuationOutputAsJSON(row);
@@ -391,7 +391,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                     "geometry(LINESTRING Z,");
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
-            if(databaseParameters.exportCnossosPathWithAttenuation) {
+            if(databaseParameters.exportAttenuationOutput) {
                 sb.append(", PATH VARCHAR");
             }
             if(databaseParameters.exportAttenuationMatrix) {

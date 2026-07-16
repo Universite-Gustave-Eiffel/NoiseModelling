@@ -251,7 +251,7 @@ public class SceneWithEmissionTest {
             noiseMap.getNoiseMapDatabaseParameters().setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
             noiseMap.getNoiseMapDatabaseParameters().setRaysTable("RAYS");
             noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationMatrix(true);
-            noiseMap.getNoiseMapDatabaseParameters().setExportCnossosPathWithAttenuation(true);
+            noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationOutput(true);
             noiseMap.getNoiseMapDatabaseParameters().keepAbsorption = true;
 
             DefaultTableLoader defaultTableLoader = (DefaultTableLoader) noiseMap.getPropagationProcessDataFactory();
