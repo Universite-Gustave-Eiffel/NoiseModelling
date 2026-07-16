@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 
 import com.bedatadriven.jackson.datatype.jts.JtsModule;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.locationtech.jts.geom.*;
@@ -102,8 +103,17 @@ public class NoiseMapWriter implements Callable<Boolean> {
         return jsonWriter.writeValueAsString(attenuationOutput);
     }
 
+    /**
+     * Deserialize AttenuationOutput object or AttenuationOutput child object.
+     * Note: the FAIL_ON_UNKNOWN_PROPERTIES feature ensure that the deserialization won't fail for children of
+     * AttenuationOutput with additional attributes.
+     *
+     * @param json The serialized AttenuationOutput
+     * @return Deserialized AttenuationOutput object
+     * @throws JsonProcessingException if the deserialization fails
+     */
     public static AttenuationOutput jsonToAttenuationOutput(String json) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
         mapper.registerModule(new JtsModule());
         return mapper.readValue(json, AttenuationOutput.class);

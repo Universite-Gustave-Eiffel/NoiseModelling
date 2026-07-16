@@ -9,7 +9,6 @@
 
 package org.noise_planet.noisemodelling.propagation.cnossos;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 
@@ -24,40 +23,24 @@ public class CnossosAttenuationOutput extends AttenuationOutput {
     /**
      * Intermediate attenuation.
      */
-    @JsonIgnore
     public  double[] aAtm = new double[0];
-    @JsonIgnore
     public  double[] aDiv = new double[0];
-    @JsonIgnore
     public  double[] aRef = new double[0];
-    @JsonIgnore
     public  double[] double_aBoundary = new double[0];
-    @JsonIgnore
     public  double[] aRetroDiff = new double[0]; // Alpha Retro Diffraction
 
     /**
      * Global attenuation (dB) without source directivity or atmospheric conditions probability ponderation
      */
-    @JsonIgnore
     public  double[] aGlobalRaw = new double[0];
-    @JsonIgnore
     public double[] aDif = new double[0];
-    @JsonIgnore
     public double[] aSource = new double[0]; // directivity attenuation
 
-    @JsonIgnore
     public ABoundary aBoundary = new ABoundary();
-    @JsonIgnore
     public GroundAttenuation groundAttenuation = new GroundAttenuation();
-    @JsonIgnore
     public double deltaRetro= Double.MAX_VALUE;
-    @JsonIgnore
     public boolean keepAbsorption = false;
 
-    /**
-     * CNOSSOS specific attributes
-     */
-    @JsonIgnore
     public CnossosPath propagationPath = new CnossosPath();
 
     public void init(int size) {

@@ -9,6 +9,9 @@
 
 package org.noise_planet.noisemodelling.jdbc;
 
+import com.bedatadriven.jackson.datatype.jts.JtsModule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.h2gis.api.EmptyProgressVisitor;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.utilities.JDBCUtilities;
@@ -26,6 +29,7 @@ import org.noise_planet.noisemodelling.jdbc.input.SceneWithEmission;
 import org.noise_planet.noisemodelling.jdbc.output.NoiseMapWriter;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.IsoSurface;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
@@ -120,6 +124,21 @@ public class NoiseMapByReceiverMakerTest {
         sb.append(") AS select ");
         sb.append(values.toString());
         return sb.toString();
+    }
+
+    /**
+     * Deserialize CnossosAttenuationOutput object.
+     *
+     * @param json The serialized CnossosAttenuationOutput
+     * @return Deserialized CnossosAttenuationOutput object
+     * @throws JsonProcessingException if the deserialization fails
+     */
+    public static CnossosAttenuationOutput jsonToCnossosAttenuationOutput(String json) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
+        return mapper.readValue(json, CnossosAttenuationOutput.class);
+
     }
 
 
@@ -285,7 +304,7 @@ public class NoiseMapByReceiverMakerTest {
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
             try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString("PATH"));
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
                 }
             }
@@ -449,7 +468,7 @@ public class NoiseMapByReceiverMakerTest {
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
             try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE NOT FAVOURABLE ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString("PATH"));
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
                 }
             }
@@ -517,7 +536,7 @@ public class NoiseMapByReceiverMakerTest {
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
             try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
-                    AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString("PATH"));
+                    CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
                 }
             }
