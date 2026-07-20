@@ -13,11 +13,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
-import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +58,11 @@ public class CnossosPropagationModel implements PropagationModel {
             AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
                     isExportAttenuationMatrix);
             attenuationOutput.setLineString(cnossosPath.asGeom());
-            attenuationOutput.setFavourable(cnossosPath.isFavourable());
+            if (cnossosPath.isFavourable()){
+                attenuationOutput.setMeteoType(MeteoType.FAVOURABLE);
+            } else{
+                attenuationOutput.setMeteoType(MeteoType.HOMOGENEOUS);
+            }
             attenuationOutputs.add(attenuationOutput);
         }
         return attenuationOutputs;

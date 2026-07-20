@@ -139,7 +139,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         if(exportPeriod) {
             query.append(", PERIOD");
         }
-        query.append(", FAVOURABLE");
+        query.append(", METEO");
         query.append(") VALUES (?, ?, ?");
         if(databaseParameters.exportAttenuationOutput) {
             query.append(", ?");
@@ -185,7 +185,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
-            ps.setBoolean(parameterIndex++, row.isFavourable());
+            ps.setString(parameterIndex++, row.getMeteoType());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
@@ -400,7 +400,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 sb.append(", PERIOD VARCHAR");
             }
-            sb.append(", FAVOURABLE BOOLEAN");
+            sb.append(", METEO VARCHAR");
             sb.append(");");
             processQuery(sb.toString());
         }

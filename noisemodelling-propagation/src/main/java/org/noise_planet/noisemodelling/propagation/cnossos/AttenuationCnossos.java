@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.math.Vector3D;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
+import org.noise_planet.noisemodelling.propagation.MeteoType;
 import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -766,7 +767,7 @@ public class AttenuationCnossos {
             // Favourable conditions
             if (data.getWindRose()[roseIndex] != 0) {
                 cnossosPath.setFavourable(true);
-                attenuationOutput.setFavourable(true);
+                attenuationOutput.setMeteoType(MeteoType.FAVOURABLE);
                 aBoundary = AttenuationCnossos.aBoundary(cnossosPath, attenuationOutput, data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(cnossosPath, data);
                 for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {

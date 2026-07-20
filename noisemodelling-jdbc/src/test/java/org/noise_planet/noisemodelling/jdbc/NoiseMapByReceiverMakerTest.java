@@ -234,7 +234,7 @@ public class NoiseMapByReceiverMakerTest {
                 assertFalse(rs.next());
             }
 
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH, IDSOURCE FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER, IDSOURCE")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH, IDSOURCE FROM " + parameters.raysTable + " WHERE PERIOD='D' AND METEO='homogeneous' ORDER BY IDRECEIVER, IDSOURCE")) {
                 assertTrue(rs.next());
                 assertEquals(1, rs.getInt(1));
                 AttenuationOutput attenuationOutput = NoiseMapWriter.jsonToAttenuationOutput(rs.getString(2));
@@ -302,7 +302,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND NOT FAVOURABLE ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE PERIOD='D' AND METEO='homogeneous' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);
@@ -466,7 +466,7 @@ public class NoiseMapByReceiverMakerTest {
             NoiseMapDatabaseParameters parameters = noiseMapByReceiverMaker.getNoiseMapDatabaseParameters();
 
             List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
-            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE NOT FAVOURABLE ORDER BY IDRECEIVER")) {
+            try(ResultSet rs = st.executeQuery("SELECT IDRECEIVER, PATH FROM " + parameters.raysTable + " WHERE METEO='homogeneous' ORDER BY IDRECEIVER")) {
                 while (rs.next()) {
                     CnossosAttenuationOutput attenuationOutput = jsonToCnossosAttenuationOutput(rs.getString("PATH"));
                     attenuationOutputs.add(attenuationOutput);

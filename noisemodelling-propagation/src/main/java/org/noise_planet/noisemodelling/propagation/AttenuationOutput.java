@@ -22,7 +22,7 @@ public class AttenuationOutput {
     public CutProfile cutProfile;
     public String timePeriod=""; // time period if relevant (day, evening, night or other parameters, use LDenConfig.TIME_PERIOD)
     public LineString lineString; // ray from src to rcv through potential reflexion and diffraction points
-    private boolean favourable;
+    public MeteoType meteoType; // Type of meteo parameters used to obtain the attenuation
 
     /**
      * Final attenuation (dB)
@@ -45,7 +45,7 @@ public class AttenuationOutput {
         this.aGlobal = other.aGlobal;
         this.timePeriod = other.timePeriod;
         this.lineString = other.lineString;
-        this.favourable = other.favourable;
+        this.meteoType = other.meteoType;
     }
 
     /**
@@ -89,11 +89,11 @@ public class AttenuationOutput {
         this.lineString = lineString;
     }
 
-    public boolean isFavourable() {
-        return favourable;
+    public String getMeteoType() {
+        return meteoType.getMeteoType();
     }
 
-    public void setFavourable(boolean favourable) {
-        this.favourable = favourable;
+    public void setMeteoType(MeteoType meteoType){
+        this.meteoType = meteoType;
     }
 }
