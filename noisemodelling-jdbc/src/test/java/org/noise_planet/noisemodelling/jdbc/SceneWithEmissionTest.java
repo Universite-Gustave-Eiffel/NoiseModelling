@@ -333,6 +333,66 @@ public class SceneWithEmissionTest {
     }
 
     /**
+     * Test optimisation feature {@link NoiseMapDatabaseParameters#setMaximumError(double)}
+     * when sources do not emit in the same periods. Close sources emit only in period PA,
+     * far sources only in period PB. The pruning must not stop looking for sources while
+     * period PB still expects significant power from the far sources.
+     */
+    @Test
+    public void testIgnoreNonSignificantSourcesDisjointPeriods() throws Exception {
+        final double maxError = 0.5;
+        try (Connection connection =
+                     JDBCUtilities.wrapConnection(
+                             H2GISDBFactory.createSpatialDataBase(
+                                     "testDisjointPeriods", true, ""))) {
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE TABLE BUILDINGS(THE_GEOM GEOMETRY, HEIGHT DOUBLE)");
+                st.execute("CREATE TABLE SOURCES_GEOM(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+                st.execute("CREATE TABLE SOURCES_EMISSION(PERIOD VARCHAR NOT NULL, IDSOURCE INT NOT NULL," +
+                        " HZ63 REAL, HZ125 REAL, HZ250 REAL, HZ500 REAL," +
+                        " HZ1000 REAL, HZ2000 REAL, HZ4000 REAL, HZ8000 REAL)");
+                st.execute("CREATE TABLE RECEIVERS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ, 2154))");
+                st.execute("INSERT INTO RECEIVERS VALUES(1, ST_GeomFromText('POINT Z(700000 6600000 1.5)', 2154))");
+                int sourceCount = 40;
+                for (int i = 0; i < sourceCount; i++) {
+                    double angle = 2 * Math.PI * i / sourceCount;
+                    // ring of close sources, emitting only in period PA
+                    st.execute(String.format(Locale.ROOT,
+                            "INSERT INTO SOURCES_GEOM VALUES(%d, ST_GeomFromText('POINT Z(%.2f %.2f 0.5)', 2154))",
+                            i, 700000 + 100 * Math.cos(angle), 6600000 + 100 * Math.sin(angle)));
+                    st.execute("INSERT INTO SOURCES_EMISSION VALUES('PA', " + i +
+                            ", 95, 95, 95, 95, 95, 95, 95, 95)");
+                    // ring of far sources, emitting only in period PB
+                    st.execute(String.format(Locale.ROOT,
+                            "INSERT INTO SOURCES_GEOM VALUES(%d, ST_GeomFromText('POINT Z(%.2f %.2f 0.5)', 2154))",
+                            sourceCount + i, 700000 + 600 * Math.cos(angle), 6600000 + 600 * Math.sin(angle)));
+                    st.execute("INSERT INTO SOURCES_EMISSION VALUES('PB', " + (sourceCount + i) +
+                            ", 95, 95, 95, 95, 95, 95, 95, 95)");
+                }
+            }
+
+            testIgnoreNonSignificantSourcesParam(connection, 0., "BUILDINGS", "SOURCES_GEOM",
+                    "RECEIVERS", "SOURCES_EMISSION");
+            Map<String, Double> allSourcesReceiverLevel = fetchReceiverLevel(connection);
+            testIgnoreNonSignificantSourcesParam(connection, maxError, "BUILDINGS", "SOURCES_GEOM",
+                    "RECEIVERS", "SOURCES_EMISSION");
+            Map<String, Double> someSourcesReceiverLevel = fetchReceiverLevel(connection);
+
+            // The remaining power budget of the pruning is an estimate, so the level error
+            // can be a little over maxError. Twice maxError still catches a period cut too early.
+            for (Map.Entry<String, Double> entry : allSourcesReceiverLevel.entrySet()) {
+                String period = entry.getKey();
+                double levelAllSources = wToDb(entry.getValue());
+                assertTrue(someSourcesReceiverLevel.containsKey(period),
+                        "No level found for period " + period);
+                double levelLimitedSources = wToDb(someSourcesReceiverLevel.get(period));
+                assertEquals(levelAllSources, levelLimitedSources, maxError * 2,
+                        "Wrong level for period " + period);
+            }
+        }
+    }
+
+    /**
      * Check if Li coefficient computation and line source subdivision are correctly done
      */
     @Test
