@@ -586,21 +586,33 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         List<Triangle> triangles;
         if (!isoSurfaceInBuildings) {
             triangles = new ArrayList<>(cellMesh.getTriangles().size());
+            boolean removedTriangles = false;
             for (Triangle triangle : cellMesh.getTriangles()) {
                 if (triangle.getAttribute() == 0) {
                     // Keep only triangles that aren't associated with a building
                     triangles.add(triangle);
+                } else {
+                    removedTriangles = true;
                 }
             }
-            // Keep only referenced vertices
-            Map<Integer, Integer> verticesIndexCorrespondence = new HashMap<>(); // Tinfour vertex index to our vertex index
-            List<Coordinate> filteredVertices = new ArrayList<>(vertices.size());
-            for(Triangle triangle : triangles) {
-                for(int i = 0; i < 3; i++) {
-                    updateTriangle(triangle, verticesIndexCorrespondence, i, vertices, filteredVertices);
+            if(removedTriangles) {
+                // Some triangles have been removed, we may have to remove vertices
+                Map<Coordinate, Integer> uniqueVertices = new HashMap<>();
+                for(Triangle triangle : triangles) {
+                    for(int i = 0; i < 3; i++) {
+                        int newIndex = updateMap(uniqueVertices,vertices.get(triangle.get(i)));
+                        triangle.set(i, newIndex);
+                    }
+                }
+                if(uniqueVertices.size() != vertices.size()) {
+                    vertices = new ArrayList<>(Arrays.asList(new Coordinate[uniqueVertices.size()]));
+                    for (Map.Entry<Coordinate, Integer> entry : uniqueVertices.entrySet()) {
+                        Coordinate key = entry.getKey();
+                        Integer value = entry.getValue();
+                        vertices.set(value, key);
+                    }
                 }
             }
-            vertices = filteredVertices;
         } else {
             triangles = cellMesh.getTriangles();
         }
@@ -635,6 +647,14 @@ public class DelaunayReceiversMaker extends GridMapMaker {
             vertices.add(oldVerticesList.get(tinFourVertexIndex));
             triangle.set(cornerIndex, vertices.size() - 1);
         }
+    }
+
+    private static Integer updateMap(Map<Coordinate, Integer> uniqueVertices, Coordinate vertex) {
+        Integer indexA = uniqueVertices.putIfAbsent(vertex, uniqueVertices.size());
+        if(indexA == null) {
+            indexA = uniqueVertices.size() - 1;
+        }
+        return indexA;
     }
 
     public double getRoadWidth() {

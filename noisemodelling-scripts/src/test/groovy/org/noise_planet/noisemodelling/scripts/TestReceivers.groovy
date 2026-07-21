@@ -242,6 +242,8 @@ class TestReceivers extends JdbcTestCase {
         assertEquals(2154, GeometryTableUtilities.getSRID(connection, TableLocation.parse("RECEIVERS")))
         Envelope envelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse("RECEIVERS")).envelopeInternal
         assertEquals(1127409.17, envelope.getArea(), 1.0)
+        // Count the expected number of vertices
+        assertEquals(2294, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
     }
 
     @Test
