@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.noise_planet.noisemodelling.scripts.Geometric_Tools.Clean_Buildings_Table
+import org.noise_planet.noisemodelling.scripts.Import_and_Export.Export_Table
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.Receivers.Building_Grid
 import org.noise_planet.noisemodelling.scripts.Receivers.Building_Grid3D
@@ -311,6 +312,8 @@ class TestReceivers extends JdbcTestCase {
         def res = sql.firstRow("SELECT ST_AREA(ST_EXTENT(THE_GEOM)) AREA FROM TRIANGLES T")
 
         assertEquals(expectedArea, res["area"], 5)
+
+        assertEquals(7924, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
     }
 
     @Test
