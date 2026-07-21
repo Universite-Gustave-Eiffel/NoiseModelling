@@ -172,6 +172,10 @@ public class PathFinder {
      */
     public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, CutPlaneVisitor dataOut, ProgressVisitor visitor) {
 
+        if (isBelowGround(receiverPointInfo.position)) {
+            return;
+        }
+
         long start = 0;
         if(profilerThread != null) {
             start = System.nanoTime();
@@ -213,7 +217,7 @@ public class PathFinder {
                 Geometry source = data.sourceGeometries.get(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    if (ptpos.distance(receiverPointInfo.getCoordinates()) < data.maxSrcDist) {
+                    if (!isBelowGround(ptpos) && ptpos.distance(receiverPointInfo.getCoordinates()) < data.maxSrcDist) {
                         Orientation orientation = null;
                         if(data.sourcesPk.size() > srcIndex) {
                             orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
@@ -890,7 +894,7 @@ public class PathFinder {
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
-            if (pt.distance(receiverCoord) < data.maxSrcDist) {
+            if (!isBelowGround(pt) && pt.distance(receiverCoord) < data.maxSrcDist) {
                 // use the orientation computed from the line source coordinates
                 Vector3D v;
                 if(ptIndex == 0) {
@@ -915,6 +919,10 @@ public class PathFinder {
                 sourceList.add(new SourcePointInfo(srcIndex, sourcePk, pt, li, orientation));
             }
         }
+    }
+
+    private boolean isBelowGround(Coordinate coordinate) {
+        return data.profileBuilder.hasDem() && coordinate.z < data.profileBuilder.getZGround(coordinate);
     }
 
     public enum ComputationSide {LEFT, RIGHT}
