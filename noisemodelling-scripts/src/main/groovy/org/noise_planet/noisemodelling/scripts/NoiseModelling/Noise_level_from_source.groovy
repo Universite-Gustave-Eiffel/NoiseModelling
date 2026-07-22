@@ -161,7 +161,7 @@ inputs = [
         confReceiversZIsAltitude          : [
                 name       : 'Receivers Z is altitude',
                 title      : 'Receivers Z is altitude',
-                description: 'If checked, the Z value of the receivers geometry is considered as an absolute altitude (above sea level) instead of a height above the ground/DEM. </br> </br>' +
+                description: 'If checked, the Z value of the receiver\'s geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table. </br> </br>' +
                              '&#128736; Default value: <b>false = the Z value is a height relative to the ground/DEM</b>',
                 default    : false,
                 type: Boolean.class
@@ -169,7 +169,7 @@ inputs = [
         confSourcesZIsAltitude          : [
                 name       : 'Sources Z is altitude',
                 title      : 'Sources Z is altitude',
-                description: 'If checked, the Z value of the sources geometry is considered as an absolute altitude (above sea level) instead of a height above the ground/DEM. </br> </br>' +
+                description: 'If checked, the Z value of the source\'s geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table. </br> </br>' +
                              '&#128736; Default value: <b>false = the Z value is a height relative to the ground/DEM</b>',
                 default    : false,
                 type: Boolean.class
@@ -559,8 +559,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
-    pointNoiseMap.setReceiverHasAbsoluteZCoordinates(receiversZisAltitude)
-    pointNoiseMap.setSourceHasAbsoluteZCoordinates(sourcesZisAltitude)
+    pointNoiseMap.setReceiversZIsAltitude(receiversZisAltitude)
+    pointNoiseMap.setSourcesZIsAltitude(sourcesZisAltitude)
 
     if(recordProfile) {
         LocalDateTime now = LocalDateTime.now()

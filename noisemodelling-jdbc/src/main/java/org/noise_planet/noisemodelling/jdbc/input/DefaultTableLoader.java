@@ -345,7 +345,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                     " contain at least one receiver without Z ordinate." +
                                     " You must specify X,Y,Z for each receiver");
                         }
-                        if(!noiseMapByReceiverMaker.isReceiverHasAbsoluteZCoordinates()) {
+                        if(!noiseMapByReceiverMaker.isReceiversZIsAltitude()) {
                             pt = scene.profileBuilder.makeGeometryRelativeZToAbsolute(pt, true);
                         }
                         scene.addReceiver(receiverPk, pt.getCoordinate(), rs);
@@ -792,7 +792,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                             " You must specify X,Y,Z for each source");
                                 }
                             }
-                            if(!noiseMapByReceiverMaker.isSourceHasAbsoluteZCoordinates()) {
+                            if(!noiseMapByReceiverMaker.isSourcesZIsAltitude()) {
                                 if(scene.profileBuilder.hasDem()) {
                                     // Coordinates are supposed to be relative to the digital elevation model
                                     // So we must compute the altitude values
