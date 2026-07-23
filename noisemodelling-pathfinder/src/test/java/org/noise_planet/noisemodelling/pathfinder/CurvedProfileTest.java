@@ -19,6 +19,8 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGe
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -294,6 +296,89 @@ public class CurvedProfileTest {
         assertEquals(4, curvedSideHull.size());
         assertEquals(0, new Coordinate(773, 12, 0).distance(curvedSideHull.get(1)), 0.1);
         assertEquals(0, new Coordinate(986, 79, 0).distance(curvedSideHull.get(2)), 0.1);
+
+    }
+
+    /**
+     * Compare the current implementation of the curved rays conformal mapping
+     * and the one from Harmonoise project.
+     * (uses CNOSSOS Test case 28 for favourable propagation conditions between source and receiver)
+     */
+    @Test
+    public void testCompareConformalMapping() {
+
+        //Create obstruction test object
+        ProfileBuilder builder = new ProfileBuilder();
+
+        // Add building
+        builder.addBuilding(new Coordinate[]{
+                        new Coordinate(113, 10, 6),
+                        new Coordinate(127, 16, 6),
+                        new Coordinate(102, 70, 6),
+                        new Coordinate(88, 64, 6)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(176, 19, 10),
+                        new Coordinate(164, 88, 10),
+                        new Coordinate(184, 91, 10),
+                        new Coordinate(196, 22, 10)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(250, 70, 14),
+                        new Coordinate(250, 180, 14),
+                        new Coordinate(270, 180, 14),
+                        new Coordinate(270, 70, 14)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(332, 32, 10),
+                        new Coordinate(348, 126, 10),
+                        new Coordinate(361, 108, 10),
+                        new Coordinate(349, 44, 10)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(400, 5, 9),
+                        new Coordinate(400, 85, 9),
+                        new Coordinate(415, 85, 9),
+                        new Coordinate(415, 5, 9)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(444, 47, 12),
+                        new Coordinate(436, 136, 12),
+                        new Coordinate(516, 143, 12),
+                        new Coordinate(521, 89, 12),
+                        new Coordinate(506, 87, 12),
+                        new Coordinate(502, 127, 12),
+                        new Coordinate(452, 123, 12),
+                        new Coordinate(459, 48, 12)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(773, 12, 14),
+                        new Coordinate(728, 90, 14),
+                        new Coordinate(741, 98, 14),
+                        new Coordinate(786, 20, 14)}, -1)
+
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(972, 82, 8),
+                        new Coordinate(979, 121, 8),
+                        new Coordinate(993, 118, 8),
+                        new Coordinate(986, 79, 8)}, -1)
+                .addGroundEffect(-11, 1011, -300, 300, 0.5);
+
+        // Generate profile
+        builder.finishFeeding();
+        Coordinate source = new Coordinate(0, 50, 4);
+        Coordinate receiver = new Coordinate(1000, 100, 1);
+        CutProfile profile = builder.getProfile(source, receiver);
+
+        // Current computation
+        List<Coordinate> flatProfile = profile.computePts2D(false);
+        List<Coordinate> curvedProfile = profile.computePts2D(true);
+
+        // Through Harmonoise implementation
+        // Get 2D profile including ground points
+        List<Integer> hullIndices = profile.getConvexHullIndices(profile.computePts2D());
+        Coordinate[] flatProfile2D = profile.computePts2DGround(hullIndices).toArray(new Coordinate[0]);
+        Coordinate[] curvedProfileHarmonoise = CurvedProfileGenerator.doHarmonoiseCurvature(source, receiver, flatProfile2D);
 
     }
 }

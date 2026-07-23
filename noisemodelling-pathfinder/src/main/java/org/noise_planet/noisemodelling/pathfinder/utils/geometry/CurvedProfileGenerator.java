@@ -14,9 +14,11 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
+import org.noise_planet.noisemodelling.pathfinder.utils.ComplexNumber;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.asin;
 import static java.lang.Math.max;
@@ -118,6 +120,41 @@ public class CurvedProfileGenerator {
             curvedProfile[i] = new Coordinate(p.x, p.y, p.z + z);
         }
 
+        return curvedProfile;
+    }
+
+    public static Coordinate[] doHarmonoiseCurvature(Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D){
+        Coordinate[] curvedProfile = new Coordinate[flatProfile2D.length];
+
+        // Calculate projected distance between source and receiver on the vertical plane
+        double d = cs.distance(cr);
+
+        // Calculate radius of curvature (Γ)
+        double radius = Math.max(1000, 8 * d);
+
+        // Ground curvature
+        double hSource = cs.z;
+        double hReceiver = cr.z;
+        double hm = (hSource + hReceiver) / 2;
+        flatProfile2D[0].y = 0;
+        flatProfile2D[flatProfile2D.length-1].y = 0;
+        double xc = 0.5 * (flatProfile2D[0].x + flatProfile2D[flatProfile2D.length-1].x);
+        double yc = 0.5 * (flatProfile2D[0].y + flatProfile2D[flatProfile2D.length-1].y) + hm;
+
+        for (int i = 0; i < flatProfile2D.length; i++) {
+            double x = flatProfile2D[i].x - xc;
+            double y = flatProfile2D[i].y - yc;
+
+            ComplexNumber z = new ComplexNumber(x,y);
+            ComplexNumber c = new ComplexNumber(0, 2* (hm + radius));
+
+            ComplexNumber w = ComplexNumber.divide( ComplexNumber.multiply(c, z), ComplexNumber.add(z, c));
+
+            // Create new coordinate with transformed z
+            curvedProfile[i] = new Coordinate(w.getRe(), w.getIm(), flatProfile2D[i].z);
+        }
+
+        // Return
         return curvedProfile;
     }
 
