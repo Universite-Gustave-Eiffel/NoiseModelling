@@ -398,7 +398,7 @@ public class ProfileBuilder {
     public Coordinate offsetCoordinateToAltitudeUsingDigitalElevationModel(Coordinate geometryCoordinate, boolean checkForBuildingVolumes) {
         Coordinate offsetCoordinate = new Coordinate(geometryCoordinate.x, geometryCoordinate.y, geometryCoordinate.z + getZGround(geometryCoordinate));
         if(checkForBuildingVolumes) {
-            logWarningIfCoordinatesIntoBuildings(geometryCoordinate);
+            logWarningIfCoordinatesIntoBuildings(offsetCoordinate);
         }
         return offsetCoordinate;
     }
