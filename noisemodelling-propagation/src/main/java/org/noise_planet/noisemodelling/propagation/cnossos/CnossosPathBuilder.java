@@ -226,6 +226,11 @@ public class CnossosPathBuilder {
                 && !cutProfile.isCurvedPath()) {
             throw new IllegalArgumentException("A favourable path cannot be computed using lateral non curved cut profile");
         }
+        // Check if source or receiver are below the ground
+        if(cutProfile.getReceiver().coordinate.z < cutProfile.getReceiver().getzGround()
+          || cutProfile.getSource().coordinate.z < cutProfile.getSource().getzGround()) {
+            return null;
+        }
         List<SegmentPath> segments = new ArrayList<>();
         List<PointPath> points = new ArrayList<>();
 

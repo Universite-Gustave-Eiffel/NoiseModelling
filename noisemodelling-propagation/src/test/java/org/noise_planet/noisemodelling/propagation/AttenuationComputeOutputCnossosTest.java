@@ -6100,6 +6100,108 @@ public class AttenuationComputeOutputCnossosTest {
         assertArrayEquals(propDataOut.receiversAttenuationLevels.pop().levels, propDataOut.receiversAttenuationLevels.pop().levels, Double.MIN_VALUE);
     }
 
+
+    /**
+     * Check if source is rejected if it has been placed under the DEM
+     */
+    @Test
+    public void testSourceUnderDem() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        // add square topographic points around the scene at the altitude of 19m
+        profileBuilder
+                .addTopographicPoint(new Coordinate(-50, -50, 19))
+                .addTopographicPoint(new Coordinate(50, -50, 19))
+                .addTopographicPoint(new Coordinate(50, 50, 19))
+                .addTopographicPoint(new Coordinate(-50, 50, 19))
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, 10, 31.0),
+                        new Coordinate(-5, 20, 31.0),
+                        new Coordinate(5, 20, 31.0),
+                        new Coordinate(5, 10, 31.0)
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, -10, 31.0),
+                        new Coordinate(-5, -20, 31.0),
+                        new Coordinate(5, -20, 31.0),
+                        new Coordinate(5, -10, 31.0)
+                })
+                .finishFeeding();
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 18)));
+        scene.addReceiver(new Coordinate(0, 30, 24));
+
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationParameters attData = new AttenuationParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertEquals(0, propDataOut.getPropagationPaths().size(), "The source is under the DEM and no propagation paths should be found");
+    }
+
+    /**
+     * Check if receiver is rejected if it has been placed under the DEM
+     */
+    @Test
+    public void testReceiverUnderDem() {
+        //Profile building
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        // add square topographic points around the scene at the altitude of 19m
+        profileBuilder
+                .addTopographicPoint(new Coordinate(-50, -50, 19))
+                .addTopographicPoint(new Coordinate(50, -50, 19))
+                .addTopographicPoint(new Coordinate(50, 50, 19))
+                .addTopographicPoint(new Coordinate(-50, 50, 19))
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, 10, 31.0),
+                        new Coordinate(-5, 20, 31.0),
+                        new Coordinate(5, 20, 31.0),
+                        new Coordinate(5, 10, 31.0)
+                })
+                .addBuilding(new Coordinate[]{
+                        new Coordinate(-5, -10, 31.0),
+                        new Coordinate(-5, -20, 31.0),
+                        new Coordinate(5, -20, 31.0),
+                        new Coordinate(5, -10, 31.0)
+                })
+                .finishFeeding();
+
+        //Propagation data building
+        GeometryFactory f = new GeometryFactory();
+        SceneWithAttenuation scene = new SceneWithAttenuation(profileBuilder);
+        scene.addSource(f.createPoint(new Coordinate(0, 0, 21)));
+        scene.addReceiver(new Coordinate(0, 30, 18));
+
+        scene.reflexionOrder = 0;
+
+        //Propagation process path data building
+        AttenuationParameters attData = new AttenuationParameters();
+        attData.setHumidity(HUMIDITY);
+        attData.setTemperature(TEMPERATURE);
+
+        //Out and computation settings
+        AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);
+        PathFinder computeRays = new PathFinder(scene);
+        computeRays.setThreadCount(1);
+
+        //Run computation
+        computeRays.run(propDataOut);
+
+        assertEquals(0, propDataOut.getPropagationPaths().size(), "The receiver is under the DEM and no propagation paths should be found");
+    }
     /**
      * Test body-barrier effect
      * NMPB08 – Railway Emission Model

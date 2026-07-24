@@ -172,8 +172,14 @@ public class PathFinder {
      */
     public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, CutPlaneVisitor dataOut, ProgressVisitor visitor) {
 
-        if (isBelowGround(receiverPointInfo.position)) {
-            return;
+        if(data.profileBuilder.hasDem()) {
+            // Check if the receiver has been positioned below the ground
+            double zGround = data.profileBuilder.getZGround(receiverPointInfo.position);
+            if (zGround > receiverPointInfo.position.z) {
+                LOGGER.warn("The receiver located at {} is below the ground level ({} m) and has been ignored",
+                        new WKTWriter(3).write(GEOMETRY_FACTORY.createPoint(receiverPointInfo.position)), zGround);
+                return;
+            }
         }
 
         long start = 0;
@@ -217,7 +223,7 @@ public class PathFinder {
                 Geometry source = data.sourceGeometries.get(srcIndex);
                 if (source instanceof Point) {
                     Coordinate ptpos = source.getCoordinate();
-                    if (!isBelowGround(ptpos) && ptpos.distance(receiverPointInfo.getCoordinates()) < data.maxSrcDist) {
+                    if (ptpos.distance(receiverPointInfo.getCoordinates()) < data.maxSrcDist) {
                         Orientation orientation = null;
                         if(data.sourcesPk.size() > srcIndex) {
                             orientation = data.sourceOrientation.get(data.sourcesPk.get(srcIndex));
@@ -894,7 +900,7 @@ public class PathFinder {
         double li = splitLineStringIntoPoints(source, segmentSizeConstraint, pts);
         for (int ptIndex = 0; ptIndex < pts.size(); ptIndex++) {
             Coordinate pt = pts.get(ptIndex);
-            if (!isBelowGround(pt) && pt.distance(receiverCoord) < data.maxSrcDist) {
+            if (pt.distance(receiverCoord) < data.maxSrcDist) {
                 // use the orientation computed from the line source coordinates
                 Vector3D v;
                 if(ptIndex == 0) {
@@ -919,10 +925,6 @@ public class PathFinder {
                 sourceList.add(new SourcePointInfo(srcIndex, sourcePk, pt, li, orientation));
             }
         }
-    }
-
-    private boolean isBelowGround(Coordinate coordinate) {
-        return data.profileBuilder.hasDem() && coordinate.z < data.profileBuilder.getZGround(coordinate);
     }
 
     public enum ComputationSide {LEFT, RIGHT}
