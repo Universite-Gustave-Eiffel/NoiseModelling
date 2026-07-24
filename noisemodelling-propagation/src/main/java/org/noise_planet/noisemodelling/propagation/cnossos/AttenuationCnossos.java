@@ -486,8 +486,9 @@ public class AttenuationCnossos {
         double dp = path.dp;
         double k = 2*PI*fm/c;
         double gw = forceGPath ? path.gPath : proPathParameters.isFavourable() ? path.gPath : path.gPathPrime;
-        double w = 0.0185 * pow(fm, 2.5) * pow(gw, 2.6) /
-                (pow(fm, 1.5) * pow(gw, 2.6) + 1.3e3 * pow(fm, 0.75) * pow(gw, 1.3) + 1.16e6);
+        double gw26 = pow(gw, 2.6);
+        double w = 0.0185 * data.groundFm25[idFreq] * gw26 /
+                (data.groundFm15[idFreq] * gw26 + 1.3e3 * data.groundFm075[idFreq] * pow(gw, 1.3) + 1.16e6);
         double cf = dp * (1 + 3 * w * dp * exp(-sqrt(w * dp))) / (1 + w * dp);
         return new double[]{cf, k, w};
     }
