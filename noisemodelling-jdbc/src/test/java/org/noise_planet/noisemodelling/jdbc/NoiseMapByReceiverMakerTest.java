@@ -46,6 +46,12 @@ public class NoiseMapByReceiverMakerTest {
 
     private Connection connection;
 
+    private static class DemTableLoader extends DefaultTableLoader {
+        public void fetchDem(Connection connection, org.locationtech.jts.geom.Envelope envelope) throws SQLException {
+            fetchCellDem(connection, envelope, new org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder());
+        }
+    }
+
     @BeforeEach
     public void tearUp() throws Exception {
         connection = JDBCUtilities.wrapConnection(H2GISDBFactory.createSpatialDataBase(NoiseMapByReceiverMakerTest.class.getSimpleName(), true, ""));
@@ -56,6 +62,48 @@ public class NoiseMapByReceiverMakerTest {
         if(connection != null) {
             connection.close();
         }
+    }
+
+    private DemTableLoader initDemTableLoader(String demGeometryType, String demWkt) throws SQLException {
+        try (Statement st = connection.createStatement()) {
+            st.execute("CREATE TABLE BUILDINGS(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(POLYGONZ))");
+            st.execute("INSERT INTO BUILDINGS VALUES(1, 'POLYGONZ ((0 0 0, 10 0 0, 10 10 0, 0 10 0, 0 0 0))')");
+            st.execute("CREATE TABLE RECEIVERS(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(POINTZ))");
+            st.execute("INSERT INTO RECEIVERS VALUES(1, 'POINTZ (5 5 1)')");
+            st.execute("CREATE TABLE DEM(ID INTEGER PRIMARY KEY, THE_GEOM GEOMETRY(" + demGeometryType + "))");
+            st.execute("INSERT INTO DEM VALUES(1, '" + demWkt + "')");
+        }
+        DemTableLoader tableLoader = new DemTableLoader();
+        NoiseMapByReceiverMaker noiseMapByReceiverMaker = new NoiseMapByReceiverMaker("BUILDINGS", "", "RECEIVERS");
+        noiseMapByReceiverMaker.setPropagationProcessDataFactory(tableLoader);
+        noiseMapByReceiverMaker.setInputMode(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
+        noiseMapByReceiverMaker.setDemTable("DEM");
+        noiseMapByReceiverMaker.initialize(connection);
+        return tableLoader;
+    }
+
+    private void assertDemWithoutZThrows(String demGeometryType, String demWkt) throws SQLException {
+        DemTableLoader tableLoader = initDemTableLoader(demGeometryType, demWkt);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
+        assertTrue(exception.getMessage().contains("DEM"), exception.getMessage());
+        assertTrue(exception.getMessage().contains("without Z ordinate"), exception.getMessage());
+    }
+
+    @Test
+    public void testDemPointWithoutZThrows() throws Exception {
+        assertDemWithoutZThrows("POINT", "POINT (1 1)");
+    }
+
+    @Test
+    public void testDemLineStringWithoutZThrows() throws Exception {
+        assertDemWithoutZThrows("LINESTRING", "LINESTRING (1 1, 2 2)");
+    }
+
+    @Test
+    public void testDemPointWithZSucceeds() throws Exception {
+        DemTableLoader tableLoader = initDemTableLoader("POINTZ", "POINTZ (1 1 12)");
+        assertDoesNotThrow(() -> tableLoader.fetchDem(connection, new org.locationtech.jts.geom.Envelope(-1, 20, -1, 20)));
     }
 
     /**
