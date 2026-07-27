@@ -357,9 +357,12 @@ public class PathFinder {
         // between source and receiver is blocked and does not penetrate the terrain profile.
         // In addition, the source must not be a mirror source due to reflection"
         if (horizontalDiffraction && !cutProfile.isFreeField()) {
+            // The four side hull searches (left/right x straight/curved) share the same walls
+            // and the same plane cuts, the visitor caches them
+            BuildingIntersectionPathVisitor sideHullVisitor = createSideHullVisitor(src.position, rcv.position);
             for(boolean curved : new boolean[]{false, true}) {
                 for(PathFinder.ComputationSide side : PathFinder.ComputationSide.values()) {
-                    CutProfile cutProfileSide = computeVEdgeDiffraction(rcv, src, data, side, curved);
+                    CutProfile cutProfileSide = computeVEdgeDiffraction(rcv, src, data, side, curved, sideHullVisitor);
                     if (cutProfileSide != null) {
                         strategy = dataOut.onNewCutPlane(cutProfileSide);
                         if(strategy.equals(CutPlaneVisitor.PathSearchStrategy.SKIP_SOURCE) ||
@@ -384,9 +387,20 @@ public class PathFinder {
      */
     public CutProfile computeVEdgeDiffraction(ReceiverPointInfo rcv, SourcePointInfo src,
                                                Scene data, ComputationSide side, boolean curved) {
+        return computeVEdgeDiffraction(rcv, src, data, side, curved,
+                createSideHullVisitor(src.position, rcv.position));
+    }
+
+    /**
+     * Same as {@link #computeVEdgeDiffraction(ReceiverPointInfo, SourcePointInfo, Scene, ComputationSide, boolean)}
+     * with a visitor that can be shared between the four searches of the same source-receiver couple.
+     */
+    public CutProfile computeVEdgeDiffraction(ReceiverPointInfo rcv, SourcePointInfo src,
+                                              Scene data, ComputationSide side, boolean curved,
+                                              BuildingIntersectionPathVisitor sideHullVisitor) {
 
         List<Coordinate> coordinates = computeSideHull(side == LEFT, new Coordinate(src.position),
-                new Coordinate(rcv.position), curved);
+                new Coordinate(rcv.position), curved, sideHullVisitor);
 
         List<CutPoint> cutPoints = new ArrayList<>();
 
@@ -474,12 +488,31 @@ public class PathFinder {
      * @return Intersection points between the plane formed by p1 and p2 and the buildings walls
      */
     public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved) {
+        return computeSideHull(left, p1, p2, curved, createSideHullVisitor(p1, p2));
+    }
+
+    /**
+     * Create the visitor used to search the side hull points between two positions.
+     * One instance can be shared by the four side hull searches of the same source-receiver
+     * couple (left/right x straight/curved), so the walls lookup and the plane cuts are done
+     * only once for the four searched paths.
+     */
+    public BuildingIntersectionPathVisitor createSideHullVisitor(Coordinate p1, Coordinate p2) {
+        Coordinate sourcePosition = new Coordinate(p1);
+        Coordinate receiverPosition = new Coordinate(p2);
+        return new BuildingIntersectionPathVisitor(sourcePosition, receiverPosition, true,
+                data.profileBuilder, new ArrayList<>(), computeZeroRadPlane(sourcePosition, receiverPosition));
+    }
+
+    /**
+     * Same as {@link #computeSideHull(boolean, Coordinate, Coordinate, boolean)} with a visitor
+     * that can be shared between the side hull searches of the same source-receiver couple.
+     */
+    public List<Coordinate> computeSideHull(boolean left, Coordinate p1, Coordinate p2, boolean curved,
+                                            BuildingIntersectionPathVisitor buildingIntersectionPathVisitor) {
         if (p1.equals(p2)) {
             return new ArrayList<>();
         }
-
-        // Intersection test cache
-        Set<LineSegment> freeFieldSegments = new HashSet<>();
 
         List<Coordinate> input = new ArrayList<>();
 
@@ -490,16 +523,17 @@ public class PathFinder {
         input.add(p1);
         input.add(p2);
 
-        Plane cutPlane = computeZeroRadPlane(p1, p2);
-
-        BuildingIntersectionPathVisitor buildingIntersectionPathVisitor = new BuildingIntersectionPathVisitor(p1, p2, left,
-                data.profileBuilder, input, cutPlane);
-
         // The roof vertices of buildings will be moved downward if the curved coordinate system is used
         // This will return the altered cut plane intersection coordinates, so the coordinate must be restored before returning it
-        buildingIntersectionPathVisitor.setCurved(curved);
+        buildingIntersectionPathVisitor.reset(left, curved, input);
 
-        data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
+        if (buildingIntersectionPathVisitor.isCandidatesCollected()) {
+            // Reuse the walls found by the first search of this source-receiver couple
+            buildingIntersectionPathVisitor.replayCandidates();
+        } else {
+            data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
+            buildingIntersectionPathVisitor.setCandidatesCollected(true);
+        }
 
         int k;
 
