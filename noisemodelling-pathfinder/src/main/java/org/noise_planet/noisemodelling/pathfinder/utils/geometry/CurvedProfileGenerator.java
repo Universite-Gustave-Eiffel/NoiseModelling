@@ -64,7 +64,7 @@ public class CurvedProfileGenerator {
             CutPoint cp = flatProfile.get(i);
             CutPoint newCp = cp.clone();
             newCp.setZGround(groundCoords[i].z);
-            newCp.setCoordinate(curvedCoords[i]);
+            newCp.coordinate.z = curvedCoords[i].z;
 
             // If this is a reflection point, also transform the wall coordinates
             if (newCp instanceof CutPointReflection) {
@@ -172,26 +172,26 @@ public class CurvedProfileGenerator {
         double hSource = cs.z;
         double hReceiver = cr.z;
         double hm = (hSource + hReceiver) / 2;
-        flatProfile2D[0].y = 0;
-        flatProfile2D[flatProfile2D.length-1].y = 0;
+        double c0 = 2* (hm + radius); // Eq. 77
+        ComplexNumber c = new ComplexNumber(0, c0); // Eq. 76
         double xc = 0.5 * (flatProfile2D[0].x + flatProfile2D[flatProfile2D.length-1].x);
         double yc = 0.5 * (flatProfile2D[0].y + flatProfile2D[flatProfile2D.length-1].y) + hm;
+        ComplexNumber w0 = new ComplexNumber(xc, yc); // Eq. 75
 
         double deltaY = 0;
         for (int i = 0; i < flatProfile2D.length; i++) {
-            double x = flatProfile2D[i].x - xc;
-            double y = flatProfile2D[i].y - yc;
-            ComplexNumber z = new ComplexNumber(x,y);
-            ComplexNumber c = new ComplexNumber(0, 2* (hm + radius));
-
-            ComplexNumber w = ComplexNumber.divide( ComplexNumber.multiply(c, z), ComplexNumber.add(z, c));
+            ComplexNumber w = new ComplexNumber(flatProfile2D[i].x, flatProfile2D[i].y);
+            ComplexNumber wPrim = ComplexNumber.divide(
+                    ComplexNumber.multiply(c, ComplexNumber.subtract(w, w0)),
+                    ComplexNumber.add(c, ComplexNumber.subtract(w, w0))
+            ); // Eq. 74
 
             // Create new coordinate with transformed z (incl. profile translation)
             if (i == 0) {
-                deltaY = y + yc - w.getIm();
-                curvedProfile[i] = new Coordinate(w.getRe() + xc, y + yc , flatProfile2D[i].z);
+                deltaY = flatProfile2D[i].y - wPrim.getIm();
+                curvedProfile[i] = new Coordinate(wPrim.getRe() + xc, flatProfile2D[i].y , flatProfile2D[i].z);
             } else {
-                curvedProfile[i] = new Coordinate(w.getRe() + xc, w.getIm() + deltaY, flatProfile2D[i].z);
+                curvedProfile[i] = new Coordinate(wPrim.getRe() + xc, wPrim.getIm() + deltaY, flatProfile2D[i].z);
             }
         }
 
