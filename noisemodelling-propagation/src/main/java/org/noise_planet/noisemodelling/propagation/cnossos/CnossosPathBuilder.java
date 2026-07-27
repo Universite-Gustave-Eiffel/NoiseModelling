@@ -197,9 +197,23 @@ public class CnossosPathBuilder {
         List<CnossosPath> cnossosPaths = new ArrayList<>();
         if(cutProfile.profileType == CutProfile.PROFILE_TYPE.DIRECT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.REFLECTION) {
-            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, false);
+            // The 2D projection of the profile, the ground points and the mean ground plane are
+            // the same for the homogeneous and the favourable path, so compute them only once here
+            List<Coordinate> pts2D = cutProfile.computePts2D();
+            List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.cutPoints.size());
+            Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
+            double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
+            CnossosPath cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray,
+                    gS, false, pts2D, pts2DGround, cut2DGroundIndex, meanPlane);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
-            cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, true);
+            // Give a copy of the 2D points to the favourable path, because building a path can
+            // move the height of its reflection points (each path must have its own points)
+            List<Coordinate> pts2DCopy = new ArrayList<>(pts2D.size());
+            for (Coordinate coordinate : pts2D) {
+                pts2DCopy.add(new Coordinate(coordinate));
+            }
+            cnossosPath = computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray,
+                    gS, true, pts2DCopy, pts2DGround, cut2DGroundIndex, meanPlane);
             if(cnossosPath != null) cnossosPaths.add(cnossosPath);
         } else if (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                 cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT) {
@@ -220,6 +234,28 @@ public class CnossosPathBuilder {
      * @return The cnossos path or null
      */
     public static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier, List<Double> exactFrequencyArray, double gS, boolean favourable) {
+        List<Coordinate> pts2D = cutProfile.computePts2D();
+        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfile.cutPoints.size());
+        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
+        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
+        return computeCnossosPathFromCutProfile(cutProfile, bodyBarrier, exactFrequencyArray, gS, favourable,
+                pts2D, pts2DGround, cut2DGroundIndex, meanPlane);
+    }
+
+    /**
+     * Same as {@link #computeCnossosPathFromCutProfile(CutProfile, boolean, List, double, boolean)} but with the
+     * profile geometry already computed, so it is not computed twice when the same profile gives
+     * the homogeneous and the favourable path.
+     * @param pts2D 2D projection of the cut points, may be updated by this method (reflection points)
+     * @param pts2DGround 2D projection of the ground, read only
+     * @param cut2DGroundIndex Ground point index for each cut point, read only
+     * @param meanPlane Mean ground plane coefficients of the whole profile, read only
+     */
+    private static CnossosPath computeCnossosPathFromCutProfile(CutProfile cutProfile , boolean bodyBarrier,
+                                                                List<Double> exactFrequencyArray, double gS,
+                                                                boolean favourable, List<Coordinate> pts2D,
+                                                                Coordinate[] pts2DGround,
+                                                                List<Integer> cut2DGroundIndex, double[] meanPlane) {
         if(favourable &&
                 (cutProfile.profileType == CutProfile.PROFILE_TYPE.LEFT ||
                         cutProfile.profileType == CutProfile.PROFILE_TYPE.RIGHT)
@@ -232,14 +268,10 @@ public class CnossosPathBuilder {
         // Use original cutPoints for all calculations (no transformation)
         final List<CutPoint> cutProfilePoints = cutProfile.cutPoints;
 
-        List<Coordinate> pts2D = cutProfile.computePts2D();
         if(pts2D.size() != cutProfilePoints.size()) {
             throw new IllegalArgumentException("The two arrays size should be the same");
         }
 
-        List<Integer> cut2DGroundIndex = new ArrayList<>(cutProfilePoints.size());
-        Coordinate[] pts2DGround = cutProfile.computePts2DGround(cut2DGroundIndex).toArray(new Coordinate[0]);
-        double[] meanPlane = JTSUtility.getMeanPlaneCoefficients(pts2DGround);
         Coordinate firstPts2D = pts2D.get(0);
         Coordinate lastPts2D = pts2D.get(pts2D.size()-1);
         SegmentPath srPath = computeSegment(firstPts2D, lastPts2D, meanPlane, cutProfile.getGPath(), cutProfile.getSource().groundCoefficient);

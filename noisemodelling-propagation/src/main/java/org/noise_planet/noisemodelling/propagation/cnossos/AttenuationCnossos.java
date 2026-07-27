@@ -201,9 +201,14 @@ public class AttenuationCnossos {
      */
     public static double[] aDiv(CnossosPath pathParameters, AttenuationParameters data) {
         double[] aDiv = new double[data.getFrequencies().size()];
-        long difVPointCount = pathParameters.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(DIFV)).count();
-        Arrays.fill(aDiv, getADiv(difVPointCount == 0 ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc));
+        boolean hasDifVPoint = false;
+        for (PointPath pointPath : pathParameters.getPointList()) {
+            if (pointPath.type.equals(DIFV)) {
+                hasDifVPoint = true;
+                break;
+            }
+        }
+        Arrays.fill(aDiv, getADiv(!hasDifVPoint ? pathParameters.getSRSegment().d : pathParameters.getSRSegment().dc));
         return aDiv;
     }
 
@@ -244,28 +249,50 @@ public class AttenuationCnossos {
     public static double[] aBoundary(CnossosPath path, AttenuationParameters data) {
         double[] aGround = new double[data.getFrequencies().size()];
         double[] aDif = new double[data.getFrequencies().size()];
-        List<PointPath> diffPts = path.getPointList().stream().
-                filter(pointPath -> pointPath.type.equals(DIFH_RCRIT) || pointPath.type.equals(DIFH)
-                        || pointPath.type.equals(DIFV)).collect(Collectors.toList());
+        // Count the diffraction points and find the first one once, before the frequency
+        // loop, as they do not depend on the frequency. Only the presence of the DIFH_RCRIT
+        // point depends on the Rayleigh criterion, so keep the first point with and without it.
+        long difHCount = 0;
+        long difVCount = 0;
+        PointPath firstDif = null;
+        PointPath firstDifWithRcrit = null;
+        for (PointPath pointPath : path.getPointList()) {
+            boolean difH = pointPath.type.equals(DIFH);
+            boolean difV = pointPath.type.equals(DIFV);
+            if (difH) {
+                difHCount++;
+            }
+            if (difV) {
+                difVCount++;
+            }
+            if ((difH || difV) && firstDif == null) {
+                firstDif = pointPath;
+            }
+            if ((difH || difV || pointPath.type.equals(DIFH_RCRIT)) && firstDifWithRcrit == null) {
+                firstDifWithRcrit = pointPath;
+            }
+        }
+        boolean recordGround = path.groundAttenuation != null && path.groundAttenuation.aGround != null;
         path.aBoundary.init(data.getFrequencies().size());
         // Without diff
         for(int i=0; i<data.getFrequencies().size(); i++) {
-            int finalI = i;
-            boolean isValidRCriterion = isValidRcrit(path, data.getFrequencies().get(finalI));
-            PointPath first = diffPts.stream()
-                    .filter(pp -> pp.type.equals(PointPath.POINT_TYPE.DIFH) || pp.type.equals(DIFV) ||
-                            (pp.type.equals(DIFH_RCRIT) && isValidRCriterion ))
-                    .findFirst()
-                    .orElse(null);
-            aGround[i] = path.isFavourable() ?
-                    aGroundF(path, path.getSRSegment(), data, i) :
-                    aGroundH(path, path.getSRSegment(), data, i);
-            if(path.groundAttenuation != null && path.groundAttenuation.aGround != null) {
-                path.groundAttenuation.aGround[i] = aGround[i];
+            boolean isValidRCriterion = isValidRcrit(path, data.getFrequencies().get(i));
+            PointPath first = isValidRCriterion ? firstDifWithRcrit : firstDif;
+            // When the first diffraction is horizontal and the Rayleigh criterion is valid,
+            // the ground attenuation is replaced by zero below, so do not compute it for
+            // nothing (unless it is kept for the attenuation matrix export)
+            boolean groundReplacedByDif = first != null && !first.type.equals(DIFV) && isValidRCriterion;
+            if (!groundReplacedByDif || recordGround || path.keepAbsorption) {
+                aGround[i] = path.isFavourable() ?
+                        aGroundF(path, path.getSRSegment(), data, i) :
+                        aGroundH(path, path.getSRSegment(), data, i);
+                if (recordGround) {
+                    path.groundAttenuation.aGround[i] = aGround[i];
+                }
             }
             if (first != null) {
-                aDif[i] = aDif(path, data, i, first.type);
-                if(!first.type.equals(DIFV) && isValidRCriterion) {
+                aDif[i] = aDif(path, data, i, first.type, difHCount, difVCount);
+                if (groundReplacedByDif) {
                     aGround[i] = 0.;
                 }
             } else {
@@ -367,14 +394,13 @@ public class AttenuationCnossos {
      * @param type Type of diffraction
      * @return the value of ADiv
      */
-    private static double aDif(CnossosPath proPathParameters, AttenuationParameters data, int frequencyIndex, PointPath.POINT_TYPE type) {
+    private static double aDif(CnossosPath proPathParameters, AttenuationParameters data, int frequencyIndex,
+                               PointPath.POINT_TYPE type, long difHCount, long difVCount) {
         SegmentPath first = proPathParameters.getSegmentList().get(0);
         SegmentPath last = proPathParameters.getSegmentList().get(proPathParameters.getSegmentList().size()-1);
 
         double ch = 1.;
         double lambda = 340.0 / data.getFrequencies().get(frequencyIndex);
-        long difHCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFH)).count();
-        long difVCount = proPathParameters.getPointList().stream().filter(pointPath -> pointPath.type.equals(DIFV)).count();
         double cSecond = (type.equals(PointPath.POINT_TYPE.DIFH) && difHCount <= 1) || (type.equals(DIFV) && difVCount <= 1) || proPathParameters.e <= 0.3 ? 1. :
                 (1+pow(5*lambda/ proPathParameters.e, 2))/(1./3+pow(5*lambda/ proPathParameters.e, 2));
 
@@ -591,11 +617,6 @@ public class AttenuationCnossos {
         if (data == null) {
             return new double[0];
         }
-        // cache frequencies
-        double[] frequencies = new double[0];
-        if(scene != null) {
-            frequencies =  scene.profileBuilder.frequencyArray.stream().mapToDouble(value -> value).toArray();
-        }
         // Compute receiver/source attenuation
         if(exportAttenuationMatrix) {
             proPathParameters.keepAbsorption = true;
@@ -624,7 +645,13 @@ public class AttenuationCnossos {
         // todo get hRail from input data
         double hRail = 0.5;
         Coordinate src = ptList.get(0).coordinate;
-        PointPath pDif = ptList.stream().filter(p -> p.type.equals(PointPath.POINT_TYPE.DIFH)).findFirst().orElse(null);
+        PointPath pDif = null;
+        for (PointPath p : ptList) {
+            if (p.type.equals(PointPath.POINT_TYPE.DIFH)) {
+                pDif = p;
+                break;
+            }
+        }
 
         if (pDif != null && !pDif.alphaWall.isEmpty()) {
             if (pDif.bodyBarrier){
@@ -785,6 +812,7 @@ public class AttenuationCnossos {
         double sourceLi = proPathParameters.getCutProfile().getSource().li;
 
         if(scene != null && !scene.isOmnidirectional(sourceId)) {
+            double[] frequencies = scene.profileBuilder.frequencyArray.stream().mapToDouble(value -> value).toArray();
             Orientation directivityToPick = proPathParameters.raySourceReceiverDirectivity;
             double[] attSource = scene.getSourceAttenuation( sourceId,
                     frequencies, Math.toRadians(directivityToPick.yaw),
