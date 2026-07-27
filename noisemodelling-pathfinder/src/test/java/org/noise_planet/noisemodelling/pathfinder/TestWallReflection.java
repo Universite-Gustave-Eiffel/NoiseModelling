@@ -88,6 +88,48 @@ public class TestWallReflection {
     }
 
     @Test
+    public void testSourceOnWallSegment() {
+        GeometryFactory factory = new GeometryFactory();
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.addBuilding(new Coordinate[]{
+                new Coordinate(0, 0, 10),
+                new Coordinate(10, 0, 10),
+                new Coordinate(10, 10, 10),
+                new Coordinate(0, 10, 10)});
+        profileBuilder.finishFeeding();
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(new Coordinate(5, -20, 4));
+        // The source is exactly on a wall of the building, so the reflection point on this
+        // wall is the source itself and no reflection path can be built from it
+        inputData.addSource(factory.createPoint(new Coordinate(5, 0, 1)));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 80;
+        inputData.maxSrcDist = 180;
+        inputData.setReflexionOrder(1);
+        PathFinder computeRays = new PathFinder(inputData);
+        computeRays.setThreadCount(1);
+
+        Coordinate receiver = inputData.receivers.get(0);
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        DefaultCutPlaneVisitor defaultCutPlaneVisitor = new DefaultCutPlaneVisitor(true, inputData);
+
+        // Must not throw even if the reflection point is the source position
+        computeRays.computeReflexion(new PathFinder.ReceiverPointInfo(1, 1, receiver),
+                new PathFinder.SourcePointInfo(1, 1, inputData.sourceGeometries.get(0).getCoordinate(), 1.0,
+                        new Orientation()), receiverMirrorIndex, defaultCutPlaneVisitor,
+                CutPlaneVisitor.PathSearchStrategy.CONTINUE);
+
+        // The degenerate reflection is ignored, no reflection path is expected
+        assertTrue(defaultCutPlaneVisitor.cutProfiles.isEmpty());
+    }
+
+    @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
         GeometryFactory factory = new GeometryFactory();
 
