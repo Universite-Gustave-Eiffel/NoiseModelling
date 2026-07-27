@@ -98,7 +98,7 @@ inputs = [
                 description: 'Name of the Receivers table </br> </br>' +
                         'The table must contain: </br> <ul>' +
                         '<li> <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
-                        '<li> <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
+                        '<li> <b> THE_GEOM </b> : the 3D geometry of the receivers (POINTZ) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Blocks in the "Receivers" folder',
                 type       : String.class
         ],
@@ -107,7 +107,7 @@ inputs = [
                 title      : 'DEM table name',
                 description: 'Name of the Digital Elevation Model (DEM) table </br> </br>' +
                         'The table must contain: </br> <ul>' +
-                        '<li> <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
+                        '<li> <b> THE_GEOM </b> : the 3D geometry of the elevation points (POINTZ) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Block "Import_Asc_File"',
                 min        : 0, max: 1,
                 type: String.class
@@ -117,7 +117,7 @@ inputs = [
                 title      : 'Ground absorption table name',
                 description: 'Name of the surface/ground acoustic absorption table </br> </br>' +
                         'The table must contain: </br> <ul>' +
-                        '<li> <b> THE_GEOM </b>: the 2D geometry of the sources (POLYGON or MULTIPOLYGON) </li>' +
+                        '<li> <b> THE_GEOM </b>: the 2D geometry of the ground (POLYGON) </li>' +
                         '<li> <b> G </b>: the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft) </li> </ul> ',
                 min        : 0, max: 1,
                 type: String.class
