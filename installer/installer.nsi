@@ -8,7 +8,7 @@
   !define MAVEN_VERSION "dev"
 !endif
 !define INSTALLER_NAME "NoiseModelling-${MAVEN_VERSION}-Setup.exe"
-!define INSTALL_DIR     "$PROGRAMFILES64\${APP_NAME}"
+!define INSTALL_DIR     "$LOCALAPPDATA\${APP_NAME}"
 !define UNINSTALL_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
 
@@ -20,8 +20,8 @@
 Name            "${APP_NAME} ${MAVEN_VERSION}"
 OutFile         "${INSTALLER_NAME}"
 InstallDir      "${INSTALL_DIR}"
-InstallDirRegKey HKLM "${UNINSTALL_KEY}" "InstallLocation"
-RequestExecutionLevel admin
+InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
+RequestExecutionLevel user
 SetCompressor   /SOLID lzma
 Unicode         True
 
@@ -47,6 +47,7 @@ Unicode         True
 Section "NoiseModelling" SecMain
   SectionIn RO
 
+  SetShellVarContext current
   SetOutPath "$INSTDIR"
   File /r "app\*"
   File "NoiseModelling.exe"
@@ -73,18 +74,19 @@ Section "NoiseModelling" SecMain
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME} ${MAVEN_VERSION}"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayVersion"   "${MAVEN_VERSION}"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"
-  WriteRegStr   HKLM "${UNINSTALL_KEY}" "UninstallString"  "$INSTDIR\Uninstall.exe"
-  WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify"         1
-  WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair"         1
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayName"      "${APP_NAME} ${MAVEN_VERSION}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "DisplayVersion"   "${MAVEN_VERSION}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "Publisher"        "${APP_PUBLISHER}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "URLInfoAbout"     "${APP_URL}"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "InstallLocation"  "$INSTDIR"
+  WriteRegStr   HKCU "${UNINSTALL_KEY}" "UninstallString"  "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify"         1
+  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair"         1
 
 SectionEnd
 
 Section "Uninstall"
+  SetShellVarContext current
 
   Delete "$INSTDIR\${EXE_NAME}"
   Delete "$INSTDIR\noisemodelling.ico"
@@ -97,6 +99,5 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${APP_NAME}\Uninstall ${APP_NAME}.lnk"
   RMDir  "$SMPROGRAMS\${APP_NAME}"
 
-  DeleteRegKey HKLM "${UNINSTALL_KEY}"
-
+  DeleteRegKey HKCU "${UNINSTALL_KEY}"
 SectionEnd

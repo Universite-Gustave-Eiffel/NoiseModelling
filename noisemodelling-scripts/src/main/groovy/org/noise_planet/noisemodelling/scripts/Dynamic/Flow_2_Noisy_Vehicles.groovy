@@ -549,6 +549,7 @@ class Vehicle {
             RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
                     speed * 3.6, 0, vehicle_type, 0,  true, 1, id      )
             rsParametersDynamic.setRoadSurface("DEF")
+            rsParametersDynamic.setFrequency(freqs[i])
             // remove lw_correction
             result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic) + lw_correction;
         }
@@ -750,6 +751,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setRoadSurface(RoadSurface)
                 rsParameters.setSlopePercentage(0)
+                rsParameters.setFrequency(FreqParam)
 
                 res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
@@ -776,6 +778,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
                 rsParameters.setRoadSurface(RoadSurface)
+                rsParameters.setFrequency(FreqParam)
                 res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }

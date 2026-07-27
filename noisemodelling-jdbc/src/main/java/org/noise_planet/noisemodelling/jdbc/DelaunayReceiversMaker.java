@@ -586,21 +586,33 @@ public class DelaunayReceiversMaker extends GridMapMaker {
         List<Triangle> triangles;
         if (!isoSurfaceInBuildings) {
             triangles = new ArrayList<>(cellMesh.getTriangles().size());
+            boolean removedTriangles = false;
             for (Triangle triangle : cellMesh.getTriangles()) {
                 if (triangle.getAttribute() == 0) {
                     // Keep only triangles that aren't associated with a building
                     triangles.add(triangle);
+                } else {
+                    removedTriangles = true;
                 }
             }
-            // Keep only referenced vertices
-            Map<Integer, Integer> verticesIndexCorrespondence = new HashMap<>(); // Tinfour vertex index to our vertex index
-            List<Coordinate> filteredVertices = new ArrayList<>(vertices.size());
-            for(Triangle triangle : triangles) {
-                for(int i = 0; i < 3; i++) {
-                    updateTriangle(triangle, verticesIndexCorrespondence, i, vertices, filteredVertices);
+            if(removedTriangles) {
+                // Some triangles have been removed, we may have to remove vertices
+                Map<Coordinate, Integer> uniqueVertices = new HashMap<>();
+                for(Triangle triangle : triangles) {
+                    for(int i = 0; i < 3; i++) {
+                        int newIndex = updateMap(uniqueVertices,vertices.get(triangle.get(i)));
+                        triangle.set(i, newIndex);
+                    }
+                }
+                if(uniqueVertices.size() != vertices.size()) {
+                    vertices = new ArrayList<>(Arrays.asList(new Coordinate[uniqueVertices.size()]));
+                    for (Map.Entry<Coordinate, Integer> entry : uniqueVertices.entrySet()) {
+                        Coordinate key = entry.getKey();
+                        Integer value = entry.getValue();
+                        vertices.set(value, key);
+                    }
                 }
             }
-            vertices = filteredVertices;
         } else {
             triangles = cellMesh.getTriangles();
         }
@@ -611,30 +623,17 @@ public class DelaunayReceiversMaker extends GridMapMaker {
     }
 
     /**
-     * Insert into the new vertice list only vertices referenced in the triangles. If the vertex already exists
-     * in the mapping, its corresponding index is used; otherwise, the vertex is added to
-     * the vertices list and mapped to its new index.
-     *
-     * @param triangle The triangle to be updated, where vertex indices are modified as needed.
-     * @param tinFourIndexToListIndex A mapping of original vertex indices to their corresponding
-     *                                indices in the updated vertices list.
-     * @param cornerIndex The corner index of the triangle to update (0, 1, or 2).
-     * @param oldVerticesList The list of original vertices, from which new vertices are sourced if needed.
-     * @param vertices The list of updated vertices, where new vertices are added if they do not exist.
+     * Update the map with coordinate instance, it is already inserted return the old value
+     * @param uniqueVertices Map of vertices
+     * @param vertex Vertex to add
+     * @return Vertex index
      */
-    private static void updateTriangle(Triangle triangle, Map<Integer, Integer> tinFourIndexToListIndex,
-                                       int cornerIndex, List<Coordinate> oldVerticesList, List<Coordinate> vertices) {
-        // get the original vertex index
-        int tinFourVertexIndex = triangle.get(cornerIndex);
-        // find if this vertex is already in our vertices list
-        if(tinFourIndexToListIndex.containsKey(tinFourVertexIndex)) {
-            // use the vertex index inserted by a previous triangle
-            triangle.set(cornerIndex, tinFourIndexToListIndex.get(tinFourVertexIndex));
-        } else {
-            // Not found, create a new vertex
-            vertices.add(oldVerticesList.get(tinFourVertexIndex));
-            triangle.set(cornerIndex, vertices.size() - 1);
+    private static Integer updateMap(Map<Coordinate, Integer> uniqueVertices, Coordinate vertex) {
+        Integer indexA = uniqueVertices.putIfAbsent(vertex, uniqueVertices.size());
+        if(indexA == null) {
+            indexA = uniqueVertices.size() - 1;
         }
+        return indexA;
     }
 
     public double getRoadWidth() {

@@ -52,6 +52,10 @@ public class AttenuationParameters {
      */
     public double pressure = Pref;
     public double[] alpha_atmo;
+    /** Frequency power terms of the ground effect equation (2.5.15), one value per frequency band */
+    public double[] groundFm25;
+    public double[] groundFm15;
+    public double[] groundFm075;
     public double defaultOccurrence = 0.5;
 
     public boolean gDisc = true;     // choose between accept G discontinuity or not
@@ -94,6 +98,9 @@ public class AttenuationParameters {
         this.humidity = other.humidity;
         this.pressure = other.pressure;
         this.alpha_atmo = other.alpha_atmo;
+        this.groundFm25 = other.groundFm25;
+        this.groundFm15 = other.groundFm15;
+        this.groundFm075 = other.groundFm075;
         this.defaultOccurrence = other.defaultOccurrence;
         this.gDisc = other.gDisc;
         this.prime2520 = other.prime2520;
@@ -114,6 +121,15 @@ public class AttenuationParameters {
     }
 
     protected void init() {
+        groundFm25 = new double[freq_lvl.size()];
+        groundFm15 = new double[freq_lvl.size()];
+        groundFm075 = new double[freq_lvl.size()];
+        for (int idFreq = 0; idFreq < freq_lvl.size(); idFreq++) {
+            int fm = freq_lvl.get(idFreq);
+            groundFm25[idFreq] = Math.pow(fm, 2.5);
+            groundFm15[idFreq] = Math.pow(fm, 1.5);
+            groundFm075[idFreq] = Math.pow(fm, 0.75);
+        }
         this.setTemperature(temperature);
     }
 

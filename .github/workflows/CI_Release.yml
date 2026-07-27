@@ -111,6 +111,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Necessary to see tags and branches
+      - name: Setup java 25 using Adoptium Temurin
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'          
       - name: Build Zip Artifact
         # Since we are already on the release-ready state locally,
         # we can just package the webserver
