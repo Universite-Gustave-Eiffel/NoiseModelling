@@ -19,8 +19,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGe
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -378,7 +376,11 @@ public class CurvedProfileTest {
         // Get 2D profile including ground points
         List<Integer> hullIndices = profile.getConvexHullIndices(profile.computePts2D());
         Coordinate[] flatProfile2D = profile.computePts2DGround(hullIndices).toArray(new Coordinate[0]);
-        Coordinate[] curvedProfileHarmonoise = CurvedProfileGenerator.doHarmonoiseCurvature(source, receiver, flatProfile2D);
+        Coordinate[] curvedProfileHarmonoise = CurvedProfileGenerator.applyHarmonoiseTransformation(source, receiver, flatProfile2D);
+
+        // Compare
+        for (int i = 1; i < curvedProfile.size() - 1; i++)
+            assertEquals(curvedProfile.get(i).y, curvedProfileHarmonoise[2*i -1 + i%2].y, 0.03);
 
     }
 }

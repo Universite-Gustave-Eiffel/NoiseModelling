@@ -18,7 +18,6 @@ import org.noise_planet.noisemodelling.pathfinder.utils.ComplexNumber;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.asin;
 import static java.lang.Math.max;
@@ -123,14 +122,46 @@ public class CurvedProfileGenerator {
         return curvedProfile;
     }
 
-    public static Coordinate[] doHarmonoiseCurvature(Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D){
-        Coordinate[] curvedProfile = new Coordinate[flatProfile2D.length];
+    /**
+     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
+     * source and receiver).
+     * @author Martin Glesser
+     *
+     * @param cs Source coordinate
+     * @param cr Receiver coordinate
+     * @param flatProfile2D Array of coordinates representing the flat profile (should be discretized with segments
+     *                      distance <= 50 m)
+     * @return Array of coordinates representing the curved profile
+     */
+    public static Coordinate[] applyHarmonoiseTransformation(
+            Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D){
 
         // Calculate projected distance between source and receiver on the vertical plane
         double d = cs.distance(cr);
 
         // Calculate radius of curvature (Γ)
         double radius = Math.max(1000, 8 * d);
+
+        return applyHarmonoiseTransformation(cs, cr, flatProfile2D, radius);
+    }
+
+    /**
+     * Generate a curved profile from a coordinate list, two endpoints (source and receiver) and a curvature radius.
+     * Based on:
+     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
+     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
+     * @author Martin Glesser
+     *
+     * @param cs Source coordinate
+     * @param cr Receiver coordinate
+     * @param flatProfile2D Array of coordinates representing the flat profile (should be discretized with segments
+     *                      distance <= 50 m)
+     * @param radius Radius of curvature
+     * @return Array of coordinates representing the curved profile
+     */
+    public static Coordinate[] applyHarmonoiseTransformation(
+            Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D, double radius){
+        Coordinate[] curvedProfile = new Coordinate[flatProfile2D.length];
 
         // Ground curvature
         double hSource = cs.z;
@@ -141,22 +172,26 @@ public class CurvedProfileGenerator {
         double xc = 0.5 * (flatProfile2D[0].x + flatProfile2D[flatProfile2D.length-1].x);
         double yc = 0.5 * (flatProfile2D[0].y + flatProfile2D[flatProfile2D.length-1].y) + hm;
 
+        double deltaY = 0;
         for (int i = 0; i < flatProfile2D.length; i++) {
             double x = flatProfile2D[i].x - xc;
             double y = flatProfile2D[i].y - yc;
-
             ComplexNumber z = new ComplexNumber(x,y);
             ComplexNumber c = new ComplexNumber(0, 2* (hm + radius));
 
             ComplexNumber w = ComplexNumber.divide( ComplexNumber.multiply(c, z), ComplexNumber.add(z, c));
 
-            // Create new coordinate with transformed z
-            curvedProfile[i] = new Coordinate(w.getRe(), w.getIm(), flatProfile2D[i].z);
+            // Create new coordinate with transformed z (incl. profile translation)
+            if (i == 0) {
+                deltaY = y + yc - w.getIm();
+                curvedProfile[i] = new Coordinate(w.getRe() + xc, y + yc , flatProfile2D[i].z);
+            } else {
+                curvedProfile[i] = new Coordinate(w.getRe() + xc, w.getIm() + deltaY, flatProfile2D[i].z);
+            }
         }
 
         // Return
         return curvedProfile;
     }
-
 }
 
