@@ -23,27 +23,31 @@ import static java.lang.Math.asin;
 import static java.lang.Math.max;
 
 /**
- * Generate a curved profile (favourable propagation conditions) from a coordinate list and two endpoints (source and receiver)
- * Based on:
- * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+ * Generate a curved profile from a coordinate list and two endpoints (source and receiver)
  * @author Pierre Aumond
+ * @author Martin Glesser
  */
 public class CurvedProfileGenerator {
 
     /**
-     * Eq.2.5.24 and Eq. 2.5.25
-     * @param mn Length of ray
-     * @param d Distance between source and receiver
+     * Compute the length of a sound ray curve in favourable conditions.
+     * Ref: CNOSSOS (Directive 2002/49/EC) Eq.2.5.24 and Eq. 2.5.25
+     *
+     * @param mn Length of ray MN in homogeneous conditions
+     * @param d 3D distance between source and receiver of the unfolded path
      * @return Length of curved ray
      */
     public static double toCurve(double mn, double d){
-        return 2*max(1000, 8*d)* asin(mn/(2*max(1000, 8*d)));
+        double curvatureRadius = max(1000, 8*d);
+        return 2*curvatureRadius * asin(mn/(2*curvatureRadius));
     }
 
     /**
-     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
-     * @param flatProfile
-     * @return
+     * Manage coordinate transformation.
+     *
+     * @param flatProfile 3D geometrical profile
+     * @param inversed If true, apply the inverse transformation (from curved to flat)
+     * @return list of CutPoints representing the curved profile
      */
     public static List<CutPoint> applyTransformation(List<CutPoint> flatProfile, boolean inversed) {
         // Get chord endpoints
@@ -84,10 +88,12 @@ public class CurvedProfileGenerator {
     }
 
     /**
-     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model. Acta acustica united with acustica, 97(1), 62-74.
+     * Generate a curved profile.
+     * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
+     *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance &lt; 50 m)
+     * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
      * @param inverse If true, apply the inverse transformation (from curved to flat)
      * @return Array of coordinates representing the curved profile
      */
@@ -125,7 +131,8 @@ public class CurvedProfileGenerator {
     /**
      * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
      * source and receiver).
-     * @author Martin Glesser
+     * Ref: Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
+     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
@@ -147,10 +154,8 @@ public class CurvedProfileGenerator {
 
     /**
      * Generate a curved profile from a coordinate list, two endpoints (source and receiver) and a curvature radius.
-     * Based on:
-     * Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
+     * Ref: Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
      * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
-     * @author Martin Glesser
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
