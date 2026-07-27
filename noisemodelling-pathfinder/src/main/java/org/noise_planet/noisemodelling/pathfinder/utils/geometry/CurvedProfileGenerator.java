@@ -131,7 +131,7 @@ public class CurvedProfileGenerator {
     /**
      * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
      * source and receiver).
-     * Ref: Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
+     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
      * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
      *
      * @param cs Source coordinate
