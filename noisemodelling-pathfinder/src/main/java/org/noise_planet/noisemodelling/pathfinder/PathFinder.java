@@ -489,13 +489,12 @@ public class PathFinder {
         }
 
         // Intersection test cache
-        Set<LineSegment> freeFieldSegments = new HashSet<>();
 
         List<Coordinate> input = new ArrayList<>();
 
-        Coordinate[] coordinates = new Coordinate[0];
-        int indexp1 = 0;
-        int indexp2 = 0;
+        Coordinate[] coordinates;
+        int indexp1;
+        int indexp2;
 
         input.add(p1);
         input.add(p2);
@@ -511,20 +510,11 @@ public class PathFinder {
 
         data.profileBuilder.getWallsOnPath(p1, p2, buildingIntersectionPathVisitor);
 
-        int k;
-
         ConvexHull convexHull = new ConvexHull(input.toArray(new Coordinate[0]), GEOMETRY_FACTORY);
         Geometry convexhull = convexHull.getConvexHull();
 
         coordinates = convexhull.getCoordinates();
         // for the length we do not count the return ray from receiver to source (closed polygon here)
-        double convexHullLength = Length.ofLine(
-                CoordinateArraySequenceFactory.instance()
-                        .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
-        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
-                convexHullLength >= data.maxSrcDist) {
-            return new ArrayList<>();
-        }
 
         input.clear();
         input.addAll(Arrays.asList(coordinates));
@@ -565,12 +555,21 @@ public class PathFinder {
         }
 
         // restore coordinates order from source to receiver
+        Coordinate[] output;
         if (left) {
-            return Arrays.asList(Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1));
+            output = Arrays.copyOfRange(coordinates, indexp1, indexp2 + 1);
         } else {
-            List<Coordinate> inversePath = Arrays.asList(Arrays.copyOfRange(coordinates, indexp2, coordinates.length));
-            Collections.reverse(inversePath);
-            return inversePath;
+            output = Arrays.copyOfRange(coordinates, indexp2, coordinates.length);
+            // reverse output
+            CoordinateArrays.reverse(output);
+        }
+
+        double convexHullLength = Length.ofLine(CoordinateArraySequenceFactory.instance().create( output ) );
+        if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
+                convexHullLength >= data.maxSrcDist) {
+            return new ArrayList<>();
+        } else {
+            return Arrays.asList(output);
         }
     }
 
