@@ -16,6 +16,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReflection;
 import org.noise_planet.noisemodelling.pathfinder.utils.ComplexNumber;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -43,42 +44,51 @@ public class CurvedProfileGenerator {
     }
 
     /**
-     * Manage coordinate transformation.
+     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
+     * source and receiver).
+     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
+     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
      *
-     * @param flatProfile 3D geometrical profile
-     * @param inversed If true, apply the inverse transformation (from curved to flat)
+     * @param straightProfile List of cutPoints representing the uncurved profile
      * @return list of CutPoints representing the curved profile
      */
-    public static List<CutPoint> applyTransformation(List<CutPoint> flatProfile, boolean inversed) {
+    public static List<CutPoint> applyTransformation(List<CutPoint> straightProfile) {
         // Get chord endpoints
-        CutPoint sourcePoint = flatProfile.get(0);
-        CutPoint receiverPoint = flatProfile.get(flatProfile.size() - 1);
+        CutPoint sourcePoint = straightProfile.getFirst();
+        CutPoint receiverPoint = straightProfile.getLast();
         Coordinate cs = sourcePoint.getCoordinate();
         Coordinate cr = receiverPoint.getCoordinate();
 
         List<CutPoint> curvedProfile = new ArrayList<>();
-        Coordinate[] curvedCoords = applyTransformation(cs, cr, flatProfile.stream().map(CutPoint::getCoordinate).toArray(Coordinate[]::new), inversed);
-        Coordinate[] groundCoords = applyTransformation(cs, cr, flatProfile.stream().map(p -> new Coordinate(p.getCoordinate().x, p.getCoordinate().y, p.zGround)).toArray(Coordinate[]::new), inversed);
+        List<Coordinate> curvedCoords = applyTransformation(cs, cr,
+                straightProfile.stream()
+                        .map(CutPoint::getCoordinate)
+                        .toList()
+        );
+        List <Coordinate> groundCoords = applyTransformation(cs, cr,
+                straightProfile.stream()
+                        .map(p -> new Coordinate(p.getCoordinate().x, p.getCoordinate().y, p.zGround))
+                        .toList()
+        );
 
-        for (int i = 0; i < curvedCoords.length; i++) {
-            CutPoint cp = flatProfile.get(i);
+        for (int i = 0; i < curvedCoords.size(); i++) {
+            CutPoint cp = straightProfile.get(i);
             CutPoint newCp = cp.clone();
-            newCp.setZGround(groundCoords[i].z);
-            newCp.coordinate.z = curvedCoords[i].z;
+            newCp.setZGround(groundCoords.get(i).z);
+            newCp.setCoordinate(curvedCoords.get(i));
 
             // If this is a reflection point, also transform the wall coordinates
-            if (newCp instanceof CutPointReflection) {
-                CutPointReflection reflectionPoint = (CutPointReflection) newCp;
+            if (newCp instanceof CutPointReflection reflectionPoint) {
                 if (reflectionPoint.wall != null) {
                     // Transform wall endpoints using the same curved transformation
-                    Coordinate[] wallCoords = new Coordinate[]{
+                    List<Coordinate> wallCoords = List.of(
                             new Coordinate(reflectionPoint.wall.p0),
                             new Coordinate(reflectionPoint.wall.p1)
-                    };
-                    Coordinate[] transformedWallCoords = applyTransformation(cs, cr, wallCoords, inversed);
+                    );
+                    List<Coordinate> transformedWallCoords = applyTransformation(cs, cr, wallCoords);
 
                     // Create a NEW LineSegment with transformed coordinates
-                    reflectionPoint.wall = new LineSegment(transformedWallCoords[0], transformedWallCoords[1]);
+                    reflectionPoint.wall = new LineSegment(transformedWallCoords.getFirst(), transformedWallCoords.get(1));
                 }
             }
 
@@ -87,18 +97,53 @@ public class CurvedProfileGenerator {
         return curvedProfile;
     }
 
+//    /**
+//     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
+//     * source and receiver).
+//     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
+//     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
+//     *
+//     * @param cs Source coordinate
+//     * @param cr Receiver coordinate
+//     * @param straightProfile List of 3D coordinates representing the uncurved profile (should be discretized with
+//     *                      segments distance <= 50 m)
+//     * @return List of 3D coordinates representing the curved profile
+//     */
+//    public static List <Coordinate> applyTransformation(
+//            Coordinate cs, Coordinate cr, List <Coordinate> straightProfile){
+//
+//        // Calculate projected distance between source and receiver on the vertical plane
+//        double d = cs.distance(cr);
+//
+//        // Calculate radius of curvature (Γ) for favourable condition
+//        double radius = Math.max(1000, 8 * d);
+//
+//        // Compute curved profile
+//        List <Coordinate> curvedProfile2D = applyTransformation(cs, cr, straightProfile, radius);
+//        List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[straightProfile.size()]);
+//        for (int i = 0; i < straightProfile.size(); i++) {
+//            curvedProfile.set(i, new Coordinate(
+//                    straightProfile.get(i).x,
+//                    straightProfile.get(i).y,
+//                    curvedProfile2D.get(i).y)
+//            );
+//        }
+//
+//        return curvedProfile;
+//    }
+
+
     /**
      * Generate a curved profile.
      * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param flatProfile Array of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
-     * @param inverse If true, apply the inverse transformation (from curved to flat)
-     * @return Array of coordinates representing the curved profile
+     * @param flatProfile List of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
+     * @return List of coordinates representing the curved profile
      */
-    public static Coordinate[] applyTransformation(Coordinate cs, Coordinate cr, Coordinate[] flatProfile, boolean inverse) {
-        Coordinate[] curvedProfile = new Coordinate[flatProfile.length];
+     public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> flatProfile) {
+        List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[flatProfile.size()]);
 
         // Calculate projected distance between source and receiver on the vertical plane
         double d = cs.distance(cr);
@@ -108,48 +153,18 @@ public class CurvedProfileGenerator {
 
         double base = Math.sqrt(radius * radius - d * d / 4);
 
-        for (int i = 0; i < flatProfile.length; i++) {
-            Coordinate p = flatProfile[i];
+        for (int i = 0; i < flatProfile.size(); i++) {
+            Coordinate p = flatProfile.get(i);
 
             // Apply equation (4) for z coordinate transformation
             double z = base -
                     Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
 
-            if(inverse) {
-                z = -z;
-                // it is a simplification because p.distance3D(cs) is not good if we are not on the curved profile
-                // not mathematically exact, but it gives a close working inverse.
-            }
-
             // Create new coordinate with transformed z
-            curvedProfile[i] = new Coordinate(p.x, p.y, p.z + z);
+            curvedProfile.set(i, new Coordinate(p.x, p.y, p.z + z));
         }
 
         return curvedProfile;
-    }
-
-    /**
-     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
-     * source and receiver).
-     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
-     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
-     *
-     * @param cs Source coordinate
-     * @param cr Receiver coordinate
-     * @param flatProfile2D Array of coordinates representing the flat profile (should be discretized with segments
-     *                      distance <= 50 m)
-     * @return Array of coordinates representing the curved profile
-     */
-    public static Coordinate[] applyHarmonoiseTransformation(
-            Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D){
-
-        // Calculate projected distance between source and receiver on the vertical plane
-        double d = cs.distance(cr);
-
-        // Calculate radius of curvature (Γ)
-        double radius = Math.max(1000, 8 * d);
-
-        return applyHarmonoiseTransformation(cs, cr, flatProfile2D, radius);
     }
 
     /**
@@ -159,14 +174,15 @@ public class CurvedProfileGenerator {
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param flatProfile2D Array of coordinates representing the flat profile (should be discretized with segments
-     *                      distance <= 50 m)
+     * @param straightProfile List of 3D coordinates representing the uncurved profile (should be discretized with
+     *                      segments distance <= 50 m)
      * @param radius Radius of curvature
-     * @return Array of coordinates representing the curved profile
+     * @return List of 2D coordinates representing the unfolded curved profile
      */
-    public static Coordinate[] applyHarmonoiseTransformation(
-            Coordinate cs, Coordinate cr, Coordinate[] flatProfile2D, double radius){
-        Coordinate[] curvedProfile = new Coordinate[flatProfile2D.length];
+    public static List<Coordinate> applyTransformation(
+            Coordinate cs, Coordinate cr, List<Coordinate> straightProfile, double radius){
+        // Unfold profile
+        List<Coordinate> straightProfile2D = JTSUtility.getNewCoordinateSystem(straightProfile);
 
         // Ground curvature
         double hSource = cs.z;
@@ -174,13 +190,14 @@ public class CurvedProfileGenerator {
         double hm = (hSource + hReceiver) / 2;
         double c0 = 2* (hm + radius); // Eq. 77
         ComplexNumber c = new ComplexNumber(0, c0); // Eq. 76
-        double xc = 0.5 * (flatProfile2D[0].x + flatProfile2D[flatProfile2D.length-1].x);
-        double yc = 0.5 * (flatProfile2D[0].y + flatProfile2D[flatProfile2D.length-1].y) + hm;
+        double xc = 0.5 * (straightProfile2D.getFirst().x + straightProfile2D.getLast().x);
+        double yc = 0.5 * (straightProfile2D.getFirst().y + straightProfile2D.getLast().y) + hm;
         ComplexNumber w0 = new ComplexNumber(xc, yc); // Eq. 75
 
         double deltaY = 0;
-        for (int i = 0; i < flatProfile2D.length; i++) {
-            ComplexNumber w = new ComplexNumber(flatProfile2D[i].x, flatProfile2D[i].y);
+        List<Coordinate> curvedProfile = Arrays.asList(new Coordinate[straightProfile2D.size()]);
+        for (int i = 0; i < straightProfile2D.size(); i++) {
+            ComplexNumber w = new ComplexNumber(straightProfile2D.get(i).x, straightProfile2D.get(i).y);
             ComplexNumber wPrim = ComplexNumber.divide(
                     ComplexNumber.multiply(c, ComplexNumber.subtract(w, w0)),
                     ComplexNumber.add(c, ComplexNumber.subtract(w, w0))
@@ -188,10 +205,12 @@ public class CurvedProfileGenerator {
 
             // Create new coordinate with transformed z (incl. profile translation)
             if (i == 0) {
-                deltaY = flatProfile2D[i].y - wPrim.getIm();
-                curvedProfile[i] = new Coordinate(wPrim.getRe() + xc, flatProfile2D[i].y , flatProfile2D[i].z);
+                deltaY = straightProfile2D.get(i).y - wPrim.getIm();
+                curvedProfile.set(i,
+                        new Coordinate(wPrim.getRe() + xc, straightProfile2D.get(i).y , straightProfile2D.get(i).z));
             } else {
-                curvedProfile[i] = new Coordinate(wPrim.getRe() + xc, wPrim.getIm() + deltaY, flatProfile2D[i].z);
+                curvedProfile.set(i,
+                        new Coordinate(wPrim.getRe() + xc, wPrim.getIm() + deltaY, straightProfile2D.get(i).z));
             }
         }
 

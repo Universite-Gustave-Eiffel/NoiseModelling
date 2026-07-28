@@ -295,7 +295,7 @@ public class CutProfile {
     public List<Coordinate> computePts2D(boolean curvedPath, List<CutPoint> transformedCutPointsOut) {
         List<Coordinate> pts2D;
         if(curvedPath) {
-            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints, false);
+            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints);
             // If caller wants the transformed cut points, populate the output list
             if (transformedCutPointsOut != null) {
                 transformedCutPointsOut.clear();
