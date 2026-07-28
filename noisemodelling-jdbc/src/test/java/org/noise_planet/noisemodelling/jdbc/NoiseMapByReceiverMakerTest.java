@@ -475,8 +475,8 @@ public class NoiseMapByReceiverMakerTest {
 
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSourcesZIsAltitude(false);
+            noiseMapByReceiverMaker.setReceiversZIsAltitude(false);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");
@@ -541,8 +541,8 @@ public class NoiseMapByReceiverMakerTest {
 
             noiseMapByReceiverMaker.setComputeHorizontalDiffraction(false);
             noiseMapByReceiverMaker.setComputeVerticalDiffraction(true);
-            noiseMapByReceiverMaker.setSourceHasAbsoluteZCoordinates(false);
-            noiseMapByReceiverMaker.setReceiverHasAbsoluteZCoordinates(false);
+            noiseMapByReceiverMaker.setSourcesZIsAltitude(false);
+            noiseMapByReceiverMaker.setReceiversZIsAltitude(false);
             noiseMapByReceiverMaker.setSoundReflectionOrder(0);
             noiseMapByReceiverMaker.setMaximumPropagationDistance(1000);
             noiseMapByReceiverMaker.setHeightField("HEIGHT");

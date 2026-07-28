@@ -31,7 +31,6 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.jdbc.utils.DataBaseUtilities
 import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
-import org.noise_planet.noisemodelling.pathfinder.utils.profiler.RootProgressVisitor
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -90,7 +89,7 @@ inputs = [
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>' +
                         '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b> : Emission noise level in dB can be third-octave 50Hz to 10000Hz (FLOAT) </li> ',
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         tableReceivers          : [
@@ -99,7 +98,7 @@ inputs = [
                 description: 'Name of the Receivers table </br> </br>' +
                         'The table must contain: </br> <ul>' +
                         '<li> <b> PK </b> : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY) </li> ' +
-                        '<li> <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
+                        '<li> <b> THE_GEOM </b> : the 3D geometry of the receivers (POINTZ) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Blocks in the "Receivers" folder',
                 type       : String.class
         ],
@@ -108,9 +107,9 @@ inputs = [
                 title      : 'DEM table name',
                 description: 'Name of the Digital Elevation Model (DEM) table </br> </br>' +
                         'The table must contain: </br> <ul>' +
-                        '<li> <b> THE_GEOM </b> : the 3D geometry of the sources (POINT, MULTIPOINT) </li> </ul>' +
+                        '<li> <b> THE_GEOM </b> : the 3D geometry of the elevation points (POINTZ) </li> </ul>' +
                         '&#128161; This table can be generated from the WPS Block "Import_Asc_File"',
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         tableGroundAbs          : [
@@ -118,9 +117,9 @@ inputs = [
                 title      : 'Ground absorption table name',
                 description: 'Name of the surface/ground acoustic absorption table </br> </br>' +
                         'The table must contain: </br> <ul>' +
-                        '<li> <b> THE_GEOM </b>: the 2D geometry of the sources (POLYGON or MULTIPOLYGON) </li>' +
+                        '<li> <b> THE_GEOM </b>: the 2D geometry of the ground (POLYGON) </li>' +
                         '<li> <b> G </b>: the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft) </li> </ul> ',
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         tableSourceDirectivity          : [
@@ -133,7 +132,7 @@ inputs = [
                         '<li> <b> THETA </b>: [-90;90] Vertical angle in degree. 0&#176; front 90&#176; top -90&#176; bottom (FLOAT) </li> ' +
                         '<li> <b> PHI </b>: [0;360] Horizontal angle in degree. 0&#176; front 90&#176; right (FLOAT) </li> ' +
                         '<li> <b> HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000 </b>: attenuation levels in dB for each octave or third octave (FLOAT) </li> </ul> ' ,
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         tablePeriodAtmosphericSettings          : [
@@ -149,22 +148,38 @@ inputs = [
                         '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
                         '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ' +
                         '</ul>' ,
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         paramWallAlpha          : [
                 name       : 'wallAlpha',
                 title      : 'Wall absorption coefficient',
                 description: 'Wall absorption coefficient [0,1] (between ``0`` : "fully reflective" and ``1`` : "fully absorbent")',
-                default    : 0.1, 
+                default    : 0.1,
                 type: Double.class
+        ],
+        confReceiversZIsAltitude          : [
+                name       : 'Receivers Z is altitude',
+                title      : 'Receivers Z is altitude',
+                description: 'If checked, the Z value of the receiver\'s geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table. </br> </br>' +
+                             '&#128736; Default value: <b>false = the Z value is a height relative to the ground/DEM</b>',
+                default    : false,
+                type: Boolean.class
+        ],
+        confSourcesZIsAltitude          : [
+                name       : 'Sources Z is altitude',
+                title      : 'Sources Z is altitude',
+                description: 'If checked, the Z value of the source\'s geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table. </br> </br>' +
+                             '&#128736; Default value: <b>false = the Z value is a height relative to the ground/DEM</b>',
+                default    : false,
+                type: Boolean.class
         ],
         confReflOrder           : [
                 name       : 'Order of reflexion',
                 title      : 'Order of reflexion',
                 description: 'Maximum number of reflections to be taken into account (INTEGER). </br> </br>' +
                              '&#x1F6A8; Adding 1 order of reflexion can significantly increase the processing time.',
-                default    : 1, 
+                default    : 1,
                 type: Integer.class
         ],
         confMaxSrcDist          : [
@@ -172,7 +187,7 @@ inputs = [
                 title      : 'Maximum source-receiver distance',
                 description: 'Maximum distance between source and receiver (FLOAT, in meters). </br> </br>' +
                              '<img src="wps_images/acoustics_parameters_confMaxSrcDist.png" alt="Noise level from source" width="95%" align="center">',
-                default    : 150, 
+                default    : 150,
                 type: Double.class
         ],
         confMaxReflDist         : [
@@ -180,7 +195,7 @@ inputs = [
                 title      : 'Maximum source-reflexion distance',
                 description: 'Maximum search distance of walls / facades from the "Source-Receiver" segment, for the calculation of specular reflections (meters). </br> </br>' +
                              '<img src="wps_images/acoustics_parameters_confMaxReflDist.png" alt="Noise level from source" width="95%" align="center">',
-                default    : 50, 
+                default    : 50,
                 type: Double.class
         ],
         confMinWallReflDist: [
@@ -196,14 +211,14 @@ inputs = [
                 title      : 'Thread number',
                 description: 'Number of thread to use on the computer (INTEGER). </br> </br>' +
                              '&#128736; Default value: <b>0 = Automatic. Will check the number of cores and apply -1. (*e.g*: 8 cores = 7 cores will be used)</b>',
-                default    : 0, 
+                default    : 0,
                 type: Integer.class
         ],
         confDiffVertical        : [
                 name       : 'Diffraction on vertical edges',
                 title      : 'Diffraction on vertical edges',
                 description: 'Compute or not the diffraction on vertical edges. Following Directive 2015/996, enable this option for rail and industrial sources only',
-                default    : false, 
+                default    : false,
                 type: Boolean.class
         ],
         confDiffHorizontal      : [
@@ -248,7 +263,7 @@ inputs = [
                 description: 'You can provide a table name to export the propagation rays with the attenuation computation details into the specified table (ex:RAYS).' +
                              'You can also provide a folder path URI (ex: <code>file:///C:/Users/joe/My%20Documents/3D%20Scene/</code> or <code>file:/home/user/scene3d/</code>; you can paste the path in the browser address to convert it to an URI) to export the 3D scene (DEM, Buildings, Sources) for each sub-domains. The export format is KML and can be viewed into earth.google.com .' +
                              '&#128736; <b>If not provided nothing is exported</b>',
-                min        : 0, max: 1, 
+                min        : 0, max: 1,
                 type: String.class
         ],
         confMaxError            : [
@@ -443,6 +458,9 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         throw new IllegalArgumentException("Error : confLineSourceSpacingRatio must be greater than 0.")
     }
 
+    boolean receiversZisAltitude = input.getOrDefault("confReceiversZIsAltitude", false) as Boolean
+    boolean sourcesZisAltitude = input.getOrDefault("confSourcesZIsAltitude", false) as Boolean
+
     // --------------------------------------------
     // Initialize NoiseModelling propagation part
     // --------------------------------------------
@@ -541,6 +559,8 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     pointNoiseMap.setWallAbsorption(wall_alpha)
     pointNoiseMap.setThreadCount(n_thread)
 
+    pointNoiseMap.setReceiversZIsAltitude(receiversZisAltitude)
+    pointNoiseMap.setSourcesZIsAltitude(sourcesZisAltitude)
 
     if(recordProfile) {
         LocalDateTime now = LocalDateTime.now()

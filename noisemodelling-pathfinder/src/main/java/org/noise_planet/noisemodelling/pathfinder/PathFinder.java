@@ -172,6 +172,16 @@ public class PathFinder {
      */
     public void computeRaysAtPosition(ReceiverPointInfo receiverPointInfo, CutPlaneVisitor dataOut, ProgressVisitor visitor) {
 
+        if(data.profileBuilder.hasDem()) {
+            // Check if the receiver has been positioned below the ground
+            double zGround = data.profileBuilder.getZGround(receiverPointInfo.position);
+            if (zGround > receiverPointInfo.position.z) {
+                LOGGER.warn("The receiver located at {} is below the ground level ({} m) and has been ignored",
+                        new WKTWriter(3).write(GEOMETRY_FACTORY.createPoint(receiverPointInfo.position)), zGround);
+                return;
+            }
+        }
+
         long start = 0;
         if(profilerThread != null) {
             start = System.nanoTime();
