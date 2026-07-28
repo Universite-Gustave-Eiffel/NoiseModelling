@@ -520,7 +520,7 @@ public class PathFinder {
         // for the length we do not count the return ray from receiver to source (closed polygon here)
         double convexHullLength = Length.ofLine(
                 CoordinateArraySequenceFactory.instance()
-                        .create(Arrays.copyOfRange(coordinates, 0, coordinates.length - 1)));
+                        .create(Arrays.copyOfRange(coordinates, left ? 1 : 0, coordinates.length - (left ? 0 : 1))));
         if (convexHullLength / p1.distance(p2) > MAX_RATIO_HULL_DIRECT_PATH ||
                 convexHullLength >= data.maxSrcDist) {
             return new ArrayList<>();
