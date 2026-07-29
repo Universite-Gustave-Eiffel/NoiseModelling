@@ -257,7 +257,10 @@ def exec(Connection connection, input) {
             }
         })
     }
-    sql.execute("CREATE INDEX ON SOURCES_EMISSION(PERIOD, IDSOURCE)")
+    // IDSOURCE must be the leading column: both the per-cell emission fetch and the
+    // Noise_From_Attenuation_Matrix join look rows up by IDSOURCE (H2 nested-loop joins
+    // cannot use an index whose leading column is PERIOD for those lookups)
+    sql.execute("CREATE INDEX ON SOURCES_EMISSION(IDSOURCE, PERIOD)")
     sql.execute("drop table VEHICLES_PROBA if exists;")
 
 

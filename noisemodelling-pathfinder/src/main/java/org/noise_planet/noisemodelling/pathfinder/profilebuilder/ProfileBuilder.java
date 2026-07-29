@@ -398,7 +398,7 @@ public class ProfileBuilder {
     public Coordinate offsetCoordinateToAltitudeUsingDigitalElevationModel(Coordinate geometryCoordinate, boolean checkForBuildingVolumes) {
         Coordinate offsetCoordinate = new Coordinate(geometryCoordinate.x, geometryCoordinate.y, geometryCoordinate.z + getZGround(geometryCoordinate));
         if(checkForBuildingVolumes) {
-            logWarningIfCoordinatesIntoBuildings(geometryCoordinate);
+            logWarningIfCoordinatesIntoBuildings(offsetCoordinate);
         }
         return offsetCoordinate;
     }
@@ -1519,6 +1519,8 @@ public class ProfileBuilder {
 
 
     /**
+     * Fetch the z ground at this position by browsing the triangles RTREE.
+     * This function should not be called repetitively as it is computationally expensive.
      * @return Altitude in meters from sea level
      */
     public double getZGround(Coordinate coordinate) {
