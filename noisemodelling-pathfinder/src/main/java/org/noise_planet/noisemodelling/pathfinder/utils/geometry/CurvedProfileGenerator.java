@@ -44,10 +44,8 @@ public class CurvedProfileGenerator {
     }
 
     /**
-     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
-     * source and receiver).
-     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
-     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
+     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a cutPoint list.
+     * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
      *
      * @param straightProfile List of cutPoints representing the uncurved profile
      * @return list of CutPoints representing the curved profile
@@ -139,11 +137,11 @@ public class CurvedProfileGenerator {
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param flatProfile List of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
+     * @param straightProfile List of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
      * @return List of coordinates representing the curved profile
      */
-     public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> flatProfile) {
-        List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[flatProfile.size()]);
+     public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> straightProfile) {
+        List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[straightProfile.size()]);
 
         // Calculate projected distance between source and receiver on the vertical plane
         double d = cs.distance(cr);
@@ -153,8 +151,8 @@ public class CurvedProfileGenerator {
 
         double base = Math.sqrt(radius * radius - d * d / 4);
 
-        for (int i = 0; i < flatProfile.size(); i++) {
-            Coordinate p = flatProfile.get(i);
+        for (int i = 0; i < straightProfile.size(); i++) {
+            Coordinate p = straightProfile.get(i);
 
             // Apply equation (4) for z coordinate transformation
             double z = base -
@@ -171,19 +169,18 @@ public class CurvedProfileGenerator {
      * Generate a curved profile from a coordinate list, two endpoints (source and receiver) and a curvature radius.
      * Ref: Salomons, E., Van Maercke, D., Defrance, J.,&amp;De Roo, F. (2011). The Harmonoise sound propagation model.
      * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
+     * Note: This implementation yield similar results to the one from applyTransformation. However, it works only on
+     * the whole ground profile (from zGroundSource to zGroundReceiver).
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param straightProfile List of 3D coordinates representing the uncurved profile (should be discretized with
-     *                      segments distance <= 50 m)
+     * @param straightProfile2D List of 2D coordinates representing the whole unfolded non-curved profile (from
+     *                        zGround_source to zGround_receiver)
      * @param radius Radius of curvature
      * @return List of 2D coordinates representing the unfolded curved profile
      */
-    public static List<Coordinate> applyTransformation(
-            Coordinate cs, Coordinate cr, List<Coordinate> straightProfile, double radius){
-        // Unfold profile
-        List<Coordinate> straightProfile2D = JTSUtility.getNewCoordinateSystem(straightProfile);
-
+    public static List<Coordinate> applyHarmonoiseTransformation(
+            Coordinate cs, Coordinate cr, List<Coordinate> straightProfile2D, double radius){
         // Ground curvature
         double hSource = cs.z;
         double hReceiver = cr.z;
