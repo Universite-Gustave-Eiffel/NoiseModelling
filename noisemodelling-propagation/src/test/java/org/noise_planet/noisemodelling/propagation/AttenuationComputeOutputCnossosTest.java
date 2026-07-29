@@ -6148,7 +6148,7 @@ public class AttenuationComputeOutputCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(0, propDataOut.getPropagationPaths().size(), "The source is under the DEM and no propagation paths should be found");
+        assertEquals(0, propDataOut.getAttenuationOutputs().size(), "The source is under the DEM and no propagation paths should be found");
     }
 
     /**
@@ -6199,7 +6199,7 @@ public class AttenuationComputeOutputCnossosTest {
         //Run computation
         computeRays.run(propDataOut);
 
-        assertEquals(0, propDataOut.getPropagationPaths().size(), "The receiver is under the DEM and no propagation paths should be found");
+        assertEquals(0, propDataOut.getAttenuationOutputs().size(), "The receiver is under the DEM and no propagation paths should be found");
     }
     /**
      * Test body-barrier effect
