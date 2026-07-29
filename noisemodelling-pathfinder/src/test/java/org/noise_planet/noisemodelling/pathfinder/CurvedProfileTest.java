@@ -16,6 +16,7 @@ import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -121,6 +122,38 @@ public class CurvedProfileTest {
     }
 
     @Test
+    public void testInverseCurved() {
+        Coordinate source = new Coordinate(50, 15, 500.5);
+        Coordinate receiver = new Coordinate(950, -25, 502.5);
+        int intermediateSteps = 20;
+        List<Coordinate> flatProfile = new ArrayList<>();
+        flatProfile.add(source);
+        for (int i = 1; i <= intermediateSteps; i++) {
+            double ratio = (double) i / (intermediateSteps + 1);
+            double x = source.x + ratio * (receiver.x - source.x);
+            double y = source.y + ratio * (receiver.y - source.y);
+            flatProfile.add(new Coordinate(x, y, 500));
+        }
+        flatProfile.add(receiver);
+
+        List<Coordinate> curvedCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                flatProfile, false);
+        List<Coordinate> inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver,
+                curvedCoordinates, true);
+        for (int i = 0; i < inverseCoordinates.size(); i++) {
+            double expectedX = flatProfile.get(i).x;
+            double expectedY = flatProfile.get(i).y;
+            double expectedZ = flatProfile.get(i).z;
+            double computedX = inverseCoordinates.get(i).x;
+            double computedY = inverseCoordinates.get(i).y;
+            double computedZ = inverseCoordinates.get(i).z;
+            assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
+            assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
+            assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
+        }
+    }
+
+    @Test
     public void testCurvedGroundFromGraph() {
 
         Coordinate source = new Coordinate(0,0,0);
@@ -159,6 +192,20 @@ public class CurvedProfileTest {
             double expectedZ = coordinates.get(i).z;
             double computedZ = curvedCoordinates.get(i).z;
             assertEquals(expectedZ, computedZ, 0.3, String.format(Locale.ROOT, "Error at point %d : expected %.3f, computed %.3f", i, expectedZ, computedZ));
+        }
+
+        // Compute inverse transformation
+        List<Coordinate> inverseCoordinates = CurvedProfileGenerator.applyTransformation(source, receiver, curvedCoordinates, true);
+        for (int i = 0; i < inverseCoordinates.size(); i++) {
+            double expectedX = flatGroundcoordinates.get(i).x;
+            double expectedY = flatGroundcoordinates.get(i).y;
+            double expectedZ = flatGroundcoordinates.get(i).z;
+            double computedX = inverseCoordinates.get(i).x;
+            double computedY = inverseCoordinates.get(i).y;
+            double computedZ = inverseCoordinates.get(i).z;
+            assertEquals(expectedX, computedX, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedX %.6f, computedX %.6f", i, expectedX, computedX));
+            assertEquals(expectedY, computedY, 1e-5, String.format(Locale.ROOT, "Error at point %d : expectedY %.6f, computedY %.6f", i, expectedY, computedY));
+            assertEquals(expectedZ, computedZ, 0.01, String.format(Locale.ROOT, "Error at point %d : expectedZ %.6f, computedZ %.6f", i, expectedZ, computedZ));
         }
     }
 

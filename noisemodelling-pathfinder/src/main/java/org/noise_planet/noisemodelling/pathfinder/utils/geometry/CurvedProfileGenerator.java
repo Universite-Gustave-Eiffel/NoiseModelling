@@ -95,7 +95,6 @@ public class CurvedProfileGenerator {
         return curvedProfile;
     }
 
-
     /**
      * Generate a curved profile (in CNOSSOS favourable propagation conditions) from a coordinate list and two
      * endpoints (source and receiver)
@@ -107,7 +106,24 @@ public class CurvedProfileGenerator {
      *                        distance &lt; 50 m)
      * @return List of coordinates representing the curved profile
      */
-     public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> straightProfile) {
+    public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> straightProfile) {
+        return applyTransformation(cs, cr, straightProfile, false);
+    }
+
+    /**
+     * Generate a curved profile (in CNOSSOS favourable propagation conditions) from a coordinate list and two
+     * endpoints (source and receiver)
+     * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
+     *
+     * @param cs Source coordinate
+     * @param cr Receiver coordinate
+     * @param straightProfile List of coordinates representing the flat profile (should be discretized with segments
+     *                        distance &lt; 50 m)
+     * @param isInverse If true, apply the inverse transformation (from curved to straight)
+     * @return List of coordinates representing the curved profile
+     */
+     public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr,
+                                                        List<Coordinate> straightProfile, boolean isInverse) {
         List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[straightProfile.size()]);
 
         // Calculate projected distance between source and receiver on the vertical plane
@@ -124,6 +140,12 @@ public class CurvedProfileGenerator {
             // Apply equation (4) for z coordinate transformation
             double z = base -
                     Math.sqrt(radius * radius - Math.pow(p.distance(cs) - d/2, 2));
+
+            if(isInverse) {
+                z = -z;
+                // it is a simplification because p.distance3D(cs) is not good if we are not on the curved profile
+                // not mathematically exact, but it gives a close working inverse.
+            }
 
             // Create new coordinate with transformed z
             curvedProfile.set(i, new Coordinate(p.x, p.y, p.z + z));
