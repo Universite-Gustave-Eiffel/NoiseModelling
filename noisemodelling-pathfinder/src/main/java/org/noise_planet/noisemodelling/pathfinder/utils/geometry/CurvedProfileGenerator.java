@@ -24,7 +24,7 @@ import static java.lang.Math.asin;
 import static java.lang.Math.max;
 
 /**
- * Generate a curved profile from a coordinate list and two endpoints (source and receiver)
+ * Generate a curved profile
  * @author Pierre Aumond
  * @author Martin Glesser
  */
@@ -44,7 +44,7 @@ public class CurvedProfileGenerator {
     }
 
     /**
-     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a cutPoint list.
+     * Generate a curved profile (in CNOSSOS favourable propagation conditions) from a cutPoint list.
      * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
      *
      * @param straightProfile List of cutPoints representing the uncurved profile
@@ -95,49 +95,16 @@ public class CurvedProfileGenerator {
         return curvedProfile;
     }
 
-//    /**
-//     * Generate a curved profile (CNOSSOS favourable propagation conditions) from a coordinate list, two endpoints
-//     * source and receiver).
-//     * Ref: Salomons, E., Van Maercke, D., Defrance, J. and De Roo, F. (2011). The Harmonoise sound propagation model.
-//     * Acta acustica united with acustica, 97(1), 62-74 (section 2.5)
-//     *
-//     * @param cs Source coordinate
-//     * @param cr Receiver coordinate
-//     * @param straightProfile List of 3D coordinates representing the uncurved profile (should be discretized with
-//     *                      segments distance <= 50 m)
-//     * @return List of 3D coordinates representing the curved profile
-//     */
-//    public static List <Coordinate> applyTransformation(
-//            Coordinate cs, Coordinate cr, List <Coordinate> straightProfile){
-//
-//        // Calculate projected distance between source and receiver on the vertical plane
-//        double d = cs.distance(cr);
-//
-//        // Calculate radius of curvature (Γ) for favourable condition
-//        double radius = Math.max(1000, 8 * d);
-//
-//        // Compute curved profile
-//        List <Coordinate> curvedProfile2D = applyTransformation(cs, cr, straightProfile, radius);
-//        List <Coordinate> curvedProfile = Arrays.asList(new Coordinate[straightProfile.size()]);
-//        for (int i = 0; i < straightProfile.size(); i++) {
-//            curvedProfile.set(i, new Coordinate(
-//                    straightProfile.get(i).x,
-//                    straightProfile.get(i).y,
-//                    curvedProfile2D.get(i).y)
-//            );
-//        }
-//
-//        return curvedProfile;
-//    }
-
 
     /**
-     * Generate a curved profile.
+     * Generate a curved profile (in CNOSSOS favourable propagation conditions) from a coordinate list and two
+     * endpoints (source and receiver)
      * Ref: A. Kok and A. Van Beek, “Amendments for CNOSSOS-EU,” RIVM, 2019 (Annex G1)
      *
      * @param cs Source coordinate
      * @param cr Receiver coordinate
-     * @param straightProfile List of coordinates representing the flat profile (should be discretized with segments distance <= 50 m)
+     * @param straightProfile List of coordinates representing the flat profile (should be discretized with segments
+     *                        distance &lt; 50 m)
      * @return List of coordinates representing the curved profile
      */
      public static List<Coordinate> applyTransformation(Coordinate cs, Coordinate cr, List<Coordinate> straightProfile) {
