@@ -13,56 +13,59 @@ import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointReceiver;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
-import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
-import org.noise_planet.noisemodelling.propagation.PropagationModel;
+import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
-import org.noise_planet.noisemodelling.propagation.SceneWithAttenuation;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * CNOSSOS P2P propagation model
+ * Note : the instances of the class are thread-safe.
  * @author Martin Glesser
  */
 public class CnossosPropagationModel implements PropagationModel {
+    List<CnossosPath> cnossosPaths = new ArrayList<>();
+
     /**
      * Constructor for CnossosPropagationModel objects
      */
     public CnossosPropagationModel(){}
 
     /**
-     * Compute the propagation paths for a given geometrical cross-section / cut profile
-     *
-     * @param scene Geometrical information about the propagation scene
-     * @param cutProfile Geometrical cross-section
-     * @return List of Cnossos propagation paths
-     */
-    public List<CnossosPath> computePaths(SceneWithAttenuation scene, CutProfile cutProfile){
-        double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
-        return CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
-                scene.profileBuilder.exactFrequencyArray, gs);
-    }
-
-    /**
      * Compute the attenuation for a list of paths
      *
      * @param scene Geometrical information about the propagation scene
      * @param cutProfile Geometrical cross-section
-     * @param paths List of propagation paths (Cnossos specific)
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @return Attenuation for the homogeneous and favourable path
+     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
+     * @return List of AttenuationOutput objects [favorable, homogeneous]
      */
-    public List<double[]> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile, List<CnossosPath> paths,
+    public List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                       AttenuationParameters attenuationParameters,
                                       boolean isExportAttenuationMatrix) {
-        List<double[]> attenuationList = new ArrayList<>();
-        for (CnossosPath path : paths){
-            attenuationList.add(AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, path,
-                    scene, isExportAttenuationMatrix));
+        // Compute favorable and homogeneous propagation paths
+        if (cnossosPaths.isEmpty()) {
+            double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
+            cnossosPaths = CnossosPathBuilder.computeCnossosPathsFromCutProfile(cutProfile, scene.isBodyBarrier(),
+                    scene.profileBuilder.exactFrequencyArray, gs);
         }
-        return attenuationList;
+        // Compute attenuation for each path
+        List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
+        for (CnossosPath cnossosPath : cnossosPaths){
+            CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
+            attenuationOutput.propagationPath = cnossosPath;
+            AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
+                    isExportAttenuationMatrix);
+            attenuationOutput.setLineString(cnossosPath.asGeom());
+            if (cnossosPath.isFavourable()){
+                attenuationOutput.setMeteoType(MeteoType.FAVOURABLE);
+            } else{
+                attenuationOutput.setMeteoType(MeteoType.HOMOGENEOUS);
+            }
+            attenuationOutputs.add(attenuationOutput);
+        }
+        return attenuationOutputs;
     }
 
     /**
@@ -72,21 +75,25 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param receiver receiver point information
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
-     * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
+     * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
      * @return Attenuation
      */
-    public double[] computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
+    public AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
                                              SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
                                              boolean isExportAttenuationMatrix){
         CutProfile cutProfile = new CutProfile(new CutPointSource(source), new CutPointReceiver(receiver));
-        CnossosPath cnossosPath = new CnossosPath(cutProfile);
-        cnossosPath.setFavourable(true);
-        cnossosPath.setPointList(new ArrayList<>());
+        CnossosPath propagationPath = new CnossosPath(cutProfile);
+        propagationPath.setFavourable(true);
+        propagationPath.setPointList(new ArrayList<>());
         List<Coordinate> pts2D = cutProfile.computePts2D();
-        cnossosPath.setSRSegment(CnossosPathBuilder.computeSegment(pts2D.get(0), pts2D.get(1), new double[] {0, 0}));
-        cnossosPath.getPointList().add(new PointPath(pts2D.get(0), 0, PointPath.POINT_TYPE.SRCE));
-        cnossosPath.getPointList().add(new PointPath(pts2D.get(1), 0, PointPath.POINT_TYPE.RECV));
-        return AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, cnossosPath, scene, isExportAttenuationMatrix);
+        propagationPath.setSRSegment(CnossosPathBuilder.computeSegment(pts2D.get(0), pts2D.get(1), new double[] {0, 0}));
+        propagationPath.getPointList().add(new PointPath(pts2D.get(0), 0, PointPath.POINT_TYPE.SRCE));
+        propagationPath.getPointList().add(new PointPath(pts2D.get(1), 0, PointPath.POINT_TYPE.RECV));
+        CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
+        attenuationOutput.propagationPath = propagationPath;
+        AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
+                isExportAttenuationMatrix);
+        return attenuationOutput;
 
     }
 }

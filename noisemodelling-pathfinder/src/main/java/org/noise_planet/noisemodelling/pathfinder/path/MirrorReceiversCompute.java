@@ -68,7 +68,7 @@ public class MirrorReceiversCompute {
             if(wallIntersectionPoint != null) {
                 double wallIntersectionPointDistance = wallIntersectionPoint.distance(receiverImage);
                 if (wallIntersectionPointDistance < maximumPropagationDistance) {
-                    double vectorLength = Math.min(wallIntersectionPointDistance + maximumDistanceFromWall, maximumPropagationDistance);
+                    double vectorLength = maximumPropagationDistance;
                     newPoint = newPointTranslationVector.multiply(vectorLength).translate(receiverImage);
                     if (circleSegmentPoints.isEmpty()) {
                         circleSegmentPoints.add(wallIntersectionPoint);

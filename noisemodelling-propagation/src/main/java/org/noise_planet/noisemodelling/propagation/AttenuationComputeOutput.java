@@ -12,9 +12,8 @@ package org.noise_planet.noisemodelling.propagation;
 
 import org.h2gis.api.ProgressVisitor;
 import org.noise_planet.noisemodelling.pathfinder.*;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModelCreator;
 
 
 import java.util.*;
@@ -31,8 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public ConcurrentLinkedDeque<ReceiverNoiseLevel> receiversAttenuationLevels = new ConcurrentLinkedDeque<>();
-    public Deque<CnossosPath> pathParameters = new ConcurrentLinkedDeque<>();
-    public AtomicInteger propagationPathsSize = new AtomicInteger(0);
+    public Deque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
     public boolean exportPaths;
     public boolean exportAttenuationMatrix;
     public AtomicInteger cutProfileCount = new AtomicInteger();
@@ -43,12 +41,12 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
     public AtomicLong nb_diffraction_path = new AtomicLong();
     public AtomicInteger cellComputed = new AtomicInteger();
     public SceneWithAttenuation scene;
-    public PropagationModel propagationModel;
+    public PropagationModelCreator propagationModelCreator;
 
     public AttenuationComputeOutput(boolean exportPaths, boolean exportAttenuationMatrix, SceneWithAttenuation scene) {
         this.exportPaths = exportPaths;
         this.exportAttenuationMatrix = exportAttenuationMatrix;
-        this.propagationModel = new CnossosPropagationModel();
+        this.propagationModelCreator = new CnossosPropagationModelCreator();
         this.scene = scene;
     }
 
@@ -75,15 +73,14 @@ public class AttenuationComputeOutput implements CutPlaneVisitorFactory {
 
     /**
      *
-     * @return a list of Path propagation
+     * @return a list of AttenuationOutputs
      */
-    public List<CnossosPath> getPropagationPaths() {
-        return new ArrayList<>(pathParameters);
+    public List<AttenuationOutput> getAttenuationOutputs() {
+        return new ArrayList<>(attenuationOutputs);
     }
 
-    public void clearPropagationPaths() {
-        pathParameters.clear();
-        propagationPathsSize.set(0);
+    public void clearAttenuationOutputs() {
+        attenuationOutputs.clear();
     }
 
     public void appendReflexionPath(long added) {

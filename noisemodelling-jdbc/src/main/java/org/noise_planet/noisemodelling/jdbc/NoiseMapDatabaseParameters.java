@@ -37,9 +37,10 @@ public class NoiseMapDatabaseParameters {
     public int CSVProfilerWriteInterval = 60;
 
     /**
-     * With attenuation export also the json of the related cnossos path, for debugging purpose
+     * With attenuation export also the json of the related intermediate attenuation (and propagation paths in the
+     * case of a Cnossos propagation model), for debugging purpose
      */
-    public boolean exportCnossosPathWithAttenuation = false;
+    public boolean exportAttenuationOutput = false;
     public boolean keepAbsorption = false; // in rays, keep store detailed absorption data
     public int maximumRaysOutputCount = 0; // if export rays, do not keep more than this number of rays (0 infinite)
 
@@ -121,10 +122,10 @@ public class NoiseMapDatabaseParameters {
 
 
     /**
-     * @param exportCnossosPathWithAttenuation With attenuation export also the json of the related cnossos path, for debugging purpose
+     * @param exportAttenuationOutput With attenuation export also the json of the related cnossos path, for debugging purpose
      */
-    public void setExportCnossosPathWithAttenuation(boolean exportCnossosPathWithAttenuation) {
-        this.exportCnossosPathWithAttenuation = exportCnossosPathWithAttenuation;
+    public void setExportAttenuationOutput(boolean exportAttenuationOutput) {
+        this.exportAttenuationOutput = exportAttenuationOutput;
     }
 
     /**

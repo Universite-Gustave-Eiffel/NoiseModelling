@@ -257,7 +257,10 @@ def exec(Connection connection, input) {
             }
         })
     }
-    sql.execute("CREATE INDEX ON SOURCES_EMISSION(PERIOD, IDSOURCE)")
+    // IDSOURCE must be the leading column: both the per-cell emission fetch and the
+    // Noise_From_Attenuation_Matrix join look rows up by IDSOURCE (H2 nested-loop joins
+    // cannot use an index whose leading column is PERIOD for those lookups)
+    sql.execute("CREATE INDEX ON SOURCES_EMISSION(IDSOURCE, PERIOD)")
     sql.execute("drop table VEHICLES_PROBA if exists;")
 
 
@@ -549,6 +552,7 @@ class Vehicle {
             RoadVehicleCnossosvarParameters rsParametersDynamic = new RoadVehicleCnossosvarParameters(
                     speed * 3.6, 0, vehicle_type, 0,  true, 1, id      )
             rsParametersDynamic.setRoadSurface("DEF")
+            rsParametersDynamic.setFrequency(freqs[i])
             // remove lw_correction
             result[i] = RoadVehicleCnossosvar.evaluate(rsParametersDynamic) + lw_correction;
         }
@@ -750,6 +754,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setRoadSurface(RoadSurface)
                 rsParameters.setSlopePercentage(0)
+                rsParameters.setFrequency(FreqParam)
 
                 res_LV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
@@ -776,6 +781,7 @@ class IndividualVehicleEmissionProcessData {
                 RoadVehicleCnossosvarParameters rsParameters = new RoadVehicleCnossosvarParameters(speed, acc, veh_type, acc_type, Stud, LwStd, VehId)
                 rsParameters.setSlopePercentage(0)
                 rsParameters.setRoadSurface(RoadSurface)
+                rsParameters.setFrequency(FreqParam)
                 res_HV[kk] = RoadVehicleCnossosvar.evaluate(rsParameters)
                 kk++
             }

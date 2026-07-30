@@ -38,11 +38,11 @@ public abstract class GridMapMaker {
     /** True if Z of receivers geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
      * When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
      */
-    protected boolean receiverHasSeaLevelZCoordinates = false;
+    protected boolean receiversZIsAltitude = false;
     /** True if Z of sources geometry is the altitude (sea level) or false if Z is relative to the ground (relative to digital elevation model)
      *  When the propagation area will be prepared. All coordinates will be converted into altitude if necessary.
      */
-    protected boolean sourceHasSeaLevelZCoordinates = false;
+    protected boolean sourcesZIsAltitude = false;
     protected double maximumPropagationDistance = 750;
     protected double maximumReflectionDistance = 100;
     protected double closeReceiverReflectionWallDistance = 0;
@@ -229,30 +229,30 @@ public abstract class GridMapMaker {
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    public boolean isReceiverHasAbsoluteZCoordinates() {
-        return receiverHasSeaLevelZCoordinates;
+    public boolean isReceiversZIsAltitude() {
+        return receiversZIsAltitude;
     }
 
     /**
      *
-     * @param receiverHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
+     * @param receiversZIsAltitude True if provided Z value are sea level (false for relative to ground level)
      */
-    public void setReceiverHasAbsoluteZCoordinates(boolean receiverHasAbsoluteZCoordinates) {
-        this.receiverHasSeaLevelZCoordinates = receiverHasAbsoluteZCoordinates;
+    public void setReceiversZIsAltitude(boolean receiversZIsAltitude) {
+        this.receiversZIsAltitude = receiversZIsAltitude;
     }
 
     /**
      * @return True if provided Z value are sea level (false for relative to ground level)
      */
-    public boolean isSourceHasAbsoluteZCoordinates() {
-        return sourceHasSeaLevelZCoordinates;
+    public boolean isSourcesZIsAltitude() {
+        return sourcesZIsAltitude;
     }
 
     /**
-     * @param sourceHasAbsoluteZCoordinates True if provided Z value are sea level (false for relative to ground level)
+     * @param sourcesZIsAltitude True if provided Z value are sea level (false for relative to ground level)
      */
-    public void setSourceHasAbsoluteZCoordinates(boolean sourceHasAbsoluteZCoordinates) {
-        this.sourceHasSeaLevelZCoordinates = sourceHasAbsoluteZCoordinates;
+    public void setSourcesZIsAltitude(boolean sourcesZIsAltitude) {
+        this.sourcesZIsAltitude = sourcesZIsAltitude;
     }
 
     /**

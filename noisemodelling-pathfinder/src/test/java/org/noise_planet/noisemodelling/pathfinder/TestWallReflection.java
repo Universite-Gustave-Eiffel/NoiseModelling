@@ -88,6 +88,53 @@ public class TestWallReflection {
     }
 
     @Test
+    public void testCubicBuildingReflectionWithinMaxReflectionDistance() {
+        // This test reproduces a case where a valid reflection was previously discarded because the
+        // wall reflection visibility cone was truncated to (wallDistance + maxRefDist) instead of
+        // extending to the full propagation distance.
+
+        GeometryFactory factory = new GeometryFactory();
+        double buildingHeight = 10.0;
+
+        // Cubic building 10m x 10m x 10m, front wall facing the source/receiver at y = 0
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        Coordinate[] buildingCoordinates = new Coordinate[]{
+                new Coordinate(-5, 0, buildingHeight),
+                new Coordinate(5, 0, buildingHeight),
+                new Coordinate(5, 10, buildingHeight),
+                new Coordinate(-5, 10, buildingHeight),
+                new Coordinate(-5, 0, buildingHeight)
+        };
+        profileBuilder.addBuilding(buildingCoordinates, 1);
+        profileBuilder.finishFeeding();
+
+        // Receiver 5 m in front of the building, centered, at 4 m height
+        Coordinate receiver = new Coordinate(0, -5, 4);
+        // Source 50 m from the building, at 1 m height
+        Coordinate source = new Coordinate(0, -50, 1);
+
+        Scene inputData = new Scene(profileBuilder);
+        inputData.addReceiver(receiver);
+        inputData.addSource(factory.createPoint(source));
+        inputData.setComputeHorizontalDiffraction(false);
+        inputData.setComputeVerticalDiffraction(false);
+        inputData.maxRefDist = 20;
+        inputData.maxSrcDist = 100;
+        inputData.setReflexionOrder(1);
+
+        Envelope receiverPropagationEnvelope = new Envelope(receiver);
+        receiverPropagationEnvelope.expandBy(inputData.maxSrcDist);
+        List<Wall> buildWalls = inputData.profileBuilder.getWallsIn(receiverPropagationEnvelope);
+        MirrorReceiversCompute receiverMirrorIndex = new MirrorReceiversCompute(buildWalls, receiver,
+                inputData.reflexionOrder, inputData.maxSrcDist, inputData.maxRefDist);
+
+        List<MirrorReceiver> mirrorResults = receiverMirrorIndex.findCloseMirrorReceivers(source);
+
+        assertFalse(mirrorResults.isEmpty(),
+                "Expected the reflection on the building front wall to be found");
+    }
+
+    @Test
     public void testNReflexion() throws ParseException, IOException, SQLException {
         GeometryFactory factory = new GeometryFactory();
 

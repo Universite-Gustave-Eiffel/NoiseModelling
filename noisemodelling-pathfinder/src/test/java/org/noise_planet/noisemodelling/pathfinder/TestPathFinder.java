@@ -281,4 +281,51 @@ public class TestPathFinder {
             assertFalse(Double.isNaN(pt.y));
         }
     }
+
+
+    /**
+     * Test regression on https://github.com/Universite-Gustave-Eiffel/NoiseModelling/issues/1031
+     *
+     * @throws ParseException
+     */
+    @Test
+    public void TestHullRegression() throws ParseException {
+        GeometryFactory factory = new GeometryFactory();
+        WKTReader wktReader = new WKTReader(factory);
+        //Scene dimension
+        //Envelope cellEnvelope = new Envelope(new Coordinate(0, 0, 0.), new Coordinate(20, 15, 0.));
+        //Create obstruction test object
+        ProfileBuilder profileBuilder = new ProfileBuilder();
+        profileBuilder.addBuilding(wktReader.read("POLYGON((5 6 4, 4 5 4, 7 5 4, 7 8 4, 4 8 4, 5 7 4, 5 6 4))"), -1);
+        profileBuilder.finishFeeding();
+
+        Scene processData = new Scene(profileBuilder);
+        PathFinder computeRays = new PathFinder(processData);
+
+        // Right hull length is 6.68m
+        // Left hull length is 7.08m
+        // We reject left hull with max src dist
+        computeRays.getData().maxSrcDist = 6.8;
+
+        Coordinate p1 = new Coordinate(5.643, 8.912, 1.6);
+        Coordinate p2 = new Coordinate(5.610, 3.531, 1.6);
+        // Top down
+        List<Coordinate> ray = computeRays.computeSideHull(true, p1, p2);
+        assertEquals(4, ray.size());
+        assertEquals(p1, ray.getFirst());
+        assertEquals(p2, ray.getLast());
+
+        ray = computeRays.computeSideHull(false, p1, p2);
+        assertTrue(ray.isEmpty());
+
+        // Down top
+        ray = computeRays.computeSideHull(true, p2, p1);
+        assertTrue(ray.isEmpty());
+
+        ray = computeRays.computeSideHull(false, p2, p1);
+        assertEquals(4, ray.size());
+        assertEquals(p2, ray.getFirst());
+        assertEquals(p1, ray.getLast());
+
+    }
 }

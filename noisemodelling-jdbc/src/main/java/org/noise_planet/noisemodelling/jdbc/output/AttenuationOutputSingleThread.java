@@ -21,8 +21,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutPointSource;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.propagation.*;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPropagationModel;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -40,7 +39,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     private static final int UNKNOWN_SOURCE_ID = -1;
     AttenuationOutputMultiThread multiThread;
     NoiseMapDatabaseParameters dbSettings;
-    public List<CnossosPath> cnossosPaths = new ArrayList<>();
+    PropagationModel propagationModel;
+    public List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
 
     /**
      * Collected attenuation/noise level on the current receiver
@@ -66,9 +66,12 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     ProgressVisitor progressVisitor;
 
     /**
-     * Constructs a NoiseMapInStack object with a multithreaded parent NoiseMap instance.
+     * Constructs a AttenuationOutputSingleThread object with a multithreaded parent
+     * AttenuationOutputMultiThread instance.
      * This class is not thread-safe
-     * @param multiThreadParent
+     *
+     * @param multiThreadParent multi thread cell computation manager
+     * @param progressVisitor progress information
      */
     public AttenuationOutputSingleThread(AttenuationOutputMultiThread multiThreadParent, ProgressVisitor progressVisitor) {
         this.multiThread = multiThreadParent;
@@ -86,41 +89,64 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.NONE;
     }
 
+    /**
+     * Compute the attenuation for a given geometrical cross-section and period and store the
+     * results.
+     *
+     * @param cutProfile geometrical cross-section
+     * @param data attenuation computation parameters
+     * @param period period identifier
+     * @param emission source emission levels for the period
+     * @param sourcePk source identifier
+     * @return path search strategy
+     */
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk) {
         return processAndStoreAttenuation(cutProfile, data, period, emission, sourcePk, new ArrayList<>());
     }
 
+    /**
+     * Compute the attenuation for a given geometrical cross-section and period and store the
+     * results.
+     *
+     * @param cutProfile geometrical cross-section
+     * @param data attenuation computation parameters
+     * @param period period identifier
+     * @param emission source emission levels for the period
+     * @param sourcePk source identifier
+     * @param defaultAttenuation attenuation computed with default parameters
+     * @return path search strategy
+     */
     private PathSearchStrategy processAndStoreAttenuation(CutProfile cutProfile, AttenuationParameters data,
                                                           String period, double[] emission, long sourcePk,
-                                                          List<double[]> defaultAttenuation) {
-        PropagationModel propagationModel = multiThread.propagationModel;
+                                                          List<AttenuationOutput> defaultAttenuation) {
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         final SceneWithEmission scene = multiThread.sceneWithEmission;
         // Avoid multiple attenuation computation with default attenuation parameters
-        List<double[]> attenuationList;
+        List<AttenuationOutput> attenuationList;
         if(!defaultAttenuation.isEmpty()){
             attenuationList = defaultAttenuation;
         } else {
-            List<CnossosPath> cnossosPaths = propagationModel.computePaths(scene, cutProfile);
-            attenuationList = propagationModel.computeAttenuation(scene, cutProfile, cnossosPaths, data,
+            attenuationList = propagationModel.computeAttenuation(scene, cutProfile, data,
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
-            // export path per period if required, in the case of a Cnossos propagation model
-            if(propagationModel instanceof CnossosPropagationModel &&
-                    multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
+            // export attenuation output per period if required
+            if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-                for (CnossosPath proPathParameters : cnossosPaths) {
-                    CnossosPath cnossosPath = new CnossosPath(proPathParameters);
-                    cnossosPath.setTimePeriod(period);
-                    this.cnossosPaths.add(cnossosPath);
+                for (AttenuationOutput attenuationOutput : attenuationList) {
+                    attenuationOutput.setTimePeriod(period);
+                    this.attenuationOutputs.add(attenuationOutput);
                 }
             }
             defaultAttenuation.addAll(attenuationList);
         }
-//        if(isDefaultParameters && defaultAttenuation.isEmpty()) {
-//            defaultAttenuation = attenuationList;
-//        }
-        for (double[] attenuationDb : attenuationList) {
+        // export attenuation output (only the rays/propagation path export is requested)
+        if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
+                .TO_RAYS_TABLE && this.attenuationOutputs.isEmpty()) {
+            // Use only one ray as the ray is the same if we not keep absorption values
+            this.attenuationOutputs.addAll(attenuationList);
+        }
+        for (AttenuationOutput attenuationOutput : attenuationList) {
+            double[] attenuationDb = attenuationOutput.getaGlobal();
             double[] attenuation = dBToW(attenuationDb);
             double[] levels;
             if(emission.length != 0 ) {
@@ -189,7 +215,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
     /**
      * Update internal map with new attenuation
-     * @param noiseLevel
+     * @param noiseLevel receiver noise level
      */
     private void processNoiseLevel(ReceiverNoiseLevel noiseLevel) {
         int keyToUpdate = UNKNOWN_SOURCE_ID;
@@ -204,8 +230,18 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 TimePeriodParameters::update);
     }
 
+    /**
+     * Manage attenuation computation each time a cutProfile is found.
+     * Note: in the case of CNOSSOS propagation model, a new instance of PropagationModel needs to be
+     * created for each cutProfile to ensure a new computation of the cnossosPaths.
+     *
+     * @param cutProfile vertical profile
+     * @return Search strategy
+     */
     @Override
     public PathSearchStrategy onNewCutPlane(CutProfile cutProfile) {
+        // Create a PropagationModel instance
+        propagationModel = multiThread.propagationModelCreator.create();
         PathSearchStrategy strategy = PathSearchStrategy.CONTINUE;
         multiThread.cutProfileCount.addAndGet(1);
         final SceneWithEmission scene = multiThread.sceneWithEmission;
@@ -213,19 +249,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                 && cutProfile.hasCloseReflectionBeforeReceiver(scene.getCloseReceiverReflectionWallDistance())) {
             return strategy;
         }
-        // Create propagation model and compute rays for the current cutProfile
-        PropagationModel propagationModel = multiThread.propagationModel;
-        // export path if required, in the case of a Cnossos propagation model
-        if(propagationModel instanceof CnossosPropagationModel &&
-                multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods
-                        .TO_RAYS_TABLE && !multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
-            // Use only one ray as the ray is the same if we not keep absorption values
-            // Copy path content in order to keep original ids for other method calls
-            this.cnossosPaths.addAll(propagationModel.computePaths(scene, cutProfile));
-        }
-
         CutPointSource source = cutProfile.getSource();
-        CutPointReceiver receiver = cutProfile.getReceiver();
         long sourcePk = source.sourcePk == -1 ? source.id : source.sourcePk;
         if(scene.wjSources.isEmpty()) {
             // No emission push only attenuation for each period
@@ -243,7 +267,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             // Apply period attenuation to emission for each time period covered by the source emission
             if(scene.wjSources.containsKey(sourcePk)) {
                 ArrayList<SceneWithEmission.PeriodEmission> emissions = scene.wjSources.get(sourcePk);
-                List<double[]>  defaultAttenuation = new ArrayList<>();
+                List<AttenuationOutput>  defaultAttenuation = new ArrayList<>();
                 for (SceneWithEmission.PeriodEmission periodEmission : emissions) {
                     String period = periodEmission.period;
                     // look for specific atmospheric settings for this period
@@ -265,6 +289,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
     public void startReceiver(PathFinder.ReceiverPointInfo receiver, Collection<PathFinder.SourcePointInfo> sourceList,
             AtomicInteger cutProfileCount) {
         this.cutProfileCount = cutProfileCount;
+        // Create a PropagationModel instance
+        propagationModel = multiThread.propagationModelCreator.create();
         // Quickly evaluate the maximum expected power level at receiver location
         // using all nearby sources maximum emission in reflective direct field
         if(isMaximumErrorPruningEnabled() && !multiThread.sceneWithEmission.wjSources.isEmpty()) {
@@ -277,9 +303,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             final SceneWithEmission scene = multiThread.sceneWithEmission;
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
-                PropagationModel propagationModel = multiThread.propagationModel;
                 double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(sourcePointInfo, receiver,
-                        scene, scene.defaultCnossosParameters,false));
+                        scene, scene.defaultCnossosParameters,false).getaGlobal());
                 // For line source apply a gain on the attenuation
                 if(sourcePointInfo.li > 1) {
                     attenuation = multiplicationArray(attenuation, sourcePointInfo.li);
@@ -294,7 +319,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         double[] attenuationPerPeriod = attenuation;
                         if(parameters != scene.defaultCnossosParameters) {
                             attenuationPerPeriod = dBToW(propagationModel.computeDirectAttenuation(sourcePointInfo,
-                                    receiver, scene, parameters,false));
+                                    receiver, scene, parameters,false).getaGlobal());
                             if(sourcePointInfo.li > 1) {
                                 attenuationPerPeriod = multiplicationArray(attenuationPerPeriod, sourcePointInfo.li);
                             }
@@ -342,7 +367,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
      * @param stack Stack to feed
      * @param data rays
      */
-    public void pushInStack(ConcurrentLinkedDeque<CnossosPath> stack, List<CnossosPath> data) {
+    public void pushInStack(ConcurrentLinkedDeque<AttenuationOutput> stack, List<AttenuationOutput> data) {
         while(multiThread.resultsCache.queueSize.get() > dbSettings.outputMaximumQueue) {
             try {
                 Thread.sleep(10);
@@ -378,21 +403,21 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             return new double[0];
         }
     }
+
     /**
      * No more propagation paths will be pushed for this receiver identifier
      *
-     * @param receiver
+     * @param receiver attributes of the receiver point
      */
     @Override
     public void finalizeReceiver(PathFinder.ReceiverPointInfo receiver) {
         // Push propagation rays (only in case of Cnossos propagation model)
-        if(!this.cnossosPaths.isEmpty()) {
+        if(!this.attenuationOutputs.isEmpty()) {
             if(dbSettings.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
-                pushInStack(multiThread.resultsCache.cnossosPaths, this.cnossosPaths);
+                pushInStack(multiThread.resultsCache.attenuationOutputs, this.attenuationOutputs);
             }
         }
         // Convert to dB then pushed cached entries for this receiver into multi-thread instance
-
         boolean computeLden = isComputeLden();
         Set<String> collectedPeriod = new HashSet<>();
         for (Map.Entry<Integer, TimePeriodParameters> periodParametersEntry : receiverAttenuationList.entrySet()) {
@@ -441,7 +466,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
         receiverAttenuationList.clear();
         maximumWjExpectedSplAtReceiver.clear();
         wjAtReceiver.clear();
-        this.cnossosPaths.clear();
+        this.attenuationOutputs.clear();
     }
 
     private boolean isComputeLden() {
@@ -479,8 +504,8 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
 
         /**
          * merge attenuation/noise level in w
-         * @param other
-         * @return
+         * @param other noise level as a function of the period
+         * @return noise level as a function of the period
          */
         public TimePeriodParameters update(TimePeriodParameters other) {
             for (Map.Entry<String, double[]> entry : other.levelsPerPeriod.entrySet()) {

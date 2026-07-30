@@ -19,7 +19,8 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.*;
 
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
+import org.noise_planet.noisemodelling.propagation.cnossos.CnossosAttenuationOutput;
 import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public class GenerateReferenceDeviation {
         return result;
     }
 
-    private static AttenuationComputeOutput computeCnossosPath(String... utNames)
+    private static AttenuationComputeOutput computeAttenuationOutput(String... utNames)
             throws IOException {
         //Create profile builder
         ProfileBuilder profileBuilder = new ProfileBuilder()
@@ -152,7 +153,7 @@ public class GenerateReferenceDeviation {
     }
 
     /**
-     * Generate documentatin content for a unit test according to the deviation
+     * Generate documentation content for a unit test according to the deviation
      * @param utName Unit test name
      * @param sb Output of documentation
      * @param expectedValues Expected results
@@ -198,17 +199,18 @@ public class GenerateReferenceDeviation {
                 utName));
     }
 
-    private static CnossosPath fetchPath(List<CnossosPath> paths, CutProfile.PROFILE_TYPE profileType, boolean favourable) {
-        for(CnossosPath path : paths) {
-            if(path.getCutProfile().profileType == profileType && path.isFavourable() == favourable) {
-                return path;
+    private static AttenuationOutput fetchPath(List<AttenuationOutput> paths, CutProfile.PROFILE_TYPE profileType, MeteoType meteoType) {
+        for(AttenuationOutput attenuationOutput : paths) {
+
+            if(attenuationOutput.getCutProfile().profileType == profileType && Objects.equals(attenuationOutput.meteoType, meteoType)) {
+                return attenuationOutput;
             }
         }
         return null;
     }
 
-    private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<CnossosPath> paths, double[] powerLevel) {
-        CnossosPath homogenous = fetchPath(paths, profileType, false);
+    private static void addUTDeviationDetails(CutProfile.PROFILE_TYPE profileType, StringBuilder sb, JsonNode expectedValues, List<AttenuationOutput> paths, double[] powerLevel) {
+        CnossosAttenuationOutput homogenous = (CnossosAttenuationOutput) fetchPath(paths, profileType, MeteoType.HOMOGENEOUS);
         String utName = PATH_NAMES[profileType.ordinal()];
         assert homogenous != null;
         double[] actualLH = addArray(homogenous.aGlobalRaw, powerLevel);
@@ -229,7 +231,7 @@ public class GenerateReferenceDeviation {
                 "     - %d\n", utName.replace("_", " "), lhDeviation.deviation, lhDeviation.frequency));
 
         if(expectedValues.has("LF")) {
-            CnossosPath favourablePath = fetchPath(paths, profileType, true);
+            CnossosAttenuationOutput favourablePath = (CnossosAttenuationOutput) fetchPath(paths, profileType, MeteoType.FAVOURABLE);
             if(favourablePath != null) {
                 double[] actualLF = addArray(favourablePath.aGlobalRaw, powerLevel);
                 double[] expectedLF = asArray(expectedValues.get("LF"));
@@ -251,7 +253,7 @@ public class GenerateReferenceDeviation {
      * @param args var args
      * @throws IOException exception
      */
-    public static void main(String[] args) throws IOException {
+    static void main(String[] args) throws IOException {
         Logging.initConsoleLogging();
 
         // Read working directory argument
@@ -275,45 +277,44 @@ public class GenerateReferenceDeviation {
                 JsonNode node = mapper.getFactory().createParser(referenceStream).readValueAsTree();
                 StringBuilder stringBuilderDetail = new StringBuilder();
                 StringBuilder stringBuilderTable = new StringBuilder();
-                for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
+                for (Map.Entry<String, JsonNode> stringJsonNodeEntry : node.properties()) {
                     total += 1;
-                    Map.Entry<String, JsonNode> elt = it.next();
-                    String utName = elt.getKey();
-                    JsonNode pathsExpected = elt.getValue();
+                    String utName = stringJsonNodeEntry.getKey();
+                    JsonNode pathsExpected = stringJsonNodeEntry.getValue();
                     double[] powerLevel = SOUND_POWER_LEVELS;
-                    if(pathsExpected.has("PL")) {
+                    if (pathsExpected.has("PL")) {
                         powerLevel = asArray(pathsExpected.get("PL"));
                     }
                     List<String> verticalCutFileNames = new ArrayList<>();
                     List<String> verticalCutFileNamesWithoutLateral = new ArrayList<>();
-                    verticalCutFileNames.add(utName+"_Direct");
-                    verticalCutFileNamesWithoutLateral.add(utName+"_Direct");
-                    if(pathsExpected.has("Right")) {
-                        verticalCutFileNames.add(utName+"_Right");
-                        verticalCutFileNames.add(utName+"_Right_Curved");
+                    verticalCutFileNames.add(utName + "_Direct");
+                    verticalCutFileNamesWithoutLateral.add(utName + "_Direct");
+                    if (pathsExpected.has("Right")) {
+                        verticalCutFileNames.add(utName + "_Right");
+                        verticalCutFileNames.add(utName + "_Right_Curved");
                     }
-                    if(pathsExpected.has("Left")) {
-                        verticalCutFileNames.add(utName+"_Left");
-                        verticalCutFileNames.add(utName+"_Left_Curved");
+                    if (pathsExpected.has("Left")) {
+                        verticalCutFileNames.add(utName + "_Left");
+                        verticalCutFileNames.add(utName + "_Left_Curved");
                     }
-                    if(pathsExpected.has("Reflection")) {
-                        verticalCutFileNames.add(utName+"_Reflection");
-                        verticalCutFileNamesWithoutLateral.add(utName+"_Reflection");
+                    if (pathsExpected.has("Reflection")) {
+                        verticalCutFileNames.add(utName + "_Reflection");
+                        verticalCutFileNamesWithoutLateral.add(utName + "_Reflection");
                     }
-                    AttenuationComputeOutput attenuationComputeOutput = computeCnossosPath(verticalCutFileNames.toArray(new String[]{}));
-                    AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeCnossosPath(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
+                    AttenuationComputeOutput attenuationComputeOutput = computeAttenuationOutput(verticalCutFileNames.toArray(new String[]{}));
+                    AttenuationComputeOutput attenuationComputeOutputWithoutLateral = computeAttenuationOutput(verticalCutFileNamesWithoutLateral.toArray(new String[]{}));
                     addUTDeviation(utName, stringBuilderTable, pathsExpected, attenuationComputeOutput, attenuationComputeOutputWithoutLateral, powerLevel, fullPass, directPass);
                     // Write details
                     stringBuilderDetail.append("\n").append(utName).append("\n^^^^\n");
-                    addUTDeviationDetails(CutProfile.PROFILE_TYPE.DIRECT, stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
-                    if(pathsExpected.has("Right")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.RIGHT, stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                    addUTDeviationDetails(CutProfile.PROFILE_TYPE.DIRECT, stringBuilderDetail, pathsExpected.get("Direct"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
+                    if (pathsExpected.has("Right")) {
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.RIGHT, stringBuilderDetail, pathsExpected.get("Right"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
-                    if(pathsExpected.has("Left")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.LEFT, stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                    if (pathsExpected.has("Left")) {
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.LEFT, stringBuilderDetail, pathsExpected.get("Left"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
-                    if(pathsExpected.has("Reflection")) {
-                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.REFLECTION, stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getPropagationPaths(), powerLevel);
+                    if (pathsExpected.has("Reflection")) {
+                        addUTDeviationDetails(CutProfile.PROFILE_TYPE.REFLECTION, stringBuilderDetail, pathsExpected.get("Reflection"), attenuationComputeOutput.getAttenuationOutputs(), powerLevel);
                     }
                 }
                 fileWriter.write(String.format(Locale.ROOT, "| Conform\n" +
