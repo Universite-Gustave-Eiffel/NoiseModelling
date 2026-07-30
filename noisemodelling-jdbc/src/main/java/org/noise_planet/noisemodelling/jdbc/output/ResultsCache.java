@@ -11,7 +11,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 
 import org.noise_planet.noisemodelling.pathfinder.utils.profiler.ProfilerThread;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,7 +26,7 @@ public class ResultsCache implements ProfilerThread.Metric {
     public final AtomicLong queueSize = new AtomicLong(0);
     public final AtomicLong totalRaysInserted = new AtomicLong(0);
     public final ConcurrentLinkedDeque<ReceiverNoiseLevel> receiverLevels = new ConcurrentLinkedDeque<>();
-    public final ConcurrentLinkedDeque<CnossosPath> cnossosPaths = new ConcurrentLinkedDeque<>();
+    public final ConcurrentLinkedDeque<AttenuationOutput> attenuationOutputs = new ConcurrentLinkedDeque<>();
 
 
     @Override

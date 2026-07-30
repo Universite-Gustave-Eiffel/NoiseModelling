@@ -27,14 +27,13 @@ import org.noise_planet.noisemodelling.jdbc.output.AttenuationOutputMultiThread;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
-import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.CutProfile;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,10 +183,10 @@ public class SceneWithEmissionTest {
         return counts;
     }
 
-    private static Map<String, Integer> countSourcePeriodRays(Collection<CnossosPath> cnossosPaths) {
+    private static Map<String, Integer> countSourcePeriodRays(Collection<AttenuationOutput> attenuationOutputs) {
         Map<String, Integer> counts = new HashMap<>();
-        for (CnossosPath cnossosPath : cnossosPaths) {
-            String key = cnossosPath.getTimePeriod() + "#" + cnossosPath.getCutProfile().getSource().sourcePk;
+        for (AttenuationOutput attenuationOutput : attenuationOutputs) {
+            String key = attenuationOutput.getTimePeriod() + "#" + attenuationOutput.getCutProfile().getSource().sourcePk;
             counts.merge(key, 1, Integer::sum);
         }
         return counts;
@@ -201,8 +200,8 @@ public class SceneWithEmissionTest {
         assertEquals(baselineReceiverKeys, optimizedReceiverKeys,
                 "Optimized run should keep the same source-period receiver contributions as baseline");
 
-        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.cnossosPaths);
-        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.cnossosPaths);
+        Map<String, Integer> baselineRayKeys = countSourcePeriodRays(baseline.resultsCache.attenuationOutputs);
+        Map<String, Integer> optimizedRayKeys = countSourcePeriodRays(optimized.resultsCache.attenuationOutputs);
         assertEquals(baselineRayKeys, optimizedRayKeys,
                 "Optimized run should keep the same source-period ray contributions as baseline");
 
@@ -252,7 +251,7 @@ public class SceneWithEmissionTest {
             noiseMap.getNoiseMapDatabaseParameters().setExportRaysMethod(NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE);
             noiseMap.getNoiseMapDatabaseParameters().setRaysTable("RAYS");
             noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationMatrix(true);
-            noiseMap.getNoiseMapDatabaseParameters().setExportCnossosPathWithAttenuation(true);
+            noiseMap.getNoiseMapDatabaseParameters().setExportAttenuationOutput(true);
             noiseMap.getNoiseMapDatabaseParameters().keepAbsorption = true;
 
             DefaultTableLoader defaultTableLoader = (DefaultTableLoader) noiseMap.getPropagationProcessDataFactory();
@@ -664,8 +663,8 @@ public class SceneWithEmissionTest {
         scene.addSourceEmission(3L, "T1", createFlatSpectrum(profileBuilder, 112.0));
 
         AttenuationOutputMultiThread baseline = runSceneWithMaximumError(scene, 0.0);
-        assertTrue(baseline.resultsCache.cnossosPaths.stream().anyMatch(cnossosPath ->
-                        cnossosPath.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
+        assertTrue(baseline.resultsCache.attenuationOutputs.stream().anyMatch(attenuationOutput ->
+                        attenuationOutput.getCutProfile().getProfileType() == CutProfile.PROFILE_TYPE.REFLECTION),
                 "Baseline scene should include at least one reflection path");
 
         AttenuationOutputMultiThread optimized = runSceneWithMaximumError(scene, maxError);

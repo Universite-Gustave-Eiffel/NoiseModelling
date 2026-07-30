@@ -23,7 +23,7 @@ public class AttenuationComputeOutputTemplateTest {
         return mapper.readValue(inputStream, CutProfile.class);
     }
 
-    private static List<double[]> computeTemplateAttenuation(String utName)
+    private static double[] computeTemplateAttenuation(String utName)
             throws IOException {
         //Get test data
         URL url = AttenuationComputeOutputTemplateTest.class.getResource("template/" + utName + ".json");
@@ -48,8 +48,8 @@ public class AttenuationComputeOutputTemplateTest {
 
         PropagationModel propagationModel = new TemplatePropagationModel();
 
-        return propagationModel.computeAttenuation(sceneWithAttenuation, cutProfile, new ArrayList<>(),
-                sceneWithAttenuation.defaultCnossosParameters, false);
+        return propagationModel.computeAttenuation(sceneWithAttenuation, cutProfile,
+                sceneWithAttenuation.defaultCnossosParameters, false).getFirst().getaGlobal();
     }
 
     /**
@@ -58,10 +58,10 @@ public class AttenuationComputeOutputTemplateTest {
     @Test
     public void test_template_01() throws IOException {
 
-        List<double[]> attenuation = computeTemplateAttenuation("case_1_4");
+        double[] attenuation = computeTemplateAttenuation("case_1_4");
 
         //Assertion
-        assertEquals(0, attenuation.get(0)[0]);
-        assertEquals(0, attenuation.get(1)[0]);
+        assertEquals(0, attenuation[0]);
+
     }
 }

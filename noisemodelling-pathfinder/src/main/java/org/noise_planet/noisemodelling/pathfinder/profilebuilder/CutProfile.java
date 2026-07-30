@@ -13,10 +13,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineSegment;
 import org.noise_planet.noisemodelling.pathfinder.path.Scene;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CurvedProfileGenerator;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.JTSUtility;
+import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +50,8 @@ public class CutProfile {
     public boolean curvedPath = false;
 
     public PROFILE_TYPE profileType = PROFILE_TYPE.DIRECT;
+
+    public Orientation raySourceReceiverDirectivity = new Orientation(); // direction of the source->receiver path relative to the source heading
 
     /**
      * Empty constructor for deserialization
@@ -101,7 +103,7 @@ public class CutProfile {
     /**
      * Insert and sort cut points,
      * @param sortBySourcePosition After inserting points, sort the by the distance from the source
-     * @param cutPointsToInsert
+     * @param cutPointsToInsert Points to insert
      */
     public void insertCutPoint(boolean sortBySourcePosition, CutPoint... cutPointsToInsert) {
         CutPointSource sourcePoint = getSource();
@@ -113,7 +115,7 @@ public class CutProfile {
             int sourceIndex = cutPoints.indexOf(sourcePoint);
             if (sourceIndex != 0) {
                 cutPoints.remove(sourceIndex);
-                cutPoints.add(0, sourcePoint);
+                cutPoints.addFirst(sourcePoint);
             }
             // move receiver as the last point
             int receiverIndex = cutPoints.indexOf(receiverPoint);
@@ -133,8 +135,8 @@ public class CutProfile {
 
     /**
      * compute the path between two points
-     * @param p0
-     * @param p1
+     * @param p0 Point 0
+     * @param p1 Point 1
      * @return the absorption coefficient of this path
      */
     @JsonIgnore
@@ -172,7 +174,7 @@ public class CutProfile {
     @JsonIgnore
     public double getGPath() {
         if(!cutPoints.isEmpty()) {
-            return getGPath(cutPoints.get(0), cutPoints.get(cutPoints.size() - 1), Scene.DEFAULT_G_BUILDING);
+            return getGPath(cutPoints.getFirst(), cutPoints.getLast(), Scene.DEFAULT_G_BUILDING);
         } else {
             return 0;
         }
@@ -213,6 +215,14 @@ public class CutProfile {
             }
         }
         return rsLength / totalLength;
+    }
+
+    public Orientation getRaySourceReceiverDirectivity() {
+        return raySourceReceiverDirectivity;
+    }
+
+    public void setRaySourceReceiverDirectivity(Orientation raySourceReceiverDirectivity) {
+        this.raySourceReceiverDirectivity = raySourceReceiverDirectivity;
     }
 
     /**
@@ -325,7 +335,7 @@ public class CutProfile {
         // Filter out points that are below the line segment
         List<Coordinate> convexHullInput = new ArrayList<>();
         // Add source position
-        convexHullInput.add(coordinates2d.get(0));
+        convexHullInput.add(coordinates2d.getFirst());
         // Add valid diffraction point, building/walls/dem
         for (int idPoint=1; idPoint < cutPoints.size() - 1; idPoint++) {
             CutPoint currentPoint = cutPoints.get(idPoint);
@@ -337,7 +347,7 @@ public class CutProfile {
             }
         }
         // Add receiver position
-        convexHullInput.add(coordinates2d.get(coordinates2d.size() - 1));
+        convexHullInput.add(coordinates2d.getLast());
 
         // Compute the convex hull using JTS
         List<Coordinate> convexHullPoints = new ArrayList<>();
@@ -491,13 +501,18 @@ public class CutProfile {
 
     @JsonIgnore
     public CutPointSource getSource() {
-        return !cutPoints.isEmpty() && cutPoints.get(0) instanceof CutPointSource ?
-                (CutPointSource) cutPoints.get(0) : null;
+        return !cutPoints.isEmpty() && cutPoints.getFirst() instanceof CutPointSource ?
+                (CutPointSource) cutPoints.getFirst() : null;
     }
 
     @JsonIgnore
     public CutPointReceiver getReceiver() {
-        return !cutPoints.isEmpty() && cutPoints.get(cutPoints.size() - 1) instanceof CutPointReceiver ?
-                (CutPointReceiver) cutPoints.get(cutPoints.size() - 1) : null;
+        return !cutPoints.isEmpty() && cutPoints.getLast() instanceof CutPointReceiver ?
+                (CutPointReceiver) cutPoints.getLast() : null;
     }
+    @JsonIgnore
+    public Orientation getSourceOrientation() {
+        return this.getSource().orientation;
+    }
+
 }

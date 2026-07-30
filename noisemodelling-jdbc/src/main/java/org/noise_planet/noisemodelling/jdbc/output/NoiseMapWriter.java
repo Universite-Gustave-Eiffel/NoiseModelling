@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.jdbc.output;
 
 import com.bedatadriven.jackson.datatype.jts.JtsModule;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.locationtech.jts.geom.*;
@@ -24,7 +25,7 @@ import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFuncti
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.CoordinateMixin;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.LineSegmentMixin;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
-import org.noise_planet.noisemodelling.propagation.cnossos.CnossosPath;
+import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +86,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         this.exitWhenDone = exitWhenDone;
         this.aborted = aborted;
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             jsonWriter = createJsonWriter();
         }
     }
@@ -98,28 +99,38 @@ public class NoiseMapWriter implements Callable<Boolean> {
         return mapper.writer();
     }
 
-    public String propagationPathAsJSON(CnossosPath path) throws JsonProcessingException {
-        return jsonWriter.writeValueAsString(path);
-    }
-
-    public static CnossosPath jsonToPropagationPath(String json) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
-        mapper.registerModule(new JtsModule());
-        return mapper.readValue(json, CnossosPath.class);
+    public String attenuationOutputAsJSON(AttenuationOutput attenuationOutput) throws JsonProcessingException {
+        return jsonWriter.writeValueAsString(attenuationOutput);
     }
 
     /**
-     * Processes the stack of CnossosPath objects and inserts their data into the rays table.
-     * @param stack the stack of CnossosPath objects containing the data to be inserted into the rays table
+     * Deserialize AttenuationOutput object or AttenuationOutput child object.
+     * Note: the FAIL_ON_UNKNOWN_PROPERTIES feature ensure that the deserialization won't fail for children of
+     * AttenuationOutput with additional attributes.
+     *
+     * @param json The serialized AttenuationOutput
+     * @return Deserialized AttenuationOutput object
+     * @throws JsonProcessingException if the deserialization fails
+     */
+    public static AttenuationOutput jsonToAttenuationOutput(String json) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.addMixIn(Coordinate.class, CoordinateMixin.class);
+        mapper.registerModule(new JtsModule());
+        return mapper.readValue(json, AttenuationOutput.class);
+
+    }
+
+    /**
+     * Processes the stack of AttenuationOutput objects and inserts their data into the rays table.
+     * @param stack the stack of AttenuationOutput objects containing the data to be inserted into the rays table
      * @throws SQLException if an SQL exception occurs while executing the INSERT query
      */
-    void processRaysStack(ConcurrentLinkedDeque<CnossosPath> stack) throws SQLException {
+    void processRaysStack(ConcurrentLinkedDeque<AttenuationOutput> stack) throws SQLException {
         boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
                 equals(SceneDatabaseInputSettings.INPUT_MODE.INPUT_MODE_ATTENUATION);
         StringBuilder query = new StringBuilder("INSERT INTO " + databaseParameters.raysTable +
                 "(the_geom , IDRECEIVER , IDSOURCE");
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             query.append(", PATH");
         }
         if(databaseParameters.exportAttenuationMatrix) {
@@ -128,9 +139,9 @@ public class NoiseMapWriter implements Callable<Boolean> {
         if(exportPeriod) {
             query.append(", PERIOD");
         }
-        query.append(", FAVOURABLE");
+        query.append(", METEO");
         query.append(") VALUES (?, ?, ?");
-        if(databaseParameters.exportCnossosPathWithAttenuation) {
+        if(databaseParameters.exportAttenuationOutput) {
             query.append(", ?");
         }
         if(databaseParameters.exportAttenuationMatrix) {
@@ -150,18 +161,18 @@ public class NoiseMapWriter implements Callable<Boolean> {
         }
         int batchSize = 0;
         while(!stack.isEmpty()) {
-            CnossosPath row = stack.pop();
+            AttenuationOutput row = stack.pop();
             resultsCache.queueSize.decrementAndGet();
             int parameterIndex = 1;
-            LineString lineString = row.asGeom();
+            LineString lineString = row.getLineString();
             lineString.setSRID(srid);
             ps.setObject(parameterIndex++, lineString);
             ps.setLong(parameterIndex++, row.getCutProfile().getReceiver().receiverPk);
             ps.setLong(parameterIndex++, row.getCutProfile().getSource().sourcePk);
-            if(databaseParameters.exportCnossosPathWithAttenuation) {
+            if(databaseParameters.exportAttenuationOutput) {
                 String json = "";
                 try {
-                    json = propagationPathAsJSON(row);
+                    json = attenuationOutputAsJSON(row);
                 } catch (IOException ex) {
                     //ignore
                 }
@@ -174,7 +185,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 ps.setString(parameterIndex++, row.getTimePeriod());
             }
-            ps.setBoolean(parameterIndex++, row.isFavourable());
+            ps.setString(parameterIndex++, row.getMeteoType());
             ps.addBatch();
             batchSize++;
             if (batchSize >= BATCH_MAX_SIZE) {
@@ -327,7 +338,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Creates a primary key or index on the specified table depending on the configuration.
-     * @param tableName
+     * @param tableName Name of the table
      * @return the SQL statement for creating the primary key or index     */
     private String forgePkTable(String tableName) {
         boolean exportPeriod = !noiseMapByReceiverMaker.getSceneInputSettings().getInputMode().
@@ -349,9 +360,9 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Executes the specified SQL query.
-     * @param query
-     * @throws SQLException
-     * @throws IOException
+     * @param query SQL query to be processed
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while writing
      */
     private void processQuery(String query) throws SQLException, IOException {
         if(sqlFilePath == null) {
@@ -365,8 +376,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Initializes the noise map calculation by setting up required database tables based on the specified parameters.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while processing the query
      */
     public void init() throws SQLException, IOException {
         if(databaseParameters.getExportRaysMethod() == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE) {
@@ -380,7 +391,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
                     "geometry(LINESTRING Z,");
             sb.append(srid);
             sb.append("), IDRECEIVER bigint NOT NULL, IDSOURCE bigint NOT NULL");
-            if(databaseParameters.exportCnossosPathWithAttenuation) {
+            if(databaseParameters.exportAttenuationOutput) {
                 sb.append(", PATH VARCHAR");
             }
             if(databaseParameters.exportAttenuationMatrix) {
@@ -389,7 +400,7 @@ public class NoiseMapWriter implements Callable<Boolean> {
             if(exportPeriod) {
                 sb.append(", PERIOD VARCHAR");
             }
-            sb.append(", FAVOURABLE BOOLEAN");
+            sb.append(", METEO VARCHAR");
             sb.append(");");
             processQuery(sb.toString());
         }
@@ -403,16 +414,15 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Main loop for processing attenuated paths and stacking results.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
      */
-    void mainLoop() throws SQLException, IOException {
+    void mainLoop() throws SQLException {
         while (!aborted.get()) {
             try {
                 if(!resultsCache.receiverLevels.isEmpty()) {
                     processStack(databaseParameters.receiversLevelTable, resultsCache.receiverLevels);
-                } else if(!resultsCache.cnossosPaths.isEmpty()) {
-                    processRaysStack(resultsCache.cnossosPaths);
+                } else if(!resultsCache.attenuationOutputs.isEmpty()) {
+                    processRaysStack(resultsCache.attenuationOutputs);
                 } else {
                     if(exitWhenDone.get()) {
                         break;
@@ -429,8 +439,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
 
     /**
      * Creates primary keys for the computed noise level tables.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException if an SQL exception occurs while executing the query
+     * @throws IOException if an I/O error occurs while processing the query
      */
     void createKeys()  throws SQLException, IOException {
         // Set primary keys
