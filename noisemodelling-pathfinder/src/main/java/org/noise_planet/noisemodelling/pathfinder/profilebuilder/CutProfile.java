@@ -285,6 +285,13 @@ public class CutProfile {
     /**
      * @return @return the computed coordinate list
      */
+    public List<Coordinate> computePts2D() {
+        return computePts2D(false);
+    }
+
+    /**
+     * @return @return the computed coordinate list
+     */
     public List<Coordinate> computePts2D(boolean curvedPath) {
         return computePts2D(curvedPath, null);
     }
@@ -298,7 +305,7 @@ public class CutProfile {
     public List<Coordinate> computePts2D(boolean curvedPath, List<CutPoint> transformedCutPointsOut) {
         List<Coordinate> pts2D;
         if(curvedPath) {
-            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints, false);
+            List<CutPoint> transformedCutPoints = CurvedProfileGenerator.applyTransformation(cutPoints);
             // If caller wants the transformed cut points, populate the output list
             if (transformedCutPointsOut != null) {
                 transformedCutPointsOut.clear();
@@ -314,13 +321,6 @@ public class CutProfile {
         }
         pts2D = JTSUtility.getNewCoordinateSystem(pts2D);
         return pts2D;
-    }
-
-    /**
-     * @return @return the computed coordinate list
-     */
-    public List<Coordinate> computePts2D() {
-        return computePts2D(false);
     }
 
     public List<Integer> getConvexHullIndices(List<Coordinate> coordinates2d) {
