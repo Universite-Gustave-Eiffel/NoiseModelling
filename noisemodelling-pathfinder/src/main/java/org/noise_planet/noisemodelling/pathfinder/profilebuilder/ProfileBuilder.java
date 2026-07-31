@@ -73,8 +73,6 @@ public class ProfileBuilder {
     private List<Wall> walls = new ArrayList<>();
     /** Building RTree. */
     private final STRtree buildingTree;
-    /** Building RTree. */
-    private final STRtree wallTree = new STRtree(TREE_NODE_CAPACITY);
     /** RTree with Buildings's walls linestrings, walls linestring, GroundEffect linestrings
      * The object is an integer. It's an index of the array {@link #processedObstructions} */
     public STRtree rtree;
@@ -486,7 +484,6 @@ public class ProfileBuilder {
             );
         }
         walls.add(wall);
-        wallTree.insert(new Envelope(wall.line.p0, wall.line.p1), walls.size());
         return this;
     }
 
