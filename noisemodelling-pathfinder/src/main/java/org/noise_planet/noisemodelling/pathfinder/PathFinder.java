@@ -50,6 +50,7 @@ import static org.noise_planet.noisemodelling.pathfinder.PathFinder.ComputationS
 public class PathFinder {
     // distance from wall for reflection points and diffraction points
     private static final double NAVIGATION_POINT_DISTANCE_FROM_WALLS = ProfileBuilder.MILLIMETER;
+    private static final int RECEIVER_BATCHES_PER_THREAD = 16;
     private static final double epsilon = 1e-7;
     private static final double MAX_RATIO_HULL_DIRECT_PATH = 4;
     public static final Logger LOGGER = LoggerFactory.getLogger(PathFinder.class);
@@ -120,7 +121,8 @@ public class PathFinder {
      */
     public void run(CutPlaneVisitorFactory computeRaysOut) {
         ThreadPool threadManager = new ThreadPool(threadCount, threadCount + 1, Long.MAX_VALUE, TimeUnit.SECONDS);
-        int maximumReceiverBatch = (int) ceil(data.receivers.size() / (double) threadCount);
+        int maximumReceiverBatch = (int) max(1,
+                ceil(data.receivers.size() / (double) (threadCount * RECEIVER_BATCHES_PER_THREAD)));
         int endReceiverRange = 0;
         //Launch execution of computation by batch
         List<Future<Boolean>> tasks = new ArrayList<>();
@@ -134,7 +136,7 @@ public class PathFinder {
             ThreadPathFinder batchThread = new ThreadPathFinder(endReceiverRange, newEndReceiver,
                     this, cellProgress, computeRaysOut.subProcess(cellProgress), data);
             if (threadCount != 1) {
-                tasks.add(threadManager.submitBlocking(batchThread));
+                tasks.add(threadManager.submit(batchThread));
             } else {
                 try {
                     batchThread.call();
