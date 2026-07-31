@@ -16,7 +16,10 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineSegment;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedGeometry;
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
 import org.locationtech.jts.index.ItemVisitor;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.locationtech.jts.io.WKTWriter;
@@ -102,6 +105,20 @@ public class MirrorReceiversCompute {
         this.maximumDistanceFromWall = maximumDistanceFromWall;
         this.maximumPropagationDistance = maximumPropagationDistance;
         mirrorReceiverTree = new STRtree();
+        // Create the geometry of each wall once, and index them, instead of creating a new
+        // geometry for every parent image x wall combination in the loop below
+        List<LineString> wallGeometries = new ArrayList<>(buildWalls.size());
+        for (Wall wall : buildWalls) {
+            wallGeometries.add(wall.getLineSegment().toGeometry(gf));
+        }
+        STRtree wallsTree = null;
+        if (reflectionOrder > 1) {
+            wallsTree = new STRtree();
+            for (int idWall = 0; idWall < buildWalls.size(); idWall++) {
+                wallsTree.insert(wallGeometries.get(idWall).getEnvelopeInternal(), idWall);
+            }
+            wallsTree.build();
+        }
         ArrayList<MirrorReceiver> parentsToProcess = new ArrayList<>();
         for(int currentDepth = 0; currentDepth < reflectionOrder; currentDepth++) {
             if(currentDepth == 0) {
@@ -109,11 +126,22 @@ public class MirrorReceiversCompute {
             }
             ArrayList<MirrorReceiver> nextParentsToProcess = new ArrayList<>();
             for(MirrorReceiver parent : parentsToProcess) {
-                for (Wall wall : buildWalls) {
+                // For the first depth every wall can create an image. For the next depths only
+                // the walls under the visibility cone of the parent image can, so ask the wall
+                // index instead of testing every wall
+                List<?> wallCandidates = null;
+                PreparedGeometry parentCone = null;
+                if (parent != null) {
+                    wallCandidates = wallsTree.query(parent.getImageReceiverVisibilityCone().getEnvelopeInternal());
+                    parentCone = PreparedGeometryFactory.prepare(parent.getImageReceiverVisibilityCone());
+                }
+                int candidateCount = parent == null ? buildWalls.size() : wallCandidates.size();
+                for (int idCandidate = 0; idCandidate < candidateCount; idCandidate++) {
+                    int wallIndex = parent == null ? idCandidate : (Integer) wallCandidates.get(idCandidate);
+                    Wall wall = buildWalls.get(wallIndex);
                     if(parent != null) {
                         // check if the wall is visible from the previous image receiver
-                        if(!parent.getImageReceiverVisibilityCone().intersects(
-                                wall.getLineSegment().toGeometry(new GeometryFactory()))) {
+                        if(!parentCone.intersects(wallGeometries.get(wallIndex))) {
                             continue; // this wall is out of the bound of the receiver visibility
                         }
                     }
