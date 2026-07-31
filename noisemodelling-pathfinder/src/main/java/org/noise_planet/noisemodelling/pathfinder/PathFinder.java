@@ -252,7 +252,7 @@ public class PathFinder {
                 }
             }
         }
-        // Sort sources by power contribution descending
+        // Sort sources by distance to the receiver, nearest first
         sourceList.sort(Comparator.comparingDouble(o -> receiverPointInfo.position.distance3D(o.position)));
 
         // Provides full sources points list to output data in order to do preprocessing step to evaluate
