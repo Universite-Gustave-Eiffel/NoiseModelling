@@ -29,7 +29,7 @@ Requirements
 
 Using the terminal of your operating system
 
-Below is an example of a bash instruction, executing the ``Noise_level_from_traffic.groovy`` script (located in the directory ``scripts/``). This block has 5 arguments corresponding to the input table names (for buildings, roads, receivers, dem and ground type).
+Below is an example of a bash instruction, executing the ``Import_File.groovy`` script (located in the directory ``scripts/``). This block has three arguments. The first one sets the working directory to create the NoiseModelling database, the second parameter specifies the groovy import script. The third parameter sets the filepath of the dataset to be imported to the database. This third parameter is specified by the ``Import_File.groovy``. Each groovy script has its own set of required and/or optional parameters.
 
 .. literalinclude:: scripts/nm_terminal.bash
    :language: bash
