@@ -72,6 +72,10 @@ public class ProfileBuilder {
     private List<Building> buildings = new ArrayList<>();
     /** List of walls. */
     private List<Wall> walls = new ArrayList<>();
+    /** Bridge deck handling (loading, deck elevation, facet export). */
+    private final BridgeService bridgeService = new BridgeService(TREE_NODE_CAPACITY, FACTORY);
+    /** Bridge deck facets exported as processed walls, with their own spatial index. */
+    private final ProcessedWallService bridgeProcessedWalls = new ProcessedWallService(TREE_NODE_CAPACITY, FACTORY);
     /** Building RTree. */
     private final STRtree buildingTree;
     /** Building RTree. */
@@ -658,6 +662,62 @@ public class ProfileBuilder {
     }
 
     /**
+     * Add a bridge deck to this builder.
+     * @param bridge Bridge deck to add
+     * @return this
+     */
+    public ProfileBuilder addBridge(Bridge bridge) {
+        if(!isFeedingFinished) {
+            Geometry footprint = bridge.getFootprintGeometry();
+            if (footprint != null) {
+                if (envelope == null) {
+                    envelope = footprint.getEnvelopeInternal();
+                } else {
+                    envelope.expandToInclude(footprint.getEnvelopeInternal());
+                }
+            }
+            bridgeService.addBridge(bridge);
+        }
+        return this;
+    }
+
+    /** @return the bridge deck list */
+    public List<Bridge> getBridges() {
+        return bridgeService.getBridges();
+    }
+
+    /** @return the number of bridge decks */
+    public int getBridgeCount() {
+        return bridgeService.getBridgeCount();
+    }
+
+    /** @return whether at least one bridge deck was added */
+    public boolean hasBridges() {
+        return getBridgeCount() > 0;
+    }
+
+    /**
+     * @param id index in the bridge list
+     * @return the bridge deck at that index
+     */
+    public Bridge getBridge(int id) {
+        return bridgeService.getBridge(id);
+    }
+
+    /**
+     * @param pk primary key of the bridge
+     * @return the bridge deck with that primary key, or {@code null}
+     */
+    public Bridge getBridgeByPk(long pk) {
+        return bridgeService.getBridgeByPk(pk);
+    }
+
+    /** @return the bridge deck handling service. */
+    public BridgeService getBridgeService() {
+        return bridgeService;
+    }
+
+    /**
      * Clear the building list.
      */
     public void clearBuildings() {
@@ -844,6 +904,14 @@ public class ProfileBuilder {
         groundEffectsRtree.build();
         // initialize with default frequencies
         setFrequencyArray(frequencyArray);
+        // Process bridge decks: compute deck elevation from the DEM, export the deck
+        // facets as processed walls with their own spatial index.
+        if (bridgeService.getBridgeCount() > 0) {
+            bridgeService.computeElevations(this);
+            bridgeService.exportFacetsToProcessedWalls(bridgeProcessedWalls);
+            bridgeProcessedWalls.buildProcessedWallRtree();
+            bridgeService.initializeFrequencyDependentData(exactFrequencyArray);
+        }
         return this;
     }
 
@@ -933,6 +1001,9 @@ public class ProfileBuilder {
      */
     public CutProfile getProfile(Coordinate sourceCoordinate, Coordinate receiverCoordinate, double defaultGroundAttenuation, boolean stopAtObstacleOverSourceReceiver) {
         CutPointSource sourcePoint  = new CutPointSource(sourceCoordinate);
+        if (bridgeService.getBridgeCount() > 0) {
+            classifySourceAgainstBridges(sourcePoint);
+        }
         CutPointReceiver receiverPoint = new CutPointReceiver(receiverCoordinate);
 
         CutProfile profile = new CutProfile(sourcePoint, receiverPoint);
@@ -961,6 +1032,14 @@ public class ProfileBuilder {
             LineSegment fullLine = new LineSegment(sourceCoordinate, receiverCoordinate);
             addGroundBuildingCutPts(fullLine, profile, stopAtObstacleOverSourceReceiver);
             if(stopAtObstacleOverSourceReceiver && profile.hasBuildingIntersection) {
+                return profile;
+            }
+        }
+
+        //Add bridge deck cut points
+        if(bridgeProcessedWalls.getProcessedRtree() != null && bridgeService.getBridgeCount() > 0) {
+            addBridgeCutPts(new LineSegment(sourceCoordinate, receiverCoordinate), profile, stopAtObstacleOverSourceReceiver);
+            if(stopAtObstacleOverSourceReceiver && profile.hasBridgeIntersection) {
                 return profile;
             }
         }
@@ -1196,6 +1275,94 @@ public class ProfileBuilder {
         } finally {
             profile.insertCutPoint(true, newCutPoints.toArray(CutPoint[]::new));
         }
+    }
+
+    /**
+     * Set the {@link org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship} of a source
+     * from its position relative to the registered bridge decks: on the deck, under the deck, or
+     * unrelated. The first matching bridge wins. This is a fallback for callers that do not classify
+     * sources themselves.
+     * @param sourcePoint source cut point (mutated)
+     */
+    private void classifySourceAgainstBridges(CutPointSource sourcePoint) {
+        Coordinate c = sourcePoint.getCoordinate();
+        for (Bridge bridge : bridgeService.getBridges()) {
+            if (!bridge.isPointWithinBridgeFootprint(c)) {
+                continue;
+            }
+            if (bridge.isPointOnBridge(c)) {
+                sourcePoint.setBridgeRelationship(new org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship(
+                        org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship.RelationType.ACTUAL_SOURCE_ON_BRIDGE,
+                        bridge.getPrimaryKey(), -1L));
+                double deckHeight = bridge.getDeckHeightAtPoint(c);
+                if (!Double.isNaN(deckHeight)) {
+                    sourcePoint.setBridgeHeight(deckHeight);
+                }
+            } else if (bridge.isPointBelowBridge(c)) {
+                sourcePoint.setBridgeRelationship(new org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship(
+                        org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship.RelationType.IMAGINARY_SOURCE_UNDER_BRIDGE,
+                        -1L, bridge.getPrimaryKey()));
+            }
+            return;
+        }
+    }
+
+    /**
+     * Add the cut points where the source-receiver ray meets a bridge deck.
+     * Runs after {@link #addGroundBuildingCutPts}; buildings/walls/ground are left untouched.
+     *
+     * @param fullLine full source-receiver segment
+     * @param profile profile being built
+     * @param stopAtObstacleOverSourceReceiver stop as soon as a blocking bridge cut point is found
+     */
+    private void addBridgeCutPts(LineSegment fullLine, CutProfile profile, boolean stopAtObstacleOverSourceReceiver) {
+        BridgeService.PropagationType propagationType = bridgeService.checkPropagationType(profile);
+        if (propagationType == BridgeService.PropagationType.NOT_RELATED_TO_BRIDGE) {
+            // v0: bridge cut points are only computed for a source that is on / under a bridge.
+            // Occlusion of a ray by an unrelated deck needs source classification wired from the
+            // data layer and is handled in a later iteration.
+            return;
+        }
+        Set<Integer> visited = new HashSet<>();
+        List<CutPoint> newCutPoints = new LinkedList<>();
+        boolean sortCutPoints = true;
+        List<LineSegment> segments = ProfileUtils.splitToSegments(fullLine.p0, fullLine.p1, maxLineLength);
+
+        if (propagationType == BridgeService.PropagationType.ACTUAL_SOURCE_TO_LOWER_RECEIVER
+                || propagationType == BridgeService.PropagationType.IMAGINARY_SOURCE_TO_UPPER_RECEIVER) {
+            CutPointBridgeWall firstCut = bridgeService.calculateFirstBridgeCutpoint(profile, propagationType);
+            newCutPoints.add(firstCut);
+            profile.hasBridgeIntersection = true;
+            sortCutPoints = false;
+            segments = ProfileUtils.splitToSegments(firstCut.getCoordinate(), fullLine.p1, maxLineLength);
+            visited.add(firstCut.processedWallIndex);
+        }
+
+        outer:
+        for (LineSegment seg : segments) {
+            for (Object wallIndexObj : org.noise_planet.noisemodelling.pathfinder.utils.geometry.RTreeUtils.query(
+                    bridgeProcessedWalls.getProcessedRtree(), new Envelope(seg.p0, seg.p1))) {
+                if (!(wallIndexObj instanceof Integer) || !visited.add((Integer) wallIndexObj)) {
+                    continue;
+                }
+                RayWallIntersection rwi = new RayWallIntersection(fullLine, bridgeProcessedWalls, (Integer) wallIndexObj);
+                if (!rwi.hasValidIntersection() || rwi.getType() != IntersectionType.BRIDGE) {
+                    continue;
+                }
+                rwi.setZonWall();
+                CutPointBridgeWall newCutPoint = bridgeService.createBridgeCutPoint(rwi, profile);
+                newCutPoints.add(newCutPoint);
+                if (newCutPoint.isObstructingAcousticRay()) {
+                    profile.hasBridgeIntersection = true;
+                    if (stopAtObstacleOverSourceReceiver) {
+                        break outer;
+                    }
+                }
+            }
+        }
+
+        profile.insertCutPoint(sortCutPoints, newCutPoints.toArray(CutPoint[]::new));
+        bridgeService.setEffectiveBridgeCutPoint(profile);
     }
 
     Coordinate[] getTriangleVertices(int triIndex) {
@@ -1565,7 +1732,7 @@ public class ProfileBuilder {
     /**
      * Different type of intersection.
      */
-    public enum IntersectionType {BUILDING, WALL, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION, V_EDGE_DIFFRACTION}
+    public enum IntersectionType {BUILDING, WALL, BRIDGE, TOPOGRAPHY, GROUND_EFFECT, SOURCE, RECEIVER, REFLECTION, V_EDGE_DIFFRACTION}
 
     /**
      * Cutting profile containing all th cut points with there x,y,z position.

@@ -53,6 +53,11 @@ public class Wall extends LineObstruction {
         this.primaryKey = primaryKey;
     }
 
+    /** @return database primary key of this wall or its parent building/bridge (-1 if unset). */
+    public long getPrimaryKey() {
+        return primaryKey;
+    }
+
     public ProfileBuilder.IntersectionType getType() {
         return type;
     }

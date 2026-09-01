@@ -11,6 +11,7 @@ package org.noise_planet.noisemodelling.pathfinder.profilebuilder;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.PathFinder;
+import org.noise_planet.noisemodelling.pathfinder.path.BridgeRelationship;
 import org.noise_planet.noisemodelling.pathfinder.utils.geometry.Orientation;
 
 public class CutPointSource  extends CutPoint {
@@ -62,6 +63,32 @@ public class CutPointSource  extends CutPoint {
      */
     @JsonIgnore
     public int id = -1;
+
+    /** Relationship of this source to a bridge deck (on it / above it / none). */
+    private BridgeRelationship bridgeRelationship = new BridgeRelationship();
+
+    /** Absolute Z of the bridge deck at this source, when the source sits on a bridge (NaN otherwise). */
+    private double bridgeHeight = Double.NaN;
+
+    /** @return the source-to-bridge relationship. */
+    public BridgeRelationship getBridgeRelationship() {
+        return bridgeRelationship;
+    }
+
+    /** @param bridgeRelationship the source-to-bridge relationship. */
+    public void setBridgeRelationship(BridgeRelationship bridgeRelationship) {
+        this.bridgeRelationship = bridgeRelationship;
+    }
+
+    /** @return the bridge deck absolute Z at this source, or NaN. */
+    public double getBridgeHeight() {
+        return bridgeHeight;
+    }
+
+    /** @param bridgeHeight the bridge deck absolute Z at this source. */
+    public void setBridgeHeight(double bridgeHeight) {
+        this.bridgeHeight = bridgeHeight;
+    }
 
     @Override
     public String toString() {

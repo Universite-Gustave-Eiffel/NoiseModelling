@@ -45,6 +45,10 @@ public class CutProfile {
     @JsonIgnore
     public boolean hasTopographyIntersection = false;
 
+    /** True if the Source-Receiver ray is blocked by a bridge deck, only used at the generation of the profile. */
+    @JsonIgnore
+    public boolean hasBridgeIntersection = false;
+
     /** True if the path between source and receiver is curved, the coordinates are the original,
      *  only the cutting planes for left and right are not the same */
     public boolean curvedPath = false;
@@ -98,6 +102,24 @@ public class CutProfile {
      */
     public ArrayList<CutPoint> getCutPoints() {
         return cutPoints;
+    }
+
+    /**
+     * Replace the cut point list.
+     * @param cutPoints new cut points
+     */
+    public void setCutPoints(ArrayList<CutPoint> cutPoints) {
+        this.cutPoints = cutPoints;
+    }
+
+    /**
+     * @return the cut point coordinates projected onto the 2D source-receiver plane (x = distance from source).
+     */
+    public List<Coordinate> generateCutPointCoordinates2D() {
+        List<Coordinate> cutPointCoordinates = cutPoints.stream()
+                .map(CutPoint::getCoordinate)
+                .collect(Collectors.toList());
+        return JTSUtility.getNewCoordinateSystem(cutPointCoordinates);
     }
 
     /**
@@ -231,7 +253,7 @@ public class CutProfile {
      */
     @JsonIgnore
     public boolean isFreeField() {
-        return !hasBuildingIntersection && !hasTopographyIntersection;
+        return !hasBuildingIntersection && !hasTopographyIntersection && !hasBridgeIntersection;
     }
 
     /**

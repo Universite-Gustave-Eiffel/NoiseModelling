@@ -29,6 +29,35 @@ import java.util.*;
  * @author Adrien Le Bellec
  */
 public class Scene {
+
+    /**
+     * How the Z ordinate of a source or receiver geometry is to be interpreted.
+     */
+    public enum HeightType {
+        /** Height value is relative to ground elevation (or bridge deck for bridge sources). */
+        RELATIVE,
+        /** Height value is absolute elevation in the same coordinate system as the DEM. */
+        ABSOLUTE;
+
+        /**
+         * Convert a string to a {@link HeightType} (case-insensitive). {@code null} maps to {@link #RELATIVE}.
+         * @param value String representation
+         * @return the matching value
+         * @throws IllegalArgumentException if the value matches no constant
+         */
+        public static HeightType fromString(String value) {
+            if (value == null) {
+                return RELATIVE;
+            }
+            try {
+                return HeightType.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Unknown HeightType: " + value +
+                        ". Valid values are: RELATIVE, ABSOLUTE");
+            }
+        }
+    }
+
     public static final double DEFAULT_MAX_PROPAGATION_DISTANCE = 1200;
     public static final double DEFAULT_MAXIMUM_REF_DIST = 700;
     public static final double DEFAULT_RECEIVER_DIST = 1.0;

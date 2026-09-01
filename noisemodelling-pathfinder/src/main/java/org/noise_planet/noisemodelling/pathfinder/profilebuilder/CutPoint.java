@@ -52,6 +52,9 @@ public class CutPoint implements Comparable<CutPoint>, Cloneable {
      **/
     public double groundCoefficient = Double.NaN;
 
+    /** Whether this cut point actually blocks the direct source-receiver ray (set by bridge handling). */
+    private boolean obstructingAcousticRay = false;
+
     public CutPoint() {
     }
 
@@ -130,6 +133,16 @@ public class CutPoint implements Comparable<CutPoint>, Cloneable {
      */
     public Double getzGround() {
         return zGround;
+    }
+
+    /** @return whether this cut point blocks the direct source-receiver ray. */
+    public boolean isObstructingAcousticRay() {
+        return obstructingAcousticRay;
+    }
+
+    /** @param obstructingAcousticRay whether this cut point blocks the direct source-receiver ray. */
+    public void setObstructingAcousticRay(boolean obstructingAcousticRay) {
+        this.obstructingAcousticRay = obstructingAcousticRay;
     }
 
     /**
