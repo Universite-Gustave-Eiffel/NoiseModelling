@@ -112,6 +112,21 @@ inputs = [
                 min        : 0, max: 1,
                 type: String.class
         ],
+        tableBridgePoints       : [
+                name       : 'Bridge deck points table name',
+                title      : 'Bridge deck points table name',
+                description: 'Name of the bridge deck points table (elevated road structures). Optional. </br> </br>' +
+                        'One bridge deck is built per <b>BRIDGE_PK</b> value from its ordered <b>PK</b> points. The table must contain: </br> <ul>' +
+                        '<li> <b> PK </b>: point identifier (INTEGER) </li>' +
+                        '<li> <b> BRIDGE_PK </b>: identifier of the bridge this point belongs to (INTEGER) </li>' +
+                        '<li> <b> THE_GEOM </b>: 2D point on the deck centre line (POINT) </li>' +
+                        '<li> <b> ABSOLUTE_DECK_HEIGHT </b> / <b> RELATIVE_DECK_HEIGHT </b>: deck top height, absolute or relative to the ground (DOUBLE, one of the two) </li>' +
+                        '<li> <b> DECK_THICKNESS, RIGHT_WIDTH, LEFT_WIDTH, RIGHT_BARRIER_HEIGHT, LEFT_BARRIER_HEIGHT </b> (DOUBLE) </li>' +
+                        '<li> <b> POSITION </b>: CENTER | LEFT | RIGHT </li>' +
+                        '<li> <b> GIRDER_TYPE, SLAB_TYPE </b> (VARCHAR) </li> </ul>',
+                min        : 0, max: 1,
+                type: String.class
+        ],
         tableGroundAbs          : [
                 name       : 'Ground absorption table name',
                 title      : 'Ground absorption table name',
@@ -385,6 +400,17 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
         if (sridDEM != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+dem_table_name+" are not the same.")
     }
 
+    String bridge_points_table_name = ""
+    if (input['tableBridgePoints']) {
+        bridge_points_table_name = input['tableBridgePoints']
+
+        // Check if srid are in metric projection and are all the same.
+        int sridBridge = GeometryTableUtilities.getSRID(connection, TableLocation.parse(bridge_points_table_name, dbType))
+        if (!DataBaseUtilities.isSridMetric(connection, sridBridge)) throw new IllegalArgumentException("Error : Please use a metric projection for "+bridge_points_table_name+".")
+        if (sridBridge == 0) throw new IllegalArgumentException("Error : The table "+bridge_points_table_name+" does not have an associated SRID.")
+        if (sridBridge != sridSources) throw new IllegalArgumentException("Error : The SRID of table "+sources_table_name+" and "+bridge_points_table_name+" are not the same.")
+    }
+
     String ground_table_name = ""
     if (input['tableGroundAbs']) {
         ground_table_name = input['tableGroundAbs']
@@ -546,6 +572,10 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     // Point cloud height above sea level POINT(X Y Z)
     if (dem_table_name != "") {
         pointNoiseMap.setDemTable(dem_table_name)
+    }
+    // Bridge deck points (elevated road structures)
+    if (bridge_points_table_name != "") {
+        pointNoiseMap.setBridgePointsTableName(bridge_points_table_name)
     }
 
     pointNoiseMap.setMaximumPropagationDistance(max_src_dist)
