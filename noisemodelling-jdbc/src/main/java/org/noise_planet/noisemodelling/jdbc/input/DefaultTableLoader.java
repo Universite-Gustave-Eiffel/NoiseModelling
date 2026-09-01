@@ -27,6 +27,9 @@ import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker;
 import org.noise_planet.noisemodelling.jdbc.utils.CellIndex;
 import org.noise_planet.noisemodelling.jdbc.utils.CornerZCollector;
 import org.noise_planet.noisemodelling.pathfinder.delaunay.LayerDelaunayError;
+import org.noise_planet.noisemodelling.pathfinder.path.Scene;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Bridge;
+import org.noise_planet.noisemodelling.pathfinder.profilebuilder.BridgePoint;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Building;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.Wall;
@@ -300,6 +303,9 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
 
         // Fetch soil areas
         fetchCellSoilAreas(connection, expandedCellEnvelop, scene.profileBuilder);
+
+        // Fetch bridge decks (optional)
+        fetchCellBridges(connection, expandedCellEnvelop, scene.profileBuilder);
 
         scene.profileBuilder.finishFeeding();
 
@@ -767,6 +773,96 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                     }
                 }
             }
+        }
+    }
+
+    private static double getDoubleOrNaN(SpatialResultSet rs, String column) throws SQLException {
+        double v = rs.getDouble(column);
+        return rs.wasNull() ? Double.NaN : v;
+    }
+
+    /**
+     * Fetch bridge deck points from {@link NoiseMapByReceiverMaker#getBridgePointsTableName()}, group them
+     * by {@code BRIDGE_PK}, and add one {@link Bridge} per group to the profile builder. No-op if the table
+     * name is empty. Expected columns: PK, BRIDGE_PK, THE_GEOM (POINT), ABSOLUTE_DECK_HEIGHT,
+     * RELATIVE_DECK_HEIGHT, DECK_THICKNESS, RIGHT_WIDTH, LEFT_WIDTH, RIGHT_BARRIER_HEIGHT,
+     * LEFT_BARRIER_HEIGHT, POSITION, GIRDER_TYPE, SLAB_TYPE.
+     *
+     * @param connection database connection
+     * @param fetchEnvelope area to fetch
+     * @param builder profile builder to feed
+     * @throws SQLException on database error
+     */
+    protected void fetchCellBridges(Connection connection, Envelope fetchEnvelope, ProfileBuilder builder)
+            throws SQLException {
+        String bridgeTableName = noiseMapByReceiverMaker.getBridgePointsTableName();
+        if (bridgeTableName == null || bridgeTableName.isEmpty()) {
+            return;
+        }
+        GeometryFactory geometryFactory = noiseMapByReceiverMaker.getGeometryFactory();
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        String geomName = getGeometryColumnNames(connection, TableLocation.parse(bridgeTableName, dbType)).get(0);
+
+        // group bridge points by BRIDGE_PK, preserving insertion order (= PK order from the query)
+        Map<Long, List<BridgePoint>> pointsByBridge = new LinkedHashMap<>();
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT * FROM " + bridgeTableName + " WHERE " +
+                        TableLocation.quoteIdentifier(geomName, dbType) + " && ?::geometry ORDER BY BRIDGE_PK, PK")) {
+            st.setObject(1, geometryFactory.toGeometry(fetchEnvelope));
+            try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
+                while (rs.next()) {
+                    Geometry geom = rs.getGeometry();
+                    if (geom == null || geom.isEmpty()) {
+                        continue;
+                    }
+                    long pk = rs.getLong("PK");
+                    long bridgePk = rs.getLong("BRIDGE_PK");
+                    double absDeck = getDoubleOrNaN(rs, "ABSOLUTE_DECK_HEIGHT");
+                    double relDeck = getDoubleOrNaN(rs, "RELATIVE_DECK_HEIGHT");
+                    BridgePoint.Builder pb = new BridgePoint.Builder(pk, bridgePk, geom.getCoordinate());
+                    if (!Double.isNaN(absDeck)) {
+                        pb.withHeightType(Scene.HeightType.ABSOLUTE).withAbsoluteDeckHeight(absDeck);
+                    } else if (!Double.isNaN(relDeck)) {
+                        pb.withHeightType(Scene.HeightType.RELATIVE).withRelativeDeckHeight(relDeck);
+                    }
+                    double thickness = getDoubleOrNaN(rs, "DECK_THICKNESS");
+                    if (!Double.isNaN(thickness)) {
+                        pb.withDeckThickness(thickness);
+                    }
+                    double rWidth = getDoubleOrNaN(rs, "RIGHT_WIDTH");
+                    double lWidth = getDoubleOrNaN(rs, "LEFT_WIDTH");
+                    if (!Double.isNaN(rWidth) && !Double.isNaN(lWidth)) {
+                        pb.withWidth(rWidth, lWidth);
+                    }
+                    double rBar = getDoubleOrNaN(rs, "RIGHT_BARRIER_HEIGHT");
+                    double lBar = getDoubleOrNaN(rs, "LEFT_BARRIER_HEIGHT");
+                    if (!Double.isNaN(rBar) && !Double.isNaN(lBar)) {
+                        pb.withBarrierHeight(rBar, lBar);
+                    }
+                    pb.withPosition(BridgePoint.Position.fromString(rs.getString("POSITION")));
+                    pb.withGirderType(Bridge.GirderType.fromString(rs.getString("GIRDER_TYPE")));
+                    pb.withSlabType(Bridge.SlabType.fromString(rs.getString("SLAB_TYPE")));
+                    pointsByBridge.computeIfAbsent(bridgePk, k -> new ArrayList<>()).add(pb.build());
+                }
+            }
+        }
+
+        for (Map.Entry<Long, List<BridgePoint>> entry : pointsByBridge.entrySet()) {
+            List<BridgePoint> pts = entry.getValue();
+            if (pts.size() < 2) {
+                LOGGER.warn("Bridge {} has {} deck point(s); at least 2 are required, skipping", entry.getKey(), pts.size());
+                continue;
+            }
+            Bridge.GirderType girder = pts.get(0).getGirderType();
+            Bridge.SlabType slab = pts.get(0).getSlabType();
+            Bridge.Builder bb = new Bridge.Builder(pts).setPrimaryKey(entry.getKey());
+            if (girder != null) {
+                bb.setGirderType(girder);
+            }
+            if (slab != null) {
+                bb.setSlabType(slab);
+            }
+            builder.addBridge(bb.build());
         }
     }
 
