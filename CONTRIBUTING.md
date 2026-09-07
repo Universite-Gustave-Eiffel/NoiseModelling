@@ -11,7 +11,7 @@ To contribute (code, patches, or documentation) to the NoiseModelling project, a
 
 - Abide by the [Social Contract](#social-contract).
 - Be familiar with the development process and the reference material available in NoiseModelling Sources.
-- Ensure that all code committed to the repository is unencumbered and compatible with the [NoiseModelling license](LICENSE.md), GNU Public License (GPL) Version 3 or any later version.
+- Ensure that all code committed to the repository is unencumbered and compatible with the [NoiseModelling license](LICENSE), GNU Public License (GPL) Version 3 or any later version.
 - Not use or include any code that will cause a trademark or patent infringement. If you are unsure, ask on a Project Steering Committee member.
 - These requirements apply to both developers desiring commit privileges and those that submit patches.
 - Read and agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
