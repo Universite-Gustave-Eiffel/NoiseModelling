@@ -77,7 +77,8 @@ inputs = [
                         '<li> <b> YAW </b> : Source horizontal orientation in degrees. For points 0&#176; North, 90&#176; East. For lines 0&#176; line direction, 90&#176; right of the line direction.  (FLOAT) </li> ' +
                         '<li> <b> PITCH </b> : Source vertical orientation in degrees. 0&#176; front, 90&#176; top, -90&#176; bottom. (FLOAT) </li> ' +
                         '<li> <b> ROLL </b> : Source roll in degrees (FLOAT) </li> ' +
-                        '<li> <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER) </li> </ul> ' +
+                        '<li> <b> DIR_ID </b> : identifier of the directivity sphere from tableSourceDirectivity parameter or train directivity if not provided -> OMNIDIRECTIONAL(0), ROLLING(1), TRACTIONA(2), TRACTIONB(3), AERODYNAMICA(4), AERODYNAMICB(5), BRIDGE(6) (INTEGER) </li> ' +
+                        '<li> <b> BRIDGE_PK </b> : optional, identifies the bridge deck (from tableBridgePoints) this source sits on. When confSourcesZIsAltitude is false, its relative Z is resolved against that deck instead of the ground below it </li> </ul> ' +
                         '&#128161; This table can be generated from the WPS Block "Road_Emission_from_Traffic"',
                 type       : String.class
         ],

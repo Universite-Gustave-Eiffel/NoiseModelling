@@ -401,6 +401,60 @@ public class ProfileBuilder {
         return offsetCoordinate;
     }
 
+    /**
+     * Update relative-to-deck Z coordinates of a sound source sitting on a bridge deck to absolute
+     * (sea level) altitude, using the deck height of the given bridge instead of the digital
+     * elevation model. Use this instead of {@link #makeGeometryRelativeZToAbsolute(Geometry, boolean)}
+     * for sources explicitly associated with a bridge (e.g. via an optional {@code BRIDGE_PK}
+     * column on the sources table), so their height resolves against the deck they sit on rather
+     * than the ground below it.
+     *
+     * <p>A {@code BRIDGE_PK} is typically assigned per source row, but a real road's geometry can
+     * extend past the bridge's own deck footprint (e.g. an approach span before the abutment) -
+     * vertices outside the footprint fall back to the digital elevation model, like an
+     * unassociated source, rather than failing the whole geometry.
+     * @param geometry Geometry to offset the Z value
+     * @param bridgePk Primary key of the bridge the source sits on
+     */
+    public Geometry makeGeometryRelativeZToAbsoluteOnBridge(Geometry geometry, long bridgePk) {
+        Bridge bridge = bridgeService.getBridgeByPk(bridgePk);
+        if (bridge == null) {
+            throw new IllegalArgumentException("Bridge not found for BRIDGE_PK " + bridgePk);
+        }
+        if (geometry instanceof Point) {
+            return geometry.getFactory().createPoint(offsetCoordinateToBridgeDeck(geometry.getCoordinate(), bridge));
+        } else if (geometry instanceof LineString) {
+            return geometry.getFactory().createLineString(offsetCoordinatesToBridgeDeck(geometry.getCoordinates(), bridge));
+        } else if (geometry instanceof MultiLineString) {
+            LineString[] newGeom = new LineString[geometry.getNumGeometries()];
+            for (int idGeom = 0; idGeom < geometry.getNumGeometries(); idGeom++) {
+                newGeom[idGeom] = geometry.getFactory().createLineString(
+                        offsetCoordinatesToBridgeDeck(geometry.getGeometryN(idGeom).getCoordinates(), bridge));
+            }
+            return geometry.getFactory().createMultiLineString(newGeom);
+        } else {
+            throw new IllegalArgumentException("Unsupported source geometry " + geometry.getGeometryType());
+        }
+    }
+
+    private Coordinate[] offsetCoordinatesToBridgeDeck(Coordinate[] coordinates, Bridge bridge) {
+        Coordinate[] offset = new Coordinate[coordinates.length];
+        for (int i = 0; i < coordinates.length; i++) {
+            offset[i] = offsetCoordinateToBridgeDeck(coordinates[i], bridge);
+        }
+        return offset;
+    }
+
+    private Coordinate offsetCoordinateToBridgeDeck(Coordinate coordinate, Bridge bridge) {
+        double deckHeight = bridge.getDeckHeightAtPoint(coordinate);
+        if (Double.isNaN(deckHeight)) {
+            // Outside the deck's own footprint (e.g. an approach span) - resolve against the
+            // ground instead, as if this point carried no BRIDGE_PK.
+            return new Coordinate(coordinate.x, coordinate.y, coordinate.z + getZGround(coordinate));
+        }
+        return new Coordinate(coordinate.x, coordinate.y, coordinate.z + deckHeight);
+    }
+
     private void logWarningIfCoordinatesIntoBuildings(Coordinate... coordinates) {
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
         for (Coordinate coordinate : coordinates) {

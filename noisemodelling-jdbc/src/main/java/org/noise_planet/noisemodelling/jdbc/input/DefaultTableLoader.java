@@ -904,6 +904,7 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
             st.setFetchDirection(ResultSet.FETCH_FORWARD);
             try (SpatialResultSet rs = st.executeQuery().unwrap(SpatialResultSet.class)) {
                 EmissionTableGenerator.cacheFields(sourceFieldNames, rs);
+                boolean hasBridgePk = sourceFieldNames.containsKey("BRIDGE_PK");
                 while (rs.next()) {
                     Geometry geo = rs.getGeometry();
                     if (geo != null) {
@@ -920,8 +921,19 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
                                             " You must specify X,Y,Z for each source");
                                 }
                             }
+                            Long bridgePk = null;
+                            if (hasBridgePk) {
+                                long v = rs.getLong("BRIDGE_PK");
+                                if (!rs.wasNull()) {
+                                    bridgePk = v;
+                                }
+                            }
                             if(!noiseMapByReceiverMaker.isSourcesZIsAltitude()) {
-                                if(scene.profileBuilder.hasDem()) {
+                                if (bridgePk != null) {
+                                    // Source sits on a bridge deck: resolve its relative height
+                                    // against the deck rather than the ground below it.
+                                    geo = scene.profileBuilder.makeGeometryRelativeZToAbsoluteOnBridge(geo, bridgePk);
+                                } else if(scene.profileBuilder.hasDem()) {
                                     // Coordinates are supposed to be relative to the digital elevation model
                                     // So we must compute the altitude values
                                     geo = scene.profileBuilder.makeGeometryRelativeZToAbsolute(geo, true);

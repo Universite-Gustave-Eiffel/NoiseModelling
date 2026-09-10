@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.Noise_level_from_source
+import org.noise_planet.noisemodelling.scripts.NoiseModelling.Road_Emission_from_Traffic
 
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -134,6 +135,77 @@ class TestNoiseLevelFromBridge extends JdbcTestCase {
         assertTrue(leqLoss > 6.0 && leqLoss < 12.0, "unweighted insertion loss ${String.format('%.2f', leqLoss)} dB outside [6, 12]")
         assertTrue(laeqLoss > 10.0 && laeqLoss < 17.0, "A-weighted insertion loss ${String.format('%.2f', laeqLoss)} dB outside [10, 17]")
         assertTrue((with["LEQ"] as Double) > 40.0, "a physical level is expected, not a rejected-path floor: ${with['LEQ']}")
+    }
+
+    /**
+     * End-to-end through the real traffic pipeline: Road_Emission_from_Traffic forces every
+     * source Z to a flat 0.05 m (merge_project.md, "Z pass-through" gap), so a road physically on
+     * a deck needs its BRIDGE_PK carried into LW_ROADS for Noise_level_from_source to resolve that
+     * 0.05 m against the deck (not the ground below it) when confSourcesZIsAltitude is false.
+     * Reuses buildScene's deck/receiver geometry, but drives the source through a traffic-flow
+     * ROADS table instead of a hand-authored absolute-Z LW_ROADS row.
+     *
+     * <p>The deck is present in every run ({@code tableBridgePoints} always set) - only whether
+     * the ROADS row carries {@code BRIDGE_PK} varies. Without it the source resolves to ~0.05 m
+     * (ground level): the line of sight to the ground receiver at (50, 75, 4) stays well under the
+     * deck's 9.5 m underside the whole way, so the deck has nothing to shield.
+     */
+    private Map runFromTrafficAndGetLevel(boolean withBridgePk) {
+        Sql sql = new Sql(connection)
+        buildScene(sql)
+        sql.execute("DROP TABLE IF EXISTS " + NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME)
+
+        // Traffic-flow source on the deck: Z is a placeholder (Road_Emission_from_Traffic forces
+        // it to 0.05 m regardless), BRIDGE_PK is what lets the deck height be recovered.
+        sql.execute("DROP TABLE IF EXISTS ROADS")
+        String bridgePkColumn = withBridgePk ? ", BRIDGE_PK INT" : ""
+        String bridgePkValue = withBridgePk ? ", 100" : ""
+        sql.execute("CREATE TABLE ROADS(PK INT PRIMARY KEY, THE_GEOM GEOMETRY(LINESTRINGZ, 2154), " +
+                "LV_D DOUBLE, LV_E DOUBLE, LV_N DOUBLE, LV_SPD_D DOUBLE, LV_SPD_E DOUBLE, LV_SPD_N DOUBLE" +
+                bridgePkColumn + ")")
+        sql.execute("INSERT INTO ROADS VALUES(1, ST_SetSRID('LINESTRING Z(40 20 0, 60 20 0)'::geometry, 2154), " +
+                "500, 500, 500, 50, 50, 50" + bridgePkValue + ")")
+
+        String lwTable = new Road_Emission_from_Traffic().exec(connection, ["tableRoads": "ROADS"]).result
+
+        Map inputs = ["tableBuilding"           : "BUILDINGS",
+                      "tableSources"            : lwTable,
+                      "tableReceivers"          : "RECEIVERS",
+                      "tableDEM"                : "DEM",
+                      "confReceiversZIsAltitude": true,
+                      "confMaxSrcDist"          : 250,
+                      "confReflOrder"           : 0,
+                      "confDiffHorizontal"      : true,
+                      "tableBridgePoints"       : "BRIDGE_POINTS"]
+        new Noise_level_from_source().exec(connection, inputs)
+
+        def rows = sql.rows("SELECT LEQ FROM " +
+                NoiseMapDatabaseParameters.DEFAULT_RECEIVERS_LEVEL_TABLE_NAME + " WHERE PERIOD = 'D'")
+        assertTrue(rows.size() >= 1)
+        return rows[0]
+    }
+
+    @Test
+    void bridgePkCarriesTheDeckHeightThroughRoadEmissionFromTraffic() {
+        double withoutBridgePk = runFromTrafficAndGetLevel(false)["LEQ"] as Double
+        double withBridgePk = runFromTrafficAndGetLevel(true)["LEQ"] as Double
+
+        // Without BRIDGE_PK the source resolves to ~0.05 m: sitting at y=20, inside the deck's own
+        // footprint (y=[15,25]), it is classified IMAGINARY_SOURCE_UNDER_BRIDGE and stays low the
+        // whole 55 m to the receiver - the classic low-source/low-frequency-heavy ground-effect dip.
+        // With BRIDGE_PK the source resolves to deck height (~10 m): ACTUAL_SOURCE_ON_BRIDGE,
+        // clearing the ground-effect dip entirely, which is *louder* at the receiver despite the
+        // parapet diffraction. Either way the two runs would be near-identical (leqDiff ~ 0) if
+        // BRIDGE_PK were silently dropped somewhere on its way from ROADS to Noise_level_from_source.
+        double leqDiff = Math.abs(withBridgePk - withoutBridgePk)
+        assertTrue(leqDiff > 5.0,
+                "expected BRIDGE_PK to measurably change the resolved source height " +
+                "(withoutBridgePk=${String.format('%.2f', withoutBridgePk)}, withBridgePk=${String.format('%.2f', withBridgePk)}, " +
+                "diff=${String.format('%.2f', leqDiff)} dB) - BRIDGE_PK likely did not survive " +
+                "Road_Emission_from_Traffic -> Noise_level_from_source")
+        assertTrue(withBridgePk > 20.0 && withoutBridgePk > 20.0,
+                "a physical level is expected in both runs, not a rejected-path floor: " +
+                "withoutBridgePk=${withoutBridgePk}, withBridgePk=${withBridgePk}")
     }
 
     /** Import the TutoBridge dataset and run the WPS block with and without the deck, per receiver. */
