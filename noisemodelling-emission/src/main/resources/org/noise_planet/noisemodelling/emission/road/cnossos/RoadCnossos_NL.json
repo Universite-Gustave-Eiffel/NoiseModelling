@@ -2,7 +2,7 @@
   "vehicles": {
     "1": {
       "_comment": "NL Cnossos - XXXIII",
-      "description": "lichte motorvoertuigen",
+      "description": "light motor vehicles",
       "frequency": [
         63,
         125,
@@ -66,7 +66,7 @@
     },
     "2": {
       "_comment": "NL Cnossos - XXXIII",
-      "description": "middelzware voertuigen",
+      "description": "medium heavy vehicles",
       "frequency": [
         63,
         125,
@@ -130,7 +130,7 @@
     },
     "3": {
       "_comment": "NL Cnossos - XXXIII",
-      "description": "zware voertuigen",
+      "description": "heavy vehicles",
       "frequency": [
         63,
         125,
@@ -194,7 +194,7 @@
     },
     "4a": {
       "_comment": "NL Cnossos - XXXIII",
-      "description": "Bromfietsen met 2, 3 of 4 wielen",
+      "description": "two-, three- and four-wheel mopeds",
       "frequency": [
         63,
         125,
@@ -258,7 +258,7 @@
     },
     "4b": {
       "_comment": "NL Cnossos - XXXIII",
-      "description": "motorfietsen met of zonder zijspan, driewielers en vierwielers",
+      "description": "motorcycles with and without sidecars, tricycles and quadricycles",
       "frequency": [
         63,
         125,
@@ -323,7 +323,7 @@
   },
   "roads": {
     "REF": {
-      "description": "Referentiewegdek",
+      "description": "Reference road surface",
       "vmin": 0,
       "vmax": 999,
       "frequency": [
@@ -459,7 +459,7 @@
       }
     },
     "NL02": {
-      "description": "Akoestisch geoptimaliseerd 1L ZOAB",
+      "description": "Acoustic optimised 1-layer ZOAB",
       "vmin": 50,
       "vmax": 130,
       "frequency": [
@@ -527,7 +527,7 @@
       }
     },
     "NL03": {
-      "description": "2-laags ZOAB",
+      "description": "2-layer ZOAB",
       "vmin": 50,
       "vmax": 130,
       "frequency": [
@@ -622,7 +622,7 @@
       }
     },
     "NL04": {
-      "description": "2-laags ZOAB (fijn)",
+      "description": "2-layer ZOAB (fine)",
       "vmin": 80,
       "vmax": 130,
       "frequency": [
@@ -907,7 +907,7 @@
       }
     },
     "NL07": {
-      "description": "Akoestisch geoptimaliseerd SMA",
+      "description": "Acoustic optimised SMA",
       "vmin": 40,
       "vmax": 80,
       "frequency": [63, 125, 250, 500, 1000, 2000, 4000, 8000],
@@ -993,7 +993,7 @@
       }
     },
     "NL08": {
-      "description": "Uitgeborsteld beton",
+      "description": "Brushed down concrete",
       "vmin": 70,
       "vmax": 120,
       "frequency": [
@@ -1088,7 +1088,7 @@
       }
     },
     "NL09": {
-      "description": "Geoptimaliseerd uitgeborsteld beton",
+      "description": "Optimised brushed down concrete",
       "vmin": 70,
       "vmax": 80,
       "frequency": [
@@ -1183,7 +1183,7 @@
       }
     },
     "NL10": {
-      "description": "Fijn gebezemd beton",
+      "description": "Fine broomed concrete",
       "vmin": 70,
       "vmax": 120,
       "frequency": [
@@ -1278,7 +1278,7 @@
       }
     },
     "NL11": {
-      "description": "Oppervlakte bewerking",
+      "description": "Worked surface",
       "vmin": 50,
       "vmax": 130,
       "frequency": [
@@ -1373,7 +1373,7 @@
       }
     },
     "NL12": {
-      "description": "Elementenverharding in keperverband",
+      "description": "Hard elements in herring-bone",
       "vmin": 30,
       "vmax": 60,
       "frequency": [
@@ -1468,7 +1468,7 @@
       }
     },
     "NL13": {
-      "description": "Elementnverharding in dwarsverband",
+      "description": "Hard elements not in herring-bone",
       "vmin": 30,
       "vmax": 60,
       "frequency": [
@@ -1563,7 +1563,7 @@
       }
     },
     "NL14": {
-      "description": "Stille elementenverharding",
+      "description": "Quiet hard elements",
       "vmin": 30,
       "vmax": 60,
       "frequency": [
@@ -1658,7 +1658,7 @@
       }
     },
     "NL15": {
-      "description": "Dunne deklagen A",
+      "description": "Thin layer A",
       "vmin": 40,
       "vmax": 130,
       "frequency": [
@@ -1753,7 +1753,7 @@
       }
     },
     "NL16": {
-      "description": "Dunne deklagen B",
+      "description": "Thin layer B",
       "vmin": 40,
       "vmax": 130,
       "frequency": [
