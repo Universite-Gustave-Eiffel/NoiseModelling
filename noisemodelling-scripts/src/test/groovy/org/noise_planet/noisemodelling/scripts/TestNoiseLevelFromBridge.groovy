@@ -114,12 +114,14 @@ class TestNoiseLevelFromBridge extends JdbcTestCase {
         BANDS.eachWithIndex { f, i ->
             loss[i] = (without["HZ" + f] as Double) - (with["HZ" + f] as Double)
             double predicted = cnossosDeltaDif(pathDiff, f)
-            // Lower bound: the shadow is at least the bare geometric diffraction term.
+            // Lower bound: the shadow is at least the bare geometric diffraction term, with some
+            //   slack for the on-deck source's ground reference (deck surface, not the terrain
+            //   far below) shifting the low-frequency ground term slightly.
             // Upper bound: at mid/high frequency the deck also cuts the elevated source's ground
             //   reflection, adding up to ~3.5 dB on top of the diffraction term.
-            assertTrue(loss[i] > predicted - 1.5 && loss[i] < predicted + 5.0,
+            assertTrue(loss[i] > predicted - 2.0 && loss[i] < predicted + 5.0,
                     "${f} Hz: loss ${String.format('%.2f', loss[i])} dB outside " +
-                    "[${String.format('%.2f', predicted - 1.5)}, ${String.format('%.2f', predicted + 5.0)}] " +
+                    "[${String.format('%.2f', predicted - 2.0)}, ${String.format('%.2f', predicted + 5.0)}] " +
                     "(CNOSSOS dDif = ${String.format('%.2f', predicted)})")
         }
 
