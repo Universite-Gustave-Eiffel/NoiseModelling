@@ -39,12 +39,11 @@ public class TemplatePropagationModel implements PropagationModel {
      * @param cutProfile Geometrical cross-section
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @param period period of day ('D', 'E', 'N')
      * @return List of AttenuationOutput objects
      */
     public List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                                       AttenuationParameters attenuationParameters,
-                                                      boolean isExportAttenuationMatrix, String period) {
+                                                      boolean isExportAttenuationMatrix) {
         // Attenuation computation here
         List<AttenuationOutput> attenuationOutputs = new ArrayList<>();
         AttenuationOutput attenuationOutput = new AttenuationOutput(cutProfile);
@@ -62,12 +61,11 @@ public class TemplatePropagationModel implements PropagationModel {
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @param period period of day ('D', 'E', 'N')
      * @return Attenuation
      */
     public AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
                                              SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                             boolean isExportAttenuationMatrix, String period){
+                                             boolean isExportAttenuationMatrix){
         // Direct attenuation computation here
         AttenuationOutput attenuationOutput = new AttenuationOutput();
         attenuationOutput.aGlobal = new double[0];

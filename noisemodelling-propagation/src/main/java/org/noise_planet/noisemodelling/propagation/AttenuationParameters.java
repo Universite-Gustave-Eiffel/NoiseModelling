@@ -1,6 +1,14 @@
-
+/**
+ * NoiseModelling is a library capable of producing noise maps. It can be freely used either for research and education, as well as by experts in a professional use.
+ * <p>
+ * NoiseModelling is distributed under GPL 3 license. You can read a copy of this License in the file LICENCE provided with this software.
+ * <p>
+ * Official webpage : http://noise-planet.org/noisemodelling.html
+ * Contact: contact@noise-planet.org
+ */
 package org.noise_planet.noisemodelling.propagation;
 
+import org.h2gis.utilities.JDBCUtilities;
 import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
@@ -31,8 +39,6 @@ public class AttenuationParameters {
     protected List<Integer> freq_lvl;
     protected List<Double> freq_lvl_exact;
     protected List<Double> freq_lvl_a_weighting;
-    // Wind rose for each directions
-    public static final double[] DEFAULT_WIND_ROSE = new double[]{0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
     /** Temperature in celsius */
     public double temperature = 15;
     /**
@@ -61,20 +67,7 @@ public class AttenuationParameters {
     public boolean gDisc = true;     // choose between accept G discontinuity or not
     public boolean prime2520 = false; // choose to use prime values to compute eq. 2.5.20
     /** probability occurrence favourable condition */
-    public double[] windRose  = DEFAULT_WIND_ROSE;
-    // Wind rose for each directions
-    private static final double angle_section = (2 * Math.PI) / DEFAULT_WIND_ROSE.length;
-
-    public String getPeriod() {
-        return period;
-    }
-
-    public void setPeriod(String period) {
-        this.period = period;
-    }
-
-    public String period;
-
+    public FavourableProbability windRose  = new DiscreteFavourableProbability();
     public AttenuationParameters() {
         this(false);
     }
@@ -183,36 +176,21 @@ public class AttenuationParameters {
         return this;
     }
 
-    public double[] getWindRose() {
+    /**
+     * Returns the wind rose for favourable probability calculations.
+     * @return the favourable probability interface
+     */
+    public FavourableProbability getWindRose() {
         return windRose;
     }
 
-    public void setWindRose(double[] windRose) {
-        if(windRose.length != this.windRose.length) {
-            throw new IllegalArgumentException(String.format("Wind roses length is not compatible %d!=%d",windRose.length,this.windRose.length));
-        }
+    /**
+     * Sets the wind rose for favourable probability calculations.
+     * @param windRose the favourable probability interface
+     */
+    public void setWindRose(FavourableProbability windRose) {
         this.windRose = windRose;
     }
-
-    /**
-     * Get the fraction of favourable conditions for conditions in the Netherlands.
-     * @param propagationAngle propagation angle (radians) from source to receiver where 0: north to south, pi/2: east to west (south clockwise convention)
-     * @param period period of day: D, E, N
-     * @return the fraction of favourable conditions for Dutch meteo; 0.5 if period does not match D, E, or N
-     */
-    public double getDutchFavourFraction(double propagationAngle, String period){
-        double zeta = Math.toDegrees(propagationAngle);
-        if (period.equalsIgnoreCase("D")){
-            zeta = Math.toRadians(zeta + 35.);
-            return 0.34 - 0.1 * Math.sin(zeta) + 0.045 * Math.pow(Math.sin(zeta), 2);
-        }
-        if (period.equalsIgnoreCase("E") || period.equalsIgnoreCase("N")) {
-            zeta = Math.toRadians(zeta + 60.);
-            return 0.40 - 0.1 * Math.sin(zeta) + 0.035 * Math.pow(Math.sin(zeta), 2);
-        }
-        return 0.5;
-    }
-
     public double getTemperature() {
         return temperature;
     }
@@ -293,42 +271,6 @@ public class AttenuationParameters {
      */
     public double[] getAlpha_atmo() {
         return alpha_atmo;
-    }
-
-
-    /**
-     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the path (S,R):
-     * @param receiver
-     * @param source
-     * @return rose index
-     */
-    public static int getRoseIndex(Coordinate receiver, Coordinate source) {
-        return getRoseIndex(Angle.angle(receiver, source));
-    }
-
-    /**
-     * The north slice is the last array index not the first one
-     * Ex for slice width of 20°:
-     *      - The first column 20° contain winds between 10 to 30 °
-     *      - The last column 360° contains winds between 350° to 360° and 0 to 10°
-     * get the rose index to search the mean occurrence p of favourable conditions in the direction of the angle:
-     * @return rose index
-     */
-    public static int getRoseIndex(double angle) {
-        // Angle from cos -1 sin 0
-        double angleRad = -(angle - Math.PI);
-        // Offset angle by PI / 2 (North),
-        // the north slice ranges is [PI / 2 + angle_section / 2; PI / 2 - angle_section / 2]
-        angleRad -= (Math.PI / 2 - angle_section / 2);
-        // Fix out of bounds angle 0-2Pi
-        if(angleRad < 0) {
-            angleRad += Math.PI * 2;
-        }
-        int index = (int)(angleRad / angle_section) - 1;
-        if(index < 0) {
-            index = DEFAULT_WIND_ROSE.length - 1;
-        }
-        return index;
     }
 
     /**
@@ -465,7 +407,7 @@ public class AttenuationParameters {
     public void writeToDatabase(Connection connection, String tableName, String period) throws SQLException {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
                 "PERIOD VARCHAR PRIMARY KEY," +
-                "WINDROSE REAL ARRAY," +
+                "WINDROSE VARCHAR," +
                 "PRESSURE REAL," +
                 "HUMIDITY REAL," +
                 "GDISC BOOLEAN," +
@@ -481,9 +423,8 @@ public class AttenuationParameters {
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (var pstmt = connection.prepareStatement(insertSQL)) {
-            Array sqlWindRose = connection.createArrayOf("DOUBLE", Arrays.stream(windRose).boxed().toArray());
             pstmt.setString(1, period);
-            pstmt.setArray(2, sqlWindRose);
+            pstmt.setString(2, windRose.getFavourableProbabilitySettings());
             pstmt.setDouble(3, pressure);
             pstmt.setDouble(4, humidity);
             pstmt.setBoolean(5, gDisc);
@@ -505,10 +446,16 @@ public class AttenuationParameters {
      */
     public static void readFromDatabase(ResultSet rs, Map<String, AttenuationParameters> cnossosParametersPerPeriod) throws SQLException {
         AttenuationParameters params = new AttenuationParameters();
-        Array windrose = rs.getArray("WINDROSE");
-        params.windRose = convertSqlArrayToDoubleArray(windrose);
-        if(params.windRose.length != DEFAULT_WIND_ROSE.length) {
-            throw new SQLException("Wind rose array length is not " + DEFAULT_WIND_ROSE.length);
+        ResultSetMetaData metaData = rs.getMetaData();
+        int occurrenceColumnIndex = JDBCUtilities.getFieldIndex(metaData, "WINDROSE");
+        if(rs.getMetaData().getColumnType(occurrenceColumnIndex) == Types.ARRAY) {
+            // Old format of probability occurrence
+            Array occurrence = rs.getArray("WINDROSE");
+            params.windRose = new DiscreteFavourableProbability(convertSqlArrayToDoubleArray(occurrence));
+        } else {
+            // Named favourable probability or string encoded array
+            String occurrence = rs.getString("WINDROSE").trim();
+            parseFavourableProbabilityString(occurrence, params);
         }
         params.pressure = rs.getDouble("PRESSURE");
         params.humidity = rs.getDouble("HUMIDITY");
@@ -516,10 +463,28 @@ public class AttenuationParameters {
         params.prime2520 = rs.getBoolean("PRIME2520");
         // Use the method as it will initialize the other parameters
         params.setTemperature(rs.getDouble("TEMPERATURE"));
-        params.setPeriod(rs.getString("PERIOD"));
         cnossosParametersPerPeriod.put(rs.getString("PERIOD"), params);
     }
 
+    public static void parseFavourableProbabilityString(String occurrence, AttenuationParameters params) throws SQLException {
+        if(occurrence.contains(",")) {
+            // Parse the string encoded array
+            String[] values = occurrence.split(",");
+            double[] doubleValues = new double[values.length];
+            for(int i = 0; i < values.length; i++) {
+                doubleValues[i] = Double.parseDouble(values[i].trim());
+            }
+            params.windRose = new DiscreteFavourableProbability(doubleValues);
+        } else {
+            // We use a favourable occurrence generator
+            FavourableProbability favourableProbability = DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator(occurrence);
+            if(favourableProbability != null) {
+                params.windRose = favourableProbability;
+            } else {
+                throw new SQLException("Unknown favourable probability generator: " + occurrence);
+            }
+        }
+    }
 
 
     /**

@@ -18,6 +18,7 @@ import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
+import org.noise_planet.noisemodelling.propagation.DutchFavourableProbabilityFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
@@ -37,13 +38,20 @@ inputs = [
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>',
                 type: String.class
         ],
+        confDutchFraction: [
+                name       : 'Dutch favourable fraction',
+                title      : 'Dutch favourable fraction',
+                description: 'Use the Dutch formulas on calculating the ratio for favourable/homogenous propagation',
+                min        : 0, max: 1,
+                type       : Boolean.class
+        ],
         tablePeriodAtmosphericSettings          : [
                 name       : 'Atmospheric settings table name',
                 title      : 'Atmospheric settings table name output for each time period',
                 description: 'Name of the Atmospheric settings table </br> </br>' +
                         'The table will contain the following columns: </br> <ul>' +
                         '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
-                        '<li> <b> WINDROSE </b>: probability of occurrences of favourable propagation conditions (ARRAY(16)) </li> ' +
+                        '<li> <b> WINDROSE </b>: Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. <img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center"> or DutchD, DutchE, DutchN for Netherlands </li> ' +
                         '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
                         '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
@@ -72,12 +80,6 @@ def exec(Connection connection, Map input) {
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
 
-    // Create a sql connection to interact with the database in SQL
-    Sql sql = new Sql(connection)
-
-    // Create a logger to display messages in the geoserver logs and in the command prompt.
-    Logger logger = LoggerFactory.getLogger("org.noise_planet.noisemodelling")
-
     String tableSourcesEmission = input.get("tableSourcesEmission") as String
 
     def tablePeriodAtmosphericSettings = "SOURCES_ATMOSPHERIC"
@@ -86,11 +88,29 @@ def exec(Connection connection, Map input) {
         tablePeriodAtmosphericSettings = input.get("tablePeriodAtmosphericSettings") as String
     }
 
+    boolean outputDutchFraction = false;
+    if(input.containsKey("confDutchFraction")) {
+        outputDutchFraction = input.get("confDutchFraction") as boolean;
+    }
+
     List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
 
     AttenuationParameters defaultParameters = new AttenuationParameters()
 
     periods.each { String period ->
+        if(outputDutchFraction) {
+            switch (period) {
+                case "D":
+                    defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchD"))
+                    break;
+                case "E":
+                    defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchE"))
+                    break;
+                case "N":
+                    defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchN"))
+                    break;
+            }
+        }
         defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period)
     }
 

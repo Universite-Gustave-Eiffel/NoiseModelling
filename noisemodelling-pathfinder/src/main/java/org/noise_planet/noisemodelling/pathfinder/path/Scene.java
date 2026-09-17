@@ -65,8 +65,6 @@ public class Scene {
      */
     public double lineSourceSpacingRatio = 2;
 
-    public boolean useDutchFavourableFraction = false;
-
     public Scene() {
         this.profileBuilder = new ProfileBuilder();
     }
@@ -155,8 +153,6 @@ public class Scene {
         this.reflexionOrder = reflexionOrder;
     }
 
-    public boolean getUseDutchFavourableFraction() {return this.useDutchFavourableFraction;}
-    public void setUseDutchFavourableFraction(boolean d){this.useDutchFavourableFraction = d;}
     public void setComputeHorizontalDiffraction(boolean computeHorizontalDiffraction) {
         this.computeHorizontalDiffraction = computeHorizontalDiffraction;
     }

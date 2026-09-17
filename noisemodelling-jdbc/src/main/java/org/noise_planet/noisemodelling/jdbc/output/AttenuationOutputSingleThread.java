@@ -128,7 +128,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             attenuationList = defaultAttenuation;
         } else {
             attenuationList = propagationModel.computeAttenuation(scene, cutProfile, data,
-                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix, period);
+                    multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix);
             // export attenuation output per period if required
             if(multiThread.noiseMapDatabaseParameters.exportRaysMethod == NoiseMapDatabaseParameters.ExportRaysMethods.TO_RAYS_TABLE &&
                     multiThread.noiseMapDatabaseParameters.exportAttenuationMatrix) {
@@ -304,7 +304,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
             for (PathFinder.SourcePointInfo sourcePointInfo : sourceList) {
                 // Create a fake CutProfile with direct field view between source and receiver
                 double[] attenuation = dBToW(propagationModel.computeDirectAttenuation(sourcePointInfo, receiver,
-                        scene, scene.defaultCnossosParameters,false, "").getaGlobal());
+                        scene, scene.defaultCnossosParameters,false).getaGlobal());
                 // For line source apply a gain on the attenuation
                 if(sourcePointInfo.li > 1) {
                     attenuation = multiplicationArray(attenuation, sourcePointInfo.li);
@@ -319,7 +319,7 @@ public class AttenuationOutputSingleThread implements CutPlaneVisitor {
                         double[] attenuationPerPeriod = attenuation;
                         if(parameters != scene.defaultCnossosParameters) {
                             attenuationPerPeriod = dBToW(propagationModel.computeDirectAttenuation(sourcePointInfo,
-                                    receiver, scene, parameters,false, periodEmission.period).getaGlobal());
+                                    receiver, scene, parameters,false).getaGlobal());
                             if(sourcePointInfo.li > 1) {
                                 attenuationPerPeriod = multiplicationArray(attenuationPerPeriod, sourcePointInfo.li);
                             }

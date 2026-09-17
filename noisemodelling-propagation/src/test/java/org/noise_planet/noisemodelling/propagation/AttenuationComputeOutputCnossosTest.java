@@ -5983,13 +5983,14 @@ public class AttenuationComputeOutputCnossosTest {
 
     @Test
     public void testRoseIndex() {
-        double angle_section = (2 * Math.PI) / AttenuationParameters.DEFAULT_WIND_ROSE.length;
+        DiscreteFavourableProbability discreteFavourableProbability = new DiscreteFavourableProbability();
+        double angle_section = (2 * Math.PI) / DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length;
         double angleStart = Math.PI / 2 - angle_section / 2;
-        for(int i = 0; i < AttenuationParameters.DEFAULT_WIND_ROSE.length; i++) {
+        for(int i = 0; i < DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length; i++) {
             double angle = angleStart - angle_section * i - angle_section / 3;
-            int index = AttenuationParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            int index = discreteFavourableProbability.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);angle = angleStart - angle_section * i - angle_section * 2.0/3.0;
-            index = AttenuationParameters.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
+            index = discreteFavourableProbability.getRoseIndex(new Coordinate(0, 0), new Coordinate(Math.cos(angle), Math.sin(angle)));
             assertEquals(i, index);
         }
     }
@@ -6464,11 +6465,12 @@ public class AttenuationComputeOutputCnossosTest {
 
         double[][] windRoseTest = new double[receivers.size()][];
         // generate favourable condition for each direction
+        DiscreteFavourableProbability discreteFavourableProbability = new DiscreteFavourableProbability();
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
-            windRoseTest[idReceiver] = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length];
+            windRoseTest[idReceiver] = new double[DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length];
             double angle = Math.atan2(receivers.get(idReceiver).getY(), receivers.get(idReceiver).getX());
             Arrays.fill(windRoseTest[idReceiver], 1);
-            int roseIndex = AttenuationParameters.getRoseIndex(angle);
+            int roseIndex = discreteFavourableProbability.getRoseIndex(angle);
             windRoseTest[idReceiver][roseIndex] = 0.5;
         }
         for(int idReceiver : IntStream.range(0, receivers.size()).toArray()) {
@@ -6477,7 +6479,7 @@ public class AttenuationComputeOutputCnossosTest {
             AttenuationParameters attData = scene.defaultCnossosParameters;
             attData.setHumidity(HUMIDITY);
             attData.setTemperature(TEMPERATURE);
-            attData.setWindRose(favourableConditionDirections);
+            attData.setWindRose(new DiscreteFavourableProbability(favourableConditionDirections));
 
             //Out and computation settings
             AttenuationComputeOutput propDataOut = new AttenuationComputeOutput(true, true, scene);

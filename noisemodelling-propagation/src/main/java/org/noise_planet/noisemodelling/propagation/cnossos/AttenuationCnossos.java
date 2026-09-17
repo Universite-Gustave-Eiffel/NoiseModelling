@@ -603,10 +603,9 @@ public class AttenuationCnossos {
      * @param scene Scene with attenuation data
      * @param attenuationOutput Output of the attenuation computation
      * @param exportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @param period calculate attenuation for this period of day
      */
     public static void computeCnossosAttenuation(AttenuationParameters data, SceneWithAttenuation scene,
-                                                 CnossosAttenuationOutput attenuationOutput, boolean exportAttenuationMatrix, String period) {
+                                                 CnossosAttenuationOutput attenuationOutput, boolean exportAttenuationMatrix) {
         if (data == null) {
             attenuationOutput.aGlobal = new double[0];
             return;
@@ -749,10 +748,10 @@ public class AttenuationCnossos {
         // @see ComputeCnossosRays#computeOrientation
         Vector3D fieldVectorPropagation = Orientation.rotate(attenuationOutput.getCutProfile().getSourceOrientation(),
                 Orientation.toVector(attenuationOutput.getCutProfile().getRaySourceReceiverDirectivity()), false);
-        int roseIndex = AttenuationParameters.getRoseIndex(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
+        double probability = data.getWindRose().getFavourableProbability(Math.atan2(fieldVectorPropagation.getY(), fieldVectorPropagation.getX()));
         if(!cnossosPath.isFavourable()) {
             // Homogenous conditions
-            if (data.getWindRose()[roseIndex] != 1) {
+            if (probability < 1) {
                 aBoundary = AttenuationCnossos.aBoundary(cnossosPath, attenuationOutput,data);
                 aRetroDiff = AttenuationCnossos.deltaRetrodif(cnossosPath, data);
                 for (int idfreq = 0; idfreq < data.getFrequencies().size(); idfreq++) {
@@ -767,7 +766,7 @@ public class AttenuationCnossos {
             }
         } else {
             // Favourable conditions
-            if (data.getWindRose()[roseIndex] != 0) {
+            if (probability > 0) {
                 cnossosPath.setFavourable(true);
                 attenuationOutput.setMeteoType(MeteoType.FAVOURABLE);
                 aBoundary = AttenuationCnossos.aBoundary(cnossosPath, attenuationOutput, data);
@@ -793,12 +792,6 @@ public class AttenuationCnossos {
 
         // Compute attenuation under the atmospheric conditions using the ray direction
         double[] aGlobalMeteoRay = new double[aGlobalMeteo.length];
-        double probability;
-        if (scene != null && scene.getUseDutchFavourableFraction()) {
-            probability = data.getDutchFavourFraction(Math.atan2(-fieldVectorPropagation.getX(), -fieldVectorPropagation.getY()), period);
-        } else {
-            probability = data.getWindRose()[roseIndex]; // favourable probability
-        }
         if(!cnossosPath.isFavourable()) {
             // compute homogeneous conditions probability from favourable probability
             probability = 1 - probability;

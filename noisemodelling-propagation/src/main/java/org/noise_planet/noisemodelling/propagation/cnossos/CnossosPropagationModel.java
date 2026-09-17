@@ -39,11 +39,10 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param cutProfile Geometrical cross-section
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @param period period of day ('D', 'E', "N')
      * @return List of AttenuationOutput objects [favorable, homogeneous]
      */
     public List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
-                                      AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix, String period) {
+                                      AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         // Compute favorable and homogeneous propagation paths
         if (cnossosPaths.isEmpty()) {
             double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
@@ -56,7 +55,7 @@ public class CnossosPropagationModel implements PropagationModel {
             CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
             attenuationOutput.propagationPath = cnossosPath;
             AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
-                    isExportAttenuationMatrix, period);
+                    isExportAttenuationMatrix);
             attenuationOutput.setLineString(cnossosPath.asGeom());
             if (cnossosPath.isFavourable()){
                 attenuationOutput.setMeteoType(MeteoType.FAVOURABLE);
@@ -76,12 +75,11 @@ public class CnossosPropagationModel implements PropagationModel {
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in attenuationOutput for debugging purpose
-     * @param period period of day ('D', 'E', 'N')
      * @return Attenuation
      */
     public AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
                                              SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                             boolean isExportAttenuationMatrix, String period){
+                                             boolean isExportAttenuationMatrix){
         CutProfile cutProfile = new CutProfile(new CutPointSource(source), new CutPointReceiver(receiver));
         CnossosPath propagationPath = new CnossosPath(cutProfile);
         propagationPath.setFavourable(true);
@@ -93,7 +91,7 @@ public class CnossosPropagationModel implements PropagationModel {
         CnossosAttenuationOutput attenuationOutput = new CnossosAttenuationOutput(cutProfile);
         attenuationOutput.propagationPath = propagationPath;
         AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
-                isExportAttenuationMatrix, period);
+                isExportAttenuationMatrix);
         return attenuationOutput;
     }
 }

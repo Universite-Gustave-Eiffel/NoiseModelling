@@ -135,7 +135,7 @@ inputs = [
                 description: 'Name of the Atmospheric settings table </br> </br>' +
                         'The table must contain the following columns: </br> <ul>' +
                         '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
-                        '<li> <b> WINDROSE </b>: probability of occurrences of favourable propagation conditions (ARRAY(16)) </li> ' +
+                        '<li> <b> WINDROSE </b>: Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. <img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center"> or DutchD, DutchE, DutchN for Netherlands </li> ' +
                         '<li> <b> TEMPERATURE </b>: Temperature in celsius (FLOAT) </li> ' +
                         '<li> <b> PRESSURE </b>: air pressure in pascal (FLOAT) </li> ' +
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
@@ -265,13 +265,6 @@ inputs = [
                              '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from traffic" width="95%" align="center">',
                 default    : '0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5',
                 type       : String.class
-        ],
-        confDutchFraction: [
-                name       : 'Dutch favourable fraction',
-                title      : 'Dutch favourable fraction',
-                description: 'Use the Dutch formulas on calculating the ratio for favourable/homogenous propagation',
-                min        : 0, max: 1,
-                type       : Boolean.class
         ],
         confRaysName            : [
                 name       : '',
@@ -517,12 +510,7 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
     AttenuationParameters environmentalData = defaultTableLoader.defaultParameters
 
     if (input.containsKey('confFavourableOccurrencesDefault')) {
-        StringTokenizer tk = new StringTokenizer(input['confFavourableOccurrencesDefault'] as String, ',')
-        double[] favOccurrences = new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]
-        for (int i = 0; i < favOccurrences.length; i++) {
-            favOccurrences[i] = Math.max(0, Math.min(1, Double.valueOf(tk.nextToken().trim())))
-        }
-        environmentalData.setWindRose(favOccurrences)
+        AttenuationParameters.parseFavourableProbabilityString(input['confFavourableOccurrencesDefault'] as String, environmentalData)
     }
     double confHumidity = input.getOrDefault("confHumidity",70.0) as Double
     environmentalData.setHumidity(confHumidity)
@@ -532,10 +520,6 @@ def exec(Connection connection, Map input, ProgressVisitor progress) {
 
     if(input.containsKey("tablePeriodAtmosphericSettings")) {
         pointNoiseMap.getSceneInputSettings().setPeriodAtmosphericSettingsTableName(input.get("tablePeriodAtmosphericSettings") as String)
-    }
-
-    if(input.containsKey("confDutchFraction")) {
-        pointNoiseMap.setUseDutchFavourableFraction(input.get("confDutchFraction") as boolean)
     }
 
     // Building height field name

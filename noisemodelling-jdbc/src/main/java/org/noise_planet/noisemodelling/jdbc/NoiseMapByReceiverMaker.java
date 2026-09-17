@@ -58,7 +58,6 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     private Logger logger = LoggerFactory.getLogger(NoiseMapByReceiverMaker.class);
     private int threadCount = 0;
     private ProfilerThread profilerThread;
-    private boolean useDutchFavourableFraction = false;
     public String exportKmlName = "cell_%d_%d.kml";
 
     SceneDatabaseInputSettings sceneDatabaseInputSettings = new SceneDatabaseInputSettings();
@@ -211,9 +210,6 @@ public class NoiseMapByReceiverMaker extends GridMapMaker {
     public void setThreadCount(int threadCount) {
         this.threadCount = threadCount;
     }
-
-    public boolean getUseDutchFavourableFraction() {return this.useDutchFavourableFraction;}
-    public void setUseDutchFavourableFraction(boolean d){this.useDutchFavourableFraction = d;}
 
     /**
      * Initialisation of data structures needed for sound propagation.

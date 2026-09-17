@@ -31,12 +31,11 @@ public interface PropagationModel {
      * @param attenuationParameters parameters of the computation
 
      * @param isExportAttenuationMatrix if true, store intermediate values in AttenuationOutput for debugging purpose
-     * @param period period of day ('D', 'E', 'N')
      * @return List of AttenuationOutput objects (some propagation models return several AttenuationOutput per cutProfile)
      */
     List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
                                       AttenuationParameters attenuationParameters,
-                                      boolean isExportAttenuationMatrix, String period);
+                                      boolean isExportAttenuationMatrix);
 
     /**
      * Compute attenuation along direct path between source and receiver
@@ -46,11 +45,10 @@ public interface PropagationModel {
      * @param scene Geometrical information about the propagation scene
      * @param attenuationParameters parameters of the computation
      * @param isExportAttenuationMatrix if true, store intermediate values in proPathParameters for debugging purpose
-     * @param period period of day ('D', 'E', 'N')
      * @return AttenuationOutput object
      */
     AttenuationOutput computeDirectAttenuation(PathFinder.SourcePointInfo source, PathFinder.ReceiverPointInfo receiver,
                                       SceneWithAttenuation scene, AttenuationParameters attenuationParameters,
-                                      boolean isExportAttenuationMatrix, String period);
+                                      boolean isExportAttenuationMatrix);
 
 }
