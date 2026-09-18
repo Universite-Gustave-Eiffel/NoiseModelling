@@ -8,8 +8,6 @@
  */
 package org.noise_planet.noisemodelling.propagation;
 
-import java.util.Map;
-
 /**
  * Get the fraction of favourable conditions for conditions in the Netherlands.
  */
@@ -46,10 +44,10 @@ public class DutchFavourableProbabilityFactory {
     }
 
     public static class DProbabilityGenerator implements FavourableProbability {
-        String period;
+        String name;
 
-        public DProbabilityGenerator(String period) {
-            this.period = period;
+        public DProbabilityGenerator(String name) {
+            this.name = name;
         }
 
         @Override
@@ -61,14 +59,14 @@ public class DutchFavourableProbabilityFactory {
 
         @Override
         public String getFavourableProbabilitySettings() {
-            return "DutchD";
+            return name;
         }
     }
     public static class ENProbabilityGenerator implements FavourableProbability {
-        String period;
+        String name;
 
-        public ENProbabilityGenerator(String period) {
-            this.period = period;
+        public ENProbabilityGenerator(String name) {
+            this.name = name;
         }
 
         @Override
@@ -80,7 +78,7 @@ public class DutchFavourableProbabilityFactory {
 
         @Override
         public String getFavourableProbabilitySettings() {
-            return "Dutch" + period;
+            return name;
         }
     }
 }

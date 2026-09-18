@@ -5995,6 +5995,32 @@ public class AttenuationComputeOutputCnossosTest {
         }
     }
 
+    @Test
+    public void testDutchDay() {
+        FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.DProbabilityGenerator("D");
+        double[] favFractions = {
+                favourableProbability.getFavourableProbability(Math.atan2(-1.0,  0.0)), //from source to receiver: to south
+                favourableProbability.getFavourableProbability(Math.atan2( 0.0, -1.0)), //from source to receiver: to west
+                favourableProbability.getFavourableProbability(Math.atan2( 1.0,  0.0)), //from source to receiver: to north
+                favourableProbability.getFavourableProbability(Math.atan2( 0.0,  1.0))  //from source to receiver: to east
+        };
+        double[] expectedFractions = {0.2974, 0.2883, 0.4122, 0.4521};
+        assertArrayEquals(expectedFractions, favFractions, 0.0001);
+    }
+
+    @Test
+    public void testDutchNight() {
+        FavourableProbability favourableProbability = new DutchFavourableProbabilityFactory.ENProbabilityGenerator("N");
+        double[] favFractions = {
+                favourableProbability.getFavourableProbability(Math.atan2(-1.0,  0.0)), //from source to receiver: to south
+                favourableProbability.getFavourableProbability(Math.atan2( 0.0, -1.0)), //from source to receiver: to west
+                favourableProbability.getFavourableProbability(Math.atan2( 1.0,  0.0)), //from source to receiver: to north
+                favourableProbability.getFavourableProbability(Math.atan2( 0.0,  1.0))  //from source to receiver: to east
+        };
+        double[] expectedFractions = {0.3396, 0.3588, 0.5129, 0.4588};
+        assertArrayEquals(expectedFractions, favFractions, 0.0001);
+    }
+
     /**
      * Test identic rays : to the east, to the west
      */
