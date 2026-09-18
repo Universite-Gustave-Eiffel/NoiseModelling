@@ -92,11 +92,6 @@ Optional inputs
 
    Default: ``false``
 
-``confDutchFraction`` — *Dutch favourable fraction*
-   Use the Dutch formulas on calculating the ratio for favourable/homogenous propagation
-
-   Type: ``Boolean``
-
 ``confExportSourceId`` — *Separate receiver level by source identifier*
    Keep source identifier in output in order to get noise contribution of each noise source. When only the source geometry is given, the attenuation between each pair of "source-receiver" points is specified (commonly referred to as the "attenuation matrix")
 
