@@ -1,83 +1,79 @@
 name: 🐛 Bug report
 description: Create a report to help us improve NoiseModelling
 labels:
-- bug
-- triage-needed
+  - bug
+  - triage-needed
 
 body:
-- type: markdown
-  attributes:
-  value: |
-    Thank you for reporting an issue.
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue.
 
-      This issue tracker is for bugs and issues found in **NoiseModelling**.
-      Please fill in as much of the form as possible.
+        This issue tracker is for bugs and issues found in **NoiseModelling**.
+        Please fill in as much of the form as possible.
 
-- type: dropdown
-  id: feedback_source
-  attributes:
-  label: Feedback source
-  description: With what version of NoiseModelling do you encounter this issue?
-  options:
-  - Web IDE (NoiseModelling with GUI)
-  - Command Line Interface (Console version of NoiseModelling)
+  - type: dropdown
+    id: feedback_source
+    attributes:
+      label: Feedback source
+      description: With what version of NoiseModelling do you encounter this issue?
+      options:
+        - Web IDE (NoiseModelling with GUI)
+        - Command Line Interface (Console version of NoiseModelling)
 
-- type: input
-  id: noisemodelling_version
-  attributes:
-  label: NoiseModelling version
-  description: |
-    You can check the versions from the page System status -> NoiseModelling Scripts or "ScriptRunner -h"
+  - type: input
+    id: noisemodelling_version
+    attributes:
+      label: NoiseModelling version
+      description: You can check the versions from the page System status -> NoiseModelling Scripts or "ScriptRunner -h"
 
-- type: textarea
-  id: java_version
-  attributes:
-  label: Java Version
-  description: |
-    Please specify the version of Java you are using.
+  - type: textarea
+    id: java_version
+    attributes:
+      label: Java Version
+      description: Please specify the version of Java you are using.
 
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Describe how to reproduce the issue.  
+        If applicable, include a minimal code snippet that can run directly without third-party dependencies.
+    validations:
+      required: true
 
-- type: textarea
-  id: steps
-  attributes:
-  label: Steps to reproduce
-  description: |
-    Describe how to reproduce the issue.  
-    If applicable, include a minimal code snippet that can run directly without third-party dependencies.
-  validations:
-  required: true
-
-- type: textarea
-  id: logs
-  attributes:
-  label: Logs (optional)
-  description: |
-    If possible, include logs.
-  
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: |
+        If possible, include logs.
         **Get log file:**  
         In folder 
-          - Windows: C:\Users\username\.noisemodelling\webserver.log
-          - Mac: /Users/username/.noisemodelling/webserver.log
-          - Linux: /home/username/.noisemodelling/webserver.log
+        - Windows: C:\Users\username\.noisemodelling\webserver.log
+        - Mac: /Users/username/.noisemodelling/webserver.log
+        - Linux: /home/username/.noisemodelling/webserver.log
 
-- type: textarea
-  id: expected
-  attributes:
-  label: Expected behavior
-  description: Please describe what you expected to happen. Textual output is preferred over screenshots.
-  validations:
-  required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Please describe what you expected to happen. Textual output is preferred over screenshots.
+    validations:
+      required: true
 
-- type: textarea
-  id: actual
-  attributes:
-  label: Actual behavior
-  description: Please provide screenshots, videos, or textual output of what you observed.
-  validations:
-  required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Please provide screenshots, videos, or textual output of what you observed.
+    validations:
+      required: true
 
-- type: textarea
-  id: additional
-  attributes:
-  label: Additional information
-  description: Include anything else you think may help us investigate.
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: Include anything else you think may help us investigate.
