@@ -66,6 +66,7 @@ inputs = [
                 description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. </br> </br>' +
                         '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">. For Netherlands check confDutchFraction instead of using this parameter.',
                 default    : '',
+                min        : 0, max: 1,
                 type       : String.class
         ],
         tablePeriodAtmosphericSettings          : [
@@ -80,7 +81,8 @@ inputs = [
                         '<li> <b> HUMIDITY </b>: air humidity in percentage (FLOAT) </li> ' +
                         '<li> <b> GDISC </b>: choose between accept G discontinuity or not (BOOLEAN) default true </li> ' +
                         '<li> <b> PRIME2520 </b>: choose to use prime values to compute eq. 2.5.20 (BOOLEAN) default false </li> ',
-                default   : 'SOURCES_ATMOSPHERIC', 
+                default   : 'SOURCES_ATMOSPHERIC',
+                min        : 0, max: 1,
                 type: String.class
         ],
 ]

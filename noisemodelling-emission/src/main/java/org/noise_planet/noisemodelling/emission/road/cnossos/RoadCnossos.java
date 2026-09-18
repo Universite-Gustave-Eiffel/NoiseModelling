@@ -44,7 +44,7 @@ public class RoadCnossos {
 
     /**
      * Get the CNOSSOS coefficients from a specific file version.
-     * @param fileVersion 1=RoadCnossos_2015.json; 528=cnossosDataNL.json, other = RailwayCnossosSNCF_2021.json
+     * @param fileVersion 1=RoadCnossos_2015.json; 528=cnossosDataNL.json, other = cnossosData2020.json
      *                    Country specific codes following standard in ISO 3166-1-numeric
      * @return
      */
