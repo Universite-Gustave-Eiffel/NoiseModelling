@@ -130,15 +130,15 @@ def exec(Connection connection, Map input) {
     defaultParameters.setTemperature(defaultTemperature)
     defaultParameters.setHumidity(defaultHumidity)
 
-    if(outputDutchFraction){
-        List<String> periods;
-        try {
-            periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
-        } catch (Exception ignored) {
-            // Fall back to default values
-            periods = Arrays.asList("D", "E", "N");
-        }
-        periods.each { String period ->
+    List<String> periods;
+    try {
+        periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
+    } catch (Exception ignored) {
+        // Fall back to default values
+        periods = Arrays.asList("D", "E", "N");
+    }
+    periods.each { String period ->
+        if(outputDutchFraction) {
             switch (period) {
                 case "D":
                     defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchD"))
@@ -150,8 +150,8 @@ def exec(Connection connection, Map input) {
                     defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchN"))
                     break;
             }
-            defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period);
         }
+        defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period);
     }
 
     return [result: tablePeriodAtmosphericSettings]
