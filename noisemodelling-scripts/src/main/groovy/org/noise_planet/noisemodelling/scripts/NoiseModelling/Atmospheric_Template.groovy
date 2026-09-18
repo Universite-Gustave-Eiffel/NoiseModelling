@@ -18,6 +18,7 @@ import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
+import org.noise_planet.noisemodelling.propagation.DiscreteFavourableProbability
 import org.noise_planet.noisemodelling.propagation.DutchFavourableProbabilityFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -45,9 +46,31 @@ inputs = [
                 min        : 0, max: 1,
                 type       : Boolean.class
         ],
+        confHumidity            : [
+                name       : 'Relative humidity',
+                title      : 'Relative humidity',
+                description: '&#127783; Humidity for noise propagation (%) [0,100]',
+                default    : 70,
+                type       : Double.class
+        ],
+        confTemperature         : [
+                name       : 'Temperature',
+                title      : 'Air temperature',
+                description: '&#127777; Air temperature (°C)',
+                default    : 15,
+                type       : Double.class
+        ],
+        confFavourableOccurrencesDefault: [
+                name       : 'Default favourable occurrences',
+                title      : 'Default favourable occurrences',
+                description: 'Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one. </br> </br>' +
+                        '<img src="wps_images/acoustics_parameters_confFavorableOccurrences.png" alt="Noise level from source" width="95%" align="center">. For Netherlands check confDutchFraction instead of using this parameter.',
+                default    : '',
+                type       : String.class
+        ],
         tablePeriodAtmosphericSettings          : [
-                name       : 'Atmospheric settings table name',
-                title      : 'Atmospheric settings table name output for each time period',
+                name       : 'Output table name',
+                title      : 'Output table name',
                 description: 'Name of the Atmospheric settings table </br> </br>' +
                         'The table will contain the following columns: </br> <ul>' +
                         '<li> <b> PERIOD </b>: time period (VARCHAR PRIMARY KEY) </li> ' +
@@ -93,9 +116,19 @@ def exec(Connection connection, Map input) {
         outputDutchFraction = input.get("confDutchFraction") as boolean;
     }
 
+    double defaultTemperature = input.getOrDefault("confTemperature", 15) as double
+    double defaultHumidity = input.getOrDefault("confHumidity", 70) as double
+    String defaultFavourableOccurrences = input.getOrDefault("confFavourableOccurrencesDefault", "") as String
+
     List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
 
     AttenuationParameters defaultParameters = new AttenuationParameters()
+
+    if(!outputDutchFraction && !defaultFavourableOccurrences.isEmpty()) {
+        defaultParameters.setWindRose(new DiscreteFavourableProbability(defaultFavourableOccurrences.split(",").collect { it.trim() as double }))
+    }
+    defaultParameters.setTemperature(defaultTemperature)
+    defaultParameters.setHumidity(defaultHumidity)
 
     periods.each { String period ->
         if(outputDutchFraction) {
@@ -114,5 +147,5 @@ def exec(Connection connection, Map input) {
         defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period)
     }
 
-    return "Calculation Done ! The table $tablePeriodAtmosphericSettings have been created, you can now export it, edit it and reimport to be used into Noise_level_from_source."
+    return [result: tablePeriodAtmosphericSettings]
 }

@@ -12,6 +12,7 @@ import org.locationtech.jts.algorithm.Angle;
 import org.locationtech.jts.geom.Coordinate;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Discrete favourable probability implementation
@@ -30,6 +31,10 @@ public class DiscreteFavourableProbability implements FavourableProbability {
     public DiscreteFavourableProbability(double[] windRose) {
         this.windRose = windRose;
         this.angleSection = (2 * Math.PI) / windRose.length;
+    }
+
+    public DiscreteFavourableProbability(Collection<Double> windRose) {
+        this(windRose.stream().mapToDouble(Double::doubleValue).toArray());
     }
 
     /**

@@ -18,11 +18,16 @@ import org.h2gis.functions.io.shp.SHPRead
 import org.h2gis.utilities.JDBCUtilities
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.noise_planet.noisemodelling.jdbc.NoiseMapByReceiverMaker
 import org.noise_planet.noisemodelling.jdbc.NoiseMapDatabaseParameters
+import org.noise_planet.noisemodelling.jdbc.input.DefaultTableLoader
+import org.noise_planet.noisemodelling.propagation.DutchFavourableProbabilityFactory
 import org.noise_planet.noisemodelling.scripts.Import_and_Export.Import_File
 import org.noise_planet.noisemodelling.scripts.NoiseModelling.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.sql.SQLException
 
 import static org.junit.jupiter.api.Assertions.*
 /**
@@ -213,6 +218,72 @@ class TestNoiseModelling extends JdbcTestCase {
         assertTrue(gotPeriod.contains("N"))
 
         LOGGER.info(Arrays.toString(fieldNames.toArray()))
+    }
+
+
+    /**
+     * Test the generation and the parsing of the favourable propagation settings for the Netherlands
+     * @throws SQLException
+     * @throws IOException
+     */
+    @Test
+    void testAtmosphericSettingsDutch() throws SQLException, IOException {
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])
+
+        new Import_File().exec(connection,
+                ["pathFile" : TestNoiseModelling.getResource("receivers.shp").getPath(),
+                 "inputSRID": "2154",
+                 "tableName": "receivers"])
+        // Create SOURCES_EMISSION table by splitting the LW_ROADS table old format period to separate lines
+
+        Sql sql = new Sql(connection)
+        sql.execute("DROP TABLE IF EXISTS SOURCES_EMISSION")
+        sql.execute("CREATE TABLE SOURCES_EMISSION AS SELECT PK AS IDSOURCE, 'D' AS PERIOD," +
+                " TV_D as TV, HV_D as HV, LV_SPD_D as LV_SPD, HV_SPD_D as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'E' AS PERIOD," +
+                " TV_E as TV, HV_E as HV, LV_SPD_E as LV_SPD, HV_SPD_E as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+        sql.execute("INSERT INTO SOURCES_EMISSION SELECT PK AS IDSOURCE, 'N' AS PERIOD," +
+                " TV_N as TV, HV_N as HV, LV_SPD_N as LV_SPD, HV_SPD_N as HV_SPD," +
+                " PVMT AS PVMT FROM ROADS2")
+
+        // Convert to road emission
+        String res = new Road_Emission_from_Traffic().exec(connection,
+                ["tableRoads": "SOURCES_EMISSION"]).result
+
+        // Check result table
+        assertEquals("LW_ROADS", res)
+
+        new Atmospheric_Template().exec(connection, ["tableSourcesEmission": "LW_ROADS", "confDutchFraction": true])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+        def gotWindRose = JDBCUtilities.getUniqueFieldValues(connection, "SOURCES_ATMOSPHERIC", "WINDROSE")
+
+        assertTrue(gotWindRose.contains("DutchD"))
+        assertTrue(gotWindRose.contains("DutchE"))
+        assertTrue(gotWindRose.contains("DutchN"))
+
+        NoiseMapByReceiverMaker noiseMap = new NoiseMapByReceiverMaker("BUILDINGS",
+                "LW_ROADS", "RECEIVERS");
+
+        noiseMap.getSceneInputSettings().setPeriodAtmosphericSettingsTableName("SOURCES_ATMOSPHERIC")
+
+        noiseMap.initialize(connection);
+
+        DefaultTableLoader tableLoader = (DefaultTableLoader)noiseMap.getTableLoader()
+
+        assertTrue(tableLoader.cnossosParametersPerPeriod.containsKey("D"))
+        assertTrue(tableLoader.cnossosParametersPerPeriod.containsKey("E"))
+        assertTrue(tableLoader.cnossosParametersPerPeriod.containsKey("N"))
+
+        assertInstanceOf(DutchFavourableProbabilityFactory.DProbabilityGenerator.class ,tableLoader.cnossosParametersPerPeriod.get("D").getWindRose())
+        assertInstanceOf(DutchFavourableProbabilityFactory.ENProbabilityGenerator.class ,tableLoader.cnossosParametersPerPeriod.get("E").getWindRose())
+        assertInstanceOf(DutchFavourableProbabilityFactory.ENProbabilityGenerator.class ,tableLoader.cnossosParametersPerPeriod.get("N").getWindRose())
+
     }
 
     @Test
