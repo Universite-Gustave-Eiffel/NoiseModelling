@@ -12,7 +12,7 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-import groovy.sql.Sql
+
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.dbtypes.DBTypes
 import org.h2gis.utilities.dbtypes.DBUtils
@@ -20,8 +20,7 @@ import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.noise_planet.noisemodelling.propagation.DiscreteFavourableProbability
 import org.noise_planet.noisemodelling.propagation.DutchFavourableProbabilityFactory
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+
 import java.sql.Connection
 
 title = 'Generate default atmospheric settings from the PERIOD field of a noise emission table'
@@ -37,7 +36,8 @@ inputs = [
                         'The table must contain: </br> <ul>' +
                         '<li><b> IDSOURCE </b>* : an identifier. It shall be linked to the primary key of tableRoads (INTEGER)</li>' +
                         '<li><b> PERIOD </b>* : Time period, you will find this column on the output (VARCHAR)</li>',
-                type: String.class
+                min        : 0, max: 1,
+                type       : String.class
         ],
         confDutchFraction: [
                 name       : 'Dutch favourable fraction',
@@ -122,8 +122,6 @@ def exec(Connection connection, Map input) {
     double defaultHumidity = input.getOrDefault("confHumidity", 70) as double
     String defaultFavourableOccurrences = input.getOrDefault("confFavourableOccurrencesDefault", "") as String
 
-    List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
-
     AttenuationParameters defaultParameters = new AttenuationParameters()
 
     if(!outputDutchFraction && !defaultFavourableOccurrences.isEmpty()) {
@@ -132,8 +130,15 @@ def exec(Connection connection, Map input) {
     defaultParameters.setTemperature(defaultTemperature)
     defaultParameters.setHumidity(defaultHumidity)
 
-    periods.each { String period ->
-        if(outputDutchFraction) {
+    if(outputDutchFraction){
+        List<String> periods;
+        try {
+            periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
+        } catch (Exception ignored) {
+            // Fall back to default values
+            periods = Arrays.asList("D", "E", "N");
+        }
+        periods.each { String period ->
             switch (period) {
                 case "D":
                     defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchD"))
@@ -145,8 +150,8 @@ def exec(Connection connection, Map input) {
                     defaultParameters.setWindRose(DutchFavourableProbabilityFactory.getFavourableProbabilityGenerator("DutchN"))
                     break;
             }
+            defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period);
         }
-        defaultParameters.writeToDatabase(connection, tablePeriodAtmosphericSettings, period)
     }
 
     return [result: tablePeriodAtmosphericSettings]
