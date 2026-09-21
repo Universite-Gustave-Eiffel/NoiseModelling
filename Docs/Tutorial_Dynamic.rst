@@ -121,7 +121,7 @@ Use ``Export_Table`` Block to export the following tables as files in any folder
 #. ``BUILDINGS``
 #. ``ROADS``
 
-Configure QGis to display time dependant map
+Configure QGis to display time dependent map
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Load the 3 files in QGIS. ``Contouring_noise_map`` must be ordered as the last layer (rendered in the bottom)

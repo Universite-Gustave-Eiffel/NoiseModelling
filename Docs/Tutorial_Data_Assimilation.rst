@@ -228,7 +228,7 @@ This script has the following parameters:
 Execution
 **********
 
-For this tutorial, you can fill with these informations:
+For this tutorial, you can fill with these information:
 
 * Start time stamp (``startDate``) : ``2024-08-25 06:30:00``
 * End time stamp (``endDate``) : ``2024-08-25 07:30:00``

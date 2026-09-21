@@ -37,7 +37,7 @@ Optional inputs
 
    Type: ``Integer``
 
-``exportTraffic`` — *Export additionnal traffic data ?*
+``exportTraffic`` — *Export additional traffic data ?*
    Define if you want to output average speed and flow per vehicle category in an additional table
 
    Type: ``Boolean``
@@ -57,7 +57,7 @@ Optional inputs
 ``outTableName`` — *Output table name*
    Name of the table you want to create.
    A table with this name will be created plus another with a "_LW" suffix
-   For exemple if set to "MATSIM_ROADS (default value)":
+   For example if set to "MATSIM_ROADS (default value)":
    
    - the table MATSIM_ROADS, with the link ID and the geometry field
    

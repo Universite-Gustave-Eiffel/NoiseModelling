@@ -125,7 +125,7 @@ or
 
    podman compose up -d
 
-Follow the instructions of the logs in order to register the administrator account (if not in unsecure mode).
+Follow the instructions of the logs in order to register the administrator account (if not in insecure mode).
 
 ::
 

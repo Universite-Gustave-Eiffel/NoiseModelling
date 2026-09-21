@@ -95,7 +95,7 @@ Table definition
 	* Description: A traffic identifier (PRIMARY KEY)
 	* Type: Integer
 * ``IDSECTION`` *
-	* Description: A section identifier, refering to ``RAIL_SECTIONS`` table
+	* Description: A section identifier, referring to ``RAIL_SECTIONS`` table
 	* Type: Integer
 * ``TRAINTYPE`` *
 	* Description: Type of vehicle, listed in the `RailwayTrainsets.json`_ file *(mainly for french SNCF)*

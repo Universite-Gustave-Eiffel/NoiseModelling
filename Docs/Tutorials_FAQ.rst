@@ -54,7 +54,7 @@ If you don’t have any clue about what coordinate system is used in your region
 Here is the map : https://upload.wikimedia.org/wikipedia/commons/e/ed/Utm-zones.jpg
 
 .. note::
-  We recommand using the website https://epsg.io/ to find the appropriate **SRID** code for your location.
+  We recommend using the website https://epsg.io/ to find the appropriate **SRID** code for your location.
 
 Primary Key
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

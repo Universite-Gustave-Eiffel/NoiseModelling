@@ -58,7 +58,7 @@ To do so, follow these steps:
 .. _H2/H2GIS v.2.0 : https://github.com/orbisgis/h2gis/releases/download/v2.0.0/h2gis-dist-2.0.0-bin.zip
 
 
-In the connexion panel, you have to specify the following informations:
+In the connection panel, you have to specify the following information:
 
 - ``Driver Class``: the driver that allows to connect to a specific database. Here we want to connect to a H2 db, so let the default value ``org.h2.Driver``
 - ``JDBC URL``: the JDBC address of the NoiseModelling database. By default, this database is placed in here ``~/.noisemodelling/user_001.mv.db``. So, fill this text area with ``jdbc:h2:/~/.noisemodelling/user_001.mv.db``.
@@ -114,7 +114,7 @@ Connect DBeaver to your database
 
 #. Run DBeaver
 #. Add a new connection
-#. If you use a H2GIS type databse, please select ``H2GIS embedded`` *(use the search engine to filter)*
+#. If you use a H2GIS type database, please select ``H2GIS embedded`` *(use the search engine to filter)*
 #. Point the database path by clicking on ``Browse ...``. By default the database is placed in the ``~/.noisemodelling`` directory and is named ``user_001.mv.db``.
 #. In the ``Path`` text area, remove ``.mv.db`` at the end of the address
 #. The default user is ``sa`` and password ``sa``
