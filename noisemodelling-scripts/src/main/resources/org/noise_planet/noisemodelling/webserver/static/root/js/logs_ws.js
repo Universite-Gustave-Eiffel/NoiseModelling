@@ -14,6 +14,9 @@ function openJobLogsStream(url) {
 
 }
 
-function addLogline(msg) { // Add log line to html
-    id("logs").insertAdjacentText("afterbegin", msg.data);
+function addLogline(msg) {
+    let logContainer = id("logs");
+    if (logContainer) {
+        logContainer.insertAdjacentText("afterbegin", msg.data);
+    }
 }

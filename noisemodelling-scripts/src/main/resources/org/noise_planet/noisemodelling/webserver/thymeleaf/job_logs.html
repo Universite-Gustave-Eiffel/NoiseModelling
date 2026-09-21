@@ -3,23 +3,38 @@
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{header :: customHead('Job log messages')}">
 <body>
-<div id="layout">
-    <div th:replace="~{menu :: menu}"></div>
-    <div id="main" class="content">
-        <div class="header"><h1 th:text="'Job #'+${jobId}"></h1>
-            <h2>Job latest logs</h2>
+    <div id="layout">
+        <div th:replace="~{menu :: menu}"></div>
+        <div id="main" class="content">
+            <div class="header"><h1 th:text="'Job #'+${jobId}"></h1>
+                <h2>Job latest logs</h2>
+            </div>
+            <nav class="pagination-links" th:if="${totalPages > 1}">
+                <a th:href="@{/job_logs/{id}(id=${jobId}, page=1)}"
+                   th:classappend="${currentPage == 1} ? 'active'" th:text="1"></a>
+                <span th:if="${currentPage > 4}">...</span>
+                <th:block th:each="i : ${#numbers.sequence(2, totalPages - 1)}">
+                    <a th:if="${i >= currentPage - 2 && i <= currentPage + 2}"
+                       th:href="@{/job_logs/{id}(id=${jobId}, page=${i})}"
+                       th:text="${i}"
+                       th:classappend="${i == currentPage} ? 'active'"></a>
+                </th:block>
+                <span th:if="${currentPage < totalPages - 3}">...</span>
+                <a th:if="${totalPages > 1}"
+                   th:href="@{/job_logs/{id}(id=${jobId}, page=${totalPages})}"
+                   th:classappend="${currentPage == totalPages} ? 'active'" th:text="${totalPages}"></a>
+            </nav>
+            <div class="code">
+                <pre class="console-text" id="logs" th:text="${#strings.listJoin(logs, '')}"></pre>
+            </div>
         </div>
-        <div class="code">
-            <pre class="console-text" id="logs" th:text="${rows}">blah blah</pre>
-        </div>
-    </div>
-    <script th:src="@{|/js/logs_ws.js|}"></script>
-    <script th:inline="javascript">
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const path = "[(@{/ws/job_logs_stream/})]";
-        const jobId = [(${jobId})];
-        openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
-    </script>
+        <script th:src="@{|/js/logs_ws.js|}"></script>
+        <script th:if="${isLive}" th:inline="javascript">
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const path = "[(@{/ws/job_logs_stream/})]";
+            const jobId = [(${jobId})];
+            openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
+        </script>
     </div>
 </body>
 </html>

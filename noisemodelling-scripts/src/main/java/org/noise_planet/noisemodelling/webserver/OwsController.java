@@ -308,7 +308,7 @@ public class OwsController {
         try(Connection connection = serverDataSource.getConnection()) {
             int userIdFilter = -1;
             User user = ctx.attribute("user");
-            if(user != null && !user.isAdministrator()) {
+            if(user != null) {
                 userIdFilter = user.getIdentifier();
             }
             ctx.render("job_list", Map.of("jobs", DatabaseManagement.getJobs(connection, userIdFilter)));
@@ -623,6 +623,10 @@ public class OwsController {
      *            request attributes, and response handling methods.
      */
     public void jobLogs(@NotNull Context ctx) {
+        int page = ctx.queryParamAsClass("page", Integer.class).getOrDefault(1);
+        int limit = 20;
+        int offset = (page - 1) * limit;
+
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             try {
@@ -631,18 +635,27 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                // Parse the current server logs
-                // we could store the logs into the database when the job complete or failed, maybe another time.
-                String lastLines = Logging.getLastLines(new File(configuration.workingDirectory,
-                        NoiseModellingServer.LOGGING_FILE_NAME), MAXIMUM_LINES_TO_FETCH, Job.getThreadName(jobId), new AtomicInteger());
-                ctx.render("job_logs", Map.of("jobId", jobId, "rows", lastLines));
+                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, limit);
+
+                int messageCount = DatabaseManagement.getLogMessagesCount(connection, jobId);
+                int totalPages = (int) Math.ceil((double) messageCount / limit);
+
+                ctx.render("job_logs", Map.of(
+                        "jobId", jobId,
+                        "logs", logs,
+                        "currentPage", page,
+                        "limit", limit,
+                        "messageCount", messageCount,
+                        "totalPages", totalPages,
+                        "isLive", page == 1
+                ));
             } catch (NumberFormatException ex) {
                 logger.error("Invalid job id {}", ctx.body(), ex);
                 ctx.render("blank", Map.of(
                         "redirectUrl", ctx.contextPath() + "/jobs",
                         "message", "Wrong job id parameter"));
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             logger.error(e.getLocalizedMessage(), e);
             throw new InternalServerErrorResponse();
         }
@@ -857,7 +870,6 @@ public class OwsController {
             }
         });
         wsAppender.setName("WebSocketAppender-" + jobId);
-        wsAppender.setLayout(layout);
         return wsAppender;
     }
 
