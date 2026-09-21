@@ -284,7 +284,6 @@ public class DefaultTableLoader implements NoiseMapByReceiverMaker.TableLoader {
         scene.defaultCnossosParameters = defaultParameters;
         scene.periodSet.addAll(cnossosParametersPerPeriod.keySet());
 
-
         // //////////////////////////////////////////////////////
         // feed freeFieldFinder for fast intersection query
         // optimization

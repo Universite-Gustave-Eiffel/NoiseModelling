@@ -239,7 +239,13 @@ Optional inputs
    
    *   PERIOD : time period (VARCHAR PRIMARY KEY)
    
-   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
+   
+   or DutchD, DutchE, DutchN for Netherlands
    
    *   TEMPERATURE : Temperature in celsius (FLOAT)
    

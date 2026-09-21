@@ -82,12 +82,12 @@ public class AttenuationVisitor implements CutPlaneVisitor {
      * @param scene Geometrical information about the propagation scene
      * @param cutProfile Geometrical cross-section
      * @param period Period identifier
-     * @param AttenuationParameters parameters of the propagation computation
+     * @param attenuationParameters parameters of the propagation computation
      */
     private void processAndStoreAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
-                                            String period, AttenuationParameters AttenuationParameters) {
+                                            String period, AttenuationParameters attenuationParameters) {
         List<AttenuationOutput> attenuationList = propagationModel.computeAttenuation(scene, cutProfile,
-                AttenuationParameters,multiThreadParent.exportAttenuationMatrix);
+                attenuationParameters,multiThreadParent.exportAttenuationMatrix);
         for (AttenuationOutput attenuationOutput : attenuationList) {
             double[] aGlobalMeteo = attenuationOutput.getaGlobal();
             if (aGlobalMeteo != null && aGlobalMeteo.length > 0) {

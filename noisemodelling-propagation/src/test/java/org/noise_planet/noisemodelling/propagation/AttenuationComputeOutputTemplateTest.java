@@ -47,7 +47,6 @@ public class AttenuationComputeOutputTemplateTest {
         }
 
         PropagationModel propagationModel = new TemplatePropagationModel();
-
         return propagationModel.computeAttenuation(sceneWithAttenuation, cutProfile,
                 sceneWithAttenuation.defaultCnossosParameters, false).getFirst().getaGlobal();
     }

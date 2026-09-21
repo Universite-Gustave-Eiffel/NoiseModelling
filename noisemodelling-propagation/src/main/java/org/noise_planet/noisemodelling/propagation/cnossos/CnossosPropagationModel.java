@@ -42,8 +42,7 @@ public class CnossosPropagationModel implements PropagationModel {
      * @return List of AttenuationOutput objects [favorable, homogeneous]
      */
     public List<AttenuationOutput> computeAttenuation(SceneWithAttenuation scene, CutProfile cutProfile,
-                                      AttenuationParameters attenuationParameters,
-                                      boolean isExportAttenuationMatrix) {
+                                      AttenuationParameters attenuationParameters, boolean isExportAttenuationMatrix) {
         // Compute favorable and homogeneous propagation paths
         if (cnossosPaths.isEmpty()) {
             double gs = scene.sourceGs.getOrDefault(cutProfile.getSource().sourcePk, SceneWithAttenuation.DEFAULT_GS);
@@ -94,6 +93,5 @@ public class CnossosPropagationModel implements PropagationModel {
         AttenuationCnossos.computeCnossosAttenuation(attenuationParameters, scene, attenuationOutput,
                 isExportAttenuationMatrix);
         return attenuationOutput;
-
     }
 }

@@ -8,7 +8,6 @@
  */
 package org.noise_planet.noisemodelling.emission.road;
 
-import jdk.jshell.execution.Util;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossos;
 import org.noise_planet.noisemodelling.emission.road.cnossos.RoadCnossosParameters;
 import java.io.IOException;

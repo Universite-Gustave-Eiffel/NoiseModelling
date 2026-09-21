@@ -89,7 +89,7 @@ inputs = [
                 coefficientVersion            : [
                         name       : 'Coefficient version',
                         title      : 'Coefficient version',
-                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020)',
+                        description: '&#127783; Cnossos coefficient version  (1 = 2015, 2 = 2020, 528 = NL)',
                         default    : 2,
                         type       : Double.class
                 ],

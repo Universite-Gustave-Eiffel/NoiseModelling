@@ -44,7 +44,7 @@ Mandatory inputs
    
    *   PK  : an identifier. It shall be a primary key (INTEGER, PRIMARY KEY)
    
-   *   THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
+   *   THE_GEOM  : the 3D geometry of the receivers (POINTZ)
    
    💡 This table can be generated from the WPS Blocks in the "Receivers" folder
 
@@ -99,12 +99,14 @@ Optional inputs
 
    Default: ``false``
 
-``confFavourableOccurrencesDefault`` — *Probability of occurrences*
+``confFavourableOccurrencesDefault`` — *Default favourable occurrences*
    Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
    
    .. figure:: acoustics_parameters_confFavorableOccurrences.png
       :align: center
       :alt: Noise level from source
+   
+   . For Netherlands favourable conditions you should define the period dependant values by using the tablePeriodAtmosphericSettings parameter.
 
    Type: ``String``
 
@@ -165,12 +167,26 @@ Optional inputs
 
    Type: ``String``
 
+``confReceiversZIsAltitude`` — *Receivers Z is altitude*
+   If checked, the Z value of the receiver's geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table.  🛠
+
+   Type: ``Boolean``
+
+   Default: ``false``
+
 ``confReflOrder`` — *Order of reflexion*
    Maximum number of reflections to be taken into account (INTEGER).  🚨 Adding 1 order of reflexion can significantly increase the processing time.
 
    Type: ``Integer``
 
    Default: ``1``
+
+``confSourcesZIsAltitude`` — *Sources Z is altitude*
+   If checked, the Z value of the source's geometry is considered as an altitude (above sea level) otherwise (false by default) the Z value is a height relative to the ground/DEM. In this case, NoiseModelling will deduce the altitude using the provided DEM table.  🛠
+
+   Type: ``Boolean``
+
+   Default: ``false``
 
 ``confTemperature`` — *Air temperature*
    🌡 Air temperature (°C)
@@ -203,7 +219,7 @@ Optional inputs
 ``tableDEM`` — *DEM table name*
    Name of the Digital Elevation Model (DEM) table  The table must contain:
    
-   *   THE_GEOM  : the 3D geometry of the sources (POINT, MULTIPOINT)
+   *   THE_GEOM  : the 3D geometry of the elevation points (POINTZ)
    
    💡 This table can be generated from the WPS Block "Import_Asc_File"
 
@@ -212,7 +228,7 @@ Optional inputs
 ``tableGroundAbs`` — *Ground absorption table name*
    Name of the surface/ground acoustic absorption table  The table must contain:
    
-   *   THE_GEOM : the 2D geometry of the sources (POLYGON or MULTIPOLYGON)
+   *   THE_GEOM : the 2D geometry of the ground (POLYGON)
    
    *   G : the acoustic absorption of a ground (FLOAT between 0 : very hard and 1 : very soft)
 
@@ -223,7 +239,13 @@ Optional inputs
    
    *   PERIOD : time period (VARCHAR PRIMARY KEY)
    
-   *   WINDROSE : probability of occurrences of favourable propagation conditions (ARRAY(16))
+   *   WINDROSE : Comma-delimited string containing the probability ([0,1]) of occurrences of favourable propagation conditions. Follow the clockwise direction. The north slice is the last array index (n°16 in the schema below) not the first one.
+   
+   .. figure:: acoustics_parameters_confFavorableOccurrences.png
+      :align: center
+      :alt: Noise level from source
+   
+   or DutchD, DutchE, DutchN for Netherlands
    
    *   TEMPERATURE : Temperature in celsius (FLOAT)
    

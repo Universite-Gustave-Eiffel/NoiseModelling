@@ -963,6 +963,28 @@ public class RailwayCnossosTest {
                 }
             }
         }
+    }
 
+    @Test
+    public void Test_Cnossos_Rail_Impact_Noise() throws IOException {
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+
+        double joinDensity = railwayCnossos.getJoinDensity("EU1");
+        assertEquals(1.0, joinDensity, EPSILON_TEST1);
+
+        joinDensity = railwayCnossos.getJoinDensity("NL_BB3_M2");
+        assertEquals(3.33, joinDensity,EPSILON_TEST1);
+
+    }
+
+    @Test
+    public void Test_Cnossos_Rail_Emission_Impact_Noise() throws IOException {
+        railwayCnossos.setRailwayDataFile("RailwayEmissionCnossos.json");
+
+        double impactNoise = railwayCnossos.getImpactNoise("NL_BB3_M2",9);
+        assertEquals(20.2244423, impactNoise, EPSILON_TEST1);
+
+        impactNoise = railwayCnossos.getImpactNoise("NL_BB3_M4", 9);
+        assertEquals(25, impactNoise, EPSILON_TEST1);
     }
 }

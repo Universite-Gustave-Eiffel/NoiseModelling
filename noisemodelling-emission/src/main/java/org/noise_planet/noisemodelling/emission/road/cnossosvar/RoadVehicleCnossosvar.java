@@ -75,7 +75,7 @@ public class RoadVehicleCnossosvar {
         RoadLvl = RoadLvl + getCr(veh_type, Junc_type, coeffVer) * coefficientJunctionDistance;
 
 
-        //Studied tyres
+        //Studded tyres
         if (veh_type.equals("1")) { // because studded tyres are only on Cat 1 vehicle
             if (Stud) {
                 double speedStud = (speed >= 90) ? 90 : speed;

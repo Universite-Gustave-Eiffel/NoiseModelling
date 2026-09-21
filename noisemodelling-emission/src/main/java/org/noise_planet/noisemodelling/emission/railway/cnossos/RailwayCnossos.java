@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.noise_planet.noisemodelling.emission.utils.interpLinear.interpLinear;
 
@@ -199,13 +200,37 @@ public class RailwayCnossos extends Railway {
     }
 
     /**
-     *  fetches and returns the impact noise value from the railway data for a specific impact noise ID and frequency ID.
-     * @param impactNoiseId
+     * fetches and returns the impact noise value from the railway data for a specific impact noise ID and frequency ID,
+     * compensated for the number of joins per 100 m; assumes 1 join per 100 m if parameter file doesn't specify
+     * @param impactId
      * @param freqId
      * @return
      */
-    public Double getImpactNoise(String impactNoiseId,  int freqId) { //
-        return getRailWayData().get("Track").get("ImpactNoise").get(impactNoiseId).get("Values").get(freqId).doubleValue();
+    public Double getImpactNoise(String impactId,  int freqId) { //
+        double impactNoise = getRailWayData().get("Track").get("ImpactNoise").get(impactId).get("Values").get(freqId).doubleValue();
+        double joinDensity = getJoinDensity(impactId);
+        return impactNoise + 10. * Math.log10( joinDensity);
+    }
+
+    /**
+     *  fetches and returns the join density value from the railway data for a specific impact noise ID. Returns 1 if
+     *  undefined or 0 in parameter file.
+     * @param impactId
+     * @return
+     */
+    public Double getJoinDensity(String impactId) { //
+        JsonNode impactNode = getRailWayData().get("Track").get("ImpactNoise").get(impactId);
+        if (impactNode != null) {
+            // Check JoinDensity: if present and null, this is an empty sentinel entry
+            JsonNode joinDensityNode = impactNode.get("JoinDensity");
+            if(!(joinDensityNode == null || joinDensityNode.isNull() ) ) {
+                 double joinDensity = joinDensityNode.doubleValue();
+                 if (joinDensity != 0.) {
+                     return joinDensity;
+                }
+            }
+        }
+        return 1.;
     }
 
     /**

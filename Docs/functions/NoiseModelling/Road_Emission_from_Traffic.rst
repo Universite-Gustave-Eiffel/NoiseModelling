@@ -94,7 +94,7 @@ Optional inputs
 ~~~~~~~~~~~~~~~
 
 ``coefficientVersion`` — *Coefficient version*
-   🌧 Cnossos coefficient version  (1 = 2015, 2 = 2020)
+   🌧 Cnossos coefficient version  (1 = 2015, 2 = 2020, 528 = NL)
 
    Type: ``Double``
 

@@ -32,6 +32,7 @@ import org.noise_planet.noisemodelling.pathfinder.profilebuilder.ProfileBuilder;
 import org.noise_planet.noisemodelling.pathfinder.profilebuilder.WallAbsorption;
 import org.noise_planet.noisemodelling.pathfinder.utils.AcousticIndicatorsFunctions;
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters;
+import org.noise_planet.noisemodelling.propagation.DiscreteFavourableProbability;
 import org.noise_planet.noisemodelling.propagation.ReceiverNoiseLevel;
 import org.noise_planet.noisemodelling.propagation.AttenuationOutput;
 import org.slf4j.Logger;
@@ -255,7 +256,8 @@ public class SceneWithEmissionTest {
             noiseMap.getNoiseMapDatabaseParameters().keepAbsorption = true;
 
             DefaultTableLoader defaultTableLoader = (DefaultTableLoader) noiseMap.getPropagationProcessDataFactory();
-            defaultTableLoader.defaultParameters.setWindRose(new double[AttenuationParameters.DEFAULT_WIND_ROSE.length]);
+            // Set homogeneous propagation conditions
+            defaultTableLoader.defaultParameters.setWindRose(new DiscreteFavourableProbability(new double[DiscreteFavourableProbability.DEFAULT_WIND_ROSE.length]));
 
             noiseMap.run(connection, new EmptyProgressVisitor());
 
