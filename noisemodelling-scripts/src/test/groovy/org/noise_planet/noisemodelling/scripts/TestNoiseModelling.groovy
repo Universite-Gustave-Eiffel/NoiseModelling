@@ -183,6 +183,41 @@ class TestNoiseModelling extends JdbcTestCase {
     }
 
     @Test
+    void testAtmosphericSettingsNoSources() {
+
+
+        assertFalse(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+        new Atmospheric_Template().exec(connection, [:])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+        List<String> periods = JDBCUtilities.getUniqueFieldValues(connection, "SOURCES_ATMOSPHERIC", "PERIOD")
+
+        ["D", "E", "N"].forEach {
+            assertTrue(periods.contains(it))
+        }
+    }
+
+
+    @Test
+    void testAtmosphericSettingsNoSourcesDutch() {
+
+
+        assertFalse(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+        new Atmospheric_Template().exec(connection, ["confDutchFraction": true])
+
+        assertTrue(JDBCUtilities.tableExists(connection, "SOURCES_ATMOSPHERIC"))
+
+        def gotWindRose = JDBCUtilities.getUniqueFieldValues(connection, "SOURCES_ATMOSPHERIC", "WINDROSE")
+
+        assertTrue(gotWindRose.contains("DutchD"))
+        assertTrue(gotWindRose.contains("DutchE"))
+        assertTrue(gotWindRose.contains("DutchN"))
+    }
+
+    @Test
     void testNoiseEmissionFromPeriod() {
         new Import_File().exec(connection,
                 ["pathFile" : TestNoiseModelling.getResource("ROADS2.shp").getPath()])

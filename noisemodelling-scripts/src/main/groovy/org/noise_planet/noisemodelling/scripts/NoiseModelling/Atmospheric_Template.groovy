@@ -12,10 +12,7 @@
 
 package org.noise_planet.noisemodelling.scripts.NoiseModelling
 
-
 import org.h2gis.utilities.JDBCUtilities
-import org.h2gis.utilities.dbtypes.DBTypes
-import org.h2gis.utilities.dbtypes.DBUtils
 import org.h2gis.utilities.wrapper.ConnectionWrapper
 import org.noise_planet.noisemodelling.propagation.AttenuationParameters
 import org.noise_planet.noisemodelling.propagation.DiscreteFavourableProbability
@@ -100,12 +97,8 @@ outputs = [
 // main function of the script
 def exec(Connection connection, Map input) {
 
-    DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class))
-
     //Need to change the ConnectionWrapper to WpsConnectionWrapper to work under postGIS database
     connection = new ConnectionWrapper(connection)
-
-    String tableSourcesEmission = input.get("tableSourcesEmission") as String
 
     def tablePeriodAtmosphericSettings = "SOURCES_ATMOSPHERIC"
 
@@ -130,13 +123,16 @@ def exec(Connection connection, Map input) {
     defaultParameters.setTemperature(defaultTemperature)
     defaultParameters.setHumidity(defaultHumidity)
 
-    List<String> periods;
-    try {
+    List<String> periods = Arrays.asList("D", "E", "N")
+
+    if(input.containsKey("tableSourcesEmission")) {
+        String tableSourcesEmission = input.get("tableSourcesEmission") as String
+        if(!JDBCUtilities.tableExists(connection, tableSourcesEmission)) {
+            throw new IllegalArgumentException("Table does not exist: " + tableSourcesEmission)
+        }
         periods = JDBCUtilities.getUniqueFieldValues(connection, tableSourcesEmission, "PERIOD")
-    } catch (Exception ignored) {
-        // Fall back to default values
-        periods = Arrays.asList("D", "E", "N");
     }
+
     periods.each { String period ->
         if(outputDutchFraction) {
             switch (period) {
