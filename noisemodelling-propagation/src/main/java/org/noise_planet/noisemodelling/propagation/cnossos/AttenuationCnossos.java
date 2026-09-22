@@ -793,6 +793,7 @@ public class AttenuationCnossos {
             // compute homogeneous conditions probability from favourable probability
             probability = 1 - probability;
         }
+        cnossosPath.probability = probability;
         for (int i = 0; i < aGlobalMeteoRay.length; i++) {
             aGlobalMeteoRay[i] = wToDb(probability * dBToW(aGlobalMeteo[i]));
         }
