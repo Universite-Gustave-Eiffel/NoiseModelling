@@ -72,6 +72,7 @@ public class OwsController {
     public static final int MAXIMUM_POOL_SIZE = 5;
     public static final long KEEP_ALIVE_TIME = 0L;
     public static final int MAXIMUM_LINES_TO_FETCH = 1_000;
+    public static final int LOG_MESSAGES_PER_PAGE = 200;
     // After the user cancel the job, the WPS script should detect the progressLogger.isCancel() and terminate
     // the computation. However, the script does not respond with this delay,
     // NoiseModelling will force shutdown the database then kill the processing thread.
@@ -624,8 +625,7 @@ public class OwsController {
      */
     public void jobLogs(@NotNull Context ctx) {
         int page = ctx.queryParamAsClass("page", Integer.class).getOrDefault(1);
-        int limit = 20;
-        int offset = (page - 1) * limit;
+        int offset = (page - 1) * LOG_MESSAGES_PER_PAGE;
 
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
@@ -635,16 +635,16 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, limit, 0);
+                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, LOG_MESSAGES_PER_PAGE, 0);
 
                 int messageCount = DatabaseManagement.getLogMessagesCount(connection, jobId);
-                int totalPages = (int) Math.ceil((double) messageCount / limit);
+                int totalPages = (int) Math.ceil((double) messageCount / LOG_MESSAGES_PER_PAGE);
 
                 ctx.render("job_logs", Map.of(
                         "jobId", jobId,
                         "logs", logs,
                         "currentPage", page,
-                        "limit", limit,
+                        "limit", LOG_MESSAGES_PER_PAGE,
                         "messageCount", messageCount,
                         "totalPages", totalPages,
                         "lastTimestamp", !logs.isEmpty() ? logs.getFirst().getEpochTime() : 0,
@@ -811,7 +811,6 @@ public class OwsController {
                 return;
             }
             logger.info("WebSocket connection established for job {} requesting logs since {}", jobId, lastReceivedMessageEpoch);
-            String threadName = Job.getThreadName(jobId);
 
             // Create a custom appender that sends logs to WebSocket
             WriterAppender wsAppender = getWriterAppender(ctx, jobId);
@@ -819,15 +818,7 @@ public class OwsController {
             websocketLoggers.put(ctx, wsAppender);
 
             // Filter to only capture logs from this job's thread
-            wsAppender.addFilter(new Filter() {
-                @Override
-                public int decide(LoggingEvent event) {
-                    if (event.getThreadName().equals(threadName)) {
-                        return Filter.ACCEPT;
-                    }
-                    return Filter.DENY;
-                }
-            });
+            Job.setLogFilter(wsAppender, jobId);
 
             wsAppender.activateOptions();
             org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();

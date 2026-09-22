@@ -138,19 +138,29 @@ public class Job<T> implements Callable<T> {
         jobLogAppender.setName("JobAppender-" + jobId);
 
         // Filter to only capture logs from this job's thread
-        jobLogAppender.addFilter(new Filter() {
+        setLogFilter(jobLogAppender, jobId);
+
+        jobLogAppender.activateOptions();
+        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
+        rootLogger.addAppender(jobLogAppender);
+    }
+
+    /**
+     * Sets the log filter for the writer appender based on the job ID
+     * @param writerAppender The writer appender to set the filter for
+     * @param jobId The job ID to filter logs by
+     */
+    public static void setLogFilter(WriterAppender writerAppender, int jobId) {
+        final String threadName = getThreadName(jobId);
+        writerAppender.addFilter(new Filter() {
             @Override
             public int decide(LoggingEvent event) {
-                if (event.getThreadName().equals(getThreadName(jobId))) {
+                if (event.getThreadName().equals(threadName) || event.getLoggerName().equals(threadName)) {
                     return Filter.ACCEPT;
                 }
                 return Filter.DENY;
             }
         });
-
-        jobLogAppender.activateOptions();
-        org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
-        rootLogger.addAppender(jobLogAppender);
     }
 
     private void releaseLogWritter() {

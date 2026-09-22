@@ -783,7 +783,9 @@ public class DatabaseManagement {
             pst.setInt(4, offset);
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {
-                    messages.add(new Message(rs.getString("MESSAGE"), rs.getTimestamp("TIMESTAMP"), rs.getInt("PK_LOG")));
+                    if(rs.getTimestamp("TIMESTAMP").getTime() > sinceTimeStamp) {
+                        messages.add(new Message(rs.getString("MESSAGE"), rs.getTimestamp("TIMESTAMP"), rs.getInt("PK_LOG")));
+                    }
                 }
             }
         }

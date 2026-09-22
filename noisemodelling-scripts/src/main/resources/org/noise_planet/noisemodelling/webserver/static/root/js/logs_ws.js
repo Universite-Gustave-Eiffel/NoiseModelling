@@ -19,7 +19,10 @@ function openJobLogsStream(url, lastMessageEpoch) {
 function addLogline(msg) {
     let logContainer = id("logs");
     if (logContainer) {
-        let [epoch, message] = msg.data.split(":");
+        // Split the data, epoch up to the first : character
+        let separatorIndex = msg.data.indexOf(":");
+        let epoch = msg.data.substring(0, separatorIndex);
+        let message = msg.data.substring(separatorIndex + 1);
         let messageEpoch = parseInt(epoch);
         if(messageEpoch > lastEpoch) {
             lastEpoch = messageEpoch;
