@@ -508,10 +508,6 @@ public class DelaunayReceiversMaker extends GridMapMaker {
                     SELECT 1 FROM %s t WHERE t.pk_3 = r.pk
                 );
             """.formatted(receiverTableName, trianglesTableName, trianglesTableName, trianglesTableName);
-            try(ResultSet rs = s.executeQuery("EXPLAIN "+query)) {
-                rs.next();
-                logger.info(rs.getString(1));
-            }
             s.executeUpdate(query);
         } catch (SQLException e) {
             throw new RuntimeException(e);
