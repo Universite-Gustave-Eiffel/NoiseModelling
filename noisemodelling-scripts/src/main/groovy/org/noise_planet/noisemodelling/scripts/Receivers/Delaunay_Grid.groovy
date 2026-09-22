@@ -79,8 +79,10 @@ inputs = [
         sourcesTableName   : [
                 name       : 'Sources table name',
                 title      : 'Sources table name',
-                description: 'Name of the Road table.</br><br>' +
-                             'Receivers will not be created on the specified road width',
+                description: 'Name of the Road table. The roads are added into the delaunay triangulation in order to densify the mesh near the sound sources.' +
+                             'The table must contain: <ul>' +
+                             '<li> <b> THE_GEOM </b> : the 2D geometry of the road (POINT/LINESTRING/MULTILINESTRING)</li></ul>',
+                min        : 0, max: 1,
                 type       : String.class
         ],
         maxCellDist        : [
@@ -138,13 +140,6 @@ inputs = [
                              'Do not write the name of a table that contains a space',
                 default    : 'RECEIVERS',
                 type       : String.class
-        ],
-        isoSurfaceInBuildings: [
-                name        : 'Create IsoSurfaces over buildings',
-                title       : 'Create IsoSurfaces over buildings',
-                description : 'If enabled, isosurfaces will be visible at the location of buildings',
-                default    : false,
-                type        : Boolean.class
         ],
         fenceNegativeBuffer             : [
                 name       : 'Negative buffer',
@@ -207,24 +202,13 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
     def outputTableNameTriangles = TableLocation.capsIdentifier(
             input.getOrDefault("outputTableNameTriangles", "TRIANGLES") as String, dbType)
 
-    String sources_table_name = "SOURCES"
-    if (input['sourcesTableName']) {
-        sources_table_name = input['sourcesTableName']
-    } else {
-        throw new IllegalArgumentException("Source table must be specified")
-    }
-    sources_table_name = TableLocation.capsIdentifier(sources_table_name, dbType)
+    String sources_table_name = TableLocation.capsIdentifier(input.getOrDefault("sourcesTableName", "") as String, dbType)
 
     String building_table_name = "BUILDINGS"
     if (input['tableBuilding']) {
         building_table_name = input['tableBuilding']
     }
     building_table_name = TableLocation.capsIdentifier(building_table_name, dbType)
-
-    boolean isoSurfaceInBuildings = false;
-    if(input['isoSurfaceInBuildings']) {
-        isoSurfaceInBuildings = input['isoSurfaceInBuildings'] as Boolean
-    }
 
     Double maxCellDist = 600.0
     if (input['maxCellDist']) {
@@ -334,10 +318,6 @@ def exec(Connection connection, Map input, ProgressVisitor progressLogger) {
     delaunayReceiversMaker.setMaximumArea(maxArea)
     // Do not add receivers closer to buildings than this distance
     delaunayReceiversMaker.setBuildingBuffer(buildingBuffer)
-
-
-    // Allow isosurfaces to be present over buildings if requested.
-    delaunayReceiversMaker.setIsoSurfaceInBuildings(isoSurfaceInBuildings)
 
     // Apply negative envelope parameter
     double negativeBuffer = input.getOrDefault("fenceNegativeBuffer",0.0) as Double
