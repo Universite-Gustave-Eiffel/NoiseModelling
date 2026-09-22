@@ -33,7 +33,8 @@
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const path = "[(@{/ws/job_logs_stream/})]";
             const jobId = [(${jobId})];
-            openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`);
+            const lastTimestamp = [(${lastTimestamp})];
+            openJobLogsStream(`${protocol}//${window.location.host}${path}${jobId}`, lastTimestamp);
         </script>
     </div>
 </body>

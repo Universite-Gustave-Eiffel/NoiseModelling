@@ -313,7 +313,7 @@ public class WpsXmlDocumentGenerator {
         String lastLines = "";
         try(Connection connection = job.serverDataSource.getConnection()) {
             lastLines = DatabaseManagement.getLogMessages(connection, job.jobId, 0,
-                    OwsController.MAXIMUM_LINES_TO_FETCH).stream().map(DatabaseManagement.Message::message)
+                    OwsController.MAXIMUM_LINES_TO_FETCH, 0).stream().map(DatabaseManagement.Message::message)
                     .collect(Collectors.joining("\n"));
         } catch (SQLException e) {
             throw new IOException(e);

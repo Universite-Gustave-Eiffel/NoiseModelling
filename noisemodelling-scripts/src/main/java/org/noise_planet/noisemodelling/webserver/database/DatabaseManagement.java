@@ -768,20 +768,22 @@ public class DatabaseManagement {
      * @param jobId The ID of the job for which to retrieve log messages.
      * @param offset The starting point for retrieving log messages.
      * @param limit The maximum number of log messages to retrieve.
+     * @param sinceTimeStamp The getTimestamp since which to retrieve log messages.
      * @return A list of log messages.
      * @throws SQLException If a database access error occurs or the SQL statement fails to execute.
      */
-    public static List<Message> getLogMessages(Connection connection, int jobId, int offset, int limit) throws SQLException {
-        String sql = "SELECT MESSAGE, TIMESTAMP FROM LOGS WHERE PK_JOB = ? ORDER BY TIMESTAMP DESC LIMIT ? OFFSET ?";
+    public static List<Message> getLogMessages(Connection connection, int jobId, int offset, int limit, long sinceTimeStamp) throws SQLException {
+        String sql = "SELECT PK_LOG, MESSAGE, TIMESTAMP FROM LOGS WHERE PK_JOB = ? AND TIMESTAMP > ? ORDER BY TIMESTAMP DESC LIMIT ? OFFSET ?";
         List<Message> messages = new ArrayList<>();
 
         try (PreparedStatement pst = connection.prepareStatement(sql)) {
             pst.setInt(1, jobId);
-            pst.setInt(2, limit);
-            pst.setInt(3, offset);
+            pst.setTimestamp(2, new Timestamp(sinceTimeStamp));
+            pst.setInt(3, limit);
+            pst.setInt(4, offset);
             try (ResultSet rs = pst.executeQuery()) {
                 while (rs.next()) {
-                    messages.add(new Message(rs.getString("MESSAGE"), rs.getTimestamp("TIMESTAMP")));
+                    messages.add(new Message(rs.getString("MESSAGE"), rs.getTimestamp("TIMESTAMP"), rs.getInt("PK_LOG")));
                 }
             }
         }
@@ -810,21 +812,24 @@ public class DatabaseManagement {
     }
 
     /**
-     * Message and timestamp
+     * Message and getTimestamp
      */
     public static final class Message {
         private final String message;
         private final Timestamp timestamp;
+        private final int messageIndex;
 
         /**
          * Constructs a new Message instance.
          *
          * @param message The log message.
-         * @param timestamp The timestamp of the log message.
+         * @param timestamp The getTimestamp of the log message.
+         * @param messageIndex The index of the log message.
          */
-        public Message(String message, Timestamp timestamp) {
+        public Message(String message, Timestamp timestamp, int messageIndex) {
             this.message = message;
             this.timestamp = timestamp;
+            this.messageIndex = messageIndex;
         }
 
         @Override
@@ -836,8 +841,16 @@ public class DatabaseManagement {
             return message;
         }
 
-        public Timestamp timestamp() {
+        public Timestamp getTimestamp() {
             return timestamp;
+        }
+
+        public long getEpochTime() {
+            return timestamp.getTime();
+        }
+
+        public int messageIndex() {
+            return messageIndex;
         }
 
         @Override
@@ -846,12 +859,13 @@ public class DatabaseManagement {
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (Message) obj;
             return Objects.equals(this.message, that.message) &&
-                    Objects.equals(this.timestamp, that.timestamp);
+                    Objects.equals(this.timestamp, that.timestamp) &&
+                    this.messageIndex == that.messageIndex;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(message, timestamp);
+            return Objects.hash(message, timestamp, messageIndex);
         }
 
     }

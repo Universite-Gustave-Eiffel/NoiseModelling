@@ -635,7 +635,7 @@ public class OwsController {
                 if(hasUnauthorizedJobAccess(ctx, user, jobData)) {
                     return;
                 }
-                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, limit);
+                List<DatabaseManagement.Message> logs = DatabaseManagement.getLogMessages(connection, jobId, offset, limit, 0);
 
                 int messageCount = DatabaseManagement.getLogMessagesCount(connection, jobId);
                 int totalPages = (int) Math.ceil((double) messageCount / limit);
@@ -647,6 +647,7 @@ public class OwsController {
                         "limit", limit,
                         "messageCount", messageCount,
                         "totalPages", totalPages,
+                        "lastTimestamp", !logs.isEmpty() ? logs.getLast().getEpochTime() : 0,
                         "isLive", page == 1
                 ));
             } catch (NumberFormatException ex) {
@@ -803,11 +804,13 @@ public class OwsController {
         try (Connection connection = serverDataSource.getConnection()) {
             User user = ctx.attribute("user");
             int jobId = Integer.parseInt(ctx.pathParam("job_id"));
+            // Retrieve the last received message index to send lost messages
+            long lastReceivedMessageEpoch = ctx.queryParamAsClass("lastReceivedMessageEpoch", Long.class).getOrDefault(0L);
             Map<String, Object> jobData = DatabaseManagement.getJob(connection, jobId);
             if(hasUnauthorizedJobAccess(ctx.getUpgradeCtx$javalin(), user, jobData)) {
                 return;
             }
-            logger.info("WebSocket connection established for job {}", jobId);
+            logger.info("WebSocket connection established for job {} requesting logs since {}", jobId, lastReceivedMessageEpoch);
             String threadName = Job.getThreadName(jobId);
 
             // Create a custom appender that sends logs to WebSocket
@@ -829,6 +832,14 @@ public class OwsController {
             wsAppender.activateOptions();
             org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
             rootLogger.addAppender(wsAppender);
+
+            // Push lost messages
+            if(lastReceivedMessageEpoch > 0) {
+                List<DatabaseManagement.Message> lostMessages = DatabaseManagement.getLogMessages(connection, jobId, 0, OwsController.MAXIMUM_LINES_TO_FETCH, lastReceivedMessageEpoch);
+                for(DatabaseManagement.Message message : lostMessages) {
+                    ctx.send(System.currentTimeMillis() + ":" + message.message());
+                }
+            }
 
         } catch (NumberFormatException ex) {
             logger.error("Invalid job id in WebSocket connection", ex);
@@ -857,7 +868,7 @@ public class OwsController {
             public void write(char[] cbuf, int off, int len) {
                 String message = new String(cbuf, off, len);
                 if(ctx.session.isOpen()) {
-                    ctx.send(message);
+                    ctx.send(System.currentTimeMillis() + ":" + message);
                 }
             }
 
