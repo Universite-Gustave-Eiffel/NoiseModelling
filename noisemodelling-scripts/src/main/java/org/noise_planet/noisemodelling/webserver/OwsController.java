@@ -647,7 +647,7 @@ public class OwsController {
                         "limit", limit,
                         "messageCount", messageCount,
                         "totalPages", totalPages,
-                        "lastTimestamp", !logs.isEmpty() ? logs.getLast().getEpochTime() : 0,
+                        "lastTimestamp", !logs.isEmpty() ? logs.getFirst().getEpochTime() : 0,
                         "isLive", page == 1
                 ));
             } catch (NumberFormatException ex) {
@@ -837,7 +837,7 @@ public class OwsController {
             if(lastReceivedMessageEpoch > 0) {
                 List<DatabaseManagement.Message> lostMessages = DatabaseManagement.getLogMessages(connection, jobId, 0, OwsController.MAXIMUM_LINES_TO_FETCH, lastReceivedMessageEpoch);
                 for(DatabaseManagement.Message message : lostMessages) {
-                    ctx.send(System.currentTimeMillis() + ":" + message.message());
+                    ctx.send(message.getEpochTime() + ":" + message.message());
                 }
             }
 

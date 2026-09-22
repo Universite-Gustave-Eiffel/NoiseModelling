@@ -20,7 +20,10 @@ function addLogline(msg) {
     let logContainer = id("logs");
     if (logContainer) {
         let [epoch, message] = msg.data.split(":");
-        lastEpoch = parseInt(epoch);
+        let messageEpoch = parseInt(epoch);
+        if(messageEpoch > lastEpoch) {
+            lastEpoch = messageEpoch;
+        }
         logContainer.insertAdjacentText("afterbegin", message);
     }
 }

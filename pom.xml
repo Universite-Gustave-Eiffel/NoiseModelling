@@ -9,6 +9,8 @@
     <description>NoiseModelling is an extension of H2GIS</description>
     <properties>
         <groovy-version>5.0.3</groovy-version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
     </properties>
     <organization>
         <name>UMRAE, CEREMA, Univ Gustave Eiffel</name>
