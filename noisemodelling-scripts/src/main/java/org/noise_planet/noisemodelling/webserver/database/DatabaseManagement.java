@@ -15,7 +15,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.h2gis.functions.factory.H2GISDBFactory;
 import org.h2gis.functions.factory.H2GISFunctions;
 import org.h2gis.utilities.JDBCUtilities;
-import org.jetbrains.annotations.NotNull;
 import org.noise_planet.noisemodelling.webserver.Configuration;
 import org.noise_planet.noisemodelling.webserver.script.JobStates;
 import org.noise_planet.noisemodelling.webserver.secure.JWTProviderFactory;
@@ -30,7 +29,12 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -44,7 +48,7 @@ import java.util.Date;
  * The Model of the Web Server
  */
 public class DatabaseManagement {
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final String ADMIN_EMAIL = "admin@localhost";
     public static DateFormat mediumDateFormatEN =
             new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss");
@@ -105,7 +109,6 @@ public class DatabaseManagement {
      * @param databaseEncryption True to enable encryption
      * @return Connection URL
      */
-    @NotNull
     public static String getConnectionUrl(String databaseDirectory, String databaseName,
                                                   boolean databaseEncryption) {
         StringBuilder connectionUrl = new StringBuilder();
@@ -138,8 +141,11 @@ public class DatabaseManagement {
                 }
                 // In the future check databaseVersion for database upgrades
                 if (databaseVersion < DATABASE_VERSION) {
-                    // do upgrade
-                    st.executeUpdate("UPDATE ATTRIBUTES SET DATABASE_VERSION = " + databaseVersion);
+                    if(databaseVersion == 1) {
+                        createLogsTable(st);
+                    }
+                    // We upgraded to the last version
+                    st.executeUpdate("UPDATE ATTRIBUTES SET DATABASE_VERSION = " + DATABASE_VERSION);
                 } else if (databaseVersion > DATABASE_VERSION) {
                     throw new IllegalStateException(
                             String.format("Database more recent than application version %d > %d",
@@ -217,7 +223,20 @@ public class DatabaseManagement {
                         "    ON DELETE CASCADE" +
                         ")"
         );
+        createLogsTable(st);
+    }
 
+    private static void createLogsTable(Statement st) throws SQLException {
+        st.executeUpdate("""
+                CREATE TABLE LOGS(
+                    PK_LOG SERIAL PRIMARY KEY,
+                    PK_JOB INTEGER,
+                    MESSAGE TEXT,
+                    TIMESTAMP TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (PK_JOB) REFERENCES JOBS(PK_JOB) ON DELETE CASCADE
+                )
+                """);
+        st.executeUpdate("CREATE INDEX IDX_LOGS_JOB ON LOGS(PK_JOB)");
     }
 
     /**
@@ -301,7 +320,6 @@ public class DatabaseManagement {
         return getUser(connection, rsUser);
     }
 
-    @NotNull
     public static User getUser(Connection connection, ResultSet rsUser) throws SQLException {
         String email = rsUser.getString("EMAIL");
         String registerToken = rsUser.getString("REGISTER_TOKEN");
@@ -537,7 +555,7 @@ public class DatabaseManagement {
         List<Map<String, Object>> table = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT JOBS.*, USERS.EMAIL FROM JOBS INNER JOIN USERS ON JOBS.PK_USER = USERS.PK_USER ");
         if(filterByUserIdentifier > 0) {
-            sql.append("WHERE PK_USER = ? ");
+            sql.append("WHERE JOBS.PK_USER = ? ");
         }
         sql.append("ORDER BY BEGIN_DATE DESC");
         PreparedStatement statement = connection.prepareStatement(sql.toString());
@@ -593,7 +611,6 @@ public class DatabaseManagement {
         return Collections.emptyMap();
     }
 
-    @NotNull
     public static Map<String, Object> parseJob(ResultSet rs, DateFormat mediumDateFormatEN, DecimalFormat f) throws SQLException {
         Map<String, Object> row = new HashMap<>();
         Integer pkJob = rs.getInt("pk_job");
@@ -725,5 +742,133 @@ public class DatabaseManagement {
             pstUser.setInt(1, identifier);
             pstUser.executeUpdate();
         }
+    }
+
+    /**
+     * Inserts a log message into the LOGS table.
+     *
+     * @param connection The database connection to be used for executing the query.
+     * @param jobId The ID of the job associated with the log message.
+     * @param message The log message to be inserted.
+     * @throws SQLException If a database access error occurs or the SQL statement fails to execute.
+     */
+    public static void insertLogMessage(Connection connection, int jobId, String message) throws SQLException {
+        String sql = "INSERT INTO LOGS (PK_JOB, MESSAGE) VALUES (?, ?)";
+        try (PreparedStatement pstUser = connection.prepareStatement(sql)) {
+            pstUser.setInt(1, jobId);
+            pstUser.setString(2, message);
+            pstUser.executeUpdate();
+        }
+    }
+
+    /**
+     * Return a list of log messages for a specific job.
+     *
+     * @param connection The database connection to be used for executing the query.
+     * @param jobId The ID of the job for which to retrieve log messages.
+     * @param offset The starting point for retrieving log messages.
+     * @param limit The maximum number of log messages to retrieve.
+     * @param sinceTimeStamp The getTimestamp since which to retrieve log messages.
+     * @return A list of log messages.
+     * @throws SQLException If a database access error occurs or the SQL statement fails to execute.
+     */
+    public static List<Message> getLogMessages(Connection connection, int jobId, int offset, int limit, long sinceTimeStamp) throws SQLException {
+        String sql = "SELECT PK_LOG, MESSAGE, TIMESTAMP FROM LOGS WHERE PK_JOB = ? AND TIMESTAMP > ? ORDER BY TIMESTAMP DESC LIMIT ? OFFSET ?";
+        List<Message> messages = new ArrayList<>();
+
+        try (PreparedStatement pst = connection.prepareStatement(sql)) {
+            pst.setInt(1, jobId);
+            pst.setTimestamp(2, new Timestamp(sinceTimeStamp));
+            pst.setInt(3, limit);
+            pst.setInt(4, offset);
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    if(rs.getTimestamp("TIMESTAMP").getTime() > sinceTimeStamp) {
+                        messages.add(new Message(rs.getString("MESSAGE"), rs.getTimestamp("TIMESTAMP"), rs.getInt("PK_LOG")));
+                    }
+                }
+            }
+        }
+        return messages;
+    }
+
+    /**
+     * Returns the count of log messages for a specific job.
+     *
+     * @param connection The database connection to be used for executing the query.
+     * @param jobId The ID of the job for which to retrieve log message count.
+     * @return The count of log messages.
+     * @throws SQLException If a database access error occurs or the SQL statement fails to execute.
+     */
+    public static int getLogMessagesCount(Connection connection, int jobId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM LOGS WHERE PK_JOB = ?";
+        try (PreparedStatement pst = connection.prepareStatement(sql)) {
+            pst.setInt(1, jobId);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Message and getTimestamp
+     */
+    public static final class Message {
+        private final String message;
+        private final Timestamp timestamp;
+        private final int messageIndex;
+
+        /**
+         * Constructs a new Message instance.
+         *
+         * @param message The log message.
+         * @param timestamp The getTimestamp of the log message.
+         * @param messageIndex The index of the log message.
+         */
+        public Message(String message, Timestamp timestamp, int messageIndex) {
+            this.message = message;
+            this.timestamp = timestamp;
+            this.messageIndex = messageIndex;
+        }
+
+        @Override
+        public String toString() {
+            return message;
+        }
+
+        public String message() {
+            return message;
+        }
+
+        public Timestamp getTimestamp() {
+            return timestamp;
+        }
+
+        public long getEpochTime() {
+            return timestamp.getTime();
+        }
+
+        public int messageIndex() {
+            return messageIndex;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (Message) obj;
+            return Objects.equals(this.message, that.message) &&
+                    Objects.equals(this.timestamp, that.timestamp) &&
+                    this.messageIndex == that.messageIndex;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(message, timestamp, messageIndex);
+        }
+
     }
 }

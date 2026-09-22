@@ -52,7 +52,8 @@ public class NoiseMapWriter implements Callable<Boolean> {
     static final int WRITER_CACHE = 65536;
     AtomicBoolean exitWhenDone;
     AtomicBoolean aborted;
-    Logger LOGGER = LoggerFactory.getLogger(NoiseMapWriter.class);
+    /** We use logger name as thread name as the job identifier is stored into the thread name */
+    Logger LOGGER = LoggerFactory.getLogger(Thread.currentThread().getName());
     File sqlFilePath;
     private Connection connection;
     NoiseMapByReceiverMaker noiseMapByReceiverMaker;

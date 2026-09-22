@@ -9,22 +9,20 @@ import org.jspecify.annotations.NonNull;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTWriter;
 import org.noise_planet.noisemodelling.webserver.Configuration;
-import org.noise_planet.noisemodelling.webserver.NoiseModellingServer;
 import org.noise_planet.noisemodelling.webserver.OwsController;
 import org.noise_planet.noisemodelling.webserver.database.DatabaseManagement;
-import org.noise_planet.noisemodelling.webserver.utilities.Logging;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.namespace.QName;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A utility class for generating WPS (Web Processing Service) XML documents.
@@ -255,7 +253,9 @@ public class WpsXmlDocumentGenerator {
                 break;
             case RUNNING:
                 response.getStatus().setProcessStarted(wpsf.createProcessStartedType());
-                response.getStatus().getProcessStarted().setValue(getLastLoggingLines(webServerConfiguration, jobId));
+                if (job != null) {
+                    response.getStatus().getProcessStarted().setValue(getLastLoggingLines(job));
+                }
                 // Extracts progression percentage for status encoding
                 response.getStatus().getProcessStarted().setPercentCompleted(job == null ? BigInteger.valueOf(0) : job.getProgression());
                 break;
@@ -265,7 +265,10 @@ public class WpsXmlDocumentGenerator {
                     output = castJobOutputToString(job.getExecutionPlan().getOutputs());
                 }
                 // Fetch logs output for this job and attach to response (up to a maximum number of lines)
-                String lastLines = getLastLoggingLines(webServerConfiguration, jobId);
+                String lastLines = null;
+                if (job != null) {
+                    lastLines = getLastLoggingLines(job);
+                }
                 response.getStatus().setProcessSucceeded(lastLines);
                 // Copy the wps outputs if available
                 response.setProcessOutputs(wpsf.createProcessOutputsType1());
@@ -306,13 +309,14 @@ public class WpsXmlDocumentGenerator {
 
     }
 
-    public static @NonNull String getLastLoggingLines(Configuration webServerConfiguration, int jobId) throws IOException {
+    public static @NonNull String getLastLoggingLines(Job<?> job) throws IOException {
         String lastLines = "";
-        File logFile = new File(webServerConfiguration.getWorkingDirectory(),
-                NoiseModellingServer.LOGGING_FILE_NAME);
-        if(logFile.exists()) {
-            lastLines = Logging.getLastLines(logFile, OwsController.MAXIMUM_LINES_TO_FETCH,
-                    Job.getThreadName(jobId), new AtomicInteger());
+        try(Connection connection = job.serverDataSource.getConnection()) {
+            lastLines = DatabaseManagement.getLogMessages(connection, job.jobId, 0,
+                    OwsController.MAXIMUM_LINES_TO_FETCH, 0).stream().map(DatabaseManagement.Message::message)
+                    .collect(Collectors.joining("\n"));
+        } catch (SQLException e) {
+            throw new IOException(e);
         }
         return lastLines;
     }

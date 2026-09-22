@@ -126,6 +126,48 @@ a:hover{ text-decoration: underline; }
   font-size: 1em;
 }
 
+.pagination {
+  margin-top: 2em;
+  margin-bottom: 3em;
+  padding: 1em;
+  text-align: center;
+  border-top: 1px solid var(--muted);
+}
+
+.pagination-links {
+  margin-top: 1em;
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+}
+
+.pagination-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5em;
+  height: 2.5em;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.pagination-links a:hover {
+  background-color: #e0e0e0;
+  border-color: #999;
+}
+
+.pagination-links a.active {
+  background-color: var(--text);
+  color: #ffffff;
+  border-color: var(--text);
+  cursor: default;
+}
+
 /* ---------- Sidebar menu ---------- */
 #menu{
   margin-left: -220px;
