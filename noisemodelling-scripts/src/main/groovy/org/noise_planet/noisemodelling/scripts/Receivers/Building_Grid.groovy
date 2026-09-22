@@ -205,9 +205,9 @@ def exec(Connection connection, Map input) {
     sql.execute("DROP TABLE IF EXISTS tmp_receivers_lines")
 
     if (fence != null) {
-        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall)), 0.05) the_geom from " + building_table_name + " WHERE the_geom && :fenceGeom AND ST_INTERSECTS(the_geom, :fenceGeom)", [fenceGeom : fence, distance_wall : distance])
     } else {
-        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall, 'join=bevel')), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
+        sql.execute("CREATE TABLE tmp_receivers_lines(pk int not null primary key, the_geom geometry) as select " + buildingPk + " as pk, st_simplifypreservetopology(ST_ToMultiLine(ST_Buffer(the_geom, :distance_wall)), 0.05) the_geom from " + building_table_name, [distance_wall : distance])
     }
     sql.execute("CREATE SPATIAL INDEX ON tmp_receivers_lines(the_geom)")
 
