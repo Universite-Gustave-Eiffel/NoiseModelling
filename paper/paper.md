@@ -37,7 +37,7 @@ date: 23 September 2026
 bibliography: paper.bib
 ---
 
-![NoiseModelling Header](assets/header.png "NoiseModelling Header"){ width=70% }
+![NoiseModelling Header](assets/header.png "NoiseModelling Header"){ width=100% }
 
 # Summary
 
