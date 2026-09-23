@@ -543,6 +543,25 @@ public class IsoSurface {
     }
 
     /**
+     * Fetch the unique fields values
+     * @param connection
+     * @return
+     * @throws SQLException
+     */
+    public List<Integer> getUniqueCellId(Connection connection) throws SQLException {
+        List<Integer> cellIds = new ArrayList<>();
+        try(Statement statement = connection.createStatement()) {
+            try (ResultSet result =
+                         statement.executeQuery(String.format("SELECT DISTINCT cell_id FROM %s", triangleTable))) {
+                while (result.next()) {
+                    cellIds.add(result.getInt(1));
+                }
+            }
+        }
+        return cellIds;
+    }
+
+    /**
      * @return instance of progress information
      */
     public ProgressVisitor getProgressVisitor() {
@@ -566,164 +585,148 @@ public class IsoSurface {
         final String periodField = TableLocation.capsIdentifier("PERIOD", dbType);
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
         boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, periodField);
-        int lastCellId = -1;
-        try(Statement st = connection.createStatement()) {
-            String geometryType = "GEOMETRY(POLYGONZ,"+srid+")";
+        try (Statement st = connection.createStatement()) {
+            String geometryType = "GEOMETRY(POLYGONZ," + srid + ")";
             exportDimension = 3;
-            if(smooth && smoothCoefficient > 0) {
+            if (smooth && smoothCoefficient > 0) {
                 // Bezier interpolation we loose 3d
-                geometryType = "GEOMETRY(POLYGON,"+srid+")";
+                geometryType = "GEOMETRY(POLYGON," + srid + ")";
                 exportDimension = 2;
             }
             st.execute("DROP TABLE IF EXISTS " + TableLocation.parse(outputTable, dbType));
             StringBuilder createTableQuery = new StringBuilder();
             createTableQuery.append("CREATE TABLE ").append(TableLocation.parse(outputTable, dbType))
                     .append("(PK SERIAL");
-            if(aggregateByPeriod) {
+            if (aggregateByPeriod) {
                 createTableQuery.append(", PERIOD VARCHAR");
             }
             createTableQuery.append(", CELL_ID INTEGER, THE_GEOM ")
                     .append(geometryType).append(", ISOLVL INTEGER, ISOLABEL VARCHAR);");
             st.execute(createTableQuery.toString());
 
-            StringBuilder selectQuery =  new StringBuilder();
-            selectQuery.append("SELECT CELL_ID, ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za,")
+            StringBuilder selectQuery = new StringBuilder();
+            selectQuery.append("SELECT ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za,")
                     .append("ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb, ST_Z(p2.the_geom) zb,")
                     .append("ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, ST_Z(p3.the_geom) zc,")
                     .append(" p1.").append(pointTableField).append(" lvla, p2.").append(pointTableField)
                     .append(" lvlb, p3.").append(pointTableField).append(" lvlc FROM ").append(triangleTable)
                     .append(" t, ").append(pointTable).append(" p1,").append(pointTable).append(" p2,")
                     .append(pointTable).append(" p3 WHERE t.PK_1 = p1.").append(pkField).append(" and t.PK_2 = p2.")
-                    .append(pkField).append(" AND t.PK_3 = p3.").append(pkField);
-            if(aggregateByPeriod) {
+                    .append(pkField).append(" AND t.PK_3 = p3.").append(pkField).append(" AND CELL_ID = ?");
+            if (aggregateByPeriod) {
                 selectQuery.append(" AND p1.PERIOD = ? AND p1.PERIOD=p2.period AND p1.period = p3.period");
             }
-            selectQuery.append(" order by cell_id;");
 
             PreparedStatement statement = connection.prepareStatement(selectQuery.toString());
 
             List<String> periods = new ArrayList<>();
-            if(!aggregateByPeriod) {
+            if (!aggregateByPeriod) {
                 periods.add("");
             } else {
                 periods.addAll(getUniquePeriods(connection));
             }
             ProgressVisitor periodProgress = progressVisitor.subProcess(periods.size());
             for (String period : periods) {
-                if(aggregateByPeriod) {
-                    statement.setString(1, period);
+                if (aggregateByPeriod) {
+                    statement.setString(2, period);
                 }
-
-                // Evaluate the number of triangles with this period in order to have a relevant progress information
-                int numRows = 0;
-                StringBuilder selectCountQuery = new StringBuilder();
-                selectCountQuery.append("SELECT COUNT(*) FROM ").append(triangleTable);
-                if(aggregateByPeriod) {
-                    selectCountQuery.append(" t, ").append(pointTable).append(" p1 WHERE t.PK_1 = p1.").append(pkField);
-                    selectCountQuery.append(" AND p1.PERIOD = ?");
-                }
-                try(PreparedStatement countStatement = connection.prepareStatement(selectCountQuery.toString())) {
-                    if(aggregateByPeriod) {
-                        countStatement.setString(1, period);
-                    }
-                    try (ResultSet countResult = countStatement.executeQuery()) {
-                        if (countResult.next()) {
-                            numRows = countResult.getInt(1);
-                        }
-                    }
-                }
-                ProgressVisitor cellProgress = periodProgress.subProcess(numRows);
-                // Cache iso for the current processing cell
-                Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
-                try (ResultSet rs = statement.executeQuery()) {
-                    // Cache columns index
-                    int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, za = 0, zb = 1, zc = 1, lvla = 0, lvlb = 0,
-                            lvlc = 0, cell_id = 0;
-                    ResultSetMetaData resultSetMetaData = rs.getMetaData();
-                    for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
-                        switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
-                            case "XA":
-                                xa = columnId;
-                                break;
-                            case "XB":
-                                xb = columnId;
-                                break;
-                            case "XC":
-                                xc = columnId;
-                                break;
-                            case "YA":
-                                ya = columnId;
-                                break;
-                            case "YB":
-                                yb = columnId;
-                                break;
-                            case "YC":
-                                yc = columnId;
-                                break;
-                            case "ZA":
-                                za = columnId;
-                                break;
-                            case "ZB":
-                                zb = columnId;
-                                break;
-                            case "ZC":
-                                zc = columnId;
-                                break;
-                            case "LVLA":
-                                lvla = columnId;
-                                break;
-                            case "LVLB":
-                                lvlb = columnId;
-                                break;
-                            case "LVLC":
-                                lvlc = columnId;
-                                break;
-                            case "CELL_ID":
-                                cell_id = columnId;
-                                break;
-                        }
-                    }
-                    if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0 || za == 0 || zb == 0 || zc == 0
-                            || lvla == 0 || lvlb == 0 || lvlc == 0 || cell_id == 0) {
-                        throw new SQLException("Missing field in input tables");
-                    }
-                    while (rs.next()) {
-                        int cellId = rs.getInt(cell_id);
-                        // Process polygons of last cell
-                        if (cellId != lastCellId && lastCellId != -1) {
-                            processCell(connection, cellId, polyMap, period, aggregateByPeriod);
-                            polyMap.clear();
-                        }
-                        lastCellId = cellId;
-                        // Split current triangle
-                        Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya), rs.getDouble(za));
-                        Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb), rs.getDouble(zb));
-                        Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc), rs.getDouble(zc));
-                        // Fetch data
-                        TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
-                                dbaToW(rs.getDouble(lvlb)),
-                                dbaToW(rs.getDouble(lvlc)));
-                        // Split triangle
-                        Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
-                        for (Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {
-                            if (!polyMap.containsKey(entry.getKey())) {
-                                polyMap.put(entry.getKey(), new ArrayList<>());
-                            }
-                            ArrayList<Geometry> polygonsArray = polyMap.get(entry.getKey());
-                            for (TriMarkers tri : entry.getValue()) {
-                                Polygon poly = geometryFactory.createPolygon(new Coordinate[]{tri.p0, tri.p1, tri.p2, tri.p0});
-                                polygonsArray.add(poly);
+                List<Integer> cellIds = getUniqueCellId(connection);
+                for (int cellId : cellIds) {
+                    statement.setInt(1, cellId);
+                    int numRows = 0;
+                    try(PreparedStatement countStatement = connection.prepareStatement("SELECT COUNT(*) FROM %s WHERE CELL_ID = ?".formatted(triangleTable))) {
+                        countStatement.setInt(1, cellId);
+                        try (ResultSet countResult = countStatement.executeQuery()) {
+                            if (countResult.next()) {
+                                numRows = countResult.getInt(1);
                             }
                         }
-                        cellProgress.endStep();
                     }
-                }
-                if (!polyMap.isEmpty()) {
-                    processCell(connection, lastCellId, polyMap, period, aggregateByPeriod);
+                    ProgressVisitor cellProgress = periodProgress.subProcess(numRows);
+                    // Cache iso for the current processing cell
+                    Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
+                    try (ResultSet rs = statement.executeQuery()) {
+                        // Cache columns index
+                        int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, za = 0, zb = 1, zc = 1, lvla = 0, lvlb = 0,
+                                lvlc = 0;
+                        ResultSetMetaData resultSetMetaData = rs.getMetaData();
+                        for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
+                            switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
+                                case "XA":
+                                    xa = columnId;
+                                    break;
+                                case "XB":
+                                    xb = columnId;
+                                    break;
+                                case "XC":
+                                    xc = columnId;
+                                    break;
+                                case "YA":
+                                    ya = columnId;
+                                    break;
+                                case "YB":
+                                    yb = columnId;
+                                    break;
+                                case "YC":
+                                    yc = columnId;
+                                    break;
+                                case "ZA":
+                                    za = columnId;
+                                    break;
+                                case "ZB":
+                                    zb = columnId;
+                                    break;
+                                case "ZC":
+                                    zc = columnId;
+                                    break;
+                                case "LVLA":
+                                    lvla = columnId;
+                                    break;
+                                case "LVLB":
+                                    lvlb = columnId;
+                                    break;
+                                case "LVLC":
+                                    lvlc = columnId;
+                                    break;
+                            }
+                        }
+                        if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0 || za == 0 || zb == 0 || zc == 0
+                                || lvla == 0 || lvlb == 0 || lvlc == 0) {
+                            throw new SQLException("Missing field in input tables");
+                        }
+                        while (rs.next()) {
+                            // Split current triangle
+                            Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya), rs.getDouble(za));
+                            Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb), rs.getDouble(zb));
+                            Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc), rs.getDouble(zc));
+                            // Fetch data
+                            TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
+                                    dbaToW(rs.getDouble(lvlb)),
+                                    dbaToW(rs.getDouble(lvlc)));
+                            // Split triangle
+                            Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
+                            for (Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {
+                                if (!polyMap.containsKey(entry.getKey())) {
+                                    polyMap.put(entry.getKey(), new ArrayList<>());
+                                }
+                                ArrayList<Geometry> polygonsArray = polyMap.get(entry.getKey());
+                                for (TriMarkers tri : entry.getValue()) {
+                                    Polygon poly = geometryFactory.createPolygon(new Coordinate[]{tri.p0, tri.p1, tri.p2, tri.p0});
+                                    polygonsArray.add(poly);
+                                }
+                            }
+                            cellProgress.endStep();
+                        }
+                    }
+                    // Process and export data for current cellId
+                    if(!polyMap.isEmpty()) {
+                        processCell(connection, cellId, polyMap, period, aggregateByPeriod);
+                        polyMap.clear();
+                    }
                 }
             }
         }
-        if(!connection.getAutoCommit()) {
+        if (!connection.getAutoCommit()) {
             connection.commit();
         }
     }
