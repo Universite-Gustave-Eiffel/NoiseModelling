@@ -59,7 +59,7 @@ It is therefore crucial to simulate and predict noise propagation in various env
 
 Since 2019 and Directive (EU) 2015/996 [@noauthor_commission_2015], the CNOSSOS-EU emission and propagation method must be used to produce strategic noise maps as described in Directive 2002/49/EC [@noauthor_commission_2002].
 
-There is software that fully implements the CNOSSOS-EU method, but this is commercial closed-source software. Other open-source tools can produce noise maps, such as OpeNoise Map [@arpa_piemonte_openoise_2024] and Code_TYMPAN [@edf_code_tympan], but they focus on the ISO 9613 method and do not fully implement the CNOSSOS-EU model.
+There is software that fully implements the CNOSSOS-EU method, but this is commercial closed-source software. Other open-source tools can produce noise maps, such as OpeNoise Map [@arpa_piemonte_openoise_2024] and Code_TYMPAN [@edf_code_tympan], but they either focus on the ISO 9613-2:2024 method or do not fully implement the CNOSSOS-EU model.
 
 The NoiseModelling library has been developed jointly by Gustave Eiffel University and CNRS in an effort to provide the engineering and scientific communities around the world with a fully free and open-source software to compute and explore noise maps and experiment with the underlying models.
 
