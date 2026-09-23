@@ -335,7 +335,7 @@ public class IsoSurface {
     }
 
     /**
-     * Triangle table with fields THE_GEOM, PK_1, PK_2, PK_3, CELL_ID
+     * Triangle table with fields PK_1, PK_2, PK_3, CELL_ID
      */
     public void setTriangleTable(String triangleTable) {
         this.triangleTable = triangleTable;
@@ -627,7 +627,7 @@ public class IsoSurface {
 
     /**
      * @param connection
-     * @param pkField Field name in point table to join with Triangle table and point table
+     * @param pkField    Field name in point table to join with Triangle table and point table
      * @throws SQLException
      */
     public void createTable(Connection connection, String pkField) throws SQLException {
@@ -637,12 +637,12 @@ public class IsoSurface {
         boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, periodField);
         // Check if primary key are created on point table (or query will be very slow)
         List<String> receiversPkFields = getPkFields(connection, pointTable);
-        if((aggregateByPeriod && !receiversPkFields.contains(periodField)) ||
+        if ((aggregateByPeriod && !receiversPkFields.contains(periodField)) ||
                 (!aggregateByPeriod && !receiversPkFields.contains(TableLocation.capsIdentifier(pkField, dbType)))) {
             log.info("Missing primary key(s) on {}, creating it..", pointTable);
             Statement st = connection.createStatement();
             st.execute("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL".formatted(pointTable, pkField));
-            if(aggregateByPeriod) {
+            if (aggregateByPeriod) {
                 st.execute("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL".formatted(pointTable, periodField));
                 st.execute("ALTER TABLE %s ADD PRIMARY KEY(%s, %s)".formatted(pointTable, pkField, periodField));
             } else {
@@ -651,14 +651,14 @@ public class IsoSurface {
         }
         List<String> indexes = getIndexedColumns(connection, triangleTable);
         // should have an index on CELL_ID and pk_1, pk_2, pk_3
-        if(!indexes.contains(TableLocation.capsIdentifier("CELL_ID", dbType))) {
+        if (!indexes.contains(TableLocation.capsIdentifier("CELL_ID", dbType))) {
             log.info("Missing index on {}.{}, creating it..", triangleTable, "CELL_ID");
             try (Statement st = connection.createStatement()) {
                 st.execute("CREATE INDEX ON " + TableLocation.parse(triangleTable, dbType) + " (CELL_ID)");
             }
         }
-        for(int i : new int[]{1, 2, 3}) {
-            if(!indexes.contains(TableLocation.capsIdentifier("PK_" + i, dbType))) {
+        for (int i : new int[]{1, 2, 3}) {
+            if (!indexes.contains(TableLocation.capsIdentifier("PK_" + i, dbType))) {
                 log.info("Missing index on {}.{}, creating it..", triangleTable, "PK_" + i);
                 try (Statement st = connection.createStatement()) {
                     st.execute("CREATE INDEX ON " + TableLocation.parse(triangleTable, dbType) + " (PK_" + i + ")");
@@ -684,40 +684,8 @@ public class IsoSurface {
                     .append(geometryType).append(", ISOLVL INTEGER, ISOLABEL VARCHAR);");
             st.execute(createTableQuery.toString());
 
-            String sql;
-            if (aggregateByPeriod) {
-                sql = """
-            SELECT\s
-                p1.the_geom AS geoma, p2.the_geom AS geomb, p3.the_geom AS geomc,\s
-                p1.%s AS lvla, p2.%s AS lvlb, p3.%s AS lvlc\s
-            FROM %s t
-            INNER JOIN %s p1 ON t.PK_1 = p1.%s
-            INNER JOIN %s p2 ON t.PK_2 = p2.%s
-            INNER JOIN %s p3 ON t.PK_3 = p3.%s
-            WHERE t.CELL_ID = ?\s
-              AND p1.PERIOD = ?\s
-              AND p2.PERIOD = p1.PERIOD\s
-              AND p3.PERIOD = p1.PERIOD
-           \s""".formatted(pointTableField, pointTableField, pointTableField,
-                        triangleTable,
-                        pointTable, pkField, pointTable, pkField, pointTable, pkField);
-            } else {
-                sql = """
-            SELECT\s
-                p1.the_geom AS geoma, p2.the_geom AS geomb, p3.the_geom AS geomc,\s
-                p1.%s AS lvla, p2.%s AS lvlb, p3.%s AS lvlc\s
-            FROM %s t
-            INNER JOIN %s p1 ON t.PK_1 = p1.%s
-            INNER JOIN %s p2 ON t.PK_2 = p2.%s
-            INNER JOIN %s p3 ON t.PK_3 = p3.%s
-            WHERE t.CELL_ID = ?
-           \s""".formatted(pointTableField, pointTableField, pointTableField,
-                        triangleTable,
-                        pointTable, pkField, pointTable, pkField, pointTable, pkField);
-            }
-
-            PreparedStatement statement = connection.prepareStatement(sql);
-
+            String triangleSql = "SELECT PK_1, PK_2, PK_3 FROM %s WHERE CELL_ID = ?"
+                    .formatted(triangleTable);
             List<String> periods = new ArrayList<>();
             if (!aggregateByPeriod) {
                 periods.add("");
@@ -726,14 +694,11 @@ public class IsoSurface {
             }
             ProgressVisitor periodProgress = progressVisitor.subProcess(periods.size());
             for (String period : periods) {
-                if (aggregateByPeriod) {
-                    statement.setString(2, period);
-                }
                 List<Integer> cellIds = getUniqueCellId(connection);
+                ProgressVisitor cellProgress = periodProgress.subProcess(cellIds.size());
                 for (int cellId : cellIds) {
-                    statement.setInt(1, cellId);
                     int numRows = 0;
-                    try(PreparedStatement countStatement = connection.prepareStatement("SELECT COUNT(*) FROM %s WHERE CELL_ID = ?".formatted(triangleTable))) {
+                    try (PreparedStatement countStatement = connection.prepareStatement("SELECT COUNT(*) FROM %s WHERE CELL_ID = ?".formatted(triangleTable))) {
                         countStatement.setInt(1, cellId);
                         try (ResultSet countResult = countStatement.executeQuery()) {
                             if (countResult.next()) {
@@ -741,64 +706,56 @@ public class IsoSurface {
                             }
                         }
                     }
-                    ProgressVisitor cellProgress = periodProgress.subProcess(numRows);
+                    ProgressVisitor triangleProgress = cellProgress.subProcess(numRows);
+                    // Cache receivers position and noise level for this CELL
+                    // Avoid using triple join with TRIANGLES table, there were some issues with Database optimization
+                    Map<Integer, Double> receiverLevels = new HashMap<>();
+                    Map<Integer, Coordinate> receiverCoordinates = new HashMap<>();
+                    for (int vertex = 1; vertex <= 3; vertex++) {
+                        cacheReceivers(connection, pkField, period, cellId, vertex, aggregateByPeriod, receiverLevels, receiverCoordinates);
+                    }
                     // Cache iso for the current processing cell
                     Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
-                    try (ResultSet rs = statement.executeQuery()) {
-                        // Cache columns index
-                        int geomA = 0, geomB = 0, geomC = 0, lvla = 0, lvlb = 0, lvlc = 0;
-                        ResultSetMetaData resultSetMetaData = rs.getMetaData();
-                        for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
-                            switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
-                                case "GEOMA":
-                                    geomA = columnId;
-                                    break;
-                                case "GEOMB":
-                                    geomB = columnId;
-                                    break;
-                                case "GEOMC":
-                                    geomC = columnId;
-                                    break;
-                                case "LVLA":
-                                    lvla = columnId;
-                                    break;
-                                case "LVLB":
-                                    lvlb = columnId;
-                                    break;
-                                case "LVLC":
-                                    lvlc = columnId;
-                                    break;
-                            }
-                        }
-                        if (geomA == 0 || geomB == 0 || geomC == 0 || lvla == 0 || lvlb == 0 || lvlc == 0) {
-                            throw new SQLException("Missing field in input tables");
-                        }
-                        while (rs.next()) {
-                            // Split current triangle
-                            Coordinate a = ((Geometry) rs.getObject(geomA)).getCoordinate();
-                            Coordinate b = ((Geometry) rs.getObject(geomB)).getCoordinate();
-                            Coordinate c = ((Geometry) rs.getObject(geomC)).getCoordinate();
-                            // Fetch data
-                            TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
-                                    dbaToW(rs.getDouble(lvlb)),
-                                    dbaToW(rs.getDouble(lvlc)));
-                            // Split triangle
-                            Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
-                            for (Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {
-                                if (!polyMap.containsKey(entry.getKey())) {
-                                    polyMap.put(entry.getKey(), new ArrayList<>());
+                    try (PreparedStatement triangleStatement = connection.prepareStatement(triangleSql)) {
+                        triangleStatement.setInt(1, cellId);
+                        try (ResultSet rs = triangleStatement.executeQuery()) {
+                            while (rs.next()) {
+                                // Split current triangle
+                                int pkA = rs.getInt(1);
+                                int pkB = rs.getInt(2);
+                                int pkC = rs.getInt(3);
+                                Coordinate coordinateA = receiverCoordinates.get(pkA);
+                                Coordinate coordinateB = receiverCoordinates.get(pkB);
+                                Coordinate coordinateC = receiverCoordinates.get(pkC);
+                                Double levelA = receiverLevels.get(pkA);
+                                Double levelB = receiverLevels.get(pkB);
+                                Double levelC = receiverLevels.get(pkC);
+                                if (coordinateA == null || coordinateB == null || coordinateC == null ||
+                                        levelA == null || levelB == null || levelC == null) {
+                                    triangleProgress.endStep();
+                                    continue;
                                 }
-                                ArrayList<Geometry> polygonsArray = polyMap.get(entry.getKey());
-                                for (TriMarkers tri : entry.getValue()) {
-                                    Polygon poly = geometryFactory.createPolygon(new Coordinate[]{tri.p0, tri.p1, tri.p2, tri.p0});
-                                    polygonsArray.add(poly);
+                                // Fetch data
+                                TriMarkers triMarkers = new TriMarkers(coordinateA, coordinateB, coordinateC,
+                                        dbaToW(levelA), dbaToW(levelB), dbaToW(levelC));
+                                // Split triangle
+                                Map<Short, Deque<TriMarkers>> res = Contouring.processTriangle(triMarkers, isoLevels);
+                                for (Map.Entry<Short, Deque<TriMarkers>> entry : res.entrySet()) {
+                                    if (!polyMap.containsKey(entry.getKey())) {
+                                        polyMap.put(entry.getKey(), new ArrayList<>());
+                                    }
+                                    ArrayList<Geometry> polygonsArray = polyMap.get(entry.getKey());
+                                    for (TriMarkers tri : entry.getValue()) {
+                                        Polygon poly = geometryFactory.createPolygon(new Coordinate[]{tri.p0, tri.p1, tri.p2, tri.p0});
+                                        polygonsArray.add(poly);
+                                    }
                                 }
+                                triangleProgress.endStep();
                             }
-                            cellProgress.endStep();
                         }
                     }
                     // Process and export data for current cellId
-                    if(!polyMap.isEmpty()) {
+                    if (!polyMap.isEmpty()) {
                         processCell(connection, cellId, polyMap, period, aggregateByPeriod);
                         polyMap.clear();
                     }
@@ -807,6 +764,49 @@ public class IsoSurface {
         }
         if (!connection.getAutoCommit()) {
             connection.commit();
+        }
+    }
+
+    /**
+     * Cache receivers position and noise level
+     * @param connection
+     * @param pkField
+     * @param period
+     * @param cellId
+     * @param vertex
+     * @param aggregateByPeriod
+     * @param receiverLevels
+     * @param receiverCoordinates
+     * @throws SQLException
+     */
+    private void cacheReceivers(Connection connection, String pkField, String period, int cellId, int vertex,
+                                boolean aggregateByPeriod, Map<Integer, Double> receiverLevels,
+                                Map<Integer, Coordinate> receiverCoordinates) throws SQLException {
+        String receiverSql = """
+                SELECT %s, %s, THE_GEOM
+                FROM %s
+                WHERE %s IN (
+                    SELECT PK_%d FROM %s WHERE CELL_ID = ?
+                )
+                """.formatted(pkField, pointTableField, pointTable, pkField, vertex, triangleTable);
+        if (aggregateByPeriod) {
+            receiverSql += " AND PERIOD = ?";
+        }
+        try (PreparedStatement receiverStatement = connection.prepareStatement(receiverSql)) {
+            receiverStatement.setInt(1, cellId);
+            if (aggregateByPeriod) {
+                receiverStatement.setString(2, period);
+            }
+            try (ResultSet receiverResult = receiverStatement.executeQuery()) {
+                while (receiverResult.next()) {
+                    int receiverId = receiverResult.getInt(1);
+                    receiverLevels.put(receiverId, receiverResult.getDouble(2));
+                    Geometry geometry = (Geometry) receiverResult.getObject(3);
+                    if (geometry != null && !geometry.isEmpty()) {
+                        receiverCoordinates.put(receiverId, geometry.getCoordinate());
+                    }
+                }
+            }
         }
     }
 
