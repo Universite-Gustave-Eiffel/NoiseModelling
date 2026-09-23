@@ -30,12 +30,6 @@ Arguments
 Mandatory inputs
 ~~~~~~~~~~~~~~~~
 
-``sourcesTableName`` — *Sources table name*
-   Name of the Road table.
-   Receivers will not be created on the specified road width
-
-   Type: ``String``
-
 ``tableBuilding`` — *Buildings table name*
    Name of the Buildings table.
    The table must contain:
@@ -85,13 +79,6 @@ Optional inputs
 
    Default: ``4``
 
-``isoSurfaceInBuildings`` — *Create IsoSurfaces over buildings*
-   If enabled, isosurfaces will be visible at the location of buildings
-
-   Type: ``Boolean``
-
-   Default: ``false``
-
 ``maxArea`` — *Maximum Area*
    Set Maximum Area (in m2) (FLOAT). No triangles larger than provided area will be created.Smaller area will create more receivers
 
@@ -132,6 +119,13 @@ Optional inputs
    If provided, a sub-domain will not be computed if no sources geometries are near x meters from the sub-domain area
 
    Type: ``Double``
+
+``sourcesTableName`` — *Sources table name*
+   Name of the Road table. The roads are added into the delaunay triangulation in order to densify the mesh near the sound sources.The table must contain:
+   
+   *   THE_GEOM  : the 2D geometry of the road (POINT/LINESTRING/MULTILINESTRING)
+
+   Type: ``String``
 
 Output
 ------

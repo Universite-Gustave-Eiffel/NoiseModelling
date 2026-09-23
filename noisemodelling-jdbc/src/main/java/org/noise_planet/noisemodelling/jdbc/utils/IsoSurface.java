@@ -514,13 +514,11 @@ public class IsoSurface {
      */
     public void createTable(Connection connection) throws SQLException {
         DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
-        List<String> fields = JDBCUtilities.getColumnNames(connection, TableLocation.parse(pointTable, dbType));
-        int pk = JDBCUtilities.getIntegerPrimaryKey(connection.unwrap(Connection.class), TableLocation.parse(pointTable, dbType));
-        if(pk == 0) {
+        List<String> fields = getPkFields(connection, pointTable);
+        if(fields.isEmpty()) {
             throw new SQLException(pointTable+" does not contain a primary key");
         }
-        String pkField = fields.get(pk - 1);
-        createTable(connection, pkField);
+        createTable(connection, fields.getFirst());
     }
 
     /**
@@ -576,6 +574,58 @@ public class IsoSurface {
     }
 
     /**
+     * Get primary key fields for a given table
+     * @param connection SQL connection
+     * @param tableIdentifier Table identifier
+     * @return List of primary key field names
+     * @throws SQLException Error during SQL query
+     */
+    private static List<String> getPkFields(Connection connection, String tableIdentifier) throws SQLException {
+        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+        List<String> tablePkFields = new ArrayList<>();
+        TableLocation tableIdentifierTl = TableLocation.parse(tableIdentifier, dbType);
+        try(ResultSet rs = databaseMetaData.getPrimaryKeys(tableIdentifierTl.getCatalog(),
+                tableIdentifierTl.getSchema(), tableIdentifierTl.getTable())) {
+            while (rs.next()) {
+                tablePkFields.add(rs.getString("COLUMN_NAME"));
+            }
+        }
+        return tablePkFields;
+    }
+
+    /**
+     * Get the list of indexed columns for a given table
+     * @param connection SQL connection
+     * @param tableIdentifier Table identifier
+     * @return List of indexed column names
+     * @throws SQLException Error during SQL query
+     */
+    private static List<String> getIndexedColumns(Connection connection, String tableIdentifier) throws SQLException {
+        DatabaseMetaData databaseMetaData = connection.getMetaData();
+        DBTypes dbType = DBUtils.getDBType(connection.unwrap(Connection.class));
+
+        Set<String> indexedColumns = new LinkedHashSet<>();
+        TableLocation tableIdentifierTl = TableLocation.parse(tableIdentifier, dbType);
+
+        try (ResultSet rs = databaseMetaData.getIndexInfo(
+                tableIdentifierTl.getCatalog(),
+                tableIdentifierTl.getSchema(),
+                tableIdentifierTl.getTable(),
+                false,
+                false)) {
+
+            while (rs.next()) {
+                String columnName = rs.getString("COLUMN_NAME");
+                if (columnName != null) {
+                    indexedColumns.add(columnName);
+                }
+            }
+        }
+        return new ArrayList<>(indexedColumns);
+    }
+
+    /**
      * @param connection
      * @param pkField Field name in point table to join with Triangle table and point table
      * @throws SQLException
@@ -585,6 +635,36 @@ public class IsoSurface {
         final String periodField = TableLocation.capsIdentifier("PERIOD", dbType);
         GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), srid);
         boolean aggregateByPeriod = JDBCUtilities.hasField(connection, pointTable, periodField);
+        // Check if primary key are created on point table (or query will be very slow)
+        List<String> receiversPkFields = getPkFields(connection, pointTable);
+        if((aggregateByPeriod && !receiversPkFields.contains(periodField)) ||
+                (!aggregateByPeriod && !receiversPkFields.contains(TableLocation.capsIdentifier(pkField, dbType)))) {
+            log.info("Missing primary key(s) on {}, creating it..", pointTable);
+            Statement st = connection.createStatement();
+            st.execute("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL".formatted(pointTable, pkField));
+            if(aggregateByPeriod) {
+                st.execute("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL".formatted(pointTable, periodField));
+                st.execute("ALTER TABLE %s ADD PRIMARY KEY(%s, %s)".formatted(pointTable, pkField, periodField));
+            } else {
+                st.execute("ALTER TABLE %s ADD PRIMARY KEY(%s)".formatted(pointTable, pkField));
+            }
+        }
+        List<String> indexes = getIndexedColumns(connection, triangleTable);
+        // should have an index on CELL_ID and pk_1, pk_2, pk_3
+        if(!indexes.contains(TableLocation.capsIdentifier("CELL_ID", dbType))) {
+            log.info("Missing index on {}.{}, creating it..", triangleTable, "CELL_ID");
+            try (Statement st = connection.createStatement()) {
+                st.execute("CREATE INDEX ON " + TableLocation.parse(triangleTable, dbType) + " (CELL_ID)");
+            }
+        }
+        for(int i : new int[]{1, 2, 3}) {
+            if(!indexes.contains(TableLocation.capsIdentifier("PK_" + i, dbType))) {
+                log.info("Missing index on {}.{}, creating it..", triangleTable, "PK_" + i);
+                try (Statement st = connection.createStatement()) {
+                    st.execute("CREATE INDEX ON " + TableLocation.parse(triangleTable, dbType) + " (PK_" + i + ")");
+                }
+            }
+        }
         try (Statement st = connection.createStatement()) {
             String geometryType = "GEOMETRY(POLYGONZ," + srid + ")";
             exportDimension = 3;
@@ -604,20 +684,39 @@ public class IsoSurface {
                     .append(geometryType).append(", ISOLVL INTEGER, ISOLABEL VARCHAR);");
             st.execute(createTableQuery.toString());
 
-            StringBuilder selectQuery = new StringBuilder();
-            selectQuery.append("SELECT ST_X(p1.the_geom) xa,ST_Y(p1.the_geom) ya, ST_Z(p1.the_geom) za,")
-                    .append("ST_X(p2.the_geom) xb,ST_Y(p2.the_geom) yb, ST_Z(p2.the_geom) zb,")
-                    .append("ST_X(p3.the_geom) xc,ST_Y(p3.the_geom) yc, ST_Z(p3.the_geom) zc,")
-                    .append(" p1.").append(pointTableField).append(" lvla, p2.").append(pointTableField)
-                    .append(" lvlb, p3.").append(pointTableField).append(" lvlc FROM ").append(triangleTable)
-                    .append(" t, ").append(pointTable).append(" p1,").append(pointTable).append(" p2,")
-                    .append(pointTable).append(" p3 WHERE t.PK_1 = p1.").append(pkField).append(" and t.PK_2 = p2.")
-                    .append(pkField).append(" AND t.PK_3 = p3.").append(pkField).append(" AND CELL_ID = ?");
+            String sql;
             if (aggregateByPeriod) {
-                selectQuery.append(" AND p1.PERIOD = ? AND p1.PERIOD=p2.period AND p1.period = p3.period");
+                sql = """
+            SELECT\s
+                p1.the_geom AS geoma, p2.the_geom AS geomb, p3.the_geom AS geomc,\s
+                p1.%s AS lvla, p2.%s AS lvlb, p3.%s AS lvlc\s
+            FROM %s t
+            INNER JOIN %s p1 ON t.PK_1 = p1.%s
+            INNER JOIN %s p2 ON t.PK_2 = p2.%s
+            INNER JOIN %s p3 ON t.PK_3 = p3.%s
+            WHERE t.CELL_ID = ?\s
+              AND p1.PERIOD = ?\s
+              AND p2.PERIOD = p1.PERIOD\s
+              AND p3.PERIOD = p1.PERIOD
+           \s""".formatted(pointTableField, pointTableField, pointTableField,
+                        triangleTable,
+                        pointTable, pkField, pointTable, pkField, pointTable, pkField);
+            } else {
+                sql = """
+            SELECT\s
+                p1.the_geom AS geoma, p2.the_geom AS geomb, p3.the_geom AS geomc,\s
+                p1.%s AS lvla, p2.%s AS lvlb, p3.%s AS lvlc\s
+            FROM %s t
+            INNER JOIN %s p1 ON t.PK_1 = p1.%s
+            INNER JOIN %s p2 ON t.PK_2 = p2.%s
+            INNER JOIN %s p3 ON t.PK_3 = p3.%s
+            WHERE t.CELL_ID = ?
+           \s""".formatted(pointTableField, pointTableField, pointTableField,
+                        triangleTable,
+                        pointTable, pkField, pointTable, pkField, pointTable, pkField);
             }
 
-            PreparedStatement statement = connection.prepareStatement(selectQuery.toString());
+            PreparedStatement statement = connection.prepareStatement(sql);
 
             List<String> periods = new ArrayList<>();
             if (!aggregateByPeriod) {
@@ -647,37 +746,18 @@ public class IsoSurface {
                     Map<Short, ArrayList<Geometry>> polyMap = new HashMap<>();
                     try (ResultSet rs = statement.executeQuery()) {
                         // Cache columns index
-                        int xa = 0, xb = 0, xc = 0, ya = 0, yb = 0, yc = 0, za = 0, zb = 1, zc = 1, lvla = 0, lvlb = 0,
-                                lvlc = 0;
+                        int geomA = 0, geomB = 0, geomC = 0, lvla = 0, lvlb = 0, lvlc = 0;
                         ResultSetMetaData resultSetMetaData = rs.getMetaData();
                         for (int columnId = 1; columnId <= resultSetMetaData.getColumnCount(); columnId++) {
                             switch (resultSetMetaData.getColumnLabel(columnId).toUpperCase()) {
-                                case "XA":
-                                    xa = columnId;
+                                case "GEOMA":
+                                    geomA = columnId;
                                     break;
-                                case "XB":
-                                    xb = columnId;
+                                case "GEOMB":
+                                    geomB = columnId;
                                     break;
-                                case "XC":
-                                    xc = columnId;
-                                    break;
-                                case "YA":
-                                    ya = columnId;
-                                    break;
-                                case "YB":
-                                    yb = columnId;
-                                    break;
-                                case "YC":
-                                    yc = columnId;
-                                    break;
-                                case "ZA":
-                                    za = columnId;
-                                    break;
-                                case "ZB":
-                                    zb = columnId;
-                                    break;
-                                case "ZC":
-                                    zc = columnId;
+                                case "GEOMC":
+                                    geomC = columnId;
                                     break;
                                 case "LVLA":
                                     lvla = columnId;
@@ -690,15 +770,14 @@ public class IsoSurface {
                                     break;
                             }
                         }
-                        if (xa == 0 || xb == 0 || xc == 0 || ya == 0 || yb == 0 || yc == 0 || za == 0 || zb == 0 || zc == 0
-                                || lvla == 0 || lvlb == 0 || lvlc == 0) {
+                        if (geomA == 0 || geomB == 0 || geomC == 0 || lvla == 0 || lvlb == 0 || lvlc == 0) {
                             throw new SQLException("Missing field in input tables");
                         }
                         while (rs.next()) {
                             // Split current triangle
-                            Coordinate a = new Coordinate(rs.getDouble(xa), rs.getDouble(ya), rs.getDouble(za));
-                            Coordinate b = new Coordinate(rs.getDouble(xb), rs.getDouble(yb), rs.getDouble(zb));
-                            Coordinate c = new Coordinate(rs.getDouble(xc), rs.getDouble(yc), rs.getDouble(zc));
+                            Coordinate a = ((Geometry) rs.getObject(geomA)).getCoordinate();
+                            Coordinate b = ((Geometry) rs.getObject(geomB)).getCoordinate();
+                            Coordinate c = ((Geometry) rs.getObject(geomC)).getCoordinate();
                             // Fetch data
                             TriMarkers triMarkers = new TriMarkers(a, b, c, dbaToW(rs.getDouble(lvla)),
                                     dbaToW(rs.getDouble(lvlb)),
