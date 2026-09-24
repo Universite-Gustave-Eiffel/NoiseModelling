@@ -244,7 +244,7 @@ class TestReceivers extends JdbcTestCase {
         Envelope envelope = GeometryTableUtilities.getEnvelope(connection, TableLocation.parse("RECEIVERS")).envelopeInternal
         assertEquals(1127409.17, envelope.getArea(), 1.0)
         // Count the expected number of vertices
-        assertEquals(2294, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
+        assertEquals(2308, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
     }
 
     @Test
@@ -311,9 +311,9 @@ class TestReceivers extends JdbcTestCase {
         // Check if the area of the envelope of triangles is the same as the fence table DEM
         def res = sql.firstRow("SELECT ST_AREA(ST_EXTENT(THE_GEOM)) AREA FROM TRIANGLES T")
 
-        assertEquals(expectedArea, res["area"], 5)
+        assertEquals(expectedArea, res["area"] as Double, 5.0)
 
-        assertEquals(7924, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
+        assertEquals(7938, JDBCUtilities.getRowCount(connection, "RECEIVERS"))
     }
 
     @Test

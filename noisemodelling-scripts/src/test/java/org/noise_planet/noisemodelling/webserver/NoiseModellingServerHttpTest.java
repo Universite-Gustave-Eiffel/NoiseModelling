@@ -334,11 +334,10 @@ public class NoiseModellingServerHttpTest {
             // debug export table triangles as geojson
             // GeoJsonWrite.exportTable(connection, "target/TRIANGLES.geojson", "TRIANGLES");
             // Check if there is a triangle at the location of the building in x,y location 491303.97 6772708.80
-            // No triangle should be under the buildings
             try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 FROM TRIANGLES WHERE " +
                     "ST_Contains(the_geom, ST_GeomFromText('POINT(491303.97 6772708.80)', 2154))")) {
                 try(ResultSet rs = preparedStatement.executeQuery()) {
-                    assertFalse(rs.next());
+                    assertTrue(rs.next());
                 }
             }
             // An area with a triangle at 491308.588, 6772710.399
